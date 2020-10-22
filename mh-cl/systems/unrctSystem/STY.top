@@ -1,0 +1,14 @@
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.833333
+
+#include "STY.itp"
+
+
+[ system ]
+; Name
+Generic title
+
+[ molecules ]
+; Compound       #mols
+STY                  1
