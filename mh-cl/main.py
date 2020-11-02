@@ -20,6 +20,8 @@ import topInfo
 import md
 import searchBonds
 import genBonds
+import generateChargeDb
+import generateTypeInfo
 
 import os
 from shutil import copyfile
@@ -30,10 +32,15 @@ from shutil import rmtree
 class main(object):
     def __init__(self):
         self.srcPath = os.getcwd()
+        
         self.basicFolder = ''
         self.systemsFolder = ''
+        self.unrctFolder = ''
+        self.rctFolder = ''
+        self.typeFolder = ''
         self.mdpFolder = ''
         self.workingFolder = '' # current loop folder location
+        
         
         self.basicParameter = ''
         self.molNames = []
@@ -41,7 +48,7 @@ class main(object):
         self.gro = '' # save gro object
         self.top = '' # save top object
         self.old_pairs = []
-        
+        self.pairs_detail = {}
         # needed parameters
         self.cutoff = 0.2
         self.maxBonds = 100
@@ -95,17 +102,17 @@ class main(object):
         self.workingFolder = os.getcwd()
         os.mkdir('init'); os.chdir('init')
         copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
-        copyfile('{}/nvt.mdp'.format(self.mdpFolder), 'nvt-1.mdp')
+#        copyfile('{}/nvt.mdp'.format(self.mdpFolder), 'nvt-1.mdp')
         copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
 
         for n in nameList:
-            copyfile('{}/{}.gro'.format(self.systemsFolder, n), '{}.gro'.format(n))
-            copyfile('{}/{}.top'.format(self.systemsFolder, n), '{}.top'.format(n))
-            copyfile('{}/{}.itp'.format(self.systemsFolder, n), '{}.itp'.format(n))
+            copyfile('{}/{}.gro'.format(self.unrctFolder, n), '{}.gro'.format(n))
+            copyfile('{}/{}.top'.format(self.unrctFolder, n), '{}.top'.format(n))
+            copyfile('{}/{}.itp'.format(self.unrctFolder, n), '{}.itp'.format(n))
             
         # Insert molecules to systems
         import extendSys
-        a = extendSys.extendSys('gmx_mpi')
+        a = extendSys.extendSys('gmx')
         a.extendSys(param.monInfo, param.croInfo, param.boxSize, 'init')
         
         # Get df of gro file
@@ -125,13 +132,13 @@ class main(object):
         self.top = topSum
         
         # EM and NPT to equilibrate the structure
-        a = md.md('gmx_mpi', 'mpirun', '16')
+        a = md.md('gmx', 'mpirun', '16')
         a.emSimulation('init', 'init', 'min-1', size=False)
         a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=True)
-        a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
+#        a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
         
         # Update coord to the gro df
-        self.updateCoord('nvt-1')
+        self.updateCoord('npt-init')
         
         # init rct info for potential atoms, add rct columns to the df in the gro object df
         self.gro.initRctInfo(self.basicParameter)
@@ -141,7 +148,7 @@ class main(object):
     
     def finishSim(self, folderName):
         os.chdir(self.workingFolder)
-        conv = round(len(self.old_pairs)/int(self.basicParameter.maxBonds), 2)
+        conv = round(len(self.old_pairs)/int(self.maxBonds), 2)
         move(folderName, '{}-{}'.format(folderName, conv))
         self.old_pairs = []
         self.reInitSys()
@@ -160,7 +167,7 @@ class main(object):
         
         self.gro = atomsDf
         self.gro.initRctInfo(self.basicParameter)
-        self.updateCoord('nvt-1')
+        self.updateCoord('npt-init')
         topDf = topInfo.top()
         top.setName('init.top', 'init.itp')
         top.genTopSession()
@@ -177,6 +184,47 @@ class main(object):
         copyfile('{}/npt-cl.mdp'.format(self.mdpFolder), '{}/npt-cl.mdp'.format('step{}'.format(idx)))
         return 'step{}'.format(idx)
     
+    def calMaxBonds(self):
+        maxRct = 0
+        for i in self.basicParameter.monInfo:
+            molNum = int(i[2])
+            tmp = 0
+            for ii in i[3]:
+                tmp += int(ii[1])
+            maxRct += molNum * tmp
+            
+        for i in self.basicParameter.croInfo:
+            molNum = int(i[2])
+            tmp = 0
+            for ii in i[3]:
+                tmp += int(ii[1])
+            maxRct += molNum * tmp
+                
+        self.maxBonds = maxRct * 0.5
+    
+    def logBonds(self, step):
+        num1 = 0
+        for i in self.old_pairs:
+            num1 += len(i)
+#        num1 = len(self.old_pairs)
+        conv = num1/self.maxBonds
+        
+        with open('../bond.txt', 'a') as f1:
+#            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
+#                         num1, self.maxBonds - num1, conv)
+            str1 = 'step {}: {} bonds left. Reach conversion {:.2f}\n'.format(step, 
+                         self.maxBonds - num1, conv)
+            f1.write(str1)
+        
+        with open('../bonds_Info{}.txt'.format(step), 'w') as f2:
+            str0 = 'Total bonds: {}\n'.format(self.maxBonds)
+            f2.write(str0)
+            for keys, values in self.pairs_detail.items():
+                f2.write('{}: \n'.format(keys))
+                print('values: ', values)
+                for index, row in values.iterrows():
+                    f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
+            
     def mainProcess(self, repeatTimes):
         if os.path.isdir('results'):
             rmtree('results')
@@ -187,6 +235,10 @@ class main(object):
         # Init systems
         self.initSys()
         
+        # calculate max bonds
+        self.calMaxBonds()
+        print('maxBonds: ', self.maxBonds)
+#        self.maxBonds = self.basicParameter
         # Start crosslinking approach
         step = 0        
         for i in range(repeatTimes):
@@ -194,27 +246,32 @@ class main(object):
             os.mkdir(folderName)
             os.chdir(folderName)
 
-            while(len(self.old_pairs) < int(self.basicParameter.maxBonds)):
+            while(len(self.old_pairs) < int(self.maxBonds)):
                 
                 # searching potential bonds
-                sbonds, rMols = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
-                pairs = sbonds.main()
+                sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
+                pairs, rMols = sbonds.main()
                 
                 if len(pairs) > 0:
                     self.old_pairs.append(pairs)
+#                    print('pairs.amon: ', pairs.amon.values)
+#                    print('pairs.amon.to_string(): ', pairs.amon.to_string())
+                    self.pairs_detail['step{}'.format(step)] = pairs
                     folderName1 = self.setupFolder(step)  
                     os.chdir(folderName1)
                     # generate bonds
-                    gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap)
+                    gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols)
                     gbonds.main()
+                    
                     self.gro = gbonds.gro
                     self.top = gbonds.top
+                    self.top.checkCharge()
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
                     self.top.outDf(topName)
                     
                     # Equilibrate system
-                    a = md.md('gmx_mpi', 'mpirun', '16')
+                    a = md.md('gmx', 'mpirun', '16')
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
@@ -229,11 +286,12 @@ class main(object):
                         step = 0
                         break
                     
+                    self.logBonds(step)
                     # Update coord
                     self.updateCoord('npt-cl')
                     step += 1
                     os.chdir('..')
-                    if len(self.old_pairs) > 0.95 * int(self.basicParameter.maxBonds):
+                    if len(self.old_pairs) > 0.95 * int(self.maxBonds):
                         self.finishSim(folderName)
                         step = 0
                         break
@@ -244,17 +302,24 @@ class main(object):
     
     def getMolNames(self):
         names = []
-        for n in self.basicParameter.monInfo():
+        for n in self.basicParameter.monInfo:
             names.append(n[1])
         
-        for n in self.basicParameter.croInfo():
+        for n in self.basicParameter.croInfo:
             names.append(n[1])
         
         self.molNames = names
-        
+    
+    def getChargeMaps(self, name):
+        maps = {}
+        with open(name, 'r') as f:
+            for i in f.readlines():
+                key, value = i.split(':')
+                maps[key] = value
+        return maps
+    
     def preparePara(self):
         import prepareParam
-        import molRctInfo
         
         path = self.srcPath
         basicFolder = '{}/{}'.format(path, 'basic')
@@ -267,26 +332,33 @@ class main(object):
         self.setParam('options.txt')
         self.getMolNames()
         
-        os.chdir('{}/unrctSystem'.format(self.systemsFolder))
+        self.unrctFolder = '{}/unrctSystem/'.format(self.systemsFolder)
+        self.rctFolder = '{}/rctSystem/'.format(self.systemsFolder)
+        self.typeFolder = '{}/typeSystem/'.format(self.systemsFolder)
+        
+        os.chdir(self.unrctFolder)
         for n in self.molNames:
             fileName = '{}.mol2'.format(n)
             a = prepareParam.prepareParam()
             a.PrepareFile(fileName, n, n)
         
-        os.chdir('{}/rctSystem'.format(self.systemsFolder))
-        for n in self.molNames:
-            fileName = '{}.mol2'.format(n)
-            a = prepareParam.prepareParam()
-            a.PrepareFile(fileName, n, n)
-        
-        a1 = molRctInfo.molRctInfo()
-        a2 = a1.main(self.molNames)
-        self.chargeMap = a2
         os.chdir(self.srcPath)
+        
+        if os.path.isfile('{}/charges.txt'.format(self.basicFolder)):
+            self.chargeMap = self.getChargeMaps('{}/charges.txt'.format(self.basicFolder))
+        else:
+            a1 = generateChargeDb.generateChargeDb()
+            cc = a1.main(self.unrctFolder, self.rctFolder, 4) # could be more
+            
+            self.chargeMap = cc
+        
+        os.chdir(self.srcPath)
+        a = generateTypeInfo.generateTypeInfo()
+        a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
     a = main()
     a.preparePara()
     a.mainProcess(2)
     
-    
+    # TODO: need to check that charge been update as the template. 

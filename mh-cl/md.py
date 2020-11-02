@@ -12,6 +12,7 @@ from shutil import move
 class md(object):
     def __init__(self, GMX, MPI, nCPU):
         self.gmx = GMX
+        self.gmx_mpi = 'mdrun_mpi' # 'gmx_mpi mdrun'
         self.mpi = MPI
         self.cpu = nCPU
         
@@ -61,19 +62,19 @@ class md(object):
     def emSimulation(self, groName, topName, outName, size=True, boxSize=[0, 0, 0], check=True):
         cmd0 = '{} editconf -f {}.gro -box {} {} {} -o {} -c'.format(self.gmx, groName, boxSize[0], boxSize[1], boxSize[2], groName)
         cmd1 = '{} grompp -f em.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, groName, topName, outName)
-        cmd2 = '{} -np {} {} mdrun -deffnm {}'.format(self.mpi, self.cpu, self.gmx, outName)
+        cmd2 = '{} -np {} {} -deffnm {}'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
         if size:
             subprocess.call(cmd0, shell=True)
         subprocess.call(cmd1, shell=True)
         subprocess.call(cmd2, shell=True)
         if not self.checkMDFinish(outName):
-            cmd3 = '{} -np {} {} mdrun -deffnm {} -rdd 1'.format(self.mpi, self.cpu, self.gmx, outName)
+            cmd3 = '{} -np {} {} -deffnm {} -rdd 1'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
             subprocess.call(cmd3, shell=True)
             if not self.checkMDFinish(outName):
-                cmd4 = '{} -np {} {} mdrun -deffnm {} -rdd 0.5'.format(self.mpi, self.cpu, self.gmx, outName)
+                cmd4 = '{} -np {} {} -deffnm {} -rdd 0.5'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
                 subprocess.call(cmd4, shell=True)
                 if not self.checkMDFinish(outName):
-                    cmd5 = '{} -np {} {} mdrun -deffnm {} -rdd 0.1'.format(self.mpi, self.cpu, self.gmx, outName)
+                    cmd5 = '{} -np {} {} -deffnm {} -rdd 0.1'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
                     subprocess.call(cmd5, shell=True)
                     if not self.checkMDFinish(outName):
                         cmd6 = '{} mdrun -deffnm {}'.format(self.gmx, outName)
@@ -89,7 +90,7 @@ class md(object):
     
     def NVTSimulation(self, groName, topName, outName, mdpName, check=True):
         cmd1 = '{} grompp -f {}.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, mdpName, groName, topName, outName)
-        cmd2 = '{} -np {} {} mdrun -deffnm {}'.format(self.mpi, self.cpu, self.gmx, outName)
+        cmd2 = '{} -np {} {} -deffnm {}'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
         subprocess.call(cmd1, shell=True)
         subprocess.call(cmd2, shell=True)
             
@@ -102,7 +103,7 @@ class md(object):
     
     def NPTSimulation(self, groName, topName, outName, mdpName, check=True, re=True):
         cmd1 = '{} grompp -f {}.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, mdpName, groName, topName, outName)
-        cmd2 = '{} -np {} {} mdrun -deffnm {}'.format(self.mpi, self.cpu, self.gmx, outName)
+        cmd2 = '{} -np {} {} -deffnm {}'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
         subprocess.call(cmd1, shell=True)
         subprocess.call(cmd2, shell=True)
         
@@ -114,13 +115,13 @@ class md(object):
                 else:
                     return False
             else:
-                cmd3 = '{} -np {} {} mdrun -deffnm {} -rdd 1'.format(self.mpi, self.cpu, self.gmx, outName)
+                cmd3 = '{} -np {} {} -deffnm {} -rdd 1'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
                 subprocess.call(cmd3, shell=True)
                 if not self.checkMDFinish(outName):
-                    cmd4 = '{} -np {} {} mdrun -deffnm {} -rdd 0.5'.format(self.mpi, self.cpu, self.gmx, outName)
+                    cmd4 = '{} -np {} {} -deffnm {} -rdd 0.5'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
                     subprocess.call(cmd4, shell=True)
                     if not self.checkMDFinish(outName):
-                        cmd5 = '{} -np {} {} mdrun -deffnm {} -rdd 0.1'.format(self.mpi, self.cpu, self.gmx, outName)
+                        cmd5 = '{} -np {} {} -deffnm {} -rdd 0.1'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
                         subprocess.call(cmd5, shell=True)
                         if not self.checkMDFinish(outName):
                             cmd6 = '{} mdrun -deffnm {}'.format(self.gmx, outName)

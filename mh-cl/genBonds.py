@@ -8,6 +8,7 @@ Generate bonds
 """
 import parameters
 import sys
+import re
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols):
@@ -26,17 +27,45 @@ class genBonds(object):
         '''
     
     def findHydrogen(self, atomsDf, bonds, idx): # This idx is the pd index
-        con = []
+        con = []; conSum = []
         print('atom idx: ', idx)
         for index, row in bonds.iterrows():
             if str(row.ai) == str(idx):
+                conSum.append(row.aj)
                 if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(row.aj)]['atomName'].values[0]:
                     con.append(row.aj)
             elif str(row.aj) == str(idx):
+                conSum.append(row.ai)
                 if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(row.ai)]['atomName'].values[0]:
                     con.append(row.ai)
-        print('con: ', con)
-        return con
+        
+        print('Atom connections: ', conSum)
+        print('Atom H connections: ', con)
+        # sort the hydrogen based on the atom name
+        con1 = []; atomName_ori = ''
+        for idx in con:
+            atName = atomsDf[atomsDf.loc[:, 'globalIdx'] == idx]['atomName'].values[0]
+            print('Con idx and atomNames: {} {}'.format(idx, atName))
+            if len(con1) == 0:
+                con1 = [idx]
+                atomName_ori = atName
+            else:
+                num0 = re.findall(r'\d+', atomName_ori)
+                num1 = re.findall(r'\d+', atName)
+                if len(num0) == 0:
+                    break
+                else:
+                    print('num0: ', num0)
+                    print('num1: ', num1)
+                    if len(num1) == 0:
+                        con1 = [idx]
+                        atomName_ori = atName
+                    elif int(num1[0]) < int(num0[0]):
+                        con1 = [idx]
+                        atomName_ori = atName
+                    elif int(num1[0]) > int(num0[0]):
+                        continue
+        return con1
     
     def idx2Atypes(self, idx, df_atoms):
         aTypes = df_atoms.loc[int(idx)-1, 'type']
@@ -305,58 +334,108 @@ class genBonds(object):
         return seq, name
     
     def mapCharge(self, resname, seq): 
-        print('seq: ', seq)
         charges = self.chargeMap
+        seq1 = ''; cc = []
+        for i in seq:
+            seq1 += '{}/'.format(i)
+        
         for keys, value in charges.items():
-            if resname in keys and seq == value[0]:
+            if seq1 == keys:
                 print('find map!: ', keys)
-                return value[1]
+                c = value.split('/')
+                for ii in c:
+                    if len(ii) > 0:
+                        cc.append(ii)
+        if len(cc) == 0:
+            sys.exit('Didnt find charge map, something wrong!')
+        else:
+            if len(cc[-1]) < 3 or cc[-1] == '\n':
+#                print('charge seq (w/o -1 ele): ', cc)
+                return cc[:-1]
+            else:
+#                print('charge seq: (w -1 ele)', cc)
+                return cc
     
-    def getMolIdx(self, molNum):
+    def getAtomIdx(self, molNum):
         df_atoms = self.gro.df_atoms
         rctIdx = list(df_atoms[df_atoms.molNum == molNum].globalIdx)
-        df_atoms_top = self.top.atoms[(self.top.atoms.nr.isin(rctIdx))]
-        seq, resname = self.getSeq(df_atoms_top)
-        charges = self.mapCharge(resname, seq)
+        return rctIdx
         
-        self.top.atoms.loc[(self.top.atoms.nr.isin(rctIdx)), 'charge'] = charges
-        
-    def updateCharge(self): # Didn't test this function
+    def updateCharge(self): 
         mols = self.rctMols
-        m = mols[1]
-        a = self.getMolIdx(m)
-        return a
+        for m in mols:
+            a = self.getAtomIdx(m)
+            df_atoms_top = self.top.atoms[(self.top.atoms.nr.isin(a))]
+            seq, resname = self.getSeq(df_atoms_top)
+#            print('resname: ', resname)
+#            print('seq: ', seq)
+            charges = self.mapCharge(resname, seq)
+            self.top.atoms.loc[(self.top.atoms.nr.isin(a)), 'charge'] = charges
     
+    def updateRct(self, x, row):
+        if int(x.globalIdx) == int(row.amon) or int(x.globalIdx) == int(row.acro):
+            rctNum = x.rctNum - 1
+            x.rctNum = rctNum
+            if rctNum == 0:
+                x.rct = 'False'
+            elif rctNum > 0:
+                x.rct = 'True'
+            else:
+                sys.exit('Atom {} is over-reacted'.format(x.new_idx))
+        return x
+    
+    def updateRctInfo(self):
+        pairs = self.pairs
+        for index, row in pairs.iterrows():
+            print('rctAtoms Info: ', row)
+            self.gro.df_atoms = self.gro.df_atoms.apply(lambda x: self.updateRct(x, row), axis=1)
+            
     def main(self):
+        self.updateRctInfo()
         self.delHydrogen()
         self.addNewCon()
         self.updateIdx()
+        self.updateCharge()
         
 if __name__ == "__main__":
+    def getChargeMaps():
+        maps = {}
+        with open('basic/charges.txt', 'r') as f:
+            idx = 0
+            for i in f.readlines():
+#                print(idx); idx+= 1
+                key, value = i.split(':')
+                if key in maps.keys():
+                    pass
+#                    if len(key) > 250:
+#                        print(key)
+#                        print('\n')
+                else:
+                    maps[key] = value
+        return maps
+    b = getChargeMaps()
     import readGro
     import readTop
     import groInfo
     import topInfo
+    import pandas as pd
     atomsDf = groInfo.gro()
     topDf = topInfo.top()
     
     a2 = readGro.initGro()
     a3 = readTop.initTop()
     
-    a2.setName('nvt-1')
+    a2.setName('init')
     df_init, sysName, atNum, boxSize = a2.readGRO()
     atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
     a3.setName('init.top', 'init.itp')
     a3.genTopSession()
     topDf.setInfo(a3.sumTop)
     topDf.checkCharge()
-    rctMols = ['11', '2', '6', '10']
+    rctMols = ['2', '14']
     chargeMaps = b
-    pairs = [['505', '145']]
-    b0 = genBonds(atomsDf, topDf, pairs, chargeMaps, rctMols)
-    aa0 = b0.updateCharge()
-    aa1 = b0.top.atoms
-    
-#    b.main()
-    
+    names = ['acro', 'amon']; tmp = [['123', '1177']]
+    df_pairs = pd.DataFrame(tmp, columns=names)
+    b0 = genBonds(atomsDf, topDf, df_pairs, chargeMaps, rctMols)
+    b0.main()
     

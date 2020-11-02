@@ -176,11 +176,11 @@ class searchBonds(object):
             mols.append(index)
         
         self.mol = mols
-        
+    
     def main(self):
         pairs = []; count = 10
         while(len(pairs) == 0):
-            for i in range(count):
+            for i in range(count): # max trial times
                 df_rctAtoms, df_pairs = self.getRctDf()
                 if len(df_pairs) > 0:
                     break

@@ -1,34 +1,36 @@
 # For monomer 1
 monName1 = VEA
-monNum1 = 1
+monNum1 = 20
 mon1R_list = C19, C20, C26, C27  #heavy atom index for monomer reactive atoms
 mon1R_rNum = 1, 1, 1, 1
 mon1R_rct = 1R, 1R, 1R, 1R
 
 # For monomer 2
 monName2 = VEB
-monNum2 = 1
+monNum2 = 20
 mon2R_list = C22, C23, C44, C45
 mon2R_rNum = 1, 1, 1, 1
 mon2R_rct = 2R, 2R, 2R, 2R
 
 # For croslinker 1
 croName1 = STY
-croNum1 = 1
+croNum1 = 80
 cro1R_list = C6, C7
 cro1R_rNum = 1, 1
 cro1R_rct = 1cR, 1cR
 
 # Basic Info
-boxSize = 5
+boxSize = 10
 cutoff = 0.5
 bondsRatio = 0.5
-maxBonds = 3
+maxBonds = 160
 
 # React Info (always, cro always comes first)
+VEB + VEB + 16.8%
 VEA + VEA + 16.8%
 VEA + VEB + 16.8%
-STY + STY + 16.2%
+VEB + VEA + 16.8%
+STY + STY + 16.8%
 STY + VEA + 67.2%
 STY + VEB + 67.2%
 

@@ -24,12 +24,11 @@ class molRctInfo(object):
     
     def getNames(self, nameList):
         data = {}
-        for n in nameList:
-            for files in glob.glob('{}*.top'.format(n)):
-                tmp = files.strip('.top')
+        for n in nameList: # change to mol2
+            for files in glob.glob('{}*.mol2'.format(n)):
+                tmp = files.strip('.mol2')
                 aType, aCharge = self.extractSeq(tmp)
                 data[tmp] = [aType.to_list(), aCharge.to_list()]
-        
         return data
     
     def sepData(self, row):
