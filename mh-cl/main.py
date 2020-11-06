@@ -134,7 +134,21 @@ class main(object):
         # EM and NPT to equilibrate the structure
         a = md.md('gmx', 'mpirun', '16')
         a.emSimulation('init', 'init', 'min-1', size=False)
-        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=True)
+        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+        i = 0
+        while(not a.checkMDFinish('npt-init')):
+            if i > 5:
+                print('Still cannot converge NPT system, restart')
+                sys.exit()
+            elif i == 0:
+                inName = 'npt-init'
+            else:
+                inName = 'npt-init' + str(i)
+            a.extraRun(inName, 'init', i)
+            if os.path.isfile('npt.gro'):
+                move('npt.gro', 'npt-init.gro')
+            i += 1
+
 #        a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
         
         # Update coord to the gro df

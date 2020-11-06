@@ -55,7 +55,7 @@ class md(object):
         move('{}.gro'.format(fileName), '{}.gro'.format(inName))
     
         outName = name + str(num + 1)
-        self.NPTSimulation(inName, topName, outName, 'npt', check=False, re=False)       
+        self.NPTSimulation(inName, topName, outName, 'npt-init', check=False, re=False)       
         if self.checkMDFinish(outName):
             copyfile('{}.gro'.format(outName), 'npt.gro')
     
