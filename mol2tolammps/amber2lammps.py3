@@ -1,3 +1,4 @@
+'''amber2lammps.py3 to convert AMBER to LAMMPS'''
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
@@ -6,11 +7,15 @@
 # Copyright 1999, 2000 Keir E. Novik; all rights reserved.
 #
 # Modified by Vikas Varshney, U Akron, 5 July 2005, as described in README
-# Bug Fixed: Third argument in Dihedral Coeffs section is an integer - Ketan S Khare September 26, 2011
-# Modified by Vikas Varshney, Oct 8, 2013 to include additional flags (Atomic_Number, Coulombic and van der Waals 1-4 factors which are included in newer vesions of .top and .crd files in amber12.
-# Modified by Ketan S. Khare - September 15, 2016 - (1) Improve Roundoff for Coeffs and Charges especially with Python 2.7 and later 
-#                (2) Fix Improper atom ordering.  If I is central atom of improper I,J,K,L, Amber order is J K I -L. Unless the 3rd or 4th atom in dihedral is the first atom in file (i.e. 0).  LAMMPS expected order is I, J, K, L
-# Modified by Ketan S. Khare - December 10, 2019 Converted to Python 3. (1) Masses lines have a comment followed by the AMBER Atom Type (2) Impropers separated
+# Bug Fixed: Third argument in Dihedral Coeffs section is an integer - Ketan S Khare 26-Sept-2011
+# Modified by Vikas Varshney, Oct 8, 2013 to include additional flags (Atomic_Number, Coulombic and 
+#   van der Waals 1-4 factors which are included in newer vesions of .top and .crd files in amber12.
+# Modified by Ketan S. Khare - September 15, 2016 - (1) Improve Roundoff for Coeffs and Charges 
+#   especially with Python 2.7 and later (2) Fix Improper atom ordering.  If I is central atom of 
+# improper I,J,K,L, Amber order is J K I -L. Unless the 3rd or 4th atom in dihedral is the first 
+# atom in file (i.e. 0).  LAMMPS expected order is I, J, K, L
+# Modified by Ketan S. Khare - December 10, 2019 Converted to Python 3. (1) Masses lines have a 
+# comment followed by the AMBER Atom Type (2) Impropers separated
 
 # PYTHON 3+
 # ============================================================
@@ -25,6 +30,7 @@ def Pop(S, I=-1):
 # ============================================================
 
 class Lammps:
+    '''LAMMPS Data and Functions'''
 
     # --------------------------------------------------------
 
@@ -71,6 +77,35 @@ class Lammps:
 
         F.close()
         print('done.')
+
+    # --------------------------------------------------------
+
+    def CorrectCharges(self):
+        '''Write the Lammps data to file (used by Write_Lammps)'''
+
+        import math
+
+        NetCharge = 0
+        for i in range(self.nAtoms):
+            NetCharge = NetCharge + self.Atoms[i][2]
+
+        WholeCharge = math.floor(NetCharge+0.5)
+        CorrectPerAtom = (WholeCharge - NetCharge) / self.nAtoms
+
+        NetCharge = 0
+        for i in range(self.nAtoms):
+            self.Atoms[i][2] = round(self.Atoms[i][2] + CorrectPerAtom, 8)
+            NetCharge = NetCharge + self.Atoms[i][2]
+        print('Residual Charge added to all atoms: ', round(CorrectPerAtom, 9))
+
+        self.Atoms[0][2] = round(self.Atoms[0][2] - NetCharge + WholeCharge, 15)
+        print('Roundoff Charge added to AtomID 1: ', round(NetCharge - WholeCharge, 9))
+
+        NetCharge = 0
+        for i in range(self.nAtoms):
+            NetCharge = NetCharge + self.Atoms[i][2]
+
+        print('Final Charge is ', int(WholeCharge), '\n')
 
     # --------------------------------------------------------
 
@@ -196,14 +231,12 @@ class Lammps:
                 for j in range(len(self.Impropers[0])):
                     L.append(' ' + repr(self.Impropers[i][j]))
                 L.append('\n')
-            L.append('\n')
-
         self.Write_data(Basename, L)
-
 
 # ============================================================
 
 class Amber:
+    '''AMBER Data and Functions'''
 
     def __init__(self):
         '''Initialise the Amber class'''
@@ -223,6 +256,7 @@ class Amber:
 
     # --------------------------------------------------------
 
+
     def Coerce_to_Lammps(self):
         '''Return the Amber data converted to Lammps format'''
 
@@ -237,7 +271,7 @@ class Amber:
             l.nBonds = self.NBONH + self.MBONA
             l.nAngles = self.NTHETH + self.MTHETA
             l.nDihedrals = self.NPHIH + self.MPHIA
-            l.nImpropers = 0                            #AMBER merges Dihedrals and Impropers. Will be Separated Later.
+            l.nImpropers = 0                            #AMBER merges Dihedrals and Impropers.
             l.nAtom_Types = self.NTYPES
             l.nBond_Types = self.NUMBND
             l.nAngle_Types = self.NUMANG
@@ -256,12 +290,13 @@ class Amber:
                     > min(self.Y) or l.yhi < max(self.Y) or l.zlo \
                     > min(self.Z) or l.zhi < max(self.Z):
 
-                    #  Vikas Modification: Disabling Shifting. This means I am intend to send exact coordinates of each atom and let LAMMPS
-                    #  take care of imaging into periodic image cells. If one wants to shift all atoms in the periodic box,
-                    #  please uncomment the below 2 lines.
+                    #  Vikas Modification: Disabling Shifting. This means I am intend to send exact 
+                    #  coordinates of each atom and let LAMMPS take care of imaging into periodic 
+                    #  image cells. If one wants to shift all atoms in the periodic box, please 
+					# uncomment the below 2 lines.
 
                     print('(warning: Currently not shifting the atoms to the periodic box)')
-            else:                              
+            else:
                 #Adding a padding of 1.75 A to Box
                 print('Warning: Guessing box size from crd. With pad of 1.75 A!', end=' ')
                 l.xlo = min(self.X) - 1.75
@@ -314,7 +349,7 @@ class Amber:
             for i in range(self.NPTRA):
                 l.Dihedral_Coeffs.append([0, 0, 0, 0])
             for i in range(self.NPTRA):
-                l.Dihedral_Coeffs[i][0] = round(self.PK[i],3)
+                l.Dihedral_Coeffs[i][0] = round(self.PK[i], 3)
                 l.Dihedral_Coeffs[i][1] = int(self.PN[i])
                 l.Dihedral_Coeffs[i][2] = int(180 / math.pi * self.PHASE[i])
 
@@ -322,7 +357,7 @@ class Amber:
             for i in range(self.NPTRA):
                 l.Improper_Coeffs.append([0, 0, 0])
             for i in range(self.NPTRA):
-                l.Improper_Coeffs[i][0] = round(self.PK[i],3)
+                l.Improper_Coeffs[i][0] = round(self.PK[i], 3)
                 if self.PHASE[i] == 0:
                     l.Improper_Coeffs[i][1] = 1
                 else:
@@ -330,7 +365,6 @@ class Amber:
                 l.Improper_Coeffs[i][2] = int(self.PN[i])
 
             l.Atoms = []
-            NetCharge = 0
             for i in range(self.NATOM):
                 x = self.X[i]
                 y = self.Y[i]
@@ -348,8 +382,7 @@ class Amber:
                         z = z + self.BOX[2]
                     while z > l.zhi:
                         z = z - self.BOX[2]
-                l.Atoms.append([1,self.IAC[i],round(self.CHRG[i] / 18.2223, 6),x,y,z,])
-                NetCharge = NetCharge + round(self.CHRG[i] / 18.2223, 6)
+                l.Atoms.append([1, self.IAC[i], self.CHRG[i] / 18.2223, x, y, z,])
 
             l.Bonds = []
             for i in range(l.nBonds):
@@ -407,7 +440,7 @@ class Amber:
                     l.Dihedrals[j][3] = abs(self.KP[i]) // 3 + 1
                     l.Dihedrals[j][4] = abs(self.LP[i]) // 3 + 1
                     j += 1
-            
+
             #Note difference in index order for impropers in AMBER versus LAMMPS
             l.Impropers = []
             for i in range(l.nImpropers):
@@ -446,50 +479,47 @@ class Amber:
                         l.Impropers[j][3] = abs(self.KP[i]) // 3 + 1
                         l.Impropers[j][4] = abs(self.IP[i]) // 3 + 1
                     j += 1
-                    
+
             #Remove unused dihedral and improper types from the Coeffs sections
-            UseFlag=[]  
+            UseFlag = []
             for i in range(l.nDihedral_Types):
                 UseFlag.append(0)
                 for j in range(l.nDihedrals):
-                    if(l.Dihedrals[j][0] == i+1):
-                        UseFlag[i]=1
+                    if l.Dihedrals[j][0] == i+1:
+                        UseFlag[i] = 1
                         break
-            
-            i=0
-            while(i<l.nDihedral_Types):
-                if(UseFlag[i]==0):
+
+            i = 0
+            while i < l.nDihedral_Types:
+                if UseFlag[i] == 0:
                     del l.Dihedral_Coeffs[i]
                     del UseFlag[i]
-                    l.nDihedral_Types-=1
+                    l.nDihedral_Types -= 1
                     for j in range(l.nDihedrals):
-                        if(l.Dihedrals[j][0] > i):
-                            l.Dihedrals[j][0]-=1
-                else: 
-                    i+=1                
-                                      
-            UseFlag=[]
+                        if l.Dihedrals[j][0] > i:
+                            l.Dihedrals[j][0] -= 1
+                else:
+                    i += 1
+
+            UseFlag = []
             for i in range(l.nImproper_Types):
                 UseFlag.append(0)
                 for j in range(l.nImpropers):
-                    if(l.Impropers[j][0] == i+1):
-                        UseFlag[i]=1
+                    if l.Impropers[j][0] == i+1:
+                        UseFlag[i] = 1
                         break
-            i=0
-            while(i<l.nImproper_Types):
-                if(UseFlag[i]==0):
+            i = 0
+            while i < l.nImproper_Types:
+                if UseFlag[i] == 0:
                     del l.Improper_Coeffs[i]
                     del UseFlag[i]
-                    l.nImproper_Types-=1
+                    l.nImproper_Types -= 1
                     for j in range(l.nImpropers):
-                        if(l.Impropers[j][0] > i):
-                            l.Impropers[j][0]-=1
-                else: 
-                    i+=1   
-            
-            if(NetCharge!=0):
-                print('Warning: Net Charge is ', round(NetCharge,6), '\n')
-                
+                        if l.Impropers[j][0] > i:
+                            l.Impropers[j][0] -= 1
+                else:
+                    i += 1
+
             print('done.')
             return l
         else:
@@ -524,14 +554,14 @@ class Amber:
         # If the first line is empty, use the Basename
 
         if Filename[-4:] == '.crd':
-            if (not Lines[0]):  # This line corresponds to TITLE name in CRD file
+            if not Lines[0]:  # This line corresponds to TITLE name in CRD file
                 Basename = Filename[:string.find(Filename, '.')]
                 Item_list = [Basename]
                 print('Warning: Title not present... Assigning Basename as Title')
             else:
                 Item_list = []
         else:
-            if (not Lines[3]):  # This line corresponds to TITLE name in TOPOLOGY file
+            if not Lines[3]:  # This line corresponds to TITLE name in TOPOLOGY file
                 Basename = Filename[:string.find(Filename, '.')]
                 Item_list = [Basename]
                 print('Warning: Title not present... Assigning Basename as Title')
@@ -553,9 +583,9 @@ class Amber:
 
         Item_list = self.Read_data(Basename + '.crd')
 
-        if Item_list == None:
+        if Item_list is None:
             return
-        elif len(Item_list) < 2:
+        if len(Item_list) < 2:
             print('(error: File too short!)')
             return
 
@@ -566,15 +596,15 @@ class Amber:
                 print('(warning: ITITL differs!)', end=' ')
         else:
             self.ITITL = Pop(Item_list, 0)
-        print("CRD Title is " + self.ITITL)  # Vikas Modification : Priting the Title
+        print('CRD Title is ' + self.ITITL)  # Vikas Modification : Priting the Title
 
         if 'NATOM' in self.__dict__:
             if eval(Pop(Item_list, 0)) != self.NATOM:
-                print('(error: NATOM differs!)')
+                print('Error: NATOM differs!')
                 return
         else:
             self.NATOM = eval(Pop(Item_list, 0))
-        print(repr(self.NATOM) + " atoms found!", end = " ")  # Vikas' Modification: Printing number of atoms just to make sure that the program is reading the correct value.
+        print(repr(self.NATOM) + ' atoms found!', end=' ')  # Vikas' Modification: Printing number of atoms just to make sure that the program is reading the correct value.
 
         # if len(Item_list) == 1 + 3 * self.NATOM:
         # Vikas' Modification: I changed the condition.
@@ -626,9 +656,9 @@ class Amber:
 
         Item_list = self.Read_data(Basename + '.top')
 
-        if Item_list == None:
+        if Item_list is None:
             return
-        elif len(Item_list) < 31:
+        if len(Item_list) < 31:
             print('(error: File too short!)')
             return
 
@@ -810,8 +840,7 @@ class Amber:
         # ....................................................
 
         if len(Item_list) < 3 * (self.NBONH + self.NBONA) + 4 \
-            * (self.NTHETH + self.NTHETA) + 5 * (self.NPHIH
-                + self.NPHIA):
+            * (self.NTHETH + self.NTHETA) + 5 * (self.NPHIH + self.NPHIA):
             print('(error: File too short!)')
             return -1
 
@@ -1059,9 +1088,6 @@ class Amber:
 
         # ....................................................
 
-        
-        
-        
         self.IPOL = 0
         if self.IPOL == 1:
             if len(Item_list) < self.NATOM:
@@ -1082,12 +1108,64 @@ class Amber:
 
         # ....................................................
 
-        if len(Item_list):
+        if len(Item_list) > 0:
             print('(warning: AMBER Topology file is too large! Usually Safe to ignore!)')
 
         print("TOP file is done.")
         self.TOP_is_read = 1
 
+# ============================================================
+
+    def PrintShakeInfo(self, Basename):
+
+        Filename = 'ShakeInfo.' + Basename
+        F = open(Filename, 'w')
+        F.write("fix SHAKE all shake 0.00001 25 0 b ")
+
+
+        ShakeBondType = []
+        Flag = 0
+        for i in range(self.NBONH):
+            Flag = 0
+            for j in range(len(ShakeBondType)):
+                if self.ICBH[i] == ShakeBondType[j]:
+                    Flag = 1
+            if Flag == 0:
+                ShakeBondType.append(self.ICBH[i])
+
+        for j in range(len(ShakeBondType)):
+            F.write(str(ShakeBondType[j]) + ' ')
+
+        F.write('a ')
+        ShakeAngleType = []
+        Flag = 0
+        for i in range(self.NTHETH):
+            Flag = 0
+            for j in range(len(ShakeAngleType)):
+                if self.ICTH[i] == ShakeAngleType[j]:
+                    Flag = 1
+            if Flag == 0:
+                ShakeAngleType.append(self.ICTH[i])
+
+        for j in range(len(ShakeAngleType)):
+            F.write(str(ShakeAngleType[j]) + ' ')
+
+        F.write("m 1.008")
+
+
+        F.close()
+
+# ============================================================
+
+    def PrintIndex(self, Basename):
+
+        Filename = 'TypeIndex.' + Basename
+        F = open(Filename, 'w')
+
+        for i in range(self.NATOM):
+            F.write('{0} {1} {2} {3} \n'.format(repr(i+1), str(self.IAC[i]), str(self.IGRAPH[i]), str(self.ISYMBL[i])))
+
+        F.close()
 
 # ============================================================
 
@@ -1144,13 +1222,13 @@ def Check_Python_Version():
     '''Python Version'''
     import sys
     if sys.version_info[0] < 3:
-        raise Exception("Error: Must be using Python 3")
+        raise Exception('Error: Must be using Python 3')
 
 # ============================================================
 
 def Convert_Amber_files():
     '''Handle the whole conversion process'''
-    print("\nWelcome to amber2lammps, a program to convert AMBER files to LAMMPS format!\n")
+    print('\nWelcome to amber2lammps, a program to convert AMBER files to LAMMPS format!\n')
     Check_Python_Version()
     Basename_list = Find_Amber_files()
     for Basename in Basename_list:
@@ -1160,10 +1238,14 @@ def Convert_Amber_files():
             a.Read_TOP(Basename)
             if a.TOP_is_read:
                 l = a.Coerce_to_Lammps()
+                a.PrintShakeInfo(Basename)
+                a.PrintIndex(Basename)
+                l.CorrectCharges()
                 l.Write_Lammps(Basename)
+
                 del l
         del a
-        print("Program: amber2lammps has exited gracefully.\n")
+        print('Program: amber2lammps has exited gracefully.\n')
 
 
 # ============================================================
