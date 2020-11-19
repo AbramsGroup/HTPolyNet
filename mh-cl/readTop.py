@@ -6,6 +6,7 @@ Created on Mon Sep 28 14:48:12 2020
 """
 import pandas as pd
 import sys
+from countTime import *
 
 class initTop(object):
     def __init__(self):
@@ -33,9 +34,13 @@ class initTop(object):
         self.topName = name1
         self.itpName = name2
     
+    @countTime
     def getTopInfo(self, name):
         print('name: ', name)
         df1 = pd.read_csv(name, names=['0'], comment=';', header=None, sep='\n', skip_blank_lines=True)
+        print(df1)
+        return df1
+
         dil_indx = list(df1.loc[df1['0'].str.startswith('[')].index)
         df_sep = []
         for i in range(len(dil_indx)):
@@ -62,6 +67,7 @@ class initTop(object):
         else:
             return data[idx]
     
+    @countTime
     def initSession(self, df_new, df_ori, cNames):
         i = 0
         for c in cNames:
@@ -134,10 +140,12 @@ class initTop(object):
                 if key in dup_keys:
                     df.drop(index, inplace=True)    
         return df
-        
+
+    @countTime        
     def genTopSession(self):
-        df_lst0 = self.getTopInfo(self.topName)
+#        df_lst0 = self.getTopInfo(self.topName)
         df_lst = self.getTopInfo(self.itpName)
+        return df_lst
         atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
         moltypeNames = ['name', 'nrexcl']
         atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
@@ -266,10 +274,10 @@ if __name__ == '__main__':
     a = initTop()
 #    a.setName('systems/VEA.top', 'systems/VEA.itp')
     a.setName('init.top', 'init.itp')
-    a.genTopSession()  
-    import topInfo
-    b = topInfo.top()
-    b.setInfo(a.sumTop)
-    b.outDf('tmp-1')
+    a1 = a.genTopSession()  
+#    import topInfo
+#    b = topInfo.top()
+#    b.setInfo(a.sumTop)
+#    b.outDf('tmp-1')
     # b.checkCharge()
     # c = b.outDf('tmp-1.top')

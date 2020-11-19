@@ -9,6 +9,7 @@ Generate bonds
 import parameters
 import sys
 import re
+from countTime import *
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols):
@@ -389,7 +390,8 @@ class genBonds(object):
         for index, row in pairs.iterrows():
             print('rctAtoms Info: ', row)
             self.gro.df_atoms = self.gro.df_atoms.apply(lambda x: self.updateRct(x, row), axis=1)
-            
+    
+    @countTime       
     def main(self):
         self.updateRctInfo()
         self.delHydrogen()

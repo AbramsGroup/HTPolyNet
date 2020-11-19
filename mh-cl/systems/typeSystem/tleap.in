@@ -1,6 +1,0 @@
-source leaprc.gaff 
-SUS = loadmol2 VEB-STY1-type.mol2 
-check SUS
-loadamberparams VEB-STY1-type.frcmod 
-saveamberparm SUS VEB-STY1-type.top VEB-STY1-type.crd 
-quit

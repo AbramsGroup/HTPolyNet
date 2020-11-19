@@ -5,12 +5,14 @@ Created on Sun Oct 18 13:54:55 2020
 @author: huang
 """
 import os
+from countTime import *
 
 class testCase(object):
     def __init__(self):
         self.gro = []
         self.top = []
-    
+
+    @countTime
     def testReadParam(self):
         import readParameters
         a = readParameters.parameters()
@@ -19,7 +21,8 @@ class testCase(object):
         a.readParam()
         return a
     
-    def testreadGro(self, name='systems/VEA'):
+    @countTime
+    def testreadGro(self, name='systems/unrctSystem/VEA'):
         import readGro
         import groInfo
         pp = self.testReadParam()
@@ -31,7 +34,8 @@ class testCase(object):
         a1.initRctInfo(pp)
         return a1
     
-    def testMain(self):
+    @countTime
+    def testMain(self): # cannot test locally, due to the parmed module cannot install locally
         import os
         import main
         
@@ -44,6 +48,7 @@ class testCase(object):
         a.initSys('1')
         return a.basicParameter
     
+    @countTime
     def testSearchBonds(self):
         import searchBonds
         import readGro
@@ -70,13 +75,29 @@ class testCase(object):
         topDf.setInfo(a3.sumTop)
         topDf.checkCharge()
         self.top = topDf
+        
         aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
         out = aa.main()
         return out
     
     def testGenBonds(self, pairs):
         import genBonds
-        a = genBonds.genBonds(self.gro, self.top, pairs)
+        rctMols = ['2', '14']
+        def getChargeMaps():
+            maps = {}
+            with open('basic/charges.txt', 'r') as f:
+                idx = 0
+                for i in f.readlines():
+                    key, value = i.split(':')
+                    if key in maps.keys():
+                        pass
+                    else:
+                        maps[key] = value
+            return maps
+        
+        b = getChargeMaps()
+
+        a = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols)
         a.main()
         return a
     
@@ -89,16 +110,15 @@ class testCase(object):
         
 if __name__ == "__main__":
     a = testCase()
-#    b1 = a.testreadGro()
-    
-#    b2 = a.testreadGro('systems/STY')
+    b1 = a.testreadGro()
+    b2 = a.testreadGro('systems/unrctSystem/STY')
 #    a1 = b2.df_atoms
-    
 #    b = a.testReadParam()        
     
-#    b = a.testMain()
-    
     b1 = a.testSearchBonds()
-#    b2 = a.testGenBonds(b1)
+#    
+#    names = ['acro', 'amon']; tmp = [['123', '1177']]
+#    df_pairs = pd.DataFrame(tmp, columns=names)
+#    b2 = a.testGenBonds(df_pairs)
     
 #    a.testmolRctInfo()

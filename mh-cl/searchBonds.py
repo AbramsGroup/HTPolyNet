@@ -6,6 +6,7 @@ Searching potential bonds
 """
 import pandas as pd
 import numpy as np
+from countTime import *
 
 class searchBonds(object):
     def __init__(self, basicParameters, generatedBonds, inGro, inTop):
@@ -177,6 +178,7 @@ class searchBonds(object):
         
         self.mol = mols
     
+    @countTime
     def main(self):
         pairs = []; count = 10
         while(len(pairs) == 0):

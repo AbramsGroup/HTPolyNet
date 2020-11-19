@@ -33,7 +33,7 @@ optimize_fft    = yes
 tcoupl      = Nose-Hoover             ; Weak coupling for initial equilibration 
 tc-grps     = System
 tau_t       = 0.1         	    ; time constant, in ps
-ref_t       = 600      		    ; reference temperature, one for each group, in K
+ref_t       = 300      		    ; reference temperature, one for each group, in K
 ; Pressure coupling is on
 pcoupl              = no     ; Pressure coupling on in NPT, also weak coupling
 refcoord_scaling    = com

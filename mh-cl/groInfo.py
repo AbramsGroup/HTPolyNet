@@ -5,6 +5,7 @@ Created on Tue Sep 29 11:01:01 2020
 @author: huangming
 """
 import pandas as pd
+from countTime import *
 
 class gro(object):
     def __init__(self):
@@ -39,6 +40,7 @@ class gro(object):
         self.df_atoms['posY'] = newY
         self.df_atoms['posZ'] = newZ
     
+    @countTime
     def initRctInfo(self, basicParameters):
         monR_list = basicParameters.monR_list
         croR_list = basicParameters.croR_list
