@@ -38,8 +38,6 @@ class initTop(object):
     def getTopInfo(self, name):
         print('name: ', name)
         df1 = pd.read_csv(name, names=['0'], comment=';', header=None, sep='\n', skip_blank_lines=True)
-        print(df1)
-        return df1
 
         dil_indx = list(df1.loc[df1['0'].str.startswith('[')].index)
         df_sep = []
@@ -143,9 +141,9 @@ class initTop(object):
 
     @countTime        
     def genTopSession(self):
-#        df_lst0 = self.getTopInfo(self.topName)
+        df_lst0 = self.getTopInfo(self.topName)
         df_lst = self.getTopInfo(self.itpName)
-        return df_lst
+
         atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
         moltypeNames = ['name', 'nrexcl']
         atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']

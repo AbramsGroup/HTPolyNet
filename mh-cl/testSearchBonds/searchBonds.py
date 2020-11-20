@@ -56,6 +56,7 @@ class searchBonds(object):
         dist = np.sqrt(x2+y2+z2)
         return dist
 
+    @countTime
     def filterRctPairs(self, x, df_mon):
         lst = []
         for index, row in df_mon.iterrows():
@@ -137,7 +138,8 @@ class searchBonds(object):
         
         tmp = '{},{}'.format(con2, mol1)
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
-    
+
+    @countTime
     def finalRctPairs(self, df_rctAtoms, df_pairs):
         # Sort by distance between potential atoms
         df_pairs = df_pairs.sort_values(by=['dist'])
