@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 28 14:48:12 2020
-
+This function will be replaced by readTop-2 script
 @author: huangming
 """
 import pandas as pd

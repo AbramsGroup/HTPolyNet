@@ -64,7 +64,6 @@ class initTop(object):
             lst0.append(lst_tmp) # last section (improper section) to the end of the list
             lst0 = lst0[1:]
         
-#            df_lst = []
             if len(lst0) == 12:
                 names = [atypeNames, btypeNames, angTypeNames, dihTypeNames, impTypeNames, moltypeNames, 
              atNames, bNames, pNames, angNames, dihNames, impNames]
@@ -82,6 +81,13 @@ class initTop(object):
                     else:
                         df_tmp = pd.DataFrame(lst0[i], columns=names[i])
                     setattr(self, info[i], df_tmp)
+
+            if len(lst0) == 7: # Itp file didn't contain the type section
+                pass # TODO: will finish later
+
+            elif len(lst0) == 8:
+                pass # TODO: finish later
+
 
 if __name__ == '__main__':
     a = initTop()
