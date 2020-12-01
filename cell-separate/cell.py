@@ -4,6 +4,8 @@
 # 3. assign cell id to each atoms df
 
 import pandas as pd
+import numpy as np
+import os
 
 class cell(object):
     def __init__(self):
@@ -64,10 +66,34 @@ class readGRO(object):
         return df_init, sysName, atNum, boxSize
 
 def genCell(boxSize):
-    boxSize = '15.000000'
-    for i 
+    boxSize = '3.000000'
+    parts = 2
+    x = np.linspace(0, float(boxSize), parts + 1)
+    y = np.linspace(0, float(boxSize), parts + 1)
+    z = np.linspace(0, float(boxSize), parts + 1)
+    xdiv = x[1] - x[0]
+    ydiv = y[1] - y[0]
+    zdiv = z[1] - z[0]
+    cell_id = []
+    com = [0.5 * (x[1] - x[0]),
+           0.5 * (y[1] - y[0]),
+           0.5 * (z[1] - z[0])]
+    xNum = 0; yNum = 0; zNum = 0
+    for i in range(parts): # x dir
+        xCom = com[0] + xdiv * xNum
+        xNum += 1; yNum = 0; zNum = 0
+        for j in range(parts): # y dir
+            yCom = com[1] + ydiv * yNum
+            yNum += 1; zNum = 0
+            for k in range(parts): # z dir
+                zCom = com[2] + zdiv * zNum
+                zNum += 1
+                info = [i, j, k, [xCom, yCom, zCom]]
+                cell_id.append(info)
+    return cell_id
 
 if __name__ == '__main__':
-    a = readGRO('init-1.gro')
+    name = os.path.join(os.getcwd(), 'cell-separate/init-1.gro')
+    a = readGRO(name)
     df_init, sysName, atNum, boxSize = a.readGRO()
-    genCell(boxSize.split())
+    a = genCell(boxSize.split())
