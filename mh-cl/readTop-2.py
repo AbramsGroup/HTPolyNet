@@ -34,7 +34,24 @@ class initTop(object):
     def setName(self, name1, name2):
         self.topName = name1
         self.itpName = name2
-    
+
+    def getTopInfo(self, name):
+        df1 = pd.read_csv(name, names=['0'], comment=';', header=None, sep='\n', skip_blank_lines=True)
+
+        dil_indx = list(df1.loc[df1['0'].str.startswith('[')].index)
+        df_sep = []
+        for i in range(len(dil_indx)):
+            if i == 0:
+                continue
+            else:
+                df_tmp = df1.iloc[dil_indx[i - 1] + 1:dil_indx[i], :]
+                if '#' in df_tmp.to_string():
+                    continue
+                else:
+                    df_sep.append(df_tmp)
+        df_sep.append(df1.iloc[dil_indx[i] + 1:, :])
+        return df_sep
+
     @countTime
     def genTopSession(self):
         atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
@@ -87,10 +104,14 @@ class initTop(object):
 
             elif len(lst0) == 8:
                 pass # TODO: finish later
-
+        df_lst0 = self.getTopInfo(self.topName)
+        self.sumTop = [df_lst0, self.aTypes, self.mTypes, self.bTypes,
+                       self.angTypes, self.dihTypes, self.impTypes,
+                       self.atoms, self.bonds, self.pairs, self.angles,
+                       self.dihs, self.imps, self.dupDihTypeKey]
 
 if __name__ == '__main__':
     a = initTop()
-    a.setName('init.top', 'init.itp')
+    a.setName('tmp.top', 'tmp.itp')
     a1 = a.genTopSession()
     

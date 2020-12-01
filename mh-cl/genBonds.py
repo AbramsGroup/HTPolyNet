@@ -26,7 +26,7 @@ class genBonds(object):
         index   acro   amon   dist   rctNum1   rctNum2   molCon   p
         12      glbIdx glbIdx   
         '''
-    
+
     def findHydrogen(self, atomsDf, bonds, idx): # This idx is the pd index
         con = []; conSum = []
         print('atom idx: ', idx)
@@ -183,7 +183,8 @@ class genBonds(object):
         self.top.angs = df_angs
         self.top.dihedrals = df_dihs
         self.top.impropers = df_imps
-        
+
+    @countTime
     def searchCon(self, idx, df_bonds):
         con = []
         for index, row in df_bonds.iterrows():
@@ -192,7 +193,8 @@ class genBonds(object):
             elif str(row.aj) == str(idx):
                 con.append(row.ai)
         return con
-    
+
+    @countTime
     def genNewCon(self, pair, df_bonds):
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
@@ -252,7 +254,7 @@ class genBonds(object):
             new_angles += nAngles
             new_dihedrals += nDihs
             
-        #TODO: update charge
+        # TODO: update charge
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         self.checkNewTypes(new_bonds, inTop, types='bonds')
@@ -384,7 +386,8 @@ class genBonds(object):
             else:
                 sys.exit('Atom {} is over-reacted'.format(x.new_idx))
         return x
-    
+
+    @countTime
     def updateRctInfo(self):
         pairs = self.pairs
         for index, row in pairs.iterrows():

@@ -56,8 +56,11 @@ class searchBonds(object):
         dist = np.sqrt(x2+y2+z2)
         return dist
 
-    @countTime
     def filterRctPairs(self, x, df_mon):
+        # TODO: link-cell algorithm (1st)
+        # cell idx is the coordinate related [i, j, k]
+        # pair search in the cell (adj cells)
+        # TODO: neighbor list (minor)
         lst = []
         for index, row in df_mon.iterrows():
             if x.rctNum > 0 and row.rctNum > 0:
@@ -87,6 +90,9 @@ class searchBonds(object):
 
             atLst.append(df_mon)
             atLst.append(df_cro)
+            df_atoms = pd.concat(atLst).drop_duplicates().reset_index(drop=True)
+
+            # TODO: time cost on calculating the distance between all potential atom pairs
             lst_tmp = df_cro.apply(lambda x: self.filterRctPairs(x, df_mon), axis=1).values.tolist()
             for ii in lst_tmp:
                 if len(ii) == 0:
@@ -98,7 +104,6 @@ class searchBonds(object):
             
         names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon', 'p']
         df = pd.DataFrame(rctDf, columns=names)
-        df_atoms = pd.concat(atLst).drop_duplicates().reset_index(drop=True)
         return df_atoms, df
     
     def checkRepeat(self, lst, inLst):
