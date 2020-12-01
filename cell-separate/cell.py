@@ -6,6 +6,7 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
 
 class cell(object):
     def __init__(self):
@@ -74,7 +75,7 @@ def genCell(boxSize):
     xdiv = x[1] - x[0]
     ydiv = y[1] - y[0]
     zdiv = z[1] - z[0]
-    cell_id = []
+    cell_id = []; div_box = [xdiv, ydiv, zdiv]
     com = [0.5 * (x[1] - x[0]),
            0.5 * (y[1] - y[0]),
            0.5 * (z[1] - z[0])]
@@ -88,12 +89,40 @@ def genCell(boxSize):
             for k in range(parts): # z dir
                 zCom = com[2] + zdiv * zNum
                 zNum += 1
-                info = [i, j, k, [xCom, yCom, zCom]]
+                info = [[i, j, k], [xCom, yCom, zCom]] # [[id], [center coord]]
                 cell_id.append(info)
-    return cell_id
+    return cell_id, div_box
+
+def searchCell(row, cell_id, box_div):
+    xDiv = 0.5 * box_div[0]
+    yDiv = 0.5 * box_div[1]
+    zDiv = 0.5 * box_div[2]
+
+    coord = [float(row.posX), float(row.posY), float(row.posZ)]
+    for c in cell_id:
+        xlow, xhigh = [c[1][0] - xDiv, c[1][0] + xDiv]
+        ylow, yhigh = [c[1][1] - yDiv, c[1][1] + yDiv]
+        zlow, zhigh = [c[1][2] - zDiv, c[1][2] + zDiv]
+        if coord[0] >= xlow and coord[0] <= xhigh and coord[1] >= ylow and coord[1] <= yhigh and coord[2] >=zlow and coord[2] <= zhigh:
+            # print ('set!!')
+            # print('c[0]: ',c[0])
+            row['cellId'] = c[0]
+            row['comCoord'] = c[1]
+            # print('row: ', row)
+            break
+        else:
+            continue
+        print('row: ', row) # TODO: something wrong with this, value didnt assign to the row correctly.
+    return row
+
+def assignAtoms(atomsDf, cell_id, box_div):
+    df = atomsDf.apply(lambda x: searchCell(x, cell_id, box_div), axis=1)
+    return df
 
 if __name__ == '__main__':
     name = os.path.join(os.getcwd(), 'cell-separate/init-1.gro')
     a = readGRO(name)
     df_init, sysName, atNum, boxSize = a.readGRO()
-    a = genCell(boxSize.split())
+    cell_id, div_box = genCell(boxSize.split())
+    df = assignAtoms(df_init, cell_id, div_box)
+    print(df.head())
