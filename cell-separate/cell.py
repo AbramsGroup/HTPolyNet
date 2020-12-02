@@ -70,7 +70,7 @@ def getId(x, maxId):
     outList = []
     tmpLst = [-1, 0, 1]
     for i in tmpLst:
-        tmp = x + i
+        tmp = int(x) + i
         if tmp < 0:
             tmp = maxId
         elif tmp > maxId:
@@ -92,12 +92,13 @@ def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. it
     for i in xList:
         for ii in yList:
             for iii in zList:
-                cellSum.append([i, ii, iii])
+                id = ''.join([str(i), str(ii), str(iii)])
+                cellSum.append(id)
 
     print('cellSum: ', cellSum)
     print('cellId： ', cell0)
-    df_out = atomsDf.loc[atomsDf.cellId.to_list().isin(cellSum)]
-    # return df_out
+    df_out = atomsDf.loc[atomsDf.cellId.isin(cellSum)]
+    return df_out
 
 def searchAtoms(atomsDf, atomNames):
     df = atomsDf.loc[atomsDf.atomName.isin(atomNames)]
@@ -129,7 +130,8 @@ def genCell(boxSize):
             for k in range(parts): # z dir
                 zCom = com[2] + zdiv * zNum
                 zNum += 1
-                info = [[i, j, k], [xCom, yCom, zCom]] # [[id], [center coord]]
+                id = ''.join([str(i), str(j), str(k)])
+                info = [id, [xCom, yCom, zCom]] # [[id], [center coord]]
                 cell_id.append(info)
         xMax = xNum
         maxCellId = [xMax - 1, yMax - 1, zMax - 1] # Since it starts from 0
