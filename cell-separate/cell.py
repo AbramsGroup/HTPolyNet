@@ -67,11 +67,11 @@ class readGRO(object):
         return df_init, sysName, atNum, boxSize
 
 def genCell(boxSize):
-    boxSize = '3.000000'
-    parts = 2
-    x = np.linspace(0, float(boxSize), parts + 1)
-    y = np.linspace(0, float(boxSize), parts + 1)
-    z = np.linspace(0, float(boxSize), parts + 1)
+    # boxSize = '3.000000'
+    parts = 5
+    x = np.linspace(0, float(boxSize[0]), parts + 1)
+    y = np.linspace(0, float(boxSize[1]), parts + 1)
+    z = np.linspace(0, float(boxSize[2]), parts + 1)
     xdiv = x[1] - x[0]
     ydiv = y[1] - y[0]
     zdiv = z[1] - z[0]
@@ -97,27 +97,23 @@ def searchCell(row, cell_id, box_div):
     xDiv = 0.5 * box_div[0]
     yDiv = 0.5 * box_div[1]
     zDiv = 0.5 * box_div[2]
-
+    row['cellId'] = '0'
+    row['comCoord'] = '0'
     coord = [float(row.posX), float(row.posY), float(row.posZ)]
     for c in cell_id:
         xlow, xhigh = [c[1][0] - xDiv, c[1][0] + xDiv]
         ylow, yhigh = [c[1][1] - yDiv, c[1][1] + yDiv]
         zlow, zhigh = [c[1][2] - zDiv, c[1][2] + zDiv]
         if coord[0] >= xlow and coord[0] <= xhigh and coord[1] >= ylow and coord[1] <= yhigh and coord[2] >=zlow and coord[2] <= zhigh:
-            # print ('set!!')
-            # print('c[0]: ',c[0])
             row['cellId'] = c[0]
             row['comCoord'] = c[1]
-            # print('row: ', row)
-            break
+            return row
         else:
             continue
-        print('row: ', row) # TODO: something wrong with this, value didnt assign to the row correctly.
-    return row
 
 def assignAtoms(atomsDf, cell_id, box_div):
-    df = atomsDf.apply(lambda x: searchCell(x, cell_id, box_div), axis=1)
-    return df
+    df1 = atomsDf.apply(lambda x: searchCell(x, cell_id, box_div), axis=1)
+    return df1
 
 if __name__ == '__main__':
     name = os.path.join(os.getcwd(), 'cell-separate/init-1.gro')
