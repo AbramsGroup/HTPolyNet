@@ -66,6 +66,43 @@ class readGRO(object):
         self.atomsDF = df_init
         return df_init, sysName, atNum, boxSize
 
+def getId(x, maxId):
+    outList = []
+    tmpLst = [-1, 0, 1]
+    for i in tmpLst:
+        tmp = x + i
+        if tmp < 0:
+            tmp = maxId
+        elif tmp > maxId:
+            tmp = 0
+        else:
+            pass
+        outList.append(tmp)
+    return outList
+
+def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. itself and adjacent cell
+    # maxCellId used for pdb condition
+    cell0 = atoms.cellId
+    tmpLst = [-1, 0, 1]
+    xList = getId(cell0[0], maxCellId[0])
+    yList = getId(cell0[1], maxCellId[1])
+    zList = getId(cell0[2], maxCellId[2])
+
+    cellSum = []
+    for i in xList:
+        for ii in yList:
+            for iii in zList:
+                cellSum.append([i, ii, iii])
+
+    print('cellSum: ', cellSum)
+    print('cellId： ', cell0)
+    df_out = atomsDf.loc[atomsDf.cellId.to_list().isin(cellSum)]
+    # return df_out
+
+def searchAtoms(atomsDf, atomNames):
+    df = atomsDf.loc[atomsDf.atomName.isin(atomNames)]
+    return df
+
 def genCell(boxSize):
     # boxSize = '3.000000'
     parts = 5
@@ -80,8 +117,11 @@ def genCell(boxSize):
            0.5 * (y[1] - y[0]),
            0.5 * (z[1] - z[0])]
     xNum = 0; yNum = 0; zNum = 0
+    xMax = 0; yMax = 0; zMax = 0
+
     for i in range(parts): # x dir
         xCom = com[0] + xdiv * xNum
+        yMax = yNum; zMax = zNum
         xNum += 1; yNum = 0; zNum = 0
         for j in range(parts): # y dir
             yCom = com[1] + ydiv * yNum
@@ -91,7 +131,10 @@ def genCell(boxSize):
                 zNum += 1
                 info = [[i, j, k], [xCom, yCom, zCom]] # [[id], [center coord]]
                 cell_id.append(info)
-    return cell_id, div_box
+        xMax = xNum
+        maxCellId = [xMax - 1, yMax - 1, zMax - 1] # Since it starts from 0
+    return cell_id, div_box, maxCellId
+
 
 def searchCell(row, cell_id, box_div):
     xDiv = 0.5 * box_div[0]
@@ -119,6 +162,10 @@ if __name__ == '__main__':
     name = os.path.join(os.getcwd(), 'cell-separate/init-1.gro')
     a = readGRO(name)
     df_init, sysName, atNum, boxSize = a.readGRO()
-    cell_id, div_box = genCell(boxSize.split())
+    cell_id, div_box, maxCellId = genCell(boxSize.split())
     df = assignAtoms(df_init, cell_id, div_box)
     print(df.head())
+
+    atomNames = ['C1']
+    df2 = searchAtoms(df, atomNames)
+    df3 = filterAtoms(df2.iloc[1], df2, maxCellId)
