@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+from countTime import *
 
 class cell(object):
     def __init__(self):
@@ -80,6 +81,57 @@ def getId(x, maxId):
         outList.append(tmp)
     return outList
 
+def calDist(aPos, bPos, boxSize, pbc=True):
+    boxSize = [boxSize, boxSize, boxSize]
+    xlen = 0.5 * float(boxSize[0])
+    ylen = 0.5 * float(boxSize[1])
+    zlen = 0.5 * float(boxSize[2])
+
+    x1 = float(aPos[0]) - float(bPos[0])
+    y1 = float(aPos[1]) - float(bPos[1])
+    z1 = float(aPos[2]) - float(bPos[2])
+    if pbc:
+        if x1 > xlen:
+            x1 = x1 - float(boxSize[0])
+        elif x1 <= -xlen:
+            x1 = x1 + float(boxSize[0])
+
+        elif y1 > ylen:
+            y1 = y1 - float(boxSize[1])
+        elif y1 <= -ylen:
+            y1 = y1 + float(boxSize[1])
+
+        elif z1 > zlen:
+            z1 = z1 - float(boxSize[2])
+        elif z1 <= -zlen:
+            z1 = z1 + float(boxSize[2])
+
+    x2 = np.power(x1, 2)
+    y2 = np.power(y1, 2)
+    z2 = np.power(z1, 2)
+
+    dist = np.sqrt(x2 + y2 + z2)
+    return dist
+
+def appendDist(x, atoms, boxSize):
+    x0 = float(atoms.posX)
+    y0 = float(atoms.posY)
+    z0 = float(atoms.posX)
+    x1 = float(x.posX)
+    y1 = float(x.posY)
+    z1 = float(x.posZ)
+    x['dist'] = calDist([x0, y0, z0], [x1, y1, z1], boxSize)
+    return x
+
+@countTime
+def getBestPairs(atoms, df, boxSize):
+    # boxSize = ['15', '15', '15']
+    df1 = df.apply(lambda x: appendDist(x, atoms, boxSize[0]), axis=1)
+    df2 = df1.sort_values('dist')
+    atomsOut = df2.iloc[0]
+    return atomsOut
+
+@countTime
 def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. itself and adjacent cell
     # maxCellId used for pdb condition
     cell0 = atoms.cellId
@@ -100,10 +152,12 @@ def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. it
     df_out = atomsDf.loc[atomsDf.cellId.isin(cellSum)]
     return df_out
 
+@countTime
 def searchAtoms(atomsDf, atomNames):
     df = atomsDf.loc[atomsDf.atomName.isin(atomNames)]
     return df
 
+@countTime
 def genCell(boxSize):
     # boxSize = '3.000000'
     parts = 5
@@ -137,7 +191,6 @@ def genCell(boxSize):
         maxCellId = [xMax - 1, yMax - 1, zMax - 1] # Since it starts from 0
     return cell_id, div_box, maxCellId
 
-
 def searchCell(row, cell_id, box_div):
     xDiv = 0.5 * box_div[0]
     yDiv = 0.5 * box_div[1]
@@ -156,6 +209,7 @@ def searchCell(row, cell_id, box_div):
         else:
             continue
 
+@countTime
 def assignAtoms(atomsDf, cell_id, box_div):
     df1 = atomsDf.apply(lambda x: searchCell(x, cell_id, box_div), axis=1)
     return df1
@@ -166,8 +220,10 @@ if __name__ == '__main__':
     df_init, sysName, atNum, boxSize = a.readGRO()
     cell_id, div_box, maxCellId = genCell(boxSize.split())
     df = assignAtoms(df_init, cell_id, div_box)
-    print(df.head())
 
     atomNames = ['C1']
     df2 = searchAtoms(df, atomNames)
     df3 = filterAtoms(df2.iloc[1], df2, maxCellId)
+    atPair = getBestPairs(df2.iloc[1], df3, boxSize.split())
+
+    # TODO: 1) add search criteria after collect all pairs. 2) compare with the N2 search method
