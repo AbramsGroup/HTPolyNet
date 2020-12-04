@@ -226,4 +226,4 @@ if __name__ == '__main__':
     df3 = filterAtoms(df2.iloc[1], df2, maxCellId)
     atPair = getBestPairs(df2.iloc[1], df3, boxSize.split())
 
-    # TODO: 1) add search criteria after collect all pairs. 2) compare with the N2 search method
+    # TODO: 1) add search criteria after collect all pairs. 2) compare with the N^2 search method
