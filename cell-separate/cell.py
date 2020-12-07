@@ -116,10 +116,13 @@ def calDist(aPos, bPos, boxSize, pbc=True):
 def appendDist(x, atoms, boxSize):
     x0 = float(atoms.posX)
     y0 = float(atoms.posY)
-    z0 = float(atoms.posX)
+    z0 = float(atoms.posZ)
     x1 = float(x.posX)
     y1 = float(x.posY)
     z1 = float(x.posZ)
+    # print(list(x))
+    # print('111: {} {} {}'.format(x0, y0, z0))
+    # print('222: {} {} {}'.format(x1, y1, z1))
     x['dist'] = calDist([x0, y0, z0], [x1, y1, z1], boxSize)
     return x
 
@@ -128,8 +131,8 @@ def getBestPairs(atoms, df, boxSize):
     # boxSize = ['15', '15', '15']
     df1 = df.apply(lambda x: appendDist(x, atoms, boxSize[0]), axis=1)
     df2 = df1.sort_values('dist')
-    atomsOut = df2.iloc[0]
-    return atomsOut
+    atomsOut = df2.iloc[1]
+    return atomsOut, atomsOut.dist
 
 @countTime
 def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. itself and adjacent cell
@@ -147,10 +150,11 @@ def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. it
                 id = ''.join([str(i), str(ii), str(iii)])
                 cellSum.append(id)
 
-    print('cellSum: ', cellSum)
-    print('cellId： ', cell0)
     df_out = atomsDf.loc[atomsDf.cellId.isin(cellSum)]
-    return df_out
+
+    df_out1, dist = getBestPairs(atoms, df_out, boxSize.split())
+    df_out2 = [atoms.globalIdx, df_out1.globalIdx, dist]
+    return df_out2
 
 @countTime
 def searchAtoms(atomsDf, atomNames):
@@ -160,7 +164,7 @@ def searchAtoms(atomsDf, atomNames):
 @countTime
 def genCell(boxSize):
     # boxSize = '3.000000'
-    parts = 5
+    parts = 4
     x = np.linspace(0, float(boxSize[0]), parts + 1)
     y = np.linspace(0, float(boxSize[1]), parts + 1)
     z = np.linspace(0, float(boxSize[2]), parts + 1)
@@ -214,16 +218,31 @@ def assignAtoms(atomsDf, cell_id, box_div):
     df1 = atomsDf.apply(lambda x: searchCell(x, cell_id, box_div), axis=1)
     return df1
 
+@countTime
+def n2searchAtoms(atomDf, boxSize):
+    bestPairs = []
+    boxSize = boxSize.split()
+    for index, row in atomDf.iterrows():
+        tmp1, distOut = getBestPairs(row, atomDf, boxSize)
+        bestPairs.append([tmp1.globalIdx, distOut])
+    return bestPairs
+
 if __name__ == '__main__':
     name = os.path.join(os.getcwd(), 'cell-separate/init-1.gro')
     a = readGRO(name)
     df_init, sysName, atNum, boxSize = a.readGRO()
-    cell_id, div_box, maxCellId = genCell(boxSize.split())
-    df = assignAtoms(df_init, cell_id, div_box)
-
     atomNames = ['C1']
-    df2 = searchAtoms(df, atomNames)
-    df3 = filterAtoms(df2.iloc[1], df2, maxCellId)
-    atPair = getBestPairs(df2.iloc[1], df3, boxSize.split())
+    df = searchAtoms(df_init, atomNames)
 
-    # TODO: 1) add search criteria after collect all pairs. 2) compare with the N^2 search method
+    t1 = time.time()
+    # links-cell algorithm
+    cell_id, div_box, maxCellId = genCell(boxSize.split())
+    df2 = assignAtoms(df, cell_id, div_box)
+    df3 = df2.apply(lambda x: filterAtoms(x, df2, maxCellId), axis=1)
+    t2 = time.time()
+    t = t2 - t1
+
+
+    # using n-square algorithm
+    df4 = n2searchAtoms(df, boxSize)
+    print('time cost on lincs: {}s'.format(t))
