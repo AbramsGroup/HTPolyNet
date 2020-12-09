@@ -275,7 +275,14 @@ class genBonds(object):
         inTop.addAngles(new_angles)
         inTop.addDih(new_dihedrals)
 #        inTop.addImp(new_dihedrals) # Currently don't find improper, add it back when it needed
-        
+    
+    def updateTopIdx_cfa(self,x,myd,types='atoms'):
+        if types == 'atoms':
+            newidx1=myd[x.nr];  x.new_idx=newidx1
+        elif types == 'bonds':
+            newidx1=myd[x.ai]
+            newidx2=myd[x.aj]
+
     def updateTopIdx(self, x, gro_df, types='atoms'):
         if types == 'atoms':
             idx1 = gro_df[gro_df.loc[:, 'ori_idx'] == str(x.nr)]['globalIdx'].values[0]
@@ -304,25 +311,39 @@ class genBonds(object):
         return x
     
     def updateIdx(self):
+        # atomsDf is a from the gro file (coordinates)
         atomsDf = self.gro.df_atoms
+
         inTop = self.top
+        # dataframes from the topology
         df_atoms = inTop.atoms # Top df
         df_bonds = inTop.bonds
-        df_pairs = inTop.pairs
+        df_pairs = inTop.pairs  # 1--4 interactions
         df_angs = inTop.angles
         df_dihs = inTop.dihedrals
         df_imps = inTop.impropers
         
+        # globalIdx is old; store them in new column 'ori_idx'
         atomsDf['ori_idx'] = atomsDf['globalIdx']
-        
+        # creating a new index column that renumbers atoms
         atomsDf = atomsDf.reset_index(drop=True)
+        # setting new globalIdx to be 1-initiated indices, as *strings*
         atomsDf['globalIdx'] = (atomsDf.index + 1).astype(str).to_list()
+        # make old-to-new index dictionary (cfa)
+        newIDx_from_oldIDx={}
+        for o,n in zip(atomsDf['ori_idx'],atomsDf['ori_idx']):
+            newIDx_from_oldIdx[o]=n
+
+        # create new dataframe that applies new globalIdx values to old values in original top df's
         df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(drop=True)
         df_bonds_new = df_bonds.apply(lambda x: self.updateTopIdx(x, atomsDf, types='bonds'), axis=1)
         df_pairs_new = df_pairs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='pairs'), axis=1)
         df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
         df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
         df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+
+        # 
+
         inTop.atoms = df_atoms_new
         inTop.bonds = df_bonds_new
         inTop.pairs = df_pairs_new
