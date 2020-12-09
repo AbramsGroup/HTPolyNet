@@ -104,7 +104,7 @@ class searchBonds(object):
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
         # maxCellId used for pbc condition
         cell0 = atom.cellId
-        print('cell0: ', cell0)
+        # print('cell0: ', cell0)
         maxCellId = self.maxCellId
         tmpLst = [-1, 0, 1]
         xList = self.getId(cell0[0], maxCellId[0])
@@ -140,48 +140,46 @@ class searchBonds(object):
 
         top.atoms['molCon'] = atoms['molCon']
         top.atoms['molNum'] = atoms['molNum']
-        name = []; atLst = []
 
         for i in range(len(rctFunc)):
             croName = rctFunc[i][0][0];
             monName = rctFunc[i][1][0];
             rctPct = rctFunc[i][2][0]
             df_mon = atoms[(atoms.molName == monName) & (atoms.rct == 'True')]
-
-            if monName in name:
-                pass
-            else:
-                df_mon = self.assignAtoms(df_mon)
-                name.append(monName)
-
             df_cro = atoms[(atoms.molName == croName) & (atoms.rct == 'True')]
-            if croName in name:
-                pass
-            else:
-                df_cro = self.assignAtoms(df_cro)
-                name.append(croName)
+            df_tmp = pd.concat([df_mon, df_cro]).drop_duplicates().reset_index(drop=True)
+            df_tmp = self.assignAtoms(df_tmp)
 
-            atLst.append(df_mon)
-            atLst.append(df_cro)
-            df_tmp = pd.concat([df_mon, df_cro])
-            df_tmp.to_csv('tmp.csv')
-            df_mon.to_csv('tmp1.csv')
-            df_cro.to_csv('tmp2.csv')
+            # # if monName in name:
+            # #     pass
+            # # else:
+            # name.append(monName)
+            #
+            # df_cro = atoms[(atoms.molName == croName) & (atoms.rct == 'True')]
+            # # if croName in name:
+            # #     pass
+            # # else:
+            # df_cro = self.assignAtoms(df_cro)
+            # name.append(croName)
+
+            # df_tmp.to_csv('tmp.csv')
+            # df_mon.to_csv('tmp1.csv')
+            # df_cro.to_csv('tmp2.csv')
             lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
             # lst_tmp = df_cro.apply(lambda x: self.filterRctPairs(x, df_mon), axis=1).values.tolist()
+            lst_tmp.to_csv('tmp-1.csv')
             for ii in lst_tmp:
                 if len(ii) == 0:
                     continue
                 else:
-                    for idx in ii:
-                        idx.append(rctPct)
-                rctDf = rctDf + ii
+                    # for idx in ii:
+                    #     idx.append(rctPct)
+                    rctDf.append(ii)
 
-        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon', 'p']
+        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon']#, 'p']
         df = pd.DataFrame(rctDf, columns=names)
-        df_atoms = pd.concat(atLst).drop_duplicates().reset_index(drop=True)
-
-        return df_atoms, df
+        df.to_csv('tmp1.csv')
+        return df
 
     def checkRepeat(self, lst, inLst):
         for i in lst:
@@ -221,7 +219,8 @@ class searchBonds(object):
         tmp = '{},{}'.format(con2, mol1)
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
 
-    def finalRctPairs(self, df_rctAtoms, df_pairs):
+    @countTime
+    def finalRctPairs(self, df_pairs): #TODO: unfinish, always nothing in the list, need check!
         # Sort by distance between potential atoms
         df_pairs = df_pairs.sort_values(by=['dist'])
         atomsDf = self.gro.df_atoms
@@ -311,9 +310,9 @@ class searchBonds(object):
         self.cellId = cell_id
         self.div_box = div_box
         self.maxCellId = maxCellId
-        # with open('tmp-cell.csv', 'w') as f:
-        #     for i in cell_id:
-        #         f.write('{}\n'.format(i))
+        with open('tmp-cell.csv', 'w') as f:
+            for i in cell_id:
+                f.write('{}\n'.format(i))
 
     def searchCell(self, row):
         cell_id = self.cellId
@@ -343,15 +342,18 @@ class searchBonds(object):
     @countTime
     def main(self):
         pairs = [];
-        count = 10
-        parts = 10
+        count = 2
+        parts = 5
         self.genCell(parts)
         while (len(pairs) == 0):
+            print('test0!!')
             for i in range(count):  # max trial times
-                df_rctAtoms, df_pairs = self.getRctDf()
+                print('count: ', i)
+                df_pairs = self.getRctDf()
                 if len(df_pairs) > 0:
+                    print('test1!!')
                     break
-            a1 = self.finalRctPairs(df_rctAtoms, df_pairs)
+            a1 = self.finalRctPairs(df_pairs)
             if len(a1) == 0:
                 print(self.cutoff)
                 self.cutoff += 0.5

@@ -61,7 +61,7 @@ class testCase(object):
         a2 = readGro.initGro()
         a3 = readTop.initTop()
         
-        a2.setName('nvt-1')
+        a2.setName('init-11')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
         boxSize = [15.00000, 15.00000, 15.00000]
@@ -70,7 +70,7 @@ class testCase(object):
         self.gro = atomsDf
         
         topDf = topInfo.top()
-        a3.setName('init.top', 'init.itp')
+        a3.setName('init-1.top', 'init-1.itp')
 #        a3.setName('systems/VEA.top', 'systems/VEA.itp')
         a3.genTopSession()
         topDf.setInfo(a3.sumTop)
