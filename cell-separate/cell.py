@@ -126,7 +126,6 @@ def appendDist(x, atoms, boxSize):
     x['dist'] = calDist([x0, y0, z0], [x1, y1, z1], boxSize)
     return x
 
-@countTime
 def getBestPairs(atoms, df, boxSize):
     # boxSize = ['15', '15', '15']
     df1 = df.apply(lambda x: appendDist(x, atoms, boxSize[0]), axis=1)
@@ -134,7 +133,6 @@ def getBestPairs(atoms, df, boxSize):
     atomsOut = df2.iloc[1]
     return atomsOut, atomsOut.dist
 
-@countTime
 def filterAtoms(atoms, atomsDf, maxCellId): # collect atoms based on cell id. itself and adjacent cell
     # maxCellId used for pdb condition
     cell0 = atoms.cellId
@@ -164,7 +162,7 @@ def searchAtoms(atomsDf, atomNames):
 @countTime
 def genCell(boxSize):
     # boxSize = '3.000000'
-    parts = 4
+    parts = 5
     x = np.linspace(0, float(boxSize[0]), parts + 1)
     y = np.linspace(0, float(boxSize[1]), parts + 1)
     z = np.linspace(0, float(boxSize[2]), parts + 1)
@@ -241,7 +239,6 @@ if __name__ == '__main__':
     df3 = df2.apply(lambda x: filterAtoms(x, df2, maxCellId), axis=1)
     t2 = time.time()
     t = t2 - t1
-
 
     # using n-square algorithm
     df4 = n2searchAtoms(df, boxSize)

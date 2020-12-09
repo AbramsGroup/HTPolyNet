@@ -64,6 +64,7 @@ class testCase(object):
         a2.setName('nvt-1')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
+        boxSize = [15.00000, 15.00000, 15.00000]
         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
         atomsDf.initRctInfo(a)
         self.gro = atomsDf
@@ -110,8 +111,8 @@ class testCase(object):
         
 if __name__ == "__main__":
     a = testCase()
-    b1 = a.testreadGro()
-    b2 = a.testreadGro('systems/unrctSystem/STY')
+    # b1 = a.testreadGro()
+    # b2 = a.testreadGro('systems/unrctSystem/STY')
 #    a1 = b2.df_atoms
 #    b = a.testReadParam()        
     
