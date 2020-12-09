@@ -12,9 +12,11 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Select Simulator: gromacs (default) or lammps')
 parser.add_argument('--simulator', '-s', default="gromacs", help="Specify lammps, else default is gromacs")
+parser.add_argument('--config', '-c', default="createtemplate", help="Only for lammps. Default: Create template. Otherwise specify config file. Ignored for gromacs.")
 args = parser.parse_args()
 
 script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+current_workdir = os.getcwd()
 
 if(args.simulator=="gromacs"):
 
@@ -32,15 +34,12 @@ elif(args.simulator=="lammps"):
 
     print("Processing for LAMMPS as simulator")
     try: 
-        os.chdir(script_path + "/lammps_module") 
-        os.system("python3 main.py")
-
+        module_script_abs_path = os.path.dirname(os.path.realpath(sys.argv[0])) + "/lammps-module/htpnlammps_main.py"
+s       os.system("python3 " + module_script_abs_path + " --config " + args.config) 
+        
     except:
         print("Error! Expected module files not found.")
-
+        
 else:
 
     print("Invalid entry! Use HTPolyNet.py -h for assistance.")
-
-
-
