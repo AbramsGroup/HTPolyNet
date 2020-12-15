@@ -132,7 +132,7 @@ class searchBonds(object):
             return df_out2
 
     @countTime
-    def getRctDf(self):
+    def getRctDf(self): # TODO: something wired, cost much longer time than I expected. Need to check if any wasted loop remained
         rctFunc = self.rctInfo
         atoms = self.gro.df_atoms
         top = self.top
@@ -146,6 +146,7 @@ class searchBonds(object):
         top.atoms['molNum'] = atoms['molNum']
 
         for i in range(len(rctFunc)):
+            print('!!! test1111')
             croName = rctFunc[i][0][0];
             monName = rctFunc[i][1][0];
             rctPct = rctFunc[i][2][0]
@@ -345,6 +346,7 @@ class searchBonds(object):
                 continue
         return row
 
+    @countTime
     def assignAtoms(self, df_atoms):
         df1 = df_atoms.apply(lambda x: self.searchCell(x), axis=1)
         return df1
@@ -364,6 +366,7 @@ class searchBonds(object):
                     break
             a1 = self.finalRctPairs(df_pairs)
             if len(a1) == 0:
+                print('!!! cutoff: ', self.cutoff)
                 print(self.cutoff)
                 self.cutoff += 0.5
                 if self.cutoff > 0.5 * float(self.boxSize):
