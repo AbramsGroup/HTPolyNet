@@ -64,7 +64,7 @@ class testCase(object):
         a2.setName('init-11')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
-        boxSize = [15.00000, 15.00000, 15.00000]
+        boxSize = [15.00000, 15.00000, 15.00000] # TODO: remove latter
         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
         atomsDf.initRctInfo(a)
         self.gro = atomsDf

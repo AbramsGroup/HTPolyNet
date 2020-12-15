@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from countTime import *
 
-
+import sys
 class searchBonds(object):
     def __init__(self, basicParameters, generatedBonds, inGro, inTop):
         self.monInfo = basicParameters.monInfo
@@ -98,7 +98,11 @@ class searchBonds(object):
     def getBestPairs(self, atoms, df, boxSize):
         df1 = df.apply(lambda x: self.appendDist(x, atoms, boxSize), axis=1)
         df2 = df1.sort_values('dist')
-        atomsOut = df2.iloc[1] # remove atoms itself
+        df3 = df2.iloc[1:] # remove atoms which connect to itself
+        for index, row in df3.iterrows():
+            if self.checkConSingleMolecule(atoms, row):
+                atomsOut = row
+                break
         return atomsOut, atomsOut.dist
 
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
@@ -167,7 +171,7 @@ class searchBonds(object):
             # df_cro.to_csv('tmp2.csv')
             lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
             # lst_tmp = df_cro.apply(lambda x: self.filterRctPairs(x, df_mon), axis=1).values.tolist()
-            lst_tmp.to_csv('tmp-1.csv')
+            # lst_tmp.to_csv('tmp-1.csv')
             for ii in lst_tmp:
                 if len(ii) == 0:
                     continue
@@ -178,7 +182,7 @@ class searchBonds(object):
 
         names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon']#, 'p']
         df = pd.DataFrame(rctDf, columns=names)
-        df.to_csv('tmp1.csv')
+        # df.to_csv('tmp1.csv')
         return df
 
     def checkRepeat(self, lst, inLst):
@@ -186,6 +190,12 @@ class searchBonds(object):
             if set(i) == set(inLst):
                 return False
         return True
+
+    def checkConSingleMolecule(self, row, atom):
+        if row.molNum == atom.molNum:
+            return False
+        else:
+            return True
 
     def checkCircuit(self, df_rctAtoms, row):
         mol1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['molNum'].to_list()
@@ -220,9 +230,9 @@ class searchBonds(object):
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
 
     @countTime
-    def finalRctPairs(self, df_pairs): #TODO: unfinish, always nothing in the list, need check!
+    def finalRctPairs(self, df_pairs):
         # Sort by distance between potential atoms
-        df_pairs = df_pairs.sort_values(by=['dist'])
+        # df_pairs = df_pairs.sort_values(by=['dist'])
         atomsDf = self.gro.df_atoms
         # Remove repeat rows
         lst = [];
@@ -234,7 +244,7 @@ class searchBonds(object):
             else:
                 continue
         df_tmp1 = pd.DataFrame(rowList)
-
+        df_tmp1.to_csv('tmp1.csv')
         # check circuit connection. Molecules cannot connect to the same molecules
         rowList = [];
         atomsList = []
@@ -346,7 +356,6 @@ class searchBonds(object):
         parts = 5
         self.genCell(parts)
         while (len(pairs) == 0):
-            print('test0!!')
             for i in range(count):  # max trial times
                 print('count: ', i)
                 df_pairs = self.getRctDf()
