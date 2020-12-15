@@ -52,16 +52,17 @@ class testCase(object):
     def testSearchBonds(self):
         import searchBonds
         import readGro
-        import readTop
+        import readTop2
         import topInfo
         import groInfo
         
         a = self.testReadParam()
         a1 = []
         a2 = readGro.initGro()
-        a3 = readTop.initTop()
+        a3 = readTop2.initTop()
         
         a2.setName('init')
+        # a2.setName('init-1')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
         boxSize = [15.00000, 15.00000, 15.00000] # TODO: remove latter
@@ -71,6 +72,7 @@ class testCase(object):
         
         topDf = topInfo.top()
         a3.setName('init.top', 'init.itp')
+        # a3.setName('init-1.top', 'init-1.itp')
 #        a3.setName('systems/VEA.top', 'systems/VEA.itp')
         a3.genTopSession()
         topDf.setInfo(a3.sumTop)
@@ -79,8 +81,9 @@ class testCase(object):
         
         aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
         pairs, rctMols = aa.main()
-        return pairs, rctMols
-    
+        return pairs, rctMols, topDf
+
+    @countTime
     def testGenBonds(self, pairs, rctMols):
         import genBonds
         # rctMols = ['2', '14']
@@ -98,7 +101,7 @@ class testCase(object):
         
         b = getChargeMaps()
 
-        a = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols)
+        a = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols, cat='map')
         a.main()
         return a
     
@@ -116,10 +119,7 @@ if __name__ == "__main__":
 #    a1 = b2.df_atoms
 #    b = a.testReadParam()        
     
-    pairs, rctMols = a.testSearchBonds()
+    pairs, rctMols, topDf = a.testSearchBonds()
     df_pairs = pairs
-   # names = ['acro', 'amon']; tmp = [['123', '1176']]
-   # df_pairs = pd.DataFrame(tmp, columns=names)
+    print('{} bonds will be formed!'.format(len(df_pairs)))
     b2 = a.testGenBonds(df_pairs, rctMols)
-    
-#    a.testmolRctInfo()

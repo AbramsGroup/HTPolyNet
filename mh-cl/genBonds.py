@@ -7,6 +7,7 @@ Generate bonds
 @author: huang
 """
 import parameters
+import pandas as pd
 import sys
 import re
 from countTime import *
@@ -27,19 +28,15 @@ class genBonds(object):
         12      glbIdx glbIdx   
         '''
 
+    @countTime
     def findHydrogen(self, atomsDf, bonds, idx): # This idx is the pd index
         con = []; conSum = []
         print('atom idx: ', idx)
-        for index, row in bonds.iterrows():
-            if str(row.ai) == str(idx):
-                conSum.append(row.aj)
-                if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(row.aj)]['atomName'].values[0]:
-                    con.append(row.aj)
-            elif str(row.aj) == str(idx):
-                conSum.append(row.ai)
-                if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(row.ai)]['atomName'].values[0]:
-                    con.append(row.ai)
-        
+        conSum = self.searchCon(idx, bonds)
+        for i in conSum:
+            if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(i)]['atomName'].values[0]:
+                con.append(i)
+
         print('Atom connections: ', conSum)
         print('Atom H connections: ', con)
         # sort the hydrogen based on the atom name
@@ -56,8 +53,6 @@ class genBonds(object):
                 if len(num0) == 0:
                     break
                 else:
-                    print('num0: ', num0)
-                    print('num1: ', num1)
                     if len(num1) == 0:
                         con1 = [idx]
                         atomName_ori = atName
@@ -127,7 +122,8 @@ class genBonds(object):
                         sysTop.addDihTypes(lst_tmp)
                     else:
                         sys.exit('Unknown dihedral type{}, need to find param for the pair'.format(key1))
-                        
+
+    @countTime
     def delHydrogen(self):
         '''
         1. Generate new bonds/pairs/angles/dihs
@@ -184,18 +180,22 @@ class genBonds(object):
         self.top.dihedrals = df_dihs
         self.top.impropers = df_imps
 
-    @countTime
     def searchCon(self, idx, df_bonds):
+        idx = str(idx)
+        df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)]
         con = []
-        for index, row in df_bonds.iterrows():
-            if str(row.ai) == str(idx):
+        for index, row in df_out.iterrows():
+            if row.ai == str(idx):
                 con.append(row.aj)
-            elif str(row.aj) == str(idx):
+            elif row.aj == str(idx):
                 con.append(row.ai)
+            else:
+                print('bond connection met error, please check!')
+                print('df_out: ', df_out)
+                sys.exit()
         return con
 
-    @countTime
-    def genNewCon(self, pair, df_bonds):
+    def genNewCon(self, pair, df_bonds): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2])
@@ -235,7 +235,8 @@ class genBonds(object):
                             new_pairs.append([a1, aa])
                             
         return new_bonds, new_pairs, new_angles, new_dihedrals
-    
+
+    @countTime
     def addNewCon(self):
         inTop = self.top
         df_atoms = inTop.atoms # Top df
@@ -278,6 +279,9 @@ class genBonds(object):
     
     def updateTopIdx_cfa(self,x,myd,types='atoms'):
         if types == 'atoms':
+            if x.nr not in myd.keys():
+                print('Unknown atoms Id: ', x.nr)
+                sys.exit()
             newidx1=myd[x.nr];  x.new_idx=newidx1
         elif types == 'bonds':
             newidx1=myd[x.ai]
@@ -299,7 +303,7 @@ class genBonds(object):
             x.aj = str(newidx2)
             x.ak = str(newidx3)
 
-        elif types == 'dih':
+        elif types == 'dih': # TODO: a key didn't appear in the myd dictionary cause error
             newidx1 = myd[x.ai]
             newidx2 = myd[x.aj]
             newidx3 = myd[x.ak]
@@ -382,6 +386,7 @@ class genBonds(object):
         df_imps_new = df_imps.apply(lambda x: self.updateTopIdx_cfa(x, newIDx_from_oldIdx, types='dih'), axis=1)
         return df_atoms_new, df_bonds_new, df_pairs_new, df_angs_new, df_dihs_new, df_imps_new
 
+    @countTime
     def updateIdx(self):
         # atomsDf is a from the gro file (coordinates)
         atomsDf = self.gro.df_atoms
@@ -420,8 +425,6 @@ class genBonds(object):
         # df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
         # df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
         # df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
-
-        # 
 
         inTop.atoms = df_atoms_new
         inTop.bonds = df_bonds_new
@@ -474,26 +477,44 @@ class genBonds(object):
 #            print('seq: ', seq)
             charges = self.mapCharge(resname, seq)
             self.top.atoms.loc[(self.top.atoms.nr.isin(a)), 'charge'] = charges
-    
-    def updateRct(self, x, row):
-        if int(x.globalIdx) == int(row.amon) or int(x.globalIdx) == int(row.acro):
-            rctNum = int(x.rctNum) - 1
-            x.rctNum = str(rctNum)
-            if rctNum == 0:
-                x.rct = 'False'
-            elif rctNum > 0:
-                x.rct = 'True'
-            else:
-                print('Atom {} is over-reacted'.format(x.globalIdx))
-                sys.exit()
+
+    def updateRctStatus(self, x):
+        if int(x.rctNum) == 0:
+            x.rct = 'False'
+        elif int(x.rctNum) > 0:
+            x.rct = 'True'
+        else:
+            print('Atom {} is over-reacted'.format(x.globalIdx))
+            sys.exit()
         return x
+
+    def updateRct(self, row):
+        a1 = row.amon; a2 = row.acro
+        df1 = self.gro.df_atoms
+        df2 = df1.loc[(df1.globalIdx == a1) | (df1.globalIdx == a2)]
+        pd.to_numeric(df2.rctNum)
+        df2.rctNum = df2.rctNum - 1
+        df2 = df2.apply(lambda x: self.updateRctStatus(x), axis=1)
+
+    # def updateRct(self, x, row):
+    #     if int(x.globalIdx) == int(row.amon) or int(x.globalIdx) == int(row.acro):
+    #         rctNum = int(x.rctNum) - 1
+    #         x.rctNum = str(rctNum)
+    #         if rctNum == 0:
+    #             x.rct = 'False'
+    #         elif rctNum > 0:
+    #             x.rct = 'True'
+    #         else:
+    #             print('Atom {} is over-reacted'.format(x.globalIdx))
+    #             sys.exit()
+    #     return x
 
     @countTime
     def updateRctInfo(self):
         pairs = self.pairs
         for index, row in pairs.iterrows():
-            print('rctAtoms Info: ', row)
-            self.gro.df_atoms = self.gro.df_atoms.apply(lambda x: self.updateRct(x, row), axis=1)
+            self.updateRct(row)
+            # self.gro.df_atoms = self.gro.df_atoms.apply(lambda x: self.updateRct(x, row), axis=1)
     
     @countTime       
     def main(self):

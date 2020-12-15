@@ -76,7 +76,8 @@ class initTop(object):
                     lst0.append(lst_tmp)
                     lst_tmp = []
                 else:
-                    lst_tmp.append(l.split())
+                    if len(l) > 1:
+                        lst_tmp.append(l.split())
                     
             lst0.append(lst_tmp) # last section (improper section) to the end of the list
             lst0 = lst0[1:]

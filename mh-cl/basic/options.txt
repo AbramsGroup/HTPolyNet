@@ -27,7 +27,7 @@ maxBonds = 3
 
 # React Info (always, cro always comes first)
 VEA + VEA + 16.8%
-VEA + VEB + 16.8%
+#VEA + VEB + 16.8%
 #STY + STY + 16.2%
 #STY + VEA + 67.2%
 #STY + VEB + 67.2%

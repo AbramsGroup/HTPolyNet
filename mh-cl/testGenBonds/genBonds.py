@@ -29,7 +29,7 @@ class genBonds(object):
 
     def findHydrogen(self, atomsDf, bonds, idx): # This idx is the pd index
         con = []; conSum = []
-        print('atom idx: ', idx)
+        # print('atom idx: ', idx)
         for index, row in bonds.iterrows():
             if str(row.ai) == str(idx):
                 conSum.append(row.aj)
@@ -40,13 +40,13 @@ class genBonds(object):
                 if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(row.ai)]['atomName'].values[0]:
                     con.append(row.ai)
         
-        print('Atom connections: ', conSum)
-        print('Atom H connections: ', con)
+        # print('Atom connections: ', conSum)
+        # print('Atom H connections: ', con)
         # sort the hydrogen based on the atom name
         con1 = []; atomName_ori = ''
         for idx in con:
             atName = atomsDf[atomsDf.loc[:, 'globalIdx'] == idx]['atomName'].values[0]
-            print('Con idx and atomNames: {} {}'.format(idx, atName))
+            # print('Con idx and atomNames: {} {}'.format(idx, atName))
             if len(con1) == 0:
                 con1 = [idx]
                 atomName_ori = atName
@@ -184,7 +184,6 @@ class genBonds(object):
         self.top.dihedrals = df_dihs
         self.top.impropers = df_imps
 
-    @countTime
     def searchCon(self, idx, df_bonds):
         con = []
         for index, row in df_bonds.iterrows():

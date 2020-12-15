@@ -371,7 +371,7 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
-    a = main()
+    a = main() # change name like gmx_cl ....
     a.preparePara()
     a.mainProcess(2)
     

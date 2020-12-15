@@ -146,7 +146,6 @@ class searchBonds(object):
         top.atoms['molNum'] = atoms['molNum']
 
         for i in range(len(rctFunc)):
-            print('!!! test1111')
             croName = rctFunc[i][0][0];
             monName = rctFunc[i][1][0];
             rctPct = rctFunc[i][2][0]
@@ -183,7 +182,6 @@ class searchBonds(object):
 
         names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon']#, 'p']
         df = pd.DataFrame(rctDf, columns=names)
-        # df.to_csv('tmp1.csv')
         return df
 
     def checkRepeat(self, lst, inLst):
@@ -271,7 +269,6 @@ class searchBonds(object):
             atoms.append(row.amon)
 
         groDf = self.gro.df_atoms
-        print('atoms: ', atoms)
         for a in atoms:
             index = list(groDf[groDf.globalIdx == str(a)].molNum)[0]
             mols.append(index)
@@ -287,6 +284,9 @@ class searchBonds(object):
         xdiv = x[1] - x[0]
         ydiv = y[1] - y[0]
         zdiv = z[1] - z[0]
+        print('cell length: ', xdiv)
+        if xdiv <= self.cutoff:
+            sys.exit()
         cell_id = [];
         div_box = [xdiv, ydiv, zdiv]
         com = [0.5 * (x[1] - x[0]),
@@ -321,9 +321,6 @@ class searchBonds(object):
         self.cellId = cell_id
         self.div_box = div_box
         self.maxCellId = maxCellId
-        with open('tmp-cell.csv', 'w') as f:
-            for i in cell_id:
-                f.write('{}\n'.format(i))
 
     def searchCell(self, row):
         cell_id = self.cellId
@@ -355,20 +352,17 @@ class searchBonds(object):
     def main(self):
         pairs = [];
         count = 2
-        parts = 5
+        parts = 8
+        print('Generate cells number on one dimension: ', parts)
         self.genCell(parts)
         while (len(pairs) == 0):
             for i in range(count):  # max trial times
-                print('count: ', i)
                 df_pairs = self.getRctDf()
                 if len(df_pairs) > 0:
-                    print('test1!!')
                     break
             a1 = self.finalRctPairs(df_pairs)
             if len(a1) == 0:
-                print('!!! cutoff: ', self.cutoff)
-                print(self.cutoff)
-                self.cutoff += 0.5
+                self.cutoff += 5
                 if self.cutoff > 0.5 * float(self.boxSize):
                     break
             pairs = a1

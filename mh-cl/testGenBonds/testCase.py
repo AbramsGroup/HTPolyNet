@@ -8,7 +8,7 @@ import os
 from countTime import *
 import pandas as pd
 import readGro
-import readTop
+import readTop2
 import groInfo
 import topInfo
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     topDf = topInfo.top()
 
     a2 = readGro.initGro()
-    a3 = readTop.initTop()
+    a3 = readTop2.initTop()
 
     a2.setName('tmp')
     df_init, sysName, atNum, boxSize = a2.readGRO()
@@ -72,8 +72,6 @@ if __name__ == "__main__":
 
     a.gro = atomsDf
     a.top = topDf
-
-
+    # print(a.top.impropers)
     # b2 = a.testGenBonds(df_pairs, cat='pd')
-
     b2 = a.testGenBonds(df_pairs, cat='map')

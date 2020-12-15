@@ -34,6 +34,7 @@ class testCase(object):
         a3 = readTop2.initTop()
         
         a2.setName('nvt-1')
+        # a2.setName('init')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
@@ -42,6 +43,7 @@ class testCase(object):
         
         topDf = topInfo.top()
         a3.setName('tmp.top', 'tmp.itp')
+        # a3.setName('init.top', 'init.itp')
         a3.genTopSession()
         topDf.setInfo(a3.sumTop)
         topDf.checkCharge()
