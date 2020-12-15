@@ -10,10 +10,9 @@ import parameters
 import sys
 import re
 from countTime import *
-import time
 
 class genBonds(object):
-    def __init__(self, gro, top, pairs, chargeMap, rctMols):
+    def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='pd'):
         self.gro = gro
         self.top = top
         self.pairs = pairs
@@ -21,13 +20,13 @@ class genBonds(object):
         self.rctMols = rctMols # list
         self.genPairs = []
         self.rctAtoms = []
-        
+        self.cat = cat
         '''
         pairs data structure
         index   acro   amon   dist   rctNum1   rctNum2   molCon   p
         12      glbIdx glbIdx   
         '''
-    
+
     def findHydrogen(self, atomsDf, bonds, idx): # This idx is the pd index
         con = []; conSum = []
         print('atom idx: ', idx)
@@ -127,9 +126,8 @@ class genBonds(object):
                         lst_tmp = [a4Type, a3Type, a2Type, a1Type] + param.split(',')
                         sysTop.addDihTypes(lst_tmp)
                     else:
-                        sys.exit('Unknow dihedral type{}, need to find param for the pair'.format(key1))
-
-    @countTime
+                        sys.exit('Unknown dihedral type{}, need to find param for the pair'.format(key1))
+                        
     def delHydrogen(self):
         '''
         1. Generate new bonds/pairs/angles/dihs
@@ -196,16 +194,11 @@ class genBonds(object):
                 con.append(row.ai)
         return con
 
-    # Using search step to get connection
     @countTime
     def genNewCon(self, pair, df_bonds):
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2])
-
-        # Search atoms connection info, used to generate the new angle/dih/pair
-        # TODO: should not use search to obtain connection
-        #
         con1 = self.searchCon(a1, df_bonds); con2 = self.searchCon(a2, df_bonds)
         for a in con1:
             a = str(a)
@@ -242,8 +235,7 @@ class genBonds(object):
                             new_pairs.append([a1, aa])
                             
         return new_bonds, new_pairs, new_angles, new_dihedrals
-
-    @countTime
+    
     def addNewCon(self):
         inTop = self.top
         df_atoms = inTop.atoms # Top df
@@ -255,20 +247,14 @@ class genBonds(object):
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         
         pairs = self.genPairs
-        start = time.time()
-        '''
-        Time consuming part
-        '''
         for p in pairs:
             nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds)
             new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
-
-        end = time.time()
-        print('addNewCon: ', end - start)
-        #TODO: update charge
+            
+        # TODO: update charge
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         self.checkNewTypes(new_bonds, inTop, types='bonds')
@@ -289,8 +275,14 @@ class genBonds(object):
         inTop.addAngles(new_angles)
         inTop.addDih(new_dihedrals)
 #        inTop.addImp(new_dihedrals) # Currently don't find improper, add it back when it needed
+    
+    def updateTopIdx_cfa(self,x,myd,types='atoms'):
+        if types == 'atoms':
+            newidx1=myd[x.nr];  x.new_idx=newidx1
+        elif types == 'bonds':
+            newidx1=myd[x.ai]
+            newidx2=myd[x.aj]
 
-    # TODO: using lambda function to update all atom's idx in all section
     def updateTopIdx(self, x, gro_df, types='atoms'):
         if types == 'atoms':
             idx1 = gro_df[gro_df.loc[:, 'ori_idx'] == str(x.nr)]['globalIdx'].values[0]
@@ -317,27 +309,68 @@ class genBonds(object):
         else:
             print('sth wrong')
         return x
-    
-    def updateIdx(self):
-        atomsDf = self.gro.df_atoms
+
+    def dataframeUpdate(self, df_atoms, atomsDf):
+        # Using dataframe structure to build
         inTop = self.top
-        df_atoms = inTop.atoms # Top df
+        # dataframes from the topology
+        df_atoms = inTop.atoms  # Top df
         df_bonds = inTop.bonds
-        df_pairs = inTop.pairs
+        df_pairs = inTop.pairs  # 1--4 interactions
         df_angs = inTop.angles
         df_dihs = inTop.dihedrals
         df_imps = inTop.impropers
-        
-        atomsDf['ori_idx'] = atomsDf['globalIdx']
-        
-        atomsDf = atomsDf.reset_index(drop=True)
-        atomsDf['globalIdx'] = (atomsDf.index + 1).astype(str).to_list()
-        df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(drop=True)
+
+        df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(
+            drop=True)
         df_bonds_new = df_bonds.apply(lambda x: self.updateTopIdx(x, atomsDf, types='bonds'), axis=1)
         df_pairs_new = df_pairs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='pairs'), axis=1)
         df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
         df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
         df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+        return df_atoms_new, df_bonds_new, df_pairs_new, df_angs_new, df_dihs_new, df_imps_new
+
+    def updateIdx(self):
+        # atomsDf is a from the gro file (coordinates)
+        atomsDf = self.gro.df_atoms
+
+        inTop = self.top
+        # dataframes from the topology
+        df_atoms = inTop.atoms # Top df
+        df_bonds = inTop.bonds
+        df_pairs = inTop.pairs  # 1--4 interactions
+        df_angs = inTop.angles
+        df_dihs = inTop.dihedrals
+        df_imps = inTop.impropers
+        
+        # globalIdx is old; store them in new column 'ori_idx'
+        atomsDf['ori_idx'] = atomsDf['globalIdx']
+        # creating a new index column that renumbers atoms
+        atomsDf = atomsDf.reset_index(drop=True)
+        # setting new globalIdx to be 1-initiated indices, as *strings*
+        atomsDf['globalIdx'] = (atomsDf.index + 1).astype(str).to_list()
+        # make old-to-new index dictionary (cfa)
+        newIDx_from_oldIdx={}
+        for o,n in zip(atomsDf['ori_idx'], atomsDf['ori_idx']):
+            newIDx_from_oldIdx[o]=n
+
+        # create new dataframe that applies new globalIdx values to old values in original top df's
+
+        if self.cat == 'pd':
+            df_atoms_new, df_bonds_new, df_pairs_new, df_angs_new, df_dihs_new, df_imps_new = \
+                self.dataframeUpdate(df_atoms, atomsDf)
+        elif self.cat == 'map':
+            pass
+
+        # df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(drop=True)
+        # df_bonds_new = df_bonds.apply(lambda x: self.updateTopIdx(x, atomsDf, types='bonds'), axis=1)
+        # df_pairs_new = df_pairs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='pairs'), axis=1)
+        # df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
+        # df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+        # df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+
+        # 
+
         inTop.atoms = df_atoms_new
         inTop.bonds = df_bonds_new
         inTop.pairs = df_pairs_new
@@ -392,14 +425,15 @@ class genBonds(object):
     
     def updateRct(self, x, row):
         if int(x.globalIdx) == int(row.amon) or int(x.globalIdx) == int(row.acro):
-            rctNum = x.rctNum - 1
-            x.rctNum = rctNum
+            rctNum = int(x.rctNum) - 1
+            x.rctNum = str(rctNum)
             if rctNum == 0:
                 x.rct = 'False'
             elif rctNum > 0:
                 x.rct = 'True'
             else:
-                sys.exit('Atom {} is over-reacted'.format(x.new_idx))
+                print('Atom {} is over-reacted'.format(x.globalIdx))
+                sys.exit()
         return x
 
     @countTime
@@ -414,50 +448,5 @@ class genBonds(object):
         self.updateRctInfo()
         self.delHydrogen()
         self.addNewCon()
-        # self.updateIdx()
-        # self.updateCharge()
-        
-if __name__ == "__main__":
-    def getChargeMaps():
-        maps = {}
-        with open('charges.txt', 'r') as f:
-            idx = 0
-            for i in f.readlines():
-#                print(idx); idx+= 1
-                key, value = i.split(':')
-                if key in maps.keys():
-                    pass
-#                    if len(key) > 250:
-#                        print(key)
-#                        print('\n')
-                else:
-                    maps[key] = value
-        return maps
-    b = getChargeMaps()
-    import readGro
-    import readTop2
-    import groInfo
-    import topInfo
-    import pandas as pd
-    atomsDf = groInfo.gro()
-    topDf = topInfo.top()
-
-    a2 = readGro.initGro()
-    a3 = readTop2.initTop()
-
-    a2.setName('tmp')
-    df_init, sysName, atNum, boxSize = a2.readGRO()
-    atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
-    a3.setName('tmp.top', 'tmp.itp')
-    a3.genTopSession()
-    topDf.setInfo(a3.sumTop)
-    topDf.checkCharge()
-    rctMols = ['2', '14']
-    chargeMaps = b
-    names = ['acro', 'amon']; tmp = [['123', '1176']]
-    df_pairs = pd.DataFrame(tmp, columns=names)
-    atomsDf.df_atoms['rctNum'] = 1
-
-    b0 = genBonds(atomsDf, topDf, df_pairs, chargeMaps, rctMols)
-    b0.main()
-    
+        self.updateIdx()
+        self.updateCharge()

@@ -309,7 +309,27 @@ class genBonds(object):
         else:
             print('sth wrong')
         return x
-    
+
+    def dataframeUpdate(self, df_atoms, atomsDf):
+        # Using dataframe structure to build
+        inTop = self.top
+        # dataframes from the topology
+        df_atoms = inTop.atoms  # Top df
+        df_bonds = inTop.bonds
+        df_pairs = inTop.pairs  # 1--4 interactions
+        df_angs = inTop.angles
+        df_dihs = inTop.dihedrals
+        df_imps = inTop.impropers
+
+        df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(
+            drop=True)
+        df_bonds_new = df_bonds.apply(lambda x: self.updateTopIdx(x, atomsDf, types='bonds'), axis=1)
+        df_pairs_new = df_pairs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='pairs'), axis=1)
+        df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
+        df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+        df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+        return df_atoms_new, df_bonds_new, df_pairs_new, df_angs_new, df_dihs_new, df_imps_new
+
     def updateIdx(self):
         # atomsDf is a from the gro file (coordinates)
         atomsDf = self.gro.df_atoms
@@ -331,16 +351,18 @@ class genBonds(object):
         atomsDf['globalIdx'] = (atomsDf.index + 1).astype(str).to_list()
         # make old-to-new index dictionary (cfa)
         newIDx_from_oldIDx={}
-        for o,n in zip(atomsDf['ori_idx'],atomsDf['ori_idx']):
+        for o,n in zip(atomsDf['ori_idx'], atomsDf['ori_idx']):
             newIDx_from_oldIdx[o]=n
 
         # create new dataframe that applies new globalIdx values to old values in original top df's
-        df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(drop=True)
-        df_bonds_new = df_bonds.apply(lambda x: self.updateTopIdx(x, atomsDf, types='bonds'), axis=1)
-        df_pairs_new = df_pairs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='pairs'), axis=1)
-        df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
-        df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
-        df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+        df_atoms_new, df_bonds_new, df_pairs_new, df_angs_new, df_dihs_new, df_imps_new = \
+            self.dataframeUpdate(df_atoms, atomsDf)
+        # df_atoms_new = df_atoms.apply(lambda x: self.updateTopIdx(x, atomsDf, types='atoms'), axis=1).reset_index(drop=True)
+        # df_bonds_new = df_bonds.apply(lambda x: self.updateTopIdx(x, atomsDf, types='bonds'), axis=1)
+        # df_pairs_new = df_pairs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='pairs'), axis=1)
+        # df_angs_new = df_angs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='angles'), axis=1)
+        # df_dihs_new = df_dihs.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
+        # df_imps_new = df_imps.apply(lambda x: self.updateTopIdx(x, atomsDf, types='dih'), axis=1)
 
         # 
 
@@ -398,8 +420,8 @@ class genBonds(object):
     
     def updateRct(self, x, row):
         if int(x.globalIdx) == int(row.amon) or int(x.globalIdx) == int(row.acro):
-            rctNum = x.rctNum - 1
-            x.rctNum = rctNum
+            rctNum = int(x.rctNum) - 1
+            x.rctNum = str(rctNum)
             if rctNum == 0:
                 x.rct = 'False'
             elif rctNum > 0:
@@ -424,6 +446,7 @@ class genBonds(object):
         self.updateCharge()
         
 if __name__ == "__main__":
+    import sys
     def getChargeMaps():
         maps = {}
         with open('basic/charges.txt', 'r') as f:
@@ -445,6 +468,14 @@ if __name__ == "__main__":
     import groInfo
     import topInfo
     import pandas as pd
+
+    import readParameters
+
+    a = readParameters.parameters()
+    name = 'basic/options.txt'
+    a.setName(name)
+    a.readParam()
+
     atomsDf = groInfo.gro()
     topDf = topInfo.top()
     
@@ -454,6 +485,8 @@ if __name__ == "__main__":
     a2.setName('init')
     df_init, sysName, atNum, boxSize = a2.readGRO()
     atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
+    atomsDf.initRctInfo(a)
+
     a3.setName('init.top', 'init.itp')
     a3.genTopSession()
     topDf.setInfo(a3.sumTop)
