@@ -65,7 +65,6 @@ class initTop(object):
         else:
             return data[idx]
     
-    @countTime
     def initSession(self, df_new, df_ori, cNames):
         i = 0
         for c in cNames:
@@ -139,7 +138,7 @@ class initTop(object):
                     df.drop(index, inplace=True)    
         return df
 
-    @countTime        
+    @countTime
     def genTopSession(self):
         df_lst0 = self.getTopInfo(self.topName)
         df_lst = self.getTopInfo(self.itpName)

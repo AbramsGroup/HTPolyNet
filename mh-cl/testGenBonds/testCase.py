@@ -44,7 +44,7 @@ class testCase(object):
 
         b = getChargeMaps()
 
-        a1 = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols, cat='pd')
+        a1 = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols, cat=cat)
         a1.main()
         return a1
         
@@ -73,6 +73,7 @@ if __name__ == "__main__":
     a.gro = atomsDf
     a.top = topDf
 
-    b2 = a.testGenBonds(df_pairs, cat='pd')
+
+    # b2 = a.testGenBonds(df_pairs, cat='pd')
 
     b2 = a.testGenBonds(df_pairs, cat='map')
