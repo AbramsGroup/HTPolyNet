@@ -17,6 +17,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config')
     args=parser.parse_args()
+<<<<<<< HEAD
     print(args)
+=======
+>>>>>>> c6518ed5524a7269bc56af54fc99b227070888fc
     
     
