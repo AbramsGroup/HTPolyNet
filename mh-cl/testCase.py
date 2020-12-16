@@ -61,10 +61,10 @@ class testCase(object):
         a2 = readGro.initGro()
         a3 = readTop.initTop()
         
-        a2.setName('nvt-1')
+        a2.setName('init')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
-        boxSize = [15.00000, 15.00000, 15.00000]
+        boxSize = [15.00000, 15.00000, 15.00000] # TODO: remove latter
         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
         atomsDf.initRctInfo(a)
         self.gro = atomsDf
@@ -78,12 +78,12 @@ class testCase(object):
         self.top = topDf
         
         aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
-        out = aa.main()
-        return out
+        pairs, rctMols = aa.main()
+        return pairs, rctMols
     
-    def testGenBonds(self, pairs):
+    def testGenBonds(self, pairs, rctMols):
         import genBonds
-        rctMols = ['2', '14']
+        # rctMols = ['2', '14']
         def getChargeMaps():
             maps = {}
             with open('basic/charges.txt', 'r') as f:
@@ -116,10 +116,10 @@ if __name__ == "__main__":
 #    a1 = b2.df_atoms
 #    b = a.testReadParam()        
     
-    b1 = a.testSearchBonds()
-#    
-#    names = ['acro', 'amon']; tmp = [['123', '1177']]
-#    df_pairs = pd.DataFrame(tmp, columns=names)
-#    b2 = a.testGenBonds(df_pairs)
+    pairs, rctMols = a.testSearchBonds()
+    df_pairs = pairs
+   # names = ['acro', 'amon']; tmp = [['123', '1176']]
+   # df_pairs = pd.DataFrame(tmp, columns=names)
+    b2 = a.testGenBonds(df_pairs, rctMols)
     
 #    a.testmolRctInfo()

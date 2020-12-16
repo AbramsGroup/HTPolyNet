@@ -52,6 +52,7 @@ class gro(object):
             atNames = []
             for n in monR_list[i]:
                 atNames.append(n[0])
+
             self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName.isin(atNames)), 'rct'] = 'True'
             self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName.isin(atNames)), 'rctNum'] = 1 # TODO: need to change when rctNum is different
         
