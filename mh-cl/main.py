@@ -332,7 +332,7 @@ class main(object):
                 maps[key] = value
         return maps
     
-    def preparePara(self):
+    def preparePara(self, simulator = "gromacs"):
         import prepareParam
         
         path = self.srcPath
