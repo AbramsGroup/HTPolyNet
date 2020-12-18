@@ -28,22 +28,21 @@ class genBonds(object):
         12      glbIdx glbIdx   
         '''
 
-    @countTime
     def findHydrogen(self, atomsDf, bonds, idx): # This idx is the pd index
         con = []; conSum = []
-        print('atom idx: ', idx)
+        # print('atom idx: ', idx)
         conSum = self.searchCon(idx, bonds)
         for i in conSum:
             if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(i)]['atomName'].values[0]:
                 con.append(i)
 
-        print('Atom connections: ', conSum)
-        print('Atom H connections: ', con)
+        # print('Atom connections: ', conSum)
+        # print('Atom H connections: ', con)
         # sort the hydrogen based on the atom name
         con1 = []; atomName_ori = ''
         for idx in con:
             atName = atomsDf[atomsDf.loc[:, 'globalIdx'] == idx]['atomName'].values[0]
-            print('Con idx and atomNames: {} {}'.format(idx, atName))
+            # print('Con idx and atomNames: {} {}'.format(idx, atName))
             if len(con1) == 0:
                 con1 = [idx]
                 atomName_ori = atName
@@ -66,7 +65,8 @@ class genBonds(object):
     def idx2Atypes(self, idx, df_atoms):
         aTypes = df_atoms.loc[int(idx)-1, 'type']
         return aTypes
-    
+
+    @countTime
     def checkNewTypes(self, pairs, sysTop, types='bonds'):
         sysTop = self.top
         df_atoms = sysTop.atoms # Top df
@@ -130,7 +130,9 @@ class genBonds(object):
         2. Check new types if exist in the database
         3. Find and delete hydrogen
         '''
-        
+        '''
+        TODO: when the number of bonds increase, this function time increase a lot. Need to find a way to get rid of the loop
+        '''
         pairs = []
         for index, row in self.pairs.iterrows():
             pairs.append([row.acro, row.amon])
@@ -146,7 +148,7 @@ class genBonds(object):
         df_imps = inTop.impropers
         hAtoms = []
         for p in pairs:
-            print('pairs: ', p)
+            # print('pairs: ', p)
             hCon1 = self.findHydrogen(atomsDf, df_bonds, p[0])[0]
             hCon2 = self.findHydrogen(atomsDf, df_bonds, p[1])[0]
             hAtoms.append(hCon1); hAtoms.append(hCon2)
@@ -182,7 +184,7 @@ class genBonds(object):
 
     def searchCon(self, idx, df_bonds):
         idx = str(idx)
-        df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)]
+        df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)] # df_bonds is the bond section in the topology
         con = []
         for index, row in df_out.iterrows():
             if row.ai == str(idx):
@@ -195,6 +197,7 @@ class genBonds(object):
                 sys.exit()
         return con
 
+    @countTime
     def genNewCon(self, pair, df_bonds): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
@@ -303,7 +306,7 @@ class genBonds(object):
             x.aj = str(newidx2)
             x.ak = str(newidx3)
 
-        elif types == 'dih': # TODO: a key didn't appear in the myd dictionary cause error
+        elif types == 'dih':
             newidx1 = myd[x.ai]
             newidx2 = myd[x.aj]
             newidx3 = myd[x.ak]
@@ -515,7 +518,13 @@ class genBonds(object):
         for index, row in pairs.iterrows():
             self.updateRct(row)
             # self.gro.df_atoms = self.gro.df_atoms.apply(lambda x: self.updateRct(x, row), axis=1)
-    
+
+    def generateBondConnection(self):
+        df_bonds = self.top.bonds
+        con = {}
+        pass
+
+
     @countTime       
     def main(self):
         self.updateRctInfo()

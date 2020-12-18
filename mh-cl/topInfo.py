@@ -6,6 +6,7 @@ Created on Mon Sep 28 15:34:47 2020
 """
 import pandas as pd
 from decimal import Decimal
+from countTime import *
 
 class top(object):
     def __init__(self):
@@ -133,46 +134,73 @@ class top(object):
         cNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
         tmp = pd.DataFrame([lst], columns=cNames)
         self.dihtypes = self.dihtypes.append(tmp, sort=False).reset_index(drop=True)
-    
+
+    @countTime
     def addBonds(self, pairs):
-        cNames = ['ai', 'aj', 'funct']
-        for p in pairs:
-            a = p.copy()
-            a.append('1')
-            b_tmp = pd.DataFrame([a], columns=cNames)
-            self.bonds = self.bonds.append(b_tmp, sort=False).reset_index(drop=True)
-    
+        # cNames = ['ai', 'aj', 'funct']
+        cNames = ['ai', 'aj']
+        b_tmp = pd.DataFrame(pairs, columns=cNames)
+        b_tmp['funct'] = '1'
+        self.bonds = pd.concat([self.bonds, b_tmp])
+        # for p in pairs:
+        #     a = p.copy()
+        #     a.append('1')
+        #     b_tmp = pd.DataFrame([a], columns=cNames)
+        #     self.bonds = self.bonds.append(b_tmp, sort=False).reset_index(drop=True)
+
+    @countTime
     def addPairs(self, pairs):
-        cNames = ['ai', 'aj', 'funct']
-        for p in pairs:
-            a = p.copy()
-            a.append('1')
-            b_tmp = pd.DataFrame([a], columns=cNames)
-            self.pairs = self.pairs.append(b_tmp, sort=False).reset_index(drop=True)
-    
+        # cNames = ['ai', 'aj', 'funct']
+        cNames = ['ai', 'aj']
+        b_tmp = pd.DataFrame(pairs, columns=cNames)
+        b_tmp['funct'] = '1'
+        self.pairs = pd.concat([self.pairs, b_tmp])
+        # for p in pairs:
+        #     a = p.copy()
+        #     a.append('1')
+        #     b_tmp = pd.DataFrame([a], columns=cNames)
+        #     self.pairs = self.pairs.append(b_tmp, sort=False).reset_index(drop=True)
+
+    @countTime
     def addAngles(self, pairs):
-        cNames = ['ai', 'aj', 'ak', 'funct']
-        for p in pairs:
-            a = p.copy()
-            a.append('1') # This is the func
-            b_tmp = pd.DataFrame([a], columns=cNames)
-            self.angles = self.angles.append(b_tmp, sort=False).reset_index(drop=True)
-    
+        # cNames = ['ai', 'aj', 'ak', 'funct']
+        cNames = ['ai', 'aj', 'ak']
+        b_tmp = pd.DataFrame(pairs, columns=cNames)
+        b_tmp['funct'] = '1'
+        self.angles = pd.concat([self.angles, b_tmp])
+
+        # for p in pairs:
+        #     a = p.copy()
+        #     a.append('1') # This is the func
+        #     b_tmp = pd.DataFrame([a], columns=cNames)
+        #     self.angles = self.angles.append(b_tmp, sort=False).reset_index(drop=True)
+
+    @countTime
     def addDih(self, pairs):
-        cNames = ['ai', 'aj', 'ak', 'al', 'funct']
-        for p in pairs:
-            a = p.copy()
-            a.append('9')
-            b_tmp = pd.DataFrame([a], columns=cNames)
-            self.dihedrals = self.dihedrals.append(b_tmp, sort=False).reset_index(drop=True)
+        # cNames = ['ai', 'aj', 'ak', 'al', 'funct']
+        cNames = ['ai', 'aj', 'ak', 'al']
+        b_tmp = pd.DataFrame(pairs, columns=cNames)
+        b_tmp['funct'] = '9'
+        self.dihedrals = pd.concat([self.dihedrals, b_tmp])
+
+        # for p in pairs:
+        #     a = p.copy()
+        #     a.append('9')
+        #     b_tmp = pd.DataFrame([a], columns=cNames)
+        #     self.dihedrals = self.dihedrals.append(b_tmp, sort=False).reset_index(drop=True)
     
     def addImp(self, pairs):
-        cNames = ['ai', 'aj', 'ak', 'al', 'funct']
-        for p in pairs:
-            a = p.copy()
-            a.append('4')
-            b_tmp = pd.DataFrame([pairs], columns=cNames)
-            self.dihedrals = self.dihedrals.append(b_tmp, sort=False).reset_index(drop=True)
+        # cNames = ['ai', 'aj', 'ak', 'al', 'funct']
+        cNames = ['ai', 'aj', 'ak', 'al']
+        b_tmp = pd.DataFrame(pairs, columns=cNames)
+        b_tmp['funct'] = '4'
+        self.dihedrals = pd.concat([self.dihedrals, b_tmp])
+
+        # for p in pairs:
+        #     a = p.copy()
+        #     a.append('4')
+        #     b_tmp = pd.DataFrame([pairs], columns=cNames)
+        #     self.dihedrals = self.dihedrals.append(b_tmp, sort=False).reset_index(drop=True)
     
     def outTop(self, df, outName):
         with open('{}.top'.format(outName), 'w') as f:

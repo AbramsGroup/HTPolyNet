@@ -132,7 +132,12 @@ class searchBonds(object):
             return df_out2
 
     @countTime
-    def getRctDf(self): # TODO: something wired, cost much longer time than I expected. Need to check if any wasted loop remained
+    def getRctDf(self):
+        '''
+        TODO: something wired, cost much longer time than I expected. Need to check if any wasted loop remained
+        if just one react info in the option.txt file, it is fast, but when I increase to 4, the spending
+        time just increase a lot
+        '''
         rctFunc = self.rctInfo
         atoms = self.gro.df_atoms
         top = self.top
@@ -284,7 +289,7 @@ class searchBonds(object):
         xdiv = x[1] - x[0]
         ydiv = y[1] - y[0]
         zdiv = z[1] - z[0]
-        print('cell length: ', xdiv)
+        # print('cell length: ', xdiv)
         if xdiv <= self.cutoff:
             sys.exit()
         cell_id = [];
@@ -353,7 +358,7 @@ class searchBonds(object):
         pairs = [];
         count = 2
         parts = 8
-        print('Generate cells number on one dimension: ', parts)
+        # print('Generate cells number on one dimension: ', parts)
         self.genCell(parts)
         while (len(pairs) == 0):
             for i in range(count):  # max trial times
