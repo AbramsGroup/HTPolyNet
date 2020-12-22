@@ -1,18 +1,18 @@
-# For monomer 1
+# For croslinker 1
 monName1 = VEA
 monNum1 = 1
 mon1R_list = C19, C20, C26, C27  #heavy atom index for monomer reactive atoms
 mon1R_rNum = 1, 1, 1, 1
 mon1R_rct = 1R, 1R, 1R, 1R
 
-# For monomer 2
+# For croslinker 2
 monName2 = VEB
 monNum2 = 1
 mon2R_list = C22, C23, C44, C45
 mon2R_rNum = 1, 1, 1, 1
 mon2R_rct = 2R, 2R, 2R, 2R
 
-# For croslinker 1
+# For monomer 1
 croName1 = STY
 croNum1 = 1
 cro1R_list = C6, C7

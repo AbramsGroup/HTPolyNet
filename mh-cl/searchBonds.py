@@ -6,7 +6,9 @@ Searching potential bonds
 """
 import pandas as pd
 import numpy as np
+import time
 from countTime import *
+from multiprocessing import Process, Pool
 
 import sys
 class searchBonds(object):
@@ -76,6 +78,7 @@ class searchBonds(object):
         tmpLst = [-1, 0, 1]
         for i in tmpLst:
             tmp = int(x) + i
+            # PBC condition applied
             if tmp < 0:
                 tmp = maxId
             elif tmp > maxId:
@@ -95,12 +98,14 @@ class searchBonds(object):
         x['dist'] = self.calDist([x0, y0, z0], [x1, y1, z1])
         return x
 
-    def getBestPairs(self, atoms, df, boxSize):
-        df1 = df.apply(lambda x: self.appendDist(x, atoms, boxSize), axis=1)
-        df2 = df1.sort_values('dist')
-        df3 = df2.iloc[1:] # remove atoms which connect to itself
-        for index, row in df3.iterrows():
-            if self.checkConSingleMolecule(atoms, row):
+    def getBestPairs(self, atom, df, boxSize):
+        # df contains all potential atoms within 'atom' neighbor cell
+        df1 = df.apply(lambda x: self.appendDist(x, atom, boxSize), axis=1)
+        df2 = df1.iloc[1:] # remove atoms which connect to itself
+        # df2 = df1.sort_values('dist')
+        # df3 = df2.iloc[1:]
+        for index, row in df2.iterrows():
+            if self.checkConSingleMolecule(atom, row):
                 atomsOut = row
                 break
         return atomsOut, atomsOut.dist
@@ -124,20 +129,52 @@ class searchBonds(object):
 
         df1 = atomsDf.loc[atomsDf.cellId.isin(cellSum)]
         df2 = df1.loc[df1.rctNum > 0]
-        df_out1, dist = self.getBestPairs(atom, df2, self.boxSize)
-        if dist > self.cutoff:
+
+        # obtain the distance between the atoms and distance between atoms and the potential atoms within neighbor cell
+        df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
+        df3 = df3.iloc[1:] # remove atoms which connect to itself
+        pd.to_numeric(df3.dist)
+        df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
+        df_out1 = []
+        # df_out1, dist = self.getBestPairs(atom, df2, self.boxSize)
+        # if dist > self.cutoff:
+        #     return []
+        # else:
+        if len(df4) == 0:
             return []
         else:
-            df_out2 = [atom.globalIdx, df_out1.globalIdx, round(dist, 2), atom.rctNum, df_out1.rctNum, atom.molCon]
-            return df_out2
+            for index, row in df4.iterrows():
+                df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum, atom.molCon])
+            return df_out1
+
+    @countTime
+    def getAllMolNames(self):
+        atomNames = []
+        rctFunc = self.rctInfo
+        for i in rctFunc:
+            if i[0] not in atomNames:
+                atomNames.append(i[0][0])
+            elif i[1] not in atomNames:
+                atomNames.append(i[1][0])
+
+        return atomNames
+
+    def openList(self, inList):
+        out = []
+        for i in inList:
+            if i == []:
+                continue
+            else:
+                for ii in i:
+                    out.append(ii)
+        return out
+
+    def parallel_getPairs(self, df):
+        res = df.apply(lambda x: self.getPairs(x, df), axis=1)
+        return res
 
     @countTime
     def getRctDf(self):
-        '''
-        TODO: something wired, cost much longer time than I expected. Need to check if any wasted loop remained
-        if just one react info in the option.txt file, it is fast, but when I increase to 4, the spending
-        time just increase a lot
-        '''
         rctFunc = self.rctInfo
         atoms = self.gro.df_atoms
         top = self.top
@@ -150,42 +187,48 @@ class searchBonds(object):
         top.atoms['molCon'] = atoms['molCon']
         top.atoms['molNum'] = atoms['molNum']
 
-        for i in range(len(rctFunc)):
-            croName = rctFunc[i][0][0];
-            monName = rctFunc[i][1][0];
-            rctPct = rctFunc[i][2][0]
-            df_mon = atoms[(atoms.molName == monName) & (atoms.rct == 'True')]
-            df_cro = atoms[(atoms.molName == croName) & (atoms.rct == 'True')]
-            df_tmp = pd.concat([df_mon, df_cro]).drop_duplicates().reset_index(drop=True)
-            df_tmp = self.assignAtoms(df_tmp)
+        atomNames = self.getAllMolNames()
+        df_tmp = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames))]
+        # for i in range(len(rctFunc)):
+        #     croName = rctFunc[i][0][0]
+        #     monName = rctFunc[i][1][0]
+        #     rctPct = rctFunc[i][2][0]
+        #     df_mon = atoms[(atoms.molName == monName) & (atoms.rct == 'True')]
+        #     df_cro = atoms[(atoms.molName == croName) & (atoms.rct == 'True')]
+        #     print('mon number: ', len(df_mon))
+        #     print('cro number: ', len(df_cro))
+        #
+        #     df_tmp = pd.concat([df_mon, df_cro]).drop_duplicates().reset_index(drop=True)
+        df_tmp = self.assignAtoms(df_tmp)
+        print('df_tmp number: ', len(df_tmp))
+        t1 = time.time()
 
-            # # if monName in name:
-            # #     pass
-            # # else:
-            # name.append(monName)
-            #
-            # df_cro = atoms[(atoms.molName == croName) & (atoms.rct == 'True')]
-            # # if croName in name:
-            # #     pass
-            # # else:
-            # df_cro = self.assignAtoms(df_cro)
-            # name.append(croName)
+        ##### START PARALLEL
+        print('start parallel searching!!')
+        p = Pool(processes=2) #TODO: should be able to tune based on the number of cell and free CPU cores
+        dfSplit = np.array_split(df_tmp, 2)
+        results = p.map(self.parallel_getPairs, dfSplit)
+        p.close()
+        p.join()
+        parts = pd.concat(results, axis=0)
+        ##### END PARALLEL
 
-            # df_tmp.to_csv('tmp.csv')
-            # df_mon.to_csv('tmp1.csv')
-            # df_cro.to_csv('tmp2.csv')
-            lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
-            # lst_tmp = df_cro.apply(lambda x: self.filterRctPairs(x, df_mon), axis=1).values.tolist()
-            # lst_tmp.to_csv('tmp-1.csv')
-            for ii in lst_tmp:
-                if len(ii) == 0:
-                    continue
-                else:
-                    # for idx in ii:
-                    #     idx.append(rctPct)
-                    rctDf.append(ii)
+        # Non-parallel method to search bonds
+        # lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
 
-        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon']#, 'p']
+        t2 = time.time()
+        lst_tmp = parts
+        print('Collect potential pairs cost: ', t2 - t1)
+        lst_tmp2 = self.openList(lst_tmp)
+        for ii in lst_tmp2:
+            if len(ii) == 0:
+                continue
+            else:
+                # for idx in ii:
+                #     idx.append(rctPct) #TODO: add rct p here and in the final filter, using p to filter the bonds
+                rctDf.append(ii)
+
+        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon']#, 'p'] #TODO: need to implement this rct probability
         df = pd.DataFrame(rctDf, columns=names)
         return df
 
@@ -248,7 +291,6 @@ class searchBonds(object):
             else:
                 continue
         df_tmp1 = pd.DataFrame(rowList)
-        df_tmp1.to_csv('tmp1.csv')
         # check circuit connection. Molecules cannot connect to the same molecules
         rowList = [];
         atomsList = []
@@ -291,7 +333,7 @@ class searchBonds(object):
         zdiv = z[1] - z[0]
         # print('cell length: ', xdiv)
         if xdiv <= self.cutoff:
-            sys.exit()
+            sys.exit() #TODO: this should became a tune function
         cell_id = [];
         div_box = [xdiv, ydiv, zdiv]
         com = [0.5 * (x[1] - x[0]),
@@ -373,4 +415,5 @@ class searchBonds(object):
             pairs = a1
 
         self.idx2Mol(pairs)
+        print('{} bonds are going to be generated'.format(len(pairs)))
         return a1, self.mol

@@ -116,10 +116,9 @@ if __name__ == "__main__":
     a = testCase()
     # b1 = a.testreadGro()
     # b2 = a.testreadGro('systems/unrctSystem/STY')
-#    a1 = b2.df_atoms
-#    b = a.testReadParam()        
+    # b = a.testReadParam()
     
     pairs, rctMols, topDf = a.testSearchBonds()
-    df_pairs = pairs
-    print('{} bonds will be formed!'.format(len(df_pairs)))
-    b2 = a.testGenBonds(df_pairs, rctMols)
+    # df_pairs = pairs
+    # print('{} bonds will be formed!'.format(len(df_pairs)))
+    # b2 = a.testGenBonds(df_pairs, rctMols)
