@@ -27,7 +27,7 @@ import os
 from shutil import copyfile
 from shutil import move
 from shutil import rmtree
-
+import sys
 
 class main(object):
     def __init__(self):
@@ -274,7 +274,7 @@ class main(object):
                     folderName1 = self.setupFolder(step)  
                     os.chdir(folderName1)
                     # generate bonds
-                    gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols)
+                    gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
                     gbonds.main()
                     
                     self.gro = gbonds.gro

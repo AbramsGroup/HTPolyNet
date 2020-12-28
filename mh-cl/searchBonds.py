@@ -205,8 +205,8 @@ class searchBonds(object):
 
         ##### START PARALLEL
         print('start parallel searching!!')
-        p = Pool(processes=2) #TODO: should be able to tune based on the number of cell and free CPU cores
-        dfSplit = np.array_split(df_tmp, 2)
+        p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
+        dfSplit = np.array_split(df_tmp, 4)
         results = p.map(self.parallel_getPairs, dfSplit)
         p.close()
         p.join()
