@@ -13,7 +13,7 @@ step 2: init systems
 """
 import readParameters
 import mergeTop
-import readTop
+import readTop2
 import readGro
 import groInfo
 import topInfo
@@ -69,7 +69,7 @@ class main(object):
         self.gro = m
     
     def getTopInfo(self, topName, itpName):
-        a = readTop.initTop()
+        a = readTop2.initTop()
         a.setName(topName, itpName)
         a.genTopSession()
         b = topInfo.top()
@@ -112,7 +112,7 @@ class main(object):
             
         # Insert molecules to systems
         import extendSys
-        a = extendSys.extendSys('gmx')
+        a = extendSys.extendSys('gmx_mpi')
         a.extendSys(param.monInfo, param.croInfo, param.boxSize, 'init')
         
         # Get df of gro file
@@ -132,7 +132,7 @@ class main(object):
         self.top = topSum
         
         # EM and NPT to equilibrate the structure
-        a = md.md('gmx', 'mpirun', '16')
+        a = md.md('gmx_mpi', 'mpirun', '16')
         a.emSimulation('init', 'init', 'min-1', size=False)
         a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
         i = 0
@@ -172,7 +172,7 @@ class main(object):
         os.chdir(path)
         # Get df of gro file
         gro = readGro.initGro()
-        top = readTop.initTop()
+        top = readTop2.initTop()
         
         gro.setName('init')
         df_init, sysName, atNum, boxSize = gro.readGRO()
@@ -285,7 +285,7 @@ class main(object):
                     self.top.outDf(topName)
                     
                     # Equilibrate system
-                    a = md.md('gmx', 'mpirun', '16')
+                    a = md.md('gmx_mpi', 'mpirun', '16')
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
