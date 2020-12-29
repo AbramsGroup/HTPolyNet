@@ -75,9 +75,11 @@ class initTop(object):
                 if l.startswith('['):
                     lst0.append(lst_tmp)
                     lst_tmp = []
+                elif l.startswith(';'):
+                    continue
                 else:
                     if len(l) > 1:
-                        lst_tmp.append(l.split())
+                        lst_tmp.append(l.split(';')[0].split())
                     
             lst0.append(lst_tmp) # last section (improper section) to the end of the list
             lst0 = lst0[1:]
@@ -125,6 +127,7 @@ class initTop(object):
                             impNames = ['ai', 'aj', 'ak', 'al', 'funct']
                             df_tmp = pd.DataFrame(lst0[i], columns=impNames)
                     else:
+                        print('!!!readTop2: ', lst0[i])
                         df_tmp = pd.DataFrame(lst0[i], columns=names[i])
                     setattr(self, info[i], df_tmp)
 
