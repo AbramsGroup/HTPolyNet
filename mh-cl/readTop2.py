@@ -101,10 +101,33 @@ class initTop(object):
                     setattr(self, info[i], df_tmp)
 
             if len(lst0) == 7: # Itp file didn't contain the type section
-                pass # TODO: will finish later
+                names = [moltypeNames, atNames, bNames, pNames, angNames, dihNames, impNames]
+                info = ['mTypes', 'atoms', 'bonds', 'pairs', 'angles', 'dihs', 'imps']
+                for i in range(len(lst0)):
+                    if i == 6:
+                        try:
+                            df_tmp = pd.DataFrame(lst0[i], columns=names[i])
+                        except:
+                            impNames = ['ai', 'aj', 'ak', 'al', 'funct']
+                            df_tmp = pd.DataFrame(lst0[i], columns=impNames)
+                    else:
+                        df_tmp = pd.DataFrame(lst0[i], columns=names[i])
+                    setattr(self, info[i], df_tmp)
 
             elif len(lst0) == 8:
-                pass # TODO: finish later
+                names = [atypeNames, moltypeNames, atNames, bNames, pNames, angNames, dihNames, impNames]
+                info = ['aTypes', 'mTypes', 'atoms', 'bonds', 'pairs', 'angles', 'dihs', 'imps']
+                for i in range(len(lst0)):
+                    if i == 7:
+                        try:
+                            df_tmp = pd.DataFrame(lst0[i], columns=names[i])
+                        except:
+                            impNames = ['ai', 'aj', 'ak', 'al', 'funct']
+                            df_tmp = pd.DataFrame(lst0[i], columns=impNames)
+                    else:
+                        df_tmp = pd.DataFrame(lst0[i], columns=names[i])
+                    setattr(self, info[i], df_tmp)
+
         df_lst0 = self.getTopInfo(self.topName)
         self.sumTop = [df_lst0, self.aTypes, self.mTypes, self.bTypes,
                        self.angTypes, self.dihTypes, self.impTypes,
