@@ -356,7 +356,7 @@ class main(object):
             fileName = '{}.mol2'.format(n)
             a = prepareParam.prepareParam()
             a.PrepareFile(fileName, n, n)
-            b = processTop.processTop(fileName) # process the top file, make it standard
+            b = processTop.processTop(n) # process the top file, make it standard
             b.main()
 
         os.chdir(self.srcPath)

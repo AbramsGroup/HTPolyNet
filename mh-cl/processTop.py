@@ -133,10 +133,16 @@ class processTop(object):
             return data[idx]
 
     def initSession(self, df_new, df_ori, cNames):
-        i = 0
-        for c in cNames:
-            df_new.loc[:, c] = df_ori.apply(lambda x: self.sepData(x, len(cNames), idx=i), axis=1)
-            i += 1
+        newList = []
+        for index, value in df_ori.iterrows():
+            row = list(value.str.split())[0]
+            newList.append(row)
+
+        df_new = pd.DataFrame(newList, columns=cNames)
+        # i = 0
+        # for c in cNames:
+        #     df_new.loc[:, c] = df_ori.apply(lambda x: self.sepData(x, len(cNames), idx=i), axis=1)
+        #     i += 1
         return df_new
 
     def genTop(self, inLst):
@@ -201,7 +207,7 @@ class processTop(object):
         df_impTypes = pd.DataFrame(impNames)
 
         df_dihTypes = self.rmDihType(df_dihTypes)
-
+        print('df_atypes: ', df_atypes)
         if len(df_lst) == 8:
             df_imp = self.initSession(df_imp, df_lst[7], dihNames).reset_index(drop=True)
             df_impTypes = self.extractType(df_imp, df_atoms, keys='dih').drop_duplicates().reset_index(drop=True)
@@ -238,6 +244,6 @@ class processTop(object):
         self.genTop(lst)
 
 if __name__ == '__main__':
-    a = processTop('VEA')
+    a = processTop('STY')
     a1 = a.getTopInfo()
     a.genTop(a1)
