@@ -68,10 +68,13 @@ class top(object):
             str1 = '{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
                 x.ai, x.aj, x.ak, x.funct, x.c0, round(float(x.c1), 2))
         elif keys == 'dihTypes':
-            str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 2), x.c2)
+            if len(x) != 8:
+                str1 = ' '
+            else:
+                str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+                    x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 2), x.c2)
         elif keys == 'atoms':
-            str1 = '{:>5}{:>11}{:>7}{:>7}{:>7}{:>6}{:>11}{:>11}'.format(
+            str1 = '{:>5}{:>11}{:>7}{:>7}{:>7}{:>6} {:>11}{:>11}'.format(
                     x.nr, x.type, x.resnr, x.residue, x.atom, x.cgnr, x.charge, x.mass)
         elif keys == 'bonds':
             str1 = '{:>7}{:>7}{:>7}'.format(
@@ -83,14 +86,18 @@ class top(object):
             str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.ak, x.funct)
         elif keys == 'dih':
-            key = self.subAtom2Atypes(x.ai, x.aj, x.ak, x.al, self.atoms)
-            # key = '{}-{}-{}-{}'.format(x.ai, x.aj, x.ak, x.al)
-            if key not in self.dupDihTypeKey:
-                str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
-                        x.ai, x.aj, x.ak, x.al, x.funct)
+            if len(x) != 8:
+                str1 = ' '
+
             else:
-                str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                        x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 4), x.c2)
+                key = self.subAtom2Atypes(x.ai, x.aj, x.ak, x.al, self.atoms)
+                # key = '{}-{}-{}-{}'.format(x.ai, x.aj, x.ak, x.al)
+                if key not in self.dupDihTypeKey:
+                    str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
+                            x.ai, x.aj, x.ak, x.al, x.funct)
+                else:
+                    str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 4), x.c2)
         return str1
     
     def addCharge(self, incharge):
