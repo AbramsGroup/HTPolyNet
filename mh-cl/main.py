@@ -42,7 +42,8 @@ class main(object):
         self.mdpFolder = ''
         self.workingFolder = '' # current loop folder location
         
-        
+        self.topMap = {}
+
         self.basicParameter = ''
         self.molNames = []
         self.chargeMap = {}
@@ -122,7 +123,8 @@ class main(object):
         # Get parameters from parameters file
         topList = []
         for n in nameList:
-            a = self.getTopInfo('{}.top'.format(n), '{}.itp'.format(n))
+            a = self.topMap[n]
+            # a = self.getTopInfo('{}.top'.format(n), '{}.itp'.format(n))
             nNum = int(molInfo[n])
             for i in range(nNum):
                 topList.append(a)
@@ -358,6 +360,7 @@ class main(object):
             a.PrepareFile(fileName, n, n)
             b = processTop.processTop(n) # process the top file, make it standard
             b.main()
+            self.topMap[b.name] = b.top
 
         os.chdir(self.srcPath)
         

@@ -70,7 +70,6 @@ def mergeTopList(topList):
     topSum.system = topInit.system
     topSum.molecules = topInit.molecules
     topSum.moleculetype = topInit.moleculetype
-#    topSum.dupDihTypeKey = topInit.dupDihTypeKey
     dup = []
     for i in range(len(topList)):
         dup += topList[i].dupDihTypeKey

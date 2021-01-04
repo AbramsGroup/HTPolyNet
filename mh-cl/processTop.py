@@ -27,6 +27,7 @@ class processTop(object):
         self.topInfo = ''
         self.sumTop = []
 
+        self.top = topInfo.top()
     def checkFile(self):
         # check if top has been processed
         if os.path.isfile(self.topName) and os.path.isfile(self.itpName):
@@ -236,6 +237,7 @@ class processTop(object):
 
         top0.setInfo(self.sumTop)
         top0.outDf(self.name)
+        self.top = top0
 
     def main(self):
         lst = self.getTopInfo()
