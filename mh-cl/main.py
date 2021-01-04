@@ -135,7 +135,7 @@ class main(object):
         self.top = topSum
         
         # EM and NPT to equilibrate the structure
-        a = md.md('gmx_mpi', 'mpirun', '16')
+        a = md.md('gmx_mpi', 'mpirun', '4')
         a.emSimulation('init', 'init', 'min-1', size=False)
         a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
         i = 0
@@ -288,7 +288,7 @@ class main(object):
                     self.top.outDf(topName)
                     
                     # Equilibrate system
-                    a = md.md('gmx_mpi', 'mpirun', '16')
+                    a = md.md('gmx_mpi', 'mpirun', '4')
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
