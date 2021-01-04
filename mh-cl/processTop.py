@@ -200,14 +200,12 @@ class processTop(object):
         df_pairs = self.initSession(df_pairs, df_lst[4], pNames).reset_index(drop=True)
         df_angles = self.initSession(df_angles, df_lst[5], angNames).reset_index(drop=True)
         df_dih = self.initSession(df_dih, df_lst[6], dihNames).reset_index(drop=True)
-
         df_bTypes = self.extractType(df_bonds, df_atoms, keys='bonds').drop_duplicates().reset_index(drop=True)
         df_angTypes = self.extractType(df_angles, df_atoms, keys='angles').drop_duplicates().reset_index(drop=True)
         df_dihTypes = self.extractType(df_dih, df_atoms, keys='dih').drop_duplicates().reset_index(drop=True)
         df_impTypes = pd.DataFrame(impNames)
 
         df_dihTypes = self.rmDihType(df_dihTypes)
-        print('df_atypes: ', df_atypes)
         if len(df_lst) == 8:
             df_imp = self.initSession(df_imp, df_lst[7], dihNames).reset_index(drop=True)
             df_impTypes = self.extractType(df_imp, df_atoms, keys='dih').drop_duplicates().reset_index(drop=True)

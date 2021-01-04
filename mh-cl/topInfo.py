@@ -65,7 +65,7 @@ class top(object):
             str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
                 x.ai, x.aj, x.funct, x.c0, round(float(x.c1), 2))
         elif keys == 'angTypes':
-            str1 = '{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
+            str1 = '{:>7}{:>7}{:>7}{:>7} {:>10}{:>11}'.format(
                 x.ai, x.aj, x.ak, x.funct, x.c0, round(float(x.c1), 2))
         elif keys == 'dihTypes':
             if len(x) != 8:
