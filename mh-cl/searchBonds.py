@@ -402,7 +402,6 @@ class searchBonds(object):
         parts = 8
         # print('Generate cells number on one dimension: ', parts)
         self.genCell(parts)
-        print('cellID: ', self.cellId)
         while (len(pairs) == 0):
             for i in range(count):  # max trial times
                 df_pairs = self.getRctDf()
