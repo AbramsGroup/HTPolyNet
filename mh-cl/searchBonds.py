@@ -375,7 +375,7 @@ class searchBonds(object):
         xDiv = 0.5 * box_div[0]
         yDiv = 0.5 * box_div[1]
         zDiv = 0.5 * box_div[2]
-        row['cellId'] = '0'
+        row['cellId'] = '000'
         row['comCoord'] = '0'
         coord = [float(row.posX), float(row.posY), float(row.posZ)]
         for c in cell_id:
@@ -402,6 +402,7 @@ class searchBonds(object):
         parts = 8
         # print('Generate cells number on one dimension: ', parts)
         self.genCell(parts)
+        print('cellID: ', self.cellId)
         while (len(pairs) == 0):
             for i in range(count):  # max trial times
                 df_pairs = self.getRctDf()

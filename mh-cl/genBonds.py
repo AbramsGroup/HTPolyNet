@@ -285,10 +285,11 @@ class genBonds(object):
             if x.nr not in myd.keys():
                 print('Unknown atoms Id: ', x.nr)
                 sys.exit()
-            newidx1=myd[x.nr];  x.new_idx=newidx1
+            newidx1 = myd[x.nr];  x.new_idx = newidx1; x.nr = newidx1; x.cgnr = newidx1
+
         elif types == 'bonds':
-            newidx1=myd[x.ai]
-            newidx2=myd[x.aj]
+            newidx1 = myd[x.ai]
+            newidx2 = myd[x.aj]
             x.ai = str(newidx1)
             x.aj = str(newidx2)
 
@@ -411,7 +412,7 @@ class genBonds(object):
         atomsDf['globalIdx'] = (atomsDf.index + 1).astype(str).to_list()
         # make old-to-new index dictionary (cfa)
         newIDx_from_oldIdx={}
-        for o,n in zip(atomsDf['ori_idx'], atomsDf['globalIdx']):
+        for o, n in zip(atomsDf['ori_idx'], atomsDf['globalIdx']):
             newIDx_from_oldIdx[o] = n
 
         # create new dataframe that applies new globalIdx values to old values in original top df's
