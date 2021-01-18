@@ -43,6 +43,8 @@ class main(object):
         self.workingFolder = '' # current loop folder location
         
         self.topMap = {}
+        self.initGro = ''
+        self.initTop = ''
 
         self.basicParameter = ''
         self.molNames = []
@@ -69,7 +71,7 @@ class main(object):
         m = groInfo.gro()
         m.setGroInfo(df_init, sysName, atNum, boxSize)
         self.gro = m
-    
+
     def getTopInfo(self, topName, itpName):
         a = readTop2.initTop()
         a.setName(topName, itpName)
@@ -86,6 +88,7 @@ class main(object):
         a1 = groInfo.gro()
         a1.setGroInfo(df_init, sysName, atNum, boxSize)
         self.gro.updateCoord(a1)
+        self.initGro = self.gro
         
     def initSys(self):
         param = self.basicParameter
@@ -133,6 +136,7 @@ class main(object):
         topSum = mergeTop.mergeTopList(topList)
         sysTop = topSum.outDf('init')
         self.top = topSum
+        self.initTop = topSum
         
         # EM and NPT to equilibrate the structure
         a = md.md('gmx_mpi', 'mpirun', '4')
@@ -301,7 +305,7 @@ class main(object):
                         print('NPT failed')
                         self.finishSim(folderName)
                         step = 0
-                        break
+                        break # TODO: need to reset the gro and top file
                     
                     self.logBonds(step)
                     # Update coord
@@ -316,7 +320,8 @@ class main(object):
                     self.finishSim(folderName) 
                     step = 0
                     break
-    
+            self.gro = self.initGro
+            self.top = self.initTop
     def getMolNames(self):
         names = []
         for n in self.basicParameter.monInfo:
