@@ -281,6 +281,7 @@ class main(object):
                     self.pairs_detail['step{}'.format(step)] = pairs
                     folderName1 = self.setupFolder(step)  
                     os.chdir(folderName1)
+                    self.gro.outDf('init.gro') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
                     gbonds.main()
