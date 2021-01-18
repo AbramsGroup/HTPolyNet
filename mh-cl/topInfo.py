@@ -7,6 +7,7 @@ Created on Mon Sep 28 15:34:47 2020
 import pandas as pd
 from decimal import Decimal
 from countTime import *
+from copy import deepcopy
 
 class top(object):
     def __init__(self):
@@ -27,7 +28,19 @@ class top(object):
         self.molecules = []
         self.dupDihTypeKey = []
         self.molNum = 0
-        
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        result.__dict__.update(deepcopy(self.__dict__))
+        return result
+
     def setInfo(self, info):
         self.atomtypes = info[1]
         self.moleculetype = info[2]

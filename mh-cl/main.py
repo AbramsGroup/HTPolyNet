@@ -28,6 +28,7 @@ import os
 from shutil import copyfile
 from shutil import move
 from shutil import rmtree
+from copy import deepcopy
 import sys
 
 class main(object):
@@ -136,7 +137,7 @@ class main(object):
         topSum = mergeTop.mergeTopList(topList)
         sysTop = topSum.outDf('init')
         self.top = topSum
-        self.initTop = topSum
+        self.initTop = deepcopy(self.top)
         
         # EM and NPT to equilibrate the structure
         a = md.md('gmx_mpi', 'mpirun', '4')
@@ -163,7 +164,7 @@ class main(object):
         
         # init rct info for potential atoms, add rct columns to the df in the gro object df
         self.gro.initRctInfo(self.basicParameter)
-        
+        self.initGro = deepcopy(self.gro)
         # Back to the working directory and start crosslinking approach
         os.chdir(self.workingFolder)
     
@@ -320,8 +321,9 @@ class main(object):
                     self.finishSim(folderName) 
                     step = 0
                     break
-            self.gro = self.initGro
-            self.top = self.initTop
+            self.gro = deepcopy(self.initGro)
+            self.top = deepcopy(self.initTop)
+
     def getMolNames(self):
         names = []
         for n in self.basicParameter.monInfo:

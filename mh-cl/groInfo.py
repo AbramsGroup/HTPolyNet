@@ -7,6 +7,7 @@ Created on Tue Sep 29 11:01:01 2020
 
 import pandas as pd
 from countTime import *
+from copy import deepcopy
 
 class gro(object):
     def __init__(self):
@@ -14,7 +15,19 @@ class gro(object):
         self.sysName = ''
         self.atNum = ''
         self.boxSize = ''
-    
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        result.__dict__.update(deepcopy(self.__dict__))
+        return result
+
     def setGroInfo(self, atoms_df, sysName, atNum, boxSize):
         self.df_atoms = atoms_df
         self.sysName = sysName
