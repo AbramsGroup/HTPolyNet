@@ -325,15 +325,20 @@ class searchBonds(object):
     # links-cell algorithm
     def genCell(self, parts):
         parts = parts - 1
-        x = np.linspace(0, float(self.boxSize), parts + 1) #TODO: future implement different box dimension
-        y = np.linspace(0, float(self.boxSize), parts + 1)
-        z = np.linspace(0, float(self.boxSize), parts + 1)
-        xdiv = x[1] - x[0]
-        ydiv = y[1] - y[0]
-        zdiv = z[1] - z[0]
-        # print('cell length: ', xdiv)
-        if xdiv <= self.cutoff:
-            sys.exit() #TODO: this should became a tune function
+        xdiv = 0
+        while (xdiv <= self.cutoff):
+            if parts <= 2:
+                print('Unusual occasion occurs! Please check the cutoff you set and rerun the script!')
+                sys.exit()
+
+            x = np.linspace(0, float(self.boxSize), parts + 1)
+            y = np.linspace(0, float(self.boxSize), parts + 1)
+            z = np.linspace(0, float(self.boxSize), parts + 1)
+            xdiv = x[1] - x[0]
+            ydiv = y[1] - y[0]
+            zdiv = z[1] - z[0]
+            parts -= 1
+
         cell_id = [];
         div_box = [xdiv, ydiv, zdiv]
         com = [0.5 * (x[1] - x[0]),
@@ -416,4 +421,7 @@ class searchBonds(object):
 
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))
+        print('Following bonds will be formed: \n')
+        for p in pairs:
+            print('\t', p.acro, '\t', p.amon)
         return a1, self.mol
