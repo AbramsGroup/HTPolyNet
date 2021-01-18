@@ -9,6 +9,7 @@ import numpy as np
 import time
 from countTime import *
 from multiprocessing import Process, Pool
+from functools import partial
 
 import sys
 class searchBonds(object):
@@ -111,6 +112,7 @@ class searchBonds(object):
         return atomsOut, atomsOut.dist
 
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
+        # atomsDf contains all atoms
         # maxCellId used for pbc condition
         cell0 = atom.cellId
         # print('cell0: ', cell0)
@@ -169,8 +171,9 @@ class searchBonds(object):
                     out.append(ii)
         return out
 
-    def parallel_getPairs(self, df):
-        res = df.apply(lambda x: self.getPairs(x, df), axis=1)
+    def parallel_getPairs(self, df, df_sum):
+        print('!!!tmp')
+        res = df.apply(lambda x: self.getPairs(x, df_sum), axis=1)
         return res
 
     @countTime
@@ -203,15 +206,15 @@ class searchBonds(object):
         print('df_tmp number: ', len(df_tmp))
         t1 = time.time()
 
-        ##### START PARALLEL
+        # ##### START PARALLEL
         print('start parallel searching!!')
         p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
         dfSplit = np.array_split(df_tmp, 4)
-        results = p.map(self.parallel_getPairs, dfSplit)
+        results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
         p.close()
         p.join()
         parts = pd.concat(results, axis=0)
-        ##### END PARALLEL
+        # ##### END PARALLEL
 
         # Non-parallel method to search bonds
         # lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
@@ -326,8 +329,13 @@ class searchBonds(object):
     def genCell(self, parts):
         parts = parts - 1
         xdiv = 0
+        if self.cutoff > float(self.boxSize) * 0.5:
+            print('cutoff should smaller than the half of the box size, please modify it.')
+            sys.exit()
+
         while (xdiv <= self.cutoff):
-            if parts <= 2:
+            print('parts: ', parts)
+            if parts <= 1:
                 print('Unusual occasion occurs! Please check the cutoff you set and rerun the script!')
                 sys.exit()
 
@@ -422,6 +430,6 @@ class searchBonds(object):
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))
         print('Following bonds will be formed: \n')
-        for p in pairs:
-            print('\t', p.acro, '\t', p.amon)
+        for index, value in pairs.iterrows():
+            print('\t', value.acro, '\t', value.amon)
         return a1, self.mol

@@ -121,6 +121,6 @@ if __name__ == "__main__":
     pairs, rctMols, topDf = a.testSearchBonds()
     df_pairs = pairs
     print('{} bonds will be formed!'.format(len(df_pairs)))
-    b2 = a.testGenBonds(df_pairs, rctMols)
-
-    b2.top.outDf('tmp11')
+    # b2 = a.testGenBonds(df_pairs, rctMols)
+    #
+    # b2.top.outDf('tmp11')
