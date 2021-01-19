@@ -482,43 +482,34 @@ class genBonds(object):
             charges = self.mapCharge(resname, seq)
             self.top.atoms.loc[(self.top.atoms.nr.isin(a)), 'charge'] = charges
 
-    def updateRctStatus(self, x):
-        if int(x.rctNum) == 0:
-            x.rct = 'False'
-        elif int(x.rctNum) > 0:
-            x.rct = 'True'
-        else:
-            print('Atom {} is over-reacted'.format(x.globalIdx))
+    def updateRctStatus(self, atIdx, df, rctNum):
+        df.loc[(df.globalIdx == atIdx), 'rctNum'] = str(rctNum - 1)
+        if rctNum - 1 == 0:
+            df.loc[(df.globalIdx == atIdx), 'rct'] = 'False'
+        elif rctNum - 1 < 0:
+            print('Atom {} is over-reacted'.format(atIdx.globalIdx))
             sys.exit()
-        return x
 
     def updateRct(self, row):
         a1 = row.amon; a2 = row.acro
         df1 = self.gro.df_atoms
-        df2 = df1.loc[(df1.globalIdx == a1) | (df1.globalIdx == a2)]
-        pd.to_numeric(df2.rctNum)
-        df2.rctNum = df2.rctNum - 1
-        df2 = df2.apply(lambda x: self.updateRctStatus(x), axis=1)
+        rctNum1 = int(df1.loc[df1.globalIdx == a1].rctNum.to_list()[0])
+        rctNum2 = int(df1.loc[df1.globalIdx == a2].rctNum.to_list()[0])
+        self.updateRctStatus(a1, df1, rctNum1)
+        self.updateRctStatus(a2, df1, rctNum2)
 
-    # def updateRct(self, x, row):
-    #     if int(x.globalIdx) == int(row.amon) or int(x.globalIdx) == int(row.acro):
-    #         rctNum = int(x.rctNum) - 1
-    #         x.rctNum = str(rctNum)
-    #         if rctNum == 0:
-    #             x.rct = 'False'
-    #         elif rctNum > 0:
-    #             x.rct = 'True'
-    #         else:
-    #             print('Atom {} is over-reacted'.format(x.globalIdx))
-    #             sys.exit()
-    #     return x
+        # df1.loc[(df1.globalIdx == a1), 'rctNum'] = str(rctNum1 - 1)
+        # if rctNum1 - 1 == 0:
+        #     df1.loc[(df1.globalIdx == a1), 'rct'] = 'False'
+        # elif rctNum1 - 1 < 0:
+        #     print('Atom {} is over-reacted'.format(a1.globalIdx))
+        #     sys.exit()
 
     @countTime
     def updateRctInfo(self):
         pairs = self.pairs
         for index, row in pairs.iterrows():
             self.updateRct(row)
-            # self.gro.df_atoms = self.gro.df_atoms.apply(lambda x: self.updateRct(x, row), axis=1)
 
     def generateBondConnection(self):
         df_bonds = self.top.bonds
