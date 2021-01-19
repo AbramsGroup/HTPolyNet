@@ -432,6 +432,9 @@ class searchBonds(object):
                     break
             pairs = a1
 
+        if len(pairs) == 0:
+            return [], self.mol
+
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))
         print('Following bonds will be formed: \n')
