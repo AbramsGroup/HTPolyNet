@@ -427,7 +427,7 @@ class searchBonds(object):
                     break
             a1 = self.finalRctPairs(df_pairs)
             if len(a1) == 0:
-                self.cutoff += 5
+                self.cutoff += 0.5
                 if self.cutoff > 0.5 * float(self.boxSize):
                     break
             pairs = a1

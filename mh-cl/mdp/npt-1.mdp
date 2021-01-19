@@ -35,7 +35,7 @@ tc-grps     = System
 tau_t       = 0.1         	    ; time constant, in ps
 ref_t       = 300      		    ; reference temperature, one for each group, in K
 ; Pressure coupling is on
-pcoupl              = Berendsen     ; Pressure coupling on in NPT, also weak coupling
+pcoupl              = Parrinello-Rahman     ; Pressure coupling on in NPT, also weak coupling
 pcoupltype          = isotropic     ; uniform scaling of x-y-z box vectors
 tau_p               = 0.5           ; time constant, in ps
 ref_p               = 400.0

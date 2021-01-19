@@ -1,0 +1,6 @@
+source leaprc.gaff 
+SUS = loadmol2 out.mol2 
+check SUS
+loadamberparams out.frcmod 
+saveamberparm SUS out.top out.crd 
+quit

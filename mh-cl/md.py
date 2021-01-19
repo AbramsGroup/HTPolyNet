@@ -12,7 +12,7 @@ from shutil import move
 class md(object):
     def __init__(self, GMX, MPI, nCPU):
         self.gmx = GMX
-        self.gmx_mpi = 'mdrun_mpi' # 'gmx_mpi mdrun'
+        self.gmx_mpi = 'gmx_mpi mdrun'
         self.mpi = MPI
         self.cpu = nCPU
         
