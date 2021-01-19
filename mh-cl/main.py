@@ -400,6 +400,6 @@ class main(object):
 if __name__ == '__main__':
     a = main() # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(2)
+    a.mainProcess(1)
     
     # TODO: need to check that charge been update as the template. 
