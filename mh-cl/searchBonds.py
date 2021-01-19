@@ -172,9 +172,25 @@ class searchBonds(object):
         return out
 
     def parallel_getPairs(self, df, df_sum):
-        print('!!!tmp')
         res = df.apply(lambda x: self.getPairs(x, df_sum), axis=1)
         return res
+
+    @countTime
+    def checkHydrogen(self, atomDf):
+        bonds = self.top.bonds
+        atoms = self.top.atoms
+        filterIdx = []
+        for index, value in atomDf.iterrows():
+            atIdx = str(value.globalIdx)
+            atCon = bonds.loc[(bonds.ai == atIdx) | (bonds.aj == atIdx)]
+            for idx2, jj in atCon.iterrows():
+                a1 = atoms.loc[atoms.nr == jj.ai]
+                a2 = atoms.loc[atoms.nr == jj.aj]
+                if 'H' in a1.atom.to_list()[0] or 'H' in a2.atom.to_list()[0]:
+                    filterIdx.append(atIdx)
+        outDf = atomDf.loc[atomDf.globalIdx.isin(filterIdx)]
+        return outDf
+
 
     @countTime
     def getRctDf(self):
@@ -191,21 +207,12 @@ class searchBonds(object):
         top.atoms['molNum'] = atoms['molNum']
 
         atomNames = self.getAllMolNames()
-        df_tmp = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames))]
-        # for i in range(len(rctFunc)):
-        #     croName = rctFunc[i][0][0]
-        #     monName = rctFunc[i][1][0]
-        #     rctPct = rctFunc[i][2][0]
-        #     df_mon = atoms[(atoms.molName == monName) & (atoms.rct == 'True')]
-        #     df_cro = atoms[(atoms.molName == croName) & (atoms.rct == 'True')]
-        #     print('mon number: ', len(df_mon))
-        #     print('cro number: ', len(df_cro))
-        #
-        #     df_tmp = pd.concat([df_mon, df_cro]).drop_duplicates().reset_index(drop=True)
-        df_tmp = self.assignAtoms(df_tmp)
-        print('df_tmp number: ', len(df_tmp))
-        t1 = time.time()
+        df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames))]
+        df_tmp0 = self.assignAtoms(df_tmp0)
 
+        # add hydrogen filter
+
+        df_tmp = self.checkHydrogen(df_tmp0)
         # ##### START PARALLEL
         print('start parallel searching!!')
         p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
@@ -219,9 +226,7 @@ class searchBonds(object):
         # Non-parallel method to search bonds
         # lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
 
-        t2 = time.time()
         lst_tmp = parts
-        print('Collect potential pairs cost: ', t2 - t1)
         lst_tmp2 = self.openList(lst_tmp)
         for ii in lst_tmp2:
             if len(ii) == 0:

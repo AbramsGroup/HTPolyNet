@@ -99,7 +99,6 @@ class initTop(object):
                             impNames = ['ai', 'aj', 'ak', 'al', 'funct']
                             df_tmp = pd.DataFrame(lst0[i], columns=impNames)
                     else:
-                        print('names: ', names[i])
                         df_tmp = pd.DataFrame(lst0[i], columns=names[i])
                     setattr(self, info[i], df_tmp)
 

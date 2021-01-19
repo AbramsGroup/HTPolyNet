@@ -307,7 +307,7 @@ class main(object):
                         print('NPT failed')
                         self.finishSim(folderName)
                         step = 0
-                        break # TODO: need to reset the gro and top file
+                        break
                     
                     self.logBonds(step)
                     # Update coord
