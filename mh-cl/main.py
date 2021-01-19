@@ -273,11 +273,17 @@ class main(object):
             os.chdir(folderName)
 
             while(len(self.old_pairs) < int(self.maxBonds)):
-                
+
+                intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+                intDf.to_csv('int-df0.csv')
+
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
                 pairs, rMols = sbonds.main()
-                
+
+                intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+                intDf.to_csv('int-df1.csv')
+
                 if len(pairs) > 0:
                     self.old_pairs.append(pairs)
 #                    print('pairs.amon: ', pairs.amon.values)
@@ -285,7 +291,7 @@ class main(object):
                     self.pairs_detail['step{}'.format(step)] = pairs
                     folderName1 = self.setupFolder(step)  
                     os.chdir(folderName1)
-                    self.gro.outDf('init.gro') # just for check!
+                    self.gro.outDf('init') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
                     gbonds.main()
@@ -296,7 +302,10 @@ class main(object):
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
                     self.top.outDf(topName)
-                    
+
+                    intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+                    intDf.to_csv('int-df2.csv')
+
                     # Equilibrate system
                     a = md.md('gmx_mpi', 'mpirun', '4')
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
