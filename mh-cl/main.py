@@ -170,7 +170,11 @@ class main(object):
     
     def finishSim(self, folderName):
         os.chdir(self.workingFolder)
-        conv = round(len(self.old_pairs)/int(self.maxBonds), 2)
+        num1 = 0
+        for i in self.old_pairs:
+            num1 += len(i)
+
+        conv = round(num1/int(self.maxBonds), 2)
         move(folderName, '{}-{}'.format(folderName, conv))
         self.old_pairs = []
         self.reInitSys()
@@ -234,8 +238,8 @@ class main(object):
         with open('../bond.txt', 'a') as f1:
 #            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
 #                         num1, self.maxBonds - num1, conv)
-            str1 = 'step {}: {} bonds left. Reach conversion {:.2f}\n'.format(step, 
-                         self.maxBonds - num1, conv)
+            str1 = 'step {}: {} bonds are formed, {} bonds left. Reach conversion {:.2f}\n'.format(step,
+                         len(self.old_pairs[int(step)]), self.maxBonds - num1, conv)
             f1.write(str1)
         
         with open('../bonds_Info{}.txt'.format(step), 'w') as f2:
