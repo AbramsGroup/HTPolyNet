@@ -280,9 +280,17 @@ class searchBonds(object):
 
         tmp = '{},{}'.format(con1, mol2)
         atomsDf.loc[atomsDf['molNum'] == mol1, 'molCon'] = tmp
+        rctNum1 = int(atomsDf.loc[atomsDf['molNum'] == mol1].rctNum.to_list()[0])
+        atomsDf.loc[atomsDf['molNum'] == mol1, 'rctNum'] = str(rctNum1 - 1)
+        if rctNum1 - 1 <= 0:
+            atomsDf.loc[atomsDf['molNum'] == mol1, 'rct'] = 'False'
 
         tmp = '{},{}'.format(con2, mol1)
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
+        rctNum2 = int(atomsDf.loc[atomsDf['molNum'] == mol2].rctNum.to_list()[0])
+        atomsDf.loc[atomsDf['molNum'] == mol2, 'rctNum'] = str(rctNum2 - 1)
+        if rctNum2 - 1 <= 0:
+            atomsDf.loc[atomsDf['molNum'] == mol2, 'rct'] = 'False'
 
     @countTime
     def finalRctPairs(self, df_pairs):
