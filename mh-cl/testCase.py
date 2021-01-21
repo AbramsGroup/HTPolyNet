@@ -78,7 +78,6 @@ class testCase(object):
         topDf.setInfo(a3.sumTop)
         topDf.checkCharge()
         self.top = topDf
-        
         aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
         pairs, rctMols = aa.main()
         return pairs, rctMols, topDf, aa
@@ -120,8 +119,8 @@ if __name__ == "__main__":
     b = a.testReadParam()
     
     pairs, rctMols, topDf, aa = a.testSearchBonds()
-    df_pairs = pairs
-    print('{} bonds will be formed!'.format(len(df_pairs)))
-    b2 = a.testGenBonds(df_pairs, rctMols)
+    # df_pairs = pairs
+    # print('{} bonds will be formed!'.format(len(df_pairs)))
+    # b2 = a.testGenBonds(df_pairs, rctMols)
     #
     # b2.top.outDf('tmp11')

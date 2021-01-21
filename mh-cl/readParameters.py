@@ -19,6 +19,7 @@ class parameters(object):
         self.cutoff = ''
         self.bondsRatio = ''
         self.maxBonds = ''
+        self.HTProcess = ''
         self.rctInfo = ''
     
     def setName(self, name):
@@ -110,7 +111,9 @@ class parameters(object):
                 bondsRatio = line.split('=')[1].strip(' ')
             if 'maxBonds' in line:
                 maxBonds = line.split('=')[1].strip(' ')
-        
+            if 'HTProcess' in line:
+                HTProcess = line.split('=')[1].strip(' ')
+
         rctInfo = []
         for line in baseList: # React Info
             if '+' in line:
@@ -126,4 +129,4 @@ class parameters(object):
         self.bondsRatio = bondsRatio
         self.maxBonds = maxBonds
         self.rctInfo = rctInfo
-        
+        self.HTProcess = HTProcess

@@ -53,29 +53,39 @@ class gro(object):
         self.df_atoms['posX'] = newX
         self.df_atoms['posY'] = newY
         self.df_atoms['posZ'] = newZ
-    
+
+    def getProp(self, molName, atName, infoMap):
+        info = {}
+        for i in infoMap[molName]:
+            if i[0] == atName:
+                info[atName] = [i[1], i[2]] # rctNum & at prop
+        return info
+
     @countTime
     def initRctInfo(self, basicParameters):
         monR_list = basicParameters.monR_list
         croR_list = basicParameters.croR_list
+        infoMap = {**monR_list, **croR_list}
 
         self.df_atoms['rct'] = 'False'
         self.df_atoms['rctNum'] = '0'
+        self.df_atoms['prop'] = 'N'
 
         for i in monR_list.keys():
             atNames = []
             for n in monR_list[i]:
-                atNames.append(n[0])
+                info = self.getProp(i, n[0], infoMap)
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rct'] = 'True'
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctNum'] = int(info[n[0]][0])
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'prop'] = info[n[0]][1]
 
-            self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName.isin(atNames)), 'rct'] = 'True'
-            self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName.isin(atNames)), 'rctNum'] = 1 # TODO: need to change when rctNum is different
-        
         for i in croR_list.keys():
             atNames = []
             for n in croR_list[i]:
-                atNames.append(n[0])
-            self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName.isin(atNames)), 'rct'] = 'True'
-            self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName.isin(atNames)), 'rctNum'] = 1 # TODO: need to change when rctNum is different
+                info = self.getProp(i, n[0], infoMap)
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rct'] = 'True'
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctNum'] = int(info[n[0]][0])
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'prop'] = info[n[0]][1]
 
     def outDf(self, outName):
         df = self.df_atoms

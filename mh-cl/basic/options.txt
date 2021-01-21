@@ -24,6 +24,7 @@ boxSize = 5
 cutoff = 0.5
 bondsRatio = 0.5
 maxBonds = 8
+HTProcess = True
 
 # React Info (always, cro always comes first)
 VEA + VEA + 16.8%

@@ -23,6 +23,7 @@ class searchBonds(object):
         self.boxSize = basicParameters.boxSize  # one dimension box length
         self.maxBonds = basicParameters.maxBonds
         self.rctInfo = basicParameters.rctInfo
+        self.HTProcess = basicParameters.HTProcess
         self.rctMap = self.genRctMap(basicParameters.rctInfo)
         self.generatedBonds = generatedBonds
         self.gro = inGro  # gro object
@@ -125,6 +126,7 @@ class searchBonds(object):
         # Reaction define
         rctMolInfo = self.rctMap[atom.molName]
         rctName = []; rctPct = []
+
         for r in rctMolInfo:
             if r[0] not in rctName:
                 rctName.append(r[0])
@@ -236,7 +238,6 @@ class searchBonds(object):
         atomNames = self.getAllMolNames()
         df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames))]
         df_tmp0 = self.assignAtoms(df_tmp0)
-
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
         # ##### START PARALLEL
         print('start parallel searching!!')
@@ -285,13 +286,24 @@ class searchBonds(object):
         else:
             return True
 
-    def checkAtomsRepeat(self, lst, inAtoms):
+    def checkAtomsRepeat(self, inAtoms, lst):
         for a in inAtoms:
             if a in lst:
                 return False
             else:
                 continue
         return True
+
+    def checkHT(self, at1Idx, at2Idx):
+        atomsDf = self.gro.df_atoms
+        at1Prop = atomsDf.loc[atomsDf.globalIdx == at1Idx].prop.values[0]
+        at2Prop = atomsDf.loc[atomsDf.globalIdx == at2Idx].prop.values[0]
+        # print('at1Prop: ', at1Prop.values[0])
+        # print('at2Prop: ', at2Prop.values[0])
+        if at1Prop == at2Prop:
+            return False
+        else:
+            return True
 
     def updateMolCon(self, atomsDf, a1, a2):
         mol1 = atomsDf[atomsDf.globalIdx == str(a1)].molNum.values[0]
@@ -323,14 +335,15 @@ class searchBonds(object):
 
         for index, row in df_pairs.iterrows():
             if self.checkRepeat(lst, [row.acro, row.amon]):
-                if pcriteria == 1:
-                    k = 1
-                else:
-                    k = float(row.rctP.strip('%'))/100
+                if self.checkHT(row.acro, row.amon):
+                    if pcriteria == 1:
+                        k = 1
+                    else:
+                        k = float(row.rctP.strip('%'))/100
 
-                if float(row.p) > 1 - k:
-                    # lst.append([row.acro, row.amon, random.random(), row.p]);
-                    rowList.append(row)
+                    if float(row.p) > 1 - k:
+                        # lst.append([row.acro, row.amon, random.random(), row.p]);
+                        rowList.append(row)
             else:
                 continue
         df_tmp1 = pd.DataFrame(rowList)
