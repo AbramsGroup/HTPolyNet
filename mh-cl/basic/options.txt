@@ -1,23 +1,23 @@
 # For croslinker 1
-monName1 = VEA
-monNum1 = 4
-mon1R_list = C19, C20, C26, C27  #heavy atom index for monomer reactive atoms
-mon1R_rNum = 1, 1, 1, 1
-mon1R_rct = 1R, 1R, 1R, 1R
+croName1 = VEA
+croNum1 = 4
+cro1R_list = C19, C20, C26, C27  #heavy atom index for monomer reactive atoms
+cro1R_rNum = 1, 1, 1, 1
+cro1R_rct = H, T, H, T
 
 # For croslinker 2
-monName2 = VEB
-monNum2 = 4
-mon2R_list = C22, C23, C44, C45
-mon2R_rNum = 1, 1, 1, 1
-mon2R_rct = 2R, 2R, 2R, 2R
+croName2 = VEB
+croNum2 = 4
+cro2R_list = C22, C23, C44, C45
+cro2R_rNum = 1, 1, 1, 1
+cro2R_rct = H, T, H, T
 
 # For monomer 1
-croName1 = STY
-croNum1 = 16
-cro1R_list = C6, C7
-cro1R_rNum = 1, 1
-cro1R_rct = 1cR, 1cR
+monName1 = STY
+monNum1 = 16
+mon1R_list = C6, C7
+mon1R_rNum = 1, 1
+mon1R_rct = H, T
 
 # Basic Info
 boxSize = 5

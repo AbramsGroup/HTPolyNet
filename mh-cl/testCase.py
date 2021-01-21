@@ -82,6 +82,7 @@ class testCase(object):
         aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
         pairs, rctMols = aa.main()
         return pairs, rctMols, topDf, aa
+        # return aa
 
     @countTime
     def testGenBonds(self, pairs, rctMols):
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     a = testCase()
     # b1 = a.testreadGro()
     # b2 = a.testreadGro('systems/unrctSystem/STY')
-    # b = a.testReadParam()
+    b = a.testReadParam()
     
     pairs, rctMols, topDf, aa = a.testSearchBonds()
     df_pairs = pairs

@@ -11,7 +11,9 @@ from countTime import *
 from multiprocessing import Process, Pool
 from functools import partial
 
+import random
 import sys
+
 class searchBonds(object):
     def __init__(self, basicParameters, generatedBonds, inGro, inTop):
         self.monInfo = basicParameters.monInfo
@@ -21,6 +23,7 @@ class searchBonds(object):
         self.boxSize = basicParameters.boxSize  # one dimension box length
         self.maxBonds = basicParameters.maxBonds
         self.rctInfo = basicParameters.rctInfo
+        self.rctMap = self.genRctMap(basicParameters.rctInfo)
         self.generatedBonds = generatedBonds
         self.gro = inGro  # gro object
         self.top = inTop  # top object
@@ -32,6 +35,25 @@ class searchBonds(object):
         self.maxCellId = []
         self.cellId = []
         self.div_box = []
+
+    def genRctMap(self, rctInfo):
+        rctMap = {}
+        for rct in rctInfo:
+            if rct[0][0] not in rctMap.keys():
+                rctMap[rct[0][0]] = [[rct[1][0], rct[2][0]]]
+            elif rct[0][0] in rctMap.keys():
+                if [rct[1][0], rct[2][0]] not in rctMap[rct[0][0]]:
+                    rctMap[rct[0][0]].append([rct[1][0], rct[2][0]])
+
+            if rct[1][0] not in rctMap.keys():
+                rctMap[rct[1][0]] = [[rct[0][0], rct[2][0]]]
+            elif rct[1][0] in rctMap.keys():
+                if [rct[0][0], rct[2][0]] not in rctMap[rct[1][0]]:
+                    rctMap[rct[1][0]].append([rct[0][0], rct[2][0]])
+            else:
+                print('undecide rctions. Please check!')
+
+        return rctMap
 
     def calDist(self, aPos, bPos, pbc=True):
         boxSize = [self.boxSize, self.boxSize, self.boxSize]
@@ -99,17 +121,21 @@ class searchBonds(object):
         x['dist'] = self.calDist([x0, y0, z0], [x1, y1, z1])
         return x
 
-    def getBestPairs(self, atom, df, boxSize):
-        # df contains all potential atoms within 'atom' neighbor cell
-        df1 = df.apply(lambda x: self.appendDist(x, atom, boxSize), axis=1)
-        df2 = df1.iloc[1:] # remove atoms which connect to itself
-        # df2 = df1.sort_values('dist')
-        # df3 = df2.iloc[1:]
-        for index, row in df2.iterrows():
-            if self.checkConSingleMolecule(atom, row):
-                atomsOut = row
-                break
-        return atomsOut, atomsOut.dist
+    def condFilter(self, atom, atomsDf):
+        # Reaction define
+        rctMolInfo = self.rctMap[atom.molName]
+        rctName = []; rctPct = []
+        for r in rctMolInfo:
+            if r[0] not in rctName:
+                rctName.append(r[0])
+                rctPct.append(r[1])
+
+        tmpDf = atomsDf.loc[atomsDf.molName.isin(rctName)]
+        for i in range(len(rctName)):
+            tmpDf.loc[(tmpDf.molName == rctName[i]), 'rctPct'] = rctPct[i]
+
+        return tmpDf
+
 
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
         # atomsDf contains all atoms
@@ -132,21 +158,22 @@ class searchBonds(object):
         df1 = atomsDf.loc[atomsDf.cellId.isin(cellSum)]
         df2 = df1.loc[df1.rctNum > 0]
 
+        # Using needed condition to filter the atomsDf
+        df2 = self.condFilter(atom, df2)
+
         # obtain the distance between the atoms and distance between atoms and the potential atoms within neighbor cell
         df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
         df3 = df3.iloc[1:] # remove atoms which connect to itself
         pd.to_numeric(df3.dist)
         df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
         df_out1 = []
-        # df_out1, dist = self.getBestPairs(atom, df2, self.boxSize)
-        # if dist > self.cutoff:
-        #     return []
-        # else:
+
         if len(df4) == 0:
             return []
         else:
             for index, row in df4.iterrows():
-                df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum, atom.molCon])
+                df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
+                                atom.molCon, random.random(), row.rctPct])
             return df_out1
 
     @countTime
@@ -210,9 +237,7 @@ class searchBonds(object):
         df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames))]
         df_tmp0 = self.assignAtoms(df_tmp0)
 
-        # add hydrogen filter
-
-        df_tmp = self.checkHydrogen(df_tmp0)
+        df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
         # ##### START PARALLEL
         print('start parallel searching!!')
         p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
@@ -222,7 +247,6 @@ class searchBonds(object):
         p.join()
         parts = pd.concat(results, axis=0)
         # ##### END PARALLEL
-
         # Non-parallel method to search bonds
         # lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
 
@@ -232,11 +256,9 @@ class searchBonds(object):
             if len(ii) == 0:
                 continue
             else:
-                # for idx in ii:
-                #     idx.append(rctPct) #TODO: add rct p here and in the final filter, using p to filter the bonds
                 rctDf.append(ii)
 
-        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon']#, 'p'] #TODO: need to implement this rct probability
+        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon', 'p', 'rctP']
         df = pd.DataFrame(rctDf, columns=names)
         return df
 
@@ -286,16 +308,29 @@ class searchBonds(object):
 
     @countTime
     def finalRctPairs(self, df_pairs):
-        # Sort by distance between potential atoms
-        # df_pairs = df_pairs.sort_values(by=['dist'])
+        '''
+        1. check repeat
+        2. check circuit
+        3. check kinetic ratio
+        '''
         atomsDf = self.gro.df_atoms
         # Remove repeat rows
         lst = [];
         rowList = []
+        pcriteria = 0
+        if len(df_pairs) <= 1:
+            pcriteria = 1
+
         for index, row in df_pairs.iterrows():
             if self.checkRepeat(lst, [row.acro, row.amon]):
-                lst.append([row.acro, row.amon]);
-                rowList.append(row)
+                if pcriteria == 1:
+                    k = 1
+                else:
+                    k = float(row.rctP.strip('%'))/100
+
+                if float(row.p) > 1 - k:
+                    # lst.append([row.acro, row.amon, random.random(), row.p]);
+                    rowList.append(row)
             else:
                 continue
         df_tmp1 = pd.DataFrame(rowList)
@@ -439,5 +474,6 @@ class searchBonds(object):
         print('{} bonds are going to be generated'.format(len(pairs)))
         print('Following bonds will be formed: \n')
         for index, value in pairs.iterrows():
-            print('\t', value.acro, '\t', value.amon)
+            print('\t', value.acro, '\t', value.amon, '\t',
+                  round(value.p, 2), '\t', value.rctP)
         return a1, self.mol
