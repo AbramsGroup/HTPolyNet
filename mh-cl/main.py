@@ -375,10 +375,13 @@ class main(object):
         self.typeFolder = '{}/typeSystem/'.format(self.systemsFolder)
         
         os.chdir(self.unrctFolder)
-        for n in self.molNames:
+        for n in self.molNames: # Need test
             fileName = '{}.mol2'.format(n)
-            a = prepareParam.prepareParam()
-            a.PrepareFile(fileName, n, n)
+            if os.path.isfile('{}.gro'.format(fileName)) and os.path.isfile('{}.top'.format(fileName)):
+                pass
+            else:
+                a = prepareParam.prepareParam()
+                a.PrepareFile(fileName, n, n)
             b = processTop.processTop(n) # process the top file, make it standard
             b.main()
             self.topMap[b.name] = b.top
