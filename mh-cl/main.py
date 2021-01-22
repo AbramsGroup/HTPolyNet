@@ -32,7 +32,8 @@ from copy import deepcopy
 import sys
 
 class main(object):
-    def __init__(self):
+    def __init__(self, cpu):
+        self.cpu = cpu
         self.srcPath = os.getcwd()
         
         self.basicFolder = ''
@@ -140,7 +141,7 @@ class main(object):
         self.initTop = deepcopy(self.top)
         
         # EM and NPT to equilibrate the structure
-        a = md.md('gmx_mpi', 'mpirun', '4')
+        a = md.md('gmx_mpi', 'mpirun', self.cpu)
         a.emSimulation('init', 'init', 'min-1', size=False)
         a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
         i = 0
@@ -307,7 +308,7 @@ class main(object):
                     intDf.to_csv('int-df2.csv')
 
                     # Equilibrate system
-                    a = md.md('gmx_mpi', 'mpirun', '4')
+                    a = md.md('gmx_mpi', 'mpirun', self.cpu)
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
@@ -377,13 +378,14 @@ class main(object):
         os.chdir(self.unrctFolder)
         for n in self.molNames: # Need test
             fileName = '{}.mol2'.format(n)
-            if os.path.isfile('{}.gro'.format(fileName)) and os.path.isfile('{}.top'.format(fileName)):
-                pass
+            if os.path.isfile('{}.gro'.format(n)) and os.path.isfile('{}.top'.format(n)):
+                b = processTop.processTop(n, repeat=True)
+                b.main()
             else:
                 a = prepareParam.prepareParam()
                 a.PrepareFile(fileName, n, n)
-            b = processTop.processTop(n) # process the top file, make it standard
-            b.main()
+                b = processTop.processTop(n) # process the top file, make it standard
+                b.main()
             self.topMap[b.name] = b.top
 
         os.chdir(self.srcPath)
@@ -401,8 +403,8 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
-    a = main() # change name like gmx_cl ....
+    a = main(16) # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(1)
+    a.mainProcess(5)
     
     # TODO: need to check that charge been update as the template. 

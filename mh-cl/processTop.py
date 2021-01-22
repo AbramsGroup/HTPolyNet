@@ -3,9 +3,12 @@ import topInfo
 from shutil import copyfile
 import os
 class processTop(object):
-    def __init__(self, name):
+    def __init__(self, name, repeat=False):
         self.name = name
-        self.topName = '{}.top'.format(name)
+        if repeat:
+            self.topName = '{}.top-bk'.format(name)
+        else:
+            self.topName = '{}.top'.format(name)
         self.itpName = '{}.itp'.format(name)
 
         self.aTypes = ''
