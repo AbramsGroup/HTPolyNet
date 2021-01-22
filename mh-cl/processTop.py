@@ -5,6 +5,7 @@ import os
 class processTop(object):
     def __init__(self, name, repeat=False):
         self.name = name
+        self.repeat = repeat
         if repeat:
             self.topName = '{}.top-bk'.format(name)
         else:
@@ -239,7 +240,9 @@ class processTop(object):
                        self.atoms, self.bonds, self.pairs, self.angles, self.dihs, self.imps, self.dupDihTypeKey]
 
         top0.setInfo(self.sumTop)
-        top0.outDf(self.name)
+        if self.repeat:
+            top0.outDf(self.name)
+
         self.top = top0
 
     def main(self):
