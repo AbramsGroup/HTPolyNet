@@ -143,9 +143,7 @@ class searchBonds(object):
         # atomsDf contains all atoms
         # maxCellId used for pbc condition
         cell0 = atom.cellId
-        # print('cell0: ', cell0)
         maxCellId = self.maxCellId
-        tmpLst = [-1, 0, 1]
         xList = self.getId(cell0[0], maxCellId[0])
         yList = self.getId(cell0[1], maxCellId[1])
         zList = self.getId(cell0[2], maxCellId[2])
@@ -161,12 +159,14 @@ class searchBonds(object):
         df2 = df1.loc[df1.rctNum > 0]
 
         # Using needed condition to filter the atomsDf
+        # Set chemical reaction
         df2 = self.condFilter(atom, df2)
 
         # obtain the distance between the atoms and distance between atoms and the potential atoms within neighbor cell
         df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
         df3 = df3.iloc[1:] # remove atoms which connect to itself
         pd.to_numeric(df3.dist)
+        df3 = df3.sort_values(by='dist')
         df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
         df_out1 = []
 
