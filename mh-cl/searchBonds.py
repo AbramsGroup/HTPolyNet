@@ -483,6 +483,8 @@ class searchBonds(object):
                 self.cutoff += 0.5
                 if self.cutoff > 0.5 * float(self.boxSize):
                     break
+                else:
+                    continue
             pairs = a1
 
         if len(pairs) == 0:

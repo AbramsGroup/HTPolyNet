@@ -283,7 +283,6 @@ class main(object):
                 pairs, rMols, cutoff = sbonds.main()
 
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-                intDf.to_csv('int-df1.csv')
 
                 if len(pairs) > 0:
                     self.old_pairs.append(pairs)
