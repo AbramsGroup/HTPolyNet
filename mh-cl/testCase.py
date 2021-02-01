@@ -79,7 +79,7 @@ class testCase(object):
         topDf.checkCharge()
         self.top = topDf
         aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
-        pairs, rctMols = aa.main()
+        pairs, rctMols, cutoff = aa.main()
         return pairs, rctMols, topDf, aa
         # return aa
 

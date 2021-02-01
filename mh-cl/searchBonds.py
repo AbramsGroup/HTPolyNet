@@ -138,7 +138,6 @@ class searchBonds(object):
 
         return tmpDf
 
-
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
         # atomsDf contains all atoms
         # maxCellId used for pbc condition
@@ -166,8 +165,11 @@ class searchBonds(object):
         df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
         df3 = df3.iloc[1:] # remove atoms which connect to itself
         pd.to_numeric(df3.dist)
-        df3 = df3.sort_values(by='dist')
+        # df3.to_csv('df3.csv')
+        df3.sort_values(by='dist', inplace=True)
+        # df3.to_csv('df3_sorted.csv')
         df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
+        # df4.to_csv('df4.csv')
         df_out1 = []
 
         if len(df4) == 0:
@@ -347,6 +349,7 @@ class searchBonds(object):
             else:
                 continue
         df_tmp1 = pd.DataFrame(rowList)
+        # df_tmp1.to_csv('1st_inter_dataframe.csv')
         # check circuit connection. Molecules cannot connect to the same molecules
         rowList = [];
         atomsList = []
@@ -473,7 +476,9 @@ class searchBonds(object):
                 df_pairs = self.getRctDf()
                 if len(df_pairs) > 0:
                     break
+            # df_pairs.to_csv('1st_bonds_dataframe.csv')
             a1 = self.finalRctPairs(df_pairs)
+            a1.to_csv('generated_bonds_dataframe.csv')
             if len(a1) == 0:
                 self.cutoff += 0.5
                 if self.cutoff > 0.5 * float(self.boxSize):
@@ -489,4 +494,4 @@ class searchBonds(object):
         for index, value in pairs.iterrows():
             print('\t', value.acro, '\t', value.amon, '\t',
                   round(value.p, 2), '\t', value.rctP)
-        return a1, self.mol
+        return a1, self.mol, self.cutoff

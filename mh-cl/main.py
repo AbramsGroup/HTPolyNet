@@ -228,8 +228,8 @@ class main(object):
             maxRct += molNum * tmp
                 
         self.maxBonds = maxRct * 0.5
-    
-    def logBonds(self, step):
+
+    def logBonds(self, step, cutoff):
         num1 = 0
         for i in self.old_pairs:
             num1 += len(i)
@@ -239,8 +239,8 @@ class main(object):
         with open('../bond.txt', 'a') as f1:
 #            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
 #                         num1, self.maxBonds - num1, conv)
-            str1 = 'step {}: {} bonds are formed, {} bonds left. Reach conversion {:.2f}\n'.format(step,
-                         len(self.old_pairs[int(step)]), self.maxBonds - num1, conv)
+            str1 = 'step {}: {} bonds are formed, within cutoff {}A. {} bonds left. Reach conversion {:.2f}\n'.format(step,
+                         len(self.old_pairs[int(step)]), cutoff, self.maxBonds - num1, conv)
             f1.write(str1)
         
         with open('../bonds_Info{}.txt'.format(step), 'w') as f2:
@@ -280,7 +280,7 @@ class main(object):
 
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
-                pairs, rMols = sbonds.main()
+                pairs, rMols, cutoff = sbonds.main()
 
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 intDf.to_csv('int-df1.csv')
@@ -323,7 +323,7 @@ class main(object):
                         step = 0
                         break
                     
-                    self.logBonds(step)
+                    self.logBonds(step, cutoff)
                     # Update coord
                     self.updateCoord('npt-cl')
                     step += 1
@@ -336,6 +336,7 @@ class main(object):
                     self.finishSim(folderName) 
                     step = 0
                     break
+
             self.gro = deepcopy(self.initGro)
             self.top = deepcopy(self.initTop)
 
@@ -403,8 +404,8 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
-    a = main(16) # change name like gmx_cl ....
+    a = main(32) # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(5)
+    a.mainProcess(10)
     
     # TODO: need to check that charge been update as the template. 
