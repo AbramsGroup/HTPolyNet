@@ -476,9 +476,9 @@ class searchBonds(object):
                 df_pairs = self.getRctDf()
                 if len(df_pairs) > 0:
                     break
-            # df_pairs.to_csv('1st_bonds_dataframe.csv')
+            df_pairs.to_csv('all_bonds_within_cutoff.csv')
             a1 = self.finalRctPairs(df_pairs)
-            a1.to_csv('generated_bonds_dataframe.csv')
+            a1.to_csv('final_bonds.csv')
             if len(a1) == 0:
                 self.cutoff += 0.5
                 if self.cutoff > 0.5 * float(self.boxSize):

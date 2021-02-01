@@ -278,6 +278,9 @@ class main(object):
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 intDf.to_csv('int-df0.csv')
 
+                folderName1 = self.setupFolder(step)
+                os.chdir(folderName1)
+
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
                 pairs, rMols, cutoff = sbonds.main()
@@ -288,9 +291,9 @@ class main(object):
                     self.old_pairs.append(pairs)
 #                    print('pairs.amon: ', pairs.amon.values)
 #                    print('pairs.amon.to_string(): ', pairs.amon.to_string())
+
                     self.pairs_detail['step{}'.format(step)] = pairs
-                    folderName1 = self.setupFolder(step)  
-                    os.chdir(folderName1)
+
                     self.gro.outDf('init') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
@@ -304,7 +307,6 @@ class main(object):
                     self.top.outDf(topName)
 
                     intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-                    intDf.to_csv('int-df2.csv')
 
                     # Equilibrate system
                     a = md.md('gmx_mpi', 'mpirun', self.cpu)
