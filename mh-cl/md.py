@@ -124,10 +124,10 @@ class md(object):
                         cmd5 = '{} -np {} {} -deffnm {} -rdd 0.1'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
                         subprocess.call(cmd5, shell=True)
                         if not self.checkMDFinish(outName):
-                            cmd6 = '{} mdrun -deffnm {} -ntomp {}'.format(self.gmx_mpi, outName, int(self.cpu)/2)
+                            cmd6 = '{} mdrun -deffnm {} -ntomp {}'.format(self.gmx_mpi, outName, int(int(self.cpu)/2))
                             subprocess.call(cmd6, shell=True)
                             if not self.checkMDFinish(outName):
-                                cmd7 = '{} mdrun -deffnm {} -rdd 0.5 -ntomp {}'.format(self.gmx_mpi, outName, int(self.cpu)/2)
+                                cmd7 = '{} mdrun -deffnm {} -rdd 0.5 -ntomp {}'.format(self.gmx_mpi, outName, int(int(self.cpu)/2))
                                 subprocess.call(cmd7, shell=True)
                                 if not self.checkMDFinish(outName):
                                     cmd8 = '{} mdrun -deffnm {} -rdd 0.5'.format(self.gmx, outName)
