@@ -336,8 +336,8 @@ class searchBonds(object):
             pcriteria = 1
 
         for index, row in df_pairs.iterrows():
-            if self.checkRepeat(lst, [row.acro, row.amon]):
-                if self.checkHT(row.acro, row.amon):
+            if self.checkHT(row.acro, row.amon):
+                if self.checkRepeat(lst, [row.acro, row.amon]):
                     if pcriteria == 1:
                         k = 1
                     else:
@@ -349,8 +349,6 @@ class searchBonds(object):
             else:
                 continue
         df_tmp1 = pd.DataFrame(rowList)
-        # df_tmp1.to_csv('1st_inter_dataframe.csv')
-        # check circuit connection. Molecules cannot connect to the same molecules
         rowList = [];
         atomsList = []
         for index, row in df_tmp1.iterrows():
