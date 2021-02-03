@@ -393,14 +393,13 @@ class searchBonds(object):
         df_tmp1 = pd.DataFrame(rowList1)
         rowList = [];
         atomsList = []
-
         for index, row in df_tmp1.iterrows():
             if self.checkCircuit(atomsDf, row):
                 if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
-                atomsList.append(row.acro);
-                atomsList.append(row.amon);
-                rowList.append(row)
-                self.updateMolCon(atomsDf, row.acro, row.amon)
+                    atomsList.append(row.acro);
+                    atomsList.append(row.amon);
+                    rowList.append(row)
+                    self.updateMolCon(atomsDf, row.acro, row.amon)
             else:
                 continue
 

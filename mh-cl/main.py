@@ -290,7 +290,6 @@ class main(object):
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
 
                 if len(pairs) > 0:
-                    self.old_pairs.append(pairs)
 #                    print('pairs.amon: ', pairs.amon.values)
 #                    print('pairs.amon.to_string(): ', pairs.amon.to_string())
 
@@ -339,6 +338,7 @@ class main(object):
                     self.finishSim(folderName) 
                     step = 0
                     break
+            self.old_pairs.append(pairs)
 
             self.gro = deepcopy(self.initGro)
             self.top = deepcopy(self.initTop)
