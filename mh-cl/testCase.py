@@ -79,7 +79,7 @@ class testCase(object):
         topDf.checkCharge()
         self.top = topDf
         atomsDf.df_atoms.to_csv('atomsDf.csv')
-        aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
+        aa = searchBonds.searchBonds(a, a1, atomsDf, topDf, 0, 1000)
         pairs, rctMols, cutoff = aa.main()
         return pairs, rctMols, topDf, aa
         # return aa
@@ -115,11 +115,11 @@ class testCase(object):
         
 if __name__ == "__main__":
     a = testCase()
-    # b1 = a.testreadGro()
+    b1 = a.testreadGro()
     # b2 = a.testreadGro('systems/unrctSystem/STY')
     b = a.testReadParam()
     
-    pairs, rctMols, topDf, aa = a.testSearchBonds()
+    # pairs, rctMols, topDf, aa = a.testSearchBonds()
     # df_pairs = pairs
     # print('{} bonds will be formed!'.format(len(df_pairs)))
     # b2 = a.testGenBonds(df_pairs, rctMols)

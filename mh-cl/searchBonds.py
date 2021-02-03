@@ -15,7 +15,7 @@ import random
 import sys
 
 class searchBonds(object):
-    def __init__(self, basicParameters, generatedBonds, inGro, inTop):
+    def __init__(self, basicParameters, generatedBonds, inGro, inTop, conv, desBonds):
         self.monInfo = basicParameters.monInfo
         self.croInfo = basicParameters.croInfo
         self.cutoff = basicParameters.cutoff
@@ -31,6 +31,8 @@ class searchBonds(object):
         self.rctMon = []
         self.rctCro = []
         self.mol = []
+        self.conv = conv
+        self.desBonds = desBonds
 
         # links-cell properties
         self.maxCellId = []
@@ -307,6 +309,17 @@ class searchBonds(object):
         else:
             return True
 
+    def checkKineticRatio(self, pcriteria, row):
+        if pcriteria == 1:
+            k = 1
+        else:
+            k = float(row.rctP.strip('%')) / 100
+
+        if float(row.p) > 1 - k:
+            return True
+        else:
+            return False
+
     def updateMolCon(self, atomsDf, a1, a2):
         mol1 = atomsDf[atomsDf.globalIdx == str(a1)].molNum.values[0]
         mol2 = atomsDf[atomsDf.globalIdx == str(a2)].molNum.values[0]
@@ -320,6 +333,10 @@ class searchBonds(object):
         tmp = '{},{}'.format(con2, mol1)
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
 
+    def setRctP(self, df_pairs):
+        for index, value in df_pairs.iterrows():
+            df_pairs.loc[index, 'p'] = random.random()
+
     @countTime
     def finalRctPairs(self, df_pairs):
         '''
@@ -330,25 +347,47 @@ class searchBonds(object):
         atomsDf = self.gro.df_atoms
         # Remove repeat rows
         lst = [];
-        rowList = []
-        pcriteria = 0
-        if len(df_pairs) <= 1:
-            pcriteria = 1
-
+        rowList0 = []
+        rowList1 = []
         for index, row in df_pairs.iterrows():
             if self.checkHT(row.acro, row.amon):
                 if self.checkRepeat(lst, [row.acro, row.amon]):
-                    if pcriteria == 1:
-                        k = 1
-                    else:
-                        k = float(row.rctP.strip('%'))/100
-
-                    if float(row.p) > 1 - k:
-                        # lst.append([row.acro, row.amon, random.random(), row.p]);
-                        rowList.append(row)
+                    rowList0.append(row)
             else:
                 continue
-        df_tmp1 = pd.DataFrame(rowList)
+
+        df_tmp0 = pd.DataFrame(rowList0)
+        pcriteria = 0
+        if len(df_pairs) <= 2:
+            pcriteria = 1
+
+        cc = 0
+        while(len(rowList1) == 0 and cc < 5):
+            for index, row in df_tmp0.iterrows():
+                if self.checkKineticRatio(pcriteria, row):
+                    rowList1.append(row)
+
+            if self.conv < 0.7:
+                if len(rowList1) < 0.1 * self.desBonds:
+                    self.setRctP(df_tmp0)
+                    rowList = []
+                    cc += 1
+                    continue
+                else:
+                    break
+            elif 0.7 <= self.conv <= 0.9:
+                if len(rowList1) < 0.05 * self.desBonds:
+                    self.setRctP(df_tmp0)
+                    rowList = []
+                    cc += 1
+                    continue
+                else:
+                    break
+
+            else:
+                break
+
+        df_tmp1 = pd.DataFrame(rowList1)
         rowList = [];
         atomsList = []
         for index, row in df_tmp1.iterrows():
@@ -462,28 +501,52 @@ class searchBonds(object):
         df1 = df_atoms.apply(lambda x: self.searchCell(x), axis=1)
         return df1
 
+    def collectBonds(self, count):
+        pairs = []
+        while (len(pairs) == 0):
+            df_pairs = self.getRctDf()
+            if self.conv < 0.7:
+                if len(df_pairs) == 0 or len(df_pairs) < 0.4 * self.desBonds:
+                    self.cutoff += 0.1
+                    if self.cutoff > 0.5 * float(self.boxSize):
+                        break
+                    else:
+                        continue
+                else:
+                    break
+
+            elif 0.7 <= self.conv <= 0.9:
+                if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
+                    self.cutoff += 0.1
+                    if self.cutoff > 0.5 * float(self.boxSize):
+                        break
+                    else:
+                        continue
+                else:
+                    break
+            else:
+                if len(df_pairs) == 0:
+                    self.cutoff += 0.1
+                    if self.cutoff > 0.5 * float(self.boxSize):
+                        break
+                    else:
+                        continue
+                else:
+                    break
+
+        df_pairs.to_csv('all_bonds_within_cutoff.csv')
+        a1 = self.finalRctPairs(df_pairs)
+        a1.to_csv('final_bonds.csv')
+
+        pairs = a1
+        return pairs
+
     @countTime
     def main(self):
-        pairs = [];
-        count = 2
+        count = 5
         parts = 8
-        # print('Generate cells number on one dimension: ', parts)
         self.genCell(parts)
-        while (len(pairs) == 0):
-            for i in range(count):  # max trial times
-                df_pairs = self.getRctDf()
-                if len(df_pairs) > 0:
-                    break
-            df_pairs.to_csv('all_bonds_within_cutoff.csv')
-            a1 = self.finalRctPairs(df_pairs)
-            a1.to_csv('final_bonds.csv')
-            if len(a1) == 0:
-                self.cutoff += 0.5
-                if self.cutoff > 0.5 * float(self.boxSize):
-                    break
-                else:
-                    continue
-            pairs = a1
+        pairs = self.collectBonds(count)
 
         if len(pairs) == 0:
             return [], self.mol
@@ -494,4 +557,4 @@ class searchBonds(object):
         for index, value in pairs.iterrows():
             print('\t', value.acro, '\t', value.amon, '\t',
                   round(value.p, 2), '\t', value.rctP)
-        return a1, self.mol, self.cutoff
+        return pairs, self.mol, self.cutoff

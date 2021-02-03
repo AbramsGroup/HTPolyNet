@@ -56,9 +56,10 @@ class main(object):
         self.old_pairs = []
         self.pairs_detail = {}
         # needed parameters
-        self.cutoff = 0.2
         self.maxBonds = 100
-        
+        self.conv = 0
+        self.desBonds = 0
+
     def setParam(self, name):
         path = '{}/{}'.format(self.basicFolder, name)
         a = readParameters.parameters()
@@ -228,6 +229,7 @@ class main(object):
             maxRct += molNum * tmp
                 
         self.maxBonds = maxRct * 0.5
+        self.desBonds = self.basicParameter.bondsRatio * self.maxBonds
 
     def logBonds(self, step, cutoff):
         num1 = 0
@@ -235,11 +237,12 @@ class main(object):
             num1 += len(i)
 #        num1 = len(self.old_pairs)
         conv = num1/self.maxBonds
-        
+        self.conv = conv
+
         with open('../bond.txt', 'a') as f1:
 #            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
 #                         num1, self.maxBonds - num1, conv)
-            str1 = 'step {}: {} bonds are formed, within cutoff {}A. {} bonds left. Reach conversion {:.2f}\n'.format(step,
+            str1 = 'step {}: {} bonds are formed, within cutoff {}nm. {} bonds left. Reach conversion {:.2f}\n'.format(step,
                          len(self.old_pairs[int(step)]), cutoff, self.maxBonds - num1, conv)
             f1.write(str1)
         
@@ -265,7 +268,6 @@ class main(object):
         # calculate max bonds
         self.calMaxBonds()
         print('maxBonds: ', self.maxBonds)
-#        self.maxBonds = self.basicParameter
         # Start crosslinking approach
         step = 0        
         for i in range(repeatTimes):
@@ -274,7 +276,6 @@ class main(object):
             os.chdir(folderName)
 
             while(len(self.old_pairs) < int(self.maxBonds)):
-
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 intDf.to_csv('int-df0.csv')
 
@@ -282,10 +283,11 @@ class main(object):
                 os.chdir(folderName1)
 
                 # searching potential bonds
-                sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
+                sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top,
+                                                 self.conv, self.desBonds)
                 pairs, rMols, cutoff = sbonds.main()
 
-                intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+                # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
 
                 if len(pairs) > 0:
                     self.old_pairs.append(pairs)
@@ -297,7 +299,7 @@ class main(object):
                     self.gro.outDf('init') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
-                    gbonds.main()
+                    gbonds.main() # update atom's rct status
                     
                     self.gro = gbonds.gro
                     self.top = gbonds.top
