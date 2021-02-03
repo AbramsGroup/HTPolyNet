@@ -229,7 +229,7 @@ class main(object):
             maxRct += molNum * tmp
                 
         self.maxBonds = maxRct * 0.5
-        self.desBonds = self.basicParameter.bondsRatio * self.maxBonds
+        self.desBonds = float(self.basicParameter.bondsRatio) * self.maxBonds
 
     def logBonds(self, step, cutoff):
         num1 = 0
@@ -407,8 +407,9 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
-    a = main(32) # change name like gmx_cl ....
+    a = main(4) # change name like gmx_cl ....
     a.preparePara()
     a.mainProcess(10)
+
     
     # TODO: need to check that charge been update as the template. 

@@ -357,12 +357,16 @@ class searchBonds(object):
                 continue
 
         df_tmp0 = pd.DataFrame(rowList0)
-        pcriteria = 0
-        if len(df_pairs) <= 2:
-            pcriteria = 1
+        df_tmp0.to_csv('all_bonds_within_cutoff.csv')
 
+        print('{} bonds goes to check probability'.format(len(df_tmp0)))
+        pcriteria = 0
+        if len(df_tmp0) <= 2:
+            pcriteria = 1
+        
         cc = 0
         while(len(rowList1) == 0 and cc < 5):
+            print('{} rounds'.format(cc))
             for index, row in df_tmp0.iterrows():
                 if self.checkKineticRatio(pcriteria, row):
                     rowList1.append(row)
@@ -504,6 +508,7 @@ class searchBonds(object):
     def collectBonds(self, count):
         pairs = []
         while (len(pairs) == 0):
+            print('search bonds within cutoff {}nm'.format(self.cutoff))
             df_pairs = self.getRctDf()
             if self.conv < 0.7:
                 if len(df_pairs) == 0 or len(df_pairs) < 0.4 * self.desBonds:
@@ -535,6 +540,7 @@ class searchBonds(object):
                     break
 
         df_pairs.to_csv('all_bonds_within_cutoff.csv')
+        print('Find {} potential bonds within {}nm'.format(len(df_pairs), self.cutoff))
         a1 = self.finalRctPairs(df_pairs)
         a1.to_csv('final_bonds.csv')
 
@@ -549,7 +555,7 @@ class searchBonds(object):
         pairs = self.collectBonds(count)
 
         if len(pairs) == 0:
-            return [], self.mol
+            return [], self.mol, self.cutoff
 
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))
