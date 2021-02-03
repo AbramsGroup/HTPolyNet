@@ -291,8 +291,8 @@ class searchBonds(object):
             return True
 
     def checkAtomsRepeat(self, inAtoms, lst):
-        for a in inAtoms:
-            if a in lst:
+        for a in lst:
+            if a in inAtoms:
                 return False
             else:
                 continue
@@ -394,38 +394,17 @@ class searchBonds(object):
         rowList = [];
         atomsList = []
 
-        # for index, row in df_tmp1.iterrows():
-        #     if self.checkCircuit(atomsDf, row):
-        #         if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
-        #         atomsList.append(row.acro);
-        #         atomsList.append(row.amon);
-        #         rowList.append(row)
-        #         self.updateMolCon(atomsDf, row.acro, row.amon)
-        #     else:
-        #         continue
-        rowList1 = []; rowList2 = []
         for index, row in df_tmp1.iterrows():
             if self.checkCircuit(atomsDf, row):
-                # if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
+                if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
                 atomsList.append(row.acro);
                 atomsList.append(row.amon);
-                rowList1.append(row)
-                # self.updateMolCon(atomsDf, row.acro, row.amon)
-            else:
-                continue
-        df_tmp1 = pd.DataFrame(rowList1)
-        df_tmp1.to_csv('tmp1.csv')
-        for index, row in df_tmp1.iterrows():
-            # if self.checkCircuit(atomsDf, row):
-            if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
-                atomsList.append(row.acro);
-                atomsList.append(row.amon);
-                rowList2.append(row)
-                # self.updateMolCon(atomsDf, row.acro, row.amon)
+                rowList.append(row)
+                self.updateMolCon(atomsDf, row.acro, row.amon)
             else:
                 continue
 
-        df_tmp2 = pd.DataFrame(rowList2)
+        df_tmp2 = pd.DataFrame(rowList)
         df_tmp2.to_csv('tmp2.csv')
         sys.exit()
         return df_tmp2
