@@ -363,10 +363,9 @@ class searchBonds(object):
         pcriteria = 0
         if len(df_tmp0) <= 2:
             pcriteria = 1
-        
+
         cc = 0
         while(len(rowList1) == 0 and cc < 5):
-            print('{} rounds'.format(cc))
             for index, row in df_tmp0.iterrows():
                 if self.checkKineticRatio(pcriteria, row):
                     rowList1.append(row)
@@ -396,11 +395,11 @@ class searchBonds(object):
         atomsList = []
         for index, row in df_tmp1.iterrows():
             if self.checkCircuit(atomsDf, row):
-                if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
-                    atomsList.append(row.acro);
-                    atomsList.append(row.amon);
-                    rowList.append(row)
-                    self.updateMolCon(atomsDf, row.acro, row.amon)
+                # if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
+                atomsList.append(row.acro);
+                atomsList.append(row.amon);
+                rowList.append(row)
+                self.updateMolCon(atomsDf, row.acro, row.amon)
             else:
                 continue
         df_tmp2 = pd.DataFrame(rowList)
@@ -508,7 +507,6 @@ class searchBonds(object):
     def collectBonds(self, count):
         pairs = []
         while (len(pairs) == 0):
-            print('search bonds within cutoff {}nm'.format(self.cutoff))
             df_pairs = self.getRctDf()
             if self.conv < 0.7:
                 if len(df_pairs) == 0 or len(df_pairs) < 0.4 * self.desBonds:
@@ -540,7 +538,6 @@ class searchBonds(object):
                     break
 
         df_pairs.to_csv('all_bonds_within_cutoff.csv')
-        print('Find {} potential bonds within {}nm'.format(len(df_pairs), self.cutoff))
         a1 = self.finalRctPairs(df_pairs)
         a1.to_csv('final_bonds.csv')
 
@@ -555,7 +552,7 @@ class searchBonds(object):
         pairs = self.collectBonds(count)
 
         if len(pairs) == 0:
-            return [], self.mol, self.cutoff
+            return [], self.mol
 
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))
