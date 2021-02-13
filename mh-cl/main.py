@@ -270,7 +270,7 @@ class main(object):
                 return False
 
             cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
-                                    'sw-npt-{}'.format(i), 'sw-npt-{}'.format(i),
+                                    'sw-npt-{}'.format(i), 'npt-cl',
                                     check=False, re=True)
             if cond1 == False:
                 print('NPT failed')
