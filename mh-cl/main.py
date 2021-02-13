@@ -255,7 +255,7 @@ class main(object):
                 for index, row in values.iterrows():
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
 
-    def stepwiseRelax(self, folderName):
+    def stepwiseRelax(self):
         k = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
         outName = 'sw'
         for i in k:
@@ -329,7 +329,11 @@ class main(object):
                     self.top = gbonds.top
                     self.top.checkCharge()
 
-                    self.stepwiseRelax()
+                    cond = self.stepwiseRelax()
+                    if cond == False:
+                        self.finishSim(folderName)
+                        step = 0
+                        break
 
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
