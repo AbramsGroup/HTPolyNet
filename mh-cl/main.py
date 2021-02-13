@@ -254,7 +254,32 @@ class main(object):
                 print('values: ', values)
                 for index, row in values.iterrows():
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
-            
+
+    def stepwiseRelax(self, folderName):
+        k = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
+        outName = 'sw'
+        for i in k:
+            groName = outName
+            topName = '{}-{}'.format(outName, i)
+            self.gro.outDf(groName)
+            self.top.outDf(topName)
+            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
+            if cond0 == False:
+                print('EM failed')
+                return False
+
+            cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
+                                    'sw-npt-{}'.format(i), 'sw-npt-{}'.format(i),
+                                    check=False, re=True)
+            if cond1 == False:
+                print('NPT failed')
+                return False
+
+            self.updateCoord('sw-npt-{}'.format(i))
+
+        return True
+
     def mainProcess(self, repeatTimes):
         if os.path.isdir('results'):
             rmtree('results')
@@ -299,10 +324,13 @@ class main(object):
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
                     gbonds.main() # update atom's rct status
-                    
+
                     self.gro = gbonds.gro
                     self.top = gbonds.top
                     self.top.checkCharge()
+
+                    self.stepwiseRelax()
+
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
                     self.top.outDf(topName)

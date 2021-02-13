@@ -28,6 +28,7 @@ class top(object):
         self.molecules = []
         self.dupDihTypeKey = []
         self.molNum = 0
+        self.k = 1
 
     def __copy__(self):
         cls = self.__class__
@@ -76,16 +77,16 @@ class top(object):
             str1 = '{:>7}{:>7}'.format(x.loc['name'], x.loc['nrexcl'])
         elif keys == 'bTypes':
             str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
-                x.ai, x.aj, x.funct, x.c0, round(float(x.c1), 2))
+                x.ai, x.aj, x.funct, round(float(x.c0) / self.k, 2), round(float(x.c1) * self.k, 2))
         elif keys == 'angTypes':
             str1 = '{:>7}{:>7}{:>7}{:>7} {:>10}{:>11}'.format(
-                x.ai, x.aj, x.ak, x.funct, x.c0, round(float(x.c1), 2))
+                x.ai, x.aj, x.ak, x.funct, x.c0, x.c1)
         elif keys == 'dihTypes':
             if len(x) != 8:
                 str1 = ' '
             else:
                 str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                    x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 2), x.c2)
+                    x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
         elif keys == 'atoms':
             str1 = '{:>5}{:>11}{:>7}{:>7}{:>7}{:>6} {:>11}{:>11}'.format(
                     x.nr, x.type, x.resnr, x.residue, x.atom, x.cgnr, x.charge, x.mass)
@@ -110,7 +111,7 @@ class top(object):
                             x.ai, x.aj, x.ak, x.al, x.funct)
                 else:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 4), x.c2)
+                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
         return str1
     
     def addCharge(self, incharge):
@@ -227,7 +228,8 @@ class top(object):
             for index, row in df.iterrows():
                 f.write('{}\n'.format(row['0']))
         
-    def outDf(self, outName):
+    def outDf(self, outName, k=1):
+        self.k = k
         df_atypes_str = self.atomtypes.apply(lambda x: self.mergeRow(x, keys='aTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_btypes_str = self.bondtypes.apply(lambda x: self.mergeRow(x, keys='bTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_angTypes_str = self.angletypes.apply(lambda x: self.mergeRow(x, keys='angTypes'), axis=1).to_frame().rename(columns={0: '0'})

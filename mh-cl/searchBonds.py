@@ -405,7 +405,6 @@ class searchBonds(object):
 
         df_tmp2 = pd.DataFrame(rowList)
         df_tmp2.to_csv('tmp2.csv')
-        sys.exit()
         return df_tmp2
 
     def idx2Mol(self, pairs):
