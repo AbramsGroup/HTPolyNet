@@ -294,6 +294,7 @@ class main(object):
 
         else:
             os.chdir('results')
+            os.system('rm -rf sim*')
         # Init systems
         self.initSys(ig)
         
