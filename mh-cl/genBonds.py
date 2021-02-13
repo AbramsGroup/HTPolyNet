@@ -71,19 +71,34 @@ class genBonds(object):
         sysTop = self.top
         df_atoms = sysTop.atoms # Top df
         if types == 'bonds':
+            pairs_tmp = []
             for p in pairs:
+                pp = []
                 bt = sysTop.bondtypes
                 pairList = bt.loc[:, ['ai', 'aj']].values.tolist()
+                pp.append(p[0])
+                pp.append(p[1])
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 if [a1Type, a2Type] in pairList or [a2Type, a1Type] in pairList:
-                    continue
+                    if len(bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)]) > 0:
+                        c0 = bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)].c0.values[0]
+                        c1 = bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1)
+                    elif len(bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)]) > 0:
+                        c0 = bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)].c0.values[0]
+                        c1 = bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1)
+                    else:
+                        continue
                 else:
                     key = '{}-{}'.format(a1Type, a2Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
                     param = parameters.dictBond[key]; lst_tmp = [a1Type, a2Type] + param
                     sysTop.addBondTypes(lst_tmp)
-                    
+                    pp += param[1:]
+                pairs_tmp.append(pp)
+            return pairs_tmp
         if types == 'angles':
             for p in pairs:
                 angt = sysTop.angletypes
@@ -258,10 +273,9 @@ class genBonds(object):
             new_angles += nAngles
             new_dihedrals += nDihs
             
-        # TODO: update charge
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
-        self.checkNewTypes(new_bonds, inTop, types='bonds')
+        new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
         self.checkNewTypes(new_angles, inTop, types='angles')
         self.checkNewTypes(new_dihedrals, inTop, types='dih')
 

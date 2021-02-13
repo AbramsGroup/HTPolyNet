@@ -91,8 +91,12 @@ class top(object):
             str1 = '{:>5}{:>11}{:>7}{:>7}{:>7}{:>6} {:>11}{:>11}'.format(
                     x.nr, x.type, x.resnr, x.residue, x.atom, x.cgnr, x.charge, x.mass)
         elif keys == 'bonds':
-            str1 = '{:>7}{:>7}{:>7}'.format(
+            if x.c0 == '':
+                str1 = '{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.funct)
+            else:
+                str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
+                        x.ai, x.aj, x.funct, x.c0, float(x.c1) * self.k)
         elif keys == 'pairs':
             str1 = '{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.funct)
@@ -159,10 +163,13 @@ class top(object):
     @countTime
     def addBonds(self, pairs):
         # cNames = ['ai', 'aj', 'funct']
-        cNames = ['ai', 'aj']
+        cNames = ['ai', 'aj', 'c0', 'c1']
         b_tmp = pd.DataFrame(pairs, columns=cNames)
         b_tmp['funct'] = '1'
+        self.bonds['c0'] = ''
+        self.bonds['c1'] = ''
         self.bonds = pd.concat([self.bonds, b_tmp])
+
         # for p in pairs:
         #     a = p.copy()
         #     a.append('1')
@@ -230,6 +237,11 @@ class top(object):
         
     def outDf(self, outName, k=1, simple=False):
         self.k = k
+        self.bonds.reset_index(drop=True)
+        self.angles.reset_index(drop=True)
+        self.pairs.reset_index(drop=True)
+        self.dihedrals.reset_index(drop=True)
+
         df_atypes_str = self.atomtypes.apply(lambda x: self.mergeRow(x, keys='aTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_btypes_str = self.bondtypes.apply(lambda x: self.mergeRow(x, keys='bTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_angTypes_str = self.angletypes.apply(lambda x: self.mergeRow(x, keys='angTypes'), axis=1).to_frame().rename(columns={0: '0'})
@@ -251,7 +263,7 @@ class top(object):
         # atom, bond, pair, angle, dihedral, system, molecules
         df_lst0 = [df_default, df_itp, df_sys, df_mol]
         str_top_tmp = ['[ defaults ]', '; Include', '[ system ]', '[ molecules ]']
-
+        print('b2: ', df_bonds_str.head())
         if simple:
             df_lst1 = [df_atypes_str, df_btypes_str, df_molType, df_atoms_str, df_bonds_str]
             str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ moleculetype ]', '[ atoms ]', '[ bonds ]']

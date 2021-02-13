@@ -75,6 +75,7 @@ class testCase(object):
         # a3.setName('init-1.top', 'init-1.itp')
 #        a3.setName('systems/VEA.top', 'systems/VEA.itp')
         a3.genTopSession()
+
         topDf.setInfo(a3.sumTop)
         topDf.checkCharge()
         self.top = topDf
@@ -123,5 +124,5 @@ if __name__ == "__main__":
     df_pairs = pairs
     print('{} bonds will be formed!'.format(len(df_pairs)))
     b2 = a.testGenBonds(df_pairs, rctMols)
-
-    b2.top.outDf('tmp11', k=0.1)
+    #
+    b2.top.outDf('tmp11', k=0.01)
