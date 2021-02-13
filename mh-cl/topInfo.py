@@ -250,17 +250,21 @@ class top(object):
         # Top file section: default, atomtype, bondtype, angletype, dihtype, molecular type, 
         # atom, bond, pair, angle, dihedral, system, molecules
         df_lst0 = [df_default, df_itp, df_sys, df_mol]
+        str_top_tmp = ['[ defaults ]', '; Include', '[ system ]', '[ molecules ]']
+
         if simple:
             df_lst1 = [df_atypes_str, df_btypes_str, df_molType, df_atoms_str, df_bonds_str]
+            str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ moleculetype ]', '[ atoms ]', '[ bonds ]']
+
         else:
             df_lst1 = [df_atypes_str, df_btypes_str, df_angTypes_str, df_dihTypes_str, df_impTypes_str, df_molType,
                        df_atoms_str, df_bonds_str, df_pairs_str, df_angles_str, df_dih_str, df_imp_str]
-        
+            str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ angletypes ]', '[ dihedraltypes ]', '[ dihedraltypes ]',
+                           '[ moleculetype ]', '[ atoms ]', '[ bonds ]', '[ pairs ]', '[ angles ]', '[ dihedrals ]',
+                           '[ dihedrals ]',
+                           ]
         df0 = []; df = []
-        str_top_tmp = ['[ defaults ]', '; Include', '[ system ]', '[ molecules ]']
-        str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ angletypes ]', '[ dihedraltypes ]', '[ dihedraltypes ]', 
-                   '[ moleculetype ]', '[ atoms ]', '[ bonds ]', '[ pairs ]', '[ angles ]', '[ dihedrals ]', '[ dihedrals ]', 
-                   ]
+
         for i in range(len(str_top_tmp)):
             s = str_top_tmp[i]
             df_tmp = self.addTopRow(df_lst0[i], s)
