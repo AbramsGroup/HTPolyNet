@@ -108,7 +108,9 @@ class main(object):
             nameList.append(i[1])
         
         self.workingFolder = os.getcwd()
-        os.mkdir('init'); os.chdir('init')
+        if not ig:
+            os.mkdir('init')
+        os.chdir('init')
         copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
 #        copyfile('{}/nvt.mdp'.format(self.mdpFolder), 'nvt-1.mdp')
         copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
