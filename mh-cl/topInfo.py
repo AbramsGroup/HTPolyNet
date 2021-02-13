@@ -77,7 +77,7 @@ class top(object):
             str1 = '{:>7}{:>7}'.format(x.loc['name'], x.loc['nrexcl'])
         elif keys == 'bTypes':
             str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
-                x.ai, x.aj, x.funct, round(float(x.c0) * self.k, 2), round(float(x.c1) * self.k, 2))
+                x.ai, x.aj, x.funct, round(float(x.c0), 2), round(float(x.c1) * self.k, 2))
         elif keys == 'angTypes':
             str1 = '{:>7}{:>7}{:>7}{:>7} {:>10}{:>11}'.format(
                 x.ai, x.aj, x.ak, x.funct, x.c0, x.c1)
