@@ -93,7 +93,7 @@ class main(object):
         self.gro.updateCoord(a1)
         self.initGro = self.gro
         
-    def initSys(self):
+    def initSys(self, ig=False):
         param = self.basicParameter
         molInfo = {}
         nameList = []
@@ -140,24 +140,25 @@ class main(object):
         sysTop = topSum.outDf('init')
         self.top = topSum
         self.initTop = deepcopy(self.top)
-        
-        # EM and NPT to equilibrate the structure
-        a = md.md('gmx_mpi', 'mpirun', self.cpu)
-        a.emSimulation('init', 'init', 'min-1', size=False)
-        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
-        i = 0
-        while(not a.checkMDFinish('npt-init')):
-            if i > 5:
-                print('Still cannot converge NPT system, restart')
-                sys.exit()
-            elif i == 0:
-                inName = 'npt-init'
-            else:
-                inName = 'npt-init' + str(i)
-            a.extraRun(inName, 'init', i)
-            if os.path.isfile('npt.gro'):
-                move('npt.gro', 'npt-init.gro')
-            i += 1
+
+        if not ig:
+            # EM and NPT to equilibrate the structure
+            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            a.emSimulation('init', 'init', 'min-1', size=False)
+            a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+            i = 0
+            while(not a.checkMDFinish('npt-init')):
+                if i > 5:
+                    print('Still cannot converge NPT system, restart')
+                    sys.exit()
+                elif i == 0:
+                    inName = 'npt-init'
+                else:
+                    inName = 'npt-init' + str(i)
+                a.extraRun(inName, 'init', i)
+                if os.path.isfile('npt.gro'):
+                    move('npt.gro', 'npt-init.gro')
+                i += 1
 
 #        a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
         
@@ -280,15 +281,19 @@ class main(object):
 
         return True
 
-    def mainProcess(self, repeatTimes):
-        if os.path.isdir('results'):
-            rmtree('results')
+    def mainProcess(self, repeatTimes, ig=False):
+        # ig is the key to do the test. if ig == True, won't create the init system
+        if not ig:
+            if os.path.isdir('results'):
+                rmtree('results')
+            else:
+                pass
+            os.mkdir('results'); os.chdir('results')
+
         else:
-            pass
-        os.mkdir('results'); os.chdir('results')  
-        
+            os.chdir('results')
         # Init systems
-        self.initSys()
+        self.initSys(ig)
         
         # calculate max bonds
         self.calMaxBonds()
@@ -357,7 +362,6 @@ class main(object):
                         step = 0
                         break
                     
-                    self.logBonds(step, cutoff)
                     # Update coord
                     self.updateCoord('npt-cl')
                     step += 1
@@ -371,6 +375,7 @@ class main(object):
                     step = 0
                     break
             self.old_pairs.append(pairs)
+            self.logBonds(step, cutoff)
 
             self.gro = deepcopy(self.initGro)
             self.top = deepcopy(self.initTop)
@@ -441,7 +446,7 @@ class main(object):
 if __name__ == '__main__':
     a = main(4) # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(2)
+    a.mainProcess(2, ig=True)
 
     
     # TODO: need to check that charge been update as the template. 
