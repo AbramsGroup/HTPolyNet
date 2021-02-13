@@ -258,11 +258,11 @@ class main(object):
     def stepwiseRelax(self):
         k = [0.1, 0.3, 0.5, 0.7, 0.9, 1]
         outName = 'sw'
-        for i in k:
+        for i in range(len(k)):
             groName = outName
             topName = '{}-{}'.format(outName, i)
             self.gro.outDf(groName)
-            self.top.outDf(topName)
+            self.top.outDf(topName, k[i], simple=True)
             a = md.md('gmx_mpi', 'mpirun', self.cpu)
             cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
             if cond0 == False:

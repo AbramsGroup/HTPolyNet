@@ -228,7 +228,7 @@ class top(object):
             for index, row in df.iterrows():
                 f.write('{}\n'.format(row['0']))
         
-    def outDf(self, outName, k=1):
+    def outDf(self, outName, k=1, simple=False):
         self.k = k
         df_atypes_str = self.atomtypes.apply(lambda x: self.mergeRow(x, keys='aTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_btypes_str = self.bondtypes.apply(lambda x: self.mergeRow(x, keys='bTypes'), axis=1).to_frame().rename(columns={0: '0'})
@@ -250,8 +250,11 @@ class top(object):
         # Top file section: default, atomtype, bondtype, angletype, dihtype, molecular type, 
         # atom, bond, pair, angle, dihedral, system, molecules
         df_lst0 = [df_default, df_itp, df_sys, df_mol]
-        df_lst1 = [df_atypes_str, df_btypes_str, df_angTypes_str, df_dihTypes_str, df_impTypes_str, df_molType,
-                   df_atoms_str, df_bonds_str, df_pairs_str, df_angles_str, df_dih_str, df_imp_str]
+        if simple:
+            df_lst1 = [df_atypes_str, df_btypes_str, df_molType, df_atoms_str, df_bonds_str]
+        else:
+            df_lst1 = [df_atypes_str, df_btypes_str, df_angTypes_str, df_dihTypes_str, df_impTypes_str, df_molType,
+                       df_atoms_str, df_bonds_str, df_pairs_str, df_angles_str, df_dih_str, df_imp_str]
         
         df0 = []; df = []
         str_top_tmp = ['[ defaults ]', '; Include', '[ system ]', '[ molecules ]']
