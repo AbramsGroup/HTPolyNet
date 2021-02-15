@@ -553,7 +553,7 @@ class searchBonds(object):
         pairs = self.collectBonds(count)
 
         if len(pairs) == 0:
-            return [], self.mol
+            return [], self.mol, self.cutoff
 
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))

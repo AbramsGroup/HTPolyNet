@@ -537,4 +537,4 @@ class genBonds(object):
         self.delHydrogen()
         self.addNewCon()
         self.updateIdx()
-        # self.updateCharge()
+        self.updateCharge()
