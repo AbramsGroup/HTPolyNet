@@ -213,6 +213,7 @@ class main(object):
         os.mkdir('step{}'.format(idx))
         copyfile('{}/em.mdp'.format(self.mdpFolder), '{}/em.mdp'.format('step{}'.format(idx)))
         copyfile('{}/npt-cl.mdp'.format(self.mdpFolder), '{}/npt-cl.mdp'.format('step{}'.format(idx)))
+        copyfile('{}/npt-sw.mdp'.format(self.mdpFolder), '{}/npt-sw.mdp'.format('step{}'.format(idx)))
         return 'step{}'.format(idx)
     
     def calMaxBonds(self):
