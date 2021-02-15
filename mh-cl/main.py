@@ -265,7 +265,7 @@ class main(object):
             groName = outName
             topName = '{}-{}'.format(outName, i)
             self.gro.outDf(groName)
-            self.top.outDf(topName, k[i], simple=True)
+            self.top.outDf(topName, k[i], simple=True, stepRelax=True)
             a = md.md('gmx_mpi', 'mpirun', self.cpu)
             cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
             if cond0 == False:

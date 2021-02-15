@@ -29,6 +29,7 @@ class top(object):
         self.dupDihTypeKey = []
         self.molNum = 0
         self.k = 1
+        self.stepRelax = False
 
     def __copy__(self):
         cls = self.__class__
@@ -91,12 +92,17 @@ class top(object):
             str1 = '{:>5}{:>11}{:>7}{:>7}{:>7}{:>6} {:>11}{:>11}'.format(
                     x.nr, x.type, x.resnr, x.residue, x.atom, x.cgnr, x.charge, x.mass)
         elif keys == 'bonds':
-            if x.c0 == '':
+            if self.stepRelax:
+                if x.c0 == '':
+                    str1 = '{:>7}{:>7}{:>7}'.format(
+                        x.ai, x.aj, x.funct)
+                else:
+                    str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
+                            x.ai, x.aj, x.funct, x.c0, float(x.c1) * self.k)
+            else:
                 str1 = '{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.funct)
-            else:
-                str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
-                        x.ai, x.aj, x.funct, x.c0, float(x.c1) * self.k)
+
         elif keys == 'pairs':
             str1 = '{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.funct)
@@ -235,8 +241,9 @@ class top(object):
             for index, row in df.iterrows():
                 f.write('{}\n'.format(row['0']))
         
-    def outDf(self, outName, k=1, simple=False):
+    def outDf(self, outName, k=1, simple=False, stepRelax=False):
         self.k = k
+        self.stepRelax = stepRelax
         self.bonds.reset_index(drop=True)
         self.angles.reset_index(drop=True)
         self.pairs.reset_index(drop=True)
