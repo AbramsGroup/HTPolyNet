@@ -370,6 +370,7 @@ class main(object):
                     self.updateCoord('npt-cl')
                     step += 1
                     os.chdir('..')
+                    self.old_pairs.append(pairs)
                     self.logBonds(step, cutoff)
 
                     if len(self.old_pairs) > 0.95 * int(self.maxBonds):
@@ -380,7 +381,6 @@ class main(object):
                     self.finishSim(folderName) 
                     step = 0
                     break
-            self.old_pairs.append(pairs)
 
             self.gro = deepcopy(self.initGro)
             self.top = deepcopy(self.initTop)
