@@ -369,9 +369,9 @@ class main(object):
                     # Update coord
                     self.updateCoord('npt-cl')
                     self.old_pairs.append(pairs)
-                    step += 1
                     os.chdir('..')
                     self.logBonds(step, cutoff)
+                    step += 1
 
                     if len(self.old_pairs) > 0.95 * int(self.maxBonds):
                         self.finishSim(folderName)
