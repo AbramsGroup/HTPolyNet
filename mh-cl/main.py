@@ -265,7 +265,7 @@ class main(object):
             groName = outName
             topName = '{}-{}'.format(outName, i)
             self.gro.outDf(groName)
-            self.top.outDf(topName, k[i], simple=True, stepRelax=True)
+            self.top.outDf(topName, k[i], simple=False, stepRelax=True)
             a = md.md('gmx_mpi', 'mpirun', self.cpu)
             cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
             if cond0 == False:
@@ -273,7 +273,7 @@ class main(object):
                 return False
 
             cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
-                                    'sw-npt-{}'.format(i), 'npt-cl',
+                                    'sw-npt-{}'.format(i), 'npt-sw',
                                     check=False, re=True)
             if cond1 == False:
                 print('NPT failed')
@@ -369,6 +369,8 @@ class main(object):
                     self.updateCoord('npt-cl')
                     step += 1
                     os.chdir('..')
+                    self.logBonds(step, cutoff)
+
                     if len(self.old_pairs) > 0.95 * int(self.maxBonds):
                         self.finishSim(folderName)
                         step = 0
@@ -378,7 +380,6 @@ class main(object):
                     step = 0
                     break
             self.old_pairs.append(pairs)
-            self.logBonds(step, cutoff)
 
             self.gro = deepcopy(self.initGro)
             self.top = deepcopy(self.initTop)
@@ -449,7 +450,7 @@ class main(object):
 if __name__ == '__main__':
     a = main(4) # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(2, ig=True)
+    a.mainProcess(2, ig=False)
 
     
     # TODO: need to check that charge been update as the template. 
