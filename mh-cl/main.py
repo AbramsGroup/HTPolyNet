@@ -260,7 +260,7 @@ class main(object):
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
 
     def stepwiseRelax(self):
-        k = [0.001, 0.01, 0.1, 1]
+        k = [0.001, 1]
         outName = 'sw'
         for i in range(len(k)):
             groName = outName
@@ -368,9 +368,9 @@ class main(object):
                     
                     # Update coord
                     self.updateCoord('npt-cl')
+                    self.old_pairs.append(pairs)
                     step += 1
                     os.chdir('..')
-                    self.old_pairs.append(pairs)
                     self.logBonds(step, cutoff)
 
                     if len(self.old_pairs) > 0.95 * int(self.maxBonds):
