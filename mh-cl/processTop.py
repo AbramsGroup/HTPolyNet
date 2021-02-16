@@ -240,8 +240,8 @@ class processTop(object):
                        self.atoms, self.bonds, self.pairs, self.angles, self.dihs, self.imps, self.dupDihTypeKey]
 
         top0.setInfo(self.sumTop)
-        if self.repeat:
-            top0.outDf(self.name)
+        # if self.repeat:
+        top0.outDf(self.name)
 
         self.top = top0
 

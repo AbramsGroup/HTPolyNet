@@ -299,15 +299,18 @@ class searchBonds(object):
         return True
 
     def checkHT(self, at1Idx, at2Idx):
-        atomsDf = self.gro.df_atoms
-        at1Prop = atomsDf.loc[atomsDf.globalIdx == at1Idx].prop.values[0]
-        at2Prop = atomsDf.loc[atomsDf.globalIdx == at2Idx].prop.values[0]
-        # print('at1Prop: ', at1Prop.values[0])
-        # print('at2Prop: ', at2Prop.values[0])
-        if at1Prop == at2Prop:
-            return False
-        else:
+        if self.HTProcess == 'False':
             return True
+        else:
+            atomsDf = self.gro.df_atoms
+            at1Prop = atomsDf.loc[atomsDf.globalIdx == at1Idx].prop.values[0]
+            at2Prop = atomsDf.loc[atomsDf.globalIdx == at2Idx].prop.values[0]
+            # print('at1Prop: ', at1Prop.values[0])
+            # print('at2Prop: ', at2Prop.values[0])
+            if at1Prop == at2Prop:
+                return False
+            else:
+                return True
 
     def checkKineticRatio(self, pcriteria, row):
         if pcriteria == 1:
