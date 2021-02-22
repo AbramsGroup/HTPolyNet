@@ -97,7 +97,7 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
                 else:
-                    dist = float(x.c0) + (float(x.dist) - float(x.c0)) * self.k
+                    dist = float(x.c0) + (float(x.dist) - float(x.c0)) * (1 - self.k)
                     str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
                             x.ai, x.aj, x.funct, round(dist, 2), float(x.c1) * self.k)
             else:
