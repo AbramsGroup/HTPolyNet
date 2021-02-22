@@ -78,17 +78,20 @@ class genBonds(object):
                 pairList = bt.loc[:, ['ai', 'aj']].values.tolist()
                 pp.append(p[0])
                 pp.append(p[1])
+                pp.append('1') # func value
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 if [a1Type, a2Type] in pairList or [a2Type, a1Type] in pairList:
                     if len(bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)]) > 0:
                         c0 = bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)].c0.values[0]
                         c1 = bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)].c1.values[0]
-                        pp.append(c0); pp.append(c1)
+                        pp.append(c0); pp.append(c1); pp.append('1')
+                        pp.append(p[2]) # dist
                     elif len(bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)]) > 0:
                         c0 = bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)].c0.values[0]
                         c1 = bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)].c1.values[0]
-                        pp.append(c0); pp.append(c1)
+                        pp.append(c0); pp.append(c1); pp.append('1') # 1 stands for new bonds
+                        pp.append(p[2])
                     else:
                         continue
                 else:
@@ -100,24 +103,48 @@ class genBonds(object):
                 pairs_tmp.append(pp)
             return pairs_tmp
         if types == 'angles':
+            pairs_tmp = []
             for p in pairs:
+                pp = []
                 angt = sysTop.angletypes
                 pairList = angt.loc[:, ['ai', 'aj', 'ak']].values.tolist()
+                pp.append(p[0])
+                pp.append(p[1])
+                pp.append(p[2])
+                pp.append('1') # func value
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 a3Type = self.idx2Atypes(p[2], df_atoms)
                 if [a1Type, a2Type, a3Type] in pairList or [a3Type, a2Type, a1Type] in pairList:
-                    continue            
+                    if len(angt.loc[(angt.ai == a1Type) & (angt.aj == a2Type) & (angt.ak == a3Type)]) > 0:
+                        c0 = angt.loc[(angt.ai == a1Type) & (angt.aj == a2Type) & (angt.ak == a3Type)].c0.values[0]
+                        c1 = angt.loc[(angt.ai == a1Type) & (angt.aj == a2Type) & (angt.ak == a3Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('1')
+                    elif len(angt.loc[(angt.ai == a3Type) & (angt.aj == a2Type) & (angt.ak == a1Type)]) > 0:
+                        c0 = angt.loc[(angt.ai == a3Type) & (angt.aj == a2Type) & (angt.ak == a1Type)].c0.values[0]
+                        c1 = angt.loc[(angt.ai == a3Type) & (angt.aj == a2Type) & (angt.ak == a1Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('1')
+                    else:
+                        continue
                 else:
                     key = '{}-{}-{}'.format(a1Type, a2Type, a3Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
                     param = parameters.dictAngle[key]; lst_tmp = [a1Type, a2Type, a3Type] + param
                     sysTop.addAngleTypes(lst_tmp)
-        
+                pairs_tmp.append(pp)
+            return pairs_tmp
+
         if types == 'dih':
+            pairs_tmp = []
             for p in pairs:
+                pp = []
                 diht = sysTop.dihtypes
                 pairList = diht.loc[:, ['ai', 'aj', 'ak', 'al']].values.tolist()
+                pp.append(p[0])
+                pp.append(p[1])
+                pp.append(p[2])
+                pp.append(p[3])
+                pp.append('1') # func value '1' proper, '9', multiple proper dih
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 a3Type = self.idx2Atypes(p[2], df_atoms)
@@ -125,7 +152,22 @@ class genBonds(object):
                 key1 =  '{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
                 key2 =  '{}-{}-{}-{}'.format(a4Type, a3Type, a2Type, a1Type)
                 if [a1Type, a2Type, a3Type, a4Type] in pairList or [a4Type, a3Type, a2Type, a1Type] in pairList:
-                    continue
+                    if len(diht.loc[(diht.ai == a1Type) & (diht.aj == a2Type) &
+                                    (diht.ak == a3Type) & (diht.al == a4Type)]) > 0:
+                        c0 = diht.loc[(diht.ai == a1Type) & (diht.aj == a2Type) &
+                                      (diht.ak == a3Type) & (diht.al == a4Type)].c0.values[0]
+                        c1 = diht.loc[(diht.ai == a1Type) & (diht.aj == a2Type) &
+                                      (diht.ak == a3Type) & (diht.al == a4Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('2'); pp.append('1')
+                    elif len(diht.loc[(diht.ai == a4Type) & (diht.aj == a3Type) &
+                                      (diht.ak == a2Type) & (diht.al == a1Type)]) > 0:
+                        c0 = diht.loc[(diht.ai == a4Type) & (diht.aj == a3Type) &
+                                      (diht.ak == a2Type) & (diht.al == a1Type)].c0.values[0]
+                        c1 = diht.loc[(diht.ai == a4Type) & (diht.aj == a3Type) &
+                                      (diht.ak == a2Type) & (diht.al == a1Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('2'); pp.append('1')
+                    else:
+                        continue
                 else:
                     if key1 in parameters.dictDihedral.keys():
                         param = parameters.dictDihedral[key1]
@@ -137,6 +179,8 @@ class genBonds(object):
                         sysTop.addDihTypes(lst_tmp)
                     else:
                         sys.exit('Unknown dihedral type{}, need to find param for the pair'.format(key1))
+                pairs_tmp.append(pp)
+            return pairs_tmp
 
     @countTime
     def delHydrogen(self):
@@ -150,7 +194,7 @@ class genBonds(object):
         '''
         pairs = []
         for index, row in self.pairs.iterrows():
-            pairs.append([row.acro, row.amon])
+            pairs.append([row.acro, row.amon, row.dist])
 #        pairs = self.pairs
         self.genPairs = pairs
         atomsDf = self.gro.df_atoms
@@ -216,7 +260,7 @@ class genBonds(object):
     def genNewCon(self, pair, df_bonds): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
-        new_bonds.append([a1, a2])
+        new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
         con1 = self.searchCon(a1, df_bonds); con2 = self.searchCon(a2, df_bonds)
         for a in con1:
             a = str(a)
@@ -228,12 +272,12 @@ class genBonds(object):
                     aa = str(aa)
                     if aa != a1: # sth wrong with this
                         new_dihedrals.append([aa, a, a1, a2])
-                        new_pairs.append([aa, a2])
+                        new_pairs.append([aa, a2, '1', '1']) # stands for new pairs
                 for aa in con4:
                     aa = str(aa)
                     if aa != a1:
                         new_dihedrals.append([a, a1, a2, aa])
-                        new_pairs.append([a, aa])
+                        new_pairs.append([a, aa, '1', '1'])
         for a in con2:
             a = str(a)
             if a != 1:#row.acro:
@@ -244,13 +288,13 @@ class genBonds(object):
                     if aa != a2:
                         if [aa, a1, a2, a] not in new_dihedrals:
                             new_dihedrals.append([aa, a1, a2, a])
-                            new_pairs.append([aa, a])
+                            new_pairs.append([aa, a, '1', '1'])
                 for aa in con4:
                     aa = str(aa)
                     if aa != a2:
                         if [a1, a2, a, aa] not in new_dihedrals:
                             new_dihedrals.append([a1, a2, a, aa])
-                            new_pairs.append([a1, aa])
+                            new_pairs.append([a1, aa, '1', '1'])
                             
         return new_bonds, new_pairs, new_angles, new_dihedrals
 
@@ -276,8 +320,8 @@ class genBonds(object):
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
-        self.checkNewTypes(new_angles, inTop, types='angles')
-        self.checkNewTypes(new_dihedrals, inTop, types='dih')
+        new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
+        new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
 
         inTop.atoms = df_atoms
         inTop.bonds = df_bonds

@@ -27,9 +27,9 @@ maxBonds = 8
 HTProcess = True
 
 # React Info (always, cro always comes first)
-VEA + VEA + 16.8%
-VEA + VEB + 16.8%
-STY + STY + 16.2%
-STY + VEA + 67.2%
-STY + VEB + 67.2%
+VEA + VEA + 100.0%
+VEA + VEB + 100.0%
+STY + STY + 100.0%
+STY + VEA + 100.0%
+STY + VEB + 100.0%
 

@@ -178,6 +178,7 @@ class searchBonds(object):
             print('No pairs found')
             return [[]]
         else:
+            print('Pairs found')
             for index, row in df4.iterrows():
                 df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
                                 atom.molCon, random.random(), row.rctPct])
