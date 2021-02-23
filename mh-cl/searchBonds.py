@@ -538,7 +538,8 @@ class searchBonds(object):
     def collectBonds(self, count):
         pairs = []
         a1 = []
-        while len(pairs) == 0:
+        count = 0
+        while (len(pairs) == 0 and count < 10):
             while (len(pairs) == 0):
                 df_pairs = self.getRctDf()
                 df_pairs.to_csv('all_bonds_within_cutoff.csv')
@@ -575,6 +576,9 @@ class searchBonds(object):
 
             df_pairs = self.finalRctPairs(df_pairs)  # TODO: update mol connection should not be here
             pairs = df_pairs
+            count += 1
+            if len(pairs) == 0:
+                self.cutoff += 0.2
         return pairs
 
     @countTime
@@ -584,7 +588,7 @@ class searchBonds(object):
         self.genCell(parts)
         pairs = self.collectBonds(count)
         if len(pairs) == 0:
-            return [], self.mol, self.cutoff
+            return pairs, self.mol, self.cutoff
 
         print('pairs: ', pairs)
         self.idx2Mol(pairs)
