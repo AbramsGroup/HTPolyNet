@@ -206,6 +206,8 @@ class searchBonds(object):
 
     def openList(self, inList):
         out = []
+        print('inList type: ', type(inList))
+        print('inList: ', inList)
         for i in inList:
             if i == []:
                 continue
@@ -257,9 +259,19 @@ class searchBonds(object):
         print('start parallel searching!!')
         p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
         dfSplit = np.array_split(df_tmp, 4)
+        print('df_tmp: ', df_tmp.head())
         results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
         p.close()
         p.join()
+        tmpLst = []
+        for l in results:
+            print('l type: ', type(l))
+            print('l: ', l)
+            if l.empty:
+                tmpLst.append(pd.Series(dtype=object))
+            else:
+                tmpLst.append(l)
+
         parts = pd.concat(results, axis=0)
         # ##### END PARALLEL
         # Non-parallel method to search bonds

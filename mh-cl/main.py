@@ -248,7 +248,7 @@ class main(object):
 #            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
 #                         num1, self.maxBonds - num1, conv)
             str1 = 'step {}: {} bonds are formed, within cutoff {}nm. {} bonds left. Reach conversion {:.2f}\n'.format(step,
-                         len(self.old_pairs[int(step)]), cutoff, self.maxBonds - num1, conv)
+                         len(self.old_pairs[int(step)]), round(cutoff, 2), self.maxBonds - num1, conv)
             f1.write(str1)
         
         with open('../bonds_Info{}.txt'.format(step), 'w') as f2:
@@ -452,7 +452,7 @@ class main(object):
 if __name__ == '__main__':
     a = main(4) # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(2, ig=False)
+    a.mainProcess(1, ig=False)
 
     
     # TODO: need to check that charge been update as the template. 
