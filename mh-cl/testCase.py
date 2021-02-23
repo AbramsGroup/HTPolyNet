@@ -65,7 +65,7 @@ class testCase(object):
         a2.setName('init')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
-        boxSize = [15.00000, 15.00000, 15.00000] # TODO: remove latter
+        boxSize = [5.00000, 5.00000, 5.00000] # TODO: remove latter
         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
         atomsDf.initRctInfo(a)
         self.gro = atomsDf
@@ -80,7 +80,7 @@ class testCase(object):
         topDf.checkCharge()
         self.top = topDf
         atomsDf.df_atoms.to_csv('atomsDf.csv')
-        aa = searchBonds.searchBonds(a, a1, atomsDf, topDf, 0, 1000)
+        aa = searchBonds.searchBonds(a, a1, atomsDf, topDf, 0, 20)
         pairs, rctMols, cutoff = aa.main()
         return pairs, rctMols, topDf, aa
         # return aa
@@ -121,9 +121,9 @@ if __name__ == "__main__":
     b = a.testReadParam()
     
     pairs, rctMols, topDf, aa = a.testSearchBonds()
-    df_pairs = pairs
-    print('{} bonds will be formed!'.format(len(df_pairs)))
-
-    b2 = a.testGenBonds(df_pairs, rctMols)
+    # df_pairs = pairs
+    # print('{} bonds will be formed!'.format(len(df_pairs)))
     #
-    a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)
+    # b2 = a.testGenBonds(df_pairs, rctMols)
+    # #
+    # a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)

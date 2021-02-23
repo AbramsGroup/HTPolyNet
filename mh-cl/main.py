@@ -47,6 +47,7 @@ class main(object):
         self.topMap = {}
         self.initGro = ''
         self.initTop = ''
+        self.dumpPairs = {} # pair map when check circuit
 
         self.basicParameter = ''
         self.molNames = []
@@ -260,7 +261,7 @@ class main(object):
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
 
     def stepwiseRelax(self):
-        k = [0.001, 1]
+        k = [0.001, 0.01, 0.1, 1]
         outName = 'sw'
         for i in range(len(k)):
             groName = outName
@@ -319,8 +320,7 @@ class main(object):
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top,
                                                  self.conv, self.desBonds)
-                pairs, rMols, cutoff = sbonds.main()
-
+                pairs, rMols, cutoff, dumpPairs = sbonds.main()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
 
                 if len(pairs) > 0:

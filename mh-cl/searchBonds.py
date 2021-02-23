@@ -33,6 +33,7 @@ class searchBonds(object):
         self.mol = []
         self.conv = conv
         self.desBonds = desBonds
+        self.dumpPairs = {}
 
         # links-cell properties
         self.maxCellId = []
@@ -125,6 +126,12 @@ class searchBonds(object):
         return x
 
     def condFilter(self, atom, atomsDf):
+        # dump pairs define, filter short circuit
+        try:
+            dumpList = self.dumpPairs[atom.globalIdx]
+        except:
+            dumpList = []
+        df1 = atomsDf.loc[~atomsDf.molNum.isin(dumpList)]
         # Reaction define
         rctMolInfo = self.rctMap[atom.molName]
         rctName = []; rctPct = []
@@ -134,7 +141,7 @@ class searchBonds(object):
                 rctName.append(r[0])
                 rctPct.append(r[1])
 
-        tmpDf = atomsDf.loc[atomsDf.molName.isin(rctName)]
+        tmpDf = atomsDf.loc[df1.molName.isin(rctName)]
         for i in range(len(rctName)):
             tmpDf.loc[(tmpDf.molName == rctName[i]), 'rctPct'] = rctPct[i]
 
@@ -157,6 +164,7 @@ class searchBonds(object):
                     cellSum.append(id)
 
         df1 = atomsDf.loc[atomsDf.cellId.isin(cellSum)]
+        df1.to_csv('df1.csv')
         df2 = df1.loc[df1.rctNum > 0]
 
         # Using needed condition to filter the atomsDf
@@ -167,11 +175,11 @@ class searchBonds(object):
         df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
         df3 = df3.iloc[1:] # remove atoms which connect to itself
         pd.to_numeric(df3.dist)
-        # df3.to_csv('df3.csv')
         df3.sort_values(by='dist', inplace=True)
-        # df3.to_csv('df3_sorted.csv')
+        df3.to_csv('df3_sorted.csv')
+        print('cutoff: ', self.cutoff)
         df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
-        # df4.to_csv('df4.csv')
+        df4.to_csv('df4.csv')
         df_out1 = []
 
         if len(df4) == 0:
@@ -255,7 +263,7 @@ class searchBonds(object):
         parts = pd.concat(results, axis=0)
         # ##### END PARALLEL
         # Non-parallel method to search bonds
-        # lst_tmp = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
+        # parts = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
 
         lst_tmp = parts
         lst_tmp2 = self.openList(lst_tmp)
@@ -288,6 +296,17 @@ class searchBonds(object):
         molCon2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['molCon'].to_list()[0].split(',')
 
         if mol1[0] in molCon2 or mol2[0] in molCon1 or mol1[0] == mol2[0]:
+            print('generate circuit, mol {}'.format(mol1[0]))
+            keys = self.dumpPairs.keys()
+            if row.acro in keys:
+                self.dumpPairs[row.acro].append(row.amon)
+            else:
+                self.dumpPairs[row.acro] = [row.amon]
+
+            if row.amon in keys:
+                self.dumpPairs[row.amon].append(row.acro)
+            else:
+                self.dumpPairs[row.acro] = [row.acro]
             return False
         else:
             return True
@@ -396,20 +415,8 @@ class searchBonds(object):
                 break
 
         df_tmp1 = pd.DataFrame(rowList1)
-        rowList = [];
-        atomsList = []
-        for index, row in df_tmp1.iterrows():
-            if self.checkCircuit(atomsDf, row):
-                if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
-                    atomsList.append(row.acro);
-                    atomsList.append(row.amon);
-                    rowList.append(row)
-                    self.updateMolCon(atomsDf, row.acro, row.amon)
-            else:
-                continue
+        df_tmp2 = self.updateAllCon(df_pairs)
 
-        df_tmp2 = pd.DataFrame(rowList)
-        df_tmp2.to_csv('tmp2.csv')
         return df_tmp2
 
     def idx2Mol(self, pairs):
@@ -431,7 +438,7 @@ class searchBonds(object):
     def genCell(self, parts):
         parts = parts - 1
         xdiv = 0
-        if self.cutoff > float(self.boxSize) * 0.5:
+        if self.cutoff > float(self.boxSize) * 0.6:
             print('cutoff should smaller than the half of the box size, please modify it.')
             sys.exit()
 
@@ -510,44 +517,64 @@ class searchBonds(object):
         df1 = df_atoms.apply(lambda x: self.searchCell(x), axis=1)
         return df1
 
+    def updateAllCon(self, df_tmp):
+        atomsDf = self.gro.df_atoms
+        rowList = []
+        atomsList = []
+        for index, row in df_tmp.iterrows():
+            if self.checkCircuit(atomsDf, row):
+                if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
+                    atomsList.append(row.acro);
+                    atomsList.append(row.amon);
+                    rowList.append(row)
+                    self.updateMolCon(atomsDf, row.acro, row.amon)
+            else:
+                continue
+
+        df_out = pd.DataFrame(rowList)
+        df_out.to_csv('tmp2.csv')
+        return df_out
+
     def collectBonds(self, count):
         pairs = []
-        while (len(pairs) == 0):
-            df_pairs = self.getRctDf()
-            if self.conv < 0.7:
-                if len(df_pairs) == 0 or len(df_pairs) < 0.4 * self.desBonds:
-                    self.cutoff += 0.1
-                    if self.cutoff > 0.5 * float(self.boxSize):
-                        break
+        a1 = []
+        while len(pairs) == 0:
+            while (len(pairs) == 0):
+                df_pairs = self.getRctDf()
+                df_pairs.to_csv('all_bonds_within_cutoff.csv')
+                # df_pairs.to_csv('final_bonds.csv')
+                print('df_pairs: ', df_pairs)
+                if self.conv < 0.7:
+                    if len(df_pairs) == 0 or len(df_pairs) < 0.3 * self.desBonds:
+                        self.cutoff += 0.1
+                        if self.cutoff > 0.5 * float(self.boxSize):
+                            break
+                        else:
+                            continue
                     else:
-                        continue
-                else:
-                    break
-
-            elif 0.7 <= self.conv <= 0.9:
-                if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
-                    self.cutoff += 0.1
-                    if self.cutoff > 0.5 * float(self.boxSize):
                         break
+
+                elif 0.7 <= self.conv <= 0.9:
+                    if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
+                        self.cutoff += 0.1
+                        if self.cutoff > 0.5 * float(self.boxSize):
+                            break
+                        else:
+                            continue
                     else:
-                        continue
-                else:
-                    break
-            else:
-                if len(df_pairs) == 0:
-                    self.cutoff += 0.1
-                    if self.cutoff > 0.5 * float(self.boxSize):
                         break
-                    else:
-                        continue
                 else:
-                    break
+                    if len(df_pairs) == 0:
+                        self.cutoff += 0.1
+                        if self.cutoff > 0.5 * float(self.boxSize):
+                            break
+                        else:
+                            continue
+                    else:
+                        break
 
-        df_pairs.to_csv('all_bonds_within_cutoff.csv')
-        a1 = self.finalRctPairs(df_pairs)
-        a1.to_csv('final_bonds.csv')
-
-        pairs = a1
+            df_pairs = self.finalRctPairs(df_pairs)  # TODO: update mol connection should not be here
+            pairs = df_pairs
         return pairs
 
     @countTime
@@ -556,10 +583,10 @@ class searchBonds(object):
         parts = 8
         self.genCell(parts)
         pairs = self.collectBonds(count)
-
         if len(pairs) == 0:
             return [], self.mol, self.cutoff
 
+        print('pairs: ', pairs)
         self.idx2Mol(pairs)
         print('{} bonds are going to be generated'.format(len(pairs)))
         print('Following bonds will be formed: \n')
