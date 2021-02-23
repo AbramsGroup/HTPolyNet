@@ -272,7 +272,7 @@ class searchBonds(object):
             else:
                 tmpLst.append(l)
 
-        parts = pd.concat(results, axis=0)
+        parts = pd.concat(tmpLst, axis=0)
         # ##### END PARALLEL
         # Non-parallel method to search bonds
         # parts = df_tmp.apply(lambda x: self.getPairs(x, df_tmp), axis=1)
