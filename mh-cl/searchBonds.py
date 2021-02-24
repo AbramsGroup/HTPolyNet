@@ -558,7 +558,7 @@ class searchBonds(object):
                 # df_pairs.to_csv('final_bonds.csv')
                 print('df_pairs: ', df_pairs)
                 if self.conv < 0.7:
-                    if len(df_pairs) == 0 or len(df_pairs) < 0.3 * self.desBonds:
+                    if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
                         self.cutoff += 0.1
                         if self.cutoff > 0.5 * float(self.boxSize):
                             break
@@ -570,7 +570,7 @@ class searchBonds(object):
                 elif 0.7 <= self.conv <= 0.9:
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
                         self.cutoff += 0.1
-                        if self.cutoff > 0.5 * float(self.boxSize):
+                        if self.cutoff > 0.6 * float(self.boxSize):
                             break
                         else:
                             continue
@@ -579,7 +579,7 @@ class searchBonds(object):
                 else:
                     if len(df_pairs) == 0:
                         self.cutoff += 0.1
-                        if self.cutoff > 0.5 * float(self.boxSize):
+                        if self.cutoff > 0.6 * float(self.boxSize):
                             break
                         else:
                             continue
