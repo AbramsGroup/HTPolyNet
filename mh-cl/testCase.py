@@ -121,9 +121,9 @@ if __name__ == "__main__":
     b = a.testReadParam()
     
     pairs, rctMols, topDf, aa = a.testSearchBonds()
-    # df_pairs = pairs
-    # print('{} bonds will be formed!'.format(len(df_pairs)))
+    df_pairs = pairs
+    print('{} bonds will be formed!'.format(len(df_pairs)))
+
+    b2 = a.testGenBonds(df_pairs, rctMols)
     #
-    # b2 = a.testGenBonds(df_pairs, rctMols)
-    # #
-    # a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)
+    a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)

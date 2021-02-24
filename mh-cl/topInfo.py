@@ -131,23 +131,23 @@ class top(object):
             # else:
             key = self.subAtom2Atypes(x.ai, x.aj, x.ak, x.al, self.atoms)
             # key = '{}-{}-{}-{}'.format(x.ai, x.aj, x.ak, x.al)
-            if self.stepRelax:
-                if x.new == '':
-                    if key not in self.dupDihTypeKey:
-                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct)
-                    else:
-                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
-                else:
-                    str1 = ' '
-            else:
+            # if self.stepRelax:
+            if x.new == '':
                 if key not in self.dupDihTypeKey:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct)
+                        x.ai, x.aj, x.ak, x.al, x.funct)
                 else:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                        x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+            else:
+                str1 = ' '
+            # else:
+            #     if key not in self.dupDihTypeKey:
+            #         str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
+            #                 x.ai, x.aj, x.ak, x.al, x.funct)
+            #     else:
+            #         str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+            #                 x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
         elif keys == 'imp':
             str1 = ' '
 

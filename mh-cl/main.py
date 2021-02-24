@@ -261,7 +261,7 @@ class main(object):
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
 
     def stepwiseRelax(self):
-        k = [0.001, 0.01, 0.1, 1]
+        k = [0.01, 0.1, 1]
         outName = 'sw'
         for i in range(len(k)):
             groName = outName
