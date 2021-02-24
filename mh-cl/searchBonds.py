@@ -197,11 +197,10 @@ class searchBonds(object):
         atomNames = []
         rctFunc = self.rctInfo
         for i in rctFunc:
-            if i[0] not in atomNames:
+            if i[0][0] not in atomNames:
                 atomNames.append(i[0][0])
-            elif i[1] not in atomNames:
+            elif i[1][0] not in atomNames:
                 atomNames.append(i[1][0])
-
         return atomNames
 
     def openList(self, inList):
