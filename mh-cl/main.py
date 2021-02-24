@@ -309,6 +309,17 @@ class main(object):
             folderName = 'sim{}'.format(i)
             os.mkdir(folderName)
             os.chdir(folderName)
+            os.mkdir('init')
+            os.chdir('init')
+            self.top.outDf('init')
+            self.gro.outDf('init')
+            copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
+            copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
+            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            a.emSimulation('init', 'init', 'min-1', size=False)
+            a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+            self.updateCoord('npt-init')
+            os.chdir('..')
 
             while(len(self.old_pairs) < int(self.maxBonds)):
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
@@ -329,7 +340,7 @@ class main(object):
 
                     self.pairs_detail['step{}'.format(step)] = pairs
 
-                    self.gro.outDf('init') # just for check!
+                    # self.gro.outDf('init') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
                     gbonds.main() # update atom's rct status
