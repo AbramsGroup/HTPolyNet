@@ -143,7 +143,8 @@ class searchBonds(object):
 
         tmpDf = atomsDf.loc[df1.molName.isin(rctName)]
         for i in range(len(rctName)):
-            tmpDf.loc[(tmpDf.molName == rctName[i]), 'rctPct'] = rctPct[i]
+            if not tmpDf.empty:
+                tmpDf.loc[(tmpDf.molName == rctName[i]), 'rctPct'] = rctPct[i]
 
         return tmpDf
 
@@ -170,27 +171,29 @@ class searchBonds(object):
         # Using needed condition to filter the atomsDf
         # Set chemical reaction
         df2 = self.condFilter(atom, df2)
+        if not df2.empty:
+            # obtain the distance between the atoms and distance between atoms and the potential atoms within neighbor cell
+            df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
+            df3 = df3.iloc[1:] # remove atoms which connect to itself
+            pd.to_numeric(df3.dist)
+            df3.sort_values(by='dist', inplace=True)
+            df3.to_csv('df3_sorted.csv')
+            print('cutoff: ', self.cutoff)
+            df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
+            df4.to_csv('df4.csv')
+            df_out1 = []
 
-        # obtain the distance between the atoms and distance between atoms and the potential atoms within neighbor cell
-        df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
-        df3 = df3.iloc[1:] # remove atoms which connect to itself
-        pd.to_numeric(df3.dist)
-        df3.sort_values(by='dist', inplace=True)
-        df3.to_csv('df3_sorted.csv')
-        print('cutoff: ', self.cutoff)
-        df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
-        df4.to_csv('df4.csv')
-        df_out1 = []
-
-        if len(df4) == 0:
-            print('No pairs found')
-            return [[]]
+            if len(df4) == 0:
+                print('No pairs found')
+                return [[]]
+            else:
+                print('Pairs found')
+                for index, row in df4.iterrows():
+                    df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
+                                    atom.molCon, random.random(), row.rctPct])
+                return df_out1
         else:
-            print('Pairs found')
-            for index, row in df4.iterrows():
-                df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
-                                atom.molCon, random.random(), row.rctPct])
-            return df_out1
+            return [[]]
 
     @countTime
     def getAllMolNames(self):
@@ -337,8 +340,8 @@ class searchBonds(object):
             atomsDf = self.gro.df_atoms
             at1Prop = atomsDf.loc[atomsDf.globalIdx == at1Idx].prop.values[0]
             at2Prop = atomsDf.loc[atomsDf.globalIdx == at2Idx].prop.values[0]
-            # print('at1Prop: ', at1Prop.values[0])
-            # print('at2Prop: ', at2Prop.values[0])
+            print('at1Prop: ', at1Prop) # TODO: 好像有问题， 虚拟机里面的tmp-res文件夹里有
+            print('at2Prop: ', at2Prop)
             if at1Prop == at2Prop:
                 return False
             else:
