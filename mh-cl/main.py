@@ -54,6 +54,8 @@ class main(object):
         self.chargeMap = {}
         self.gro = '' # save gro object
         self.top = '' # save top object
+
+        self.chains = []
         self.old_pairs = []
         self.pairs_detail = {}
         # needed parameters
@@ -330,7 +332,7 @@ class main(object):
 
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top,
-                                                 self.conv, self.desBonds)
+                                                 self.conv, self.desBonds, self.chains)
                 pairs, rMols, cutoff = sbonds.main()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
 

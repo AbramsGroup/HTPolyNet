@@ -62,9 +62,15 @@ class parameters(object):
                         key4 = 'mon{}R_rct'.format(i)
                         if key4 in l2:
                             monR_rct = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-                                               
+
+                    for l2 in baseList:
+                        key4 = 'mon{}R_group'.format(i)
+                        if key4 in l2:
+                            monR_group = l2.split('=')[1].strip(' ').split('#')[0].split(',')
+
                     for idx in range(len(monR_list_tmp)):
-                        monR_list_tmp[idx] = [monR_list_tmp[idx].strip(), monR_rNum[idx].strip(), monR_rct[idx].strip()]
+                        monR_list_tmp[idx] = [monR_list_tmp[idx].strip(), monR_rNum[idx].strip(),
+                                              monR_rct[idx].strip(), monR_group[idx].strip()]
                     
                     monInfo.append([i, monName, monNum, monR_list_tmp])
                     monR_list[monName] = monR_list_tmp
@@ -94,9 +100,15 @@ class parameters(object):
                         key4 = 'cro{}R_rct'.format(i)
                         if key4 in l2:
                             croR_rct = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-                                               
+
+                    for l2 in baseList:
+                        key4 = 'cro{}R_group'.format(i)
+                        if key4 in l2:
+                            croR_group = l2.split('=')[1].strip(' ').split('#')[0].split(',')
+
                     for idx in range(len(croR_list_tmp)):
-                        croR_list_tmp[idx] = [croR_list_tmp[idx].strip(), croR_rNum[idx].strip(), croR_rct[idx].strip()]
+                        croR_list_tmp[idx] = [croR_list_tmp[idx].strip(), croR_rNum[idx].strip(),
+                                              croR_rct[idx].strip(), croR_group[idx].strip()]
                                                 
                     croInfo.append([i, croName, croNum, croR_list_tmp])
                     croR_list[croName] = croR_list_tmp

@@ -15,7 +15,7 @@ import random
 import sys
 
 class searchBonds(object):
-    def __init__(self, basicParameters, generatedBonds, inGro, inTop, conv, desBonds):
+    def __init__(self, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
         self.monInfo = basicParameters.monInfo
         self.croInfo = basicParameters.croInfo
         self.cutoff = basicParameters.cutoff
@@ -28,6 +28,8 @@ class searchBonds(object):
         self.generatedBonds = generatedBonds
         self.gro = inGro  # gro object
         self.top = inTop  # top object
+
+        self.chains = chains
         self.rctMon = []
         self.rctCro = []
         self.mol = []
@@ -148,6 +150,19 @@ class searchBonds(object):
 
         return tmpDf
 
+    def convChainsNum2Name(self, inChain, atomsDf):
+        chain = inChain.split(',')
+        names = []
+        if chain == ['']:
+            return ['']
+        else:
+            print('chain: ', chain)
+            for ele in chain:
+                n = atomsDf.loc[atomsDf['molNum'] == ele, 'molName'].values[0]
+                names.append(n)
+
+            return names
+
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
         # atomsDf contains all atoms
         # maxCellId used for pbc condition
@@ -238,7 +253,6 @@ class searchBonds(object):
         outDf = atomDf.loc[atomDf.globalIdx.isin(filterIdx)]
         return outDf
 
-
     @countTime
     def getRctDf(self):
         rctFunc = self.rctInfo
@@ -304,13 +318,18 @@ class searchBonds(object):
             return True
 
     def checkCircuit(self, df_rctAtoms, row):
+        cond = 0
         mol1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['molNum'].to_list()
         mol2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['molNum'].to_list()
+        rctGrp1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['rctGroup'].to_list()[0]
+        rctGrp2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['rctGroup'].to_list()[0]
+
         molCon1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['molCon'].to_list()[0].split(',')
         molCon2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['molCon'].to_list()[0].split(',')
 
+        # 条件1： 两个分子不能形成环
         if mol1[0] in molCon2 or mol2[0] in molCon1 or mol1[0] == mol2[0]:
-            print('generate circuit, mol {}'.format(mol1[0]))
+            # print('generate circuit, mol {}'.format(mol1[0]))
             keys = self.dumpPairs.keys()
             if row.acro in keys:
                 self.dumpPairs[row.acro].append(row.amon)
@@ -321,10 +340,49 @@ class searchBonds(object):
                 self.dumpPairs[row.amon].append(row.acro)
             else:
                 self.dumpPairs[row.acro] = [row.acro]
-            return False
+            cond += 1
         else:
-            return True
+            pass
 
+        # 条件2： 一条由单体形成的链不能首尾相连
+        chain1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['chain'].to_list()[0]
+        chain2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['chain'].to_list()[0]
+        name1 = self.convChainsNum2Name(chain1, df_rctAtoms)
+        name2 = self.convChainsNum2Name(chain2, df_rctAtoms)
+        if len(name1) == 1 or len(name2) == 1:
+            pass
+        else:
+            croNames = []
+            for n in self.croInfo:
+                croNames.append(n[1])
+
+            if chain1 == chain2 and any(croNames) not in name1:
+                if mol1 in chain1 and mol2 in chain1:
+                    cond += 1
+                else:
+                    pass
+
+        # 条件三：
+        adj1 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol1[0]) &
+                           (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp1) &
+                           (df_rctAtoms.loc[:, 'globalIdx'] != row.acro)]['groupCon']
+        adj2 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol2[0]) &
+                           (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp2) &
+                           (df_rctAtoms.loc[:, 'globalIdx'] != row.amon)]['groupCon']
+
+        grpsCon1 = adj1.to_list()[0].split('-')
+        grpsCon2 = adj2.to_list()[0].split('-')
+        info1 = '[{}, {}]'.format(mol1[0], rctGrp1)
+        info2 = '[{}, {}]'.format(mol2[0], rctGrp2)
+        if info1 in grpsCon1 or info2 in grpsCon2:
+            cond += 1
+        else:
+            pass
+
+        if cond == 0:
+            return True
+        else:
+            return False
     def checkAtomsRepeat(self, inAtoms, lst):
         for a in lst:
             if a in inAtoms:
@@ -358,6 +416,71 @@ class searchBonds(object):
         else:
             return False
 
+    def updateChains(self, mol1, mol2):
+        tmpChains = {}
+        nmol1 = 0; nmol2 = 0
+        for i in range(len(self.chains)):
+            c = self.chains[i]
+            # 同一个分子不会出同时出现在两个链上
+            if mol1 in c:
+                tmpChains[mol1] = c
+                nmol1 += 1
+            if mol2 in c:
+                tmpChains[mol2] = c
+                nmol2 += 1
+
+        if nmol1 > 0 and nmol2 > 0:
+            # print('\t\t', tmpChains[mol1])
+            # print('\t\t', tmpChains[mol2])
+            if tmpChains[mol1] == tmpChains[mol2]:
+                pass
+            else:
+                try:
+                    self.chains.remove(tmpChains[mol1])
+                    self.chains.remove(tmpChains[mol2])
+                    new = tmpChains[mol1] + tmpChains[mol2]
+                    self.chains.append(new)
+                except:
+                    print('Unexpected chains')
+
+        elif nmol1 == 0 and nmol2 > 0:
+            idx = self.chains.index(tmpChains[mol2])
+            self.chains[idx].append(mol1)
+
+        elif nmol2 == 0 and nmol1 > 0:
+            idx = self.chains.index(tmpChains[mol1])
+            self.chains[idx].append(mol2)
+
+        elif nmol1 == 0 and nmol2 == 0:
+            new = [mol1, mol2]
+            self.chains.append(new)
+
+    def updateAllChains(self):
+        df_atoms = self.gro.df_atoms
+        chains = self.chains
+        for c in chains:
+            tmpStr = ','.join(c)
+            df_atoms.loc[df_atoms['molNum'].isin(c), 'chain'] = tmpStr
+
+    def updateGroupCon(self, a1, a2, mol1, mol2, atomsDf):
+        # 已经在找getPairs的一步判定了该连接方式是否征程
+        group1 = atomsDf[atomsDf.globalIdx == str(a1)].rctGroup.values[0]
+        group2 = atomsDf[atomsDf.globalIdx == str(a2)].rctGroup.values[0]
+
+        grp1 = atomsDf.loc[atomsDf['globalIdx'] == str(a1), 'groupCon'].values[0]
+        grp2 = atomsDf.loc[atomsDf['globalIdx'] == str(a2), 'groupCon'].values[0]
+        if grp1 == '':
+            atomsDf.loc[atomsDf['globalIdx'] == str(a1), 'groupCon'] = '[{}, {}]'.format(mol2, group2)
+        else:
+            tmpStr = grp1 + '-[{}, {}]'.format(mol2, group2)
+            atomsDf.loc[atomsDf['globalIdx'] == str(a1), 'groupCon'] = tmpStr
+
+        if grp2 == '':
+            atomsDf.loc[atomsDf['globalIdx'] == str(a2), 'groupCon'] = '[{}, {}]'.format(mol1, group1)
+        else:
+            tmpStr = grp2 + '-[{}, {}]'.format(mol1, group1)
+            atomsDf.loc[atomsDf['globalIdx'] == str(a2), 'groupCon'] = tmpStr
+
     def updateMolCon(self, atomsDf, a1, a2):
         mol1 = atomsDf[atomsDf.globalIdx == str(a1)].molNum.values[0]
         mol2 = atomsDf[atomsDf.globalIdx == str(a2)].molNum.values[0]
@@ -370,6 +493,11 @@ class searchBonds(object):
 
         tmp = '{},{}'.format(con2, mol1)
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
+
+        self.updateChains(mol1, mol2)
+        print('Bonds formed between mol {} and mol {}'.format(mol1, mol2))
+        print('self.chains: ', self.chains)
+        self.updateGroupCon(a1, a2, mol1, mol2, atomsDf)
 
     def setRctP(self, df_pairs):
         for index, value in df_pairs.iterrows():
@@ -604,11 +732,14 @@ class searchBonds(object):
         if len(pairs) == 0:
             return pairs, self.mol, self.cutoff
 
-        print('pairs: ', pairs)
+        # print('pairs: ', pairs)
         self.idx2Mol(pairs)
+
+        # update all atoms belonged chain
+        self.updateAllChains()
         print('{} bonds are going to be generated'.format(len(pairs)))
         print('Following bonds will be formed: \n')
         for index, value in pairs.iterrows():
             print('\t', value.acro, '\t', value.amon, '\t',
                   round(value.p, 2), '\t', value.rctP)
-        return pairs, self.mol, self.cutoff
+        return pairs, self.chains, self.mol, self.cutoff
