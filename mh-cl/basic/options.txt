@@ -4,6 +4,7 @@ croNum1 = 4
 cro1R_list = C19, C20, C26, C27  #heavy atom index for monomer reactive atoms
 cro1R_rNum = 1, 1, 1, 1
 cro1R_rct = H, T, H, T
+cro1R_group = 1, 1, 2, 2
 
 # For croslinker 2
 croName2 = VEB
@@ -11,6 +12,7 @@ croNum2 = 4
 cro2R_list = C22, C23, C44, C45
 cro2R_rNum = 1, 1, 1, 1
 cro2R_rct = H, T, H, T
+cro2R_group = 1, 1, 2, 2
 
 # For monomer 1
 monName1 = STY
@@ -18,6 +20,7 @@ monNum1 = 16
 mon1R_list = C6, C7
 mon1R_rNum = 1, 1
 mon1R_rct = H, T
+mon1R_group = 1, 1, 2, 2
 
 # Basic Info
 boxSize = 5
