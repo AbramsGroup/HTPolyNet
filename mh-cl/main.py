@@ -333,9 +333,9 @@ class main(object):
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top,
                                                  self.conv, self.desBonds, self.chains)
-                pairs, rMols, cutoff = sbonds.main()
+                pairs, chains, rMols, cutoff = sbonds.main()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-
+                self.chains = chains
                 if len(pairs) > 0:
 #                    print('pairs.amon: ', pairs.amon.values)
 #                    print('pairs.amon.to_string(): ', pairs.amon.to_string())
