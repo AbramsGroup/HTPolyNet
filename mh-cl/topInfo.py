@@ -8,6 +8,7 @@ import pandas as pd
 from decimal import Decimal
 from countTime import *
 from copy import deepcopy
+import numpy as np
 
 class top(object):
     def __init__(self):
@@ -155,19 +156,21 @@ class top(object):
 
     
     def addCharge(self, incharge):
-        c = max(self.atoms.charge)
+        # c = max(self.atoms.charge)
+        c = incharge / len(self.atoms.charge)
         for i in range(len(self.atoms.charge)):
-            if self.atoms.charge[i] == c:
-                # print('old: {}, new: {}'.format(self.atoms.charge[i], str(Decimal(self.atoms.charge[i]) + Decimal(incharge))))
-                self.atoms.charge[i] = str(Decimal(self.atoms.charge[i]) - Decimal(incharge))
-                break
+            self.atoms.charge += c
+            # if self.atoms.charge[i] == c:
+            #     print('old: {}, new: {}'.format(self.atoms.charge[i], str(Decimal(self.atoms.charge[i]) + Decimal(incharge))))
+            #     self.atoms.charge[i] = str(Decimal(self.atoms.charge[i]) - Decimal(incharge))
+            #     break
         
     def setChargeDicimal(self, row):
-        row.charge = str(round(float(row.charge), 4))
+        row.charge = round(float(row.charge), 4)
         return row
         
     def checkCharge(self):
-        self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
+        # self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
         charges = 0
         for index, row in self.atoms.iterrows():
             charges += Decimal(row.charge)

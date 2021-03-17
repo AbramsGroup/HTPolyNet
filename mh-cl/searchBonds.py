@@ -195,9 +195,9 @@ class searchBonds(object):
             df3.to_csv('df3_sorted.csv')
             print('cutoff: ', self.cutoff)
             df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
-            df4.to_csv('df4.csv')
+            df4.to_csv('df4.csv') # TODO: append files to check
             df_out1 = []
-
+            # TODO: check if df3 new generated
             if len(df4) == 0:
                 print('No pairs found')
                 return [[]]
@@ -275,6 +275,7 @@ class searchBonds(object):
         print('start parallel searching!!')
         p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
         dfSplit = np.array_split(df_tmp, 4)
+        # TODO: without parallel searching and check the results
         print('df_tmp: ', df_tmp.head())
         results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
         p.close()
@@ -349,6 +350,8 @@ class searchBonds(object):
         chain2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['chain'].to_list()[0]
         name1 = self.convChainsNum2Name(chain1, df_rctAtoms)
         name2 = self.convChainsNum2Name(chain2, df_rctAtoms)
+        chain1 = chain1.split(',')
+        chain2 = chain2.split(',')
         if len(name1) == 1 or len(name2) == 1:
             pass
         else:
@@ -357,7 +360,7 @@ class searchBonds(object):
                 croNames.append(n[1])
 
             if chain1 == chain2 and any(croNames) not in name1:
-                if mol1 in chain1 and mol2 in chain1:
+                if mol1[0] in chain1 and mol2[0] in chain1:
                     cond += 1
                 else:
                     pass
@@ -391,7 +394,7 @@ class searchBonds(object):
                 continue
         return True
 
-    def checkHT(self, at1Idx, at2Idx):
+    def checkHT(self, at1Idx, at2Idx): # TODO: didn't work
         if self.HTProcess == 'False':
             return True
         else:
@@ -580,7 +583,7 @@ class searchBonds(object):
     def genCell(self, parts):
         parts = parts - 1
         xdiv = 0
-        if self.cutoff > float(self.boxSize) * 0.6:
+        if self.cutoff > float(self.boxSize) * 0.72:
             print('cutoff should smaller than the half of the box size, please modify it.')
             sys.exit()
 
@@ -730,7 +733,7 @@ class searchBonds(object):
         self.genCell(parts)
         pairs = self.collectBonds(count)
         if len(pairs) == 0:
-            return pairs, self.mol, self.cutoff
+            return pairs, self.chains, self.mol, self.cutoff
 
         # print('pairs: ', pairs)
         self.idx2Mol(pairs)
