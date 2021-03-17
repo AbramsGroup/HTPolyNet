@@ -143,7 +143,7 @@ class searchBonds(object):
                 rctName.append(r[0])
                 rctPct.append(r[1])
 
-        tmpDf = atomsDf.loc[df1.molName.isin(rctName)]
+        tmpDf = df1.loc[df1.molName.isin(rctName)]
         for i in range(len(rctName)):
             if not tmpDf.empty:
                 tmpDf.loc[(tmpDf.molName == rctName[i]), 'rctPct'] = rctPct[i]

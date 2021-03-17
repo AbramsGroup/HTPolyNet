@@ -155,7 +155,7 @@ class top(object):
         return str1
 
     
-    def addCharge(self, incharge):
+    def addCharge(self, incharge, add=True):
         # c = max(self.atoms.charge)
         c = incharge / len(self.atoms.charge)
         for i in range(len(self.atoms.charge)):
@@ -170,7 +170,7 @@ class top(object):
         return row
         
     def checkCharge(self):
-        # self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
+        self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
         charges = 0
         for index, row in self.atoms.iterrows():
             charges += Decimal(row.charge)

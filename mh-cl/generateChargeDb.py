@@ -11,6 +11,7 @@ import readMol
 import subprocess
 import os
 import glob
+from decimal import Decimal
 
 class generateChargeDb(object):
     def __init__(self):
@@ -72,11 +73,27 @@ class generateChargeDb(object):
         
         self.extractCharge(nameList) # Extract and save
         os.chdir(self.srcPath)
-    
+
+    def avgCharge(self, inList):
+        outList = []
+        cc = 0
+        for l in inList:
+            cc += Decimal(l)
+
+        print('cc1: ', cc)
+        if cc > 0:
+            idx = inList.index(max(inList))
+        else:
+            idx = inList.index(min(inList))
+
+        inList[idx] = Decimal(inList[idx]) - Decimal(cc)
+        return inList
+
     def getSeq(self, df):
         atomType = df[(df.resname.str.contains('CRO') == False)].atype.to_list()
         charge = df[(df.resname.str.contains('CRO') == False)].charge.to_list()
         atomSeq = ''; chargeSeq = ''
+        charge = self.avgCharge(charge)
         for i in range(len(atomType)):
             if i != len(atomType):
                 atomSeq += '{}/'.format(atomType[i])
@@ -93,12 +110,19 @@ class generateChargeDb(object):
             
     def extractCharge(self, nameList):
         charge = {}
+        cc = 0
         for f in nameList:
             a = readMol.readMol(f)
             a.main()
             atomsDf = a.mol2.atoms
             atomSeq, chargeSeq = self.getSeq(atomsDf)
             charge[atomSeq] = chargeSeq
+            for c in chargeSeq.split('/'):
+                try:
+                    cc += Decimal(c)
+                except:
+                    continue
+            print('cc: ', cc)
         self.charge = charge
         self.saveMap(charge)
     
@@ -115,6 +139,6 @@ class generateChargeDb(object):
         
 if __name__ == '__main__':
     a = generateChargeDb()
-    nameList = ['VEA.mol2', 'VEB.mol2', 'STY.mol2']
+    nameList = ['systems/unrctSystem/VEB.mol2']
     a.extractCharge(nameList)
     a1 = a.charge
