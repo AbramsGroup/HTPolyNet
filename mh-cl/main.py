@@ -349,7 +349,7 @@ class main(object):
 
                     self.gro = gbonds.gro
                     self.top = gbonds.top
-                    self.top.checkCharge()
+                    # self.top.checkCharge()
 
                     cond = self.stepwiseRelax()
                     if cond == False:
