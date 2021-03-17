@@ -405,8 +405,14 @@ class searchBonds(object):
             atomsDf = self.gro.df_atoms
             at1Prop = atomsDf.loc[atomsDf.globalIdx == at1Idx].prop.values[0]
             at2Prop = atomsDf.loc[atomsDf.globalIdx == at2Idx].prop.values[0]
-            print('at1Prop: ', at1Prop) # TODO: 好像有问题， 虚拟机里面的tmp-res文件夹里有
-            print('at2Prop: ', at2Prop)
+            print('atom1: {}\tatom2: {}\tat1Prop: {}\tat2Prop: {}'.format(at1Idx, at2Idx, at1Prop, at2Prop))
+            print('atom1: {}\t'.format(at1Idx))
+            print('\t{}'.format(atomsDf.loc[atomsDf.globalIdx == at1Idx].values[0]))
+            print('atom2: {}\t'.format(at1Idx))
+            print('\t{}'.format(atomsDf.loc[atomsDf.globalIdx == at2Idx].values[0]))
+
+            # print('at1Prop: ', at1Prop) # TODO: 好像有问题， 虚拟机里面的tmp-res文件夹里有
+            # print('at2Prop: ', at2Prop)
             if at1Prop == at2Prop:
                 return False
             else:
