@@ -207,7 +207,7 @@ class main(object):
         top.setName('init.top', 'init.itp')
         top.genTopSession()
         topDf.setInfo(top.sumTop)
-        topDf.checkCharge()
+        # topDf.checkCharge()
         self.top = topDf
         os.chdir(self.workingFolder)
     

@@ -362,6 +362,8 @@ class searchBonds(object):
             if chain1 == chain2 and any(croNames) not in name1:
                 if mol1[0] in chain1 and mol2[0] in chain1:
                     cond += 1
+                    with open('cond2.txt', 'a') as f:
+                        f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
                 else:
                     pass
 
@@ -379,6 +381,8 @@ class searchBonds(object):
         info2 = '[{}, {}]'.format(mol2[0], rctGrp2)
         if info1 in grpsCon1 or info2 in grpsCon2:
             cond += 1
+            with open('cond3.txt', 'a') as f:
+                f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
         else:
             pass
 
