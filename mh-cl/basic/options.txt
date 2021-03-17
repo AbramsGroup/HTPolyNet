@@ -20,7 +20,7 @@ monNum1 = 16
 mon1R_list = C6, C7
 mon1R_rNum = 1, 1
 mon1R_rct = H, T
-mon1R_group = 1, 1, 2, 2
+mon1R_group = 1, 1
 
 # Basic Info
 boxSize = 5
