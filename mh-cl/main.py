@@ -94,7 +94,7 @@ class main(object):
         a1 = groInfo.gro()
         a1.setGroInfo(df_init, sysName, atNum, boxSize)
         self.gro.updateCoord(a1)
-        self.initGro = self.gro
+        self.initGro.updateCoord(a1)
         
     def initSys(self, ig=False):
         param = self.basicParameter
@@ -165,14 +165,15 @@ class main(object):
                     move('npt.gro', 'npt-init.gro')
                 i += 1
 
-#        a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
-        
-        # Update coord to the gro df
-        self.updateCoord('npt-init')
-        
+        # a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
+
         # init rct info for potential atoms, add rct columns to the df in the gro object df
         self.gro.initRctInfo(self.basicParameter)
         self.initGro = deepcopy(self.gro)
+
+        # Update coord to the gro df
+        self.updateCoord('npt-init')
+
         # Back to the working directory and start crosslinking approach
         os.chdir(self.workingFolder)
     
@@ -322,10 +323,10 @@ class main(object):
             a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
             self.updateCoord('npt-init')
             os.chdir('..')
-
+            self.gro.df_atoms.to_csv('init-df0.csv')
             while(len(self.old_pairs) < int(self.maxBonds)):
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-                intDf.to_csv('int-df0.csv')
+                intDf.to_csv('init-df1.csv')
 
                 folderName1 = self.setupFolder(step)
                 os.chdir(folderName1)

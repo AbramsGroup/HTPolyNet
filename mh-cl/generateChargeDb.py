@@ -117,12 +117,11 @@ class generateChargeDb(object):
             atomsDf = a.mol2.atoms
             atomSeq, chargeSeq = self.getSeq(atomsDf)
             charge[atomSeq] = chargeSeq
-            for c in chargeSeq.split('/'):
-                try:
-                    cc += Decimal(c)
-                except:
-                    continue
-            print('cc: ', cc)
+            # for c in chargeSeq.split('/'):
+            #     try:
+            #         cc += Decimal(c)
+            #     except:
+            #         continue
         self.charge = charge
         self.saveMap(charge)
     
