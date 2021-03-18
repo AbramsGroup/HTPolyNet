@@ -351,8 +351,8 @@ class searchBonds(object):
 
         if len(path) > 3:
             for atn in self.tmpBonds[idx]:
-                if atn[0] == self.start:
-                    path = path + [atn[0]]
+                if atn == self.start:
+                    path = path + [atn]
                     return [path]
 
         paths = []
@@ -393,6 +393,9 @@ class searchBonds(object):
         if path == []:
             return True
         else:
+            with open('cycle.txt', 'a') as f1:
+                f1.write('cycle: \n')
+                f1.write('\tpath: {}\n'.format(path))
             return False
 
     def checkCircuit(self, df_rctAtoms, row):
