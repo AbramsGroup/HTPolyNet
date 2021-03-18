@@ -379,13 +379,16 @@ class searchBonds(object):
             tmpBonds[row.amon] = [row.acro]
 
         with open('rctBonds.txt', 'a') as f:
-            f.write('tmpBonds: \n')
-            f.write('\t{}'.format(self.rctBonds))
+            f.write('\nOriginal con: ')
+            f.write('\n\t{}'.format(self.rctBonds))
+            f.write('\nRct pairs: ')
+            f.write('\n\t{}\t{}'.format(row.acro, row.amon))
+            f.write('\ntmpBonds: ')
+            f.write('\n\t{}'.format(tmpBonds))
 
         self.tmpBonds = tmpBonds
         self.start = row.acro
         path = self.cycleDetect(self.start)
-        sys.exit()
         print('path: ', path)
         if path == []:
             return True
