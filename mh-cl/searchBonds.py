@@ -344,6 +344,8 @@ class searchBonds(object):
 
     def cycleDetect(self, idx, path=[]):
         path = path + [idx]
+        print('path: ', path)
+        print('idx: ', idx)
         if path == len(self.rctAtoms):
             return path
 
@@ -354,9 +356,9 @@ class searchBonds(object):
                     return [path]
 
         paths = []
-        for idx in self.tmpBonds[idx]:
-            if idx not in path:
-                newPaths = self.cycleDetect(idx, path)
+        for ii in self.tmpBonds[idx]:
+            if ii not in path:
+                newPaths = self.cycleDetect(ii, path)
                 for newPath in newPaths:
                     paths.append(newPath)
         return paths
@@ -376,9 +378,15 @@ class searchBonds(object):
         else:
             tmpBonds[row.amon] = [row.acro]
 
+        with open('rctBonds.txt', 'a') as f:
+            f.write('tmpBonds: \n')
+            f.write('\t{}'.format(self.rctBonds))
+
         self.tmpBonds = tmpBonds
         self.start = row.acro
         path = self.cycleDetect(self.start)
+        sys.exit()
+        print('path: ', path)
         if path == []:
             return True
         else:
@@ -594,6 +602,17 @@ class searchBonds(object):
         print('Bonds formed between mol {} and mol {}'.format(mol1, mol2))
         print('self.chains: ', self.chains)
         self.updateGroupCon(a1, a2, mol1, mol2, atomsDf)
+
+        # update tmp bond session
+        if a1 in self.rctBonds.keys():
+            self.rctBonds[a1].append(a2)
+        else:
+            self.rctBonds[a1] = [a2]
+
+        if a2 in self.rctBonds.keys():
+            self.rctBonds[a2].append(a1)
+        else:
+            self.rctBonds[a2] = [a1]
 
     def setRctP(self, df_pairs):
         for index, value in df_pairs.iterrows():
