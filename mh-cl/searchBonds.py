@@ -10,7 +10,7 @@ import time
 from countTime import *
 from multiprocessing import Process, Pool
 from functools import partial
-
+from copy import deepcopy
 import random
 import sys
 
@@ -29,7 +29,14 @@ class searchBonds(object):
         self.gro = inGro  # gro object
         self.top = inTop  # top object
 
+        self.rctAtoms = rctAtoms = self.gro.df_atoms.loc[(self.gro.df_atoms.rct == 'True') | (self.gro.df_atoms.rct == 'False')].globalIdx.to_list()
+        self.rctBonds = self.genRctBondsMap(inGro.df_atoms, inTop.bonds)
+
+        self.start = '0' # use for circle detect
+        self.tmpBonds = {}
+
         self.chains = chains
+
         self.rctMon = []
         self.rctCro = []
         self.mol = []
@@ -41,6 +48,23 @@ class searchBonds(object):
         self.maxCellId = []
         self.cellId = []
         self.div_box = []
+
+    def genRctBondsMap(self, atoms, bonds):
+        rctAtoms = self.rctAtoms
+        rctBonds = {}
+        for index, row in bonds.iterrows():
+            if row.ai in rctAtoms and row.aj in rctAtoms:
+                if row.ai not in rctBonds.keys():
+                    rctBonds[row.ai] = [row.aj]
+                else:
+                    rctBonds[row.ai].append(row.aj)
+
+                if row.aj not in rctBonds.keys():
+                    rctBonds[row.aj] = [row.ai]
+                else:
+                    rctBonds[row.aj].append(row.ai)
+
+        return rctBonds
 
     def genRctMap(self, rctInfo):
         rctMap = {}
@@ -318,6 +342,48 @@ class searchBonds(object):
         else:
             return True
 
+    def cycleDetect(self, idx, path=[]):
+        path = path + [idx]
+        if path == len(self.rctAtoms):
+            return path
+
+        if len(path) > 3:
+            for atn in self.tmpBonds[idx]:
+                if atn[0] == self.start:
+                    path = path + [atn[0]]
+                    return [path]
+
+        paths = []
+        for idx in self.tmpBonds[idx]:
+            if idx not in path:
+                newPaths = self.cycleDetect(idx, path)
+                for newPath in newPaths:
+                    paths.append(newPath)
+        return paths
+
+    def searchCycle(self, row):
+        atoms = self.rctAtoms
+        bonds = self.rctBonds
+        tmpBonds = deepcopy(bonds)
+        print('tmpBonds: ', tmpBonds)
+        if row.acro in tmpBonds.keys():
+            tmpBonds[row.acro].append(row.amon)
+        else:
+            tmpBonds[row.acro] = [row.amon]
+
+        if row.amon in tmpBonds.keys():
+            tmpBonds[row.amon].append(row.acro)
+        else:
+            tmpBonds[row.amon] = [row.acro]
+
+        self.tmpBonds = tmpBonds
+        self.start = row.acro
+        path = self.cycleDetect(self.start)
+        if path == []:
+            return True
+        else:
+            return False
+
     def checkCircuit(self, df_rctAtoms, row):
         cond = 0
         mol1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['molNum'].to_list()
@@ -359,15 +425,23 @@ class searchBonds(object):
             for n in self.croInfo:
                 croNames.append(n[1])
 
-            if chain1 == chain2 and any(croNames) not in name1:
+            if chain1 == chain2 and any(i not in name1 for i in croNames):
+                #TODO: add comment here, should be question here
                 if mol1[0] in chain1 and mol2[0] in chain1:
                     cond += 1
                     with open('cond2.txt', 'a') as f:
+                        f.write('Found STY chain: ')
+                        f.write('croNames: {}'.format(croNames))
+                        f.write('\n\tatom1: {}\tatom2: {}'.format(row.acro, row.amon))
                         f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
+                        f.write('\n\tchain: {}'.format(name1))
                 else:
                     pass
 
         # 条件三：
+        # 描述的是一个group中不能形成loop
+        # T1-H1--R1--H1-T1, T2-H2--R2--H2-T2
+        # 其中T1-H1-T2-H2是不允许形成的
         adj1 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol1[0]) &
                            (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp1) &
                            (df_rctAtoms.loc[:, 'globalIdx'] != row.acro)]['groupCon']
@@ -386,10 +460,19 @@ class searchBonds(object):
         else:
             pass
 
+        # 条件4: 不能形成全部由可反应原子形成的环
+        if self.searchCycle(row):
+            print('No cycle found')
+            pass
+        else:
+            print('Cycle detect')
+            cond += 1
+
         if cond == 0:
             return True
         else:
             return False
+
     def checkAtomsRepeat(self, inAtoms, lst):
         for a in lst:
             if a in inAtoms:
@@ -570,7 +653,7 @@ class searchBonds(object):
                 break
 
         df_tmp1 = pd.DataFrame(rowList1)
-        df_tmp2 = self.updateAllCon(df_pairs)
+        df_tmp2 = self.updateAllCon(df_tmp1)
 
         return df_tmp2
 
@@ -676,6 +759,7 @@ class searchBonds(object):
         atomsDf = self.gro.df_atoms
         rowList = []
         atomsList = []
+
         for index, row in df_tmp.iterrows():
             if self.checkCircuit(atomsDf, row):
                 if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):

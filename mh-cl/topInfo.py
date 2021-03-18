@@ -159,7 +159,7 @@ class top(object):
         # c = max(self.atoms.charge)
         c = incharge / len(self.atoms.charge)
         for i in range(len(self.atoms.charge)):
-            self.atoms.charge += c
+            self.atoms.charge[i] = Decimal(self.atoms.charge[i]) + c
             # if self.atoms.charge[i] == c:
             #     print('old: {}, new: {}'.format(self.atoms.charge[i], str(Decimal(self.atoms.charge[i]) + Decimal(incharge))))
             #     self.atoms.charge[i] = str(Decimal(self.atoms.charge[i]) - Decimal(incharge))

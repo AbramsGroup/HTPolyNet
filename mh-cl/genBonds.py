@@ -19,6 +19,7 @@ class genBonds(object):
         self.pairs = pairs
         self.chargeMap = chargeMap # map
         self.rctMols = rctMols # list
+
         self.genPairs = []
         self.rctAtoms = []
         self.cat = cat

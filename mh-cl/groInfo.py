@@ -67,7 +67,7 @@ class gro(object):
         croR_list = basicParameters.croR_list
         infoMap = {**monR_list, **croR_list}
 
-        self.df_atoms['rct'] = 'False'
+        self.df_atoms['rct'] = 'NaN'
         self.df_atoms['rctNum'] = '0'
         self.df_atoms['prop'] = 'N'
         self.df_atoms['rctGroup'] = '0'
