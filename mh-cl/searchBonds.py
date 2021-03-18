@@ -759,7 +759,7 @@ class searchBonds(object):
         atomsDf = self.gro.df_atoms
         rowList = []
         atomsList = []
-
+        df_tmp.to_csv('tmp1.csv')
         for index, row in df_tmp.iterrows():
             if self.checkCircuit(atomsDf, row):
                 if self.checkAtomsRepeat(atomsList, [row.acro, row.amon]):
