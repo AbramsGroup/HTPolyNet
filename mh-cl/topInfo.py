@@ -9,7 +9,7 @@ from countTime import *
 from copy import deepcopy
 import numpy as np
 import decimal
-decimal.getcontext().prec = 7
+decimal.getcontext().prec = 6
 
 class top(object):
     def __init__(self):
