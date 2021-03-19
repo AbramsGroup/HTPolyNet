@@ -332,7 +332,7 @@ class main(object):
                 os.chdir(folderName1)
 
                 # searching potential bonds
-                sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top,
+                sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
                                                  self.conv, self.desBonds, self.chains)
                 pairs, chains, rMols, cutoff = sbonds.main()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
@@ -350,7 +350,7 @@ class main(object):
 
                     self.gro = gbonds.gro
                     self.top = gbonds.top
-                    # self.top.checkCharge()
+                    self.top.checkCharge()
 
                     cond = self.stepwiseRelax()
                     if cond == False:

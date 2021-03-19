@@ -15,7 +15,9 @@ import random
 import sys
 
 class searchBonds(object):
-    def __init__(self, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
+    def __init__(self, cpu, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
+        self.cpu = cpu
+
         self.monInfo = basicParameters.monInfo
         self.croInfo = basicParameters.croInfo
         self.cutoff = basicParameters.cutoff
@@ -297,8 +299,8 @@ class searchBonds(object):
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
         # ##### START PARALLEL
         print('start parallel searching!!')
-        p = Pool(processes=4) #TODO: should be able to tune based on the number of cell and free CPU cores
-        dfSplit = np.array_split(df_tmp, 4)
+        p = Pool(processes=self.cpu) #TODO: should be able to tune based on the number of cell and free CPU cores
+        dfSplit = np.array_split(df_tmp, self.cpu)
         # TODO: without parallel searching and check the results
         print('df_tmp: ', df_tmp.head())
         results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
