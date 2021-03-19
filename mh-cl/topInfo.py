@@ -162,7 +162,7 @@ class top(object):
             f.write('residue charge: {}\n'.format(c))
 
         for i in range(len(self.atoms.charge)):
-            self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) + c
+            self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - c
 
     def addCharge(self, incharge):
         c = max(self.atoms.charge)
