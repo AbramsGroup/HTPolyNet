@@ -9,7 +9,7 @@ from countTime import *
 from copy import deepcopy
 import numpy as np
 import decimal
-decimal.getcontext().prec = 8
+decimal.getcontext().prec = 7
 
 class top(object):
     def __init__(self):
@@ -190,17 +190,19 @@ class top(object):
 
         with open('chargeInfo.txt', 'a') as f:
             f.write('ori charge: {}\n'.format(charges))
-
+            f.write('\t{}'.format(self.atoms.charge[:10]))
         self.avgCharge(charges)
 
         charges = self.countCharge()
         with open('chargeInfo.txt', 'a') as f:
             f.write('new charge: {}\n'.format(charges))
+            f.write('\t{}'.format(self.atoms.charge[:10]))
 
         self.addCharge(charges)
         charges = self.countCharge()
         with open('chargeInfo.txt', 'a') as f:
             f.write('final charge: {}\n'.format(charges))
+            f.write('\t{}'.format(self.atoms.charge[:10]))
 
     def addTopRow(self, df, inStr):
         df.loc[-1] = inStr
