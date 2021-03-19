@@ -9,6 +9,7 @@ from countTime import *
 from copy import deepcopy
 import numpy as np
 import decimal
+decimal.getcontext().prec = 8
 
 class top(object):
     def __init__(self):
@@ -155,30 +156,52 @@ class top(object):
         return str1
 
     
-    def addCharge(self, incharge, add=True):
-        # c = max(self.atoms.charge)
+    def avgCharge(self, incharge, add=True):
         c = incharge / len(self.atoms.charge)
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('residue charge: {}\n'.format(c))
+
         for i in range(len(self.atoms.charge)):
             self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) + c
-            # if self.atoms.charge[i] == c:
-            #     print('old: {}, new: {}'.format(self.atoms.charge[i], str(Decimal(self.atoms.charge[i]) + Decimal(incharge))))
-            #     self.atoms.charge[i] = str(Decimal(self.atoms.charge[i]) - Decimal(incharge))
-            #     break
-        
+
+    def addCharge(self, incharge):
+        c = max(self.atoms.charge)
+        for i in range(len(self.atoms.charge)):
+            if self.atoms.charge[i] == c:
+                self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - decimal.Decimal(incharge)
+                break
+
     def setChargeDicimal(self, row):
         row.charge = decimal.Decimal(row.charge)
         # row.charge = round(float(row.charge), 8)
         return row
-        
-    def checkCharge(self):
-        decimal.getcontext().prec = 8
-        self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
+
+    def countCharge(self):
         charges = decimal.Decimal('0')
         for index, row in self.atoms.iterrows():
             charges += decimal.Decimal(row.charge)
-        
+
+        return charges
+
+    def checkCharge(self):
+
+        self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
+        charges = self.countCharge()
+
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('ori charge: {}\n'.format(charges))
+
+        self.avgCharge(charges)
+
+        charges = self.countCharge()
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('new charge: {}\n'.format(charges))
+
         self.addCharge(charges)
-        
+        charges = self.countCharge()
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('final charge: {}\n'.format(charges))
+
     def addTopRow(self, df, inStr):
         df.loc[-1] = inStr
         df.index = df.index + 1

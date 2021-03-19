@@ -80,7 +80,7 @@ class testCase(object):
         topDf.checkCharge()
         self.top = topDf
         atomsDf.df_atoms.to_csv('atomsDf.csv')
-        aa = searchBonds.searchBonds(a, a1, atomsDf, topDf, 0, 20, [])
+        aa = searchBonds.searchBonds(4, a, a1, atomsDf, topDf, 0, 20, [])
         pairs, chains, rctMols, cutoff = aa.main()
         return pairs, chains, rctMols, cutoff, topDf, aa
         # return aa
