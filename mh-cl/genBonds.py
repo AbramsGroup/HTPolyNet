@@ -242,7 +242,7 @@ class genBonds(object):
         self.top.dihedrals = df_dihs
         self.top.impropers = df_imps
 
-    def searchCon(self, idx, df_bonds):
+    def searchCon(self, idx, df_bonds, df_new=[]):
         idx = str(idx)
         df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)] # df_bonds is the bond section in the topology
         con = []
@@ -255,23 +255,35 @@ class genBonds(object):
                 print('bond connection met error, please check!')
                 print('df_out: ', df_out)
                 sys.exit()
+
+        print('df_new: ', df_new)
+        for i in df_new:
+            # print('i: ', i)
+            # print('idx: ', idx)
+            if i[0] == str(idx):
+                con.append(i[1])
+            elif i[1] == str(idx):
+                con.append(i[0])
+            else:
+                pass
+        print('atom {} has con: {}'.format(idx, con))
         return con
 
     @countTime
-    def genNewCon(self, pair, df_bonds): # TODO: still slow
+    def genNewCon(self, pair, df_bonds, df_new): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
-        con1 = self.searchCon(a1, df_bonds); con2 = self.searchCon(a2, df_bonds)
+        df_new.append([a1, a2, pair[2]])
+        con1 = self.searchCon(a1, df_bonds, df_new=df_new); con2 = self.searchCon(a2, df_bonds, df_new=df_new)
         for a in con1:
             a = str(a)
-            if a != 1:#row.amon:
-                #row.acro = a1; row.amon = a2
+            if a != a2:
                 new_angles.append([a, a1, a2])
-                con3 = self.searchCon(a, df_bonds); con4 = self.searchCon(a2, df_bonds)
+                con3 = self.searchCon(a, df_bonds, df_new=df_new); con4 = self.searchCon(a2, df_bonds, df_new=df_new)
                 for aa in con3:
                     aa = str(aa)
-                    if aa != a1: # sth wrong with this
+                    if aa != a1:
                         new_dihedrals.append([aa, a, a1, a2])
                         new_pairs.append([aa, a2, '1', '1']) # stands for new pairs
                 for aa in con4:
@@ -281,9 +293,9 @@ class genBonds(object):
                         new_pairs.append([a, aa, '1', '1'])
         for a in con2:
             a = str(a)
-            if a != 1:#row.acro:
+            if a != a1:
                 new_angles.append([a1, a2, a])
-                con3 = self.searchCon(a1, df_bonds); con4 = self.searchCon(a, df_bonds)
+                con3 = self.searchCon(a1, df_bonds, df_new=df_new); con4 = self.searchCon(a, df_bonds, df_new=df_new)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a2:
@@ -312,18 +324,21 @@ class genBonds(object):
         
         pairs = self.genPairs
         for p in pairs:
-            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds)
+            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
             new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
-            
+
+        for i in new_dihedrals:
+            print('dih1: ', i)
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
         new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
         new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
-
+        for i in new_dihedrals:
+            print('dih2: ', i)
         inTop.atoms = df_atoms
         inTop.bonds = df_bonds
         inTop.pairs = df_pairs
@@ -516,7 +531,9 @@ class genBonds(object):
                     if len(ii) > 0:
                         cc.append(ii)
         if len(cc) == 0:
-            sys.exit('Didnt find charge map, something wrong!')
+            print('Didnt find charge map, something wrong!')
+            print('seq1: ', seq1)
+            sys.exit()
         else:
             if len(cc[-1]) < 3 or cc[-1] == '\n':
 #                print('charge seq (w/o -1 ele): ', cc)

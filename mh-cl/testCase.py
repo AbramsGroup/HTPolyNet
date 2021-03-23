@@ -105,7 +105,7 @@ class testCase(object):
 
         a = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols, cat='map')
         a.main()
-        return a
+        return a, b
     
     def testmolRctInfo(self):
         import molRctInfo
@@ -122,9 +122,11 @@ if __name__ == "__main__":
     
     pairs, chains, rctMols, cutoff, topDf, aa = a.testSearchBonds()
     aa.gro.df_atoms.to_csv('z.csv')
-    # df_pairs = pairs
-    # print('{} bonds will be formed!'.format(len(df_pairs)))
+    df_pairs = pairs#.iloc[0:1]
+    print('{} bonds will be formed!'.format(len(df_pairs)))
+    print('\t{}'.format(df_pairs))
+
+    b2, charge = a.testGenBonds(df_pairs, rctMols)
     #
-    # b2 = a.testGenBonds(df_pairs, rctMols)
-    # #
-    # a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)
+    a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)
+    a = b2.top.outDf('tmp22', k=0.9, stepRelax=False)
