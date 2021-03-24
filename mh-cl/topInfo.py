@@ -326,7 +326,6 @@ class top(object):
         # atom, bond, pair, angle, dihedral, system, molecules
         df_lst0 = [df_default, df_itp, df_sys, df_mol]
         str_top_tmp = ['[ defaults ]', '; Include', '[ system ]', '[ molecules ]']
-        print('b2: ', df_bonds_str.head())
         if simple:
             df_lst1 = [df_atypes_str, df_btypes_str, df_molType, df_atoms_str, df_bonds_str]
             str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ moleculetype ]', '[ atoms ]', '[ bonds ]']

@@ -256,17 +256,13 @@ class genBonds(object):
                 print('df_out: ', df_out)
                 sys.exit()
 
-        print('df_new: ', df_new)
         for i in df_new:
-            # print('i: ', i)
-            # print('idx: ', idx)
             if i[0] == str(idx):
                 con.append(i[1])
             elif i[1] == str(idx):
                 con.append(i[0])
             else:
                 pass
-        print('atom {} has con: {}'.format(idx, con))
         return con
 
     @countTime
@@ -321,24 +317,21 @@ class genBonds(object):
         df_dihs = inTop.dihedrals
         df_imps = inTop.impropers
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
-        
+        lst_bonds = []
         pairs = self.genPairs
         for p in pairs:
-            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
+            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, lst_bonds)
             new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
 
-        for i in new_dihedrals:
-            print('dih1: ', i)
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
         new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
         new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
-        for i in new_dihedrals:
-            print('dih2: ', i)
+
         inTop.atoms = df_atoms
         inTop.bonds = df_bonds
         inTop.pairs = df_pairs
@@ -525,7 +518,6 @@ class genBonds(object):
         
         for keys, value in charges.items():
             if seq1 == keys:
-                print('find map!: ', keys)
                 c = value.split('/')
                 for ii in c:
                     if len(ii) > 0:

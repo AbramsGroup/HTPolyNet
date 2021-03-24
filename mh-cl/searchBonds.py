@@ -346,8 +346,6 @@ class searchBonds(object):
 
     def cycleDetect(self, idx, path=[]):
         path = path + [idx]
-        print('path: ', path)
-        print('idx: ', idx)
         if path == len(self.rctAtoms):
             return path
 
@@ -813,8 +811,8 @@ class searchBonds(object):
                 print('df_pairs: ', df_pairs)
                 if self.conv < 0.7:
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
-                        self.cutoff += 0.1
-                        if self.cutoff > 0.5 * float(self.boxSize):
+                        self.cutoff += 0.2
+                        if self.cutoff > 0.7 * float(self.boxSize):
                             break
                         else:
                             continue
@@ -823,8 +821,8 @@ class searchBonds(object):
 
                 elif 0.7 <= self.conv <= 0.9:
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
-                        self.cutoff += 0.1
-                        if self.cutoff > 0.6 * float(self.boxSize):
+                        self.cutoff += 0.2
+                        if self.cutoff > 0.75 * float(self.boxSize):
                             break
                         else:
                             continue
