@@ -345,9 +345,12 @@ class searchBonds(object):
             return True
 
     def cycleDetect(self, idx, path=[]):
+        #TODO: infinite loop caused by the network structure
+        #TODO: Using networkx to find cycle
+
         path = path + [idx]
-        if path == len(self.rctAtoms):
-            return path
+        if len(path) >= len(self.rctAtoms):
+            return [path]
 
         if len(path) > 3:
             for atn in self.tmpBonds[idx]:
@@ -389,7 +392,7 @@ class searchBonds(object):
         self.tmpBonds = tmpBonds
         self.start = row.acro
         path = self.cycleDetect(self.start)
-        print('path: ', path)
+        # print('path: ', path)
         if path == []:
             return True
         else:
@@ -843,6 +846,8 @@ class searchBonds(object):
             count += 1
             if len(pairs) == 0:
                 self.cutoff += 0.2
+            with open('count.txt', 'a') as f:
+                f.write('\ncount: {}'.format(count))
         return pairs
 
     @countTime
