@@ -658,7 +658,7 @@ class searchBonds(object):
                     rowList1.append(row)
 
             if self.conv < 0.7:
-                if len(rowList1) < 0.1 * self.desBonds:
+                if len(rowList1) < 0.2 * self.desBonds:
                     self.setRctP(df_tmp0)
                     rowList = []
                     cc += 1
@@ -838,7 +838,7 @@ class searchBonds(object):
                     else:
                         break
 
-            df_pairs = self.finalRctPairs(df_pairs)  # TODO: update mol connection should not be here
+            df_pairs = self.finalRctPairs(df_pairs)
             pairs = df_pairs
             count += 1
             if len(pairs) == 0:
