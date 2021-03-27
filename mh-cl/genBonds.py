@@ -256,10 +256,7 @@ class genBonds(object):
                 print('df_out: ', df_out)
                 sys.exit()
 
-        print('df_new: ', df_new)
         for i in df_new:
-            # print('i: ', i)
-            # print('idx: ', idx)
             if i[0] == str(idx):
                 con.append(i[1])
             elif i[1] == str(idx):
@@ -329,6 +326,16 @@ class genBonds(object):
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
+
+        # with open('bonds-2.txt', 'w') as f:
+        #     for b in new_bonds:
+        #         f.write('{}\n'.format(b))
+        # with open('ang-2.txt', 'w') as f:
+        #     for a in new_angles:
+        #         f.write('{}\n'.format(a))
+        # with open('dih-2.txt', 'w') as f:
+        #     for d in new_dihedrals:
+        #         f.write('{}\n'.format(d))
 
         for i in new_dihedrals:
             print('dih1: ', i)

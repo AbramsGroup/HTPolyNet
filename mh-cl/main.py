@@ -338,9 +338,6 @@ class main(object):
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 self.chains = chains
                 if len(pairs) > 0:
-#                    print('pairs.amon: ', pairs.amon.values)
-#                    print('pairs.amon.to_string(): ', pairs.amon.to_string())
-
                     self.pairs_detail['step{}'.format(step)] = pairs
 
                     # self.gro.outDf('init') # just for check!

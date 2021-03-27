@@ -13,6 +13,7 @@ from functools import partial
 from copy import deepcopy
 import random
 import sys
+import networkx as nx
 
 class searchBonds(object):
     def __init__(self, cpu, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
@@ -344,32 +345,18 @@ class searchBonds(object):
         else:
             return True
 
-    def cycleDetect(self, idx, path=[]):
-        path = path + [idx]
-        print('path: ', path)
-        print('idx: ', idx)
-        if path == len(self.rctAtoms):
-            return path
+    def cycleDetect(self):
+        g = nx.Graph()
+        g.add_nodes_from(self.tmpBonds.keys())
+        for key, value in self.tmpBonds.items():
+            g.add_edges_from(([(key, t) for t in value]))
 
-        if len(path) > 3:
-            for atn in self.tmpBonds[idx]:
-                if atn == self.start:
-                    path = path + [atn]
-                    return [path]
-
-        paths = []
-        for ii in self.tmpBonds[idx]:
-            if ii not in path:
-                newPaths = self.cycleDetect(ii, path)
-                for newPath in newPaths:
-                    paths.append(newPath)
-        return paths
+        return nx.cycle_basis(g)
 
     def searchCycle(self, row):
         atoms = self.rctAtoms
         bonds = self.rctBonds
         tmpBonds = deepcopy(bonds)
-        print('tmpBonds: ', tmpBonds)
         if row.acro in tmpBonds.keys():
             tmpBonds[row.acro].append(row.amon)
         else:
@@ -389,9 +376,7 @@ class searchBonds(object):
             f.write('\n\t{}'.format(tmpBonds))
 
         self.tmpBonds = tmpBonds
-        self.start = row.acro
-        path = self.cycleDetect(self.start)
-        print('path: ', path)
+        path = self.cycleDetect()
         if path == []:
             return True
         else:
@@ -660,7 +645,7 @@ class searchBonds(object):
                     rowList1.append(row)
 
             if self.conv < 0.7:
-                if len(rowList1) < 0.1 * self.desBonds:
+                if len(rowList1) < 0.2 * self.desBonds:
                     self.setRctP(df_tmp0)
                     rowList = []
                     cc += 1
@@ -840,7 +825,7 @@ class searchBonds(object):
                     else:
                         break
 
-            df_pairs = self.finalRctPairs(df_pairs)  # TODO: update mol connection should not be here
+            df_pairs = self.finalRctPairs(df_pairs)
             pairs = df_pairs
             count += 1
             if len(pairs) == 0:
