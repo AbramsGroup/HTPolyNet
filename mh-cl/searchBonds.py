@@ -14,6 +14,7 @@ from functools import partial
 from copy import deepcopy
 import random
 import sys
+import networkx as nx
 
 class searchBonds(object):
     def __init__(self, cpu, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
@@ -357,7 +358,6 @@ class searchBonds(object):
         atoms = self.rctAtoms
         bonds = self.rctBonds
         tmpBonds = deepcopy(bonds)
-        print('tmpBonds: ', tmpBonds)
         if row.acro in tmpBonds.keys():
             tmpBonds[row.acro].append(row.amon)
         else:

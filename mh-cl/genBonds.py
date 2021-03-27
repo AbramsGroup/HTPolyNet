@@ -11,7 +11,6 @@ import pandas as pd
 import sys
 import re
 from countTime import *
-from copy import deepcopy
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map'):
@@ -264,21 +263,21 @@ class genBonds(object):
                 con.append(i[0])
             else:
                 pass
+        print('atom {} has con: {}'.format(idx, con))
         return con
 
     @countTime
     def genNewCon(self, pair, df_bonds, df_new): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
-        lst = deepcopy(df_new)
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
-        lst.append([a1, a2, pair[2]])
-        con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
+        df_new.append([a1, a2, pair[2]])
+        con1 = self.searchCon(a1, df_bonds, df_new=df_new); con2 = self.searchCon(a2, df_bonds, df_new=df_new)
         for a in con1:
             a = str(a)
             if a != a2:
                 new_angles.append([a, a1, a2])
-                con3 = self.searchCon(a, df_bonds, df_new=lst); con4 = self.searchCon(a2, df_bonds, df_new=lst)
+                con3 = self.searchCon(a, df_bonds, df_new=df_new); con4 = self.searchCon(a2, df_bonds, df_new=df_new)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a1:
@@ -293,7 +292,7 @@ class genBonds(object):
             a = str(a)
             if a != a1:
                 new_angles.append([a1, a2, a])
-                con3 = self.searchCon(a1, df_bonds, df_new=lst); con4 = self.searchCon(a, df_bonds, df_new=lst)
+                con3 = self.searchCon(a1, df_bonds, df_new=df_new); con4 = self.searchCon(a, df_bonds, df_new=df_new)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a2:
@@ -319,6 +318,7 @@ class genBonds(object):
         df_dihs = inTop.dihedrals
         df_imps = inTop.impropers
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
+        
         pairs = self.genPairs
         for p in pairs:
             nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
@@ -327,12 +327,25 @@ class genBonds(object):
             new_angles += nAngles
             new_dihedrals += nDihs
 
+        # with open('bonds-2.txt', 'w') as f:
+        #     for b in new_bonds:
+        #         f.write('{}\n'.format(b))
+        # with open('ang-2.txt', 'w') as f:
+        #     for a in new_angles:
+        #         f.write('{}\n'.format(a))
+        # with open('dih-2.txt', 'w') as f:
+        #     for d in new_dihedrals:
+        #         f.write('{}\n'.format(d))
+
+        for i in new_dihedrals:
+            print('dih1: ', i)
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
         new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
         new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
-
+        for i in new_dihedrals:
+            print('dih2: ', i)
         inTop.atoms = df_atoms
         inTop.bonds = df_bonds
         inTop.pairs = df_pairs
@@ -519,6 +532,7 @@ class genBonds(object):
         
         for keys, value in charges.items():
             if seq1 == keys:
+                print('find map!: ', keys)
                 c = value.split('/')
                 for ii in c:
                     if len(ii) > 0:
