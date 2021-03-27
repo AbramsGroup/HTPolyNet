@@ -6,6 +6,7 @@ Searching potential bonds
 """
 import pandas as pd
 import numpy as np
+import networkx as nx
 import time
 from countTime import *
 from multiprocessing import Process, Pool
@@ -344,27 +345,13 @@ class searchBonds(object):
         else:
             return True
 
-    def cycleDetect(self, idx, path=[]):
-        #TODO: infinite loop caused by the network structure
-        #TODO: Using networkx to find cycle
+    def cycleDetect(self):
+        g = nx.Graph()
+        g.add_nodes_from(self.tmpBonds.keys())
+        for key, value in self.tmpBonds.items():
+            g.add_edges_from(([(key, t) for t in value]))
 
-        path = path + [idx]
-        if len(path) >= len(self.rctAtoms):
-            return [path]
-
-        if len(path) > 3:
-            for atn in self.tmpBonds[idx]:
-                if atn == self.start:
-                    path = path + [atn]
-                    return [path]
-
-        paths = []
-        for ii in self.tmpBonds[idx]:
-            if ii not in path:
-                newPaths = self.cycleDetect(ii, path)
-                for newPath in newPaths:
-                    paths.append(newPath)
-        return paths
+        return nx.cycle_basis(g)
 
     def searchCycle(self, row):
         atoms = self.rctAtoms
@@ -390,9 +377,7 @@ class searchBonds(object):
             f.write('\n\t{}'.format(tmpBonds))
 
         self.tmpBonds = tmpBonds
-        self.start = row.acro
-        path = self.cycleDetect(self.start)
-        # print('path: ', path)
+        path = self.cycleDetect()
         if path == []:
             return True
         else:

@@ -128,5 +128,5 @@ if __name__ == "__main__":
 
     b2, charge = a.testGenBonds(df_pairs, rctMols)
     #
-    a = b2.top.outDf('tmp11', k=0.9, stepRelax=True)
-    a = b2.top.outDf('tmp22', k=0.9, stepRelax=False)
+    a = b2.top.outDf('tmp11-2', k=0.9, stepRelax=True)
+    a = b2.top.outDf('tmp22-2', k=0.9, stepRelax=False)

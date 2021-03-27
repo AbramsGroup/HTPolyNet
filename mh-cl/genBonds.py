@@ -11,6 +11,7 @@ import pandas as pd
 import sys
 import re
 from countTime import *
+from copy import deepcopy
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map'):
@@ -268,15 +269,16 @@ class genBonds(object):
     @countTime
     def genNewCon(self, pair, df_bonds, df_new): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
+        lst = deepcopy(df_new)
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
-        df_new.append([a1, a2, pair[2]])
-        con1 = self.searchCon(a1, df_bonds, df_new=df_new); con2 = self.searchCon(a2, df_bonds, df_new=df_new)
+        lst.append([a1, a2, pair[2]])
+        con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)
             if a != a2:
                 new_angles.append([a, a1, a2])
-                con3 = self.searchCon(a, df_bonds, df_new=df_new); con4 = self.searchCon(a2, df_bonds, df_new=df_new)
+                con3 = self.searchCon(a, df_bonds, df_new=lst); con4 = self.searchCon(a2, df_bonds, df_new=lst)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a1:
@@ -291,7 +293,7 @@ class genBonds(object):
             a = str(a)
             if a != a1:
                 new_angles.append([a1, a2, a])
-                con3 = self.searchCon(a1, df_bonds, df_new=df_new); con4 = self.searchCon(a, df_bonds, df_new=df_new)
+                con3 = self.searchCon(a1, df_bonds, df_new=lst); con4 = self.searchCon(a, df_bonds, df_new=lst)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a2:
@@ -317,10 +319,9 @@ class genBonds(object):
         df_dihs = inTop.dihedrals
         df_imps = inTop.impropers
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
-        lst_bonds = []
         pairs = self.genPairs
         for p in pairs:
-            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, lst_bonds)
+            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
             new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
