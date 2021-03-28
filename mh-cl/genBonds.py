@@ -337,15 +337,12 @@ class genBonds(object):
         #     for d in new_dihedrals:
         #         f.write('{}\n'.format(d))
 
-        for i in new_dihedrals:
-            print('dih1: ', i)
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
         new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
         new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
         new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
-        for i in new_dihedrals:
-            print('dih2: ', i)
+
         inTop.atoms = df_atoms
         inTop.bonds = df_bonds
         inTop.pairs = df_pairs
