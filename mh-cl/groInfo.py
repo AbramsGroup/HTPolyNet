@@ -79,7 +79,6 @@ class gro(object):
             atNames = []
             for n in monR_list[i]:
                 info = self.getProp(i, n[0], infoMap)
-                print(info[n[0]])
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rct'] = 'True'
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctNum'] = int(info[n[0]][0])
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'prop'] = info[n[0]][1]
@@ -94,6 +93,7 @@ class gro(object):
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'prop'] = info[n[0]][1]
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctGroup'] = info[n[0]][2]
 
+    @countTime
     def outDf(self, outName):
         df = self.df_atoms
         sysName = self.sysName

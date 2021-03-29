@@ -184,7 +184,7 @@ class searchBonds(object):
         if chain == ['']:
             return ['']
         else:
-            print('chain: ', chain)
+            # print('chain: ', chain)
             for ele in chain:
                 n = atomsDf.loc[atomsDf['molNum'] == ele, 'molName'].values[0]
                 names.append(n)
@@ -221,16 +221,16 @@ class searchBonds(object):
             pd.to_numeric(df3.dist)
             df3.sort_values(by='dist', inplace=True)
             df3.to_csv('df3_sorted.csv')
-            print('cutoff: ', self.cutoff)
+            # print('cutoff: ', self.cutoff)
             df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
             df4.to_csv('df4.csv') # TODO: append files to check
             df_out1 = []
             # TODO: check if df3 new generated
             if len(df4) == 0:
-                print('No pairs found')
+                # print('No pairs found')
                 return [[]]
             else:
-                print('Pairs found')
+                # print('Pairs found')
                 for index, row in df4.iterrows():
                     df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
                                     atom.molCon, random.random(), row.rctPct])
@@ -238,7 +238,6 @@ class searchBonds(object):
         else:
             return [[]]
 
-    @countTime
     def getAllMolNames(self):
         atomNames = []
         rctFunc = self.rctInfo
@@ -251,8 +250,6 @@ class searchBonds(object):
 
     def openList(self, inList):
         out = []
-        print('inList type: ', type(inList))
-        print('inList: ', inList)
         for i in inList:
             if i == []:
                 continue
@@ -304,14 +301,11 @@ class searchBonds(object):
         p = Pool(processes=self.cpu) #TODO: should be able to tune based on the number of cell and free CPU cores
         dfSplit = np.array_split(df_tmp, self.cpu)
         # TODO: without parallel searching and check the results
-        print('df_tmp: ', df_tmp.head())
         results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
         p.close()
         p.join()
         tmpLst = []
         for l in results:
-            print('l type: ', type(l))
-            print('l: ', l)
             if l.empty:
                 tmpLst.append(pd.Series(dtype=object))
             else:
@@ -464,10 +458,8 @@ class searchBonds(object):
 
         # 条件4: 不能形成全部由可反应原子形成的环
         if self.searchCycle(row):
-            print('No cycle found')
             pass
         else:
-            print('Cycle detect')
             cond += 1
 
         if cond == 0:
@@ -490,14 +482,6 @@ class searchBonds(object):
             atomsDf = self.gro.df_atoms
             at1Prop = atomsDf.loc[atomsDf.globalIdx == at1Idx].prop.values[0]
             at2Prop = atomsDf.loc[atomsDf.globalIdx == at2Idx].prop.values[0]
-            print('atom1: {}\tatom2: {}\tat1Prop: {}\tat2Prop: {}'.format(at1Idx, at2Idx, at1Prop, at2Prop))
-            print('atom1: {}\t'.format(at1Idx))
-            print('\t{}'.format(atomsDf.loc[atomsDf.globalIdx == at1Idx].values[0]))
-            print('atom2: {}\t'.format(at1Idx))
-            print('\t{}'.format(atomsDf.loc[atomsDf.globalIdx == at2Idx].values[0]))
-
-            # print('at1Prop: ', at1Prop) # TODO: 好像有问题， 虚拟机里面的tmp-res文件夹里有
-            # print('at2Prop: ', at2Prop)
             if at1Prop == at2Prop:
                 return False
             else:
@@ -528,8 +512,6 @@ class searchBonds(object):
                 nmol2 += 1
 
         if nmol1 > 0 and nmol2 > 0:
-            # print('\t\t', tmpChains[mol1])
-            # print('\t\t', tmpChains[mol2])
             if tmpChains[mol1] == tmpChains[mol2]:
                 pass
             else:
@@ -553,6 +535,7 @@ class searchBonds(object):
             new = [mol1, mol2]
             self.chains.append(new)
 
+    @countTime
     def updateAllChains(self):
         df_atoms = self.gro.df_atoms
         chains = self.chains
@@ -594,7 +577,6 @@ class searchBonds(object):
 
         self.updateChains(mol1, mol2)
         print('Bonds formed between mol {} and mol {}'.format(mol1, mol2))
-        print('self.chains: ', self.chains)
         self.updateGroupCon(a1, a2, mol1, mol2, atomsDf)
 
         # update tmp bond session
@@ -694,7 +676,6 @@ class searchBonds(object):
             sys.exit()
 
         while (xdiv <= self.cutoff):
-            print('parts: ', parts)
             if parts <= 1:
                 print('Unusual occasion occurs! Please check the cutoff you set and rerun the script!')
                 sys.exit()
@@ -763,7 +744,6 @@ class searchBonds(object):
                 continue
         return row
 
-    @countTime
     def assignAtoms(self, df_atoms):
         df1 = df_atoms.apply(lambda x: self.searchCell(x), axis=1)
         return df1
@@ -787,6 +767,7 @@ class searchBonds(object):
         df_out.to_csv('tmp2.csv')
         return df_out
 
+    @countTime
     def collectBonds(self, count):
         pairs = []
         a1 = []
@@ -795,8 +776,6 @@ class searchBonds(object):
             while (len(pairs) == 0):
                 df_pairs = self.getRctDf()
                 df_pairs.to_csv('all_bonds_within_cutoff.csv')
-                # df_pairs.to_csv('final_bonds.csv')
-                print('df_pairs: ', df_pairs)
                 if self.conv < 0.7:
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
                         self.cutoff += 0.2
@@ -836,7 +815,7 @@ class searchBonds(object):
         return pairs
 
     @countTime
-    def main(self):
+    def sBonds(self):
         count = 5
         parts = 8
         self.genCell(parts)
@@ -844,7 +823,6 @@ class searchBonds(object):
         if len(pairs) == 0:
             return pairs, self.chains, self.mol, self.cutoff
 
-        # print('pairs: ', pairs)
         self.idx2Mol(pairs)
 
         # update all atoms belonged chain

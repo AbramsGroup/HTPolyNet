@@ -183,6 +183,7 @@ class top(object):
 
         return charges
 
+    @countTime
     def checkCharge(self):
 
         self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
@@ -296,7 +297,8 @@ class top(object):
         with open('{}.top'.format(outName), 'w') as f:
             for index, row in df.iterrows():
                 f.write('{}\n'.format(row['0']))
-        
+
+    @countTime
     def outDf(self, outName, k=1, simple=False, stepRelax=False):
         self.k = k
         self.stepRelax = stepRelax

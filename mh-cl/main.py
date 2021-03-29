@@ -23,6 +23,7 @@ import genBonds
 import generateChargeDb
 import generateTypeInfo
 import processTop
+from countTime import *
 
 import os
 from shutil import copyfile
@@ -86,7 +87,8 @@ class main(object):
         b.setInfo(a.sumTop)
         b.checkCharge()
         return b
-    
+
+    @countTime
     def updateCoord(self, name):
         a = readGro.initGro()
         a.setName(name)
@@ -263,6 +265,7 @@ class main(object):
                 for index, row in values.iterrows():
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
 
+    @countTime
     def stepwiseRelax(self):
         k = [0.01, 0.1, 1]
         outName = 'sw'
@@ -334,7 +337,7 @@ class main(object):
                 # searching potential bonds
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
                                                  self.conv, self.desBonds, self.chains)
-                pairs, chains, rMols, cutoff = sbonds.main()
+                pairs, chains, rMols, cutoff = sbonds.sBonds()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 self.chains = chains
                 if len(pairs) > 0:
@@ -343,7 +346,7 @@ class main(object):
                     # self.gro.outDf('init') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
-                    gbonds.main() # update atom's rct status
+                    gbonds.gBonds() # update atom's rct status
 
                     self.gro = gbonds.gro
                     self.top = gbonds.top

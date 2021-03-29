@@ -11,6 +11,8 @@ import pandas as pd
 import sys
 import re
 from countTime import *
+from copy import deepcopy
+import time
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map'):
@@ -208,14 +210,13 @@ class genBonds(object):
         df_imps = inTop.impropers
         hAtoms = []
         for p in pairs:
-            # print('pairs: ', p)
             hCon1 = self.findHydrogen(atomsDf, df_bonds, p[0])[0]
             hCon2 = self.findHydrogen(atomsDf, df_bonds, p[1])[0]
             hAtoms.append(hCon1); hAtoms.append(hCon2)
         
         print('Following atoms will be removed: ', hAtoms)
+        t1 = time.time()
         for a in hAtoms:
-#            gro_df = sysGro[0]
             atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
             self.gro.df_atoms = atomsDf
             df_atoms.drop(df_atoms[df_atoms['nr'] == a].index, inplace=True)
@@ -234,7 +235,8 @@ class genBonds(object):
             df_imps.drop(df_imps[df_imps['aj'] == a].index, inplace=True)
             df_imps.drop(df_imps[df_imps['ak'] == a].index, inplace=True)
             df_imps.drop(df_imps[df_imps['al'] == a].index, inplace=True)
-        
+        t2 = time.time()
+        print('@timefn: dropRows {}s'.format(t2 - t1))
         self.top.atoms = df_atoms
         self.top.bonds = df_bonds
         self.top.pairs = df_pairs
@@ -263,7 +265,6 @@ class genBonds(object):
                 con.append(i[0])
             else:
                 pass
-        print('atom {} has con: {}'.format(idx, con))
         return con
 
     @countTime
@@ -271,13 +272,14 @@ class genBonds(object):
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
-        df_new.append([a1, a2, pair[2]])
-        con1 = self.searchCon(a1, df_bonds, df_new=df_new); con2 = self.searchCon(a2, df_bonds, df_new=df_new)
+        # df_new.append([a1, a2, pair[2]])
+        lst = deepcopy(df_new)
+        con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)
             if a != a2:
                 new_angles.append([a, a1, a2])
-                con3 = self.searchCon(a, df_bonds, df_new=df_new); con4 = self.searchCon(a2, df_bonds, df_new=df_new)
+                con3 = self.searchCon(a, df_bonds, df_new=lst); con4 = self.searchCon(a2, df_bonds, df_new=lst)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a1:
@@ -292,7 +294,7 @@ class genBonds(object):
             a = str(a)
             if a != a1:
                 new_angles.append([a1, a2, a])
-                con3 = self.searchCon(a1, df_bonds, df_new=df_new); con4 = self.searchCon(a, df_bonds, df_new=df_new)
+                con3 = self.searchCon(a1, df_bonds, df_new=lst); con4 = self.searchCon(a, df_bonds, df_new=lst)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a2:
@@ -322,7 +324,8 @@ class genBonds(object):
         pairs = self.genPairs
         for p in pairs:
             nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
-            new_bonds += nBonds
+            if nBonds not in new_bonds:
+                new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
@@ -529,7 +532,7 @@ class genBonds(object):
         
         for keys, value in charges.items():
             if seq1 == keys:
-                print('find map!: ', keys)
+                # print('find map!: ', keys)
                 c = value.split('/')
                 for ii in c:
                     if len(ii) > 0:
@@ -540,25 +543,22 @@ class genBonds(object):
             sys.exit()
         else:
             if len(cc[-1]) < 3 or cc[-1] == '\n':
-#                print('charge seq (w/o -1 ele): ', cc)
                 return cc[:-1]
             else:
-#                print('charge seq: (w -1 ele)', cc)
                 return cc
     
     def getAtomIdx(self, molNum):
         df_atoms = self.gro.df_atoms
         rctIdx = list(df_atoms[df_atoms.molNum == molNum].globalIdx)
         return rctIdx
-        
+
+    @countTime
     def updateCharge(self): 
         mols = self.rctMols
         for m in mols:
             a = self.getAtomIdx(m)
             df_atoms_top = self.top.atoms[(self.top.atoms.nr.isin(a))]
             seq, resname = self.getSeq(df_atoms_top)
-#            print('resname: ', resname)
-#            print('seq: ', seq)
             charges = self.mapCharge(resname, seq)
             self.top.atoms.loc[(self.top.atoms.nr.isin(a)), 'charge'] = charges
 
@@ -585,7 +585,6 @@ class genBonds(object):
         #     print('Atom {} is over-reacted'.format(a1.globalIdx))
         #     sys.exit()
 
-    @countTime
     def updateRctInfo(self):
         pairs = self.pairs
         for index, row in pairs.iterrows():
@@ -598,7 +597,7 @@ class genBonds(object):
 
 
     @countTime       
-    def main(self):
+    def gBonds(self):
         self.updateRctInfo()
         self.delHydrogen()
         self.addNewCon()
