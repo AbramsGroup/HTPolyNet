@@ -86,6 +86,6 @@ class readMol(object):
         self.mol2 = mol2
         
 if __name__ == '__main__':
-    a = readMol('systems/unrctSystem/VEA.mol2')
+    a = readMol('systems/unrctSystem/mST.mol2')
     a.main()
     
