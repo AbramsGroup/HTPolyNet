@@ -6,6 +6,7 @@ Created on Thu Oct 22 13:49:19 2020
 """
 import pandas as pd
 import mol2Info
+from copy import deepcopy
 
 class readMol(object):
     def __init__(self, name):
@@ -30,7 +31,8 @@ class readMol(object):
         return df_sep
     
     def splitRow(self, row, idx=0):
-        data = list(row.str.split())[0]
+        x = deepcopy(row)
+        data = list(x.str.split())[0]
         return data[idx]
     
     def extractInfo(self, df, key='basic'):
