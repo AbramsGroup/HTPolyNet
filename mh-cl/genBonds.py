@@ -267,7 +267,6 @@ class genBonds(object):
                 pass
         return con
 
-    @countTime
     def genNewCon(self, pair, df_bonds, df_new): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
