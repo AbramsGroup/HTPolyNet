@@ -360,6 +360,7 @@ class main(object):
 
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
+                    self.top.topClean(key='bonds')
                     self.top.outDf(topName)
 
                     intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']

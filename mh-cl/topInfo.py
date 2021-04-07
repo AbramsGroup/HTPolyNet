@@ -112,8 +112,7 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
                 else:
-                    str1 = '{:>7}{:>7}{:>7}'.format(
-                    x.ai, x.aj, x.funct)
+                    str1 = ' '
             else:
                 str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
@@ -123,8 +122,7 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.ak, x.funct)
                 else:
-                    str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
-                    x.ai, x.aj, x.ak, x.funct)
+                    str1 = ' '
             else:
                 str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.ak, x.funct)
@@ -144,12 +142,7 @@ class top(object):
                         str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
                             x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
                 else:
-                    if key not in self.dupDihTypeKey:
-                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct)
-                    else:
-                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                    str1 = ' '
             else:
                 if key not in self.dupDihTypeKey:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
@@ -304,6 +297,10 @@ class top(object):
         with open('{}.top'.format(outName), 'w') as f:
             for index, row in df.iterrows():
                 f.write('{}\n'.format(row['0']))
+
+    def topClean(self, key='bonds'):
+        if key == 'bonds':
+            self.bonds.drop_duplicates(inplace=True)
 
     @countTime
     def outDf(self, outName, k=1, simple=False, stepRelax=False):

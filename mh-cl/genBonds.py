@@ -325,9 +325,7 @@ class genBonds(object):
         pairs = self.genPairs
         for p in pairs:
             nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
-            for b in nBonds:
-                if b not in new_bonds:
-                    new_bonds += b
+            new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
