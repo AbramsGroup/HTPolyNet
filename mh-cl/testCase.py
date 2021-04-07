@@ -81,7 +81,7 @@ class testCase(object):
         self.top = topDf
         atomsDf.df_atoms.to_csv('atomsDf.csv')
         aa = searchBonds.searchBonds(4, a, a1, atomsDf, topDf, 0, 20, [])
-        pairs, chains, rctMols, cutoff = aa.main()
+        pairs, chains, rctMols, cutoff = aa.sBonds()
         return pairs, chains, rctMols, cutoff, topDf, aa
         # return aa
 
@@ -104,7 +104,7 @@ class testCase(object):
         b = getChargeMaps()
 
         a = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols, cat='map')
-        a.main()
+        a.gBonds()
         return a, b
     
     def testmolRctInfo(self):

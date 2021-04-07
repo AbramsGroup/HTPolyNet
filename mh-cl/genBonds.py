@@ -194,6 +194,7 @@ class genBonds(object):
         '''
         '''
         TODO: when the number of bonds increase, this function time increase a lot. Need to find a way to get rid of the loop
+        SOLUTIONS: Split the potential pairs into small list and using Pool to finish it in part
         '''
         pairs = []
         for index, row in self.pairs.iterrows():
@@ -271,8 +272,9 @@ class genBonds(object):
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
-        # df_new.append([a1, a2, pair[2]])
-        lst = deepcopy(df_new)
+        df_new.append([a1, a2, pair[2]])
+        # lst = deepcopy(df_new)
+        lst = df_new
         con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)
@@ -323,21 +325,12 @@ class genBonds(object):
         pairs = self.genPairs
         for p in pairs:
             nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
-            if nBonds not in new_bonds:
-                new_bonds += nBonds
+            for b in nBonds:
+                if b not in new_bonds:
+                    new_bonds += b
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
-
-        # with open('bonds-2.txt', 'w') as f:
-        #     for b in new_bonds:
-        #         f.write('{}\n'.format(b))
-        # with open('ang-2.txt', 'w') as f:
-        #     for a in new_angles:
-        #         f.write('{}\n'.format(a))
-        # with open('dih-2.txt', 'w') as f:
-        #     for d in new_dihedrals:
-        #         f.write('{}\n'.format(d))
 
         # check and add new types to the corresponding type section
         print('checking and adding new types...')

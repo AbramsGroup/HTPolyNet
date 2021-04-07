@@ -298,12 +298,15 @@ class searchBonds(object):
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
         # ##### START PARALLEL
         print('start parallel searching!!')
-        p = Pool(processes=self.cpu) #TODO: should be able to tune based on the number of cell and free CPU cores
+        t1 = time.time()
+        p = Pool(processes=self.cpu)
         dfSplit = np.array_split(df_tmp, self.cpu)
         # TODO: without parallel searching and check the results
         results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
         p.close()
         p.join()
+        t2 = time.time()
+        print('@timefn: getPairs_tot took: {}s'.format(t2 - t1))
         tmpLst = []
         for l in results:
             if l.empty:
@@ -576,7 +579,7 @@ class searchBonds(object):
         atomsDf.loc[atomsDf['molNum'] == mol2, 'molCon'] = tmp
 
         self.updateChains(mol1, mol2)
-        print('Bonds formed between mol {} and mol {}'.format(mol1, mol2))
+        # print('Bonds formed between mol {} and mol {}'.format(mol1, mol2))
         self.updateGroupCon(a1, a2, mol1, mol2, atomsDf)
 
         # update tmp bond session
@@ -744,7 +747,9 @@ class searchBonds(object):
                 continue
         return row
 
+    @countTime
     def assignAtoms(self, df_atoms):
+        # assign all unrcted atoms to different cell
         df1 = df_atoms.apply(lambda x: self.searchCell(x), axis=1)
         return df1
 
@@ -828,8 +833,8 @@ class searchBonds(object):
         # update all atoms belonged chain
         self.updateAllChains()
         print('{} bonds are going to be generated'.format(len(pairs)))
-        print('Following bonds will be formed: \n')
-        for index, value in pairs.iterrows():
-            print('\t', value.acro, '\t', value.amon, '\t',
-                  round(value.p, 2), '\t', value.rctP)
+        # print('Following bonds will be formed: \n')
+        # for index, value in pairs.iterrows():
+        #     print('\t', value.acro, '\t', value.amon, '\t',
+        #           round(value.p, 2), '\t', value.rctP)
         return pairs, self.chains, self.mol, self.cutoff

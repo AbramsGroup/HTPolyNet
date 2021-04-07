@@ -112,7 +112,8 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
                 else:
-                    str1 = ' '
+                    str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
+                    x.ai, x.aj, x.ak, x.funct)
             else:
                 str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
@@ -122,7 +123,8 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.ak, x.funct)
                 else:
-                    str1 = ' '
+                    str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
+                    x.ai, x.aj, x.ak, x.funct)
             else:
                 str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.ak, x.funct)
