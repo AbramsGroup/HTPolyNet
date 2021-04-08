@@ -11,6 +11,8 @@ import pandas as pd
 import sys
 import re
 from countTime import *
+from copy import deepcopy
+import time
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map'):
@@ -19,6 +21,7 @@ class genBonds(object):
         self.pairs = pairs
         self.chargeMap = chargeMap # map
         self.rctMols = rctMols # list
+
         self.genPairs = []
         self.rctAtoms = []
         self.cat = cat
@@ -71,38 +74,80 @@ class genBonds(object):
         sysTop = self.top
         df_atoms = sysTop.atoms # Top df
         if types == 'bonds':
+            pairs_tmp = []
             for p in pairs:
+                pp = []
                 bt = sysTop.bondtypes
                 pairList = bt.loc[:, ['ai', 'aj']].values.tolist()
+                pp.append(p[0])
+                pp.append(p[1])
+                pp.append('1') # func value
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 if [a1Type, a2Type] in pairList or [a2Type, a1Type] in pairList:
-                    continue
+                    if len(bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)]) > 0:
+                        c0 = bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)].c0.values[0]
+                        c1 = bt.loc[(bt.ai == a1Type) & (bt.aj == a2Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('1')
+                        pp.append(p[2]) # dist
+                    elif len(bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)]) > 0:
+                        c0 = bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)].c0.values[0]
+                        c1 = bt.loc[(bt.ai == a2Type) & (bt.aj == a1Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('1') # 1 stands for new bonds
+                        pp.append(p[2])
+                    else:
+                        continue
                 else:
                     key = '{}-{}'.format(a1Type, a2Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
                     param = parameters.dictBond[key]; lst_tmp = [a1Type, a2Type] + param
                     sysTop.addBondTypes(lst_tmp)
-                    
+                    pp += param[1:]
+                pairs_tmp.append(pp)
+            return pairs_tmp
         if types == 'angles':
+            pairs_tmp = []
             for p in pairs:
+                pp = []
                 angt = sysTop.angletypes
                 pairList = angt.loc[:, ['ai', 'aj', 'ak']].values.tolist()
+                pp.append(p[0])
+                pp.append(p[1])
+                pp.append(p[2])
+                pp.append('1') # func value
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 a3Type = self.idx2Atypes(p[2], df_atoms)
                 if [a1Type, a2Type, a3Type] in pairList or [a3Type, a2Type, a1Type] in pairList:
-                    continue            
+                    if len(angt.loc[(angt.ai == a1Type) & (angt.aj == a2Type) & (angt.ak == a3Type)]) > 0:
+                        c0 = angt.loc[(angt.ai == a1Type) & (angt.aj == a2Type) & (angt.ak == a3Type)].c0.values[0]
+                        c1 = angt.loc[(angt.ai == a1Type) & (angt.aj == a2Type) & (angt.ak == a3Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('1')
+                    elif len(angt.loc[(angt.ai == a3Type) & (angt.aj == a2Type) & (angt.ak == a1Type)]) > 0:
+                        c0 = angt.loc[(angt.ai == a3Type) & (angt.aj == a2Type) & (angt.ak == a1Type)].c0.values[0]
+                        c1 = angt.loc[(angt.ai == a3Type) & (angt.aj == a2Type) & (angt.ak == a1Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('1')
+                    else:
+                        continue
                 else:
                     key = '{}-{}-{}'.format(a1Type, a2Type, a3Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
                     param = parameters.dictAngle[key]; lst_tmp = [a1Type, a2Type, a3Type] + param
                     sysTop.addAngleTypes(lst_tmp)
-        
+                pairs_tmp.append(pp)
+            return pairs_tmp
+
         if types == 'dih':
+            pairs_tmp = []
             for p in pairs:
+                pp = []
                 diht = sysTop.dihtypes
                 pairList = diht.loc[:, ['ai', 'aj', 'ak', 'al']].values.tolist()
+                pp.append(p[0])
+                pp.append(p[1])
+                pp.append(p[2])
+                pp.append(p[3])
+                pp.append('1') # func value '1' proper, '9', multiple proper dih
                 a1Type = self.idx2Atypes(p[0], df_atoms)
                 a2Type = self.idx2Atypes(p[1], df_atoms)
                 a3Type = self.idx2Atypes(p[2], df_atoms)
@@ -110,7 +155,22 @@ class genBonds(object):
                 key1 =  '{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
                 key2 =  '{}-{}-{}-{}'.format(a4Type, a3Type, a2Type, a1Type)
                 if [a1Type, a2Type, a3Type, a4Type] in pairList or [a4Type, a3Type, a2Type, a1Type] in pairList:
-                    continue
+                    if len(diht.loc[(diht.ai == a1Type) & (diht.aj == a2Type) &
+                                    (diht.ak == a3Type) & (diht.al == a4Type)]) > 0:
+                        c0 = diht.loc[(diht.ai == a1Type) & (diht.aj == a2Type) &
+                                      (diht.ak == a3Type) & (diht.al == a4Type)].c0.values[0]
+                        c1 = diht.loc[(diht.ai == a1Type) & (diht.aj == a2Type) &
+                                      (diht.ak == a3Type) & (diht.al == a4Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('2'); pp.append('1')
+                    elif len(diht.loc[(diht.ai == a4Type) & (diht.aj == a3Type) &
+                                      (diht.ak == a2Type) & (diht.al == a1Type)]) > 0:
+                        c0 = diht.loc[(diht.ai == a4Type) & (diht.aj == a3Type) &
+                                      (diht.ak == a2Type) & (diht.al == a1Type)].c0.values[0]
+                        c1 = diht.loc[(diht.ai == a4Type) & (diht.aj == a3Type) &
+                                      (diht.ak == a2Type) & (diht.al == a1Type)].c1.values[0]
+                        pp.append(c0); pp.append(c1); pp.append('2'); pp.append('1')
+                    else:
+                        continue
                 else:
                     if key1 in parameters.dictDihedral.keys():
                         param = parameters.dictDihedral[key1]
@@ -122,6 +182,8 @@ class genBonds(object):
                         sysTop.addDihTypes(lst_tmp)
                     else:
                         sys.exit('Unknown dihedral type{}, need to find param for the pair'.format(key1))
+                pairs_tmp.append(pp)
+            return pairs_tmp
 
     @countTime
     def delHydrogen(self):
@@ -132,10 +194,11 @@ class genBonds(object):
         '''
         '''
         TODO: when the number of bonds increase, this function time increase a lot. Need to find a way to get rid of the loop
+        SOLUTIONS: Split the potential pairs into small list and using Pool to finish it in part
         '''
         pairs = []
         for index, row in self.pairs.iterrows():
-            pairs.append([row.acro, row.amon])
+            pairs.append([row.acro, row.amon, row.dist])
 #        pairs = self.pairs
         self.genPairs = pairs
         atomsDf = self.gro.df_atoms
@@ -148,14 +211,13 @@ class genBonds(object):
         df_imps = inTop.impropers
         hAtoms = []
         for p in pairs:
-            # print('pairs: ', p)
             hCon1 = self.findHydrogen(atomsDf, df_bonds, p[0])[0]
             hCon2 = self.findHydrogen(atomsDf, df_bonds, p[1])[0]
             hAtoms.append(hCon1); hAtoms.append(hCon2)
         
         print('Following atoms will be removed: ', hAtoms)
+        t1 = time.time()
         for a in hAtoms:
-#            gro_df = sysGro[0]
             atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
             self.gro.df_atoms = atomsDf
             df_atoms.drop(df_atoms[df_atoms['nr'] == a].index, inplace=True)
@@ -174,7 +236,8 @@ class genBonds(object):
             df_imps.drop(df_imps[df_imps['aj'] == a].index, inplace=True)
             df_imps.drop(df_imps[df_imps['ak'] == a].index, inplace=True)
             df_imps.drop(df_imps[df_imps['al'] == a].index, inplace=True)
-        
+        t2 = time.time()
+        print('@timefn: dropRows {}s'.format(t2 - t1))
         self.top.atoms = df_atoms
         self.top.bonds = df_bonds
         self.top.pairs = df_pairs
@@ -182,7 +245,7 @@ class genBonds(object):
         self.top.dihedrals = df_dihs
         self.top.impropers = df_imps
 
-    def searchCon(self, idx, df_bonds):
+    def searchCon(self, idx, df_bonds, df_new=[]):
         idx = str(idx)
         df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)] # df_bonds is the bond section in the topology
         con = []
@@ -195,47 +258,56 @@ class genBonds(object):
                 print('bond connection met error, please check!')
                 print('df_out: ', df_out)
                 sys.exit()
+
+        for i in df_new:
+            if i[0] == str(idx):
+                con.append(i[1])
+            elif i[1] == str(idx):
+                con.append(i[0])
+            else:
+                pass
         return con
 
-    @countTime
-    def genNewCon(self, pair, df_bonds): # TODO: still slow
+    def genNewCon(self, pair, df_bonds, df_new): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
-        new_bonds.append([a1, a2])
-        con1 = self.searchCon(a1, df_bonds); con2 = self.searchCon(a2, df_bonds)
+        new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
+        df_new.append([a1, a2, pair[2]])
+        # lst = deepcopy(df_new)
+        lst = df_new
+        con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)
-            if a != 1:#row.amon:
-                #row.acro = a1; row.amon = a2
+            if a != a2:
                 new_angles.append([a, a1, a2])
-                con3 = self.searchCon(a, df_bonds); con4 = self.searchCon(a2, df_bonds)
+                con3 = self.searchCon(a, df_bonds, df_new=lst); con4 = self.searchCon(a2, df_bonds, df_new=lst)
                 for aa in con3:
                     aa = str(aa)
-                    if aa != a1: # sth wrong with this
+                    if aa != a1:
                         new_dihedrals.append([aa, a, a1, a2])
-                        new_pairs.append([aa, a2])
+                        new_pairs.append([aa, a2, '1', '1']) # stands for new pairs
                 for aa in con4:
                     aa = str(aa)
                     if aa != a1:
                         new_dihedrals.append([a, a1, a2, aa])
-                        new_pairs.append([a, aa])
+                        new_pairs.append([a, aa, '1', '1'])
         for a in con2:
             a = str(a)
-            if a != 1:#row.acro:
+            if a != a1:
                 new_angles.append([a1, a2, a])
-                con3 = self.searchCon(a1, df_bonds); con4 = self.searchCon(a, df_bonds)
+                con3 = self.searchCon(a1, df_bonds, df_new=lst); con4 = self.searchCon(a, df_bonds, df_new=lst)
                 for aa in con3:
                     aa = str(aa)
                     if aa != a2:
                         if [aa, a1, a2, a] not in new_dihedrals:
                             new_dihedrals.append([aa, a1, a2, a])
-                            new_pairs.append([aa, a])
+                            new_pairs.append([aa, a, '1', '1'])
                 for aa in con4:
                     aa = str(aa)
                     if aa != a2:
                         if [a1, a2, a, aa] not in new_dihedrals:
                             new_dihedrals.append([a1, a2, a, aa])
-                            new_pairs.append([a1, aa])
+                            new_pairs.append([a1, aa, '1', '1'])
                             
         return new_bonds, new_pairs, new_angles, new_dihedrals
 
@@ -252,18 +324,17 @@ class genBonds(object):
         
         pairs = self.genPairs
         for p in pairs:
-            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds)
+            nBonds, nPairs, nAngles, nDihs = self.genNewCon(p, df_bonds, new_bonds)
             new_bonds += nBonds
             new_pairs += nPairs
             new_angles += nAngles
             new_dihedrals += nDihs
-            
-        # TODO: update charge
+
         # check and add new types to the corresponding type section
         print('checking and adding new types...')
-        self.checkNewTypes(new_bonds, inTop, types='bonds')
-        self.checkNewTypes(new_angles, inTop, types='angles')
-        self.checkNewTypes(new_dihedrals, inTop, types='dih')
+        new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
+        new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
+        new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
 
         inTop.atoms = df_atoms
         inTop.bonds = df_bonds
@@ -451,34 +522,33 @@ class genBonds(object):
         
         for keys, value in charges.items():
             if seq1 == keys:
-                print('find map!: ', keys)
+                # print('find map!: ', keys)
                 c = value.split('/')
                 for ii in c:
                     if len(ii) > 0:
                         cc.append(ii)
         if len(cc) == 0:
-            sys.exit('Didnt find charge map, something wrong!')
+            print('Didnt find charge map, something wrong!')
+            print('seq1: ', seq1)
+            sys.exit()
         else:
             if len(cc[-1]) < 3 or cc[-1] == '\n':
-#                print('charge seq (w/o -1 ele): ', cc)
                 return cc[:-1]
             else:
-#                print('charge seq: (w -1 ele)', cc)
                 return cc
     
     def getAtomIdx(self, molNum):
         df_atoms = self.gro.df_atoms
         rctIdx = list(df_atoms[df_atoms.molNum == molNum].globalIdx)
         return rctIdx
-        
+
+    @countTime
     def updateCharge(self): 
         mols = self.rctMols
         for m in mols:
             a = self.getAtomIdx(m)
             df_atoms_top = self.top.atoms[(self.top.atoms.nr.isin(a))]
             seq, resname = self.getSeq(df_atoms_top)
-#            print('resname: ', resname)
-#            print('seq: ', seq)
             charges = self.mapCharge(resname, seq)
             self.top.atoms.loc[(self.top.atoms.nr.isin(a)), 'charge'] = charges
 
@@ -505,7 +575,6 @@ class genBonds(object):
         #     print('Atom {} is over-reacted'.format(a1.globalIdx))
         #     sys.exit()
 
-    @countTime
     def updateRctInfo(self):
         pairs = self.pairs
         for index, row in pairs.iterrows():
@@ -518,9 +587,9 @@ class genBonds(object):
 
 
     @countTime       
-    def main(self):
+    def gBonds(self):
         self.updateRctInfo()
         self.delHydrogen()
         self.addNewCon()
         self.updateIdx()
-        # self.updateCharge()
+        self.updateCharge()

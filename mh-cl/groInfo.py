@@ -58,7 +58,7 @@ class gro(object):
         info = {}
         for i in infoMap[molName]:
             if i[0] == atName:
-                info[atName] = [i[1], i[2]] # rctNum & at prop
+                info[atName] = [i[1], i[2], i[3]] # rctNum & at prop
         return info
 
     @countTime
@@ -67,9 +67,13 @@ class gro(object):
         croR_list = basicParameters.croR_list
         infoMap = {**monR_list, **croR_list}
 
-        self.df_atoms['rct'] = 'False'
+        self.df_atoms['rct'] = 'NaN'
         self.df_atoms['rctNum'] = '0'
         self.df_atoms['prop'] = 'N'
+        self.df_atoms['rctGroup'] = '0'
+
+        self.df_atoms['groupCon'] = ''
+        self.df_atoms['chain'] = ''
 
         for i in monR_list.keys():
             atNames = []
@@ -78,6 +82,7 @@ class gro(object):
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rct'] = 'True'
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctNum'] = int(info[n[0]][0])
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'prop'] = info[n[0]][1]
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctGroup'] = info[n[0]][2]
 
         for i in croR_list.keys():
             atNames = []
@@ -86,7 +91,9 @@ class gro(object):
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rct'] = 'True'
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctNum'] = int(info[n[0]][0])
                 self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'prop'] = info[n[0]][1]
+                self.df_atoms.loc[(self.df_atoms.molName == i) & (self.df_atoms.atomName == n[0]), 'rctGroup'] = info[n[0]][2]
 
+    @countTime
     def outDf(self, outName):
         df = self.df_atoms
         sysName = self.sysName

@@ -151,41 +151,40 @@ class createRctMol(object):
                 value[i].outMol2(n)
                 idx += 1 
 if __name__ == '__main__':
+    path = 'systems/unrctSystem/'
+    rctPath = 'systems/rctSystem/'
+    # Get connect info from options.txt
+    import readParameters
 
-#    path = 'systems/unrctSystem/'
-#    rctPath = 'systems/rctSystem/'
-#    # Get connect info from options.txt
-#    import readParameters
-#    
-#    a = readParameters.parameters()
-#    a.setName('basic/options.txt')
-#    a.readParam()
-#    mainMol = createRctMol()
-#    mainMol.getRctInfo(a) # assume only contain 1 cro
-#    keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
-#    croName = '{}{}.mol2'.format(path, list(mainMol.rctInfo['cro'][0].keys())[0])
-#    mainMol.croResName = 'CRO'
-#    
-#    croMol = readMol.readMol(croName)
-#    croMol.main()
-#    croMol.mol2.updateResName(mainMol.croResName)
-#    molList = {}
-#    for i in range(len(keys)):
-#        name = '{}{}.mol2'.format(path, keys[i])
-#        monMol = readMol.readMol(name)
-#        monMol.main()
-#        mainMol.base = monMol.mol2
-#        mainMol.connect = croMol.mol2
-#        rctTimes = 1
-#        for ii in range(rctTimes):
-#            unrctMol = mainMol.mergeMol(ii + 1)
-#            a1 = mainMol.creatMol(ii + 1, unrctMol, keys[i])
-#            key = '{}{}'.format(monMol.resname, ii + 1)
-#            molList[key] = a1
-#    mainMol.mol2List = molList
-#    mainMol.symmetry()
-#    mainMol.outMolLst(rctPath)
-    
+    a = readParameters.parameters()
+    a.setName('basic/options.txt')
+    a.readParam()
+    mainMol = createRctMol()
+    mainMol.getRctInfo(a) # assume only contain 1 cro
+    keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
+    croName = '{}{}.mol2'.format(path, list(mainMol.rctInfo['cro'][0].keys())[0])
+    mainMol.croResName = 'CRO'
+
+    croMol = readMol.readMol(croName)
+    croMol.main()
+    croMol.mol2.updateResName(mainMol.croResName)
+    molList = {}
+    for i in range(len(keys)):
+        name = '{}{}.mol2'.format(path, keys[i])
+        monMol = readMol.readMol(name)
+        monMol.main()
+        mainMol.base = monMol.mol2
+        mainMol.connect = croMol.mol2
+        rctTimes = 1
+        for ii in range(rctTimes):
+            unrctMol = mainMol.mergeMol(ii + 1)
+            a1 = mainMol.creatMol(ii + 1, unrctMol, keys[i])
+            key = '{}{}'.format(monMol.resname, ii + 1)
+            molList[key] = a1
+    mainMol.mol2List = molList
+    mainMol.symmetry()
+    mainMol.outMolLst(rctPath)
+
     seqList = {}
     for keys, value in molList.items():
         seq = []

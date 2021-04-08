@@ -48,6 +48,7 @@ class mol2Info(object):
     def getNewIdx(self, x):
         idx1 = self.atoms.loc[(self.atoms.oriId == x.ai), 'atomId'].values
         idx2 = self.atoms.loc[(self.atoms.oriId == x.aj), 'atomId'].values
+        # TODO: didn't work when reset charge. "Index 0 is out of bounds for axis 0 with size 0"
         x.ai = idx1[0]; x.aj = idx2[0]
         return x
     

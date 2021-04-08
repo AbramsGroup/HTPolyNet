@@ -3,6 +3,8 @@
 ; Include
 #include "init.itp"
 [ system ]
+[ system ]
 Generic title
 [ molecules ]
-VEA                  1
+[ molecules ]
+STY                  1

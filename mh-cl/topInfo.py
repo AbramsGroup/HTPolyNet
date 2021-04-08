@@ -5,9 +5,11 @@ Created on Mon Sep 28 15:34:47 2020
 @author: huangming
 """
 import pandas as pd
-from decimal import Decimal
 from countTime import *
 from copy import deepcopy
+import numpy as np
+import decimal
+decimal.getcontext().prec = 6
 
 class top(object):
     def __init__(self):
@@ -28,6 +30,8 @@ class top(object):
         self.molecules = []
         self.dupDihTypeKey = []
         self.molNum = 0
+        self.k = 1
+        self.stepRelax = False
 
     def __copy__(self):
         cls = self.__class__
@@ -76,63 +80,131 @@ class top(object):
             str1 = '{:>7}{:>7}'.format(x.loc['name'], x.loc['nrexcl'])
         elif keys == 'bTypes':
             str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
-                x.ai, x.aj, x.funct, x.c0, round(float(x.c1), 2))
+                x.ai, x.aj, x.funct, round(float(x.c0), 2), float(x.c1))
         elif keys == 'angTypes':
             str1 = '{:>7}{:>7}{:>7}{:>7} {:>10}{:>11}'.format(
-                x.ai, x.aj, x.ak, x.funct, x.c0, round(float(x.c1), 2))
+                x.ai, x.aj, x.ak, x.funct, x.c0, x.c1)
         elif keys == 'dihTypes':
             if len(x) != 8:
                 str1 = ' '
             else:
                 str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                    x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 2), x.c2)
+                    x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
         elif keys == 'atoms':
             str1 = '{:>5}{:>11}{:>7}{:>7}{:>7}{:>6} {:>11}{:>11}'.format(
                     x.nr, x.type, x.resnr, x.residue, x.atom, x.cgnr, x.charge, x.mass)
         elif keys == 'bonds':
-            str1 = '{:>7}{:>7}{:>7}'.format(
-                    x.ai, x.aj, x.funct)
-        elif keys == 'pairs':
-            str1 = '{:>7}{:>7}{:>7}'.format(
-                    x.ai, x.aj, x.funct)
-        elif keys == 'angles':
-            str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
-                    x.ai, x.aj, x.ak, x.funct)
-        elif keys == 'dih':
-            if len(x) != 8:
-                str1 = ' '
-
+            if self.stepRelax:
+                if x.new == '':
+                    str1 = '{:>7}{:>7}{:>7}'.format(
+                        x.ai, x.aj, x.funct)
+                else:
+                    dist = float(x.c0) + (float(x.dist) - float(x.c0)) * (1 - self.k)
+                    str1 = '{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
+                            x.ai, x.aj, x.funct, round(dist, 2), float(x.c1) * self.k)
             else:
-                key = self.subAtom2Atypes(x.ai, x.aj, x.ak, x.al, self.atoms)
-                # key = '{}-{}-{}-{}'.format(x.ai, x.aj, x.ak, x.al)
+                str1 = '{:>7}{:>7}{:>7}'.format(
+                    x.ai, x.aj, x.funct)
+
+        elif keys == 'pairs':
+            if self.stepRelax:
+                if x.new == '':
+                    str1 = '{:>7}{:>7}{:>7}'.format(
+                        x.ai, x.aj, x.funct)
+                else:
+                    str1 = ' '
+            else:
+                str1 = '{:>7}{:>7}{:>7}'.format(
+                        x.ai, x.aj, x.funct)
+        elif keys == 'angles':
+            if self.stepRelax:
+                if x.new == '':
+                    str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
+                        x.ai, x.aj, x.ak, x.funct)
+                else:
+                    str1 = ' '
+            else:
+                str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
+                    x.ai, x.aj, x.ak, x.funct)
+
+        elif keys == 'dih':
+            # if len(x) != 8:
+            #     str1 = ' '
+            # else:
+            key = self.subAtom2Atypes(x.ai, x.aj, x.ak, x.al, self.atoms)
+            # key = '{}-{}-{}-{}'.format(x.ai, x.aj, x.ak, x.al)
+            if self.stepRelax:
+                if x.new == '':
+                    if key not in self.dupDihTypeKey:
+                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
+                            x.ai, x.aj, x.ak, x.al, x.funct)
+                    else:
+                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                else:
+                    str1 = ' '
+            else:
                 if key not in self.dupDihTypeKey:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
                             x.ai, x.aj, x.ak, x.al, x.funct)
                 else:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 4), x.c2)
+                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+        elif keys == 'imp':
+            str1 = ' '
+
         return str1
+
     
+    def avgCharge(self, incharge, add=True):
+        c = incharge / len(self.atoms.charge)
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('residue charge: {}\n'.format(c))
+
+        for i in range(len(self.atoms.charge)):
+            self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - c
+
     def addCharge(self, incharge):
         c = max(self.atoms.charge)
         for i in range(len(self.atoms.charge)):
             if self.atoms.charge[i] == c:
-                # print('old: {}, new: {}'.format(self.atoms.charge[i], str(Decimal(self.atoms.charge[i]) + Decimal(incharge))))
-                self.atoms.charge[i] = str(Decimal(self.atoms.charge[i]) - Decimal(incharge))
+                self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - decimal.Decimal(incharge)
                 break
-        
+
     def setChargeDicimal(self, row):
-        row.charge = str(round(float(row.charge), 4))
+        row.charge = decimal.Decimal(row.charge)
+        # row.charge = round(float(row.charge), 8)
         return row
-        
-    def checkCharge(self):
-        self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
-        charges = 0
+
+    def countCharge(self):
+        charges = decimal.Decimal('0')
         for index, row in self.atoms.iterrows():
-            charges += Decimal(row.charge)
-        
+            charges += decimal.Decimal(row.charge)
+
+        return charges
+
+    @countTime
+    def checkCharge(self):
+
+        self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
+        charges = self.countCharge()
+
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('ori charge: {}\n'.format(charges))
+            f.write('\t{}'.format(self.atoms.charge[:10]))
+        self.avgCharge(charges)
+
+        charges = self.countCharge()
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('new charge: {}\n'.format(charges))
+            f.write('\t{}'.format(self.atoms.charge[:10]))
+
         self.addCharge(charges)
-        
+        charges = self.countCharge()
+        with open('chargeInfo.txt', 'a') as f:
+            f.write('final charge: {}\n'.format(charges))
+            f.write('\t{}'.format(self.atoms.charge[:10]))
+
     def addTopRow(self, df, inStr):
         df.loc[-1] = inStr
         df.index = df.index + 1
@@ -157,11 +229,16 @@ class top(object):
 
     @countTime
     def addBonds(self, pairs):
-        # cNames = ['ai', 'aj', 'funct']
-        cNames = ['ai', 'aj']
+        # cNames = ['ai', 'aj', 'funct', 'new']
+        cNames = ['ai', 'aj', 'funct', 'c0', 'c1', 'new', 'dist']
         b_tmp = pd.DataFrame(pairs, columns=cNames)
-        b_tmp['funct'] = '1'
+        # b_tmp['funct'] = '1'
+        self.bonds['c0'] = ''
+        self.bonds['c1'] = ''
+        self.bonds['new'] = ''
+        self.bonds['dist'] = ''
         self.bonds = pd.concat([self.bonds, b_tmp])
+
         # for p in pairs:
         #     a = p.copy()
         #     a.append('1')
@@ -171,9 +248,9 @@ class top(object):
     @countTime
     def addPairs(self, pairs):
         # cNames = ['ai', 'aj', 'funct']
-        cNames = ['ai', 'aj']
+        cNames = ['ai', 'aj', 'funct', 'new']
         b_tmp = pd.DataFrame(pairs, columns=cNames)
-        b_tmp['funct'] = '1'
+        self.pairs['new'] = ''
         self.pairs = pd.concat([self.pairs, b_tmp])
         # for p in pairs:
         #     a = p.copy()
@@ -183,24 +260,18 @@ class top(object):
 
     @countTime
     def addAngles(self, pairs):
-        # cNames = ['ai', 'aj', 'ak', 'funct']
-        cNames = ['ai', 'aj', 'ak']
+        cNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1', 'new']
+        # cNames = ['ai', 'aj', 'ak']
         b_tmp = pd.DataFrame(pairs, columns=cNames)
-        b_tmp['funct'] = '1'
+        self.angles['new'] = ''
         self.angles = pd.concat([self.angles, b_tmp])
-
-        # for p in pairs:
-        #     a = p.copy()
-        #     a.append('1') # This is the func
-        #     b_tmp = pd.DataFrame([a], columns=cNames)
-        #     self.angles = self.angles.append(b_tmp, sort=False).reset_index(drop=True)
 
     @countTime
     def addDih(self, pairs):
-        # cNames = ['ai', 'aj', 'ak', 'al', 'funct']
-        cNames = ['ai', 'aj', 'ak', 'al']
+        cNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'new']
+        # cNames = ['ai', 'aj', 'ak', 'al']
         b_tmp = pd.DataFrame(pairs, columns=cNames)
-        b_tmp['funct'] = '9'
+        self.dihedrals['new'] = ''
         self.dihedrals = pd.concat([self.dihedrals, b_tmp])
 
         # for p in pairs:
@@ -226,8 +297,20 @@ class top(object):
         with open('{}.top'.format(outName), 'w') as f:
             for index, row in df.iterrows():
                 f.write('{}\n'.format(row['0']))
-        
-    def outDf(self, outName):
+
+    def topClean(self, key='bonds'):
+        if key == 'bonds':
+            self.bonds.drop_duplicates(inplace=True)
+
+    @countTime
+    def outDf(self, outName, k=1, simple=False, stepRelax=False):
+        self.k = k
+        self.stepRelax = stepRelax
+        self.bonds.reset_index(drop=True)
+        self.angles.reset_index(drop=True)
+        self.pairs.reset_index(drop=True)
+        self.dihedrals.reset_index(drop=True)
+
         df_atypes_str = self.atomtypes.apply(lambda x: self.mergeRow(x, keys='aTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_btypes_str = self.bondtypes.apply(lambda x: self.mergeRow(x, keys='bTypes'), axis=1).to_frame().rename(columns={0: '0'})
         df_angTypes_str = self.angletypes.apply(lambda x: self.mergeRow(x, keys='angTypes'), axis=1).to_frame().rename(columns={0: '0'})
@@ -238,7 +321,7 @@ class top(object):
         df_pairs_str = self.pairs.apply(lambda x: self.mergeRow(x, keys='pairs'), axis=1).to_frame().rename(columns={0: '0'})
         df_angles_str = self.angles.apply(lambda x: self.mergeRow(x, keys='angles'), axis=1).to_frame().rename(columns={0: '0'})
         df_dih_str = self.dihedrals.apply(lambda x: self.mergeRow(x, keys='dih'), axis=1).to_frame().rename(columns={0: '0'})
-        df_imp_str = self.impropers.apply(lambda x: self.mergeRow(x, keys='dih'), axis=1).to_frame().rename(columns={0: '0'})
+        df_imp_str = self.impropers.apply(lambda x: self.mergeRow(x, keys='imp'), axis=1).to_frame().rename(columns={0: '0'})
         df_default = self.default
         df_default = df_default.rename(columns={0: '0'})
         df_molType = self.moleculetype.apply(lambda x: self.mergeRow(x, keys='mtypes'), axis=1).to_frame().rename(columns={0: '0'})
@@ -248,14 +331,20 @@ class top(object):
         # Top file section: default, atomtype, bondtype, angletype, dihtype, molecular type, 
         # atom, bond, pair, angle, dihedral, system, molecules
         df_lst0 = [df_default, df_itp, df_sys, df_mol]
-        df_lst1 = [df_atypes_str, df_btypes_str, df_angTypes_str, df_dihTypes_str, df_impTypes_str, df_molType,
-                   df_atoms_str, df_bonds_str, df_pairs_str, df_angles_str, df_dih_str, df_imp_str]
-        
-        df0 = []; df = []
         str_top_tmp = ['[ defaults ]', '; Include', '[ system ]', '[ molecules ]']
-        str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ angletypes ]', '[ dihedraltypes ]', '[ dihedraltypes ]', 
-                   '[ moleculetype ]', '[ atoms ]', '[ bonds ]', '[ pairs ]', '[ angles ]', '[ dihedrals ]', '[ dihedrals ]', 
-                   ]
+        if simple:
+            df_lst1 = [df_atypes_str, df_btypes_str, df_molType, df_atoms_str, df_bonds_str]
+            str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ moleculetype ]', '[ atoms ]', '[ bonds ]']
+
+        else:
+            df_lst1 = [df_atypes_str, df_btypes_str, df_angTypes_str, df_dihTypes_str, df_impTypes_str, df_molType,
+                       df_atoms_str, df_bonds_str, df_pairs_str, df_angles_str, df_dih_str, df_imp_str]
+            str_itp_tmp = ['[ atomtypes ]', '[ bondtypes ]', '[ angletypes ]', '[ dihedraltypes ]', '[ dihedraltypes ]',
+                           '[ moleculetype ]', '[ atoms ]', '[ bonds ]', '[ pairs ]', '[ angles ]', '[ dihedrals ]',
+                           '[ dihedrals ]',
+                           ]
+        df0 = []; df = []
+
         for i in range(len(str_top_tmp)):
             s = str_top_tmp[i]
             df_tmp = self.addTopRow(df_lst0[i], s)
@@ -267,7 +356,8 @@ class top(object):
             df.append(df_tmp)
         
         df_out_top = pd.concat(df0)
-        df_out_itp = pd.concat(df)
+        df_out_itp = pd.concat(df) #TODO: need to drop empty line
+
         self.outTop(df_out_top, outName) # Not use to_csv, since it cannot handle " well, it will always generate two quotation marks
         df_out_itp.to_csv('{}.itp'.format(outName), mode = 'w', index=False, header=None)
         return df_out_top

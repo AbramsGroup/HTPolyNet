@@ -65,7 +65,7 @@ class testCase(object):
         a2.setName('init')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
-        boxSize = [15.00000, 15.00000, 15.00000] # TODO: remove latter
+        boxSize = [5.00000, 5.00000, 5.00000] # TODO: remove latter
         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
         atomsDf.initRctInfo(a)
         self.gro = atomsDf
@@ -75,13 +75,14 @@ class testCase(object):
         # a3.setName('init-1.top', 'init-1.itp')
 #        a3.setName('systems/VEA.top', 'systems/VEA.itp')
         a3.genTopSession()
+
         topDf.setInfo(a3.sumTop)
         topDf.checkCharge()
         self.top = topDf
         atomsDf.df_atoms.to_csv('atomsDf.csv')
-        aa = searchBonds.searchBonds(a, a1, atomsDf, topDf)
-        pairs, rctMols, cutoff = aa.main()
-        return pairs, rctMols, topDf, aa
+        aa = searchBonds.searchBonds(4, a, a1, atomsDf, topDf, 0, 20, [])
+        pairs, chains, rctMols, cutoff = aa.sBonds()
+        return pairs, chains, rctMols, cutoff, topDf, aa
         # return aa
 
     @countTime
@@ -103,8 +104,8 @@ class testCase(object):
         b = getChargeMaps()
 
         a = genBonds.genBonds(self.gro, self.top, pairs, b, rctMols, cat='map')
-        a.main()
-        return a
+        a.gBonds()
+        return a, b
     
     def testmolRctInfo(self):
         import molRctInfo
@@ -115,13 +116,17 @@ class testCase(object):
         
 if __name__ == "__main__":
     a = testCase()
-    # b1 = a.testreadGro()
+    b1 = a.testreadGro()
     # b2 = a.testreadGro('systems/unrctSystem/STY')
-    b = a.testReadParam()
+    # b = a.testReadParam()
     
-    pairs, rctMols, topDf, aa = a.testSearchBonds()
-    # df_pairs = pairs
-    # print('{} bonds will be formed!'.format(len(df_pairs)))
-    # b2 = a.testGenBonds(df_pairs, rctMols)
+    pairs, chains, rctMols, cutoff, topDf, aa = a.testSearchBonds()
+    aa.gro.df_atoms.to_csv('z.csv')
+    df_pairs = pairs#.iloc[0:1]
+    print('{} bonds will be formed!'.format(len(df_pairs)))
+    print('\t{}'.format(df_pairs))
+
+    b2, charge = a.testGenBonds(df_pairs, rctMols)
     #
-    # b2.top.outDf('tmp11')
+    a = b2.top.outDf('tmp11-2', k=0.9, stepRelax=True)
+    a = b2.top.outDf('tmp22-2', k=0.9, stepRelax=False)

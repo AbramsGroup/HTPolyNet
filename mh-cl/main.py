@@ -23,6 +23,7 @@ import genBonds
 import generateChargeDb
 import generateTypeInfo
 import processTop
+from countTime import *
 
 import os
 from shutil import copyfile
@@ -47,18 +48,27 @@ class main(object):
         self.topMap = {}
         self.initGro = ''
         self.initTop = ''
+        self.dumpPairs = {} # pair map when check circuit
 
         self.basicParameter = ''
         self.molNames = []
         self.chargeMap = {}
+
+        self.prevGro = ''
+        self.prevTop = ''
+
         self.gro = '' # save gro object
         self.top = '' # save top object
+
+        self.chains = []
         self.old_pairs = []
         self.pairs_detail = {}
         # needed parameters
-        self.cutoff = 0.2
         self.maxBonds = 100
-        
+        self.conv = 0
+        self.desConv = 0
+        self.desBonds = 0
+
     def setParam(self, name):
         path = '{}/{}'.format(self.basicFolder, name)
         a = readParameters.parameters()
@@ -82,7 +92,8 @@ class main(object):
         b.setInfo(a.sumTop)
         b.checkCharge()
         return b
-    
+
+    @countTime
     def updateCoord(self, name):
         a = readGro.initGro()
         a.setName(name)
@@ -90,9 +101,9 @@ class main(object):
         a1 = groInfo.gro()
         a1.setGroInfo(df_init, sysName, atNum, boxSize)
         self.gro.updateCoord(a1)
-        self.initGro = self.gro
+        self.initGro.updateCoord(a1)
         
-    def initSys(self):
+    def initSys(self, ig=False):
         param = self.basicParameter
         molInfo = {}
         nameList = []
@@ -107,7 +118,9 @@ class main(object):
             nameList.append(i[1])
         
         self.workingFolder = os.getcwd()
-        os.mkdir('init'); os.chdir('init')
+        if not ig:
+            os.mkdir('init')
+        os.chdir('init')
         copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
 #        copyfile('{}/nvt.mdp'.format(self.mdpFolder), 'nvt-1.mdp')
         copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
@@ -139,43 +152,63 @@ class main(object):
         sysTop = topSum.outDf('init')
         self.top = topSum
         self.initTop = deepcopy(self.top)
-        
-        # EM and NPT to equilibrate the structure
-        a = md.md('gmx_mpi', 'mpirun', self.cpu)
-        a.emSimulation('init', 'init', 'min-1', size=False)
-        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
-        i = 0
-        while(not a.checkMDFinish('npt-init')):
-            if i > 5:
-                print('Still cannot converge NPT system, restart')
-                sys.exit()
-            elif i == 0:
-                inName = 'npt-init'
-            else:
-                inName = 'npt-init' + str(i)
-            a.extraRun(inName, 'init', i)
-            if os.path.isfile('npt.gro'):
-                move('npt.gro', 'npt-init.gro')
-            i += 1
 
-#        a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
-        
-        # Update coord to the gro df
-        self.updateCoord('npt-init')
-        
+        if not ig:
+            # EM and NPT to equilibrate the structure
+            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            a.emSimulation('init', 'init', 'min-1', size=False)
+            a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+            i = 0
+            while(not a.checkMDFinish('npt-init')):
+                if i > 5:
+                    print('Still cannot converge NPT system, restart')
+                    sys.exit()
+                elif i == 0:
+                    inName = 'npt-init'
+                else:
+                    inName = 'npt-init' + str(i)
+                a.extraRun(inName, 'init', i)
+                if os.path.isfile('npt.gro'):
+                    move('npt.gro', 'npt-init.gro')
+                i += 1
+
+        # a.NVTSimulation('npt-init', 'init', 'nvt-1', 'nvt-1', check=False)
+
         # init rct info for potential atoms, add rct columns to the df in the gro object df
         self.gro.initRctInfo(self.basicParameter)
         self.initGro = deepcopy(self.gro)
+
+        # Update coord to the gro df
+        self.updateCoord('npt-init')
+
         # Back to the working directory and start crosslinking approach
         os.chdir(self.workingFolder)
-    
-    def finishSim(self, folderName):
-        os.chdir(self.workingFolder)
+
+    def countConv(self):
         num1 = 0
         for i in self.old_pairs:
             num1 += len(i)
 
-        conv = round(num1/int(self.maxBonds), 2)
+        conv = round(num1 / int(self.maxBonds), 2)
+        return conv
+
+    def finishSim(self, folderName, conv, step=0):
+        os.chdir('..')
+        os.mkdir('Final'); os.chdir('Final')
+        if conv >= self.desConv:
+            self.gro.outDf('sys')
+            self.top.topClean(key='bonds')
+            self.top.outDf('sys')
+        else:
+            if step == 0:
+                pass
+            else:
+                self.prevGro.outDf('sys')
+                # self.prevTop.topClean(key='bonds')
+                self.prevTop.outDf('sys')
+
+        os.chdir(self.workingFolder)
+        conv = self.countConv()
         move(folderName, '{}-{}'.format(folderName, conv))
         self.old_pairs = []
         self.reInitSys()
@@ -199,7 +232,7 @@ class main(object):
         top.setName('init.top', 'init.itp')
         top.genTopSession()
         topDf.setInfo(top.sumTop)
-        topDf.checkCharge()
+        # topDf.checkCharge()
         self.top = topDf
         os.chdir(self.workingFolder)
     
@@ -209,6 +242,7 @@ class main(object):
         os.mkdir('step{}'.format(idx))
         copyfile('{}/em.mdp'.format(self.mdpFolder), '{}/em.mdp'.format('step{}'.format(idx)))
         copyfile('{}/npt-cl.mdp'.format(self.mdpFolder), '{}/npt-cl.mdp'.format('step{}'.format(idx)))
+        copyfile('{}/npt-sw.mdp'.format(self.mdpFolder), '{}/npt-sw.mdp'.format('step{}'.format(idx)))
         return 'step{}'.format(idx)
     
     def calMaxBonds(self):
@@ -228,6 +262,8 @@ class main(object):
             maxRct += molNum * tmp
                 
         self.maxBonds = maxRct * 0.5
+        self.desConv = float(self.basicParameter.bondsRatio)
+        self.desBonds = float(self.basicParameter.bondsRatio) * self.maxBonds
 
     def logBonds(self, step, cutoff):
         num1 = 0
@@ -235,12 +271,13 @@ class main(object):
             num1 += len(i)
 #        num1 = len(self.old_pairs)
         conv = num1/self.maxBonds
-        
+        self.conv = conv
+
         with open('../bond.txt', 'a') as f1:
 #            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
 #                         num1, self.maxBonds - num1, conv)
-            str1 = 'step {}: {} bonds are formed, within cutoff {}A. {} bonds left. Reach conversion {:.2f}\n'.format(step,
-                         len(self.old_pairs[int(step)]), cutoff, self.maxBonds - num1, conv)
+            str1 = 'step {}: {} bonds are formed, within cutoff {}nm. {} bonds left. Reach conversion {:.2f}\n'.format(step,
+                         len(self.old_pairs[int(step)]), round(cutoff, 2), self.maxBonds - num1, conv)
             f1.write(str1)
         
         with open('../bonds_Info{}.txt'.format(step), 'w') as f2:
@@ -251,59 +288,103 @@ class main(object):
                 print('values: ', values)
                 for index, row in values.iterrows():
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
-            
-    def mainProcess(self, repeatTimes):
-        if os.path.isdir('results'):
-            rmtree('results')
+
+    @countTime
+    def stepwiseRelax(self):
+        k = [0.01, 0.1, 1]
+        outName = 'sw'
+        for i in range(len(k)):
+            groName = outName
+            topName = '{}-{}'.format(outName, i)
+            self.gro.outDf(groName)
+            self.top.outDf(topName, k[i], simple=False, stepRelax=True)
+            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
+            if cond0 == False:
+                print('EM failed')
+                return False
+
+            cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
+                                    'sw-npt-{}'.format(i), 'npt-sw',
+                                    check=False, re=True)
+            if cond1 == False:
+                print('NPT failed')
+                return False
+
+            self.updateCoord('sw-npt-{}'.format(i))
+
+        return True
+
+    def mainProcess(self, repeatTimes, ig=False):
+        # ig is the key to do the test. if ig == True, won't create the init system
+        if not ig:
+            if os.path.isdir('results'):
+                rmtree('results')
+            else:
+                pass
+            os.mkdir('results'); os.chdir('results')
+
         else:
-            pass
-        os.mkdir('results'); os.chdir('results')  
-        
+            os.chdir('results')
+            os.system('rm -rf sim*')
         # Init systems
-        self.initSys()
+        self.initSys(ig)
         
         # calculate max bonds
         self.calMaxBonds()
         print('maxBonds: ', self.maxBonds)
-#        self.maxBonds = self.basicParameter
         # Start crosslinking approach
         step = 0        
         for i in range(repeatTimes):
             folderName = 'sim{}'.format(i)
             os.mkdir(folderName)
             os.chdir(folderName)
-
+            os.mkdir('init')
+            os.chdir('init')
+            self.top.outDf('init')
+            self.gro.outDf('init')
+            copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
+            copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
+            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            a.emSimulation('init', 'init', 'min-1', size=False)
+            a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+            self.updateCoord('npt-init')
+            os.chdir('..')
+            self.gro.df_atoms.to_csv('init-df0.csv')
             while(len(self.old_pairs) < int(self.maxBonds)):
-
                 intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-                intDf.to_csv('int-df0.csv')
+                intDf.to_csv('init-df1.csv')
 
                 folderName1 = self.setupFolder(step)
                 os.chdir(folderName1)
 
                 # searching potential bonds
-                sbonds = searchBonds.searchBonds(self.basicParameter, self.old_pairs, self.gro, self.top)
-                pairs, rMols, cutoff = sbonds.main()
-
-                intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-
+                sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
+                                                 self.conv, self.desBonds, self.chains)
+                pairs, chains, rMols, cutoff = sbonds.sBonds()
+                # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+                self.chains = chains
                 if len(pairs) > 0:
-                    self.old_pairs.append(pairs)
-#                    print('pairs.amon: ', pairs.amon.values)
-#                    print('pairs.amon.to_string(): ', pairs.amon.to_string())
-
                     self.pairs_detail['step{}'.format(step)] = pairs
 
-                    self.gro.outDf('init') # just for check!
+                    # self.gro.outDf('init') # just for check!
                     # generate bonds
                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
-                    gbonds.main()
-                    
+                    gbonds.gBonds() # update atom's rct status
+
                     self.gro = gbonds.gro
                     self.top = gbonds.top
                     self.top.checkCharge()
+
+                    cond = self.stepwiseRelax()
+                    if cond == False:
+                        self.finishSim(folderName, 0, step=step)
+                        step = 0
+                        break
+
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
+                    # self.top.topClean(key='bonds')
                     self.top.outDf(topName)
 
                     intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
@@ -313,28 +394,34 @@ class main(object):
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
-                        self.finishSim(folderName)
+                        self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
                     
                     cond1 = a.NPTSimulation('min-1', topName, 'npt-cl', 'npt-cl', check=False, re=True)
                     if cond1 == False:
                         print('NPT failed')
-                        self.finishSim(folderName)
+                        self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
                     
-                    self.logBonds(step, cutoff)
                     # Update coord
                     self.updateCoord('npt-cl')
-                    step += 1
-                    os.chdir('..')
-                    if len(self.old_pairs) > 0.95 * int(self.maxBonds):
-                        self.finishSim(folderName)
+                    self.old_pairs.append(pairs)
+                    self.logBonds(step, cutoff)
+
+                    conv = self.countConv()
+                    if conv >= self.desConv:
+                        self.finishSim(folderName, conv, step=step)
                         step = 0
                         break
+
+                    self.prevGro = deepcopy(self.gro)
+                    self.prevTop = deepcopy(self.top)
+                    os.chdir('..')
+                    step += 1
                 else:
-                    self.finishSim(folderName) 
+                    self.finishSim(folderName, conv, step=step)
                     step = 0
                     break
 
@@ -405,8 +492,9 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
-    a = main(32) # change name like gmx_cl ....
+    a = main(4) # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(10)
+    a.mainProcess(1, ig=False)
+
     
     # TODO: need to check that charge been update as the template. 
