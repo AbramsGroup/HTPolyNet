@@ -53,6 +53,10 @@ class main(object):
         self.basicParameter = ''
         self.molNames = []
         self.chargeMap = {}
+
+        self.prevGro = ''
+        self.prevTop = ''
+
         self.gro = '' # save gro object
         self.top = '' # save top object
 
@@ -62,6 +66,7 @@ class main(object):
         # needed parameters
         self.maxBonds = 100
         self.conv = 0
+        self.desConv = 0
         self.desBonds = 0
 
     def setParam(self, name):
@@ -178,14 +183,29 @@ class main(object):
 
         # Back to the working directory and start crosslinking approach
         os.chdir(self.workingFolder)
-    
-    def finishSim(self, folderName):
-        os.chdir(self.workingFolder)
+
+    def countConv(self):
         num1 = 0
         for i in self.old_pairs:
             num1 += len(i)
 
-        conv = round(num1/int(self.maxBonds), 2)
+        conv = round(num1 / int(self.maxBonds), 2)
+        return conv
+
+    def finishSim(self, folderName, conv, step=0):
+        os.chdir('..')
+        os.mkdir('Final'); os.chdir('Final')
+        if conv >= self.desConv:
+            self.gro.outDf('sys')
+            self.top.topClean(key='bonds')
+            self.top.outDf('sys')
+        else:
+            self.prevGro.outDf('sys')
+            self.prevTop.topClean(key='bonds')
+            self.prevTop.outDf('sys')
+
+        os.chdir(self.workingFolder)
+        conv = self.countConv()
         move(folderName, '{}-{}'.format(folderName, conv))
         self.old_pairs = []
         self.reInitSys()
@@ -239,6 +259,7 @@ class main(object):
             maxRct += molNum * tmp
                 
         self.maxBonds = maxRct * 0.5
+        self.desConv = float(self.basicParameter.bondsRatio)
         self.desBonds = float(self.basicParameter.bondsRatio) * self.maxBonds
 
     def logBonds(self, step, cutoff):
@@ -354,13 +375,13 @@ class main(object):
 
                     cond = self.stepwiseRelax()
                     if cond == False:
-                        self.finishSim(folderName)
+                        self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
 
                     groName = 'cl-{}'.format(i); topName = 'init'
                     self.gro.outDf(groName)
-                    self.top.topClean(key='bonds')
+                    # self.top.topClean(key='bonds')
                     self.top.outDf(topName)
 
                     intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
@@ -370,14 +391,14 @@ class main(object):
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
-                        self.finishSim(folderName)
+                        self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
                     
                     cond1 = a.NPTSimulation('min-1', topName, 'npt-cl', 'npt-cl', check=False, re=True)
                     if cond1 == False:
                         print('NPT failed')
-                        self.finishSim(folderName)
+                        self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
                     
@@ -386,13 +407,16 @@ class main(object):
                     self.old_pairs.append(pairs)
                     self.logBonds(step, cutoff)
 
-                    os.chdir('..')
-                    step += 1
-
-                    if len(self.old_pairs) > 0.95 * int(self.maxBonds):
-                        self.finishSim(folderName)
+                    conv = self.countConv()
+                    if conv >= self.desConv:
+                        self.finishSim(folderName, conv, step=step)
                         step = 0
                         break
+
+                    self.prevGro = deepcopy(self.gro)
+                    self.prevTop = deepcopy(self.top)
+                    os.chdir('..')
+                    step += 1
                 else:
                     self.finishSim(folderName) 
                     step = 0
