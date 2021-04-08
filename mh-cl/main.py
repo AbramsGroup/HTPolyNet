@@ -200,9 +200,12 @@ class main(object):
             self.top.topClean(key='bonds')
             self.top.outDf('sys')
         else:
-            self.prevGro.outDf('sys')
-            self.prevTop.topClean(key='bonds')
-            self.prevTop.outDf('sys')
+            if step == 0:
+                pass
+            else:
+                self.prevGro.outDf('sys')
+                # self.prevTop.topClean(key='bonds')
+                self.prevTop.outDf('sys')
 
         os.chdir(self.workingFolder)
         conv = self.countConv()
@@ -418,7 +421,7 @@ class main(object):
                     os.chdir('..')
                     step += 1
                 else:
-                    self.finishSim(folderName) 
+                    self.finishSim(folderName, conv, step=step)
                     step = 0
                     break
 
