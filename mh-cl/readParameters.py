@@ -20,6 +20,8 @@ class parameters(object):
         self.bondsRatio = ''
         self.maxBonds = ''
         self.HTProcess = ''
+        self.CPU = ''
+        self.trials = ''
         self.rctInfo = ''
     
     def setName(self, name):
@@ -121,10 +123,12 @@ class parameters(object):
                 cutoff = float(line.split('=')[1].strip(' '))
             if 'bondsRatio' in line:
                 bondsRatio = line.split('=')[1].strip(' ')
-            if 'maxBonds' in line:
-                maxBonds = line.split('=')[1].strip(' ')
             if 'HTProcess' in line:
                 HTProcess = line.split('=')[1].strip(' ')
+            if 'CPU' in line:
+                CPU = line.split('=')[1].strip(' ')
+            if 'trials' in line:
+                trials = line.split('=')[1].strip(' ')
 
         rctInfo = []
         for line in baseList: # React Info
@@ -139,6 +143,7 @@ class parameters(object):
         self.croR_list = croR_list
         self.cutoff = cutoff
         self.bondsRatio = bondsRatio
-        self.maxBonds = maxBonds
         self.rctInfo = rctInfo
+        self.CPU = CPU
+        self.trials = trials
         self.HTProcess = HTProcess

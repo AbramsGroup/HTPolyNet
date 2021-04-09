@@ -33,8 +33,10 @@ from copy import deepcopy
 import sys
 
 class main(object):
-    def __init__(self, cpu):
-        self.cpu = cpu
+    def __init__(self):
+        self.cpu = ''
+        self.trials = ''
+
         self.srcPath = os.getcwd()
         
         self.basicFolder = ''
@@ -75,6 +77,8 @@ class main(object):
         a.setName(path)
         a.readParam()
         self.basicParameter = a
+        self.cpu = a.CPU
+        self.trials = a.trials
     
     def getGroInfo(self, name):
         a = readGro.initGro()
@@ -492,9 +496,9 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':
-    a = main(4) # change name like gmx_cl ....
+    a = main() # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(1, ig=False)
+    a.mainProcess(a.trials, ig=False)
 
     
     # TODO: need to check that charge been update as the template. 
