@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
 """
 step 1: read needed parameters from basic/option.txt
 step 2: init systems 
@@ -105,11 +105,13 @@ class main(object):
             os.mkdir(self.typeFolder)
 
             cmd1 = 'cp {}/options.txt {}/options.txt'.format(self.topPath, self.basicFolder)
+            cmd2 = 'cp {}/*mol2 {}/'.format(self.topPath, self.unrctFolder)
             path = os.path.join(self.HTPolyPath, 'mdp')
-            cmd2 = 'cp -r {}/* {}/*'.format(path, self.mdpFolder)
+            cmd3 = 'cp -r {}/* {}'.format(path, self.mdpFolder)
 
             subprocess.call(cmd1, shell=True)
             subprocess.call(cmd2, shell=True)
+            subprocess.call(cmd3, shell=True)
 
 
     def setParam(self, name):
@@ -476,7 +478,7 @@ class main(object):
         path = os.getcwd()
         self.topPath = path
 
-        paraFile = os.path(path, 'options.txt')
+        paraFile = os.path.join(path, 'options.txt')
         if os.path.isfile(paraFile):
             pass
         else:
