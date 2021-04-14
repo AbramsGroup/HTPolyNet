@@ -90,7 +90,7 @@ Development of High-Throughput Polymer Network Atomistic Simulation
 1. Clone this repository to the local
 2. Set environment variable in ```~/.bashrc```
 ```
-export PATH=/home/ming/code/HTPolyNet/mh-cl/src:$PATH
+export PATH=$FOLDER$/HTPolyNet/mh-cl/src:$PATH
 export HTPOLYPATH='$FOLDER$/HTPolyNet/mh-cl'
 ```
 3. Make the 'src/HTPoly.py' script an execute script ```chmod +x HTPoly.net```
