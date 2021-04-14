@@ -80,7 +80,7 @@ class main(object):
     def initFolder(self):
         if self.reProject == '':
             i = 0
-            while(os.path.isfile('proj{}'.format(i))):
+            while(os.path.isdir(os.path.join(self.topPath, 'proj{}'.format(i)))):
                 i += 1
             self.projPath = os.path.join(self.topPath, 'proj{}'.format(i))
             os.mkdir('proj{}'.format(i))
@@ -113,14 +113,17 @@ class main(object):
             subprocess.call(cmd2, shell=True)
             subprocess.call(cmd3, shell=True)
 
+        else:
+            cmd0 = 'rm -r {}/*'.format(self.resFolder)
+            subprocess.call(cmd0, shell=True)
 
     def setParam(self, name):
         a = readParameters.parameters()
         a.setName(name)
         a.readParam()
         self.basicParameter = a
-        self.cpu = a.CPU
-        self.trials = a.trials
+        self.cpu = int(a.CPU)
+        self.trials = int(a.trials)
         self.reProject = a.reProject
 
     def getGroInfo(self, name):
@@ -519,7 +522,7 @@ class main(object):
 if __name__ == '__main__':
     a = main() # change name like gmx_cl ....
     a.preparePara()
-    a.mainProcess(a.trials, ig=False)
+    a.mainProcess(a.trials)
 
     
     # TODO: need to check that charge been update as the template. 

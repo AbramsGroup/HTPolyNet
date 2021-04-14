@@ -50,11 +50,11 @@ class generateTypeInfo(object):
             
             for i in range(len(keys)):
                 name1 = keys[i]
-                molName1 = '{}{}.mol2'.format(self.unrctPath, name1)
+                molName1 = '{}/{}.mol2'.format(self.unrctPath, name1)
                 mol1 = readMol.readMol(molName1)
                 mol1.main()
-                for name2 in ['STY']:
-                    molName2 = '{}{}.mol2'.format(self.unrctPath, name2)
+                for name2 in mainMol.getKeys('mon'):
+                    molName2 = '{}/{}.mol2'.format(self.unrctPath, name2)
                     mol2 = readMol.readMol(molName2)
                     mol2.main()
                     mol2.mol2.updateResName(mainMol.croResName)
@@ -191,7 +191,8 @@ class generateTypeInfo(object):
         for i in range(len(tmpList)):
             with open('tmp.py', 'a') as f:
                 print('{} = '.format(name[i]), tmpList[i], file=f)
-        os.remove('parameters.py')
+        if os.path.isfile('parameters.py'):
+            os.remove('parameters.py')
         os.rename('tmp.py', 'parameters.py')
         
     def obtainParam(self):

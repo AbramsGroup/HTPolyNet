@@ -28,7 +28,7 @@ class generateChargeDb(object):
         mainMol = createRctMol.createRctMol()
         mainMol.getRctInfo(a) # assume only contain 1 cro
         keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
-        croName = '{}{}.mol2'.format(self.unrctPath, list(mainMol.rctInfo['cro'][0].keys())[0])
+        croName = '{}/{}.mol2'.format(self.unrctPath, list(mainMol.rctInfo['cro'][0].keys())[0])
         mainMol.croResName = 'CRO'
         
         croMol = readMol.readMol(croName)
@@ -36,7 +36,7 @@ class generateChargeDb(object):
         croMol.mol2.updateResName(mainMol.croResName)
         molList = {}
         for i in range(len(keys)):
-            name = '{}{}.mol2'.format(self.unrctPath, keys[i])
+            name = '{}/{}.mol2'.format(self.unrctPath, keys[i])
             monMol = readMol.readMol(name)
             monMol.main()
             mainMol.base = monMol.mol2
@@ -80,7 +80,6 @@ class generateChargeDb(object):
         for l in inList:
             cc += Decimal(l)
 
-        print('cc1: ', cc)
         if cc > 0:
             idx = inList.index(max(inList))
         else:

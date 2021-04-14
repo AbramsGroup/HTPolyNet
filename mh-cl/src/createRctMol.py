@@ -9,6 +9,7 @@ import mol2Info
 
 import pandas as pd
 import itertools
+import os
 
 class createRctMol(object):
     def __init__(self):
@@ -145,7 +146,8 @@ class createRctMol(object):
     def outMolLst(self, path):
         idx = 0
         for keys, value in self.mol2List.items():
-            name = path + ''.join([i for i in keys if not i.isdigit()])
+            name = os.path.join(path, ''.join([i for i in keys if not i.isdigit()]))
+            # name = path + ''.join([i for i in keys if not i.isdigit()])
             for i in range(len(value)):
                 n = name + str(idx) + '.mol2'
                 value[i].outMol2(n)
