@@ -164,7 +164,7 @@ export HTPOLYPATH='$FOLDER$/HTPolyNet/mh-cl'
         ...
         ```
 4. Run the algorithm
-    ```python3 main.py (Or using nohup python3 main.py &)```
+    ```HTPolyNet.py```
     
 5. All results locate in the *results* folder. Different replica locate in the 
     different folder. Bonds formed information is in the file *bond.txt*. When
