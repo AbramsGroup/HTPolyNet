@@ -4,15 +4,6 @@
 # 5 times: 40 65 340 V
 # 10 times: 80 130 680
 
-# Basic Info
-# reProject = proj1
-boxSize = 5
-cutoff = 0.5
-bondsRatio = 0.5
-HTProcess = True
-CPU = 32
-trials = 5
-
 # For croslinker 1
 croName1 = VEA
 croNum1 = 4
@@ -36,6 +27,13 @@ mon1R_list = C6, C7
 mon1R_rNum = 1, 1
 mon1R_rct = H, T
 mon1R_group = 1, 1
+
+# Basic Info
+boxSize = 5
+cutoff = 2
+bondsRatio = 0.5
+maxBonds = 8
+HTProcess = True
 
 # React Info (always, cro always comes first)
 VEA + VEA + 100.0%
