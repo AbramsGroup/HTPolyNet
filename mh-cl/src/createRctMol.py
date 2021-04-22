@@ -153,13 +153,13 @@ class createRctMol(object):
                 value[i].outMol2(n)
                 idx += 1 
 if __name__ == '__main__':
-    path = 'systems/unrctSystem/'
-    rctPath = 'systems/rctSystem/'
+    path = '../systems/unrctSystem/'
+    rctPath = '../systems/tmp/'
     # Get connect info from options.txt
     import readParameters
 
     a = readParameters.parameters()
-    a.setName('basic/options.txt')
+    a.setName('../basic/options.txt')
     a.readParam()
     mainMol = createRctMol()
     mainMol.getRctInfo(a) # assume only contain 1 cro

@@ -139,7 +139,18 @@ class mol2Info(object):
             x.y = float(x.y) - dist[1] - num
             x.z = float(x.z) - dist[2] - num
         return x
-    
+
+    def rotateMol(self, x, theta, resname):
+        if x.resname == resname:
+            theta = np.deg2rad(theta)
+            rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+            v = np.array([x.x, x.y]).astype(float)
+            v2 = np.dot(rot, v)
+            x.x = float(v2[0])
+            x.y = float(v2[1])
+            x.z = x.z
+        return x
+
     def shiftMol(self, pair, num):
         resname = self.atoms[(self.atoms.atomId == pair[0])].resname.values[0]
 #        com = self.getCOM(resname);
@@ -149,7 +160,8 @@ class mol2Info(object):
                 float(atPos0[1]) - float(atPos1[1]),
                 float(atPos0[2]) - float(atPos1[2])]
         self.atoms = self.atoms.apply(lambda x: self.shiftCoord(x, dist, resname, num), axis=1)
-    
+        self.atoms = self.atoms.apply(lambda x: self.rotateMol(x, 10, resname), axis=1)
+
     def getSeq(self):
         df = self.atoms[(self.atoms.resname.str.contains(self.mainResname))]
         self.seq = df.atomName.to_list()

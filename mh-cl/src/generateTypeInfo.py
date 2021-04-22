@@ -241,5 +241,5 @@ class generateTypeInfo(object):
 if __name__ == '__main__':
     a = generateTypeInfo()
     srcPath = os.getcwd()
-    a1 = a.main('{}/systems/unrctSystem/'.format(srcPath), '{}/systems/typeSystem/'.format(srcPath))
+    a1 = a.main('{}/systems/unrctSystem/'.format(srcPath), '{}/systems/tmp/'.format(srcPath))
     
