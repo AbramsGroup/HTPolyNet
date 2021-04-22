@@ -1,0 +1,12 @@
+[ defaults ]
+1               2               yes             0.5     0.8333
+; Include
+#include "init.itp"
+[ system ]
+[ system ]
+[ system ]
+Generic title
+[ molecules ]
+[ molecules ]
+[ molecules ]
+STY                  1
