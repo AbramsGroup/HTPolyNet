@@ -62,7 +62,7 @@ class testCase(object):
         a3 = readTop2.initTop()
         
         # a2.setName('init')
-        a2.setName('init')
+        a2.setName('tests/init')
         df_init, sysName, atNum, boxSize = a2.readGRO()
         atomsDf = groInfo.gro()
         boxSize = [5.00000, 5.00000, 5.00000] # TODO: remove latter
@@ -71,7 +71,7 @@ class testCase(object):
         self.gro = atomsDf
         
         topDf = topInfo.top()
-        a3.setName('init.top', 'init.itp')
+        a3.setName('tests/init.top', 'tests/init.itp')
         # a3.setName('init-1.top', 'init-1.itp')
 #        a3.setName('systems/VEA.top', 'systems/VEA.itp')
         a3.genTopSession()
@@ -115,6 +115,7 @@ class testCase(object):
         a.getNames(['VEA'])
         
 if __name__ == "__main__":
+    os.chdir('..')
     a = testCase()
     b1 = a.testreadGro()
     # b2 = a.testreadGro('systems/unrctSystem/STY')

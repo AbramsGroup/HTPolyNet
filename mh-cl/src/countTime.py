@@ -4,6 +4,7 @@ Created on Mon Nov  9 15:30:10 2020
 
 @author: huang
 """
+import os
 import time
 from functools import wraps
 
@@ -13,15 +14,11 @@ def countTime(fn):
         t1 = time.time()
         result = fn(*args, **kwargs)
         t2 = time.time()
-        print(f"@timefn: {fn.__name__} took: {t2 - t1: .5f} s")
+        if os.path.isfile('time.txt'):
+            with open('time.txt', 'a') as f:
+                f.write(f"@timefn: {fn.__name__} took: {t2 - t1: .5f} s\n")
+        else:
+            with open('time.txt', 'w') as f:
+                f.write(f"@timefn: {fn.__name__} took: {t2 - t1: .5f} s\n")
         return result
     return measure_time
-
-#@countTime
-#def readFile(name):
-#    with open(name, 'r') as f:
-#        f1 = f.readlines()
-#        for i in f1:
-#            pass
-#
-#readFile('tmp.gro')
