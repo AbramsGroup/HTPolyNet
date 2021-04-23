@@ -1,10 +1,20 @@
 # GMA 0.37, mSTY 0.63
+
+# Basic Info
+boxSize = 5
+cutoff = 2
+bondsRatio = 0.5
+HTProcess = True
+CPU = 32
+trials = 5
+
 # For croslinker 1
 croName1 = GMA
 croNum1 = 37
 cro1R_list = C1, C2, C3, C4  #heavy atom index for monomer reactive atoms
 cro1R_rNum = 1, 1, 1, 1
 cro1R_rct = H, T, H, T
+cro1R_group = 1, 1, 2, 2
 
 # For monomer 1
 monName1 = mST
@@ -12,16 +22,10 @@ monNum1 = 63
 mon1R_list = C1, C2
 mon1R_rNum = 1, 1
 mon1R_rct = H, T
-
-# Basic Info
-boxSize = 5
-cutoff = 2
-bondsRatio = 0.5
-maxBonds = 8
-HTProcess = True
+mon1R_group = 1, 1
 
 # React Info (always, cro always comes first)
 GMA+ GMA + 100.0%
-mST+ mST+ 100.0%
-mST+ GMA+ 100.0%
+mST+ mST + 100.0%
+mST+ GMA + 100.0%
 
