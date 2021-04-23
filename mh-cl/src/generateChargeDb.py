@@ -28,7 +28,7 @@ class generateChargeDb(object):
         mainMol = createRctMol.createRctMol()
         mainMol.getRctInfo(a) # assume only contain 1 cro
         keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
-        croName = '{}/{}.mol2'.format(self.unrctPath, list(mainMol.rctInfo['cro'][0].keys())[0])
+        croName = '{}/{}.mol2'.format(self.unrctPath, list(mainMol.rctInfo['mon'][0].keys())[0])
         mainMol.croResName = 'CRO'
         
         croMol = readMol.readMol(croName)
