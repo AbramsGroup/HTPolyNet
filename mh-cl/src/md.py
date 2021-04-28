@@ -66,18 +66,21 @@ class md(object):
     def emSimulation(self, groName, topName, outName, size=True, boxSize=[0, 0, 0], check=True):
         editconf = '{} editconf -f {}.gro -box {} {} {} -o {} -c'.format(self.gmx, groName, boxSize[0], boxSize[1], boxSize[2], groName)
         grompp = '{} grompp -f em.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, groName, topName, outName)
-        cmd2 = '{} -np {} {} -deffnm {} -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
+        mdcmd = '{} -np {} {} -deffnm {} -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
         if size:
             subprocess.call(editconf, shell=True) # call editconf to add box size information
         subprocess.call(grompp, shell=True) # build the tpr
         # first try for MD simulation
-        subprocess.call(cmd2, shell=True)
+        # add code to build command and redirect all output to logs
+        subprocess.call(mdcmd, shell=True)
         iter=0
         # trial stages for MD simulations: (gromacs command, rdd value)
         prog=[(self.gmx_mpi,'1'), (self.gmx_mpi,'0.5'), (self.gmx_mpi,'0.1'), (self.gmx,None), (self.gmx,'0.5')]
         while (not self.checkMDFinish(outName) and iter < len(prog)):
             print('MD iteration 0: {}, {}'.format(prog[iter][0],prog[iter][1]))
-            # add code to build command
+            # add code to build command and redirect all output to logs
+            # mdcmd = ......
+            print('-> command: {}'.format(mdcmd))
             subprocess.call(cmdname,shell=True)
             iter+=1
         if iter==maxiter:
