@@ -5,6 +5,7 @@ Searching potential bonds
 @author: huang
 """
 import pandas as pd
+pd.options.mode.chained_assignment = None
 import numpy as np
 import networkx as nx
 import time
@@ -297,16 +298,13 @@ class searchBonds(object):
         df_tmp0 = self.assignAtoms(df_tmp0)
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
         # ##### START PARALLEL
-        print('start parallel searching!!')
-        t1 = time.time()
+        print('-----> start parallel searching!!')
         p = Pool(processes=self.cpu)
         dfSplit = np.array_split(df_tmp, self.cpu)
         # TODO: without parallel searching and check the results
         results = p.map(partial(self.parallel_getPairs, df_sum=df_tmp), dfSplit)
         p.close()
         p.join()
-        t2 = time.time()
-        print('@timefn: getPairs_tot took: {}s'.format(t2 - t1))
         tmpLst = []
         for l in results:
             if l.empty:
@@ -779,10 +777,12 @@ class searchBonds(object):
         count = 0
         while (len(pairs) == 0 and count < 10):
             while (len(pairs) == 0):
+                print('--> Current cutoff: {}'.format(self.cutoff))
                 df_pairs = self.getRctDf()
                 df_pairs.to_csv('all_bonds_within_cutoff.csv')
                 if self.conv < 0.7:
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
+                        print('-----> Not enough pairs found in this step, increasing cutoff by 0.2nm')
                         self.cutoff += 0.2
                         if self.cutoff > 0.7 * float(self.boxSize):
                             break
@@ -793,6 +793,7 @@ class searchBonds(object):
 
                 elif 0.7 <= self.conv <= 0.9:
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
+                        print('-----> Not enough pairs found in this step, increasing cutoff by 0.2nm')
                         self.cutoff += 0.2
                         if self.cutoff > 0.75 * float(self.boxSize):
                             break
@@ -802,6 +803,7 @@ class searchBonds(object):
                         break
                 else:
                     if len(df_pairs) == 0:
+                        print('-----> Not enough pairs found in this step, increasing cutoff by 0.1nm')
                         self.cutoff += 0.1
                         if self.cutoff > 0.6 * float(self.boxSize):
                             break
@@ -832,7 +834,7 @@ class searchBonds(object):
 
         # update all atoms belonged chain
         self.updateAllChains()
-        print('{} bonds are going to be generated'.format(len(pairs)))
+        print('----> {} bonds are going to be generated'.format(len(pairs)))
         # print('Following bonds will be formed: \n')
         # for index, value in pairs.iterrows():
         #     print('\t', value.acro, '\t', value.amon, '\t',

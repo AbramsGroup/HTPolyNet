@@ -154,6 +154,7 @@ class main(object):
         self.initGro.updateCoord(a1)
         
     def initSys(self):
+        print('-> Creating mixture...')
         param = self.basicParameter
         molInfo = {}
         nameList = []
@@ -199,11 +200,16 @@ class main(object):
         self.top = topSum
         self.initTop = deepcopy(self.top)
 
+        print('-> Successful creating mixture!!')
+
         # EM and NPT to equilibrate the structure
+        print('-> Conduct energy minization on the new mixture')
         a = md.md('gmx_mpi', 'mpirun', self.cpu)
         a.emSimulation('init', 'init', 'min-1', size=False)
+        print('-> Conduct NPT on the new mixture')
         a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
         i = 0
+        print('-> The mixture is good to go!!')
         while(not a.checkMDFinish('npt-init')):
             if i > 5:
                 print('Still cannot converge NPT system, restart')
@@ -305,6 +311,7 @@ class main(object):
             maxRct += molNum * tmp
                 
         self.maxBonds = maxRct * 0.5
+        print('-> Maximum number of the potential bonds is {}'.format(self.maxBonds))
         self.desConv = float(self.basicParameter.bondsRatio)
         self.desBonds = float(self.basicParameter.bondsRatio) * self.maxBonds
 
@@ -334,6 +341,7 @@ class main(object):
 
     @countTime
     def stepwiseRelax(self):
+        print('----> Start stepwise relaxation step to relax the system')
         k = [0.01, 0.1, 1]
         outName = 'sw'
         for i in range(len(k)):
@@ -344,16 +352,17 @@ class main(object):
             a = md.md('gmx_mpi', 'mpirun', self.cpu)
             cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
             if cond0 == False:
-                print('EM failed')
+                print('----> Stepwised EM failed')
                 return False
 
             cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
                                     'sw-npt-{}'.format(i), 'npt-sw',
                                     check=False, re=True)
             if cond1 == False:
-                print('NPT failed')
+                print('----> Stepwised NPT failed')
                 return False
 
+            print('----> Stepwised step for k = {} is succuessful'.format(k[i]))
             self.updateCoord('sw-npt-{}'.format(i))
 
         return True
@@ -369,8 +378,10 @@ class main(object):
         # Start crosslinking approach
         step = 0        
         for i in range(repeatTimes):
+            print('--> Start crosslinking procedure on replica {}!!'.format(i))
             folderName = 'sim{}'.format(i)
             os.mkdir(folderName); os.chdir(folderName)
+            print('---> A new NPT to mix the system at 300K to create new replica')
             os.mkdir('init'); os.chdir('init')
 
             self.top.outDf('init')
@@ -383,19 +394,21 @@ class main(object):
             a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
             self.updateCoord('npt-init')
             os.chdir('..')
+            print('---> New replica is good to go')
             while(len(self.old_pairs) < int(self.maxBonds)):
-                # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-
+                print('---> step {}'.format(step))
                 folderName1 = self.setupFolder(step)
                 os.chdir(folderName1)
 
                 # searching potential bonds
+                print('----> Start searching bonds')
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
                                                  self.conv, self.desBonds, self.chains)
                 pairs, chains, rMols, cutoff = sbonds.sBonds()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 self.chains = chains
                 if len(pairs) > 0:
+                    print('----> Start generating bonds')
                     self.pairs_detail['step{}'.format(step)] = pairs
 
                     # generate bonds
@@ -408,6 +421,7 @@ class main(object):
 
                     cond = self.stepwiseRelax()
                     if cond == False:
+                        print('----> Stepwised cannot relax the systems, some wired bonds may formed in the step, will start a new replica')
                         self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
@@ -419,6 +433,7 @@ class main(object):
                     # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
 
                     # Equilibrate system
+                    print('----> Energy minimization on the normal system')
                     a = md.md('gmx_mpi', 'mpirun', self.cpu)
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
@@ -426,7 +441,7 @@ class main(object):
                         self.finishSim(folderName, 0, step=step)
                         step = 0
                         break
-                    
+                    print('----> NPT on the normal system')
                     cond1 = a.NPTSimulation('min-1', topName, 'npt-cl', 'npt-cl', check=False, re=True)
                     if cond1 == False:
                         print('NPT failed')
@@ -440,6 +455,7 @@ class main(object):
                     self.logBonds(step, cutoff)
 
                     conv = self.countConv()
+                    print('----> step {} reaches {} conversion'.format(step, round(conv, 2)))
                     if conv >= self.desConv:
                         self.finishSim(folderName, conv, step=step)
                         step = 0
@@ -523,6 +539,6 @@ if __name__ == '__main__':
     a = main() # change name like gmx_cl ....
     a.preparePara()
     a.mainProcess(a.trials)
-
+    print('All replicas are been tested')
     
     # TODO: need to check that charge been update as the template. 

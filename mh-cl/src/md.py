@@ -115,6 +115,7 @@ class md(object):
         gromppOptions['f'] = 'em.mdp'
         gromppOptions['c'] = '{}.gro'.format(groName)
         gromppOptions['p'] = '{}.top'.format(topName)
+        gromppOptions['o'] = '{}.tpr'.format(outName)
         gromppOptions['maxwarn'] = '2'
         mdrunOptions['deffnm'] = outName
 
@@ -125,22 +126,23 @@ class md(object):
 
         self.gmxCMD('mdrun', mdrunOptions, file=True, mpi=True)
         iter = 0
-        while self.checkMDFinish(outName) and iter < len(prog):
+        while not self.checkMDFinish(outName) and iter < len(prog):
             opt = {prog[iter][0]: prog[iter][1]}
             self.gmxCMD('mdrun', mdrunOptions, extraOptions=opt, file=True, mpi=prog[iter][2])
             iter += 1
 
         if not self.checkMDFinish(outName):
             if check:
-                sys.exit('Cannot equilibrium well')
+                sys.exit('Energy minimization failed. Please check!')
             else:
                 return False
 
     def NPTSimulation(self, groName, topName, outName, mdpName, check=True, re=True):
         gromppOptions = {}; mdrunOptions = {}
-        gromppOptions['f'] = '{}}.mdp'.format(mdpName)
+        gromppOptions['f'] = '{}.mdp'.format(mdpName)
         gromppOptions['c'] = '{}.gro'.format(groName)
         gromppOptions['p'] = '{}.top'.format(topName)
+        gromppOptions['o'] = '{}.tpr'.format(outName)
         gromppOptions['maxwarn'] = '2'
         mdrunOptions['deffnm'] = outName
 
@@ -158,13 +160,13 @@ class md(object):
                     return False
             else:
                 iter = 0
-                while self.checkMDFinish(outName) and iter < len(prog):
+                while not self.checkMDFinish(outName) and iter < len(prog):
                     opt = {prog[iter][0]: prog[iter][1]}
                     self.gmxCMD('mdrun', mdrunOptions, extraOptions=opt, file=True, mpi=prog[iter][2])
                     iter += 1
 
                 if not self.checkMDFinish(outName):
                     if check:
-                        sys.exit('Cannot equilibrium well')
+                        sys.exit('NPT failed')
                     else:
                         return False

@@ -16,17 +16,16 @@ class extendSys(object):
         for mol in molInfo:
             name = mol[1]
             num = mol[2]
-            print('cwd: ', os.getcwd())
-            print('extend outName: ', outName)
             if os.path.isfile('{}.gro'.format(outName)):
                 cmd1 = '{} insert-molecules -f {}.gro -ci {}.gro -nmol {} -o {} -box {} {} {} -scale 0.4'.format(
                     GMX, outName, name, num, outName, boxSize, boxSize, boxSize)
-                a1 = subprocess.call(cmd1, shell=True) #, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                #a1.wait()
+                a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = a1.communicate()
             else:
                 cmd1 = '{} insert-molecules -ci {}.gro -nmol {} -o {} -box {} {} {} -scale 0.4'.format(
                     GMX, name, num, outName, boxSize, boxSize, boxSize)
-                a1 = subprocess.call(cmd1, shell=True) #, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out, err = a1.communicate()
                 
     def extendSys(self, monInfo, croInfo, boxSize, fileName):
         print('Box size: ', boxSize)

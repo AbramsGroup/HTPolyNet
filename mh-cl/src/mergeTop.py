@@ -50,7 +50,7 @@ def mergeInfo(atomslist, bondslist, pairslist, anglelist, dihlist, implist, topS
         anglelist_new.append(df_angles); dihlist_new.append(df_dih); implist_new.append(df_imp)
         count = int(df_atoms.nr.iloc[-1])
     t2 = time.time()
-    print('tt_merge: ', t2 - t1)
+    # print('tt_merge: ', t2 - t1)
     topSum.atoms = pd.concat(atomlst_new).reset_index(drop=True)
     topSum.bonds = pd.concat(bondlst_new).reset_index(drop=True)
     topSum.pairs = pd.concat(pairlst_new).reset_index(drop=True)
