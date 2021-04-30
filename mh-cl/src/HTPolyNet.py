@@ -396,10 +396,10 @@ class main(object):
             os.chdir('..')
             print('---> New replica is good to go')
             while(len(self.old_pairs) < int(self.maxBonds)):
-                print('---> step {} (Content can be found under folder {})'.format(step, os.getcwd()))
+                print('---> step {}'.format(step))
                 folderName1 = self.setupFolder(step)
                 os.chdir(folderName1)
-
+                print('     (Content can be found under folder {})'.format(os.getcwd()))
                 # searching potential bonds
                 print('----> Start searching bonds')
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
