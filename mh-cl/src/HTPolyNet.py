@@ -335,7 +335,7 @@ class main(object):
             f2.write(str0)
             for keys, values in self.pairs_detail.items():
                 f2.write('{}: \n'.format(keys))
-                print('values: ', values)
+                # print('values: ', values)
                 for index, row in values.iterrows():
                     f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
 
@@ -396,7 +396,7 @@ class main(object):
             os.chdir('..')
             print('---> New replica is good to go')
             while(len(self.old_pairs) < int(self.maxBonds)):
-                print('---> step {}'.format(step))
+                print('---> step {} (Content can be found under folder {})'.format(step, os.getcwd()))
                 folderName1 = self.setupFolder(step)
                 os.chdir(folderName1)
 
@@ -526,12 +526,14 @@ class main(object):
         if os.path.isfile('{}/charges.txt'.format(self.basicFolder)):
             self.chargeMap = self.getChargeMaps('{}/charges.txt'.format(self.basicFolder))
         else:
+            print('--> Start generating charge data base')
             a1 = generateChargeDb.generateChargeDb()
             cc = a1.main(self.unrctFolder, self.rctFolder, 4) # could be more
             
             self.chargeMap = cc
         
         os.chdir(self.projPath)
+        print('--> Start generating reacted molecules type data base')
         a = generateTypeInfo.generateTypeInfo()
         a.main(self.unrctFolder, self.typeFolder)
         

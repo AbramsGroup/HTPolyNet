@@ -216,7 +216,7 @@ class genBonds(object):
             hCon2 = self.findHydrogen(atomsDf, df_bonds, p[1])[0]
             hAtoms.append(hCon1); hAtoms.append(hCon2)
         
-        print('Following atoms will be removed: ', hAtoms)
+        # print('Following atoms will be removed: ', hAtoms)
         t1 = time.time()
         for a in hAtoms:
             atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
@@ -238,7 +238,7 @@ class genBonds(object):
             df_imps.drop(df_imps[df_imps['ak'] == a].index, inplace=True)
             df_imps.drop(df_imps[df_imps['al'] == a].index, inplace=True)
         t2 = time.time()
-        print('@timefn: dropRows {}s'.format(t2 - t1))
+        print('-----> @timefn: dropRows {}s'.format(round(t2 - t1), 2))
         self.top.atoms = df_atoms
         self.top.bonds = df_bonds
         self.top.pairs = df_pairs
@@ -332,7 +332,7 @@ class genBonds(object):
             new_dihedrals += nDihs
 
         # check and add new types to the corresponding type section
-        print('checking and adding new types...')
+        print('-----> Checking and adding new types...')
         new_bonds = self.checkNewTypes(new_bonds, inTop, types='bonds')
         new_angles = self.checkNewTypes(new_angles, inTop, types='angles')
         new_dihedrals = self.checkNewTypes(new_dihedrals, inTop, types='dih')
@@ -345,7 +345,7 @@ class genBonds(object):
         inTop.impropers = df_imps
         
         # add new pairs to the corresponding section
-        print('generate new connection bonds/pairs/angles/dihs/imps...')
+        print('-----> Generating new connection bonds/pairs/angles/dihs/imps...')
         inTop.addBonds(new_bonds)
         inTop.addPairs(new_pairs)
         inTop.addAngles(new_angles)

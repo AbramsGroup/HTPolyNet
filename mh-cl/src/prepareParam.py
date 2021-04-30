@@ -25,11 +25,11 @@ class prepareParam(object):
             f.close()   
             
             a1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            a1.wait()
+            out1, err1 = a1.communicate()
             a2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            a2.wait()
+            out2, err2 = a2.communicate()
             a3 = subprocess.Popen(command3, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            a3.wait()
+            out3, err3 = a3.communicate()
             
             file = parmed.load_file('out.top', xyz='out.crd')
             file.save('{}.gro'.format(outputName))

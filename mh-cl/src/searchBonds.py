@@ -617,7 +617,7 @@ class searchBonds(object):
         df_tmp0 = pd.DataFrame(rowList0)
         df_tmp0.to_csv('all_bonds_within_cutoff.csv')
 
-        print('{} bonds goes to check probability'.format(len(df_tmp0)))
+        print('----> {} bonds goes to check reactivity probability'.format(len(df_tmp0)))
         pcriteria = 0
         if len(df_tmp0) <= 2:
             pcriteria = 1
@@ -777,7 +777,7 @@ class searchBonds(object):
         count = 0
         while (len(pairs) == 0 and count < 10):
             while (len(pairs) == 0):
-                print('--> Current cutoff: {}'.format(self.cutoff))
+                print('-----> Current cutoff: {}'.format(round(self.cutoff, 2)))
                 df_pairs = self.getRctDf()
                 df_pairs.to_csv('all_bonds_within_cutoff.csv')
                 if self.conv < 0.7:
@@ -834,7 +834,7 @@ class searchBonds(object):
 
         # update all atoms belonged chain
         self.updateAllChains()
-        print('----> {} bonds are going to be generated'.format(len(pairs)))
+        print('-----> {} bonds are going to be generated'.format(len(pairs)))
         # print('Following bonds will be formed: \n')
         # for index, value in pairs.iterrows():
         #     print('\t', value.acro, '\t', value.amon, '\t',

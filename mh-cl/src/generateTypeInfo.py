@@ -205,6 +205,7 @@ class generateTypeInfo(object):
             nameList = []
             for f in fileList:
                 name = f.split('.')[0]
+                print('---> Getting paramters from {}.mol2...'.format(name))
                 out1 = name + '-min'
                 out2 = name + '-type'
                 cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'.format(name, out1)
@@ -216,10 +217,14 @@ class generateTypeInfo(object):
                 with open('tleap.in', 'w') as f:
                     f.write(str1)
 
-                subprocess.call(cmd1, shell=True)
-                subprocess.call(cmd2, shell=True)
-                subprocess.call(cmd3, shell=True)
-                subprocess.call(cmd4, shell=True)
+                a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out1, err1 = a1.communicate()
+                a2 = subprocess.Popen(cmd2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out2, err2 = a2.communicate()
+                a3 = subprocess.Popen(cmd3, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out3, err3 = a3.communicate()
+                a4 = subprocess.Popen(cmd4, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                out4, err4 = a4.communicate()
                 
                 file = parmed.load_file('{}.top'.format(out2), xyz='{}.crd'.format(out2))
                 file.save('{}.gro'.format(out2))
