@@ -9,17 +9,56 @@ import subprocess
 from shutil import copyfile
 from shutil import move
 
+
 class md(object):
-    def __init__(self, GMX, MPI, nCPU):
+    def __init__(self, GMX, MPI, nCPU, nGPU=0):
         self.gmx = GMX
         self.gmx_mpi = 'gmx_mpi mdrun'
         self.mpi = MPI
-        self.cpu = nCPU
-        self.options={} # options dictionaries
-        self.options['mdrun']={} # default options for mdrun
-        self.options['editconf']={} # default options for mdrun
-        self.options['grompp']={} # default options for mdrun
-        
+        self.cpu = int(nCPU)
+        self.gpu = int(nGPU)
+
+    def combineCMD(self, inOptions):
+        opt = ''
+        for k, v in inOptions.items():
+            tmp = ' -{} {}'.format(k, v)
+            opt += tmp
+        return opt
+
+    def gmxCMD(self, cmdHeader, inOptions, extraOptions={}, file=False, mpi=True):
+        if extraOptions:
+            for k, v in extraOptions.items():
+                inOptions[k] = v
+
+        if cmdHeader == 'mdrun':
+            if self.gpu > 0:
+                inOptions['nb'] = 'gpu'
+            else:
+                inOptions['nb'] = 'cpu'
+            opt = self.combineCMD(inOptions)
+            cmd = ' '.join(['gmx_mpi', cmdHeader, opt])
+            if mpi and self.gpu > 0:
+                cmd = '{} -np {} {}'.format(self.mpi, self.gpu, cmd)
+            elif mpi and self.cpu > 0:
+                cmd = '{} -np {} {}'.format(self.mpi, self.cpu, cmd)
+            else:
+                cmd = cmd # No parallel calculation
+        else:
+            opt = self.combineCMD(inOptions)
+            cmd = ' '.join(['gmx_mpi', cmdHeader, opt])
+
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        junk, output = p.communicate()
+        if file:
+            i = 0
+            fName = '{}{}.log'.format(cmdHeader, i)
+            while (os.path.isfile(fName)):
+                i += 1
+                fName = '{}{}.log'.format(cmdHeader, i)
+
+            with open(fName, 'w') as f:
+                f.write(output.decode('utf-8'))
+
     def checkMDFinish(self, fileName):
         if os.path.isfile('{}.gro'.format(fileName)):
             return True
@@ -64,98 +103,68 @@ class md(object):
             copyfile('{}.gro'.format(outName), 'npt.gro')
     
     def emSimulation(self, groName, topName, outName, size=True, boxSize=[0, 0, 0], check=True):
-        editconf = '{} editconf -f {}.gro -box {} {} {} -o {} -c'.format(self.gmx, groName, boxSize[0], boxSize[1], boxSize[2], groName)
-        grompp = '{} grompp -f em.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, groName, topName, outName)
-        mdcmd = '{} -np {} {} -deffnm {} -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
         if size:
-            subprocess.call(editconf, shell=True) # call editconf to add box size information
-        subprocess.call(grompp, shell=True) # build the tpr
-        # first try for MD simulation
-        # add code to build command and redirect all output to logs
-        subprocess.call(mdcmd, shell=True)
-        iter=0
-        # trial stages for MD simulations: (gromacs command, rdd value)
-        prog=[(self.gmx_mpi,'1'), (self.gmx_mpi,'0.5'), (self.gmx_mpi,'0.1'), (self.gmx,None), (self.gmx,'0.5')]
-        while (not self.checkMDFinish(outName) and iter < len(prog)):
-            print('MD iteration 0: {}, {}'.format(prog[iter][0],prog[iter][1]))
-            # add code to build command and redirect all output to logs
-            # mdcmd = ......
-            print('-> command: {}'.format(mdcmd))
-            subprocess.call(cmdname,shell=True)
-            iter+=1
-        if iter==maxiter:
-            sys.exit('Failed to equilibrate system.')
+            editOptions = {}
+            editOptions['f'] = '{}.gro'.format(groName)
+            editOptions['box'] = '{} {} {}'.format(boxSize[0], boxSize[1], boxSize[2])
+            editOptions['o'] = groName
+            self.gmxCMD('editconf', editOptions)
+
+        gromppOptions = {}; mdrunOptions = {}
+
+        gromppOptions['f'] = 'em.mdp'
+        gromppOptions['c'] = '{}.gro'.format(groName)
+        gromppOptions['p'] = '{}.top'.format(topName)
+        gromppOptions['maxwarn'] = '2'
+        mdrunOptions['deffnm'] = outName
+
+        self.gmxCMD('grompp', gromppOptions)
+
+        prog = [('rdd', '1', True), ('rdd', '0.5', True), ('rdd', '0.1', True),
+                ('ntomp', '6', False), ('rdd', '0.5', False), ('rdd', '0.1', False)]
+
+        self.gmxCMD('mdrun', mdrunOptions, file=True, mpi=True)
+        iter = 0
+        while self.checkMDFinish(outName) and iter < len(prog):
+            opt = {prog[iter][0]: prog[iter][1]}
+            self.gmxCMD('mdrun', mdrunOptions, extraOptions=opt, file=True, mpi=prog[iter][2])
+            iter += 1
 
         if not self.checkMDFinish(outName):
-            cmd3 = '{} -np {} {} -deffnm {} -rdd 1 -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-            subprocess.call(cmd3, shell=True)
-            if not self.checkMDFinish(outName):
-                cmd4 = '{} -np {} {} -deffnm {} -rdd 0.5 -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-                subprocess.call(cmd4, shell=True)
-                if not self.checkMDFinish(outName):
-                    cmd5 = '{} -np {} {} -deffnm {} -rdd 0.1 -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-                    subprocess.call(cmd5, shell=True)
-                    if not self.checkMDFinish(outName):
-                        cmd6 = '{} mdrun -deffnm {} -nb cpu'.format(self.gmx, outName)
-                        subprocess.call(cmd6, shell=True)
-                        if not self.checkMDFinish(outName):
-                            cmd7 = '{} mdrun -deffnm {} -rdd 0.5 -nb cpu'.format(self.gmx, outName)
-                            subprocess.call(cmd7, shell=True)
-                            if not self.checkMDFinish(outName):
-                                if check:
-                                    sys.exit('Cannot equilibrium well')
-                                else:
-                                    return False
-    
-    def NVTSimulation(self, groName, topName, outName, mdpName, check=True):
-        cmd1 = '{} grompp -f {}.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, mdpName, groName, topName, outName)
-        cmd2 = '{} -np {} {} -deffnm {}'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-        subprocess.call(cmd1, shell=True)
-        subprocess.call(cmd2, shell=True)
-            
-        if not self.checkMDFinish(outName):
-            print('NVT didnt finish, please check log file!')
             if check:
-                sys.exit()
+                sys.exit('Cannot equilibrium well')
             else:
                 return False
-    
+
     def NPTSimulation(self, groName, topName, outName, mdpName, check=True, re=True):
-        cmd1 = '{} grompp -f {}.mdp -c {}.gro -p {}.top -o {} -maxwarn 2'.format(self.gmx, mdpName, groName, topName, outName)
-        cmd2 = '{} -np {} {} -deffnm {} -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-        subprocess.call(cmd1, shell=True)
-        subprocess.call(cmd2, shell=True)
-        
+        gromppOptions = {}; mdrunOptions = {}
+        gromppOptions['f'] = '{}}.mdp'.format(mdpName)
+        gromppOptions['c'] = '{}.gro'.format(groName)
+        gromppOptions['p'] = '{}.top'.format(topName)
+        gromppOptions['maxwarn'] = '2'
+        mdrunOptions['deffnm'] = outName
+
+        self.gmxCMD('grompp', gromppOptions)
+
+        prog = [('rdd', '1', True), ('rdd', '0.5', True), ('rdd', '0.1', True),
+                ('ntomp', '6', False), ('rdd', '0.5', False), ('rdd', '0.1', False)]
+
+        self.gmxCMD('mdrun', mdrunOptions, mpi=True)
         if not self.checkMDFinish(outName):
-            print('NPT didnt finish, please check log file!')
             if not re:
                 if check:
-                    sys.exit()
+                    sys.exit('Cannot equilibrium well')
                 else:
                     return False
             else:
-                cmd3 = '{} -np {} {} -deffnm {} -rdd 1 -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-                subprocess.call(cmd3, shell=True)
+                iter = 0
+                while self.checkMDFinish(outName) and iter < len(prog):
+                    opt = {prog[iter][0]: prog[iter][1]}
+                    self.gmxCMD('mdrun', mdrunOptions, extraOptions=opt, file=True, mpi=prog[iter][2])
+                    iter += 1
+
                 if not self.checkMDFinish(outName):
-                    cmd4 = '{} -np {} {} -deffnm {} -rdd 0.5 -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-                    subprocess.call(cmd4, shell=True)
-                    if not self.checkMDFinish(outName):
-                        cmd5 = '{} -np {} {} -deffnm {} -rdd 0.1 -nb cpu'.format(self.mpi, self.cpu, self.gmx_mpi, outName)
-                        subprocess.call(cmd5, shell=True)
-                        if not self.checkMDFinish(outName):
-                            cmd6 = '{} mdrun -deffnm {} -ntomp {} -nb cpu'.format(self.gmx_mpi, outName, int(int(self.cpu)/2))
-                            subprocess.call(cmd6, shell=True)
-                            if not self.checkMDFinish(outName):
-                                cmd7 = '{} mdrun -deffnm {} -rdd 0.5 -ntomp {} -nb cpu'.format(self.gmx_mpi, outName, int(int(self.cpu)/2))
-                                subprocess.call(cmd7, shell=True)
-                                if not self.checkMDFinish(outName):
-                                    cmd8 = '{} mdrun -deffnm {} -rdd 0.5 -nb cpu'.format(self.gmx, outName)
-                                    subprocess.call(cmd8, shell=True)
-                                    if not self.checkMDFinish(outName):
-                                        cmd9 = '{} mdrun -deffnm {} -rdd 0.1 -nb cpu'.format(self.gmx, outName)
-                                        subprocess.call(cmd9, shell=True)
-                                        if not self.checkMDFinish(outName):
-                                            if check:
-                                                sys.exit('Cannot equilibrium well')
-                                            else:
-                                                return False
+                    if check:
+                        sys.exit('Cannot equilibrium well')
+                    else:
+                        return False
