@@ -208,8 +208,8 @@ class generateTypeInfo(object):
                 print('---> Getting paramters from {}.mol2...'.format(name))
                 out1 = name + '-min'
                 out2 = name + '-type'
-                cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'.format(name, out1)
-                cmd2 = 'antechamber -j 4 -fi mol2 -fo mol2 -c gas -at gaff -i {}.mol2 -o {}.mol2 -pf Y -nc 0 -eq 1 -pl 10'.format(out1, out2)
+                # cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'.format(name, out1)
+                cmd2 = 'antechamber -j 4 -fi mol2 -fo mol2 -c gas -at gaff -i {}.mol2 -o {}.mol2 -pf Y -nc 0 -eq 1 -pl 10'.format(name, out2)
                 cmd3 = 'parmchk2 -i {}.mol2 -o {}.frcmod -f mol2 -s gaff'.format(out2, out2)
                 cmd4 = 'tleap -f tleap.in'
                 
@@ -217,8 +217,8 @@ class generateTypeInfo(object):
                 with open('tleap.in', 'w') as f:
                     f.write(str1)
 
-                a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                out1, err1 = a1.communicate()
+                # a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                # out1, err1 = a1.communicate()
                 a2 = subprocess.Popen(cmd2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out2, err2 = a2.communicate()
                 a3 = subprocess.Popen(cmd3, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
