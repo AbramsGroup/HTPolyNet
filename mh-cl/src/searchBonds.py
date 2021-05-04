@@ -446,7 +446,7 @@ class searchBonds(object):
                            (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp2) &
                            (df_rctAtoms.loc[:, 'globalIdx'] != row.amon)]['groupCon']
 
-        if adj1 == [] and adj2 == []:
+        if adj1.to_list() == [] and adj2.to_list() == []:
             pass
 
         else:

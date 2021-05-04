@@ -520,7 +520,7 @@ class main(object):
                 a.PrepareFile(fileName, n, n)
                 b = processTop.processTop(n) # process the top file, make it standard
                 b.main()
-            self.topMap[b.name] = b.topvi
+            self.topMap[b.name] = b.top
 
         os.chdir(self.projPath)
         
