@@ -70,6 +70,20 @@ class genBonds(object):
         aTypes = df_atoms.loc[int(idx)-1, 'type']
         return aTypes
 
+    def changeAtypes(self, idx, inType, df_atoms):
+        df_atoms.loc[int(idx) - 1, 'type'] = inType
+
+    def checkTypeChangeCond(self, at1, at2, df_atoms):
+        a1Type = self.idx2Atypes(at1, df_atoms)
+        a2Type = self.idx2Atypes(at2, df_atoms)
+        eAtoms = ['o', 'n']
+        if a1Type != a2Type:
+            if a1Type in eAtoms or a2Type in eAtoms:
+                return True
+            else:
+                return False
+
+
     @countTime
     def checkNewTypes(self, pairs, sysTop, types='bonds'):
         sysTop = self.top
@@ -272,13 +286,20 @@ class genBonds(object):
     def genNewCon(self, pair, df_bonds, df_new): # TODO: still slow
         new_bonds = []; new_pairs = []; new_angles = []; new_dihedrals = []
         a1 = str(pair[0]); a2 = str(pair[1])
+        df_atoms = self.top.atoms
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
         df_new.append([a1, a2, pair[2]])
-        # lst = deepcopy(df_new)
         lst = df_new
+        cond0 =  self.checkTypeChangeCond(a1, a2, df_atoms)
         con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)
+            # fix issue: New formed bonds between c-n will change the h atom's type from hc to h1
+            #            ( For GAFF forcefields)
+            if cond0 and self.idx2Atypes(a1, df_atoms).startswith('c'):
+                if self.idx2Atypes(a, df_atoms).startswith('h'):
+                    self.changeAtypes(a, 'h1', df_atoms)
+
             if a != a2:
                 new_angles.append([a, a1, a2])
                 con3 = self.searchCon(a, df_bonds, df_new=lst); con4 = self.searchCon(a2, df_bonds, df_new=lst)
@@ -294,6 +315,12 @@ class genBonds(object):
                         new_pairs.append([a, aa, '1', '1'])
         for a in con2:
             a = str(a)
+            # fix issue: New formed bonds between c-n will change the h atom's type from hc to h1
+            #            ( For GAFF forcefields)
+            if cond0 and self.idx2Atypes(a2, df_atoms).startswith('c'):
+                if self.idx2Atypes(a, df_atoms).startswith('h'):
+                    self.changeAtypes(a, 'h1', df_atoms)
+
             if a != a1:
                 new_angles.append([a1, a2, a])
                 con3 = self.searchCon(a1, df_bonds, df_new=lst); con4 = self.searchCon(a, df_bonds, df_new=lst)
