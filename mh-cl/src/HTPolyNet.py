@@ -207,8 +207,9 @@ class main(object):
         a = md.md('gmx_mpi', 'mpirun', self.cpu)
         a.emSimulation('init', 'init', 'min-1', size=False)
         print('-> Conduct NPT on the new mixture')
-        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=True, re=False)
         i = 0
+        # TODO: can not ensure the NPT is finished well
         print('-> The mixture is good to go!!')
         while(not a.checkMDFinish('npt-init')):
             if i > 5:
@@ -519,7 +520,7 @@ class main(object):
                 a.PrepareFile(fileName, n, n)
                 b = processTop.processTop(n) # process the top file, make it standard
                 b.main()
-            self.topMap[b.name] = b.top
+            self.topMap[b.name] = b.topvi
 
         os.chdir(self.projPath)
         

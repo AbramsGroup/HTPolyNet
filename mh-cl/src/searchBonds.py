@@ -245,7 +245,7 @@ class searchBonds(object):
         for i in rctFunc:
             if i[0][0] not in atomNames:
                 atomNames.append(i[0][0])
-            elif i[1][0] not in atomNames:
+            if i[1][0] not in atomNames:
                 atomNames.append(i[1][0])
         return atomNames
 
@@ -446,16 +446,20 @@ class searchBonds(object):
                            (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp2) &
                            (df_rctAtoms.loc[:, 'globalIdx'] != row.amon)]['groupCon']
 
-        grpsCon1 = adj1.to_list()[0].split('-')
-        grpsCon2 = adj2.to_list()[0].split('-')
-        info1 = '[{}, {}]'.format(mol1[0], rctGrp1)
-        info2 = '[{}, {}]'.format(mol2[0], rctGrp2)
-        if info1 in grpsCon1 or info2 in grpsCon2:
-            cond += 1
-            with open('cond3.txt', 'a') as f:
-                f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
-        else:
+        if adj1 == [] and adj2 == []:
             pass
+
+        else:
+            grpsCon1 = adj1.to_list()[0].split('-')
+            grpsCon2 = adj2.to_list()[0].split('-')
+            info1 = '[{}, {}]'.format(mol1[0], rctGrp1)
+            info2 = '[{}, {}]'.format(mol2[0], rctGrp2)
+            if info1 in grpsCon1 or info2 in grpsCon2:
+                cond += 1
+                with open('cond3.txt', 'a') as f:
+                    f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
+            else:
+                pass
 
         # 条件4: 不能形成全部由可反应原子形成的环
         if self.searchCycle(row):

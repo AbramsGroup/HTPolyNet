@@ -107,6 +107,7 @@ export HTPOLYPATH='$FOLDER$/HTPolyNet/mh-cl'
         3. *@\<TRIPOS\> BOND* 
       There should be an empty line at the end of the *@\<TRIPOS\> BOND* part. 
       Otherwise **ANTECHAMBER** will complain on this
+    * Name of the mol2 file should not include keywords "MON" nor "CRO"
 6. Prepare the *options.txt* and put it under this folder. The *options.txt* template is 
     in the basic folder.
     
