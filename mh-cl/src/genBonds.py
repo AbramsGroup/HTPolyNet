@@ -76,9 +76,12 @@ class genBonds(object):
     def checkTypeChangeCond(self, at1, at2, df_atoms):
         a1Type = self.idx2Atypes(at1, df_atoms)
         a2Type = self.idx2Atypes(at2, df_atoms)
+        print('a1Type: ', a1Type)
+        print('a2Type: ', a2Type)
+
         eAtoms = ['o', 'n']
         if a1Type != a2Type:
-            if a1Type in eAtoms or a2Type in eAtoms:
+            if a1Type[0] in eAtoms or a2Type[0] in eAtoms:
                 return True
             else:
                 return False
@@ -115,7 +118,13 @@ class genBonds(object):
                 else:
                     key = '{}-{}'.format(a1Type, a2Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
-                    param = parameters.dictBond[key]; lst_tmp = [a1Type, a2Type] + param
+                    try:
+                        param = parameters.dictBond[key]
+                    except:
+                        print('Couldn\'t locate this parameters! Please check')
+                        sys.exit()
+
+                    lst_tmp = [a1Type, a2Type] + param
                     sysTop.addBondTypes(lst_tmp)
                     pp += param[1:]
                 pairs_tmp.append(pp)
@@ -147,7 +156,12 @@ class genBonds(object):
                 else:
                     key = '{}-{}-{}'.format(a1Type, a2Type, a3Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
-                    param = parameters.dictAngle[key]; lst_tmp = [a1Type, a2Type, a3Type] + param
+                    try:
+                        param = parameters.dictAngle[key]; lst_tmp = [a1Type, a2Type, a3Type] + param
+                    except:
+                        print('Couldn\'t locate this parameters! Please check')
+                        sys.exit()
+
                     sysTop.addAngleTypes(lst_tmp)
                 pairs_tmp.append(pp)
             return pairs_tmp
@@ -196,7 +210,8 @@ class genBonds(object):
                         lst_tmp = [a4Type, a3Type, a2Type, a1Type] + param.split(',')
                         sysTop.addDihTypes(lst_tmp)
                     else:
-                        sys.exit('Unknown dihedral type{}, need to find param for the pair'.format(key1))
+                        print('Unknown dihedral type {}, need to find param for the pair'.format(key1))
+                        sys.exit()
                 pairs_tmp.append(pp)
             return pairs_tmp
 
@@ -290,7 +305,8 @@ class genBonds(object):
         new_bonds.append([a1, a2, pair[2]]) # a1, a2, dist
         df_new.append([a1, a2, pair[2]])
         lst = df_new
-        cond0 =  self.checkTypeChangeCond(a1, a2, df_atoms)
+        cond0 = self.checkTypeChangeCond(a1, a2, df_atoms)
+        print('cond0: ', cond0)
         con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)
