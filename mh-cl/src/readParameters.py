@@ -11,6 +11,7 @@ import pandas as pd
 class parameters(object):
     def __init__(self):
         self.name = ''
+        self.unrctStruct = [] # This store structures before open the double bonds or others, just used to get the type
         self.monInfo = ''
         self.croInfo = ''
         self.boxSize = ''
@@ -41,7 +42,15 @@ class parameters(object):
         df = pd.read_csv(self.name, header=None, sep='\n', skip_blank_lines=True)
         df = df[df[0].str.startswith('#') == False]
         baseList = df.iloc[:][0]
-        
+
+        i = 1
+        while i < 10:
+            for l1 in baseList:
+                if 'mol{}'.format(i) in l1:
+                    tmpName = l1.split('=')[1].strip(' ')
+                    self.unrctStruct.append(tmpName)
+            i += 1
+
         # Get monomer and crosslinker info
         i = 1
         while i < 5:
@@ -80,7 +89,7 @@ class parameters(object):
                     monInfo.append([i, monName, monNum, monR_list_tmp])
                     monR_list[monName] = monR_list_tmp
             i += 1
-        
+
         i = 1
         while i < 5:
             for l1 in baseList:

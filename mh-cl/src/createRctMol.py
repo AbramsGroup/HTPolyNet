@@ -150,7 +150,8 @@ class createRctMol(object):
             for i in range(len(value)):
                 n = name + str(idx) + '.mol2'
                 value[i].outMol2(n)
-                idx += 1 
+                idx += 1
+
 if __name__ == '__main__':
     path = '../systems/unrctSystem/'
     rctPath = '../systems/tmp/'

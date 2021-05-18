@@ -490,6 +490,9 @@ class main(object):
 
     def getMolNames(self):
         names = []
+        for n in self.basicParameter.unrctStruct:
+            names.append(n)
+
         for n in self.basicParameter.monInfo:
             names.append(n[1])
         
@@ -524,7 +527,7 @@ class main(object):
         self.initFolder()
 
         os.chdir(self.unrctFolder)
-        for n in self.molNames: # Need test
+        for n in self.molNames:
             fileName = '{}.mol2'.format(n)
             if os.path.isfile('{}.gro'.format(n)) and os.path.isfile('{}.top'.format(n)):
                 b = processTop.processTop(n, repeat=True)

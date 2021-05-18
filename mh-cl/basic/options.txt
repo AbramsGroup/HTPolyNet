@@ -15,6 +15,11 @@ trials = 5
 crossType = VE-ST
 stepwise = 0.01, 0.1, 1
 
+# Basic structures
+mol1 = VEA-un
+mol2 = VEB-un
+mol3 = STY-un
+
 # For croslinker 1
 croName1 = VEA
 croNum1 = 4

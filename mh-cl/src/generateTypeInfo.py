@@ -41,6 +41,13 @@ class generateTypeInfo(object):
             a = readParameters.parameters()
             a.setName('{}/options.txt'.format(self.basicPath))
             a.readParam()
+            basicMol = a.unrctStruct
+
+            # copy basic unreact mol2 file to the type folder
+            for molName in basicMol:
+                n1 = '{}/{}.mol2'.format(self.unrctPath, molName)
+                shutil.copy(n1, '{}/{}.mol2'.format(self.typePath, molName))
+
             mainMol = createRctMol.createRctMol()
             mainMol.getRctInfo(a) # assume only contain 1 cro
             keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
@@ -65,6 +72,7 @@ class generateTypeInfo(object):
                     a1 = mainMol.creatMol(rctNum[i], unrctMol, name1)
                     key = '{}-{}'.format(mol1.resname, mol2.resname)
                     molList[key] = a1
+
             mainMol.mol2List = molList
             mainMol.outMolLst(self.typePath)
 #        return molList
