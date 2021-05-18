@@ -277,4 +277,4 @@ class endCapping(object):
         self.changeAtypes(pPairs)
         self.delHydrogen(pPairs)
         self.updateIdx()
-        self.top.avgCharge()
+        self.top.checkCharge()
