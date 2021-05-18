@@ -62,6 +62,7 @@ class main(object):
         self.dumpPairs = {} # pair map when check circuit
 
         self.basicParameter = ''
+        self.basicFFType = ''
         self.molNames = []
         self.chargeMap = {}
 
@@ -252,7 +253,7 @@ class main(object):
         os.mkdir('Final'); os.chdir('Final')
 
         if conv >= self.desConv:
-            a = endCapping.endCapping(self.gro, self.top, self.rctType)
+            a = endCapping.endCapping(self.gro, self.top, self.rctType, self.basicFFType)
             gro = a.gro
             top = a.top
 
@@ -508,7 +509,40 @@ class main(object):
                 key, value = i.split(':')
                 maps[key] = value
         return maps
-    
+
+    def getUnrctPara(self):
+        import pandas as pd
+        atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
+        btypeNames = ['ai', 'aj', 'funct', 'c0', 'c1']
+        angTypeNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
+        dihTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
+        impTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
+
+        basicName = self.basicParameter.unrctStruct
+        aTypes = pd.DataFrame(columns=atypeNames)
+        bTypes = pd.DataFrame(columns=btypeNames)
+        angTypes = pd.DataFrame(columns=angTypeNames)
+        dihTypes = pd.DataFrame(columns=dihTypeNames)
+        impTypes = pd.DataFrame(columns=impTypeNames)
+
+        for name in basicName:
+            top = readTop2.initTop()
+            top.setName('{}.top'.format(name), '{}.itp'.format(name))
+            top.genTopSession()
+            topSum = top.sumTop
+            aTypes = aTypes.append(topSum[1], ignore_index=True)
+            bTypes = bTypes.append(topSum[3], ignore_index=True)
+            angTypes = angTypes.append(topSum[4], ignore_index=True)
+            dihTypes = dihTypes.append(topSum[5], ignore_index=True)
+            impTypes = impTypes.append(topSum[6], ignore_index=True)
+
+        aTypes.drop_duplicates(inplace=True, ignore_index=True)
+        bTypes.drop_duplicates(inplace=True, ignore_index=True)
+        angTypes.drop_duplicates(inplace=True, ignore_index=True)
+        dihTypes.drop_duplicates(inplace=True, ignore_index=True)
+        impTypes.drop_duplicates(inplace=True, ignore_index=True)
+        self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes]
+
     def preparePara(self):
         import prepareParam
 
@@ -538,6 +572,7 @@ class main(object):
                 b = processTop.processTop(n) # process the top file, make it standard
                 b.main()
             self.topMap[b.name] = b.top
+
 
         os.chdir(self.projPath)
         

@@ -2,10 +2,11 @@ import re
 import sys
 
 class endCapping(object):
-    def __init__(self, inGro, inTop, inCat):
+    def __init__(self, inGro, inTop, inCat, inFFSum):
         self.gro = inGro
         self.top = inTop
         self.cat = inCat
+        self.topSum = inFFSum # [aTypes, bTypes, angTypes...], each is a dataframe
         if self.cat == 'VE-ST':
             self.VECapping()
         else:
@@ -38,7 +39,6 @@ class endCapping(object):
                     df_atoms.loc[(df_atoms.nr == p[1]), 'charge'] = chargeCE
             else:
                 print('Found wrong atoms during end capping: \n\t', df_atoms)
-
 
     def getPairs(self):
         pPairs = []
@@ -261,6 +261,19 @@ class endCapping(object):
         inTop.impropers = df_imps_new
         self.gro.df_atoms = atomsDf;
         self.gro.atNum = len(atomsDf)
+
+    def updateBasicType(self):
+        self.top.atomtypes = self.top.atomtypes.append(self.topSum[0])
+        self.top.bondtypes = self.top.bondtypes.append(self.topSum[1])
+        self.top.angletypes = self.top.angletypes.append(self.topSum[2])
+        self.top.dihtypes = self.top.dihtypes.append(self.topSum[3])
+        self.top.imptypes = self.top.imptypes.append(self.topSum[4])
+
+        self.top.atomtypes.drop_duplicates(inplace=True, ignore_index=True)
+        self.top.bondtypes.drop_duplicates(inplace=True, ignore_index=True)
+        self.top.angletypes.drop_duplicates(inplace=True, ignore_index=True)
+        self.top.dihtypes.drop_duplicates(inplace=True, ignore_index=True)
+        self.top.imptypes.drop_duplicates(inplace=True, ignore_index=True)
 
     def VECapping(self):
         # 1. Two atoms belong to the same molecule and same group --> unreact vinyl group
