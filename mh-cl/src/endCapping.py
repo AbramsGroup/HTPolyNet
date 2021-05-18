@@ -56,7 +56,10 @@ class endCapping(object):
                     continue
                 else:
                     if a1MolNum == a2MolNum and a1Group == a2Group:
-                        pPairs.append([a1GlobalIdx, a2GlobalIdx])
+                        if [a1GlobalIdx, a2GlobalIdx] in pPairs or [a2GlobalIdx, a1GlobalIdx] in pPairs:
+                            continue
+                        else:
+                            pPairs.append([a1GlobalIdx, a2GlobalIdx])
         return pPairs
 
     def searchCon(self, idx, df_bonds, df_new=[]):
