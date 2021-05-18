@@ -8,7 +8,6 @@ class endCapping(object):
         self.cat = inCat
         if self.cat == 'VE-ST':
             self.VECapping()
-            return self.gro, self.top
         else:
             pass
 

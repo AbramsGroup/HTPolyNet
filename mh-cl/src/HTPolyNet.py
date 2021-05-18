@@ -251,9 +251,11 @@ class main(object):
         os.chdir('..')
         os.mkdir('Final'); os.chdir('Final')
 
-
         if conv >= self.desConv:
-            gro, top = endCapping.endCapping(self.gro, self.top, self.rctType)
+            a = endCapping.endCapping(self.gro, self.top, self.rctType)
+            gro = a.gro
+            top = a.top
+
             gro.outDf('sys')
             top.topClean(key='bonds')
             top.outDf('sys')
@@ -261,7 +263,9 @@ class main(object):
             if step == 0:
                 pass
             else:
-                gro, top = endCapping.endCapping(self.prevGro, self.prevTop, self.rctType)
+                a = endCapping.endCapping(self.gro, self.top, self.rctType)
+                gro = a.gro
+                top = a.top
 
                 gro.outDf('sys')
                 # self.prevTop.topClean(key='bonds')
