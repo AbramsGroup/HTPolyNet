@@ -43,7 +43,7 @@ class endCapping(object):
 
     def getPairs(self):
         pPairs = []
-        pAtoms = self.gro.loc[self.gro.rct == 'True']
+        pAtoms = self.gro.df_atoms.loc[self.gro.rct == 'True']
         for index, value in pAtoms.iterrows():
             a1GlobalIdx = pAtoms.loc[index, 'globalIdx']
             a1MolNum = pAtoms.loc[index, 'molNum']
