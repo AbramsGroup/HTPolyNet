@@ -24,7 +24,8 @@ class parameters(object):
         self.trials = ''
         self.reProject = ''
         self.rctInfo = ''
-    
+        self.rctType = ''
+
     def setName(self, name):
         self.name = name
         
@@ -134,6 +135,8 @@ class parameters(object):
                 trials = line.split('=')[1].strip(' ')
             if 'reProject' in line:
                 reProject = line.split('=')[1].strip(' ')
+            if 'crossType' in line:
+                rctType = line.split('=')[1].strip(' ')
 
         rctInfo = []
         for line in baseList: # React Info
@@ -153,3 +156,4 @@ class parameters(object):
         self.trials = trials
         self.HTProcess = HTProcess
         self.reProject = reProject
+        self.rctType = rctType

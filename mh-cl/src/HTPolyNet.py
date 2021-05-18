@@ -33,6 +33,7 @@ import genBonds
 import generateChargeDb
 import generateTypeInfo
 import processTop
+import endCapping
 from countTime import *
 
 class main(object):
@@ -40,6 +41,7 @@ class main(object):
         self.cpu = ''
         self.trials = ''
         self.reProject = ''
+        self.rctType = ''
 
         self.HTPolyPath = HTPATH
         self.topPath = ''
@@ -125,6 +127,7 @@ class main(object):
         self.cpu = int(a.CPU)
         self.trials = int(a.trials)
         self.reProject = a.reProject
+        self.rctType = a.rctType
 
     def getGroInfo(self, name):
         a = readGro.initGro()
@@ -245,17 +248,22 @@ class main(object):
     def finishSim(self, folderName, conv, step=0):
         os.chdir('..')
         os.mkdir('Final'); os.chdir('Final')
+
+
         if conv >= self.desConv:
-            self.gro.outDf('sys')
-            self.top.topClean(key='bonds')
-            self.top.outDf('sys')
+            gro, top = endCapping.endCapping(self.gro, self.top, self.rctType)
+            gro.outDf('sys')
+            top.topClean(key='bonds')
+            top.outDf('sys')
         else:
             if step == 0:
                 pass
             else:
-                self.prevGro.outDf('sys')
+                gro, top = endCapping.endCapping(self.prevGro, self.prevTop, self.rctType)
+
+                gro.outDf('sys')
                 # self.prevTop.topClean(key='bonds')
-                self.prevTop.outDf('sys')
+                top.outDf('sys')
 
         os.chdir(self.resFolder)
         conv = self.countConv()
