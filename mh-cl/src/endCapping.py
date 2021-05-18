@@ -43,7 +43,7 @@ class endCapping(object):
 
     def getPairs(self):
         pPairs = []
-        pAtoms = self.gro.df_atoms.loc[self.gro.rct == 'True']
+        pAtoms = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
         for index, value in pAtoms.iterrows():
             a1GlobalIdx = pAtoms.loc[index, 'globalIdx']
             a1MolNum = pAtoms.loc[index, 'molNum']
@@ -267,6 +267,10 @@ class endCapping(object):
         # 4. update atom index
 
         pPairs = self.getPairs()
+        print('Following atoms need to be capping: ')
+        for p in pPairs:
+            print('----> atoms {} and {}'.format(p[0], p[1]))
+
         self.changeAtypes(pPairs)
         self.delHydrogen(pPairs)
         self.updateIdx()
