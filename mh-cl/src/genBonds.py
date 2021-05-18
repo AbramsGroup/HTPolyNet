@@ -74,11 +74,11 @@ class genBonds(object):
         df_atoms.loc[int(idx) - 1, 'type'] = inType
 
     def checkTypeChangeCond(self, at1, at2, df_atoms):
+        # For epoxy - amine
         a1Type = self.idx2Atypes(at1, df_atoms)
         a2Type = self.idx2Atypes(at2, df_atoms)
-        print('a1Type: ', a1Type)
-        print('a2Type: ', a2Type)
-
+        # print('a1Type: ', a1Type)
+        # print('a2Type: ', a2Type)
         eAtoms = ['o', 'n']
         if a1Type != a2Type:
             if a1Type[0] in eAtoms or a2Type[0] in eAtoms:
@@ -306,7 +306,7 @@ class genBonds(object):
         df_new.append([a1, a2, pair[2]])
         lst = df_new
         cond0 = self.checkTypeChangeCond(a1, a2, df_atoms)
-        print('cond0: ', cond0)
+        # print('cond0: ', cond0)
         con1 = self.searchCon(a1, df_bonds, df_new=lst); con2 = self.searchCon(a2, df_bonds, df_new=lst)
         for a in con1:
             a = str(a)

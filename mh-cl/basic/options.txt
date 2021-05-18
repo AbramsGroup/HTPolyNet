@@ -13,6 +13,7 @@ HTProcess = True
 CPU = 32
 trials = 5
 crossType = VE-ST
+stepwise = 0.01, 0.1, 1
 
 # For croslinker 1
 croName1 = VEA

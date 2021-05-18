@@ -25,6 +25,7 @@ class parameters(object):
         self.reProject = ''
         self.rctInfo = ''
         self.rctType = ''
+        self.stepwise = ''
 
     def setName(self, name):
         self.name = name
@@ -137,6 +138,9 @@ class parameters(object):
                 reProject = line.split('=')[1].strip(' ')
             if 'crossType' in line:
                 rctType = line.split('=')[1].strip(' ')
+            if 'stepwise' in line:
+                tmpStr =  line.split('=')[1]
+                stepwise = tmpStr.split(',')
 
         rctInfo = []
         for line in baseList: # React Info
@@ -157,3 +161,4 @@ class parameters(object):
         self.HTProcess = HTProcess
         self.reProject = reProject
         self.rctType = rctType
+        self.stepwise = stepwise
