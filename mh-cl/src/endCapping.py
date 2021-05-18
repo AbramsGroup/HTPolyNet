@@ -130,9 +130,9 @@ class endCapping(object):
         df_imps = inTop.impropers
         hAtoms = []
         for p in pairs:
-            hCon1 = self.findHydrogen(atomsDf, df_bonds, p[0])[0]
-            hCon2 = self.findHydrogen(atomsDf, df_bonds, p[1])[0]
-            hAtoms.append(hCon1);
+            hCon1 = self.findHydrogen(p[0])[0]
+            hCon2 = self.findHydrogen(p[1])[0]
+            hAtoms.append(hCon1)
             hAtoms.append(hCon2)
 
         for a in hAtoms:
