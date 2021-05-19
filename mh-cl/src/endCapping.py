@@ -18,9 +18,11 @@ class endCapping(object):
         df_atoms = self.top.atoms
         for p in pPairs:
             for a in p:
-                atName = str(df_atoms.loc[(df_atoms.nr == a), 'atom'])
-                newAtomType = str(self.topSum[-1].loc[(self.topSum[-1].atom == atName), 'type'])
-                newAtomCharge = str(self.topSum[-1].loc[(self.topSum[-1].atom == atName), 'charge'])
+                atName = str(df_atoms.loc[(df_atoms.nr == a), 'atom'].to_list()[0])
+                resName = str(df_atoms.loc[(df_atoms.nr == a), 'residue'].to_list()[0])
+                tmpDf = self.topSum[-1]
+                newAtomType = str(tmpDf.loc[(tmpDf.atom == atName) & (tmpDf.residue == resName), 'type'].to_list()[0])
+                newAtomCharge = str(tmpDf.loc[(tmpDf.atom == atName) & (tmpDf.residue == resName), 'charge'].to_list()[0])
 
                 print('newAtomType: ', newAtomType)
                 print('newAtomCharge: ', newAtomCharge)

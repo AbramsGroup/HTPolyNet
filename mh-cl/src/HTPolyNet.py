@@ -62,7 +62,7 @@ class main(object):
         self.dumpPairs = {} # pair map when check circuit
 
         self.basicParameter = ''
-        self.basicFFType = ''
+        self.basicFFType = []
         self.molNames = []
         self.chargeMap = {}
 
@@ -537,6 +537,8 @@ class main(object):
             angTypes = angTypes.append(topSum[4], ignore_index=True)
             dihTypes = dihTypes.append(topSum[5], ignore_index=True)
             impTypes = impTypes.append(topSum[6], ignore_index=True)
+
+            topSum[7].residue = name.split('-')[0]
             atoms = atoms.append(topSum[7], ignore_index=True)
 
         aTypes.drop_duplicates(inplace=True, ignore_index=True)
