@@ -17,28 +17,16 @@ class endCapping(object):
         chargeC2 = '-0.090042'
         df_atoms = self.top.atoms
         for p in pPairs:
-            if int(float(df_atoms.loc[(df_atoms.nr == p[0]), 'mass'])) == 12:
-                hAtoms = self.findHydrogen(p[0])
-                if len(hAtoms) > 0:
-                    df_atoms.loc[(df_atoms.nr == p[0]), 'type'] = 'c2'
-                    df_atoms.loc[(df_atoms.nr == p[0]), 'charge'] = chargeC2
-                else:
-                    df_atoms.loc[(df_atoms.nr == p[0]), 'type'] = 'ce'
-                    df_atoms.loc[(df_atoms.nr == p[0]), 'charge'] = chargeCE
+            for a in p:
+                atName = str(df_atoms.loc[(df_atoms.nr == a), 'atom'])
+                newAtomType = str(self.topSum[-1].loc[(self.topSum[-1].atom == atName), 'type'])
+                newAtomCharge = str(self.topSum[-1].loc[(self.topSum[-1].atom == atName), 'charge'])
 
-            else:
-                print('Found wrong atoms during end capping: \n\t', df_atoms)
+                print('newAtomType: ', newAtomType)
+                print('newAtomCharge: ', newAtomCharge)
 
-            if int(float(df_atoms.loc[(df_atoms.nr == p[1]), 'mass'])) == 12:
-                hAtoms = self.findHydrogen(p[1])
-                if len(hAtoms) > 0:
-                    df_atoms.loc[(df_atoms.nr == p[1]), 'type'] = 'c2'
-                    df_atoms.loc[(df_atoms.nr == p[1]), 'charge'] = chargeC2
-                else:
-                    df_atoms.loc[(df_atoms.nr == p[1]), 'type'] = 'ce'
-                    df_atoms.loc[(df_atoms.nr == p[1]), 'charge'] = chargeCE
-            else:
-                print('Found wrong atoms during end capping: \n\t', df_atoms)
+                df_atoms.loc[(df_atoms.nr == a), 'type'] = newAtomType
+                df_atoms.loc[(df_atoms.nr == a), 'charge'] = newAtomCharge
 
     def getPairs(self):
         pPairs = []
@@ -268,7 +256,7 @@ class endCapping(object):
         self.top.angletypes = self.top.angletypes.append(self.topSum[2])
         self.top.dihtypes = self.top.dihtypes.append(self.topSum[3])
         self.top.imptypes = self.top.imptypes.append(self.topSum[4])
-
+        # TODO: cannot remove duplicate like this
         self.top.atomtypes.drop_duplicates(inplace=True, ignore_index=True)
         self.top.bondtypes.drop_duplicates(inplace=True, ignore_index=True)
         self.top.angletypes.drop_duplicates(inplace=True, ignore_index=True)
@@ -285,7 +273,7 @@ class endCapping(object):
         print('Following atoms need to be capping: ')
         for p in pPairs:
             print('----> atoms {} and {}'.format(p[0], p[1]))
-
+        self.updateBasicType()
         self.changeAtypes(pPairs)
         self.delHydrogen(pPairs)
         self.updateIdx()

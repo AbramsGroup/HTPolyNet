@@ -517,6 +517,7 @@ class main(object):
         angTypeNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
         dihTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
         impTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
+        atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
 
         basicName = self.basicParameter.unrctStruct
         aTypes = pd.DataFrame(columns=atypeNames)
@@ -524,6 +525,7 @@ class main(object):
         angTypes = pd.DataFrame(columns=angTypeNames)
         dihTypes = pd.DataFrame(columns=dihTypeNames)
         impTypes = pd.DataFrame(columns=impTypeNames)
+        atoms = pd.DataFrame(columns=atNames)
 
         for name in basicName:
             top = readTop2.initTop()
@@ -535,13 +537,14 @@ class main(object):
             angTypes = angTypes.append(topSum[4], ignore_index=True)
             dihTypes = dihTypes.append(topSum[5], ignore_index=True)
             impTypes = impTypes.append(topSum[6], ignore_index=True)
+            atoms = atoms.append(topSum[7], ignore_index=True)
 
         aTypes.drop_duplicates(inplace=True, ignore_index=True)
         bTypes.drop_duplicates(inplace=True, ignore_index=True)
         angTypes.drop_duplicates(inplace=True, ignore_index=True)
         dihTypes.drop_duplicates(inplace=True, ignore_index=True)
         impTypes.drop_duplicates(inplace=True, ignore_index=True)
-        self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes]
+        self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes, atoms]
 
     def preparePara(self):
         import prepareParam
@@ -573,7 +576,7 @@ class main(object):
                 b.main()
             self.topMap[b.name] = b.top
 
-
+        self.getUnrctPara()
         os.chdir(self.projPath)
         
         if os.path.isfile('{}/charges.txt'.format(self.basicFolder)):
