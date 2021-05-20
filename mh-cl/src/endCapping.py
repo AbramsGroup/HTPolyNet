@@ -7,10 +7,7 @@ class endCapping(object):
         self.top = inTop
         self.cappingBonds = inCappingBonds
         self.topSum = inFFSum # [aTypes, bTypes, angTypes...], each is a dataframe
-        if self.cat == 'VE-ST':
-            self.VECapping()
-        else:
-            pass
+        self.VECapping()
 
     def changeAtypes(self, pPairs):
         df_atoms = self.top.atoms

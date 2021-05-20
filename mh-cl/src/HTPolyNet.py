@@ -535,9 +535,8 @@ class main(object):
             aTypes = aTypes.append(topSum[1], ignore_index=True)
             bTypes = bTypes.append(topSum[3], ignore_index=True)
             angTypes = angTypes.append(topSum[4], ignore_index=True)
-            dihTypes = dihTypes.append(topSum[5], ignore_index=True)
+            dihTypes = dihTypes.append(top.fullDihTypes, ignore_index=True)
             impTypes = impTypes.append(topSum[6], ignore_index=True)
-
             topSum[7].residue = name.split('-')[0]
             atoms = atoms.append(topSum[7], ignore_index=True)
 

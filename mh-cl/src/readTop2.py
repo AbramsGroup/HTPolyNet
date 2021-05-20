@@ -30,7 +30,8 @@ class initTop(object):
         self.dupDihTypeKey = []
         self.topInfo = ''
         self.sumTop = []
-    
+        self.fullDihTypes = ''
+
     def setName(self, name1, name2):
         self.topName = name1
         self.itpName = name2
@@ -51,6 +52,10 @@ class initTop(object):
                     df_sep.append(df_tmp)
         df_sep.append(df1.iloc[dil_indx[i] + 1:, :])
         return df_sep
+
+    def convIdx2Type(self, index):
+        aType = str(self.atoms.loc[(self.atoms.nr == index), 'type'].values[0])
+        return aType
 
     @countTime
     def genTopSession(self):
@@ -136,8 +141,27 @@ class initTop(object):
                        self.atoms, self.bonds, self.pairs, self.angles,
                        self.dihs, self.imps, self.dupDihTypeKey]
 
+        fullDihTypes = []
+        key = []
+        for index, value in self.dihs.iterrows():
+            if value.c0 != None:
+                aiType = self.convIdx2Type(value.ai)
+                ajType = self.convIdx2Type(value.aj)
+                akType = self.convIdx2Type(value.ak)
+                alType = self.convIdx2Type(value.al)
+                if [aiType, ajType, akType, alType] not in key:
+                    key.append([aiType, ajType, akType, alType])
+                    tmp = [aiType, ajType, akType, alType,
+                           value.funct, value.c0, value.c1, value.c2]
+                    fullDihTypes.append(tmp)
+                else:
+                    continue
+
+        tmpDih = pd.DataFrame(fullDihTypes, columns=dihTypeNames)
+        self.fullDihTypes = self.dihTypes.append(tmpDih, ignore_index=True)
+
 if __name__ == '__main__':
     a = initTop()
     a.setName('tmp.top', 'tmp.itp')
-    a1 = a.genTopSession()
-    
+    a.genTopSession()
+    a1 = a.fullDihTypes
