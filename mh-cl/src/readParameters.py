@@ -25,8 +25,8 @@ class parameters(object):
         self.trials = ''
         self.reProject = ''
         self.rctInfo = ''
-        self.rctType = ''
         self.stepwise = ''
+        self.cappingBonds = []
 
     def setName(self, name):
         self.name = name
@@ -50,6 +50,23 @@ class parameters(object):
                     tmpName = l1.split('=')[1].strip(' ')
                     self.unrctStruct.append(tmpName)
             i += 1
+
+        i = 1
+        foundKey = False
+        while i:
+            for l1 in baseList:
+                if 'cappingBonds{}'.format(i) in l1:
+                    tmp = l1.split('=')[1]
+                    tmpBonds = tmp.split(',')
+                    self.cappingBonds.append(tmpBonds)
+                    foundKey = True
+                    i += 1
+                    break
+                else:
+                    foundKey = False
+
+            if foundKey == False:
+                break
 
         # Get monomer and crosslinker info
         i = 1
@@ -145,8 +162,6 @@ class parameters(object):
                 trials = line.split('=')[1].strip(' ')
             if 'reProject' in line:
                 reProject = line.split('=')[1].strip(' ')
-            if 'crossType' in line:
-                rctType = line.split('=')[1].strip(' ')
             if 'stepwise' in line:
                 tmpStr =  line.split('=')[1]
                 stepwise = tmpStr.split(',')
@@ -169,5 +184,10 @@ class parameters(object):
         self.trials = trials
         self.HTProcess = HTProcess
         self.reProject = reProject
-        self.rctType = rctType
         self.stepwise = stepwise
+
+if __name__ == '__main__':
+    name = 'options.txt'
+    a = parameters()
+    a.setName(name)
+    a.readParam()

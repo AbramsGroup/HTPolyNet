@@ -41,8 +41,8 @@ class main(object):
         self.cpu = ''
         self.trials = ''
         self.reProject = ''
-        self.rctType = ''
         self.stepwise = ''
+        self.cappingBonds = []
 
         self.HTPolyPath = HTPATH
         self.topPath = ''
@@ -129,8 +129,8 @@ class main(object):
         self.cpu = int(a.CPU)
         self.trials = int(a.trials)
         self.reProject = a.reProject
-        self.rctType = a.rctType
         self.stepwise = a.stepwise
+        self.cappingBonds = a.cappingBonds
 
     def getGroInfo(self, name):
         a = readGro.initGro()
@@ -253,7 +253,7 @@ class main(object):
         os.mkdir('Final'); os.chdir('Final')
 
         if conv >= self.desConv:
-            a = endCapping.endCapping(self.gro, self.top, self.rctType, self.basicFFType)
+            a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.cappingBonds)
             gro = a.gro
             top = a.top
 
@@ -264,7 +264,7 @@ class main(object):
             if step == 0:
                 pass
             else:
-                a = endCapping.endCapping(self.gro, self.top, self.rctType)
+                a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.cappingBonds)
                 gro = a.gro
                 top = a.top
 

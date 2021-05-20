@@ -2,10 +2,10 @@ import re
 import sys
 
 class endCapping(object):
-    def __init__(self, inGro, inTop, inCat, inFFSum):
+    def __init__(self, inGro, inTop, inFFSum, inCappingBonds=[]):
         self.gro = inGro
         self.top = inTop
-        self.cat = inCat
+        self.cappingBonds = inCappingBonds
         self.topSum = inFFSum # [aTypes, bTypes, angTypes...], each is a dataframe
         if self.cat == 'VE-ST':
             self.VECapping()
@@ -13,8 +13,6 @@ class endCapping(object):
             pass
 
     def changeAtypes(self, pPairs):
-        chargeCE = '0.014275'
-        chargeC2 = '-0.090042'
         df_atoms = self.top.atoms
         for p in pPairs:
             for a in p:
@@ -33,6 +31,7 @@ class endCapping(object):
     def getPairs(self):
         pPairs = []
         pAtoms = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+
         for index, value in pAtoms.iterrows():
             a1GlobalIdx = pAtoms.loc[index, 'globalIdx']
             a1MolNum = pAtoms.loc[index, 'molNum']
@@ -122,8 +121,15 @@ class endCapping(object):
         df_imps = inTop.impropers
         hAtoms = []
         for p in pairs:
-            hCon1 = self.findHydrogen(p[0])[0]
-            hCon2 = self.findHydrogen(p[1])[0]
+            hCons1 = self.findHydrogen(p[0])
+            hCons2 = self.findHydrogen(p[0])
+            for a in hCons1:
+                df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
+            for a in hCons2:
+                df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
+
+            hCon1 = hCons1[0]
+            hCon2 = hCons2[0]
             hAtoms.append(hCon1)
             hAtoms.append(hCon2)
 

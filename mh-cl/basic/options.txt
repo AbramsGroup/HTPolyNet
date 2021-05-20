@@ -12,13 +12,19 @@ bondsRatio = 0.5
 HTProcess = True
 CPU = 32
 trials = 5
-crossType = VE-ST
 stepwise = 0.01, 0.1, 1
 
 # Basic structures
 mol1 = VEA-un
 mol2 = VEB-un
 mol3 = STY-un
+
+# capping syntax
+cappingBonds1 = C19, C20, 2
+cappingBonds2 = C26, C27, 2
+cappingBonds3 = C22, C23, 2
+cappingBonds3 = C44, C45, 2
+cappingBonds3 = C6, C7, 2
 
 # For croslinker 1
 croName1 = VEA
