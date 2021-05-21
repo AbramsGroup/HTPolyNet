@@ -68,7 +68,7 @@ class top(object):
         a2Type = df_atoms.loc[int(a2)-1, 'type']   
         a3Type = df_atoms.loc[int(a3)-1, 'type']
         a4Type = df_atoms.loc[int(a4)-1, 'type']
-        key = '{}-{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
+        key = '{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
         return key
 
     def subAtom2Atypes2(self, a1, a2, a3, a4, df_atoms, inFunct):
@@ -77,8 +77,9 @@ class top(object):
         a2Type = df_atoms.loc[int(a2)-1, 'type']
         a3Type = df_atoms.loc[int(a3)-1, 'type']
         a4Type = df_atoms.loc[int(a4)-1, 'type']
-        key = '{}-{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type, inFunct)
-        return key
+        key1 = '{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
+        key2 = '{}-{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type, inFunct)
+        return key1, key2
 
     def extractDihTypeKey(self):
         # extract the key of the top's dihedral type session
@@ -95,12 +96,13 @@ class top(object):
         print('bf clean: ', len(self.dihedrals))
 
         for k, v in self.dihedrals.iterrows():
-            key1 = self.subAtom2Atypes2(v.ai, v.aj, v.ak, v.al, self.atoms, v.funct)
-            if key1 in dihTypesKeys:
+            key1, key2 = self.subAtom2Atypes2(v.ai, v.aj, v.ak, v.al, self.atoms, v.funct)
+            if key1 in self.dupDihTypeKey or key2 in dihTypesKeys:
                 continue
             else:
-                print('K: ', k)
+                print('k: ', k)
                 print('v: ', v.to_list())
+                print('key1: ', key1)
                 self.dihedrals.drop(k, inplace=True)
 
         print('af clean: ', len(self.dihedrals))

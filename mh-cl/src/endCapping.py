@@ -19,9 +19,6 @@ class endCapping(object):
                 newAtomType = str(tmpDf.loc[(tmpDf.atom == atName) & (tmpDf.residue == resName), 'type'].to_list()[0])
                 newAtomCharge = str(tmpDf.loc[(tmpDf.atom == atName) & (tmpDf.residue == resName), 'charge'].to_list()[0])
 
-                print('newAtomType: ', newAtomType)
-                print('newAtomCharge: ', newAtomCharge)
-
                 df_atoms.loc[(df_atoms.nr == a), 'type'] = newAtomType
                 df_atoms.loc[(df_atoms.nr == a), 'charge'] = newAtomCharge
 
