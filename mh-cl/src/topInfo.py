@@ -74,9 +74,11 @@ class top(object):
     def extractDihTypeKey(self):
         # extract the key of the top's dihedral type session
         dihKeys = []
-        for k, v in self.dihtypes:
-            keys = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
-            dihKeys.append(keys)
+        for k, v in self.dihtypes.iterrows():
+            keys1 = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
+            keys2 = '{}-{}-{}-{}'.format(v.al, v.ak, v.aj, v.ai)
+            dihKeys.append(keys1)
+            dihKeys.append(keys2)
         return dihKeys
 
     def endCappingtopClean(self):
@@ -87,15 +89,11 @@ class top(object):
             if v.c0 != None:
                 continue
             else:
-                key1 = self.subAtom2Atypes(v.a1, v.a2, v.a3, v.a4, self.atoms)
+                key1 = self.subAtom2Atypes(v.ai, v.aj, v.ak, v.al, self.atoms)
                 if key1 in dihTypesKeys:
                     continue
                 else:
-                    key1.reverse()
-                    if key1 in dihTypesKeys:
-                        continue
-                    else:
-                        self.dihedrals.drop(k, inplace=True)
+                    self.dihedrals.drop(k, inplace=True)
 
         print('af clean: ', len(self.dihedrals))
 
