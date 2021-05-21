@@ -62,10 +62,19 @@ class top(object):
         self.molecules = info[0][1]
         self.dupDihTypeKey = info[13]
     
-    def subAtom2Atypes(self, a1, a2, a3, a4, df_atoms, inFunct):
+    def subAtom2Atypes(self, a1, a2, a3, a4, df_atoms):
         # a1 = row.ai; a2 = row.aj; a3 = row.ak; a4 = row.al
         a1Type = df_atoms.loc[int(a1)-1, 'type']
         a2Type = df_atoms.loc[int(a2)-1, 'type']   
+        a3Type = df_atoms.loc[int(a3)-1, 'type']
+        a4Type = df_atoms.loc[int(a4)-1, 'type']
+        key = '{}-{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
+        return key
+
+    def subAtom2Atypes2(self, a1, a2, a3, a4, df_atoms, inFunct):
+        # a1 = row.ai; a2 = row.aj; a3 = row.ak; a4 = row.al
+        a1Type = df_atoms.loc[int(a1)-1, 'type']
+        a2Type = df_atoms.loc[int(a2)-1, 'type']
         a3Type = df_atoms.loc[int(a3)-1, 'type']
         a4Type = df_atoms.loc[int(a4)-1, 'type']
         key = '{}-{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type, inFunct)
@@ -86,7 +95,7 @@ class top(object):
         print('bf clean: ', len(self.dihedrals))
 
         for k, v in self.dihedrals.iterrows():
-            key1 = self.subAtom2Atypes(v.ai, v.aj, v.ak, v.al, self.atoms, v.funct)
+            key1 = self.subAtom2Atypes2(v.ai, v.aj, v.ak, v.al, self.atoms, v.funct)
             if key1 in dihTypesKeys:
                 continue
             else:
