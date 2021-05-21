@@ -234,7 +234,7 @@ class endCapping(object):
     def cleanType(self):
         tmpIdx = []; tmpKey = []
         for k, v in self.top.atomtypes.iterrows():
-            tmpK = v.name
+            tmpK = v['name']
             if tmpK not in tmpKey:
                 tmpKey.append(tmpK)
             else:
@@ -282,11 +282,11 @@ class endCapping(object):
         self.top.imptypes.drop(tmpIdx, inplace=True)
 
     def updateBasicType(self):
-        self.top.atomtypes = self.top.atomtypes.append(self.topSum[0])
-        self.top.bondtypes = self.top.bondtypes.append(self.topSum[1])
-        self.top.angletypes = self.top.angletypes.append(self.topSum[2])
-        self.top.dihtypes = self.top.dihtypes.append(self.topSum[3])
-        self.top.imptypes = self.top.imptypes.append(self.topSum[4])
+        self.top.atomtypes = self.top.atomtypes.append(self.topSum[0], ignore_index=True)
+        self.top.bondtypes = self.top.bondtypes.append(self.topSum[1], ignore_index=True)
+        self.top.angletypes = self.top.angletypes.append(self.topSum[2], ignore_index=True)
+        self.top.dihtypes = self.top.dihtypes.append(self.topSum[3], ignore_index=True)
+        self.top.imptypes = self.top.imptypes.append(self.topSum[4], ignore_index=True)
         self.cleanType()
 
     def VECapping(self):
