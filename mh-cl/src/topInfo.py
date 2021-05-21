@@ -70,7 +70,31 @@ class top(object):
         a4Type = df_atoms.loc[int(a4)-1, 'type']
         key = '{}-{}-{}-{}'.format(a1Type, a2Type, a3Type, a4Type)
         return key
-    
+
+    def extractDihTypeKey(self):
+        # extract the key of the top's dihedral type session
+        dihKeys = []
+        for k, v in self.dihtypes:
+            keys = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
+            dihKeys.append(keys)
+        return dihKeys
+
+    def topClean(self):
+        dihTypesKeys = self.extractDihTypeKey()
+        for k, v in self.dihedrals.iterrows():
+            if v.c0 != None:
+                continue
+            else:
+                key1 = self.subAtom2Atypes(v.a1, v.a2, v.a3, v.a4, self.atoms)
+                if key1 in dihTypesKeys:
+                    continue
+                else:
+                    key1.reverse()
+                    if key1 in dihTypesKeys:
+                        continue
+                    else:
+                        self.dihedrals.drop(k, inplace=True)
+
     def mergeRow(self, x, keys='aTypes'):
         if keys == 'aTypes':
             str1 = '{:<4}{:>12}{:>10}{:>10}{:>3}{:>14}{:>14}'.format(

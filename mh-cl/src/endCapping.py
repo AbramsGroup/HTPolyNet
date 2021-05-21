@@ -79,28 +79,7 @@ class endCapping(object):
             if 'H' in atomsDf[atomsDf.loc[:, 'globalIdx'] == str(i)]['atomName'].values[0]:
                 con.append(i)
 
-        # sort the hydrogen based on the atom name
-        con1 = []; atomName_ori = ''
-        for idx in con:
-            atName = atomsDf[atomsDf.loc[:, 'globalIdx'] == idx]['atomName'].values[0]
-            if len(con1) == 0:
-                con1 = [idx]
-                atomName_ori = atName
-            else:
-                num0 = re.findall(r'\d+', atomName_ori)
-                num1 = re.findall(r'\d+', atName)
-                if len(num0) == 0:
-                    break
-                else:
-                    if len(num1) == 0:
-                        con1 = [idx]
-                        atomName_ori = atName
-                    elif int(num1[0]) < int(num0[0]):
-                        con1 = [idx]
-                        atomName_ori = atName
-                    elif int(num1[0]) > int(num0[0]):
-                        continue
-        return con1
+        return con
 
     def delHydrogen(self, pairs):
         '''
@@ -119,7 +98,7 @@ class endCapping(object):
         hAtoms = []
         for p in pairs:
             hCons1 = self.findHydrogen(p[0])
-            hCons2 = self.findHydrogen(p[0])
+            hCons2 = self.findHydrogen(p[1lself])
             for a in hCons1:
                 df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
             for a in hCons2:

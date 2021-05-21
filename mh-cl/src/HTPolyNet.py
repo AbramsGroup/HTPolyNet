@@ -256,7 +256,7 @@ class main(object):
             a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.cappingBonds)
             gro = a.gro
             top = a.top
-
+            top.topClean()
             gro.outDf('sys')
             top.topClean(key='bonds')
             top.outDf('sys')
