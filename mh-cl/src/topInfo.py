@@ -103,16 +103,12 @@ class top(object):
 
     def endCappingtopClean(self):
         dihTypesKeys = self.extractDihTypeKey()
-        print('bf clean: ', len(self.dihedrals))
-
         for k, v in self.dihedrals.iterrows():
             key1, key2 = self.subAtom2Atypes2(v.ai, v.aj, v.ak, v.al, self.atoms, v.funct)
             if key1 in self.dupDihTypeKey or key2 in dihTypesKeys:
                 continue
             else:
                 self.dihedrals.drop(k, inplace=True)
-
-        print('af clean: ', len(self.dihedrals))
 
     def mergeRow(self, x, keys='aTypes'):
         if keys == 'aTypes':
