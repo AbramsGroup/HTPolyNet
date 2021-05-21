@@ -98,7 +98,7 @@ class endCapping(object):
         hAtoms = []
         for p in pairs:
             hCons1 = self.findHydrogen(p[0])
-            hCons2 = self.findHydrogen(p[1lself])
+            hCons2 = self.findHydrogen(p[1])
             for a in hCons1:
                 df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
             for a in hCons2:

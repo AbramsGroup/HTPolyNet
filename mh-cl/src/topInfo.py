@@ -79,8 +79,10 @@ class top(object):
             dihKeys.append(keys)
         return dihKeys
 
-    def topClean(self):
+    def endCappingtopClean(self):
         dihTypesKeys = self.extractDihTypeKey()
+        print('bf clean: ', len(self.dihedrals))
+
         for k, v in self.dihedrals.iterrows():
             if v.c0 != None:
                 continue
@@ -94,6 +96,8 @@ class top(object):
                         continue
                     else:
                         self.dihedrals.drop(k, inplace=True)
+
+        print('af clean: ', len(self.dihedrals))
 
     def mergeRow(self, x, keys='aTypes'):
         if keys == 'aTypes':
