@@ -85,10 +85,20 @@ class top(object):
         # extract the key of the top's dihedral type session
         dihKeys = []
         for k, v in self.dihtypes.iterrows():
-            keys1 = '{}-{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al, v.funct)
-            keys2 = '{}-{}-{}-{}-{}'.format(v.al, v.ak, v.aj, v.ai, v.funct)
-            dihKeys.append(keys1)
-            dihKeys.append(keys2)
+            if v.funct == '9':
+                keys1 = '{}-{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al, v.funct)
+                keys2 = '{}-{}-{}-{}-{}'.format(v.al, v.ak, v.aj, v.ai, v.funct)
+                keys3 = '{}-{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al, '1')
+                keys4 = '{}-{}-{}-{}-{}'.format(v.al, v.ak, v.aj, v.ai, '1')
+                dihKeys.append(keys1)
+                dihKeys.append(keys2)
+                dihKeys.append(keys3)
+                dihKeys.append(keys4)
+            else:
+                keys1 = '{}-{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al, v.funct)
+                keys2 = '{}-{}-{}-{}-{}'.format(v.al, v.ak, v.aj, v.ai, v.funct)
+                dihKeys.append(keys1)
+                dihKeys.append(keys2)
         return dihKeys
 
     def endCappingtopClean(self):
@@ -100,9 +110,6 @@ class top(object):
             if key1 in self.dupDihTypeKey or key2 in dihTypesKeys:
                 continue
             else:
-                print('k: ', k)
-                print('v: ', v.to_list())
-                print('key1: ', key1)
                 self.dihedrals.drop(k, inplace=True)
 
         print('af clean: ', len(self.dihedrals))
