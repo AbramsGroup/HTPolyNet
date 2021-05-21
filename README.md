@@ -1,7 +1,18 @@
-# HTPolyNet
-Development of High-Throughput Polymer Network Atomistic Simulation
+# HTPolyNet: High-Throughput Polymer Network Atomistic Simulations
 
-## Required packages
+Ming Huang, Ketan Khare, and Cameron F Abrams
+
+Drexel University
+
+Department of Chemical and Biological Engineering
+
+## Introduction
+
+HTPolyNet is a utility for generating atomistic models of cross-linked polymer networks together with appropriate topology and parameter files required for molecular dynamics simulations using Gromacs.  It is intended as a fully automated system builder requiring as inputs only the molecular structures of any monomer species, a description of the polymerization chemistry, and a handful of options describing primarily the desired system size and composition.
+
+HTPolyNet uses the Generalized Amber Force Field for atom-typing and parameter generation.
+
+## Software Prerequisites
 * [AmberTools19](https://ambermd.org/GetAmber.php#ambertools)
   - Options:
      * conda: `conda install -c ambermd ambertools` installs precompiled executables for ambertools into your Anaconda environment
@@ -13,19 +24,21 @@ Development of High-Throughput Polymer Network Atomistic Simulation
        source amber.sh
        make install
        ```
-  - The executables needed specfically are `antechamber`, `parmchk2`, and `tleap`
+  - The specific executables needed are `antechamber`, `parmchk2`, and `tleap`
 * [openbabel](http://openbabel.org/wiki/Category:Installation)
-    * compile from source: (download tar file from the official website)
-        ```
-        tar zxf openbabel-2.3.2.tar.gz   # (this creates openbabel-2.3.2)
-        cd openbabel-2.3.2
-        mkdir build
-        cd build
-        cmake ..
-        make -j4
-        make install
-        ```
-* [gromacs](https://manual.gromacs.org/documentation/2020/install-guide/index.html) v2016 (Don't choose v2018)
+    - Options:
+       * Install using package manager (Linux)
+       * compile from source: (download tar file from the official website)
+         ```
+         tar zxf openbabel-2.3.2.tar.gz
+         cd openbabel-2.3.2
+         mkdir build
+         cd build
+         cmake ..
+         make -j4
+         make install
+         ```
+* [gromacs](https://manual.gromacs.org/documentation/2020/install-guide/index.html) v2016
   - Notes for 2016.6 on OpenSUSE Leap 15.2 with cuda 11 and openMPI:
     ```
     tar xfz gromacs-2016.6.tar.gz
@@ -39,7 +52,7 @@ Development of High-Throughput Polymer Network Atomistic Simulation
     source /usr/local/gromacs-2016.6/bin/GMXRC  (added to ~/.bashrc)
     ```
   
-* python3.x (I'm using Anaconda)
+* python3.x with the following modules (I'm using Anaconda)
   - numpy
   - pandas
   - scipy
@@ -49,7 +62,7 @@ Development of High-Throughput Polymer Network Atomistic Simulation
     ```
   - networkx
     ```
-    conda install -c networkx
+    conda install -c anaconda networkx
     ```
   
 ## Folder structure
