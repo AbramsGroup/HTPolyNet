@@ -11,7 +11,8 @@ import pandas as pd
 class parameters(object):
     def __init__(self):
         self.name = ''
-        self.unrctStruct = [] # This store structures before open the double bonds or others, just used to get the type
+        self.cappingMolPair = []
+        self.cappingBonds = []
         self.monInfo = ''
         self.croInfo = ''
         self.boxSize = ''
@@ -43,30 +44,18 @@ class parameters(object):
         df = df[df[0].str.startswith('#') == False]
         baseList = df.iloc[:][0]
 
+        # Get capping parameters
         i = 1
         while i < 10:
             for l1 in baseList:
                 if 'mol{}'.format(i) in l1:
-                    tmpName = l1.split('=')[1].strip(' ')
-                    self.unrctStruct.append(tmpName)
+                    tmpMolPair = l1.split('=')[1].split(',')
+                    self.cappingMolPair.append(tmpMolPair)
             i += 1
 
-        i = 1
-        foundKey = False
-        while i:
-            for l1 in baseList:
-                if 'cappingBonds{}'.format(i) in l1:
-                    tmp = l1.split('=')[1]
-                    tmpBonds = tmp.split(',')
-                    self.cappingBonds.append(tmpBonds)
-                    foundKey = True
-                    i += 1
-                    break
-                else:
-                    foundKey = False
-
-            if foundKey == False:
-                break
+        for l1 in baseList:
+            if l1.startswith('cappingBonds'):
+                self.cappingBonds.append(l1.split('=')[1].split(','))
 
         # Get monomer and crosslinker info
         i = 1
@@ -187,7 +176,8 @@ class parameters(object):
         self.stepwise = stepwise
 
 if __name__ == '__main__':
-    name = 'options.txt'
+    import os
+    name = os.path.join(os.getcwd(),'mh-cl', 'basic', 'options.txt')
     a = parameters()
     a.setName(name)
     a.readParam()
