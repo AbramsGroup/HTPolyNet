@@ -15,9 +15,9 @@ trials = 5
 stepwise = 0.01, 0.1, 1
 
 # Basic structures
-mol1 = VEA-un, VEA
-mol2 = VEB-un, VEB
-mol3 = STY-un, STY
+mol1 = VEA, VEA-un
+mol2 = VEB, VEB-un
+mol3 = STY, STY-un
 
 # capping syntax
 # 2 stands for the bond properties.

@@ -34,6 +34,7 @@ import generateChargeDb
 import generateTypeInfo
 import processTop
 import endCapping
+import getCappingParam
 from countTime import *
 
 class main(object):
@@ -42,7 +43,10 @@ class main(object):
         self.trials = ''
         self.reProject = ''
         self.stepwise = ''
-        self.cappingBonds = []
+
+        # end capping
+        self.cappingBonds = [] # potential bonds for capping
+        self.unrctMap = {}
 
         self.HTPolyPath = HTPATH
         self.topPath = ''
@@ -253,7 +257,7 @@ class main(object):
         os.mkdir('Final'); os.chdir('Final')
 
         if conv >= self.desConv:
-            a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.cappingBonds)
+            a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
             gro = a.gro
             top = a.top
             top.endCappingtopClean()
@@ -265,7 +269,7 @@ class main(object):
             if step == 0:
                 pass
             else:
-                a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.cappingBonds)
+                a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
                 gro = a.gro
                 top = a.top
                 top.endCappingtopClean()
@@ -548,6 +552,9 @@ class main(object):
         dihTypes.drop_duplicates(inplace=True, ignore_index=True)
         impTypes.drop_duplicates(inplace=True, ignore_index=True)
         self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes, atoms]
+
+        unrctMap = getCappingParam.genUnrctMapping(self.basicParameter)
+        self.unrctMap = unrctMap
 
     def preparePara(self):
         import prepareParam

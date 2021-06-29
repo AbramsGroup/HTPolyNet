@@ -16,12 +16,13 @@ from copy import deepcopy
 import time
 
 class genBonds(object):
-    def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map'):
+    def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map', updateCharge=True):
         self.gro = gro
         self.top = top
         self.pairs = pairs
         self.chargeMap = chargeMap # map
         self.rctMols = rctMols # list
+        self.uCharge = updateCharge
 
         self.genPairs = []
         self.rctAtoms = []
@@ -636,4 +637,5 @@ class genBonds(object):
         self.delHydrogen()
         self.addNewCon()
         self.updateIdx()
-        self.updateCharge()
+        if self.uCharge:
+            self.updateCharge()

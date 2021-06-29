@@ -7,6 +7,16 @@ bondsRatio = 0.5
 HTProcess = True
 CPU = 32
 trials = 5
+stepwise = 0.01, 0.1, 1
+
+# Basic structures
+mol1 = GMA, GMA-un
+mol2 = mST, mST-un
+
+# capping syntax
+cappingBonds = GMA, C1, C2, 2
+cappingBonds = GMA, C3, C4, 2
+cappingBonds = mST, C1, C2, 2
 
 # For croslinker 1
 croName1 = GMA

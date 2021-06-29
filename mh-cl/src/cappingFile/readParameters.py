@@ -13,7 +13,6 @@ class parameters(object):
         self.name = ''
         self.cappingMolPair = []
         self.cappingBonds = []
-        self.unrctStruct = []
         self.monInfo = ''
         self.croInfo = ''
         self.boxSize = ''
@@ -28,7 +27,6 @@ class parameters(object):
         self.reProject = ''
         self.rctInfo = ''
         self.stepwise = ''
-        self.cappingBonds = []
 
     def setName(self, name):
         self.name = name
@@ -52,7 +50,6 @@ class parameters(object):
                 if 'mol{}'.format(i) in l1:
                     tmpMolPair = l1.split('=')[1].split(',')
                     self.cappingMolPair.append(tmpMolPair)
-                    self.unrctStruct.append(tmpMolPair[1].strip())
             i += 1
 
         for l1 in baseList:

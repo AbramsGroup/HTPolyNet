@@ -1,94 +1,72 @@
 import re
-from subprocess import check_output
 import sys
 
-from pandas.core.indexing import check_bool_indexer
-import genBonds
-
 class endCapping(object):
-    def __init__(self, inGro, inTop, inFFSum, unrctMap, inCappingBonds=[]):
+    def __init__(self, inGro, inTop, inFFSum, inCappingBonds=[]):
         self.gro = inGro
         self.top = inTop
-        self.topSum = inFFSum # [aTypes, bTypes, angTypes...], each is a dataframe
-        self.unrctMap = unrctMap
         self.cappingBonds = inCappingBonds
-        
-        self.capping()
-        
+        self.topSum = inFFSum # [aTypes, bTypes, angTypes...], each is a dataframe
+        self.VECapping()
+
+    def changeAtypes(self, pPairs):
+        df_atoms = self.top.atoms
+        for p in pPairs:
+            for a in p:
+                atName = str(df_atoms.loc[(df_atoms.nr == a), 'atom'].to_list()[0])
+                resName = str(df_atoms.loc[(df_atoms.nr == a), 'residue'].to_list()[0])
+                tmpDf = self.topSum[-1]
+                newAtomType = str(tmpDf.loc[(tmpDf.atom == atName) & (tmpDf.residue == resName), 'type'].to_list()[0])
+                newAtomCharge = str(tmpDf.loc[(tmpDf.atom == atName) & (tmpDf.residue == resName), 'charge'].to_list()[0])
+
+                df_atoms.loc[(df_atoms.nr == a), 'type'] = newAtomType
+                df_atoms.loc[(df_atoms.nr == a), 'charge'] = newAtomCharge
+
     def getPairs(self):
         pPairs = []
         pAtoms = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-        tmpAtomIdx = []
+        # potential reactive atoms in the same group should all be unreacted
         for index, value in pAtoms.iterrows():
             a1GlobalIdx = pAtoms.loc[index, 'globalIdx']
             a1MolNum = pAtoms.loc[index, 'molNum']
-            a1MolName = pAtoms.loc[index, 'molName']
             a1AtomName = pAtoms.loc[index, 'atomName']
-            if a1GlobalIdx in tmpAtomIdx:
-                continue
-            else:
-                for b in self.cappingBonds:
-                    if a1MolName == b[0].strip():
-                        if a1AtomName == b[1].strip():
-                            a2AtomName = b[2].strip()
-                        elif a1AtomName == b[2].strip():
-                            a2AtomName = b[1].strip()
-                    atomsRow = self.gro.df_atoms.loc[(self.gro.df_atoms.molNum == a1MolNum) & 
-                                                    (self.gro.df_atoms.atomName == a2AtomName)]
-                    if atomsRow.rct != 'False':
-                        pPairs.append([a1GlobalIdx, atomsRow.globalIdx])
-                        tmpAtomIdx += [a1GlobalIdx, atomsRow.globalIdx]
+            a1Group = pAtoms.loc[index, 'rctGroup']
+            for i, v in pAtoms.iterrows():
+                a2GlobalIdx = pAtoms.loc[i, 'globalIdx']
+                a2MolNum = pAtoms.loc[i, 'molNum']
+                a2Group = pAtoms.loc[i, 'rctGroup']
+                if a1GlobalIdx == a2GlobalIdx:
+                    continue
+                else:
+                    if a1MolNum == a2MolNum and a1Group == a2Group:
+                        if [a1GlobalIdx, a2GlobalIdx] in pPairs or [a2GlobalIdx, a1GlobalIdx] in pPairs:
+                            continue
+                        else:
+                            pPairs.append([a1GlobalIdx, a2GlobalIdx])
         return pPairs
 
-    def cleanType(self):
-        tmpIdx = []; tmpKey = []
-        for k, v in self.top.atomtypes.iterrows():
-            tmpK = v['name']
-            if tmpK not in tmpKey:
-                tmpKey.append(tmpK)
+    def searchCon(self, idx, df_bonds, df_new=[]):
+        idx = str(idx)
+        df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)] # df_bonds is the bond section in the topology
+        con = []
+        for index, row in df_out.iterrows():
+            if row.ai == str(idx):
+                con.append(row.aj)
+            elif row.aj == str(idx):
+                con.append(row.ai)
             else:
-                tmpIdx.append(k)
-        self.top.atomtypes.drop(tmpIdx, inplace=True)
+                print('bond connection met error, please check!')
+                print('df_out: ', df_out)
+                sys.exit()
 
-        tmpIdx = []
-        tmpKey = []
-        for k, v in self.top.bondtypes.iterrows():
-            tmpK = '{}-{}'.format(v.ai, v.aj)
-            if tmpK not in tmpKey:
-                tmpKey.append(tmpK)
+        for i in df_new:
+            if i[0] == str(idx):
+                con.append(i[1])
+            elif i[1] == str(idx):
+                con.append(i[0])
             else:
-                tmpIdx.append(k)
-        self.top.bondtypes.drop(tmpIdx, inplace=True)
-
-        tmpIdx = []
-        tmpKey = []
-        for k, v in self.top.angletypes.iterrows():
-            tmpK = '{}-{}-{}'.format(v.ai, v.aj, v.ak)
-            if tmpK not in tmpKey:
-                tmpKey.append(tmpK)
-            else:
-                tmpIdx.append(k)
-        self.top.angletypes.drop(tmpIdx, inplace=True)
-
-        tmpIdx = []
-        tmpKey = []
-        for k, v in self.top.dihtypes.iterrows():
-            tmpK = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
-            if tmpK not in tmpKey:
-                tmpKey.append(tmpK)
-            else:
-                tmpIdx.append(k)
-        self.top.dihtypes.drop(tmpIdx, inplace=True)
-
-        tmpIdx = []
-        tmpKey = []
-        for k, v in self.top.imptypes.iterrows():
-            tmpK = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
-            if tmpK not in tmpKey:
-                tmpKey.append(tmpK)
-            else:
-                tmpIdx.append(k)
-        self.top.imptypes.drop(tmpIdx, inplace=True)
+                pass
+        return con
 
     def findHydrogen(self, idx): # This idx is the pd index
         atomsDf = self.gro.df_atoms
@@ -101,7 +79,7 @@ class endCapping(object):
 
         return con
 
-    def delHydrogen(self, p):
+    def delHydrogen(self, pairs):
         '''
         1. Generate new bonds/pairs/angles/dihs
         2. Check new types if exist in the database
@@ -116,17 +94,18 @@ class endCapping(object):
         df_dihs = inTop.dihedrals
         df_imps = inTop.impropers
         hAtoms = []
-        hCons1 = self.findHydrogen(p[0])
-        hCons2 = self.findHydrogen(p[1])
-        for a in hCons1:
-            df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
-        for a in hCons2:
-            df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
+        for p in pairs:
+            hCons1 = self.findHydrogen(p[0])
+            hCons2 = self.findHydrogen(p[1])
+            for a in hCons1:
+                df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
+            for a in hCons2:
+                df_atoms.loc[(df_atoms.nr == a), 'type'] = 'ha'
 
-        hCon1 = hCons1[0]
-        hCon2 = hCons2[0]
-        hAtoms.append(hCon1)
-        hAtoms.append(hCon2)
+            hCon1 = hCons1[0]
+            hCon2 = hCons2[0]
+            hAtoms.append(hCon1)
+            hAtoms.append(hCon2)
 
         for a in hAtoms:
             atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
@@ -250,8 +229,58 @@ class endCapping(object):
         inTop.angles = df_angs_new
         inTop.dihedrals = df_dihs_new
         inTop.impropers = df_imps_new
-        self.gro.df_atoms = atomsDf
+        self.gro.df_atoms = atomsDf;
         self.gro.atNum = len(atomsDf)
+
+    def cleanType(self):
+        tmpIdx = []; tmpKey = []
+        for k, v in self.top.atomtypes.iterrows():
+            tmpK = v['name']
+            if tmpK not in tmpKey:
+                tmpKey.append(tmpK)
+            else:
+                tmpIdx.append(k)
+        self.top.atomtypes.drop(tmpIdx, inplace=True)
+
+        tmpIdx = [];
+        tmpKey = []
+        for k, v in self.top.bondtypes.iterrows():
+            tmpK = '{}-{}'.format(v.ai, v.aj)
+            if tmpK not in tmpKey:
+                tmpKey.append(tmpK)
+            else:
+                tmpIdx.append(k)
+        self.top.bondtypes.drop(tmpIdx, inplace=True)
+
+        tmpIdx = [];
+        tmpKey = []
+        for k, v in self.top.angletypes.iterrows():
+            tmpK = '{}-{}-{}'.format(v.ai, v.aj, v.ak)
+            if tmpK not in tmpKey:
+                tmpKey.append(tmpK)
+            else:
+                tmpIdx.append(k)
+        self.top.angletypes.drop(tmpIdx, inplace=True)
+
+        tmpIdx = [];
+        tmpKey = []
+        for k, v in self.top.dihtypes.iterrows():
+            tmpK = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
+            if tmpK not in tmpKey:
+                tmpKey.append(tmpK)
+            else:
+                tmpIdx.append(k)
+        self.top.dihtypes.drop(tmpIdx, inplace=True)
+
+        tmpIdx = [];
+        tmpKey = []
+        for k, v in self.top.imptypes.iterrows():
+            tmpK = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
+            if tmpK not in tmpKey:
+                tmpKey.append(tmpK)
+            else:
+                tmpIdx.append(k)
+        self.top.imptypes.drop(tmpIdx, inplace=True)
 
     def updateBasicType(self):
         self.top.atomtypes = self.top.atomtypes.append(self.topSum[0], ignore_index=True)
@@ -261,75 +290,18 @@ class endCapping(object):
         self.top.imptypes = self.top.imptypes.append(self.topSum[4], ignore_index=True)
         self.cleanType()
 
-    def searchCon(self, idx, df_bonds):
-        idx = str(idx)
-        df_out = df_bonds[(df_bonds.ai == idx) | (df_bonds.aj == idx)] # df_bonds is the bond section in the topology
-        con = []
-        for index, row in df_out.iterrows():
-            if row.ai == str(idx):
-                con.append(row.aj)
-            elif row.aj == str(idx):
-                con.append(row.ai)
-            else:
-                raise TypeError('bond connection met error, please check!')
+    def VECapping(self):
+        # 1. Two atoms belong to the same molecule and same group --> unreact vinyl group
+        # 2. change atom types
+        # 3. remove h atoms
+        # 4. update atom index
 
-        return con
-
-    def getNewAtype(self, atomName, resName):
-        print('capping resName: ', resName)
-        tmpMap = self.unrctMap[resName]
-        try:
-            charge = tmpMap[atomName]['charge']
-            aType = tmpMap[atomName]['type']
-        except:
-            raise TypeError('atom {} doesn\'t find in the unrct map'.format(atomName))
-        
-        return aType, charge
-    
-    def updateAtypes(self, idx):
-        df_atoms = self.top.atoms
-        atName = str(df_atoms.loc[(df_atoms.nr == idx), 'atom'].to_list()[0])
-        resName = str(df_atoms.loc[(df_atoms.nr == idx), 'residue'].to_list()[0])
-        newAtomType, newAtomCharge = self.getNewAtype(atName, resName)
-        df_atoms.loc[(df_atoms.nr == idx), 'type'] = newAtomType
-        df_atoms.loc[(df_atoms.nr == idx), 'charge'] = newAtomCharge
-
-    def changeAtypes(self, pPairs):
-        for p in pPairs:
-            for a in p:
-                self.updateAtypes(a)
-                # update connection atoms type and charge
-                conAtoms = self.searchCon(a, self.top.bonds)
-                for a2 in conAtoms:
-                    self.updateAtypes(a2)
-
-    def checkPairCon(self, pPair):
-        bonds = self.top.bonds
-        con = self.searchCon(pPair[0], bonds)
-        if pPair[1] in con:
-            return True
-        else:
-            return False
-
-    def genBonds(self, pPairs):
-        atoms = self.top.atoms
-        bonds = self.top.bonds
-
-        for p in pPairs:
-            if self.checkPairCon(p):
-                self.delHydrogen(p)
-            else:
-                gbonds = genBonds.genBonds(self.gro, self.top, pPairs, [], [], updateCharge=False)
-                gbonds.gBonds()
-
-    def capping(self):
         pPairs = self.getPairs()
         print('Following atoms need to be capping: ')
         for p in pPairs:
             print('----> atoms {} and {}'.format(p[0], p[1]))
         self.updateBasicType()
         self.changeAtypes(pPairs)
-        self.genBonds(pPairs)
+        self.delHydrogen(pPairs)
+        self.updateIdx()
         self.top.checkCharge()
-        
-
