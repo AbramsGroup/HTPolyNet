@@ -5,6 +5,8 @@ Created on Sun Nov  1 08:57:03 2020
 @author: huang
 """
 
+from re import T
+from typing import Type
 import readParameters
 import readMol
 import createRctMol
@@ -78,14 +80,13 @@ class generateTypeInfo(object):
 #        return molList
     
     def sepData(self, row, length, idx=0):
-        data = list(row.str.split())[0]
+        data = row['0'].split()
         if len(data) != length:
             try:
                 a = data[idx]
                 return a
             except:
                 return ' '
-            return row.to_string()
         else:
             return data[idx]
     
@@ -165,12 +166,20 @@ class generateTypeInfo(object):
             
             for values in a3:
                 if values[0] not in dihTypes.keys():
-                    dihTypes[values[0]] = values[1]
-            
+                    dihTypes[values[0]] = [values[1]]
+                else:
+                    if values[1] in dihTypes[values[0]]:
+                        continue
+                    else:
+                        print('----dih dup values: ', values)
+                        print('----old dih dup values: ', dihTypes[values[0]])
+                        dihTypes[values[0]].append(values[1])
+                        print('----new dih dup values: ', dihTypes[values[0]])
+
             for values in a4:
                 if values[0] not in dihTypes.keys():
                     impTypes[values[0]] = values[1]
-        db_out = [bTypes, angTypes, dihTypes, impTypes]         
+        db_out = [bTypes, angTypes, dihTypes, impTypes]
         return db_out
     
     def updateParamFile(self, db):
@@ -189,8 +198,7 @@ class generateTypeInfo(object):
                 newAngType[keys] = values
             
         for keys, values in db_DihType.items():
-            if keys not in newDihType:
-                newDihType[keys] = values
+            newDihType[keys] = values
         
         tmpList = [newBondType, newAngType, newDihType]
         name = ['dictBond', 'dictAngle', 'dictDihedral']
@@ -207,6 +215,7 @@ class generateTypeInfo(object):
         os.chdir(self.typePath)
         fileList = glob.glob('*.mol2')
         itpFile = glob.glob('*.itp')
+        print('itpFile: ', itpFile)
         if len(itpFile) > 0:
             nameList = itpFile
         else:
@@ -243,7 +252,7 @@ class generateTypeInfo(object):
         db = self.filterFF(db)
         os.chdir(self.srcPath)
         self.updateParamFile(db)
-#        return db
+        return db
     
     def main(self, unrctPath, typePath):
         self.unrctPath = unrctPath

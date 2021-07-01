@@ -122,8 +122,7 @@ class genBonds(object):
                     try:
                         param = parameters.dictBond[key]
                     except:
-                        print('Couldn\'t locate this parameters! Please check')
-                        sys.exit()
+                        raise TypeError('Couldn\'t locate this parameters! Please check')
 
                     lst_tmp = [a1Type, a2Type] + param
                     sysTop.addBondTypes(lst_tmp)
@@ -204,11 +203,28 @@ class genBonds(object):
                 else:
                     if key1 in parameters.dictDihedral.keys():
                         param = parameters.dictDihedral[key1]
-                        lst_tmp = [a1Type, a2Type, a3Type, a4Type] + param.split(',')
-                        sysTop.addDihTypes(lst_tmp)
+                        if type(param) == str:
+                            lst_tmp = [a1Type, a2Type, a3Type, a4Type] + param.split(',')
+                            sysTop.addDihTypes(lst_tmp)
+                        elif type(param) == list:
+                            for p in param:
+                                lst_tmp = [a1Type, a2Type, a3Type, a4Type] + p.split(',')
+                                sysTop.addDihTypes(lst_tmp)
+                            if len(param) > 1:
+                                sysTop.dupDihTypeKey.append(key1)
+                        
                     elif key2 in parameters.dictDihedral.keys():
                         param = parameters.dictDihedral[key2]
-                        lst_tmp = [a4Type, a3Type, a2Type, a1Type] + param.split(',')
+                        if type(param) == str:
+                            lst_tmp = [a4Type, a3Type, a2Type, a1Type] + param.split(',')
+                            sysTop.addDihTypes(lst_tmp)
+                        elif type(param) == list:
+                            for p in param:
+                                lst_tmp = [a4Type, a3Type, a2Type, a1Type] + p.split(',')
+                                sysTop.addDihTypes(lst_tmp)
+                            if len(param) > 1:
+                                sysTop.dupDihTypeKey.append(key1)
+
                         sysTop.addDihTypes(lst_tmp)
                     else:
                         print('Unknown dihedral type {}, need to find param for the pair'.format(key1))
@@ -228,6 +244,7 @@ class genBonds(object):
         SOLUTIONS: Split the potential pairs into small list and using Pool to finish it in part
         '''
         pairs = []
+
         for index, row in self.pairs.iterrows():
             pairs.append([row.acro, row.amon, row.dist])
 #        pairs = self.pairs
@@ -312,11 +329,10 @@ class genBonds(object):
         for a in con1:
             a = str(a)
             # fix issue: New formed bonds between c-n will change the h atom's type from hc to h1
-            #            ( For GAFF forcefields)
+            # #            ( For GAFF forcefields)
             if cond0 and self.idx2Atypes(a1, df_atoms).startswith('c'):
                 if self.idx2Atypes(a, df_atoms).startswith('h'):
                     self.changeAtypes(a, 'h1', df_atoms)
-
             if a != a2:
                 new_angles.append([a, a1, a2])
                 con3 = self.searchCon(a, df_bonds, df_new=lst); con4 = self.searchCon(a2, df_bonds, df_new=lst)
@@ -563,7 +579,7 @@ class genBonds(object):
         charges = self.chargeMap
         seq1 = ''; cc = []
         for i in seq:
-            seq1 += '{}/'.format(i)
+            seq1 += '{}/'.format(i[0])
         
         for keys, value in charges.items():
             if seq1 == keys:
@@ -573,9 +589,8 @@ class genBonds(object):
                     if len(ii) > 0:
                         cc.append(ii)
         if len(cc) == 0:
-            print('Didnt find charge map, something wrong!')
-            print('seq1: ', seq1)
-            sys.exit()
+            raise TypeError('Didnt find charge map, something wrong!\t', seq1)
+            
         else:
             if len(cc[-1]) < 3 or cc[-1] == '\n':
                 return cc[:-1]
@@ -598,7 +613,7 @@ class genBonds(object):
             self.top.atoms.loc[(self.top.atoms.nr.isin(a)), 'charge'] = charges
 
     def updateRctStatus(self, atIdx, df, rctNum):
-        df.loc[(df.globalIdx == atIdx), 'rctNum'] = str(rctNum - 1)
+        df.loc[(df.globalIdx == atIdx), 'rctNum'] = rctNum - 1
         if rctNum - 1 == 0:
             df.loc[(df.globalIdx == atIdx), 'rct'] = 'False'
         elif rctNum - 1 < 0:
@@ -633,7 +648,8 @@ class genBonds(object):
 
     @countTime       
     def gBonds(self):
-        self.updateRctInfo()
+        if self.uCharge:
+            self.updateRctInfo()
         self.delHydrogen()
         self.addNewCon()
         self.updateIdx()

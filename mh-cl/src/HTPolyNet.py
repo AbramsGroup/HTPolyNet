@@ -257,6 +257,7 @@ class main(object):
         os.mkdir('Final'); os.chdir('Final')
 
         if conv >= self.desConv:
+            self.top.outDf('tmp')
             a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
             gro = a.gro
             top = a.top
@@ -585,7 +586,6 @@ class main(object):
                 b = processTop.processTop(n) # process the top file, make it standard
                 b.main()
             self.topMap[b.name] = b.top
-
         self.getUnrctPara()
         os.chdir(self.projPath)
         

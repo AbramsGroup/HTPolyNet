@@ -65,7 +65,7 @@ def genUnrctMapping(inParam):
         mol1.genTopSession()
         mol2.genTopSession()
 
-        for b in a.cappingBonds:
+        for b in inParam.cappingBonds:
             if molPair[0].strip() in b[0].strip():
                 bonds.append(b)
         resKey, resBonds = compareAtoms(mol1, mol2, bonds)

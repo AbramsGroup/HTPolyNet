@@ -88,37 +88,48 @@ class createRctMol(object):
         rctInfo = {'mon': [], 'cro': []}
         for i in monR_list:
             tmp = {}; tmp[i] = []
+            rctTimes = 0
             for ii in monR_list[i]:
-                tmp[i].append(ii[0])
+                for idx in range(int(ii[1])):
+                    tmp[i].append(ii[0])
+                rctTimes += int(ii[1])
+            tmp[i].append(rctTimes)
             rctInfo['mon'].append(tmp)
-        
+
         for i in croR_list:
             tmp = {}; tmp[i] = []
+            rctTimes = 0
             for ii in croR_list[i]:
-                tmp[i].append(ii[0])
+                for idx in range(int(ii[1])):
+                    tmp[i].append(ii[0])
+                rctTimes += int(ii[1])
+            tmp[i].append(rctTimes)
             rctInfo['cro'].append(tmp)
-        
+
         self.rctInfo = rctInfo
-    
-    def creatMol(self, rctTimes, molObj, inKey):
+
+    def creatMol(self, rctTimes, molObj, inKey, croKey='mon'):
         # get cro mol
-        for key, value in self.rctInfo['mon'][0].items(): # sort of hard code, need to take care
-            at1 = [self.croResName, [value[0]]]
+        print('croKey: ', croKey)
+        for key, value in self.rctInfo[croKey][0].items(): # sort of hard code, need to take care
+            at1 = [self.croResName, value[0]]
         
         # get mon mol
         for mol in self.rctInfo['mon'] + self.rctInfo['cro']:
             for key, value in mol.items():
                 if key == inKey:
                     at2 = [key, value]
-                    
+
         mol2List = []
-        a = list(itertools.combinations(at2[1], rctTimes))
+        a = list(itertools.combinations(at2[1][:-1], rctTimes))
         for ii in a:
-            conInfo = [at1, [inKey, list(ii)]]
+            conInfo = []
+            for info in ii:
+                conInfo.append([at1, [inKey, info]])
+            print('conInfo: ', conInfo)
             a = mol2Info.mol2Info()
             a.setInfo(molObj)
             a.genBonds(conInfo)
-#            outDf = a.outMol2('123.mol2')
             mol2List.append(a)
         return mol2List
     

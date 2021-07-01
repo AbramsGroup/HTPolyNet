@@ -67,11 +67,8 @@ class mol2Info(object):
     
     def name2Idx(self, lst):
         resname = lst[0]; atname = lst[1]
-        idxLst = []
-        for a in atname:
-            idx = self.atoms[(self.atoms.resname.str.contains(resname)) & (self.atoms.atomName == a)].atomId.to_list()
-            idxLst += idx
-        return idxLst
+        idx = self.atoms[(self.atoms.resname.str.contains(resname)) & (self.atoms.atomName == atname)].atomId.to_list()
+        return idx
     
     def getPos(self, atIdx):
         a = self.atoms[(self.atoms.atomId == atIdx)]
@@ -92,35 +89,38 @@ class mol2Info(object):
         com = [x1, y1, z1]
         return com
     
-    def searchHCon(self, atIdx, inKey):
+    def searchHCon(self, atIdx, inKey, inHLst=[]):
         df_con = self.bonds[(self.bonds.ai == atIdx) | (self.bonds.aj == atIdx)]
         atIdx = list(set(df_con.ai.to_list() + df_con.aj.to_list()))
         con = []
         for idx in atIdx:
-            if 'H' in self.atoms[(self.atoms['atomId'] == idx) & (self.atoms['resname'].str.contains(inKey))].atomName.values[0]:
-#                return idx
+            if 'H' in self.atoms[(self.atoms['atomId'] == idx)].atomName.values[0]:
                 con.append(idx)
-        
+        print('HCon: ', con)
         con1 = ''; atomName_ori = ''
         for idx in con:
-            atName = self.atoms[self.atoms.loc[:, 'atomId'] == idx]['atomName'].values[0]
-            if len(con1) == 0:
-                con1 = idx
-                atomName_ori = atName
+            if idx in inHLst:
+                continue
             else:
-                num0 = re.findall(r'\d+', atomName_ori)
-                num1 = re.findall(r'\d+', atName)
-                if len(num0) == 0:
-                    break
+                atName = self.atoms[self.atoms.loc[:, 'atomId'] == idx]['atomName'].values[0]
+                if len(con1) == 0:
+                    con1 = idx
+                    atomName_ori = atName
                 else:
-                    if len(num1) == 0:
-                        con1 = idx
-                        atomName_ori = atName
-                    elif int(num1[0]) < int(num0[0]):
-                        con1 = idx
-                        atomName_ori = atName
-                    elif int(num1[0]) > int(num0[0]):
-                        continue
+                    # take care the H sequence, start from small number
+                    num0 = re.findall(r'\d+', atomName_ori)
+                    num1 = re.findall(r'\d+', atName)
+                    if len(num0) == 0:
+                        break
+                    else:
+                        if len(num1) == 0:
+                            con1 = idx
+                            atomName_ori = atName
+                        elif int(num1[0]) < int(num0[0]):
+                            con1 = idx
+                            atomName_ori = atName
+                        elif int(num1[0]) > int(num0[0]):
+                            continue
         return con1
     
     def addBonds(self, pairs):
@@ -160,37 +160,52 @@ class mol2Info(object):
                 float(atPos0[1]) - float(atPos1[1]),
                 float(atPos0[2]) - float(atPos1[2])]
         self.atoms = self.atoms.apply(lambda x: self.shiftCoord(x, dist, resname, num), axis=1)
-        self.atoms = self.atoms.apply(lambda x: self.rotateMol(x, 10, resname), axis=1)
+        self.atoms = self.atoms.apply(lambda x: self.rotateMol(x, 30, resname), axis=1)
 
     def getSeq(self):
         df = self.atoms[(self.atoms.resname.str.contains(self.mainResname))]
         self.seq = df.atomName.to_list()
         
-    def genBonds(self, conInfo): 
-        at1 = conInfo[0]; at2 = conInfo[1] # name of the atoms
-        self.mainResname = conInfo[1][0]
-        monlst = self.name2Idx(at2)
-        crolst = self.name2Idx(at1) 
-        monH = []; croH = []
+    def genBonds(self, inConInfo): 
+        monH = []
+        croH = []
         newBonds = []
-        for i in monlst:
-            hatom = self.searchHCon(i, at2[0])
-            monH.append(hatom)
-        
-        for i in crolst:
-            hatom = self.searchHCon(i, at1[0])
-            croH.append(hatom)
+        usedAtoms = []
+        for conInfo in inConInfo:
+            at1 = conInfo[0]; at2 = conInfo[1] # name of the atoms
+            self.mainResname = conInfo[1][0]
+            monlst = self.name2Idx(at1)
+            crolst = self.name2Idx(at2) 
+            print('monlst: ', monlst)
+            for i in monlst:
+                hatom = self.searchHCon(i, at1[0])
+                monH.append(hatom)
             
-        for i in range(len(crolst)):
-                newBonds.append([crolst[i], monlst[i]])
-        
+            for i in crolst:
+                hatom = self.searchHCon(i, at2[0], croH)
+                croH.append(hatom)
+            
+            for i in range(len(crolst)):
+                at1 = crolst[i]
+                idx = 0
+                at2 = monlst[idx]
+                while(at2 in usedAtoms and idx < len(monlst)):
+                    idx += 1
+                    at2 = monlst[idx]
+                    
+                newBonds.append([at1, at2])
+                usedAtoms.append(monlst[idx])
+        print('monH: ', monH)
+        print('croH: ', croH)
+        print('newBonds: ', newBonds)
         self.addBonds(newBonds)
+
         # shift molecules to right position
-        num = 1.5
+        num = 3
         for pair in newBonds:
             self.shiftMol(pair, num)
-            num += 0.5
-        
+            num += 1
+            
         for i in monH:
             self.atoms.drop(self.atoms[self.atoms['atomId'] == i].index, inplace=True)
             self.bonds.drop(self.bonds[self.bonds['ai'] == i].index, inplace=True)
@@ -200,7 +215,7 @@ class mol2Info(object):
             self.atoms.drop(self.atoms[self.atoms['atomId'] == i].index, inplace=True)
             self.bonds.drop(self.bonds[self.bonds['ai'] == i].index, inplace=True)
             self.bonds.drop(self.bonds[self.bonds['aj'] == i].index, inplace=True)
-        
+            
         self.updateAtIdx2()
         self.updateBdIdx()
         self.basicInfo['atnum'] = str(len(self.atoms))

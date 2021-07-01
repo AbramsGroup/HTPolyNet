@@ -12,6 +12,7 @@ class prepareParam(object):
         self.GMX = 'gmx'
         
     def PrepareFile(self, fileName, resName, outputName):
+        print('fileName: ', fileName)
         if os.path.isfile('{}.gro'.format(outputName)) and os.path.isfile('{}.top'.format(outputName)):
             pass
         else:
