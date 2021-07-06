@@ -264,7 +264,7 @@ class genBonds(object):
             hAtoms.append(hCon1); hAtoms.append(hCon2)
         
         # print('Following atoms will be removed: ', hAtoms)
-        # t1 = time.time()
+        t1 = time.time()
         # for a in hAtoms:
         #     atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
         #     self.gro.df_atoms = atomsDf

@@ -17,7 +17,8 @@ import random
 import sys
 
 class searchBonds(object):
-    def __init__(self, cpu, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
+    def __init__(self, cpu, basicParameters, generatedBonds, inGro, inTop, 
+                    conv, desBonds, chains, boxLimit):
         self.cpu = cpu
 
         self.monInfo = basicParameters.monInfo
@@ -52,6 +53,10 @@ class searchBonds(object):
         self.maxCellId = []
         self.cellId = []
         self.div_box = []
+
+        # layer limit
+        self.boxLimit = boxLimit
+        self.dimLimit = 1
 
     def genRctBondsMap(self, atoms, bonds):
         rctAtoms = self.rctAtoms
@@ -184,7 +189,6 @@ class searchBonds(object):
         if chain == ['']:
             return ['']
         else:
-            # print('chain: ', chain)
             for ele in chain:
                 n = atomsDf.loc[atomsDf['molNum'] == ele, 'molName'].values[0]
                 names.append(n)
@@ -192,13 +196,31 @@ class searchBonds(object):
             return names
 
     def calAtnDistance(self, atn, atomDf):
-        atn1 = np.array([atn.posX, atn.posY, atn.posZ]).astype(float)
-        atn2Lst = [atomDf.posX.to_list(), atomDf.posY.to_list(), atomDf.posZ.to_list()]
-        atn2Lst = np.asarray(atn2Lst).T.astype(float)
-        delta = np.abs(atn1 - atn2Lst)
-        delta = np.where(delta > 0.5 * float(self.boxSize), delta - float(self.boxSize), delta) # assume same box size for all dimension
-        dist = np.sqrt((delta ** 2).sum(axis=-1))
-        atomDf['dist'] = dist
+        if self.boxLimit != 1:
+            # won't generate bond across y boundary
+            atn1 = np.array([atn.posX, atn.posZ]).astype(float)
+            atn2Lst = [atomDf.posX.to_list(), atomDf.posZ.to_list()]
+            atn2Lst = np.asarray(atn2Lst).T.astype(float)
+            delta = np.abs(atn1 - atn2Lst)
+            delta = np.where(delta > 0.5 * float(self.boxSize), delta - float(self.boxSize), delta) # assume same box size for all dimension
+            
+            deltaY = np.abs(np.array(atn.posY).astype(float) - np.asarray(atomDf.posY.to_list()).T.astype(float))
+            deltaSum = []
+            for i in range(len(deltaY)):
+                tmp = np.insert(delta[i], 1, deltaY[i])
+                deltaSum.append(tmp)
+            
+            delta = np.asarray(deltaSum)
+            dist = np.sqrt((delta ** 2).sum(axis=-1))
+            atomDf['dist'] = dist
+        else:
+            atn1 = np.array([atn.posX, atn.posY, atn.posZ]).astype(float)
+            atn2Lst = [atomDf.posX.to_list(), atomDf.posY.to_list(), atomDf.posZ.to_list()]
+            atn2Lst = np.asarray(atn2Lst).T.astype(float)
+            delta = np.abs(atn1 - atn2Lst)
+            delta = np.where(delta > 0.5 * float(self.boxSize), delta - float(self.boxSize), delta) # assume same box size for all dimension
+            dist = np.sqrt((delta ** 2).sum(axis=-1))
+            atomDf['dist'] = dist
         return atomDf
 
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
@@ -312,7 +334,11 @@ class searchBonds(object):
         top.atoms['molNum'] = atoms['molNum']
 
         atomNames = self.getAllMolNames()
-        df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames))]
+
+        # select all atoms
+        df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posY.astype(float) < self.dimLimit)]
+
+        # assign atoms to cell
         df_tmp0 = self.assignAtoms(df_tmp0)
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
         # ##### START PARALLEL
@@ -877,10 +903,18 @@ class searchBonds(object):
                 f.write('\ncount: {}'.format(count))
         return pairs
 
+    def updateBoxSize(self):
+        self.boxSize = self.gro.boxSize.split()[0].strip(' ')
+        print('self.boxSize: ', self.boxSize)
+        # assume system sizes are same along all directions
+        self.dimLimit = float(self.boxSize) * self.boxLimit
+        print('self.dimLimit: ', self.dimLimit)
+
     @countTime
     def sBonds(self):
         count = 5
         parts = 8
+        self.updateBoxSize()
         self.genCell(parts)
         pairs = self.collectBonds(count)
         if len(pairs) == 0:

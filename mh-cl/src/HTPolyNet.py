@@ -48,6 +48,10 @@ class main(object):
         self.cappingBonds = [] # potential bonds for capping
         self.unrctMap = {}
 
+        # layer limit
+        self.boxLimit = 1
+        self.layerConvLimit = 1
+
         self.HTPolyPath = HTPATH
         self.topPath = ''
         self.projPath = ''
@@ -135,6 +139,8 @@ class main(object):
         self.reProject = a.reProject
         self.stepwise = a.stepwise
         self.cappingBonds = a.cappingBonds
+        self.boxLimit = float(a.boxLimit)
+        self.layerConvLimit = float(a.layerConvLimit)
 
     def getGroInfo(self, name):
         a = readGro.initGro()
@@ -394,7 +400,7 @@ class main(object):
         # Init systems
         os.chdir(self.resFolder)
         self.initSys()
-        
+        conv = 0
         # calculate max bonds
         self.calMaxBonds()
 
@@ -418,6 +424,7 @@ class main(object):
             self.updateCoord('npt-init')
             os.chdir('..')
             print('---> New replica is good to go')
+            boxLimit = self.boxLimit # setup layer curing condition
             while(len(self.old_pairs) < int(self.maxBonds)):
                 print('---> step {}'.format(step))
                 folderName1 = self.setupFolder(step)
@@ -425,8 +432,14 @@ class main(object):
                 print('     (Content can be found under folder {})'.format(os.getcwd()))
                 # searching potential bonds
                 print('----> Start searching bonds')
+                if conv < boxLimit * self.layerConvLimit:
+                    boxLimit = self.boxLimit
+                else:
+                    print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
+                    boxLimit = 1                    
+
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
-                                                 self.conv, self.desBonds, self.chains)
+                                                self.conv, self.desBonds, self.chains, boxLimit)
                 pairs, chains, rMols, cutoff = sbonds.sBonds()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 self.chains = chains
@@ -600,7 +613,7 @@ class main(object):
         
         os.chdir(self.projPath)
         print('--> Start generating reacted molecules type data base')
-        a = generateTypeInfo.generateTypeInfo()
+        a = generateTypeInfo.generateTypeInfo(self.topPath)
         a.main(self.unrctFolder, self.typeFolder)
         
 if __name__ == '__main__':

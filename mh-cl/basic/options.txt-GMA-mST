@@ -1,6 +1,7 @@
 # GMA 0.37, mSTY 0.63
 
 # Basic Info
+# reProject = proj1
 boxSize = 5
 cutoff = 0.5
 bondsRatio = 0.5
@@ -17,6 +18,12 @@ mol2 = mST, mST-un
 cappingBonds = GMA, C1, C2, 2
 cappingBonds = GMA, C3, C4, 2
 cappingBonds = mST, C1, C2, 2
+
+# boxCure limitation
+# boxLimit: percent of box size
+# layerConvLimit: Conversion of the select layer
+boxLimit = 1 
+layerConvLimit = 0.5
 
 # For croslinker 1
 croName1 = GMA

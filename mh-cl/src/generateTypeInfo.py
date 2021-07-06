@@ -20,11 +20,11 @@ import shutil
 import parmed
 
 class generateTypeInfo(object):
-    def __init__(self):
+    def __init__(self, basicPath):
         self.srcPath = os.getcwd()
         self.unrctPath = ''
         self.typePath = ''
-        self.basicPath = self.srcPath + '/basic'
+        self.basicPath = basicPath
         self.type = {}
     
     def getRctNum(self, keys, param):

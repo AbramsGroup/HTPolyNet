@@ -29,6 +29,8 @@ class parameters(object):
         self.rctInfo = ''
         self.stepwise = ''
         self.cappingBonds = []
+        self.boxLimit = 1
+        self.layerConvLimit = 1
 
     def setName(self, name):
         self.name = name
@@ -156,6 +158,10 @@ class parameters(object):
             if 'stepwise' in line:
                 tmpStr =  line.split('=')[1]
                 stepwise = tmpStr.split(',')
+            if 'boxLimit' in line:
+                boxLimit = line.split('=')[1].strip(' ')
+            if 'layerConvLimit' in line:
+                layerConvLimit = line.split('=')[1].strip(' ')
 
         rctInfo = []
         for line in baseList: # React Info
@@ -176,7 +182,9 @@ class parameters(object):
         self.HTProcess = HTProcess
         self.reProject = reProject
         self.stepwise = stepwise
-
+        self.boxLimit = boxLimit
+        self.layerConvLimit = layerConvLimit
+        
 if __name__ == '__main__':
     import os
     name = os.path.join(os.getcwd(),'mh-cl', 'basic', 'options.txt')
