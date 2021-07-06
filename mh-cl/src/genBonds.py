@@ -247,34 +247,45 @@ class genBonds(object):
             hAtoms.append(hCon1); hAtoms.append(hCon2)
         
         # print('Following atoms will be removed: ', hAtoms)
-        t1 = time.time()
-        for a in hAtoms:
-            atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
-            self.gro.df_atoms = atomsDf
-            df_atoms.drop(df_atoms[df_atoms['nr'] == a].index, inplace=True)
-            df_bonds.drop(df_bonds[df_bonds['ai'] == a].index, inplace=True)
-            df_bonds.drop(df_bonds[df_bonds['aj'] == a].index, inplace=True)
-            df_pairs.drop(df_pairs[df_pairs['ai'] == a].index, inplace=True)
-            df_pairs.drop(df_pairs[df_pairs['aj'] == a].index, inplace=True)
-            df_angs.drop(df_angs[df_angs['ai'] == a].index, inplace=True)
-            df_angs.drop(df_angs[df_angs['aj'] == a].index, inplace=True)
-            df_angs.drop(df_angs[df_angs['ak'] == a].index, inplace=True)
-            df_dihs.drop(df_dihs[df_dihs['ai'] == a].index, inplace=True)
-            df_dihs.drop(df_dihs[df_dihs['aj'] == a].index, inplace=True)
-            df_dihs.drop(df_dihs[df_dihs['ak'] == a].index, inplace=True)
-            df_dihs.drop(df_dihs[df_dihs['al'] == a].index, inplace=True)
-            df_imps.drop(df_imps[df_imps['ai'] == a].index, inplace=True)
-            df_imps.drop(df_imps[df_imps['aj'] == a].index, inplace=True)
-            df_imps.drop(df_imps[df_imps['ak'] == a].index, inplace=True)
-            df_imps.drop(df_imps[df_imps['al'] == a].index, inplace=True)
+        # t1 = time.time()
+        # for a in hAtoms:
+        #     atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
+        #     self.gro.df_atoms = atomsDf
+        #     df_atoms.drop(df_atoms[df_atoms['nr'] == a].index, inplace=True)
+        #     df_bonds.drop(df_bonds[df_bonds['ai'] == a].index, inplace=True)
+        #     df_bonds.drop(df_bonds[df_bonds['aj'] == a].index, inplace=True)
+        #     df_pairs.drop(df_pairs[df_pairs['ai'] == a].index, inplace=True)
+        #     df_pairs.drop(df_pairs[df_pairs['aj'] == a].index, inplace=True)
+        #     df_angs.drop(df_angs[df_angs['ai'] == a].index, inplace=True)
+        #     df_angs.drop(df_angs[df_angs['aj'] == a].index, inplace=True)
+        #     df_angs.drop(df_angs[df_angs['ak'] == a].index, inplace=True)
+        #     df_dihs.drop(df_dihs[df_dihs['ai'] == a].index, inplace=True)
+        #     df_dihs.drop(df_dihs[df_dihs['aj'] == a].index, inplace=True)
+        #     df_dihs.drop(df_dihs[df_dihs['ak'] == a].index, inplace=True)
+        #     df_dihs.drop(df_dihs[df_dihs['al'] == a].index, inplace=True)
+        #     df_imps.drop(df_imps[df_imps['ai'] == a].index, inplace=True)
+        #     df_imps.drop(df_imps[df_imps['aj'] == a].index, inplace=True)
+        #     df_imps.drop(df_imps[df_imps['ak'] == a].index, inplace=True)
+        #     df_imps.drop(df_imps[df_imps['al'] == a].index, inplace=True)
+        # t2 = time.time()
+        atomsDf_new = atomsDf[~atomsDf['globalIdx'].isin(hAtoms)].copy()
+        self.gro.df_atoms = atomsDf_new
+        df_atoms_new = df_atoms[~df_atoms['nr'].isin(hAtoms)].copy()
+        df_bonds_new = df_bonds[~(df_bonds['ai'].isin(hAtoms) | df_bonds['aj'].isin(hAtoms))].copy()
+        df_pairs_new = df_pairs[~(df_pairs['ai'].isin(hAtoms) | df_pairs['aj'].isin(hAtoms))].copy()
+        df_angs_new = df_angs[~(df_angs['ai'].isin(hAtoms) | df_angs['aj'].isin(hAtoms) | df_angs['ak'].isin(hAtoms))].copy()
+        df_dihs_new = df_dihs[~(df_dihs['ai'].isin(hAtoms) | df_dihs['aj'].isin(hAtoms) |
+                                    df_dihs['ak'].isin(hAtoms) | df_dihs['al'].isin(hAtoms))].copy()
+        df_imps_new = df_imps[~(df_imps['ai'].isin(hAtoms) | df_imps['aj'].isin(hAtoms) |
+                                df_imps['ak'].isin(hAtoms) | df_imps['al'].isin(hAtoms))].copy()
         t2 = time.time()
         print('-----> @timefn: dropRows {}s'.format(round(t2 - t1), 2))
-        self.top.atoms = df_atoms
-        self.top.bonds = df_bonds
-        self.top.pairs = df_pairs
-        self.top.angs = df_angs
-        self.top.dihedrals = df_dihs
-        self.top.impropers = df_imps
+        self.top.atoms = df_atoms_new
+        self.top.bonds = df_bonds_new
+        self.top.pairs = df_pairs_new
+        self.top.angles = df_angs_new
+        self.top.dihedrals = df_dihs_new
+        self.top.impropers = df_imps_new
 
     def searchCon(self, idx, df_bonds, df_new=[]):
         idx = str(idx)

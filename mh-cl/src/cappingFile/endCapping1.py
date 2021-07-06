@@ -229,7 +229,7 @@ class endCapping(object):
         inTop.angles = df_angs_new
         inTop.dihedrals = df_dihs_new
         inTop.impropers = df_imps_new
-        self.gro.df_atoms = atomsDf;
+        self.gro.df_atoms = atomsDf
         self.gro.atNum = len(atomsDf)
 
     def cleanType(self):
@@ -242,7 +242,7 @@ class endCapping(object):
                 tmpIdx.append(k)
         self.top.atomtypes.drop(tmpIdx, inplace=True)
 
-        tmpIdx = [];
+        tmpIdx = []
         tmpKey = []
         for k, v in self.top.bondtypes.iterrows():
             tmpK = '{}-{}'.format(v.ai, v.aj)
@@ -252,7 +252,7 @@ class endCapping(object):
                 tmpIdx.append(k)
         self.top.bondtypes.drop(tmpIdx, inplace=True)
 
-        tmpIdx = [];
+        tmpIdx = []
         tmpKey = []
         for k, v in self.top.angletypes.iterrows():
             tmpK = '{}-{}-{}'.format(v.ai, v.aj, v.ak)
@@ -262,7 +262,7 @@ class endCapping(object):
                 tmpIdx.append(k)
         self.top.angletypes.drop(tmpIdx, inplace=True)
 
-        tmpIdx = [];
+        tmpIdx = []
         tmpKey = []
         for k, v in self.top.dihtypes.iterrows():
             tmpK = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)
@@ -272,7 +272,7 @@ class endCapping(object):
                 tmpIdx.append(k)
         self.top.dihtypes.drop(tmpIdx, inplace=True)
 
-        tmpIdx = [];
+        tmpIdx = []
         tmpKey = []
         for k, v in self.top.imptypes.iterrows():
             tmpK = '{}-{}-{}-{}'.format(v.ai, v.aj, v.ak, v.al)

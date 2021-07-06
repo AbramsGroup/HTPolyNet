@@ -15,7 +15,6 @@ from functools import partial
 from copy import deepcopy
 import random
 import sys
-import networkx as nx
 
 class searchBonds(object):
     def __init__(self, cpu, basicParameters, generatedBonds, inGro, inTop, conv, desBonds, chains):
@@ -192,6 +191,16 @@ class searchBonds(object):
 
             return names
 
+    def calAtnDistance(self, atn, atomDf):
+        atn1 = np.array([atn.posX, atn.posY, atn.posZ]).astype(float)
+        atn2Lst = [atomDf.posX.to_list(), atomDf.posY.to_list(), atomDf.posZ.to_list()]
+        atn2Lst = np.asarray(atn2Lst).T.astype(float)
+        delta = np.abs(atn1 - atn2Lst)
+        delta = np.where(delta > 0.5 * float(self.boxSize), delta - float(self.boxSize), delta) # assume same box size for all dimension
+        dist = np.sqrt((delta ** 2).sum(axis=-1))
+        atomDf['dist'] = dist
+        return atomDf
+
     def getPairs(self, atom, atomsDf):  # collect atoms based on cell id. itself and adjacent cell
         # atomsDf contains all atoms
         # maxCellId used for pbc condition
@@ -217,7 +226,8 @@ class searchBonds(object):
         df2 = self.condFilter(atom, df2)
         if not df2.empty:
             # obtain the distance between the atoms and distance between atoms and the potential atoms within neighbor cell
-            df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
+            # df3 = df2.apply(lambda x: self.appendDist(x, atom, self.boxSize), axis=1)
+            df3 = self.calAtnDistance(atom, df2)
             df3 = df3.iloc[1:] # remove atoms which connect to itself
             pd.to_numeric(df3.dist)
             df3.sort_values(by='dist', inplace=True)
@@ -226,12 +236,9 @@ class searchBonds(object):
             df4 = df3.loc[(df3.dist < float(self.cutoff)) & (df3.molNum != atom.molNum)]
             df4.to_csv('df4.csv') # TODO: append files to check
             df_out1 = []
-            # TODO: check if df3 new generated
             if len(df4) == 0:
-                # print('No pairs found')
                 return [[]]
             else:
-                # print('Pairs found')
                 for index, row in df4.iterrows():
                     df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
                                     atom.molCon, random.random(), row.rctPct])
@@ -263,8 +270,7 @@ class searchBonds(object):
         res = df.apply(lambda x: self.getPairs(x, df_sum), axis=1)
         return res
 
-    @countTime
-    def checkHydrogen(self, atomDf):
+    def getHname(self, atomDf):
         bonds = self.top.bonds
         atoms = self.top.atoms
         filterIdx = []
@@ -276,6 +282,18 @@ class searchBonds(object):
                 a2 = atoms.loc[atoms.nr == jj.aj]
                 if 'H' in a1.atom.to_list()[0] or 'H' in a2.atom.to_list()[0]:
                     filterIdx.append(atIdx)
+        return filterIdx
+
+    @countTime
+    def checkHydrogen(self, atomDf):
+        filterIdx = []
+        p = Pool(processes=self.cpu)
+        atomDf_split = np.array_split(atomDf, self.cpu)
+        idxList = p.map(partial(self.getHname), atomDf_split)
+        p.close(); p.join()
+        for i in idxList:
+            filterIdx += i
+
         outDf = atomDf.loc[atomDf.globalIdx.isin(filterIdx)]
         return outDf
 
@@ -409,32 +427,67 @@ class searchBonds(object):
             pass
 
         # 条件2： 一条由单体形成的链不能首尾相连
+        # chain1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['chain'].to_list()[0]
+        # chain2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['chain'].to_list()[0]
+        # name1 = self.convChainsNum2Name(chain1, df_rctAtoms)
+        # name2 = self.convChainsNum2Name(chain2, df_rctAtoms)
+        # chain1 = chain1.split(',')
+        # chain2 = chain2.split(',')
+        # if len(name1) == 1 or len(name2) == 1:
+        #     pass
+        # else:
+        #     croNames = []
+        #     for n in self.croInfo:
+        #         croNames.append(n[1])
+
+        #     if chain1 == chain2 and any(i not in name1 for i in croNames):
+        #         #TODO: add comment here, should be question here
+        #         if mol1[0] in chain1 and mol2[0] in chain1:
+        #             cond += 1
+        #             with open('cond2.txt', 'a') as f:
+        #                 f.write('Found STY chain: ')
+        #                 f.write('croNames: {}'.format(croNames))
+        #                 f.write('\n\tatom1: {}\tatom2: {}'.format(row.acro, row.amon))
+        #                 f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
+        #                 f.write('\n\tchain: {}'.format(name1))
+        #         else:
+        #             pass
+        t1 = time.time()
+        monNum = 0
+        for nb in self.monInfo:
+            monNum += int(nb[2])
+
         chain1 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.acro]['chain'].to_list()[0]
-        chain2 = df_rctAtoms[df_rctAtoms.loc[:, 'globalIdx'] == row.amon]['chain'].to_list()[0]
-        name1 = self.convChainsNum2Name(chain1, df_rctAtoms)
-        name2 = self.convChainsNum2Name(chain2, df_rctAtoms)
         chain1 = chain1.split(',')
-        chain2 = chain2.split(',')
-        if len(name1) == 1 or len(name2) == 1:
+
+        if len(chain1) == 1:
             pass
         else:
-            croNames = []
-            for n in self.croInfo:
-                croNames.append(n[1])
+            tmp1 = np.asarray(chain1).astype(int)
+            tmp2 = list(np.where(tmp1 > monNum)[0])
+            if len(tmp2) > 1:
+                pass
+            else:
+                tmpChain = []
+                for i in range(len(chain1)):
+                    if i < len(chain1) - 1:
+                        tmpChain.append([chain1[i], chain1[i + 1]])
 
-            if chain1 == chain2 and any(i not in name1 for i in croNames):
-                #TODO: add comment here, should be question here
-                if mol1[0] in chain1 and mol2[0] in chain1:
+                tmpG = nx.Graph()
+                tmpG.add_edges_from(tmpChain)
+                newCon = [[mol1[0], mol2[0]]]
+                tmpG.add_edges_from(newCon)
+                if len(nx.cycle_basis(tmpG)) > 0:
                     cond += 1
                     with open('cond2.txt', 'a') as f:
                         f.write('Found STY chain: ')
-                        f.write('croNames: {}'.format(croNames))
                         f.write('\n\tatom1: {}\tatom2: {}'.format(row.acro, row.amon))
                         f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
-                        f.write('\n\tchain: {}'.format(name1))
                 else:
                     pass
 
+        t2 = time.time()
+        print('check cycle 2: ', t2 - t1)
         # 条件三：
         # 描述的是一个group中不能形成loop
         # T1-H1--R1--H1-T1, T2-H2--R2--H2-T2
@@ -777,7 +830,6 @@ class searchBonds(object):
     @countTime
     def collectBonds(self, count):
         pairs = []
-        a1 = []
         count = 0
         while (len(pairs) == 0 and count < 10):
             while (len(pairs) == 0):
