@@ -15,6 +15,7 @@ trials = 5
 stepwise = 0.01, 0.1, 1
 
 # Basic structures
+# only put molecules which need capping
 mol1 = VEA, VEA-un
 mol2 = VEB, VEB-un
 mol3 = STY, STY-un
@@ -24,7 +25,6 @@ mol3 = STY, STY-un
 #   single bond: 1
 #   double bond: 2
 #   triple bond: 3
-#   aromatic bond: ar
 cappingBonds = VEA, C19, C20, 2
 cappingBonds = VEA, C26, C27, 2
 cappingBonds = VEB, C22, C23, 2

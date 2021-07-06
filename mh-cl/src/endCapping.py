@@ -2,7 +2,7 @@ import re
 from subprocess import check_output
 import sys
 
-from pandas.core.indexing import check_bool_indexer
+import pandas as pd
 import genBonds
 
 class endCapping(object):
@@ -33,11 +33,15 @@ class endCapping(object):
                             a2AtomName = b[2].strip()
                         elif a1AtomName == b[2].strip():
                             a2AtomName = b[1].strip()
+                        else:
+                            continue
+                    else:
+                        continue
                     atomsRow = self.gro.df_atoms.loc[(self.gro.df_atoms.molNum == a1MolNum) & 
                                                     (self.gro.df_atoms.atomName == a2AtomName)]
-                    if atomsRow.rct != 'False':
-                        pPairs.append([a1GlobalIdx, atomsRow.globalIdx])
-                        tmpAtomIdx += [a1GlobalIdx, atomsRow.globalIdx]
+                    if atomsRow.rct.values[0] != 'False':
+                        pPairs.append([a1GlobalIdx, atomsRow.globalIdx.values[0]])
+                        tmpAtomIdx += [a1GlobalIdx, atomsRow.globalIdx.values[0]]
         return pPairs
 
     def cleanType(self):
@@ -276,13 +280,20 @@ class endCapping(object):
         return con
 
     def getNewAtype(self, atomName, resName):
-        print('capping resName: ', resName)
         tmpMap = self.unrctMap[resName]
         try:
             charge = tmpMap[atomName]['charge']
             aType = tmpMap[atomName]['type']
         except:
-            raise TypeError('atom {} doesn\'t find in the unrct map'.format(atomName))
+            if 'H' in atomName:
+                keys = tmpMap.keys()
+                for k in keys:
+                    if 'H' in k:
+                        tmpKey = k
+                charge = tmpMap[tmpKey]['charge']
+                aType = tmpMap[tmpKey]['type']
+            else:
+                raise TypeError('atom {} doesn\'t find in the unrct map'.format(atomName))
         
         return aType, charge
     
@@ -314,13 +325,52 @@ class endCapping(object):
     def genBonds(self, pPairs):
         atoms = self.top.atoms
         bonds = self.top.bonds
-
         for p in pPairs:
             if self.checkPairCon(p):
                 self.delHydrogen(p)
             else:
-                gbonds = genBonds.genBonds(self.gro, self.top, pPairs, [], [], updateCharge=False)
+                names = ['acro', 'amon']
+                pp = pd.DataFrame(pPairs, columns=names)
+                pp['dist'] = '0.2'
+                gbonds = genBonds.genBonds(self.gro, self.top, pp, [], [], updateCharge=False)
                 gbonds.gBonds()
+
+    def updateIdx(self):
+        # atomsDf is a from the gro file (coordinates)
+        atomsDf = self.gro.df_atoms
+
+        inTop = self.top
+        # dataframes from the topology
+        df_atoms = inTop.atoms  # Top df
+        df_bonds = inTop.bonds
+        df_pairs = inTop.pairs  # 1--4 interactions
+        df_angs = inTop.angles
+        df_dihs = inTop.dihedrals
+        df_imps = inTop.impropers
+
+        # globalIdx is old; store them in new column 'ori_idx'
+        atomsDf['ori_idx'] = atomsDf['globalIdx']
+        # creating a new index column that renumbers atoms
+        atomsDf = atomsDf.reset_index(drop=True)
+        # setting new globalIdx to be 1-initiated indices, as *strings*
+        atomsDf['globalIdx'] = (atomsDf.index + 1).astype(str).to_list()
+        # make old-to-new index dictionary (cfa)
+        newIDx_from_oldIdx = {}
+        for o, n in zip(atomsDf['ori_idx'], atomsDf['globalIdx']):
+            newIDx_from_oldIdx[o] = n
+
+        # create new dataframe that applies new globalIdx values to old values in original top df's
+        df_atoms_new, df_bonds_new, df_pairs_new, df_angs_new, df_dihs_new, df_imps_new = \
+            self.mapUpdate(df_atoms, newIDx_from_oldIdx)
+
+        inTop.atoms = df_atoms_new
+        inTop.bonds = df_bonds_new
+        inTop.pairs = df_pairs_new
+        inTop.angles = df_angs_new
+        inTop.dihedrals = df_dihs_new
+        inTop.impropers = df_imps_new
+        self.gro.df_atoms = atomsDf
+        self.gro.atNum = len(atomsDf)
 
     def capping(self):
         pPairs = self.getPairs()
@@ -328,8 +378,9 @@ class endCapping(object):
         for p in pPairs:
             print('----> atoms {} and {}'.format(p[0], p[1]))
         self.updateBasicType()
-        self.changeAtypes(pPairs)
         self.genBonds(pPairs)
+        self.changeAtypes(pPairs)
+        self.updateIdx()
         self.top.checkCharge()
         
 

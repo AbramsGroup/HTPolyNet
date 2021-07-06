@@ -179,6 +179,7 @@ class processTop(object):
         default = inLst[0]
         system = inLst[-2]
         molecules = inLst[-1]
+        
 
         atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
         moltypeNames = ['name', 'nrexcl']

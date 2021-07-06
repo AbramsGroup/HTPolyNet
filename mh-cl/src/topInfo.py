@@ -170,28 +170,34 @@ class top(object):
                     x.ai, x.aj, x.ak, x.funct)
 
         elif keys == 'dih':
-            # if len(x) != 8:
-            #     str1 = ' '
-            # else:
             key = self.subAtom2Atypes(x.ai, x.aj, x.ak, x.al, self.atoms)
-            # key = '{}-{}-{}-{}'.format(x.ai, x.aj, x.ak, x.al)
+            key_rev = self.subAtom2Atypes(x.al, x.ak, x.aj, x.ai, self.atoms)
             if self.stepRelax:
                 if x.new == '':
-                    if key not in self.dupDihTypeKey:
+                    if key not in self.dupDihTypeKey and key_rev not in self.dupDihTypeKey:
                         str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
                             x.ai, x.aj, x.ak, x.al, x.funct)
                     else:
-                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                        try:
+                            str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+                                    x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                        except:
+                            str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
+                                x.ai, x.aj, x.ak, x.al, x.funct)
                 else:
                     str1 = ' '
             else:
-                if key not in self.dupDihTypeKey:
+                if key not in self.dupDihTypeKey and key_rev not in self.dupDihTypeKey:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct)
+                            x.ai, x.aj, x.ak, x.al, x.funct) #TODO: may have problem. Extract ff from parameters.py
                 else:
-                    str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
-                            x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                    try:
+                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+                                x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), x.c1, x.c2)
+                    except:
+                        str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
+                            x.ai, x.aj, x.ak, x.al, x.funct)
+
         elif keys == 'imp':
             str1 = ' '
 
@@ -203,14 +209,16 @@ class top(object):
         with open('chargeInfo.txt', 'a') as f:
             f.write('residue charge: {}\n'.format(c))
 
-        for i in range(len(self.atoms.charge)):
-            self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - c
+        for index, row in self.atoms.iterrows():
+            row.charge = decimal.Decimal(row.charge) - c
+        # for i in range(len(self.atoms.charge)):
+        #     self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - c
 
     def addCharge(self, incharge):
         c = max(self.atoms.charge)
-        for i in range(len(self.atoms.charge)):
-            if self.atoms.charge[i] == c:
-                self.atoms.charge[i] = decimal.Decimal(self.atoms.charge[i]) - decimal.Decimal(incharge)
+        for index, row in self.atoms.iterrows():
+            if row.charge == c:
+                row.charge = decimal.Decimal(row.charge) - decimal.Decimal(incharge)
                 break
 
     def setChargeDicimal(self, row):
@@ -227,7 +235,6 @@ class top(object):
 
     @countTime
     def checkCharge(self):
-
         self.atoms = self.atoms.apply(lambda x: self.setChargeDicimal(x), axis=1)
         charges = self.countCharge()
 
