@@ -350,13 +350,19 @@ class genBonds(object):
                 for aa in con3:
                     aa = str(aa)
                     if aa != a1:
-                        new_dihedrals.append([aa, a, a1, a2])
-                        new_pairs.append([aa, a2, '1', '1']) # stands for new pairs
+                        dihPairs = [aa, a, a1, a2]
+                        if len(set(dihPairs)) == len(dihPairs):
+                            if dihPairs not in new_dihedrals:
+                                new_dihedrals.append(dihPairs)
+                                new_pairs.append([aa, a2, '1', '1']) # stands for new pairs
                 for aa in con4:
                     aa = str(aa)
                     if aa != a1:
-                        new_dihedrals.append([a, a1, a2, aa])
-                        new_pairs.append([a, aa, '1', '1'])
+                        dihPairs = [a, a1, a2, aa]
+                        if len(set(dihPairs)) == len(dihPairs):
+                            if dihPairs not in new_dihedrals:
+                                new_dihedrals.append(dihPairs)
+                                new_pairs.append([a, aa, '1', '1'])
         for a in con2:
             a = str(a)
             # fix issue: New formed bonds between c-n will change the h atom's type from hc to h1
@@ -371,15 +377,19 @@ class genBonds(object):
                 for aa in con3:
                     aa = str(aa)
                     if aa != a2:
-                        if [aa, a1, a2, a] not in new_dihedrals:
-                            new_dihedrals.append([aa, a1, a2, a])
-                            new_pairs.append([aa, a, '1', '1'])
+                        dihPairs = [aa, a1, a2, a]
+                        if len(set(dihPairs)) == len(dihPairs):
+                            if dihPairs not in new_dihedrals:
+                                new_dihedrals.append(dihPairs)
+                                new_pairs.append([aa, a, '1', '1'])
                 for aa in con4:
                     aa = str(aa)
                     if aa != a2:
-                        if [a1, a2, a, aa] not in new_dihedrals:
-                            new_dihedrals.append([a1, a2, a, aa])
-                            new_pairs.append([a1, aa, '1', '1'])
+                        dihPairs = [a1, a2, a, aa]
+                        if len(set(dihPairs)) == len(dihPairs):
+                            if dihPairs not in new_dihedrals:
+                                new_dihedrals.append(dihPairs)
+                                new_pairs.append([a1, aa, '1', '1'])
                             
         return new_bonds, new_pairs, new_angles, new_dihedrals
 

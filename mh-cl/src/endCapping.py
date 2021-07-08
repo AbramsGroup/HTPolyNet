@@ -131,7 +131,7 @@ class endCapping(object):
         hCon2 = hCons2[0]
         hAtoms.append(hCon1)
         hAtoms.append(hCon2)
-
+        
         for a in hAtoms:
             atomsDf.drop(atomsDf[atomsDf['globalIdx'] == str(a)].index, inplace=True)
             self.gro.df_atoms = atomsDf
@@ -323,17 +323,18 @@ class endCapping(object):
             return False
 
     def genBonds(self, pPairs):
-        atoms = self.top.atoms
-        bonds = self.top.bonds
+        tmpPairs = []
         for p in pPairs:
             if self.checkPairCon(p):
                 self.delHydrogen(p)
             else:
-                names = ['acro', 'amon']
-                pp = pd.DataFrame(pPairs, columns=names)
-                pp['dist'] = '0.2'
-                gbonds = genBonds.genBonds(self.gro, self.top, pp, [], [], updateCharge=False)
-                gbonds.gBonds()
+                tmpPairs.append(p)
+
+        names = ['acro', 'amon']
+        pp = pd.DataFrame(tmpPairs, columns=names)
+        pp['dist'] = '0.2'
+        gbonds = genBonds.genBonds(self.gro, self.top, pp, [], [], updateCharge=False)
+        gbonds.gBonds()
 
     def updateIdx(self):
         # atomsDf is a from the gro file (coordinates)
@@ -378,8 +379,8 @@ class endCapping(object):
         for p in pPairs:
             print('----> atoms {} and {}'.format(p[0], p[1]))
         self.updateBasicType()
-        self.genBonds(pPairs)
         self.changeAtypes(pPairs)
+        self.genBonds(pPairs)
         self.updateIdx()
         self.top.checkCharge()
         
