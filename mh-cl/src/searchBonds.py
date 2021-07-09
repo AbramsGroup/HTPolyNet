@@ -513,7 +513,7 @@ class searchBonds(object):
                     pass
 
         t2 = time.time()
-        print('check cycle 2: ', t2 - t1)
+        # print('check cycle 2: ', t2 - t1)
         # 条件三：
         # 描述的是一个group中不能形成loop
         # T1-H1--R1--H1-T1, T2-H2--R2--H2-T2

@@ -154,7 +154,8 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
                 else:
-                    str1 = ' '
+                    str1 = '{:>7}{:>7}{:>7}'.format(
+                        x.ai, x.aj, x.funct)
             else:
                 str1 = '{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.funct)
@@ -164,7 +165,8 @@ class top(object):
                     str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                         x.ai, x.aj, x.ak, x.funct)
                 else:
-                    str1 = ' '
+                    str1 = '{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}'.format(
+                        x.ai, x.aj, x.ak, x.funct, round(float(x.c0), 2), round(float(x.c1) * self.k, 2))
             else:
                 str1 = '{:>7}{:>7}{:>7}{:>7}'.format(
                     x.ai, x.aj, x.ak, x.funct)
@@ -186,6 +188,8 @@ class top(object):
                                 x.ai, x.aj, x.ak, x.al, x.funct)
                 else:
                     str1 = ' '
+                    # str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}{:>11}{:>11}{:>7}'.format(
+                    #             x.ai, x.aj, x.ak, x.al, x.funct, round(float(x.c0), 2), round(float(x.c1), 2), x.c2)
             else:
                 if key not in self.dupDihTypeKey and key_rev not in self.dupDihTypeKey:
                     str1 = '{:>7}{:>7}{:>7}{:>7}{:>7}'.format(
