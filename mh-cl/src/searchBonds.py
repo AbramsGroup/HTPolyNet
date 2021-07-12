@@ -263,7 +263,7 @@ class searchBonds(object):
             else:
                 for index, row in df4.iterrows():
                     df_out1.append([atom.globalIdx, row.globalIdx, round(row.dist, 2), atom.rctNum, row.rctNum,
-                                    atom.molCon, random.random(), row.rctPct])
+                                    atom.molCon, random.random(), row.rctPct, atom.molNum, row.molNum, atom.atomName, row.atomName])
                 return df_out1
         else:
             return [[]]
@@ -337,7 +337,6 @@ class searchBonds(object):
 
         # select all atoms
         df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posY.astype(float) < self.dimLimit)]
-
         # assign atoms to cell
         df_tmp0 = self.assignAtoms(df_tmp0)
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
@@ -369,7 +368,7 @@ class searchBonds(object):
             else:
                 rctDf.append(ii)
 
-        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon', 'p', 'rctP']
+        names = ['acro', 'amon', 'dist', 'rctNum1', 'rctNum2', 'molCon', 'p', 'rctP', 'croMol', 'monMol', 'croAtomName', 'monAtomName']
         df = pd.DataFrame(rctDf, columns=names)
         return df
 
@@ -513,7 +512,7 @@ class searchBonds(object):
                     pass
 
         t2 = time.time()
-        print('check cycle 2: ', t2 - t1)
+        # print('check cycle 2: ', t2 - t1)
         # 条件三：
         # 描述的是一个group中不能形成loop
         # T1-H1--R1--H1-T1, T2-H2--R2--H2-T2
@@ -857,9 +856,17 @@ class searchBonds(object):
     def collectBonds(self, count):
         pairs = []
         count = 0
+        df_layer = self.gro.df_atoms.loc[(self.gro.df_atoms.posY.astype(float) < self.dimLimit)]
+        layerLst = list(set(df_layer['molNum'].to_list()))
+        print('layerLst: ', layerLst)
+        with open('molLayer.txt', 'w') as f:
+            for i in layerLst:
+                f.write('{}\t'.format(i))
+
         while (len(pairs) == 0 and count < 10):
             while (len(pairs) == 0):
                 print('-----> Current cutoff: {}'.format(round(self.cutoff, 2)))
+                
                 df_pairs = self.getRctDf()
                 df_pairs.to_csv('all_bonds_within_cutoff.csv')
                 if self.conv < 0.7:
@@ -905,10 +912,10 @@ class searchBonds(object):
 
     def updateBoxSize(self):
         self.boxSize = self.gro.boxSize.split()[0].strip(' ')
-        print('self.boxSize: ', self.boxSize)
+        # print('self.boxSize: ', self.boxSize)
         # assume system sizes are same along all directions
         self.dimLimit = float(self.boxSize) * self.boxLimit
-        print('self.dimLimit: ', self.dimLimit)
+        # print('self.dimLimit: ', self.dimLimit)
 
     @countTime
     def sBonds(self):

@@ -40,6 +40,7 @@ from countTime import *
 class main(object):
     def __init__(self, re=False):
         self.cpu = ''
+        self.gpu = ''
         self.trials = ''
         self.reProject = ''
         self.stepwise = ''
@@ -135,6 +136,7 @@ class main(object):
         a.readParam()
         self.basicParameter = a
         self.cpu = int(a.CPU)
+        self.gpu = int(a.GPU)
         self.trials = int(a.trials)
         self.reProject = a.reProject
         self.stepwise = a.stepwise
@@ -220,7 +222,7 @@ class main(object):
 
         # EM and NPT to equilibrate the structure
         print('-> Conduct energy minization on the new mixture')
-        a = md.md('gmx_mpi', 'mpirun', self.cpu)
+        a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
         a.emSimulation('init', 'init', 'min-1', size=False)
         print('-> Conduct NPT on the new mixture')
         a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=True, re=False)
@@ -257,6 +259,21 @@ class main(object):
 
         conv = round(num1 / int(self.maxBonds), 2)
         return conv
+
+    def stepCapping(self):
+        os.mkdir('capping')
+        os.chdir('capping')
+        gro = deepcopy(self.gro)
+        top = deepcopy(self.top)
+        a = endCapping.endCapping(gro, top, self.basicFFType, self.unrctMap, self.cappingBonds)
+        gro = a.gro
+        top = a.top
+        top.endCappingtopClean()
+
+        gro.outDf('sys')
+        top.topClean(key='bonds')
+        top.outDf('sys')
+        os.chdir('..')
 
     def finishSim(self, folderName, conv, step=0):
         os.chdir('..')
@@ -359,14 +376,15 @@ class main(object):
                          len(self.old_pairs[int(step)]), round(cutoff, 2), self.maxBonds - num1, conv)
             f1.write(str1)
         
-        with open('../bonds_Info{}.txt'.format(step), 'w') as f2:
+        with open('../bonds_connect_Info.txt', 'w') as f2:
             str0 = 'Total bonds: {}\n'.format(self.maxBonds)
+            # values = self.pairs_detail['step{}'.format(step)]
             f2.write(str0)
             for keys, values in self.pairs_detail.items():
                 f2.write('{}: \n'.format(keys))
-                # print('values: ', values)
                 for index, row in values.iterrows():
-                    f2.write('atom1: {}\tatom2: {}\n'.format(row.amon, row.acro))
+                    f2.write('atom1: {}\t{}\t atom2: {}\t{}\t mol1: {}\t mol2: {}\n'.format(
+                        row.amon, row.monAtomName, row.acro, row.croAtomName, row.monMol, row.croMol))
 
     @countTime
     def stepwiseRelax(self):
@@ -378,7 +396,7 @@ class main(object):
             topName = '{}-{}'.format(outName, i)
             self.gro.outDf(groName)
             self.top.outDf(topName, float(k[i]), simple=False, stepRelax=True)
-            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
             cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
             if cond0 == False:
                 print('----> Stepwised EM failed')
@@ -418,7 +436,7 @@ class main(object):
 
             copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
             copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
-            a = md.md('gmx_mpi', 'mpirun', self.cpu)
+            a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
             a.emSimulation('init', 'init', 'min-1', size=False)
             a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
             self.updateCoord('npt-init')
@@ -436,10 +454,9 @@ class main(object):
                     boxLimit = self.boxLimit
                 else:
                     print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
-                    boxLimit = 1                    
-
+                    boxLimit = 1
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
-                                                self.conv, self.desBonds, self.chains, boxLimit)
+                                                    self.conv, self.desBonds, self.chains, boxLimit)
                 pairs, chains, rMols, cutoff = sbonds.sBonds()
                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
                 self.chains = chains
@@ -470,7 +487,7 @@ class main(object):
 
                     # Equilibrate system
                     print('----> Energy minimization on the normal system')
-                    a = md.md('gmx_mpi', 'mpirun', self.cpu)
+                    a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
                     if cond0 == False:
                         print('EM failed')
@@ -489,7 +506,7 @@ class main(object):
                     self.updateCoord('npt-cl')
                     self.old_pairs.append(pairs)
                     self.logBonds(step, cutoff)
-
+                    self.stepCapping()
                     conv = self.countConv()
                     print('----> step {} reaches {} conversion'.format(step, round(conv, 2)))
                     if conv >= self.desConv:

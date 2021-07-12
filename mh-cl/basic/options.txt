@@ -10,7 +10,11 @@ boxSize = 5
 cutoff = 0.5
 bondsRatio = 0.5
 HTProcess = True
+
+# CPU cannot be zero, the lincs cell-algo need cpu to calculate
+# If set GPU, md part will use GPU instead of CPU
 CPU = 32
+GPU = 4
 trials = 5
 stepwise = 0.01, 0.1, 1
 

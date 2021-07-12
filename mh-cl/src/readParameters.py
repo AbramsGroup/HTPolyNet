@@ -24,6 +24,7 @@ class parameters(object):
         self.maxBonds = ''
         self.HTProcess = ''
         self.CPU = ''
+        self.GPU = ''
         self.trials = ''
         self.reProject = ''
         self.rctInfo = ''
@@ -151,6 +152,8 @@ class parameters(object):
                 HTProcess = line.split('=')[1].strip(' ')
             if 'CPU' in line:
                 CPU = line.split('=')[1].strip(' ')
+            if 'GPU' in line:
+                GPU = line.split('=')[1].strip(' ')
             if 'trials' in line:
                 trials = line.split('=')[1].strip(' ')
             if 'reProject' in line:
@@ -162,7 +165,6 @@ class parameters(object):
                 boxLimit = line.split('=')[1].strip(' ')
             if 'layerConvLimit' in line:
                 layerConvLimit = line.split('=')[1].strip(' ')
-
         rctInfo = []
         for line in baseList: # React Info
             if '+' in line:
@@ -177,7 +179,14 @@ class parameters(object):
         self.cutoff = cutoff
         self.bondsRatio = bondsRatio
         self.rctInfo = rctInfo
-        self.CPU = CPU
+        try:
+            self.CPU = CPU
+        except:
+            self.CPU = 0
+        try:
+            self.GPU = GPU
+        except:
+            self.GPU = 0
         self.trials = trials
         self.HTProcess = HTProcess
         self.reProject = reProject
