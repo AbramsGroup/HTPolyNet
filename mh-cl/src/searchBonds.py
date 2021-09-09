@@ -109,12 +109,12 @@ class searchBonds(object):
             elif x1 <= -xlen:
                 x1 = x1 + float(boxSize[0])
 
-            elif y1 > ylen:
+            if y1 > ylen:
                 y1 = y1 - float(boxSize[1])
             elif y1 <= -ylen:
                 y1 = y1 + float(boxSize[1])
 
-            elif z1 > zlen:
+            if z1 > zlen:
                 z1 = z1 - float(boxSize[2])
             elif z1 <= -zlen:
                 z1 = z1 + float(boxSize[2])
