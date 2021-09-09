@@ -54,7 +54,7 @@ HTPolyNet uses the Generalized Amber Force Field for atom-typing and parameter g
   
 * python3.x with the following modules (I'm using Anaconda)
   - numpy
-  - pandas
+  - pandas [ version > 1.0 ] 
   - scipy
   - parmed
     ```
