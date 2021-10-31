@@ -123,7 +123,8 @@ class genBonds(object):
                         param = parameters.dictBond[key]
                     except:
                         raise TypeError('Couldn\'t locate this parameters! Please check')
-
+                    if isinstance(param, str):
+                        param = param.split(',')
                     lst_tmp = [a1Type, a2Type] + param
                     sysTop.addBondTypes(lst_tmp)
                     pp += param[1:]
@@ -157,12 +158,15 @@ class genBonds(object):
                     key = '{}-{}-{}'.format(a1Type, a2Type, a3Type)
                     print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
                     try:
-                        param = parameters.dictAngle[key]; lst_tmp = [a1Type, a2Type, a3Type] + param
+                        param = parameters.dictAngle[key]
                     except:
                         print('Couldn\'t locate this parameters! Please check')
                         sys.exit()
-
+                    if isinstance(param, str):
+                        param = param.split(',')
+                    lst_tmp = [a1Type, a2Type, a3Type] + param
                     sysTop.addAngleTypes(lst_tmp)
+                    pp += param[1:]
                 pairs_tmp.append(pp)
             return pairs_tmp
 

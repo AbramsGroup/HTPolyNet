@@ -265,13 +265,12 @@ class top(object):
         return df
     
     def addBondTypes(self, lst):
-        cNames = ['ai', 'aj', 'func', 'c0', 'c1']
+        cNames = ['ai', 'aj', 'funct', 'c0', 'c1']
         tmp = pd.DataFrame([lst], columns=cNames)
         self.bondtypes = self.bondtypes.append(tmp, sort=False).reset_index(drop=True)
-
     
     def addAngleTypes(self, lst):
-        cNames = ['ai', 'aj', 'ak', 'func', 'c0', 'c1']
+        cNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
         tmp = pd.DataFrame([lst], columns=cNames)
         self.angletypes = self.angletypes.append(tmp, sort=False).reset_index(drop=True)
 
@@ -279,7 +278,6 @@ class top(object):
         cNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
         tmp = pd.DataFrame([lst], columns=cNames)
         self.dihtypes = self.dihtypes.append(tmp, sort=False).reset_index(drop=True)
-
     @countTime
     def addBonds(self, pairs):
         # cNames = ['ai', 'aj', 'funct', 'new']

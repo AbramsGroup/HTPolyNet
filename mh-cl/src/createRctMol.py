@@ -110,7 +110,7 @@ class createRctMol(object):
 
     def creatMol(self, rctTimes, molObj, inKey, croKey='mon'):
         # get cro mol
-        print('croKey: ', croKey)
+        # print('croKey: ', croKey)
         for key, value in self.rctInfo[croKey][0].items(): # sort of hard code, need to take care
             at1 = [self.croResName, value[0]]
         
@@ -126,7 +126,7 @@ class createRctMol(object):
             conInfo = []
             for info in ii:
                 conInfo.append([at1, [inKey, info]])
-            print('conInfo: ', conInfo)
+            # print('conInfo: ', conInfo)
             a = mol2Info.mol2Info()
             a.setInfo(molObj)
             a.genBonds(conInfo)

@@ -2,8 +2,8 @@ title       = NPT Equilibration
 ;define      = -DPOSRES          ; position restrain the protein
 ; Run parameters
 integrator  = md                ; leap-frog integrator
-nsteps      = 100000             ; 2 * 50,000 = 100 ps
-dt          = 0.002             ; 2 fs
+nsteps      = 10000             ; 2 * 50,000 = 100 ps
+dt          = 0.001             ; 2 fs
 ; Output control
 nstxout     = 5000              ; save coordinates every 2 ps
 nstvout     = 0              ; save velocities every 2 ps
@@ -38,7 +38,7 @@ ref_t       = 300      		    ; reference temperature, one for each group, in K
 pcoupl              = Parrinello-Rahman     ; Pressure coupling on in NPT, also weak coupling
 pcoupltype          = isotropic     ; uniform scaling of x-y-z box vectors
 tau_p               = 0.5           ; time constant, in ps
-ref_p               = 400.0
+ref_p               = 10.0
 compressibility     = 4.5e-5
 refcoord_scaling    = com
 ; Periodic boundary conditions

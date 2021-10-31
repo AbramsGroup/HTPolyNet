@@ -199,7 +199,6 @@ class generateTypeInfo(object):
             
         for keys, values in db_DihType.items():
             newDihType[keys] = values
-        
         tmpList = [newBondType, newAngType, newDihType]
         name = ['dictBond', 'dictAngle', 'dictDihedral']
         if os.path.isfile('tmp.py'):
@@ -215,7 +214,6 @@ class generateTypeInfo(object):
         os.chdir(self.typePath)
         fileList = glob.glob('*.mol2')
         itpFile = glob.glob('*.itp')
-        print('itpFile: ', itpFile)
         if len(itpFile) > 0:
             nameList = itpFile
         else:

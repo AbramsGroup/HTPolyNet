@@ -96,7 +96,6 @@ class mol2Info(object):
         for idx in atIdx:
             if 'H' in self.atoms[(self.atoms['atomId'] == idx)].atomName.values[0]:
                 con.append(idx)
-        print('HCon: ', con)
         con1 = ''; atomName_ori = ''
         for idx in con:
             if idx in inHLst:
@@ -195,9 +194,6 @@ class mol2Info(object):
                     
                 newBonds.append([at1, at2])
                 usedAtoms.append(monlst[idx])
-        print('monH: ', monH)
-        print('croH: ', croH)
-        print('newBonds: ', newBonds)
         self.addBonds(newBonds)
 
         # shift molecules to right position
