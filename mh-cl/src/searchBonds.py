@@ -517,27 +517,28 @@ class searchBonds(object):
         # 描述的是一个group中不能形成loop
         # T1-H1--R1--H1-T1, T2-H2--R2--H2-T2
         # 其中T1-H1-T2-H2是不允许形成的
-        adj1 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol1[0]) &
-                           (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp1) &
-                           (df_rctAtoms.loc[:, 'globalIdx'] != row.acro)]['groupCon']
-        adj2 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol2[0]) &
-                           (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp2) &
-                           (df_rctAtoms.loc[:, 'globalIdx'] != row.amon)]['groupCon']
+        # 取消的原因：和下面的判断一样，所以可以取消这个参数
+        # adj1 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol1[0]) &
+        #                    (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp1) &
+        #                    (df_rctAtoms.loc[:, 'globalIdx'] != row.acro)]['groupCon']
+        # adj2 = df_rctAtoms[(df_rctAtoms.loc[:, 'molNum'] == mol2[0]) &
+        #                    (df_rctAtoms.loc[:, 'rctGroup'] == rctGrp2) &
+        #                    (df_rctAtoms.loc[:, 'globalIdx'] != row.amon)]['groupCon']
 
-        if adj1.to_list() == [] and adj2.to_list() == []:
-            pass
+        # if adj1.to_list() == [] and adj2.to_list() == []:
+        #     pass
 
-        else:
-            grpsCon1 = adj1.to_list()[0].split('-')
-            grpsCon2 = adj2.to_list()[0].split('-')
-            info1 = '[{}, {}]'.format(mol1[0], rctGrp1)
-            info2 = '[{}, {}]'.format(mol2[0], rctGrp2)
-            if info1 in grpsCon1 or info2 in grpsCon2:
-                cond += 1
-                with open('cond3.txt', 'a') as f:
-                    f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
-            else:
-                pass
+        # else:
+        #     grpsCon1 = adj1.to_list()[0].split('-')
+        #     grpsCon2 = adj2.to_list()[0].split('-')
+        #     info1 = '[{}, {}]'.format(mol1[0], rctGrp1)
+        #     info2 = '[{}, {}]'.format(mol2[0], rctGrp2)
+        #     if info1 in grpsCon1 or info2 in grpsCon2:
+        #         cond += 1
+        #         with open('cond3.txt', 'a') as f:
+        #             f.write('mol1: {}\tmol2: {}\n'.format(mol1, mol2))
+        #     else:
+        #         pass
 
         # 条件4: 不能形成全部由可反应原子形成的环
         if self.searchCycle(row):

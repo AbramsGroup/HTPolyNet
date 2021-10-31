@@ -145,11 +145,12 @@ class md(object):
         gromppOptions['o'] = '{}.tpr'.format(outName)
         gromppOptions['maxwarn'] = '2'
         mdrunOptions['deffnm'] = outName
+        mdrunOptions['ntomp'] = '1'
 
         self.gmxCMD('grompp', gromppOptions)
 
         prog = [('rdd', '1', True), ('rdd', '0.5', True), ('rdd', '0.1', True),
-                ('ntomp', '6', False), ('rdd', '0.5', False), ('rdd', '0.1', False)]
+                 ('rdd', '0.5', False), ('rdd', '0.1', False)]
 
         self.gmxCMD('mdrun', mdrunOptions, mpi=True)
         if not self.checkMDFinish(outName):
