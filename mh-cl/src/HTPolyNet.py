@@ -277,30 +277,30 @@ class main(object):
 
     def finishSim(self, folderName, conv, step=0):
         os.chdir('..')
-        os.mkdir('Final'); os.chdir('Final')
+        #os.mkdir('Final'); os.chdir('Final')
 
-        if conv >= self.desConv:
-            self.top.outDf('tmp')
-            a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
-            gro = a.gro
-            top = a.top
-            top.endCappingtopClean()
+        #if conv >= self.desConv:
+        #    self.top.outDf('tmp')
+            # a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
+            #gro = a.gro
+            #top = a.top
+            #top.endCappingtopClean()
 
-            gro.outDf('sys')
-            top.topClean(key='bonds')
-            top.outDf('sys')
-        else:
-            if step == 0:
-                pass
-            else:
-                a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
-                gro = a.gro
-                top = a.top
-                top.endCappingtopClean()
+            #gro.outDf('sys')
+            #top.topClean(key='bonds')
+            #top.outDf('sys')
+        #else:
+        #    if step == 0:
+        #        pass
+        #    else:
+                #a = endCapping.endCapping(self.gro, self.top, self.basicFFType, self.unrctMap, self.cappingBonds)
+                #gro = a.gro
+                #top = a.top
+                #top.endCappingtopClean()
 
-                gro.outDf('sys')
+                #gro.outDf('sys')
                 # self.prevTop.topClean(key='bonds')
-                top.outDf('sys')
+                #top.outDf('sys')
 
         os.chdir(self.resFolder)
         conv = self.countConv()
@@ -439,6 +439,13 @@ class main(object):
             a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
             a.emSimulation('init', 'init', 'min-1', size=False)
             a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+            
+            # complete structs
+            tmpGro = readGro.initGro()
+            tmpGro.setName('npt-init')
+            tmp_df, tmp_name, tmp_atNum, tmp_boxSize = tmpGro.readGRO()
+            cmd1 = f'echo 0 0 | gmx_mpi trjconv -s npt-init.tpr -f npt-init.gro -o npt-init.gro -center -pbc atom -box {tmp_boxSize}'
+            subprocess.call(cmd1, shell=True)
             self.updateCoord('npt-init')
             os.chdir('..')
             print('---> New replica is good to go')
@@ -506,7 +513,7 @@ class main(object):
                     self.updateCoord('npt-cl')
                     self.old_pairs.append(pairs)
                     self.logBonds(step, cutoff)
-                    self.stepCapping()
+                    # self.stepCapping()
                     conv = self.countConv()
                     print('----> step {} reaches {} conversion'.format(step, round(conv, 2)))
                     if conv >= self.desConv:

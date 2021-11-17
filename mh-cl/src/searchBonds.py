@@ -852,13 +852,25 @@ class searchBonds(object):
         df_out = pd.DataFrame(rowList)
         df_out.to_csv('tmp2.csv')
         return df_out
+    
+    @countTime
+    def splitLayer(self):
+        layerLst = []
+        molNum = self.gro.df_atoms['molNum'].to_list()
+        for nm in molNum:
+            tmp_mol = self.gro.df_atoms.loc[(self.gro.df_atoms.molNum == nm)]
+            tmp_layer_atns = tmp_mol.loc[(tmp_mol.posY.astype(float) < self.dimLimit)]
+            if len(tmp_layer_atns) > int(0.8 * len(tmp_mol)):
+                layerLst.append(nm)
+        return set(layerLst)
 
     @countTime
     def collectBonds(self, count):
         pairs = []
         count = 0
-        df_layer = self.gro.df_atoms.loc[(self.gro.df_atoms.posY.astype(float) < self.dimLimit)]
-        layerLst = list(set(df_layer['molNum'].to_list()))
+        # df_layer = self.gro.df_atoms.loc[(self.gro.df_atoms.posY.astype(float) < self.dimLimit)]
+        # layerLst = list(set(df_layer['molNum'].to_list()))
+        layerLst = self.splitLayer()
         print('layerLst: ', layerLst)
         with open('molLayer.txt', 'w') as f:
             for i in layerLst:
@@ -913,10 +925,11 @@ class searchBonds(object):
 
     def updateBoxSize(self):
         self.boxSize = self.gro.boxSize.split()[0].strip(' ')
-        # print('self.boxSize: ', self.boxSize)
+        print('self.boxSize: ', self.boxSize)
         # assume system sizes are same along all directions
         self.dimLimit = float(self.boxSize) * self.boxLimit
-        # print('self.dimLimit: ', self.dimLimit)
+        print('self.boxLimit: ', self.boxLimit)
+        print('self.dimLimit: ', self.dimLimit)
 
     @countTime
     def sBonds(self):
