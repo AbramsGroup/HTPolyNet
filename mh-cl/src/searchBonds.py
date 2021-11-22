@@ -25,6 +25,7 @@ class searchBonds(object):
         self.croInfo = basicParameters.croInfo
         self.cutoff = basicParameters.cutoff
         self.bondsRatio = basicParameters.bondsRatio
+        # is it necessary for the box to always be cubic? -cfa
         self.boxSize = basicParameters.boxSize  # one dimension box length
         self.maxBonds = basicParameters.maxBonds
         self.rctInfo = basicParameters.rctInfo
