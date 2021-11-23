@@ -36,6 +36,7 @@ cappingBonds = STY, C6, C7, 2
 
 # layer condition
 boxLimit = 0.5
+boxDir   = z
 layerConvLimit = 0.8
 
 # For croslinker 1

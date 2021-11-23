@@ -32,6 +32,7 @@ class parameters(object):
         self.cappingBonds = []
         self.boxLimit = 1
         self.layerConvLimit = 1
+        self.layerDir       = ''
 
     def setName(self, name):
         self.name = name
@@ -163,6 +164,8 @@ class parameters(object):
                 stepwise = tmpStr.split(',')
             if 'boxLimit' in line:
                 boxLimit = line.split('=')[1].strip(' ')
+            if 'boxDir' in line:
+                boxDir = line.split('=')[1].strip(' ')
             if 'layerConvLimit' in line:
                 layerConvLimit = line.split('=')[1].strip(' ')
         rctInfo = []
@@ -192,6 +195,7 @@ class parameters(object):
         self.reProject = reProject
         self.stepwise = stepwise
         self.boxLimit = boxLimit
+        self.layerDir = boxDir
         self.layerConvLimit = layerConvLimit
         
 if __name__ == '__main__':

@@ -57,6 +57,7 @@ class searchBonds(object):
         # layer limit
         self.boxLimit = boxLimit
         self.dimLimit = 1
+        self.layerDir = basicParameters.layerDir
 
     def genRctBondsMap(self, atoms, bonds):
         rctAtoms = self.rctAtoms
@@ -868,7 +869,14 @@ class searchBonds(object):
         molNum = self.gro.df_atoms['molNum'].to_list()
         for nm in molNum:
             tmp_mol = self.gro.df_atoms.loc[(self.gro.df_atoms.molNum == nm)]
-            tmp_layer_atns = tmp_mol.loc[(tmp_mol.posY.astype(float) < self.dimLimit)]
+            if self.layerDir == 'x':
+                tmp_layer_atns = tmp_mol.loc[(tmp_mol.posX.astype(float) < self.dimLimit)]
+            elif self.layerDir == 'y':
+                tmp_layer_atns = tmp_mol.loc[(tmp_mol.posY.astype(float) < self.dimLimit)]
+            elif self.layerDir == 'z':
+                tmp_layer_atns = tmp_mol.loc[(tmp_mol.posZ.astype(float) < self.dimLimit)]
+            else:
+                raise ValueError(f'Wrong direction is input, {self.layerDir}')
             if len(tmp_layer_atns) > int(0.8 * len(tmp_mol)):
                 layerLst.append(nm)
         return set(layerLst)
@@ -936,8 +944,14 @@ class searchBonds(object):
     def updateBoxSize(self):
         self.boxSize = [float(self.gro.boxSize.split()[0]), float(self.gro.boxSize.split()[1]), float(self.gro.boxSize.split()[2])]
         print('self.boxSize: ', self.boxSize)
-        # two occasions, 1. box size is same along all directions; 2. along z is different and let it became seperate
-        self.dimLimit = float(self.boxSize[2]) * self.boxLimit
+        # two occasions, 1. box size is same along all directions; 2. box size is different along one direction
+        if self.layerDir == 'x':
+            self.dimLimit = float(self.boxSize[0]) * self.boxLimit
+        elif self.layerDir == 'y':
+            self.dimLimit = float(self.boxSize[1]) * self.boxLimit
+        elif self.layerDir == 'z':
+            self.dimLimit = float(self.boxSize[2]) * self.boxLimit
+
         print('self.boxLimit: ', self.boxLimit)
         print('self.dimLimit: ', self.dimLimit)
 
