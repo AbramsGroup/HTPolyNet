@@ -2,7 +2,7 @@ title       = NPT Equilibration
 ;define      = -DPOSRES          ; position restrain the protein
 ; Run parameters
 integrator  = md                ; leap-frog integrator
-nsteps      = 50000             ; 2 * 50,000 = 100 ps
+nsteps      = 1000             ; 2 * 50,000 = 100 ps
 dt          = 0.001             ; 2 fs
 ; Output control
 nstxout     = 1000              ; save coordinates every 2 ps
@@ -32,14 +32,14 @@ optimize_fft    = yes
 ; Temperature coupling is on
 tcoupl      = Berendsen             ; Weak coupling for initial equilibration 
 tc-grps     = System
-tau_t       = 0.1         	    ; time constant, in ps
-ref_t       = 600      		    ; reference temperature, one for each group, in K
+tau_t       = 0.4         	    ; time constant, in ps
+ref_t       = 300      		    ; reference temperature, one for each group, in K
 ; Pressure coupling is on
 pcoupl              = Berendsen     ; Pressure coupling on in NPT, also weak coupling
 pcoupltype          = isotropic     ; uniform scaling of x-y-z box vectors
-tau_p               = 0.5           ; time constant, in ps
+tau_p               = 0.8           ; time constant, in ps
 ref_p               = 1.0
-compressibility     = 4.5e-5
+compressibility     = 4.5e-8
 refcoord_scaling    = com
 ; Periodic boundary conditions
 pbc     = xyz                   ; 3-D PBC

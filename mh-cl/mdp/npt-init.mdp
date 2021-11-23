@@ -15,7 +15,7 @@ constraint_algorithm = lincs     ; holonomic constraints
 constraints          = none ; all bonds (even heavy atom-H bonds) constrained
 ; Neighborsearching
 ns_type     = grid              ; search neighboring grid cels
-nstlist     = 5                 ; 10 fs
+nstlist     = 4                 ; 10 fs
 rlist       = 0.9               ; short-range neighborlist cutoff (in nm)
 rcoulomb    = 0.9               ; short-range electrostatic cutoff (in nm)
 rvdw        = 0.9               ; short-range van der Waals cutoff (in nm)
@@ -30,14 +30,14 @@ pme_order       = 4
 ewald_rtol      = 1e-5
 optimize_fft    = yes
 ; Temperature coupling is on
-tcoupl      = nose-hoover             ; Weak coupling for initial equilibration 
+tcoupl      = Berendsen             ; Weak coupling for initial equilibration 
 tc-grps     = System
-tau_t       = 0.1         	    ; time constant, in ps
+tau_t       = 0.4         	    ; time constant, in ps
 ref_t       = 300      		    ; reference temperature, one for each group, in K
 ; Pressure coupling is on
-pcoupl              = Parrinello-Rahman     ; Pressure coupling on in NPT, also weak coupling
+pcoupl              = Berendsen     ; Pressure coupling on in NPT, also weak coupling
 pcoupltype          = isotropic     ; uniform scaling of x-y-z box vectors
-tau_p               = 0.5           ; time constant, in ps
+tau_p               = 0.8           ; time constant, in ps
 ref_p               = 1.0
 compressibility     = 4.5e-5
 refcoord_scaling    = com

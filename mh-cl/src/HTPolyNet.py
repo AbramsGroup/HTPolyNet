@@ -187,7 +187,7 @@ class main(object):
             nameList.append(i[1])
 
         os.mkdir('init'); os.chdir('init')
-        copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
+        copyfile('{}/npt-1.mdp'.format(self.mdpFolder), 'npt-1.mdp')
         copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
 
         for n in nameList:
@@ -225,21 +225,21 @@ class main(object):
         a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
         a.emSimulation('init', 'init', 'min-1', size=False)
         print('-> Conduct NPT on the new mixture')
-        a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=True, re=False)
+        a.NPTSimulation('min-1', 'init', 'npt-1', 'npt-1', check=True, re=False)
         i = 0
         # TODO: can not ensure the NPT is finished well
         print('-> The mixture is good to go!!')
-        while(not a.checkMDFinish('npt-init')):
+        while(not a.checkMDFinish('npt-1')):
             if i > 5:
                 print('Still cannot converge NPT system, restart')
                 sys.exit()
             elif i == 0:
-                inName = 'npt-init'
+                inName = 'npt-1'
             else:
-                inName = 'npt-init' + str(i)
+                inName = 'npt-1' + str(i)
             a.extraRun(inName, 'init', i)
             if os.path.isfile('npt.gro'):
-                move('npt.gro', 'npt-init.gro')
+                move('npt.gro', 'npt-1.gro')
             i += 1
 
         # init rct info for potential atoms, add rct columns to the df in the gro object df
@@ -247,7 +247,7 @@ class main(object):
         self.initGro = deepcopy(self.gro)
 
         # Update coord to the gro df
-        self.updateCoord('npt-init')
+        self.updateCoord('npt-1')
 
         # Back to the working directory and start crosslinking approach
         os.chdir(self.resFolder)
@@ -322,7 +322,10 @@ class main(object):
         
         self.gro = atomsDf
         self.gro.initRctInfo(self.basicParameter)
-        self.updateCoord('npt-init')
+        if os.path.isfile('npt-init.gro'):
+            self.updateCoord('npt-init')
+        else:
+            self.updateCoord('npt-1')
         topDf = topInfo.top()
         top.setName('init.top', 'init.itp')
         top.genTopSession()
@@ -462,6 +465,7 @@ class main(object):
                 else:
                     print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
                     boxLimit = 1
+                    self.boxLimit = 1
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
                                                     self.conv, self.desBonds, self.chains, boxLimit)
                 pairs, chains, rMols, cutoff = sbonds.sBonds()
