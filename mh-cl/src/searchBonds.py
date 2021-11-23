@@ -764,7 +764,7 @@ class searchBonds(object):
     def genCell(self, parts):
         parts = parts - 1
         xdiv = 0
-        if self.cutoff > float(self.boxSize) * 0.72:
+        if self.cutoff > float(self.boxSize[0]) * 0.72:
             print('cutoff should smaller than the half of the box size, please modify it.')
             sys.exit()
 
@@ -773,36 +773,36 @@ class searchBonds(object):
                 print('Unusual occasion occurs! Please check the cutoff you set and rerun the script!')
                 sys.exit()
 
-            x = np.linspace(0, float(self.boxSize), parts + 1)
-            y = np.linspace(0, float(self.boxSize), parts + 1)
-            z = np.linspace(0, float(self.boxSize), parts + 1)
+            x = np.linspace(0, float(self.boxSize[0]), parts + 1)
+            y = np.linspace(0, float(self.boxSize[1]), parts + 1)
+            z = np.linspace(0, float(self.boxSize[2]), parts + 1)
             xdiv = x[1] - x[0]
             ydiv = y[1] - y[0]
             zdiv = z[1] - z[0]
             parts -= 1
 
-        cell_id = [];
+        cell_id = []
         div_box = [xdiv, ydiv, zdiv]
         com = [0.5 * (x[1] - x[0]),
                0.5 * (y[1] - y[0]),
                0.5 * (z[1] - z[0])]
-        xNum = 0;
-        yNum = 0;
+        xNum = 0
+        yNum = 0
         zNum = 0
-        xMax = 0;
-        yMax = 0;
+        xMax = 0
+        yMax = 0
         zMax = 0
 
         for i in range(parts):  # x dir
             xCom = com[0] + xdiv * xNum
-            yMax = yNum;
+            yMax = yNum
             zMax = zNum
-            xNum += 1;
-            yNum = 0;
+            xNum += 1
+            yNum = 0
             zNum = 0
             for j in range(parts):  # y dir
                 yCom = com[1] + ydiv * yNum
-                yNum += 1;
+                yNum += 1
                 zNum = 0
                 for k in range(parts):  # z dir
                     zCom = com[2] + zdiv * zNum
@@ -877,6 +877,7 @@ class searchBonds(object):
     def collectBonds(self, count):
         pairs = []
         count = 0
+        largest_dim = max(self.boxSize)
         # df_layer = self.gro.df_atoms.loc[(self.gro.df_atoms.posY.astype(float) < self.dimLimit)]
         # layerLst = list(set(df_layer['molNum'].to_list()))
         layerLst = self.splitLayer()
@@ -895,7 +896,7 @@ class searchBonds(object):
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
                         print('-----> Not enough pairs found in this step, increasing cutoff by 0.2nm')
                         self.cutoff += 0.2
-                        if self.cutoff > 0.7 * float(self.boxSize):
+                        if self.cutoff > 0.7 * float(largest_dim):
                             break
                         else:
                             continue
@@ -906,7 +907,7 @@ class searchBonds(object):
                     if len(df_pairs) == 0 or len(df_pairs) < 0.2 * self.desBonds:
                         print('-----> Not enough pairs found in this step, increasing cutoff by 0.2nm')
                         self.cutoff += 0.2
-                        if self.cutoff > 0.75 * float(self.boxSize):
+                        if self.cutoff > 0.75 * float(largest_dim):
                             break
                         else:
                             continue
@@ -916,7 +917,7 @@ class searchBonds(object):
                     if len(df_pairs) == 0:
                         print('-----> Not enough pairs found in this step, increasing cutoff by 0.1nm')
                         self.cutoff += 0.1
-                        if self.cutoff > 0.6 * float(self.boxSize):
+                        if self.cutoff > 0.6 * float(largest_dim):
                             break
                         else:
                             continue
@@ -933,10 +934,10 @@ class searchBonds(object):
         return pairs
 
     def updateBoxSize(self):
-        self.boxSize = self.gro.boxSize.split()[0].strip(' ')
+        self.boxSize = [float(self.gro.boxSize.split()[0]), float(self.gro.boxSize.split()[1]), float(self.gro.boxSize.split()[2])]
         print('self.boxSize: ', self.boxSize)
-        # assume system sizes are same along all directions
-        self.dimLimit = float(self.boxSize) * self.boxLimit
+        # two occasions, 1. box size is same along all directions; 2. along z is different and let it became seperate
+        self.dimLimit = float(self.boxSize[2]) * self.boxLimit
         print('self.boxLimit: ', self.boxLimit)
         print('self.dimLimit: ', self.dimLimit)
 
