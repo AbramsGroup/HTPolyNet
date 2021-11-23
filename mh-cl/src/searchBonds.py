@@ -346,7 +346,16 @@ class searchBonds(object):
         atomNames = self.getAllMolNames()
 
         # select all atoms
-        df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posY.astype(float) < self.dimLimit)]
+        if self.layerDir == 'x':
+            df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posX.astype(float) < self.dimLimit)]
+        elif self.layerDir == 'y':
+            df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posY.astype(float) < self.dimLimit)]
+        elif self.layerDir == 'z':
+            df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posZ.astype(float) < self.dimLimit)]
+        else:
+            raise ValueError(f'Wrong direction {self.layerDir}')
+
+
         # assign atoms to cell
         df_tmp0 = self.assignAtoms(df_tmp0)
         df_tmp = self.checkHydrogen(df_tmp0) # This check just to confirm selected atom can react
