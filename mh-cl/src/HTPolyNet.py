@@ -225,7 +225,13 @@ class main(object):
         a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
         a.emSimulation('init', 'init', 'min-1', size=False)
         print('-> Conduct NPT on the new mixture')
-        a.NPTSimulation('min-1', 'init', 'npt-1', 'npt-1', check=True, re=False)
+        boxSize = param.boxSize
+        if boxSize[0] == boxSize[1] == boxSize[2]:
+            a.NPTSimulation('min-1', 'init', 'npt-1', 'npt-1', check=True, re=False)
+        else:
+            copyfile('{}/npt-l.mdp'.format(self.mdpFolder), 'npt-l.mdp')
+            a.NPTSimulation('min-1', 'init', 'npt-l', 'npt-l', check=True, re=False)
+            a.NPTSimulation('npt-l', 'init', 'npt-1', 'npt-1', check=True, re=False)
         i = 0
         # TODO: can not ensure the NPT is finished well
         print('-> The mixture is good to go!!')

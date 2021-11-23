@@ -13,7 +13,7 @@ class extendSys(object):
     
     def insertMol(self, molInfo, boxSize, outName):
         GMX = self.GMX
-        if isinstance(boxSize) == list:
+        if isinstance(boxSize, list):
             if len(boxSize) == 3:
                 pass
             else:
