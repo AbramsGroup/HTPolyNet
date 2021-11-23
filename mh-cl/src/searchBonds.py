@@ -25,8 +25,7 @@ class searchBonds(object):
         self.croInfo = basicParameters.croInfo
         self.cutoff = basicParameters.cutoff
         self.bondsRatio = basicParameters.bondsRatio
-        # is it necessary for the box to always be cubic? -cfa
-        self.boxSize = basicParameters.boxSize  # one dimension box length
+        self.boxSize = basicParameters.boxSize  # three dimensions of box length
         self.maxBonds = basicParameters.maxBonds
         self.rctInfo = basicParameters.rctInfo
         self.HTProcess = basicParameters.HTProcess
@@ -96,7 +95,7 @@ class searchBonds(object):
         return rctMap
 
     def calDist(self, aPos, bPos, pbc=True):
-        boxSize = [self.boxSize, self.boxSize, self.boxSize]
+        boxSize = self.boxSize
         xlen = 0.5 * float(boxSize[0])
         ylen = 0.5 * float(boxSize[1])
         zlen = 0.5 * float(boxSize[2])
@@ -197,30 +196,39 @@ class searchBonds(object):
             return names
 
     def calAtnDistance(self, atn, atomDf):
-        if self.boxLimit != 1:
-            # won't generate bond across y boundary
-            atn1 = np.array([atn.posX, atn.posZ]).astype(float)
-            atn2Lst = [atomDf.posX.to_list(), atomDf.posZ.to_list()]
-            atn2Lst = np.asarray(atn2Lst).T.astype(float)
-            delta = np.abs(atn1 - atn2Lst)
-            delta = np.where(delta > 0.5 * float(self.boxSize), delta - float(self.boxSize), delta) # assume same box size for all dimension
-            
-            deltaY = np.abs(np.array(atn.posY).astype(float) - np.asarray(atomDf.posY.to_list()).T.astype(float))
-            deltaSum = []
-            for i in range(len(deltaY)):
-                tmp = np.insert(delta[i], 1, deltaY[i])
-                deltaSum.append(tmp)
-            
-            delta = np.asarray(deltaSum)
-            dist = np.sqrt((delta ** 2).sum(axis=-1))
-            atomDf['dist'] = dist
+        if self.boxSize[0] == self.boxSize[1] == self.boxSize[2]:
+            if self.boxLimit != 1:
+                # won't generate bond across y boundary
+                atn1 = np.array([atn.posX, atn.posZ]).astype(float)
+                atn2Lst = [atomDf.posX.to_list(), atomDf.posZ.to_list()]
+                atn2Lst = np.asarray(atn2Lst).T.astype(float)
+                delta = np.abs(atn1 - atn2Lst)
+                delta = np.where(delta > 0.5 * float(self.boxSize[0]), delta - float(self.boxSize[0]), delta) # assume same box size for all dimension
+                
+                deltaY = np.abs(np.array(atn.posY).astype(float) - np.asarray(atomDf.posY.to_list()).T.astype(float))
+                deltaSum = []
+                for i in range(len(deltaY)):
+                    tmp = np.insert(delta[i], 1, deltaY[i])
+                    deltaSum.append(tmp)
+                
+                delta = np.asarray(deltaSum)
+                dist = np.sqrt((delta ** 2).sum(axis=-1))
+                atomDf['dist'] = dist
+            else:
+                atn1 = np.array([atn.posX, atn.posY, atn.posZ]).astype(float)
+                atn2Lst = [atomDf.posX.to_list(), atomDf.posY.to_list(), atomDf.posZ.to_list()]
+                atn2Lst = np.asarray(atn2Lst).T.astype(float)
+                delta = np.abs(atn1 - atn2Lst)
+                delta = np.where(delta > 0.5 * float(self.boxSize[0]), delta - float(self.boxSize[0]), delta) # assume same box size for all dimension
+                dist = np.sqrt((delta ** 2).sum(axis=-1))
+                atomDf['dist'] = dist
         else:
+            dist = []
             atn1 = np.array([atn.posX, atn.posY, atn.posZ]).astype(float)
             atn2Lst = [atomDf.posX.to_list(), atomDf.posY.to_list(), atomDf.posZ.to_list()]
             atn2Lst = np.asarray(atn2Lst).T.astype(float)
-            delta = np.abs(atn1 - atn2Lst)
-            delta = np.where(delta > 0.5 * float(self.boxSize), delta - float(self.boxSize), delta) # assume same box size for all dimension
-            dist = np.sqrt((delta ** 2).sum(axis=-1))
+            for atn in atn2Lst:
+                dist.append(self.calDist(atn1, atn))
             atomDf['dist'] = dist
         return atomDf
 
