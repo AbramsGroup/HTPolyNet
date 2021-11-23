@@ -143,7 +143,7 @@ class parameters(object):
 
         for line in baseList: # Basic Info
             if 'boxSize' in line:
-                boxSize = line.split('=')[1].strip(' ')    
+                boxSize = line.split('=')[1].strip(' ').split()    
             if 'cutoff' in line:
                 cutoff = float(line.split('=')[1].strip(' '))
             if 'bondsRatio' in line:
@@ -200,3 +200,4 @@ if __name__ == '__main__':
     a = parameters()
     a.setName(name)
     a.readParam()
+    print(a.boxSize)

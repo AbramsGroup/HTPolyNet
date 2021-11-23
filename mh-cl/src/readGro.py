@@ -6,7 +6,6 @@ Created on Tue Sep 29 10:31:17 2020
 """
 
 import pandas as pd
-import re
 import sys
 
 class initGro(object):
@@ -70,4 +69,11 @@ class initGro(object):
             df1.append(df_tmp)
         df_out = pd.concat(df1)
         return df_out
-    
+
+if __name__ == '__main__':
+    import os
+    name = os.path.join('mh-cl', 'systems', 'unrctSystem', 'STY')
+    a = initGro()
+    a.setName(name)
+    df_init, sysName, atNum, boxSize = a.readGRO()
+    print('boxSize: ', boxSize)

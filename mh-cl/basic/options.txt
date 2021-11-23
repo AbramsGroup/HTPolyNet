@@ -6,7 +6,7 @@
 
 # Basic Info
 # reProject = proj1
-boxSize = 5
+boxSize = 5 10 5
 cutoff = 0.5
 bondsRatio = 0.5
 HTProcess = True
@@ -14,9 +14,8 @@ HTProcess = True
 # CPU cannot be zero, the lincs cell-algo need cpu to calculate
 # If set GPU, md part will use GPU instead of CPU
 CPU = 32
-GPU = 4
 trials = 5
-stepwise = 0.01, 0.1, 1
+stepwise = 0.01, 1
 
 # Basic structures
 # only put molecules which need capping
@@ -34,6 +33,10 @@ cappingBonds = VEA, C26, C27, 2
 cappingBonds = VEB, C22, C23, 2
 cappingBonds = VEB, C44, C45, 2
 cappingBonds = STY, C6, C7, 2
+
+# layer condition
+boxLimit = 0.5
+layerConvLimit = 0.8
 
 # For croslinker 1
 croName1 = VEA
