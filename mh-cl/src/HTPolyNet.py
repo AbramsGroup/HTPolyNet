@@ -90,6 +90,8 @@ class main(object):
         self.desConv = 0
         self.desBonds = 0
 
+        self.layer_status = False # status whether layer reached desired conversion
+
     def initFolder(self):
         if self.reProject == '':
             i = 0
@@ -459,6 +461,7 @@ class main(object):
             os.chdir('..')
             print('---> New replica is good to go')
             boxLimit = self.boxLimit # setup layer curing condition
+            
             while(len(self.old_pairs) < int(self.maxBonds)):
                 print('---> step {}'.format(step))
                 folderName1 = self.setupFolder(step)
@@ -466,12 +469,13 @@ class main(object):
                 print('     (Content can be found under folder {})'.format(os.getcwd()))
                 # searching potential bonds
                 print('----> Start searching bonds')
-                if conv < boxLimit * self.layerConvLimit:
-                    boxLimit = self.boxLimit
-                else:
-                    print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
-                    boxLimit = 1
-                    self.boxLimit = 1
+                if not self.layer_status:
+                    if conv < boxLimit * self.layerConvLimit:
+                        boxLimit = self.boxLimit
+                    else:
+                        print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
+                        boxLimit = 1
+                        self.layer_status = True
                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
                                                     self.conv, self.desBonds, self.chains, boxLimit)
                 pairs, chains, rMols, cutoff = sbonds.sBonds()
