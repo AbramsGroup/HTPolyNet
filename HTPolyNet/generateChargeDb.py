@@ -12,7 +12,7 @@ import os
 import glob
 from decimal import Decimal
 
-import HTPolyNet.readParameters as readParameters
+import HTPolyNet.readCfg as readCfg
 import HTPolyNet.createRctMol as createRctMol
 import HTPolyNet.readMol as readMol
 
@@ -59,7 +59,7 @@ class generateChargeDb(object):
 
     def createTemplate(self, rctTimes):
         
-        a = readParameters.parameters()
+        a = readCfg.configuration()
         a.setName('{}/options.txt'.format(self.basicPath))
         a.readParam()
         mainMol = createRctMol.createRctMol()

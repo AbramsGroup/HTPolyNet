@@ -16,7 +16,7 @@ import shutil
 import parmed
 
 import HTPolyNet.parameters as parameters
-import HTPolyNet.readParameters as readParameters
+import HTPolyNet.readCfg as readCfg
 import HTPolyNet.readMol as readMol
 import HTPolyNet.createRctMol as createRctMol
 
@@ -41,7 +41,7 @@ class generateTypeInfo(object):
         if len(os.listdir(self.typePath)) > 0:
             pass
         else:
-            a = readParameters.parameters()
+            a = readCfg.configuration()
             a.setName('{}/options.txt'.format(self.basicPath))
             a.readParam()
             # basicMol = a.unrctStruct

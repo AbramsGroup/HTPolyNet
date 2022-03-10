@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 
-read parameters from basic/options.txt
+read cfg file
 @author: huang
 
 """
 
 import pandas as pd
 
-class parameters(object):
+class configuration(object):
     def __init__(self):
         self.name = ''
         self.cappingMolPair = []
@@ -37,7 +37,7 @@ class parameters(object):
     def setName(self, name):
         self.name = name
         
-    def readParam(self):
+    def readCfg(self):
         monInfo = []
         croInfo = []
         
@@ -200,8 +200,9 @@ class parameters(object):
         
 if __name__ == '__main__':
     import os
+    import importlib.resources
     name = os.path.join(os.getcwd(),'mh-cl', 'basic', 'options.txt')
-    a = parameters()
+    a = configuration()
     a.setName(name)
-    a.readParam()
+    a.readCfg()
     print(a.boxSize)

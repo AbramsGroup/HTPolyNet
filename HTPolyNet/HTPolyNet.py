@@ -12,14 +12,17 @@ step 2: init systems
 @author: huang, abrams
 """
 import os
+import sys
 from shutil import copyfile
 from shutil import move
 from shutil import rmtree
 from copy import deepcopy
 
+import argparse as ap
+
 # The templates (mdp, txt, and mol2 files) are accessible after installation
 # as packages
-from importlib.resources import files
+import importlib.resources
 
 #import subprocess
 # Below should not be necessary thanks to the entry_points in setup.cfg -- cfa
@@ -28,24 +31,25 @@ from importlib.resources import files
 #sys.path.append('{}/src'.format(HTPATH))
 
 # Preferred style for local imports is to use absolute package.module syntax
-import HTPolyNet.readParameters as readParameters
+import HTPolyNet.readCfg as readCfg
 import HTPolyNet.mergeTop as mergeTop
 import HTPolyNet.readTop2 as readTop2
 import HTPolyNet.readGro as readGro
 import HTPolyNet.groInfo as groInfo
 import HTPolyNet.topInfo as topInfo
 import HTPolyNet.md as md
-import HTPolyNet.searchBonds as searchbonds
+import HTPolyNet.searchBonds as searchBonds
 import HTPolyNet.genBonds as genBonds
 import HTPolyNet.generateChargeDb as generateChargeDb
 import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
-import HTPolyNet.getCappingParam as getCappingParm
+import HTPolyNet.getCappingParam as getCappingParam
 from HTPolyNet.countTime import *
 
 class main(object):
-    def __init__(self, re=False):
+    def __init__(self, cfg='', re=False):
+        self.cfg=cfg
         self.cpu = ''
         self.gpu = ''
         self.trials = ''
@@ -61,9 +65,11 @@ class main(object):
         self.layerConvLimit = 1
 
         # using importlib resources does not require user to set an environment variables
-        self.HTPolyPath = files('HTPolyNet')
-        self.topPath = ''
-        self.projPath = ''
+        self.TemplateResourceTypes = ['cfg','Gromacs_mdp','mol2']
+        self.TemplateResourcePaths=self.IdentifyTemplateResourcePaths()
+        self.topPath = os.getcwd()
+
+        #self.projPath = ''
 
         self.basicFolder = ''
         self.mdpFolder = ''
@@ -100,6 +106,16 @@ class main(object):
 
         self.layer_status = False # status whether layer reached desired conversion
 
+    def IdentifyTemplateResourcePaths(self,basedir='Templates'):
+        td={}
+        tt=importlib.resources.files(basedir)
+        for n in tt.iterdir():
+            if os.path.isdir(n) and '__' not in str(n):
+                bn=str(n).split('/')[-1]
+                if bn in self.TemplateResourceTypes:
+                    td[bn]=n
+        return td
+
     def initFolder(self):
         if self.reProject == '':
             i = 0
@@ -128,22 +144,23 @@ class main(object):
             os.mkdir(self.typeFolder)
 
             # need to fix these 
+            # I would expect the user to copy/edit a *.cfg file, rather than this program doing it first
+            copyCmds=[
+                'cp {}/VEA-VEB-STY-example.cfg {}/editme.cfg'.format(self.TemplateResourcePaths['cfg'], self.basicFolder),
+                'cp {}/*mol2 {}/'.format(self.TemplateResourcePaths['mol2'], self.unrctFolder),
+                'cp -r {}/* {}'.format(self.TemplateRsourcePaths['mdp'], self.mdpFolder)
+                ]
 
-            cmd1 = 'cp {}/options.txt {}/options.txt'.format(self.topPath, self.basicFolder)
-            cmd2 = 'cp {}/*mol2 {}/'.format(self.topPath, self.unrctFolder)
-            path = os.path.join(self.HTPolyPath, 'mdp')
-            cmd3 = 'cp -r {}/* {}'.format(path, self.mdpFolder)
-
-            subprocess.call(cmd1, shell=True)
-            subprocess.call(cmd2, shell=True)
-            subprocess.call(cmd3, shell=True)
+            for c in copyCmds:
+                os.system(c)
 
         else:
-            cmd0 = 'rm -r {}/*'.format(self.resFolder)
-            subprocess.call(cmd0, shell=True)
+            pass
+#            cmd0 = 'rm -r {}/*'.format(self.resFolder)
+#            subprocess.call(cmd0, shell=True)
 
     def setParam(self, name):
-        a = readParameters.parameters()
+        a = readCfg.parameters()
         a.setName(name)
         a.readParam()
         self.basicParameter = a
@@ -619,10 +636,11 @@ class main(object):
         self.unrctMap = unrctMap
 
     def preparePara(self):
-        import prepareParam
+        import HTPolyNet.prepareParam as prepareParam
 
-        path = os.getcwd()
-        self.topPath = path
+        # no handled in constructor
+        #path = os.getcwd()
+        #self.topPath = path
 
         paraFile = os.path.join(path, 'options.txt')
         if os.path.isfile(paraFile):
@@ -665,10 +683,17 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 def run():
-    a = main()
-    print(a.HTPolyPath)
-#    a.preparePara()
+    parser=ap.ArgumentParser()
+    parser.add_argument('cfg',type=str,help='name of input cfg file')
+    args=parser.parse_args()
+
+    a = main(args.cfg)
+    for n,l in a.TemplateResourcePaths.items():
+        print(f'Files in template path {n}:')
+        for f in os.listdir(l):
+            print(f'   {f}')
+    a.preparePara()
 #    a.mainProcess(a.trials)
-#    print('All replicas are been tested')
+#    print('All replicas have been tested')
     
     # TODO: need to check that charge been update as the template. 

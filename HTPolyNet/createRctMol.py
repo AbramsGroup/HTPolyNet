@@ -167,9 +167,9 @@ if __name__ == '__main__':
     path = '../systems/unrctSystem/'
     rctPath = '../systems/tmp/'
     # Get connect info from options.txt
-    import readParameters
+    import HTPolyNet.readCfg as readCfg
 
-    a = readParameters.parameters()
+    a = readCfg.parameters()
     a.setName('../basic/options.txt')
     a.readParam()
     mainMol = createRctMol()

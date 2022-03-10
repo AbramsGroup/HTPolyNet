@@ -14,8 +14,8 @@ class testCase(object):
 
     @countTime
     def testReadParam(self):
-        import readParameters
-        a = readParameters.parameters()
+        import HTPolyNet.readCfg as readCfg
+        a = readCfg.configuration()
         name = 'basic/options.txt'
         a.setName(name)
         a.readParam()
@@ -23,8 +23,8 @@ class testCase(object):
     
     @countTime
     def testreadGro(self, name='systems/unrctSystem/VEA'):
-        import readGro
-        import groInfo
+        import HTPolyNet.readGro as readGro
+        import HTPolyNet.groInfo as groInfo
         pp = self.testReadParam()
         a = readGro.initGro()
         a.setName(name)
@@ -37,24 +37,24 @@ class testCase(object):
     @countTime
     def testMain(self): # cannot test locally, due to the parmed module cannot install locally
         import os
-        import main
+        import HTPolyNet
         
         path = os.getcwd()
         basicFolder = '{}/{}'.format(path, 'basic')
         systemsFolder = '{}/{}'.format(path, 'systems')
         mdpFolder = '{}/{}'.format(path, 'mdp')
-        a = main.main(basicFolder, systemsFolder, mdpFolder)
+        a = HTPolyNet.main(basicFolder, systemsFolder, mdpFolder)
         a.setParam('options.txt')
         a.initSys('1')
         return a.basicParameter
     
     @countTime
     def testSearchBonds(self):
-        import searchBonds
-        import readGro
-        import readTop2
-        import topInfo
-        import groInfo
+        import HTPolyNet.searchBonds as searchBonds
+        import HTPolyNet.readGro as readGro
+        import HTPolyNet.readTop2 as readTop2
+        import HTPolyNet.topInfo as topInfo
+        import HTPolyNet.groInfo as groInfo
         
         a = self.testReadParam()
         a1 = []
@@ -87,7 +87,7 @@ class testCase(object):
 
     @countTime
     def testGenBonds(self, pairs, rctMols):
-        import genBonds
+        import HTPolyNet.genBonds as genBonds
         # rctMols = ['2', '14']
         def getChargeMaps():
             maps = {}
@@ -108,7 +108,7 @@ class testCase(object):
         return a, b
     
     def testmolRctInfo(self):
-        import molRctInfo
+        import HTPolyNet.molRctInfo as molRctInfo
         
         path = os.getcwd() + '/' + 'systems/rctSystem'
         a = molRctInfo.molRctInfo(os.getcwd(), path)
