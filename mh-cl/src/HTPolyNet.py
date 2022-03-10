@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 """
 step 1: read needed parameters from basic/option.txt
 step 2: init systems 

@@ -1,6 +1,6 @@
 # HTPolyNet: High-Throughput Polymer Network Atomistic Simulations
 
-Ming Huang, Ketan Khare, and Cameron F Abrams
+Ming Huang and Cameron F Abrams
 
 Drexel University
 
