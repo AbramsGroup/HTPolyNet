@@ -654,7 +654,7 @@ class main(object):
         a = generateTypeInfo.generateTypeInfo(self.topPath)
         a.main(self.unrctFolder, self.typeFolder)
         
-if __name__ == '__main__':
+def run():
     a = main() # change name like gmx_cl ....
     a.preparePara()
     a.mainProcess(a.trials)
