@@ -7,13 +7,14 @@ Created on Thu Oct 29 10:34:00 2020
 
 from re import T
 from typing import Type
-import readParameters
-import createRctMol
-import readMol
 import subprocess
 import os
 import glob
 from decimal import Decimal
+
+import HTPolyNet.readParameters as readParameters
+import HTPolyNet.createRctMol as createRctMol
+import HTPolyNet.readMol as readMol
 
 class generateChargeDb(object):
     def __init__(self):

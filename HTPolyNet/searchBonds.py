@@ -9,7 +9,7 @@ pd.options.mode.chained_assignment = None
 import numpy as np
 import networkx as nx
 import time
-from countTime import *
+from HTPolyNet.countTime import *
 from multiprocessing import Process, Pool
 from functools import partial
 from copy import deepcopy

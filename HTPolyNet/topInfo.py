@@ -5,7 +5,7 @@ Created on Mon Sep 28 15:34:47 2020
 @author: huangming
 """
 import pandas as pd
-from countTime import *
+from HTPolyNet.countTime import *
 from copy import deepcopy
 import numpy as np
 import decimal

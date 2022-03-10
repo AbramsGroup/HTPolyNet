@@ -4,8 +4,8 @@ Created on Thu Oct 22 14:25:35 2020
 
 @author: huang
 """
-import readMol
-import mol2Info
+import HTPolyNet.readMol as readMol
+import HTPolyNet.mol2Info as mol2Info
 
 import pandas as pd
 import itertools

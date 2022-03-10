@@ -3,7 +3,7 @@ from subprocess import check_output
 import sys
 
 import pandas as pd
-import genBonds
+import HTPolyNet.genBonds as genBonds
 
 class endCapping(object):
     def __init__(self, inGro, inTop, inFFSum, unrctMap, inCappingBonds=[]):

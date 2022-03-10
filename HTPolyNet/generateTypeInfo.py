@@ -7,17 +7,18 @@ Created on Sun Nov  1 08:57:03 2020
 
 from re import T
 from typing import Type
-import readParameters
-import readMol
-import createRctMol
 import os
 import glob
 import subprocess
 import pandas as pd
-import parameters
 import shutil
 
 import parmed
+
+import HTPolyNet.parameters as parameters
+import HTPolyNet.readParameters as readParameters
+import HTPolyNet.readMol as readMol
+import HTPolyNet.createRctMol as createRctMol
 
 class generateTypeInfo(object):
     def __init__(self, basicPath):

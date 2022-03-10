@@ -9,33 +9,40 @@ step 2: init systems
         - copy the needed files to the folder (.mdp file)
         - update the coordinate in the gro df
 
-@author: huang
+@author: huang, abrams
 """
 import os
 from shutil import copyfile
 from shutil import move
 from shutil import rmtree
 from copy import deepcopy
-import subprocess
-import sys
-HTPATH = os.getenv('HTPOLYPATH')
-sys.path.append('{}/src'.format(HTPATH))
 
-import readParameters
-import mergeTop
-import readTop2
-import readGro
-import groInfo
-import topInfo
-import md
-import searchBonds
-import genBonds
-import generateChargeDb
-import generateTypeInfo
-import processTop
-import endCapping
-import getCappingParam
-from countTime import *
+# The templates (mdp, txt, and mol2 files) are accessible after installation
+# as packages
+from importlib.resources import files
+
+#import subprocess
+# Below should not be necessary thanks to the entry_points in setup.cfg -- cfa
+#import sys
+#HTPATH = os.getenv('HTPOLYPATH')
+#sys.path.append('{}/src'.format(HTPATH))
+
+# Preferred style for local imports is to use absolute package.module syntax
+import HTPolyNet.readParameters as readParameters
+import HTPolyNet.mergeTop as mergeTop
+import HTPolyNet.readTop2 as readTop2
+import HTPolyNet.readGro as readGro
+import HTPolyNet.groInfo as groInfo
+import HTPolyNet.topInfo as topInfo
+import HTPolyNet.md as md
+import HTPolyNet.searchBonds as searchbonds
+import HTPolyNet.genBonds as genBonds
+import HTPolyNet.generateChargeDb as generateChargeDb
+import HTPolyNet.generateTypeInfo as generateTypeInfo
+import HTPolyNet.processTop as processTop
+import HTPolyNet.endCapping as endCapping
+import HTPolyNet.getCappingParam as getCappingParm
+from HTPolyNet.countTime import *
 
 class main(object):
     def __init__(self, re=False):
@@ -53,7 +60,8 @@ class main(object):
         self.boxLimit = 1
         self.layerConvLimit = 1
 
-        self.HTPolyPath = HTPATH
+        # using importlib resources does not require user to set an environment variables
+        self.HTPolyPath = files('HTPolyNet')
         self.topPath = ''
         self.projPath = ''
 
@@ -118,6 +126,8 @@ class main(object):
             os.mkdir(self.unrctFolder)
             os.mkdir(self.rctFolder)
             os.mkdir(self.typeFolder)
+
+            # need to fix these 
 
             cmd1 = 'cp {}/options.txt {}/options.txt'.format(self.topPath, self.basicFolder)
             cmd2 = 'cp {}/*mol2 {}/'.format(self.topPath, self.unrctFolder)
@@ -656,8 +666,9 @@ class main(object):
         
 def run():
     a = main()
-    a.preparePara()
-    a.mainProcess(a.trials)
+    print(a.HTPolyPath)
+#    a.preparePara()
+#    a.mainProcess(a.trials)
 #    print('All replicas are been tested')
     
     # TODO: need to check that charge been update as the template. 

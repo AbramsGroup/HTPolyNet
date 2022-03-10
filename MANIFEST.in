@@ -1,0 +1,4 @@
+include README.md
+include Templates/Configurations/*
+include Templates/Gromacs-mdp/*.mdp
+include Monomer-mol2/*.mol2

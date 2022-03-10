@@ -5,7 +5,7 @@ Created on Sun Oct 18 13:54:55 2020
 @author: huang
 """
 import os
-from countTime import *
+from HTPolyNet.countTime import *
 
 class testCase(object):
     def __init__(self):

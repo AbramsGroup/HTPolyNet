@@ -5,7 +5,7 @@ Created on Tue Sep 29 14:45:45 2020
 @author: huangming
 """
 
-import topInfo
+import HTPolyNet.topInfo as topInfo
 import pandas as pd
 import time
 

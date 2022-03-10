@@ -7,7 +7,7 @@ Created on Tue Nov 10 15:43:00 2020
 
 import pandas as pd
 import sys
-from countTime import *
+from HTPolyNet.countTime import *
 
 class initTop(object):
     def __init__(self):

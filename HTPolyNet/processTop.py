@@ -1,5 +1,5 @@
 import pandas as pd
-import topInfo
+import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
 class processTop(object):

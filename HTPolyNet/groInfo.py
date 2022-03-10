@@ -6,7 +6,7 @@ Created on Tue Sep 29 11:01:01 2020
 """
 
 import pandas as pd
-from countTime import *
+from HTPolyNet.countTime import *
 from copy import deepcopy
 
 class gro(object):

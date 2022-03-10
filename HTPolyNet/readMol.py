@@ -5,7 +5,7 @@ Created on Thu Oct 22 13:49:19 2020
 @author: huang
 """
 import pandas as pd
-import mol2Info
+import HTPolyNet.mol2Info as mol2Info
 from copy import deepcopy
 
 class readMol(object):

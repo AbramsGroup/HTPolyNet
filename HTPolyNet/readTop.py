@@ -6,7 +6,7 @@ This function will be replaced by readTop-2 script
 """
 import pandas as pd
 import sys
-from countTime import *
+from HTPolyNet.countTime import *
 
 class initTop(object):
     def __init__(self):

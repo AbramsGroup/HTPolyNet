@@ -1,10 +1,8 @@
 import os
 import sys
-oriPath = os.getcwd()
-sys.path.append(os.path.join(oriPath, 'mh-cl', 'src'))
 
-import readParameters
-import readTop2
+import HTPolyNet.readParameters as readParameters
+import HTPolyNet.readTop2 as readTop2
 
 def getCon(df_bonds, atIdx):
     df1 = df_bonds[(df_bonds.ai == atIdx) | (df_bonds.aj == atIdx)]
@@ -73,7 +71,9 @@ def genUnrctMapping(inParam):
     
     return unrctMap
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # is this just for testing?
+    oriPath = os.getcwd()
+    sys.path.append(os.path.join(oriPath, 'mh-cl', 'src'))
     name = os.path.join(oriPath,'mh-cl', 'basic', 'options.txt-GMA-mST')
     a = readParameters.parameters()
     a.setName(name)

@@ -6,14 +6,16 @@ Generate bonds
     - update atom index in each section
 @author: huang
 """
-import parameters
+# TO DO: parameters should be a JSON file in a data directory
+import HTPolyNet.parameters as parameters
 import pandas as pd
 pd.options.mode.chained_assignment = None
 import sys
 import re
-from countTime import *
 from copy import deepcopy
 import time
+
+from HTPolyNet.countTime import *
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map', updateCharge=True):
