@@ -47,7 +47,7 @@ import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
 from HTPolyNet.countTime import *
 
-class main(object):
+class HTPolyNet(object):
     def __init__(self, cfg='', re=False):
         self.cfg=cfg
         self.cpu = ''
@@ -681,19 +681,44 @@ class main(object):
         print('--> Start generating reacted molecules type data base')
         a = generateTypeInfo.generateTypeInfo(self.topPath)
         a.main(self.unrctFolder, self.typeFolder)
-        
-def run():
-    parser=ap.ArgumentParser()
-    parser.add_argument('cfg',type=str,help='name of input cfg file')
-    args=parser.parse_args()
 
-    a = main(args.cfg)
+def init(a):
+    example_cfg='VEA-VEB-STY-example.cfg'
+    print(f'HTPolyNet is copying {example_cfg} from {a.TemplateResourcePaths["cfg"]}')
+    getme=os.path.join(a.TemplateResourcePaths["cfg"],example_cfg)
+    os.system(f'cp {getme} .')
+    print(f'After editing this file, you can launch using "htpolynet run -cfg <name-of-config-file>"')
+
+def run(a):
+    print(f'HTPolyNet is going to try to run in {os.getcwd()}...')
+    # a.preparePara()
+    # a.mainProcess(a.trials)
+    pass
+
+def info(a):
     for n,l in a.TemplateResourcePaths.items():
         print(f'Files in template path {n}:')
         for f in os.listdir(l):
             print(f'   {f}')
-    a.preparePara()
-#    a.mainProcess(a.trials)
-#    print('All replicas have been tested')
     
-    # TODO: need to check that charge been update as the template. 
+def cli():
+    parser=ap.ArgumentParser()
+    parser.add_argument('command',type=str,help='command (init, run)')
+    parser.add_argument('-cfg',type=str,default='',help='input config file')
+    args=parser.parse_args()
+
+    a = HTPolyNet()
+
+    if args.command=='init':
+        init(a)
+    elif args.command=='run':
+        cfg=args.cfg
+        if len(cfg)==0:
+            print('Error: htpolynet run requires a config file; use -cfg <name-of-file>')
+        # a.parseCfg(cfg)
+        run(a)
+    elif args.command=='info':
+        print('This is some information on your installed version of HTPolyNet')
+        info(a)
+    else:
+        print(f'HTPolyNet command {args.command} not recognized')
