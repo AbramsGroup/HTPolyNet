@@ -8,7 +8,7 @@ Created on Wed Oct 21 10:53:35 2020
 import pandas as pd
 import os
 import glob
-import readTop
+import HTPolyNet.readTop as readTop
 
 class molRctInfo(object):
     def __init__(self):
