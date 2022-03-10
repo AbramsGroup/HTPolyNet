@@ -655,9 +655,9 @@ class main(object):
         a.main(self.unrctFolder, self.typeFolder)
         
 def run():
-    a = main() # change name like gmx_cl ....
+    a = main()
     a.preparePara()
     a.mainProcess(a.trials)
-    print('All replicas are been tested')
+#    print('All replicas are been tested')
     
     # TODO: need to check that charge been update as the template. 
