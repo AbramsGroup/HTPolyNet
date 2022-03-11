@@ -45,6 +45,7 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
+from HTPolyNet.resources import *
 from HTPolyNet.countTime import *
 
 class HTPolyNet(object):
@@ -65,8 +66,7 @@ class HTPolyNet(object):
         self.layerConvLimit = 1
 
         # using importlib resources does not require user to set an environment variables
-        self.TemplateResourceTypes = ['cfg','Gromacs_mdp','mol2']
-        self.TemplateResourcePaths=self.IdentifyTemplateResourcePaths()
+        self.TemplateResourcePaths=IdentifyTemplateResourcePaths(['cfg','Gromacs_mdp','mol2'])
         self.topPath = os.getcwd()
 
         #self.projPath = ''
@@ -106,15 +106,11 @@ class HTPolyNet(object):
 
         self.layer_status = False # status whether layer reached desired conversion
 
-    def IdentifyTemplateResourcePaths(self,basedir='Templates'):
-        td={}
-        tt=importlib.resources.files(basedir)
-        for n in tt.iterdir():
-            if os.path.isdir(n) and '__' not in str(n):
-                bn=str(n).split('/')[-1]
-                if bn in self.TemplateResourceTypes:
-                    td[bn]=n
-        return td
+    def parseCfg(self):
+        a=dir(self.cfg)
+        for k,v in self.cfg.baseDict.items():
+            if k in a:
+                self.cfg.__dict__[k]=v
 
     def initFolder(self):
         if self.reProject == '':
@@ -682,24 +678,36 @@ class HTPolyNet(object):
         a = generateTypeInfo.generateTypeInfo(self.topPath)
         a.main(self.unrctFolder, self.typeFolder)
 
-def init(a):
+def init():
+    TemplateResourcePaths=IdentifyTemplateResourcePaths()
     example_cfg='VEA-VEB-STY-example.cfg'
-    print(f'HTPolyNet is copying {example_cfg} from {a.TemplateResourcePaths["cfg"]}')
-    getme=os.path.join(a.TemplateResourcePaths["cfg"],example_cfg)
+    getme=os.path.join(TemplateResourcePaths["cfg"],example_cfg)
+    print(f'HTPolyNet is copying {example_cfg} from {TemplateResourcePaths["cfg"]}')
     os.system(f'cp {getme} .')
-    print(f'After editing this file, you can launch using "htpolynet run -cfg <name-of-config-file>"')
+    print(f'After editing this file, you can launch using\n"htpolynet run -cfg <name-of-config-file>"')
 
-def run(a):
+def run(a,cfg=''):
     print(f'HTPolyNet is going to try to run in {os.getcwd()}...')
+    print(dir(a))
+    a.cfg=readCfg.configuration.readCfgFile(cfg)
+    a.parseCfg()
+    for k in dir(a.cfg):
+        if '__' not in k and k in a.cfg.__dict__:
+            print(f'{k} = {a.cfg.__dict__[k]}')
+    print(a.cfg.__dict__)
+    #print(a.cfg.baseDict,a.cfg.rctInfo)
     # a.preparePara()
     # a.mainProcess(a.trials)
     pass
 
-def info(a):
-    for n,l in a.TemplateResourcePaths.items():
-        print(f'Files in template path {n}:')
+def info():
+    print('This is some information on your installed version of HTPolyNet')
+    print('Resources:')
+    TemplateResourcePaths=IdentifyTemplateResourcePaths()
+    for n,l in TemplateResourcePaths.items():
+        print(f'    Type {n}:')
         for f in os.listdir(l):
-            print(f'   {f}')
+            print(f'       {f}')
     
 def cli():
     parser=ap.ArgumentParser()
@@ -707,18 +715,17 @@ def cli():
     parser.add_argument('-cfg',type=str,default='',help='input config file')
     args=parser.parse_args()
 
-    a = HTPolyNet()
 
     if args.command=='init':
-        init(a)
+        init()
+    elif args.command=='info':
+        info()
     elif args.command=='run':
         cfg=args.cfg
         if len(cfg)==0:
             print('Error: htpolynet run requires a config file; use -cfg <name-of-file>')
         # a.parseCfg(cfg)
-        run(a)
-    elif args.command=='info':
-        print('This is some information on your installed version of HTPolyNet')
-        info(a)
+        a = HTPolyNet()
+        run(a,cfg=cfg)
     else:
         print(f'HTPolyNet command {args.command} not recognized')

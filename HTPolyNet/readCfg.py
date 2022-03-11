@@ -7,10 +7,11 @@ read cfg file
 """
 
 import pandas as pd
+import os
 
 class configuration(object):
     def __init__(self):
-        self.name = ''
+        self.filename = ''
         self.cappingMolPair = []
         self.cappingBonds = []
         self.unrctStruct = []
@@ -34,10 +35,44 @@ class configuration(object):
         self.layerConvLimit = 1
         self.layerDir       = ''
 
-    def setName(self, name):
-        self.name = name
+    @classmethod
+    def readCfgFile(cls,filename):
+        inst=cls()
+        inst.filename=filename
+        baseList=[]
+        with open(filename,'r') as f:
+            for l in f:
+                if l[0]!='#':
+                    try:
+                        i=l.index('#')
+                        l=l[:i].strip()
+                    except:
+                        pass
+                    baseList.append(l)
+        # set all variables
+        baseDict={}
+        for l in baseList:
+            if '=' in l:
+                k,v=[a.strip() for a in l.split('=')]
+                if ',' in v:
+                    v=[a.strip() for a in v.split(',')]
+                baseDict[k]=v
+        inst.baseDict=baseDict
+        rctInfo = []
+        for line in baseList: # Reaction Info
+            if '+' in line:
+                rct = [x.split() for x in line.split('+')]
+                rctInfo.append(rct)
+        inst.rctInfo=rctInfo
+        return inst
+
+    def setName(self, filename):
+        # this method will be superseded
+        self.name = filename
         
+    
     def readCfg(self):
+        # this method will be superseded
         monInfo = []
         croInfo = []
         
@@ -45,6 +80,7 @@ class configuration(object):
         monR_list = {}
         croNum = ''
         croR_list = {}
+        
         df = pd.read_csv(self.name, header=None, sep='\n', skip_blank_lines=True)
         df = df[df[0].str.startswith('#') == False]
         baseList = df.iloc[:][0]
@@ -199,10 +235,4 @@ class configuration(object):
         self.layerConvLimit = layerConvLimit
         
 if __name__ == '__main__':
-    import os
-    import importlib.resources
-    name = os.path.join(os.getcwd(),'mh-cl', 'basic', 'options.txt')
-    a = configuration()
-    a.setName(name)
-    a.readCfg()
-    print(a.boxSize)
+    pass
