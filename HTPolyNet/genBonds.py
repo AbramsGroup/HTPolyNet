@@ -6,8 +6,6 @@ Generate bonds
     - update atom index in each section
 @author: huang
 """
-# TO DO: parameters should be a JSON file in a data directory
-import HTPolyNet.parameters as parameters
 import pandas as pd
 pd.options.mode.chained_assignment = None
 import sys
@@ -16,6 +14,7 @@ from copy import deepcopy
 import time
 
 from HTPolyNet.countTime import *
+from HTPolyNet.parameters import ExtraGAFFParams
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map', updateCharge=True):
@@ -94,6 +93,7 @@ class genBonds(object):
     def checkNewTypes(self, pairs, sysTop, types='bonds'):
         sysTop = self.top
         df_atoms = sysTop.atoms # Top df
+        extra_gaff=ExtraGAFFParams()
         if types == 'bonds':
             pairs_tmp = []
             for p in pairs:
@@ -120,11 +120,11 @@ class genBonds(object):
                         continue
                 else:
                     key = '{}-{}'.format(a1Type, a2Type)
-                    print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
+                    print('{} bondtype not found in GAFF. Searching internal HTPolyNet database...'.format(key))
                     try:
-                        param = parameters.dictBond[key]
+                        param = extra_gaff.extra_bonds[key]
                     except:
-                        raise TypeError('Couldn\'t locate this parameters! Please check')
+                        raise TypeError('Not found.')
                     if isinstance(param, str):
                         param = param.split(',')
                     lst_tmp = [a1Type, a2Type] + param
@@ -158,12 +158,11 @@ class genBonds(object):
                         continue
                 else:
                     key = '{}-{}-{}'.format(a1Type, a2Type, a3Type)
-                    print('{} pairs didn\'t show in the origin types. Searching the database...'.format(key))
+                    print('{} angletype not found in GAFF parameters. Searching the HTPolyNet database...'.format(key))
                     try:
-                        param = parameters.dictAngle[key]
+                        param = extra_gaff.extra_angles[key]
                     except:
-                        print('Couldn\'t locate this parameters! Please check')
-                        sys.exit()
+                        raise TypeError('Not found.')
                     if isinstance(param, str):
                         param = param.split(',')
                     lst_tmp = [a1Type, a2Type, a3Type] + param
@@ -207,8 +206,8 @@ class genBonds(object):
                     else:
                         continue
                 else:
-                    if key1 in parameters.dictDihedral.keys():
-                        param = parameters.dictDihedral[key1]
+                    if key1 in extra_gaff.extra_dihedrals.keys():
+                        param = extra_gaff.extra_dihedrals[key1]
                         if type(param) == str:
                             lst_tmp = [a1Type, a2Type, a3Type, a4Type] + param.split(',')
                             sysTop.addDihTypes(lst_tmp)
@@ -219,8 +218,8 @@ class genBonds(object):
                             if len(param) > 1:
                                 sysTop.dupDihTypeKey.append(key1)
                         
-                    elif key2 in parameters.dictDihedral.keys():
-                        param = parameters.dictDihedral[key2]
+                    elif key2 in extra_gaff.extra_dihedrals.keys():
+                        param = extra_gaff.extra_dihedrals[key2]
                         if type(param) == str:
                             lst_tmp = [a4Type, a3Type, a2Type, a1Type] + param.split(',')
                             sysTop.addDihTypes(lst_tmp)
@@ -233,8 +232,8 @@ class genBonds(object):
 
                         sysTop.addDihTypes(lst_tmp)
                     else:
-                        print('Unknown dihedral type {}, need to find param for the pair'.format(key1))
-                        sys.exit()
+                        print(f'{key1} dihedral type not found in GAFF or local HTPolyNet database.')
+                        raise TypeError('Please add to local')
                 pairs_tmp.append(pp)
             return pairs_tmp
 

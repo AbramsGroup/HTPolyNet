@@ -23,6 +23,7 @@ import argparse as ap
 # The library files (mdp, txt, and mol2 files) are accessible after installation
 # as packages
 import importlib.resources
+from HTPolyNet.parameters import ExtraGAFFParams
 
 #import subprocess
 # Below should not be necessary thanks to the entry_points in setup.cfg -- cfa
@@ -139,6 +140,8 @@ class HTPolyNet(object):
 
             # need to fix these 
             # I would expect the user to copy/edit a *.cfg file, rather than this program doing it first
+            # also, shouldn't you only copy the mol2 files for the 
+            # molecules indicated in the config file?
             copyCmds=[
                 'cp {}/VEA-VEB-STY-example.cfg {}/editme.cfg'.format(self.LibraryResourcePaths['cfg'], self.basicFolder),
                 'cp {}/*mol2 {}/'.format(self.LibraryResourcePaths['mol2'], self.unrctFolder),
@@ -710,6 +713,12 @@ def info():
     ver=GetVersions()
     for k,v in ver.items():
         print(f'    {k} {v}')
+    print('Dump of extra GAFF parameters database:')
+    e=ExtraGAFFParams()
+    print('bonds',e.extra_bonds)
+    print('angles',e.extra_angles)
+    print('dihedrals',e.extra_dihedrals)
+
 def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,help='command (init, info, run)')
