@@ -20,7 +20,7 @@ from copy import deepcopy
 
 import argparse as ap
 
-# The templates (mdp, txt, and mol2 files) are accessible after installation
+# The library files (mdp, txt, and mol2 files) are accessible after installation
 # as packages
 import importlib.resources
 
@@ -45,7 +45,7 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
-from HTPolyNet.resources import *
+from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 
 class HTPolyNet(object):
@@ -66,7 +66,7 @@ class HTPolyNet(object):
         self.layerConvLimit = 1
 
         # using importlib resources does not require user to set an environment variables
-        self.TemplateResourcePaths=IdentifyTemplateResourcePaths(['cfg','Gromacs_mdp','mol2'])
+        self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
         self.topPath = os.getcwd()
 
         #self.projPath = ''
@@ -139,9 +139,9 @@ class HTPolyNet(object):
             # need to fix these 
             # I would expect the user to copy/edit a *.cfg file, rather than this program doing it first
             copyCmds=[
-                'cp {}/VEA-VEB-STY-example.cfg {}/editme.cfg'.format(self.TemplateResourcePaths['cfg'], self.basicFolder),
-                'cp {}/*mol2 {}/'.format(self.TemplateResourcePaths['mol2'], self.unrctFolder),
-                'cp -r {}/* {}'.format(self.TemplateRsourcePaths['mdp'], self.mdpFolder)
+                'cp {}/VEA-VEB-STY-example.cfg {}/editme.cfg'.format(self.LibraryResourcePaths['cfg'], self.basicFolder),
+                'cp {}/*mol2 {}/'.format(self.LibraryResourcePaths['mol2'], self.unrctFolder),
+                'cp -r {}/* {}'.format(self.LibraryRsourcePaths['mdp'], self.mdpFolder)
                 ]
 
             for c in copyCmds:
@@ -676,10 +676,10 @@ class HTPolyNet(object):
         a.main(self.unrctFolder, self.typeFolder)
 
 def init():
-    TemplateResourcePaths=IdentifyTemplateResourcePaths()
+    LibraryResourcePaths=IdentifyLibraryResourcePaths()
     example_cfg='VEA-VEB-STY-example.cfg'
-    getme=os.path.join(TemplateResourcePaths["cfg"],example_cfg)
-    print(f'HTPolyNet is copying {example_cfg} from {TemplateResourcePaths["cfg"]}')
+    getme=os.path.join(LibraryResourcePaths["cfg"],example_cfg)
+    print(f'HTPolyNet is copying {example_cfg} from {LibraryResourcePaths["cfg"]}')
     os.system(f'cp {getme} .')
     print(f'After editing this file, you can launch using\n"htpolynet run -cfg <name-of-config-file>"')
 
@@ -699,9 +699,9 @@ def run(a,cfg=''):
 
 def info():
     print('This is some information on your installed version of HTPolyNet')
-    print('Resources:')
-    TemplateResourcePaths=IdentifyTemplateResourcePaths()
-    for n,l in TemplateResourcePaths.items():
+    print('Libraries:')
+    LibraryResourcePaths=IdentifyLibraryResourcePaths()
+    for n,l in LibraryResourcePaths.items():
         print(f'    Type {n}:')
         for f in os.listdir(l):
             print(f'       {f}')

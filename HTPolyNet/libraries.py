@@ -1,13 +1,13 @@
 '''
-Sets up access to resources in the Templates directory
+Sets up access to resources in the Library package directory
 '''
 import importlib.resources
 import os 
 
 _DefaultResourceTypes_=['cfg','Gromacs_mdp','mol2']
-_DefaultResourcePackageDir_='Templates'
+_DefaultResourcePackageDir_='Library'
 
-def IdentifyTemplateResourcePaths(ResourceTypes=_DefaultResourceTypes_,basedir=_DefaultResourcePackageDir_):
+def IdentifyLibraryResourcePaths(ResourceTypes=_DefaultResourceTypes_,basedir=_DefaultResourcePackageDir_):
     td={}
     tt=importlib.resources.files(basedir)
     for n in tt.iterdir():
