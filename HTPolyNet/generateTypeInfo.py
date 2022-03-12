@@ -5,13 +5,13 @@ Created on Sun Nov  1 08:57:03 2020
 @author: huang
 """
 
-from re import T
-from typing import Type
+#from re import T
+#from typing import Type
 import os
 import glob
 import subprocess
 import pandas as pd
-import shutil
+#import shutil
 
 import parmed
 
