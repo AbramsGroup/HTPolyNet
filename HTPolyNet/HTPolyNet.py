@@ -107,11 +107,8 @@ class HTPolyNet(object):
         self.layer_status = False # status whether layer reached desired conversion
 
     def parseCfg(self):
-        a=dir(self.cfg)
-        for k,v in self.cfg.baseDict.items():
-            if k in a:
-                self.cfg.__dict__[k]=v
-
+        pass
+    
     def initFolder(self):
         if self.reProject == '':
             i = 0

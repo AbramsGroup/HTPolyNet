@@ -40,24 +40,45 @@ class configuration(object):
         inst=cls()
         inst.filename=filename
         baseList=[]
+        # read all lines, append each to baseList.
+        # skip any lines beginning with '#'
+        # and ignore anything after '#' on a line
         with open(filename,'r') as f:
             for l in f:
                 if l[0]!='#':
                     try:
-                        i=l.index('#')
-                        l=l[:i].strip()
+                        l=l[:l.index('#')].strip()
                     except:
                         pass
                     baseList.append(l)
         # set all variables
         baseDict={}
+        keyCounts={}
         for l in baseList:
             if '=' in l:
                 k,v=[a.strip() for a in l.split('=')]
+                if not k in keyCounts:
+                    keyCounts[k]=0
+                keyCounts[k]+=1
                 if ',' in v:
                     v=[a.strip() for a in v.split(',')]
-                baseDict[k]=v
+                # repeated keys build lists
+                if keyCounts[k]>1:
+                    if keyCounts[k]==2:
+                        baseDict[k]=[baseDict[k]]
+                    baseDict[k].append(v)
+                else:    
+                    baseDict[k]=v
         inst.baseDict=baseDict
+
+        for k,v in inst.baseDict.items():
+            if k.startswith('mol'):
+                inst.cappingMolPair.append(v)
+                inst.unrctStruct.append(v[1])
+            elif k.startswith('cappingBond'):
+                for cb in v:
+                    inst.cappingBonds.append(cb)
+
         rctInfo = []
         for line in baseList: # Reaction Info
             if '+' in line:
