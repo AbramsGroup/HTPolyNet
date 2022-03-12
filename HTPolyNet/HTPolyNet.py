@@ -45,6 +45,7 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
+from HTPolyNet.softwareCheck import CheckCommands
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 
@@ -708,10 +709,12 @@ def info():
     
 def cli():
     parser=ap.ArgumentParser()
-    parser.add_argument('command',type=str,help='command (init, run)')
-    parser.add_argument('-cfg',type=str,default='',help='input config file')
+    parser.add_argument('command',type=str,help='command (init, info, run)')
+    parser.add_argument('cfg',type=str,default='',help='input config file')
     args=parser.parse_args()
 
+    if not CheckCommands():
+        exit()
 
     if args.command=='init':
         init()
