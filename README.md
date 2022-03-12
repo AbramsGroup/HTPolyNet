@@ -139,11 +139,13 @@ Configuration files for HTPolyNet are simple lines of the form `keyword = value`
   VEA + VEB + 100.0%
   ...
   ```
-## Library
+## Libraries
 
-* cfg:  These are example configuration files.
-* Gromacs_mdp:  These are Gromacs input files
-* mol2:  These are a selection of monomer structures
+HTPolyNet comes with several libraries in the Library package folder.  `htpolynet info` will list all available library files.
+
+* cfg:  Example configuration files.
+* Gromacs_mdp:  mdp files for Gromacs simulations
+* mol2:  Mol2 files for a selection of monomers
 
 ## Release History
 
