@@ -723,7 +723,7 @@ def cli():
     elif args.command=='run':
         cfg=args.cfg
         if len(cfg)==0:
-            print('Error: htpolynet run requires a config file; use -cfg <name-of-file>')
+            print('Error: "htpolynet run" requires a config file')
         # a.parseCfg(cfg)
         a = HTPolyNet()
         run(a,cfg=cfg)
