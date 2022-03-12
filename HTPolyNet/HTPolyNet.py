@@ -45,7 +45,7 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
-from HTPolyNet.softwareCheck import CheckCommands
+from HTPolyNet.softwareCheck import *
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 
@@ -706,11 +706,14 @@ def info():
         print(f'    Type {n}:')
         for f in os.listdir(l):
             print(f'       {f}')
-    
+    print('Software versions:')
+    ver=GetVersions()
+    for k,v in ver.items():
+        print(f'    {k} {v}')
 def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,help='command (init, info, run)')
-    parser.add_argument('cfg',type=str,default='',help='input config file')
+    parser.add_argument('-cfg',type=str,default='',help='input config file')
     args=parser.parse_args()
 
     if not CheckCommands():

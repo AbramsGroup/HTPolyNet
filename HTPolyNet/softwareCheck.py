@@ -14,5 +14,11 @@ def CheckCommands():
         print('Error: HTPolyNet cannot find',', '.join(cnf))
         return False
     return True
-     
+
+def GetVersions():
+    versions={}
+    versions['gmx']=[s for s in os.popen(f'gmx -version').read().split('\n') if 'GROMACS version:' in s][0].split(':')[1].strip()
+    versions['obabel']=os.popen('obabel -V').read().split()[2].strip()
+    versions['ambertools']=[s for s in os.popen('antechamber -h').read().split('\n') if 'Welcome' in s][0].split()[3].strip().strip(':')
+    return versions
 
