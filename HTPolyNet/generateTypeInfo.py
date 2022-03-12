@@ -15,7 +15,8 @@ import shutil
 
 import parmed
 
-import HTPolyNet.parameters as parameters
+#import HTPolyNet.parameters as parameters
+from HTPolyNet.parameters import ExtraGAFFParams
 import HTPolyNet.readCfg as readCfg
 import HTPolyNet.readMol as readMol
 import HTPolyNet.createRctMol as createRctMol
@@ -182,9 +183,14 @@ class generateTypeInfo(object):
                     impTypes[values[0]] = values[1]
         db_out = [bTypes, angTypes, dihTypes, impTypes]
         return db_out
-    
+
+    # should not do this!! very bad!! parameters used should
+    # be saved in a working directory, not the source!!
     def updateParamFile(self, db):
-        newBondType = parameters.dictBond; newAngType = parameters.dictAngle; newDihType = parameters.dictDihedral
+        e=ExtraGAFFParams()
+        newBondType = e.extra_bonds
+        newAngType = e.extra_angles
+        newDihType = e.extra_dihedrals
         db_BondType = db[0]
         db_AngType = db[1]
         db_DihType = db[2]
@@ -250,6 +256,8 @@ class generateTypeInfo(object):
         db = self.extractFF(nameList)
         db = self.filterFF(db)
         os.chdir(self.srcPath)
+        # should not do this!! very bad!! parameters used should
+        # be saved in a working directory, not the source!!
         self.updateParamFile(db)
         return db
     
