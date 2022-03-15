@@ -23,7 +23,7 @@ import argparse as ap
 # The library files (mdp, txt, and mol2 files) are accessible after installation
 # as packages
 import importlib.resources
-from HTPolyNet.parameters import ExtraGAFFParams
+#from HTPolyNet.parameters import ExtraGAFFParams
 
 #import subprocess
 # Below should not be necessary thanks to the entry_points in setup.cfg -- cfa
@@ -713,15 +713,15 @@ def info():
     ver=GetVersions()
     for k,v in ver.items():
         print(f'    {k} {v}')
-    print('Dump of extra GAFF parameters database:')
-    e=ExtraGAFFParams()
-    print('bonds',e.extra_bonds)
-    print('angles',e.extra_angles)
-    print('dihedrals',e.extra_dihedrals)
+    #print('Dump of extra GAFF parameters database:')
+    #e=ExtraGAFFParams()
+    #print('bonds',e.extra_bonds)
+    #print('angles',e.extra_angles)
+    #print('dihedrals',e.extra_dihedrals)
 
 def cli():
     parser=ap.ArgumentParser()
-    parser.add_argument('command',type=str,help='command (init, info, run)')
+    parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
     args=parser.parse_args()
 
@@ -736,8 +736,8 @@ def cli():
         cfg=args.cfg
         if len(cfg)==0:
             print('Error: "htpolynet run" requires a config file')
-        # a.parseCfg(cfg)
         a = HTPolyNet()
+        # a.parseCfg(cfg)
         run(a,cfg=cfg)
     else:
         print(f'HTPolyNet command {args.command} not recognized')
