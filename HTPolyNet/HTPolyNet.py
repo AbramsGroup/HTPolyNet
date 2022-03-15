@@ -121,13 +121,27 @@ class HTPolyNet(object):
         else:
             self.projPath = os.path.join(self.topPath, self.reProject)
 
+        # basicFolder contains charges.txt (and options.txt) and all monomer mol2 files
         self.basicFolder = os.path.join(self.projPath, 'basic')
+        # copies of all mdp files in Library/mdp/
         self.mdpFolder = os.path.join(self.projPath, 'mdp')
+        # Results, with subdirectories init, step0, step1, step2, etc... 
+        # 'init' has 5ns NPT of liquid
+        # 'step' directories run until desired conversion is met
+        # each step does SCUR iterations with increasing search radius (according to Ming's special recipe)
+        # that terminate when either enough bonds are made or not enough bonds are 
+        # made but no new bonds can be found.  Then it enters NPT md relaxation, followed 
+        # by creation of a capped structure for reference and an uncapped structure for 
+        # further crosslinking if desired.
         self.resFolder = os.path.join(self.projPath, 'results')
 
+        # storage of GAFF parameter templates in subdirectories
         self.systemsFolder = os.path.join(self.projPath, 'systems')
+        # Contains Gromacs top, itp, and gro files for liquid system
         self.unrctFolder = os.path.join(self.systemsFolder, 'unrctSystem')
+        # Partial charges for oligomers from antechamber in mol2 files for oligomer templates
         self.rctFolder = os.path.join(self.systemsFolder, 'rctSystem')
+        # Contains Gromacs top and itp files for oligomer templates
         self.typeFolder = os.path.join(self.systemsFolder, 'typeSystem')
         if self.reProject == '':
             os.mkdir(self.basicFolder)

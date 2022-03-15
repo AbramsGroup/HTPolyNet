@@ -4,7 +4,7 @@ Sets up access to resources in the Library package directory
 import importlib.resources
 import os 
 
-_DefaultResourceTypes_=['cfg','Gromacs_mdp','mol2','gaff_extra']
+_DefaultResourceTypes_=['cfg','Gromacs_mdp','mol2']
 _DefaultResourcePackageDir_='Library'
 
 def IdentifyLibraryResourcePaths(ResourceTypes=_DefaultResourceTypes_,basedir=_DefaultResourcePackageDir_):
