@@ -1,24 +1,60 @@
 ''' Check for presence of required software '''
-import os
-commandsRequired=['antechamber','tleap','parmchk2','gmx','obabel']
+import subprocess
 
-def CheckCommands():
-    cnf=[]
-    passes=True
-    for c in commandsRequired:
-        p=os.popen(f'which {c}').read()
-        if p=='':
-            passes=False
-            cnf.append(c)
-    if not passes:
-        print('Error: HTPolyNet cannot find',', '.join(cnf))
-        return False
-    return True
+class Software:
+    ambertools=['antechamber','tleap','parmchk2']
+    commandsRequired=ambertools+['gmx','obabel']
+    optionalCommands=['mdrun_mpi']
+    def __init__(self):
+        self.commands={}
+        cnf=[]
+        passes=True
+        for c in Software.commandsRequired:
+            CP=subprocess.run(['which',c],capture_output=True,text=True)
+            if CP.returncode!=0:
+                passes=False
+                cnf.append(c)
+            else:
+                self.commands[c]=CP.stdout.strip()
+        if not passes:
+            raise FileNotFoundError(f'HTPolyNet cannot find command(s) {", ".join(cnf)}')
+        cnf=[]
+        passes=True
+        for c in Software.optionalCommands:
+            CP=subprocess.run(['which',c],capture_output=True,text=True)
+            if CP.returncode!=0:
+                passes=False
+                cnf.append(c)
+            else:
+                self.commands[c]=CP.stdout.strip()
+        if not passes:
+            pass
+        self.getVersions()
 
-def GetVersions():
-    versions={}
-    versions['gmx']=[s for s in os.popen(f'gmx -version').read().split('\n') if 'GROMACS version:' in s][0].split(':')[1].strip()
-    versions['obabel']=os.popen('obabel -V').read().split()[2].strip()
-    versions['ambertools']=[s for s in os.popen('antechamber -h').read().split('\n') if 'Welcome' in s][0].split()[3].strip().strip(':')
-    return versions
+    def __str__(self):
+        r='Commands available for HTPolyNet to use:\n'
+        for c,p in self.commands.items():
+            if not c in self.ambertools:
+                verkey=c
+            else:
+                verkey='ambertools'
+            r+=f'{c:>12s} (ver. {self.versions[verkey]}) at {p:<50s}\n'
+        return r
+
+    def getVersions(self):
+        self.versions={}
+        CP=subprocess.run(['gmx','-version'],capture_output=True,text=True)
+        self.versions['gmx']=CP.stdout.split('\n')[0].split()[4].strip()
+        CP=subprocess.run(['obabel','-V'],capture_output=True,text=True)
+        self.versions['obabel']=CP.stdout.split()[2].strip()
+        CP=subprocess.run(['antechamber','-h'],capture_output=True,text=True)
+        l=CP.stdout.split('\n')[1].split()[3].strip().strip(':')
+        self.versions['ambertools']=l
+        if 'mdrun_mpi' in self.commands:
+            CP=subprocess.run(['mdrun_mpi','-h'],capture_output=True,text=True)
+            self.versions['mdrun_mpi']=CP.stdout.split('\n')[0].split()[4].strip()
+        
+    def info(self):
+        print(str(self))
+
 

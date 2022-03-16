@@ -14,8 +14,8 @@ class testCase(object):
 
     @countTime
     def testReadParam(self):
-        import HTPolyNet.readCfg as readCfg
-        a = readCfg.configuration()
+        import HTPolyNet.configuration as configuration
+        a = configuration.configuration()
         name = 'basic/options.txt'
         a.setName(name)
         a.readParam()

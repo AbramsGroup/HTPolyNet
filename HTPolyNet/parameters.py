@@ -1,4 +1,4 @@
-# extra GAFF parameters handling
+# THIS FILE IS NOT NEEDED
 
 from HTPolyNet.libraries import *
 import json

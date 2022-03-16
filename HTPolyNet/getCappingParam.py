@@ -1,7 +1,7 @@
 import os
 import sys
 
-import HTPolyNet.readCfg as readCfg
+#import HTPolyNet.configuration as configuration
 import HTPolyNet.readTop2 as readTop2
 
 def getCon(df_bonds, atIdx):
@@ -75,7 +75,7 @@ if __name__ == '__main__':  # is this just for testing?
     oriPath = os.getcwd()
     sys.path.append(os.path.join(oriPath, 'mh-cl', 'src'))
     name = os.path.join(oriPath,'mh-cl', 'basic', 'options.txt-GMA-mST')
-    a = readCfg.configuration()
+    a = configuration.configuration()
     a.setName(name)
     a.readParam()
 

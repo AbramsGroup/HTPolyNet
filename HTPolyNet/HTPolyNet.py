@@ -11,28 +11,18 @@ step 2: init systems
 
 @author: huang, abrams
 """
+''' built-ins '''
 import os
 import sys
 from shutil import copyfile
 from shutil import move
 from shutil import rmtree
 from copy import deepcopy
-
+import subprocess
 import argparse as ap
 
-# The library files (mdp, txt, and mol2 files) are accessible after installation
-# as packages
-import importlib.resources
-#from HTPolyNet.parameters import ExtraGAFFParams
-
-#import subprocess
-# Below should not be necessary thanks to the entry_points in setup.cfg -- cfa
-#import sys
-#HTPATH = os.getenv('HTPOLYPATH')
-#sys.path.append('{}/src'.format(HTPATH))
-
-# Preferred style for local imports is to use absolute package.module syntax
-import HTPolyNet.readCfg as readCfg
+''' intrapackage imports '''
+from HTPolyNet.configuration import Configuration
 import HTPolyNet.mergeTop as mergeTop
 import HTPolyNet.readTop2 as readTop2
 import HTPolyNet.readGro as readGro
@@ -46,13 +36,26 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
-from HTPolyNet.softwareCheck import *
+from HTPolyNet.softwareCheck import Software
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
+from HTPolyNet.dirTree import dirTree
 
 class HTPolyNet(object):
-    def __init__(self, cfg='', re=False):
-        self.cfg=cfg
+    def __init__(self,software=None,cfgFile=''):
+        if not software:
+            self.software=Software()  # will die if software requirements are not met
+        else:
+            self.software=software
+        if cfgFile=='':
+            raise RuntimeError('HTPolyNet requires a configuration file.')
+        
+        self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
+        self.cfgFile=cfgFile
+        self.cfg=Configuration.read(cfgFile)
+        self.root=os.getcwd()
+        self.dirTree=dirTree(root=self.root,reProject=self.cfg.reProject,nReplicas=self.cfg.trials)
+
         self.cpu = ''
         self.gpu = ''
         self.trials = ''
@@ -67,19 +70,17 @@ class HTPolyNet(object):
         self.boxLimit = 1
         self.layerConvLimit = 1
 
-        # using importlib resources does not require user to set an environment variables
-        self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
-        self.topPath = os.getcwd()
 
         #self.projPath = ''
 
-        self.basicFolder = ''
-        self.mdpFolder = ''
-        self.resFolder = '' # result folder
-        self.systemsFolder = ''
-        self.unrctFolder = ''
-        self.rctFolder = ''
-        self.typeFolder = ''
+        # handled by dirTree
+        # self.basicFolder = ''
+        # self.mdpFolder = ''
+        # self.resFolder = '' # result folder
+        # self.systemsFolder = ''
+        # self.unrctFolder = ''
+        # self.rctFolder = ''
+        # self.typeFolder = ''
 
         self.topMap = {}
         self.initGro = ''
@@ -108,9 +109,19 @@ class HTPolyNet(object):
 
         self.layer_status = False # status whether layer reached desired conversion
 
-    def parseCfg(self):
-        pass
-    
+    def initreport(self):
+        print('Libraries:')
+        LibraryResourcePaths=IdentifyLibraryResourcePaths()
+        for n,l in LibraryResourcePaths.items():
+            print(f'    Type {n}:')
+            for f in os.listdir(l):
+                print(f'       {f}')
+        print(self.cfg)
+        print(self.software)
+        print(f'Directory structure under {self.root}:')
+        for dt,d in self.dirTree.items():
+            print(f'   {d}')
+
     def initFolder(self):
         if self.reProject == '':
             i = 0
@@ -170,19 +181,19 @@ class HTPolyNet(object):
 #            cmd0 = 'rm -r {}/*'.format(self.resFolder)
 #            subprocess.call(cmd0, shell=True)
 
-    def setParam(self, name):
-        a = readCfg.parameters()
-        a.setName(name)
-        a.readParam()
-        self.basicParameter = a
-        self.cpu = int(a.CPU)
-        self.gpu = int(a.GPU)
-        self.trials = int(a.trials)
-        self.reProject = a.reProject
-        self.stepwise = a.stepwise
-        self.cappingBonds = a.cappingBonds
-        self.boxLimit = float(a.boxLimit)
-        self.layerConvLimit = float(a.layerConvLimit)
+    # def setParam(self, name):
+    #     a = readCfg.parameters()
+    #     a.setName(name)
+    #     a.readParam()
+    #     self.basicParameter = a
+    #     self.cpu = int(a.CPU)
+    #     self.gpu = int(a.GPU)
+    #     self.trials = int(a.trials)
+    #     self.reProject = a.reProject
+    #     self.stepwise = a.stepwise
+    #     self.cappingBonds = a.cappingBonds
+    #     self.boxLimit = float(a.boxLimit)
+    #     self.layerConvLimit = float(a.layerConvLimit)
 
     def getGroInfo(self, name):
         a = readGro.initGro()
@@ -236,7 +247,7 @@ class HTPolyNet(object):
             copyfile('{}/{}.itp'.format(self.unrctFolder, n), '{}.itp'.format(n))
             
         # Insert molecules to systems
-        import extendSys
+        import HTPolyNet.extendSys as extendSys
         a = extendSys.extendSys('gmx_mpi')
         a.extendSys(param.monInfo, param.croInfo, param.boxSize, 'init')
         
@@ -466,7 +477,7 @@ class HTPolyNet(object):
     def mainProcess(self, repeatTimes):
         # Init systems
         os.chdir(self.resFolder)
-        self.initSys()
+        self.initSys()  # returns to resFolder
         conv = 0
         # calculate max bonds
         self.calMaxBonds()
@@ -649,7 +660,7 @@ class HTPolyNet(object):
     def preparePara(self):
         import HTPolyNet.prepareParam as prepareParam
 
-        # no handled in constructor
+        # now handled in constructor
         #path = os.getcwd()
         #self.topPath = path
 
@@ -701,21 +712,21 @@ def init():
     os.system(f'cp {getme} .')
     print(f'After editing this file, you can launch using\n"htpolynet run -cfg <name-of-config-file>"')
 
-def run(a,cfg=''):
-    print(f'HTPolyNet is going to try to run in {os.getcwd()}...')
-    print(dir(a))
-    a.cfg=readCfg.configuration.readCfgFile(cfg)
-    a.parseCfg()
-    for k in dir(a.cfg):
-        if '__' not in k and k in a.cfg.__dict__:
-            print(f'{k} = {a.cfg.__dict__[k]}')
-    print(a.cfg.__dict__)
-    #print(a.cfg.baseDict,a.cfg.rctInfo)
-    # a.preparePara()
-    # a.mainProcess(a.trials)
-    pass
+# def run(a,cfg=''):
+#     print(f'HTPolyNet is going to try to run in {os.getcwd()}...')
+#     print(dir(a))
+#     a.cfg=readCfg.configuration.readCfgFile(cfg)
+#     a.parseCfg()
+#     for k in dir(a.cfg):
+#         if '__' not in k and k in a.cfg.__dict__:
+#             print(f'{k} = {a.cfg.__dict__[k]}')
+#     print(a.cfg.__dict__)
+#     #print(a.cfg.baseDict,a.cfg.rctInfo)
+#     # a.preparePara()
+#     # a.mainProcess(a.trials)
+#     pass
 
-def info():
+def info(sw):
     print('This is some information on your installed version of HTPolyNet')
     print('Libraries:')
     LibraryResourcePaths=IdentifyLibraryResourcePaths()
@@ -723,15 +734,7 @@ def info():
         print(f'    Type {n}:')
         for f in os.listdir(l):
             print(f'       {f}')
-    print('Software versions:')
-    ver=GetVersions()
-    for k,v in ver.items():
-        print(f'    {k} {v}')
-    #print('Dump of extra GAFF parameters database:')
-    #e=ExtraGAFFParams()
-    #print('bonds',e.extra_bonds)
-    #print('angles',e.extra_angles)
-    #print('dihedrals',e.extra_dihedrals)
+    sw.info()
 
 def cli():
     parser=ap.ArgumentParser()
@@ -739,19 +742,18 @@ def cli():
     parser.add_argument('-cfg',type=str,default='',help='input config file')
     args=parser.parse_args()
 
-    if not CheckCommands():
-        exit()
+    # Determine if required and optional software is available
+    software=Software()
 
     if args.command=='init':
         init()
     elif args.command=='info':
-        info()
+        info(software)
     elif args.command=='run':
         cfg=args.cfg
         if len(cfg)==0:
             print('Error: "htpolynet run" requires a config file')
-        a = HTPolyNet()
-        # a.parseCfg(cfg)
-        run(a,cfg=cfg)
+        a=HTPolyNet(software=software,cfgFile=cfg)
+        a.initreport()
     else:
         print(f'HTPolyNet command {args.command} not recognized')

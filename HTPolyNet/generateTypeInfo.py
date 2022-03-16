@@ -16,8 +16,8 @@ import pandas as pd
 import parmed
 
 #import HTPolyNet.parameters as parameters
-from HTPolyNet.parameters import ExtraGAFFParams
-import HTPolyNet.readCfg as readCfg
+#from HTPolyNet.parameters import ExtraGAFFParams
+import HTPolyNet.configuration as configuration
 import HTPolyNet.readMol as readMol
 import HTPolyNet.createRctMol as createRctMol
 
@@ -42,7 +42,7 @@ class generateTypeInfo(object):
         if len(os.listdir(self.typePath)) > 0:
             pass
         else:
-            a = readCfg.configuration()
+            a = configuration.configuration()
             a.setName('{}/options.txt'.format(self.basicPath))
             a.readParam()
             # basicMol = a.unrctStruct

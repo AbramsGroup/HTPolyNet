@@ -14,7 +14,7 @@ from copy import deepcopy
 import time
 
 from HTPolyNet.countTime import *
-from HTPolyNet.parameters import ExtraGAFFParams
+#from HTPolyNet.parameters import ExtraGAFFParams
 
 class genBonds(object):
     def __init__(self, gro, top, pairs, chargeMap, rctMols, cat='map', updateCharge=True):
