@@ -20,10 +20,9 @@ class prepareParam(object):
             command2 = 'parmchk2 -i out.mol2 -o out.frcmod -f mol2 -s gaff'
             command3 = 'tleap -f tleap.in'
             
-            str1 = 'source leaprc.gaff \nSUS = loadmol2 out.mol2 \ncheck SUS\nloadamberparams out.frcmod \nsaveamberparm SUS out.top out.crd \nquit'
-            f = open('tleap.in', 'w')
-            f.write(str1)
-            f.close()   
+            str1 = 'source leaprc.gaff\nSUS = loadmol2 out.mol2 \ncheck SUS\nloadamberparams out.frcmod \nsaveamberparm SUS out.top out.crd \nquit'
+            with open('tleap.in', 'w') as f:
+                f.write(str1)
             
             a1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out1, err1 = a1.communicate()

@@ -39,9 +39,10 @@ import HTPolyNet.getCappingParam as getCappingParam
 from HTPolyNet.software import Software
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
-from HTPolyNet.dirTree import dirTree
+from HTPolyNet.projectfilesystem import ProjectFileSystem
 
 class HTPolyNet(object):
+    ''' Class for a single HTPolyNet session '''
     def __init__(self,software=None,cfgFile=''):
         if not software:
             # will die if software requirements are not met
@@ -54,8 +55,8 @@ class HTPolyNet(object):
         self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
         self.cfgFile=cfgFile
         self.cfg=Configuration.read(cfgFile)
-        self.root=os.getcwd()
-        self.dirTree=dirTree(root=self.root,reProject=self.cfg.reProject,nReplicas=self.cfg.trials)
+        # session filesystem
+        self.fs=ProjectFileSystem(root=os.getcwd,reProject=self.cfg.reProject,nReplicas=self.cfg.trials)
 
 
         # do we really need these attributes if they are all under 'cfg' anyway?
