@@ -71,37 +71,37 @@ def genUnrctMapping(inParam):
     
     return unrctMap
 
-if __name__ == '__main__':  # is this just for testing?
-    oriPath = os.getcwd()
-    sys.path.append(os.path.join(oriPath, 'mh-cl', 'src'))
-    name = os.path.join(oriPath,'mh-cl', 'basic', 'options.txt-GMA-mST')
-    a = configuration.configuration()
-    a.setName(name)
-    a.readParam()
+# if __name__ == '__main__':  # is this just for testing?
+#     oriPath = os.getcwd()
+#     sys.path.append(os.path.join(oriPath, 'mh-cl', 'src'))
+#     name = os.path.join(oriPath,'mh-cl', 'basic', 'options.txt-GMA-mST')
+#     a = configuration.configuration()
+#     a.setName(name)
+#     a.readParam()
 
-    os.chdir(os.path.join(os.getcwd(), 'mh-cl', 'src', 'cappingFile', 'GMA-mST'))
-    print(os.getcwd())
+#     os.chdir(os.path.join(os.getcwd(), 'mh-cl', 'src', 'cappingFile', 'GMA-mST'))
+#     print(os.getcwd())
     
-    '''
-    finish getting the changing atom type
-    TODO: 
-    1. getting cappingBonds based on residue name
-    2. put this in the work flow
-    '''
-    unrctMap = {}
-    for molPair in a.cappingMolPair:
-        bonds = []
-        mol1 = readTop2.initTop()
-        mol2 = readTop2.initTop()
-        mol1.setName('{}.top'.format(molPair[0].strip()), '{}.itp'.format(molPair[0].strip()))
-        mol2.setName('{}.top'.format(molPair[1].strip()), '{}.itp'.format(molPair[1].strip()))
-        mol1.genTopSession()
-        mol2.genTopSession()
+#     '''
+#     finish getting the changing atom type
+#     TODO: 
+#     1. getting cappingBonds based on residue name
+#     2. put this in the work flow
+#     '''
+#     unrctMap = {}
+#     for molPair in a.cappingMolPair:
+#         bonds = []
+#         mol1 = readTop2.initTop()
+#         mol2 = readTop2.initTop()
+#         mol1.setName('{}.top'.format(molPair[0].strip()), '{}.itp'.format(molPair[0].strip()))
+#         mol2.setName('{}.top'.format(molPair[1].strip()), '{}.itp'.format(molPair[1].strip()))
+#         mol1.genTopSession()
+#         mol2.genTopSession()
 
-        for b in a.cappingBonds:
-            if molPair[0].strip() in b[0].strip():
-                bonds.append(b)
-        resKey, resBonds = compareAtoms(mol1, mol2, bonds)
-        unrctMap[resKey] = resBonds
-    print('unrctMap: ', unrctMap)
+#         for b in a.cappingBonds:
+#             if molPair[0].strip() in b[0].strip():
+#                 bonds.append(b)
+#         resKey, resBonds = compareAtoms(mol1, mol2, bonds)
+#         unrctMap[resKey] = resBonds
+#     print('unrctMap: ', unrctMap)
     

@@ -36,7 +36,7 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
-from HTPolyNet.softwareCheck import Software
+from HTPolyNet.software import Software
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 from HTPolyNet.dirTree import dirTree
@@ -44,7 +44,8 @@ from HTPolyNet.dirTree import dirTree
 class HTPolyNet(object):
     def __init__(self,software=None,cfgFile=''):
         if not software:
-            self.software=Software()  # will die if software requirements are not met
+            # will die if software requirements are not met
+            self.software=Software()
         else:
             self.software=software
         if cfgFile=='':
@@ -111,13 +112,15 @@ class HTPolyNet(object):
 
     def initreport(self):
         print('Libraries:')
-        LibraryResourcePaths=IdentifyLibraryResourcePaths()
-        for n,l in LibraryResourcePaths.items():
+        for n,l in self.LibraryResourcePaths.items():
             print(f'    Type {n}:')
             for f in os.listdir(l):
                 print(f'       {f}')
+        print()
         print(self.cfg)
+        print()
         print(self.software)
+        print()
         print(f'Directory structure to be created initially under {self.root}:')
         for dt,d in self.dirTree.items():
             print(f'   {d}')
@@ -750,10 +753,7 @@ def cli():
     elif args.command=='info':
         info(software)
     elif args.command=='run':
-        cfg=args.cfg
-        if len(cfg)==0:
-            print('Error: "htpolynet run" requires a config file')
-        a=HTPolyNet(software=software,cfgFile=cfg)
+        a=HTPolyNet(software=software,cfgFile=args.cfg)
         a.initreport()
     else:
         print(f'HTPolyNet command {args.command} not recognized')

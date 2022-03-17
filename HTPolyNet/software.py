@@ -4,7 +4,7 @@ import subprocess
 class Software:
     ambertools=['antechamber','tleap','parmchk2']
     commandsRequired=ambertools+['gmx','obabel']
-    optionalCommands=['mdrun_mpi']
+    optionalCommands=['gmx_mpi','mdrun_mpi']
     def __init__(self):
         self.commands={}
         cnf=[]
@@ -38,7 +38,7 @@ class Software:
                 verkey=c
             else:
                 verkey='ambertools'
-            r+=f'{c:>12s} (ver. {self.versions[verkey]}) at {p:<50s}\n'
+            r+=f'{c:>12s} (ver. {self.versions[verkey]:>6s}) at {p:<50s}\n'
         return r
 
     def getVersions(self):

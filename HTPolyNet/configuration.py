@@ -99,13 +99,13 @@ class Configuration(object):
                 # print(k,baseDict[k])
         inst.baseDict=baseDict
 
-        for k,v in inst.baseDict.items():
-            if k.startswith('mol'):
-                inst.cappingMolPair.append(v)
-                inst.unrctStruct.append(v[1])
-            elif k.startswith('cappingBond'):
-                for cb in v:
-                    inst.cappingBonds.append(cb)
+        # for k,v in inst.baseDict.items():
+        #     if k.startswith('mol'):
+        #         inst.cappingMolPair.append(v)
+        #         inst.unrctStruct.append(v[1])
+        #     elif k.startswith('cappingBond'):
+        #         for cb in v:
+        #             inst.cappingBonds.append(cb)
 
         rctInfo = []
         for line in baseList: # Reaction Info
@@ -121,15 +121,18 @@ class Configuration(object):
         r+='    reProject? '+(self.reProject if self.reProject!='' else '<no>')+'\n'
         r+='    boxLimit '+str(self.boxLimit)+'\n'
         r+='    layerConvLimit '+str(self.layerConvLimit)+'\n'
-        r+='    boxSize '+', '.join(str(x) for x in self.boxSize)+'\n'
+        if type(self.boxSize)==list:
+            r+='    boxSize '+', '.join(str(x) for x in self.boxSize)+'\n'
+        else:
+            r+='    boxSize '+', '.join(str(x) for x in [self.boxSize]*3)+'\n'
         r+='    cutoff '+str(self.cutoff)+'\n'
         r+='    bondsRatio '+str(self.bondsRatio)+'\n'
         r+='    HTProcess '+self.HTProcess+'\n'
         r+='    CPU '+str(self.CPU)+'\n'
         r+='    GPU '+str(self.GPU)+'\n'
         r+='    trials '+str(self.trials)+'\n'
-        r+='    stepwise '+', '.join(self.stepwise)+'\n'
-        r+='    layerDir '+self.layerDir+'\n'
+        r+='    stepwise '+(', '.join(self.stepwise) if self.stepwise!='' else 'UNSET')+'\n'
+        r+='    layerDir '+(self.layerDir if self.layerDir!='' else 'UNSET')+'\n'
         r+='Monomer info:\n'
         r+='     idx     name    count    reactive-atoms\n'
         for m in self.monInfo:
@@ -144,6 +147,17 @@ class Configuration(object):
             r+=f'                              atname  atnum   rct   grp\n'
             for rr in c[3]:
                 r+=f'                              {rr[0]:<8s}{rr[1]:<8s}{rr[2]:<6s}{rr[3]:<6s}\n'
+        if len(self.cappingMolPair)>0:
+            r+='Capping info:\n'
+            r+='    Mol    unreacted\n'
+            for p in self.cappingMolPair:
+                r+=f'    {p[0]:<6s} {p[1]:<6s}\n'
+            r+='    Mol    Atom1  Atom2  BondOrder\n'
+            for p in self.cappingBonds:
+                r+=f'    {p[0]:<6s} {p[1]:<6s} {p[2]:<6s} {p[3]:<6s}\n'
+            r+='    UnreactedNames\n'
+            for p in self.unrctStruct:
+                r+=f'    {p:>6s}\n'
         r+='React info:\n'
         for x in self.rctInfo:
             r+=f'     {x}\n'
@@ -156,15 +170,17 @@ class Configuration(object):
         
     def parseCfg(self):
         self.cappingMolPair=[]
+        self.unrctStruct=[]
         i=1
         while f'mol{i}' in self.baseDict:
             tokens=self.baseDict[f'mol{i}']
             self.cappingMolPair.append(tokens)
             self.unrctStruct.append(tokens[1])
             i+=1
-        for cp in self.baseDict['cappingBonds']:
-            tokens=cp
-            self.cappingBonds.append(tokens)
+        if 'cappingBonds' in self.baseDict:
+            for cp in self.baseDict['cappingBonds']:
+                tokens=cp
+                self.cappingBonds.append(tokens)
 
         monInfo=[]
         monR_list={}
@@ -200,20 +216,26 @@ class Configuration(object):
         self.croR_list = croR_list
 
         # basic parameters that need not be specified
+        # along with their default values
         self.reProject=self.baseDict.get('reProject','')
         self.boxLimit=float(self.baseDict.get('boxLimit','1'))
         self.layerConvLimit=float(self.baseDict.get('layerConvLimit','1'))
         self.GPU=int(self.baseDict.get('GPU','0'))
+        self.stepwise=self.baseDict.get('stepwise','')
+        self.layerDir=self.baseDict.get('boxDir','')
 
         # basic parameters that must be specified in the config file
-        self.boxSize=getOrDie(self.baseDict,'boxSize',basetype=list,subtype=float,source=self.cfgFile)
+        # boxSize can be specified by a single float for a cubic box
+        # or as three floats for an orthorhombic box
+        try:
+            self.boxSize=getOrDie(self.baseDict,'boxSize',basetype=list,subtype=float,source=self.cfgFile)
+        except:
+            self.boxSize=getOrDie(self.baseDict,'boxSize',basetype=float,source=self.cfgFile)
         self.cutoff=getOrDie(self.baseDict,'cutoff',basetype=float,source=self.cfgFile)
         self.bondsRatio=getOrDie(self.baseDict,'bondsRatio',basetype=float,source=self.cfgFile)
         self.HTProcess=getOrDie(self.baseDict,'HTProcess',basetype=str,source=self.cfgFile)
         self.CPU=getOrDie(self.baseDict,'CPU',basetype=int,source=self.cfgFile)
         self.trials=getOrDie(self.baseDict,'trials',basetype=int,source=self.cfgFile)
-        self.stepwise=getOrDie(self.baseDict,'stepwise',basetype=list,subtype=str,source=self.cfgFile)
-        self.layerDir=getOrDie(self.baseDict,'boxDir',basetype=str,source=self.cfgFile)
 
     # def readCfg(self):
     #     # this method will be superseded
