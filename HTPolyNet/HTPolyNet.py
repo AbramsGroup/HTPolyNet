@@ -57,19 +57,21 @@ class HTPolyNet(object):
         self.root=os.getcwd()
         self.dirTree=dirTree(root=self.root,reProject=self.cfg.reProject,nReplicas=self.cfg.trials)
 
-        self.cpu = ''
-        self.gpu = ''
-        self.trials = ''
-        self.reProject = ''
-        self.stepwise = ''
+
+        # do we really need these attributes if they are all under 'cfg' anyway?
+        # self.cpu = ''
+        # self.gpu = ''
+        # self.trials = ''
+        # self.reProject = ''
+        # self.stepwise = ''
 
         # end capping
-        self.cappingBonds = [] # potential bonds for capping
+#        self.cappingBonds = [] # potential bonds for capping
         self.unrctMap = {}
 
         # layer limit
-        self.boxLimit = 1
-        self.layerConvLimit = 1
+        # self.boxLimit = 1
+        # self.layerConvLimit = 1
 
 
         #self.projPath = ''
@@ -88,7 +90,9 @@ class HTPolyNet(object):
         self.initTop = ''
         self.dumpPairs = {} # pair map when check circuit
 
-        self.basicParameter = ''
+        # cfg
+        # self.basicParameter = ''
+
         self.basicFFType = []
         self.molNames = []
         self.chargeMap = {}
@@ -102,12 +106,11 @@ class HTPolyNet(object):
         self.chains = []
         self.old_pairs = []
         self.pairs_detail = {}
-        # needed parameters
-        self.maxBonds = 100
-        self.conv = 0
-        self.desConv = 0
-        self.desBonds = 0
 
+        # needed parameters
+        self.conv = 0
+        # self.desConv = 0
+        # self.desBonds = 0
         self.layer_status = False # status whether layer reached desired conversion
 
     def initreport(self):
@@ -317,7 +320,7 @@ class HTPolyNet(object):
         for i in self.old_pairs:
             num1 += len(i)
 
-        conv = round(num1 / int(self.maxBonds), 2)
+        conv = round(num1 / int(self.cfg.maxBonds), 2)
         return conv
 
     def stepCapping(self):
@@ -403,26 +406,7 @@ class HTPolyNet(object):
         copyfile('{}/npt-sw.mdp'.format(self.mdpFolder), '{}/npt-sw.mdp'.format('step{}'.format(idx)))
         return 'step{}'.format(idx)
     
-    def calMaxBonds(self):
-        maxRct = 0
-        for i in self.basicParameter.monInfo:
-            molNum = int(i[2])
-            tmp = 0
-            for ii in i[3]:
-                tmp += int(ii[1])
-            maxRct += molNum * tmp
-            
-        for i in self.basicParameter.croInfo:
-            molNum = int(i[2])
-            tmp = 0
-            for ii in i[3]:
-                tmp += int(ii[1])
-            maxRct += molNum * tmp
-                
-        self.maxBonds = maxRct * 0.5
-        print('-> Maximum number of the potential bonds is {}'.format(self.maxBonds))
-        self.desConv = float(self.basicParameter.bondsRatio)
-        self.desBonds = float(self.basicParameter.bondsRatio) * self.maxBonds
+
 
     def logBonds(self, step, cutoff):
         num1 = 0
@@ -483,7 +467,7 @@ class HTPolyNet(object):
         self.initSys()  # returns to resFolder
         conv = 0
         # calculate max bonds
-        self.calMaxBonds()
+        # self.calMaxBonds()
 
         # Start crosslinking approach
         step = 0        

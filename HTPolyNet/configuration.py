@@ -44,8 +44,10 @@ class Configuration(object):
         self.monR_list = ''
         self.croR_list = ''
         self.cutoff = ''
-        self.bondsRatio = ''
-        self.maxBonds = ''
+        self.bondsRatio = 0.0
+        self.maxBonds = 0
+        self.desBonds = 0
+        self.desConv = 0.0
         self.HTProcess = ''
         self.CPU = ''
         self.GPU = ''
@@ -99,14 +101,6 @@ class Configuration(object):
                 # print(k,baseDict[k])
         inst.baseDict=baseDict
 
-        # for k,v in inst.baseDict.items():
-        #     if k.startswith('mol'):
-        #         inst.cappingMolPair.append(v)
-        #         inst.unrctStruct.append(v[1])
-        #     elif k.startswith('cappingBond'):
-        #         for cb in v:
-        #             inst.cappingBonds.append(cb)
-
         rctInfo = []
         for line in baseList: # Reaction Info
             if '+' in line:
@@ -136,17 +130,23 @@ class Configuration(object):
         r+='Monomer info:\n'
         r+='     idx     name    count    reactive-atoms\n'
         for m in self.monInfo:
-            r+=f'     {m[0]:<8d}{m[1]:<8s}{m[2]:<8s}\n'
-            r+=f'                              atname  atnum   rct   grp\n'
+            r+=f'     {m[0]:<8d}{m[1]:<8s}{m[2]:<8d}\n'
+            r+=f'                              atname  z       rct   grp\n'
             for rr in m[3]:
-                r+=f'                              {rr[0]:<8s}{rr[1]:<8s}{rr[2]:<6s}{rr[3]:<6s}\n'
+                r+=f'                              {rr[0]:<8s}{rr[1]:<8d}{rr[2]:<6s}{rr[3]:<6s}\n'
         r+='Crosslinker info:\n'
         r+='     idx     name    count    reactive-atoms\n'
         for c in self.croInfo:
-            r+=f'     {c[0]:<8d}{c[1]:<8s}{c[2]:<8s}\n'
-            r+=f'                              atname  atnum   rct   grp\n'
+            r+=f'     {c[0]:<8d}{c[1]:<8s}{c[2]:<8d}\n'
+            r+=f'                              atname  z       rct   grp\n'
             for rr in c[3]:
-                r+=f'                              {rr[0]:<8s}{rr[1]:<8s}{rr[2]:<6s}{rr[3]:<6s}\n'
+                r+=f'                              {rr[0]:<8s}{rr[1]:<8d}{rr[2]:<6s}{rr[3]:<6s}\n'
+
+        r+='Calculated conversion info:\n'
+        r+=f'    Desired conversion ("bondsRatio"): {self.desConv:<.3f}\n'
+        r+=f'    Maximum number of new bonds:       {self.maxBonds}\n'
+        r+=f'       ->  Target number of new bonds: {self.desBonds}\n'
+
         if len(self.cappingMolPair)>0:
             r+='Capping info:\n'
             r+='    Mol    unreacted\n'
@@ -167,7 +167,29 @@ class Configuration(object):
     # def setName(self, filename):
     #     # this method will be superseded
     #     self.name = filename
+    def calMaxBonds(self):
+        maxRct = 0
+        for i in self.monInfo:
+            molNum = i[2]
+            tmp = 0
+            for ii in i[3]:
+                tmp += ii[1]
+            maxRct += molNum * tmp
+            
+        for i in self.croInfo:
+            molNum = i[2]
+            tmp = 0
+            for ii in i[3]:
+                tmp += ii[1]
+            maxRct += molNum * tmp
         
+#        print('type of maxRct',type(maxRct))
+        self.maxBonds = int(maxRct * 0.5)
+#        print('type of maxBonds',type(self.maxBonds))
+        self.desConv = self.bondsRatio
+#        print('type of desConv',type(self.desConv))
+        self.desBonds = int(self.desConv * self.maxBonds)
+
     def parseCfg(self):
         self.cappingMolPair=[]
         self.unrctStruct=[]
@@ -187,12 +209,12 @@ class Configuration(object):
         i=1
         while f'monName{i}' in self.baseDict:
             mname=self.baseDict[f'monName{i}']
-            mnum=self.baseDict.get(f'monNum{i}',f'Error: monNum{i} not found')
+            mnum=getOrDie(self.baseDict,f'monNum{i}',basetype=int,source=self.cfgFile)
             mrnames=self.baseDict.get(f'mon{i}R_list',f'Error: mon{i}R_list not found')
             mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
             mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
             mrgrp=self.baseDict.get(f'mon{i}R_group',f'Error: mon{i}R_group not found')
-            mrlist=[[r,n,x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
+            mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
             monInfo.append([i,mname,mnum,mrlist])
             monR_list[mname] = mrlist
             i+=1
@@ -201,12 +223,12 @@ class Configuration(object):
         i=1
         while f'croName{i}' in self.baseDict:
             cname=self.baseDict[f'croName{i}']
-            cnum=self.baseDict.get(f'croNum{i}',f'Error: croNum{i} not found')
+            cnum=getOrDie(self.baseDict,f'croNum{i}',basetype=int,source=self.cfgFile)
             crnames=self.baseDict.get(f'cro{i}R_list',f'Error: cro{i}R_list not found')
             crnum=self.baseDict.get(f'cro{i}R_rNum',f'Error: cro{i}R_rNum not found')
             crrct=self.baseDict.get(f'cro{i}R_rct',f'Error: cro{i}R_rct not found')
             crgrp=self.baseDict.get(f'cro{i}R_group',f'Error: cro{i}R_group not found')
-            crlist=[[r,n,x,g] for r,n,x,g in zip(crnames,crnum,crrct,crgrp)]
+            crlist=[[r,int(n),x,g] for r,n,x,g in zip(crnames,crnum,crrct,crgrp)]
             croInfo.append([i,cname,cnum,crlist])
             croR_list[cname] = crlist
             i+=1
@@ -236,6 +258,9 @@ class Configuration(object):
         self.HTProcess=getOrDie(self.baseDict,'HTProcess',basetype=str,source=self.cfgFile)
         self.CPU=getOrDie(self.baseDict,'CPU',basetype=int,source=self.cfgFile)
         self.trials=getOrDie(self.baseDict,'trials',basetype=int,source=self.cfgFile)
+
+        # anything that can be calculated immediately from data in the config
+        self.calMaxBonds()
 
     # def readCfg(self):
     #     # this method will be superseded
