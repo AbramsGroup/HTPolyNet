@@ -118,7 +118,7 @@ class HTPolyNet(object):
                 print(f'       {f}')
         print(self.cfg)
         print(self.software)
-        print(f'Directory structure under {self.root}:')
+        print(f'Directory structure to be created initially under {self.root}:')
         for dt,d in self.dirTree.items():
             print(f'   {d}')
 
