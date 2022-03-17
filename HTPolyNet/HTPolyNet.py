@@ -640,15 +640,16 @@ class HTPolyNet(object):
         #path = os.getcwd()
         #self.topPath = path
 
-        paraFile = os.path.join(path, 'options.txt')
-        if os.path.isfile(paraFile):
-            pass
-        else:
-            print('Didn\'t find configeration file. Please check!')
-            sys.exit()
+        # paraFile = os.path.join(path, 'options.txt')
+        # if os.path.isfile(paraFile):
+        #     pass
+        # else:
+        #     print('Didn\'t find configeration file. Please check!')
+        #     sys.exit()
 
-        self.setParam(paraFile)
-        self.getMolNames()
+        # self.setParam(paraFile)
+        # self.getMolNames()
+# HERE HERE HERE
         self.initFolder()
 
         os.chdir(self.unrctFolder)
