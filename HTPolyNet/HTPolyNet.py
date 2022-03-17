@@ -583,18 +583,7 @@ class HTPolyNet(object):
             self.gro = deepcopy(self.initGro)
             self.top = deepcopy(self.initTop)
 
-    def getMolNames(self):
-        names = []
-        for n in self.basicParameter.unrctStruct:
-            names.append(n)
 
-        for n in self.basicParameter.monInfo:
-            names.append(n[1])
-        
-        for n in self.basicParameter.croInfo:
-            names.append(n[1])
-        
-        self.molNames = names
     
     def getChargeMaps(self, name):
         maps = {}

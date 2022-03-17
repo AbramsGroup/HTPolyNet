@@ -141,7 +141,7 @@ class Configuration(object):
             r+=f'                              atname  z       rct   grp\n'
             for rr in c[3]:
                 r+=f'                              {rr[0]:<8s}{rr[1]:<8d}{rr[2]:<6s}{rr[3]:<6s}\n'
-
+        r+='Summary: Mol names are '+', '.join(self.molNames)+'\n'
         r+='Calculated conversion info:\n'
         r+=f'    Desired conversion ("bondsRatio"): {self.desConv:<.3f}\n'
         r+=f'    Maximum number of new bonds:       {self.maxBonds}\n'
@@ -189,6 +189,16 @@ class Configuration(object):
         self.desConv = self.bondsRatio
 #        print('type of desConv',type(self.desConv))
         self.desBonds = int(self.desConv * self.maxBonds)
+
+    def getMolNames(self):
+        names = []
+        for n in self.unrctStruct:
+            names.append(n)
+        for n in self.monInfo:
+            names.append(n[1])
+        for n in self.croInfo:
+            names.append(n[1])
+        self.molNames = names
 
     def parseCfg(self):
         self.cappingMolPair=[]
@@ -261,6 +271,7 @@ class Configuration(object):
 
         # anything that can be calculated immediately from data in the config
         self.calMaxBonds()
+        self.getMolNames()
 
     # def readCfg(self):
     #     # this method will be superseded
