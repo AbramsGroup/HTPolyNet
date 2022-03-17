@@ -30,8 +30,6 @@ class ProjectFileSystem:
     def __init__(self,root='.',reProject=''):
         self.rootPath=root
         self.D=[]
-
-        self.D['root']=root
         if reProject=='': # this is a fresh project
             i=0
             while(os.path.isdir(os.path.join(root,f'proj{i}'))):
@@ -40,10 +38,10 @@ class ProjectFileSystem:
         else:
             if not os.path.isdir(os.path.join(root,reProject)):
                 raise FileNotFoundError(f'{reProject} not found')
-        self.D['project']=reProject
+        self.D.append(reProject)
         os.mkdir(os.path.join(self.D['root'],self.D['project']))
 
-    def 
+    def populate(self):
         toplevels=['basic','mdp','results','systems']
         for tl in toplevels:
             R[tl]=os.path.join(projPath,tl)
