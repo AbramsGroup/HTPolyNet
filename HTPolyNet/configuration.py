@@ -200,6 +200,11 @@ class Configuration(object):
             names.append(n[1])
         self.molNames = names
 
+    def mol2sNeeded(self):
+        L=self.monInfo+self.croInfo
+        for n in L:
+            yield n[1]
+
     def parseCfg(self):
         self.cappingMolPair=[]
         self.unrctStruct=[]

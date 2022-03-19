@@ -21,35 +21,67 @@ root
                     |-->sim1
                     |...
                     +-->simn
-                            +-->init
+                            |-->init
 
 
 '''
-
 class ProjectFileSystem:
-    def __init__(self,root='.',reProject=''):
-        self.rootPath=root
-        self.D=[]
+    def __init__(self,root='.',verbose=False,reProject=''):
+        self.rootPath=pathlib.Path(root).resolve()
+        self.cwd=self.rootPath
+        self.verbose=verbose
+        self.cd(self.rootPath)
+        self.nextProjectDir(reProject='')
+        self.setupProjectRoot()
+        self.cd(self.rootPath)
+
+    def cd(self,dest=''):
+        os.chdir(dest)
+        self.cwd=os.getcwd()
+        if (self.verbose):
+            print(f'cwd: {self.cwd}')
+
+    def __str__(self):
+        return f'root {self.rootPath}: {self.D} cwd {self.cwd}'
+
+    def nextProjectDir(self,reProject=''):
         if reProject=='': # this is a fresh project
             i=0
-            while(os.path.isdir(os.path.join(root,f'proj{i}'))):
+            while(os.path.isdir(os.path.join(self.rootPath,f'proj{i}'))):
                 i+=1
             reProject=f'proj{i}'
         else:
-            if not os.path.isdir(os.path.join(root,reProject)):
+            if not os.path.isdir(os.path.join(self.rootPath,reProject)):
                 raise FileNotFoundError(f'{reProject} not found')
-        self.D.append(reProject)
-        os.mkdir(os.path.join(self.D['root'],self.D['project']))
+        self.projPath=os.path.join(self.rootPath,reProject)
+        os.mkdir(reProject)
 
-    def populate(self):
-        toplevels=['basic','mdp','results','systems']
-        for tl in toplevels:
-            R[tl]=os.path.join(projPath,tl)
-        syssubs=['unrctSystem','rctSystem','typeSystem']
-        for ss in syssubs:
-            R[ss]=os.path.join(R['systems'],ss)
-        ressubs=['init']
-        for rs in ressubs:
-            R[rs]=os.path.join(R['results'],rs)
-        self.D=R
+    def goToProjectRoot(self):
+        self.cd(self.projPath)
+
+    def setupProjectRoot(self):
+        self.goToProjectRoot()
+        self.projSubPaths={}
+        for tops in ['basic','mdp','systems','results']:
+            self.projSubPaths[tops]=os.path.join(self.projPath,tops)
+            os.mkdir(tops)
+        self.basicPath=self.projSubPaths['basic']
+        self.mdpPath=self.projSubPaths['mdp']
+        self.systemsPath=self.projSubPaths['systems']
+        self.resPath=self.projSubPaths['results']
+        self.cd(self.systemsPath)
+        self.systemsSubPaths={}
+        for tops in ['rctSystems','unrctSystems','typeSystems']:
+            self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
+            os.mkdir(tops)
+        self.unrctPath=self.systemsSubPaths['unrctSystems']
+        self.rctPath=self.systemsSubPaths['rctSystems']
+        self.typePath=self.systemsSubPaths['typeSystems']
+
+    def goToProjectSubPath(self,toplevel):
+        if toplevel in self.projSubPaths:
+            self.cd(self.projSubPaths[toplevel])
+
+if __name__=='__main__':
+    pfs=ProjectFileSystem(verbose=True)
 
