@@ -1,0 +1,40 @@
+# GMA 0.37, mSTY 0.63
+
+# Basic Info
+reProject = proj1
+boxSize = 10
+cutoff = 0.5
+bondsRatio = 1
+HTProcess = True
+CPU = 30
+trials = 10
+stepwise = 0.01, 1
+
+# Basic structures
+mol1 = mST, mST-un
+
+# capping syntax
+cappingBonds = mST, C1, C2, 2
+
+# layer condition
+boxLimit = 1
+layerConvLimit = 1
+
+# For croslinker 1
+croName1 = mST
+croNum1 = 500
+cro1R_list = C1, C2
+cro1R_rNum = 1, 1
+cro1R_rct = H, T
+cro1R_group = 1, 1
+
+# For monomer 1
+monName1 = mST
+monNum1 = 500
+mon1R_list = C1, C2
+mon1R_rNum = 1, 1
+mon1R_rct = H, T
+mon1R_group = 1, 1
+
+# React Info (always, cro always comes first)
+mST + mST + 100.0%
