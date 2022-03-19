@@ -1,0 +1,49 @@
+# Basic Info
+reProject = proj1
+
+boxSize = 15 15 15  
+cutoff = 0.5
+bondsRatio = 0.95
+
+HTProcess = False
+RingPierce = True
+
+CPU = 30
+replicas = 10
+stepwise = 1
+
+# Basic structures
+# only put molecules which need capping
+mol1 = DGE, DGE-un
+
+# capping syntax
+# 2 stands for the bond properties.
+#   single bond: 1
+#   double bond: 2
+#   triple bond: 3
+cappingBonds = DGE, O1, C1, 1
+cappingBonds = DGE, O2, C2, 1
+
+# layer condition
+boxLimit = 1
+layerConvLimit = 1
+
+# For croslinker 1
+croName1 = PAC
+croNum1 = 400
+cro1R_list = N1, N2
+cro1R_rNum = 2, 2
+cro1R_rct = H, H
+cro1R_group = 1, 2
+
+# For monomer 1
+monName1 = DGE
+monNum1 = 800
+mon1R_list = C1, C2
+mon1R_rNum = 1, 1
+mon1R_rct = H, H
+mon1R_group = 1, 2
+
+# React Info (always, cro always comes first)
+PAC + DGE + 100.0%
+
