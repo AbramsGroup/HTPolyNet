@@ -3,7 +3,7 @@ import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
 
-def cfaReadTop(fname):
+def GromacsTopToDataFrameDict(fname):
     ''' reads stanzas from a gromacs topology file into individual
         pandas dataframes.  Each dataframe is stored in a dictionary
         keyed by the stanza name, and this dictionary is returned. '''
@@ -94,7 +94,7 @@ class Topology(object):
         #         else:
         #             df_sep.append(df_tmp)
         # df_sep.append(df1.iloc[dil_indx[i] + 1:, :])
-        dfdict=cfaReadTop(self.topName)
+        dfdict=GromacsTopToDataFrameDict(self.topName)
         copyfile(self.topName, '{}-bk'.format(self.topName))
         return dfdict
 
