@@ -5,28 +5,25 @@ Created on Sun Nov  1 08:57:03 2020
 @author: huang
 """
 
-#from re import T
-#from typing import Type
 import os
 import glob
 import subprocess
 import pandas as pd
-#import shutil
-
 import parmed
 
-#import HTPolyNet.parameters as parameters
-#from HTPolyNet.parameters import ExtraGAFFParams
 import HTPolyNet.configuration as configuration
 import HTPolyNet.readMol as readMol
 import HTPolyNet.createRctMol as createRctMol
+import HTPolyNet.ambertools as ambertools
 
 class generateTypeInfo(object):
-    def __init__(self, basicPath):
-        self.srcPath = os.getcwd()
-        self.unrctPath = ''
-        self.typePath = ''
-        self.basicPath = basicPath
+    def __init__(self,fs,cfg):
+#        self.srcPath = os.getcwd()
+        self.fs=fs
+        self.cfg=cfg
+        self.unrctPath = fs.unrctPath
+        self.typePath = fs.typePath
+        self.basicPath = fs.basicPath
         self.type = {}
     
     def getRctNum(self, keys, param):
@@ -186,80 +183,86 @@ class generateTypeInfo(object):
 
     # should not do this!! very bad!! parameters used should
     # be saved in a working directory, not the source!!
-    def updateParamFile(self, db):
-        e=ExtraGAFFParams()
-        newBondType = e.extra_bonds
-        newAngType = e.extra_angles
-        newDihType = e.extra_dihedrals
-        db_BondType = db[0]
-        db_AngType = db[1]
-        db_DihType = db[2]
-        db_ImpType = db[3]
+    # def updateParamFile(self, db):
+    #     # e=ExtraGAFFParams()
+    #     # newBondType = e.extra_bonds
+    #     # newAngType = e.extra_angles
+    #     # newDihType = e.extra_dihedrals
+    #     db_BondType = db[0]
+    #     db_AngType = db[1]
+    #     db_DihType = db[2]
+    #     db_ImpType = db[3]
         
-        for keys, values in db_BondType.items():
-            if keys not in newBondType:
-                newBondType[keys] = values
+    #     for keys, values in db_BondType.items():
+    #         if keys not in newBondType:
+    #             newBondType[keys] = values
         
-        for keys, values in db_AngType.items():
-            if keys not in newAngType:
-                newAngType[keys] = values
+    #     for keys, values in db_AngType.items():
+    #         if keys not in newAngType:
+    #             newAngType[keys] = values
             
-        for keys, values in db_DihType.items():
-            newDihType[keys] = values
-        tmpList = [newBondType, newAngType, newDihType]
-        name = ['dictBond', 'dictAngle', 'dictDihedral']
-        if os.path.isfile('tmp.py'):
-            os.remove('tmp.py')
-        for i in range(len(tmpList)):
-            with open('tmp.py', 'a') as f:
-                print('{} = '.format(name[i]), tmpList[i], file=f)
-        if os.path.isfile('parameters.py'):
-            os.remove('parameters.py')
-        os.rename('tmp.py', 'parameters.py')
+    #     for keys, values in db_DihType.items():
+    #         newDihType[keys] = values
+    #     tmpList = [newBondType, newAngType, newDihType]
+    #     name = ['dictBond', 'dictAngle', 'dictDihedral']
+    #     if os.path.isfile('tmp.py'):
+    #         os.remove('tmp.py')
+    #     for i in range(len(tmpList)):
+    #         with open('tmp.py', 'a') as f:
+    #             print('{} = '.format(name[i]), tmpList[i], file=f)
+    #     if os.path.isfile('parameters.py'):
+    #         os.remove('parameters.py')
+    #     os.rename('tmp.py', 'parameters.py')
         
     def obtainParam(self):
         os.chdir(self.typePath)
         fileList = glob.glob('*.mol2')
         itpFile = glob.glob('*.itp')
-        if len(itpFile) > 0:
-            nameList = itpFile
-        else:
-            nameList = []
-            for f in fileList:
-                name = f.split('.')[0]
-                print('---> Getting paramters from {}.mol2...'.format(name))
-                out1 = name + '-min'
-                out2 = name + '-type'
-                # cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'.format(name, out1)
-                cmd2 = 'antechamber -j 4 -fi mol2 -fo mol2 -c gas -at gaff -i {}.mol2 -o {}.mol2 -pf Y -nc 0 -eq 1 -pl 10'.format(name, out2)
-                cmd3 = 'parmchk2 -i {}.mol2 -o {}.frcmod -f mol2 -s gaff'.format(out2, out2)
-                cmd4 = 'tleap -f tleap.in'
-                
-                str1 = 'source leaprc.gaff \nSUS = loadmol2 {}.mol2 \ncheck SUS\nloadamberparams {}.frcmod \nsaveamberparm SUS {}.top {}.crd \nquit'.format(out2, out2, out2, out2)
-                with open('tleap.in', 'w') as f:
-                    f.write(str1)
+        itpNeeded=[]
+        nameList=[]
+        for n in fileList:
+            p=n.split('.')[0]+'.itp'
+            if not p in itpFile:
+                itpNeeded.append(p)
+            else:
+                nameList.append(p)
+        A=ambertools.Parameterization()
+        for f in itpNeeded:
+            name = f.split('.')[0]
+            print(f'---> Getting parameters for {name}.mol2...')
+            # out1 = name + '-min'
+            out2 = name + '-type'
+            A.GAFFParameterize(f,out2,extra_antechamber_params='-eq 1 -pl 10',parmed_save_inline=False)
+            # cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'.format(name, out1)
+            # cmd2 = 'antechamber -j 4 -fi mol2 -fo mol2 -c gas -at gaff -i {}.mol2 -o {}.mol2 -pf Y -nc 0 -eq 1 -pl 10'.format(name, out2)
+            # cmd3 = 'parmchk2 -i {}.mol2 -o {}.frcmod -f mol2 -s gaff'.format(out2, out2)
+            # cmd4 = 'tleap -f tleap.in'
+            
+            # str1 = 'source leaprc.gaff \nSUS = loadmol2 {}.mol2 \ncheck SUS\nloadamberparams {}.frcmod \nsaveamberparm SUS {}.top {}.crd \nquit'.format(out2, out2, out2, out2)
+            # with open('tleap.in', 'w') as f:
+            #     f.write(str1)
 
-                # a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                # out1, err1 = a1.communicate()
-                a2 = subprocess.Popen(cmd2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                a2.communicate()
-                a3 = subprocess.Popen(cmd3, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                a3.communicate()
-                a4 = subprocess.Popen(cmd4, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                a4.communicate()
-                
-                file = parmed.load_file('{}.top'.format(out2), xyz='{}.crd'.format(out2))
-                file.save('{}.gro'.format(out2))
-                file.save('{}.top'.format(out2), parameters='{}.itp'.format(out2), overwrite=True)
-                nameList.append('{}.itp'.format(out2))
-        
+            # # a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # # out1, err1 = a1.communicate()
+            # a2 = subprocess.Popen(cmd2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # a2.communicate()
+            # a3 = subprocess.Popen(cmd3, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # a3.communicate()
+            # a4 = subprocess.Popen(cmd4, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # a4.communicate()
+            
+            # file = parmed.load_file('{}.top'.format(out2), xyz='{}.crd'.format(out2))
+            # file.save('{}.gro'.format(out2))
+            # file.save('{}.top'.format(out2), parameters='{}.itp'.format(out2), overwrite=True)
+            nameList.append(f'{out2}.itp')
+    
         db = self.extractFF(nameList)
         db = self.filterFF(db)
-        os.chdir(self.srcPath)
+#        os.chdir(self.srcPath)
         # should not do this!! very bad!! parameters used should
         # be saved in a working directory, not the source!!
-        self.updateParamFile(db)
-        return db
+#        self.updateParamFile(db)
+        return db  # nothing is done with this?
     
     def main(self, unrctPath, typePath):
         self.unrctPath = unrctPath

@@ -20,6 +20,7 @@ from shutil import rmtree
 from copy import deepcopy
 import subprocess
 import argparse as ap
+import pandas as pd
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
@@ -36,6 +37,8 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
+import HTPolyNet.ambertools as ambertools
+
 from HTPolyNet.software import Software
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
@@ -57,7 +60,7 @@ class HTPolyNet(object):
         self.cfg=Configuration.read(cfgFile)
         # session filesystem
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.reProject)
-        # fetch mol2 files
+        # fetch mol2 files, or die if not found
         self.findMol2()
 
 
@@ -189,7 +192,7 @@ class HTPolyNet(object):
 
     def findMol2(self):
         mol2searchpath=[self.pfs.rootPath,self.pfs.projPath,self.LibraryResourcePaths['mol2']]
-        for m in self.cfg.mol2sNeeded():
+        for m in self.cfg.molNames:
             fname=f'{m}.mol2'
             for p in mol2searchpath:
                 afname=os.path.join(p,fname)
@@ -606,7 +609,6 @@ class HTPolyNet(object):
         return maps
 
     def getUnrctPara(self):
-        import pandas as pd
         atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
         btypeNames = ['ai', 'aj', 'funct', 'c0', 'c1']
         angTypeNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
@@ -614,7 +616,7 @@ class HTPolyNet(object):
         impTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
         atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
 
-        basicName = self.basicParameter.unrctStruct
+        basicName = self.cfg.unrctStruct
         aTypes = pd.DataFrame(columns=atypeNames)
         bTypes = pd.DataFrame(columns=btypeNames)
         angTypes = pd.DataFrame(columns=angTypeNames)
@@ -642,64 +644,53 @@ class HTPolyNet(object):
         impTypes.drop_duplicates(inplace=True, ignore_index=True)
         self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes, atoms]
 
-        unrctMap = getCappingParam.genUnrctMapping(self.basicParameter)
+        unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         self.unrctMap = unrctMap
 
-    def preparePara(self):
-        import HTPolyNet.prepareParam as prepareParam
-
-        # now handled in constructor
-        #path = os.getcwd()
-        #self.topPath = path
-
-        # paraFile = os.path.join(path, 'options.txt')
-        # if os.path.isfile(paraFile):
-        #     pass
-        # else:
-        #     print('Didn\'t find configeration file. Please check!')
-        #     sys.exit()
-
-        # self.setParam(paraFile)
-        # self.getMolNames()
-# HERE HERE HERE
-        self.initFolder()
-
+    def preparePara(self,log=True):
         os.chdir(self.unrctFolder)
+        if log:
+            logf=open('parameterization.log','w')
+        A=ambertools.Parameterization()
+        self.Topologies=[]
         for n in self.molNames:
-            fileName = '{}.mol2'.format(n)
-            if os.path.isfile('{}.gro'.format(n)) and os.path.isfile('{}.top'.format(n)):
-                b = processTop.processTop(n, repeat=True)
-                b.main()
+            mol2Name=f'{n}.mol2'
+            if os.path.isfile(f'{n}.gro') and os.path.isfile(f'{n}.top'):
+                T=processTop.Topology(n,repeat=True)
             else:
-                a = prepareParam.prepareParam()
-                a.PrepareFile(fileName, n, n)
-                b = processTop.processTop(n) # process the top file, make it standard
-                b.main()
-            self.topMap[b.name] = b.top
-        self.getUnrctPara()
-        os.chdir(self.projPath)
-        
-        if os.path.isfile('{}/charges.txt'.format(self.basicFolder)):
-            self.chargeMap = self.getChargeMaps('{}/charges.txt'.format(self.basicFolder))
-        else:
-            print('--> Start generating charge data base')
-            a1 = generateChargeDb.generateChargeDb()
-            cc = a1.main(self.unrctFolder, self.rctFolder, 4) # could be more
-            
-            self.chargeMap = cc
-        
-        os.chdir(self.projPath)
-        print('--> Start generating reacted molecules type data base')
-        a = generateTypeInfo.generateTypeInfo(self.topPath)
-        a.main(self.unrctFolder, self.typeFolder)
+                msg=A.GAFFParameterize(mol2Name,n,resName=n)
+                if log:
+                    logf.write(msg)
+                T=processTop.Topology(n) # process the top file, make it standard
+            T.generate()
+            self.Topologies.append(T)
+            self.topMap[T.name] = T.top
 
-def init():
-    LibraryResourcePaths=IdentifyLibraryResourcePaths()
-    example_cfg='VEA-VEB-STY-example.cfg'
-    getme=os.path.join(LibraryResourcePaths["cfg"],example_cfg)
-    print(f'HTPolyNet is copying {example_cfg} from {LibraryResourcePaths["cfg"]}')
-    os.system(f'cp {getme} .')
-    print(f'After editing this file, you can launch using\n"htpolynet run -cfg <name-of-config-file>"')
+        self.getUnrctPara()
+
+        os.chdir(self.pfs.projPath)
+        charges_file=f'{self.pfs.basicPath}/charges.txt'
+        if os.path.isfile(charges_file):
+            self.chargeMap=self.getChargeMaps(charges_file)
+        else:
+            print('--> Generating new charge database')
+            a1=generateChargeDb.generateChargeDb()
+            self.chargeMap=a1.main(self.pfs.unrctPath,self.pfs.rctPath,4) # could be more
+        
+        os.chdir(self.pfs.projPath)
+        print('--> Generating reacted molecules type database')
+        a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
+        a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
+        if log:
+            logf.close()
+
+# def init():
+#     LibraryResourcePaths=IdentifyLibraryResourcePaths()
+#     example_cfg='VEA-VEB-STY-example.cfg'
+#     getme=os.path.join(LibraryResourcePaths["cfg"],example_cfg)
+#     print(f'HTPolyNet is copying {example_cfg} from {LibraryResourcePaths["cfg"]}')
+#     os.system(f'cp {getme} .')
+#     print(f'After editing this file, you can launch using\n"htpolynet run -cfg <name-of-config-file>"')
 
 # def run(a,cfg=''):
 #     print(f'HTPolyNet is going to try to run in {os.getcwd()}...')

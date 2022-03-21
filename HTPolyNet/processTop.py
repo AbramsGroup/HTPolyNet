@@ -2,7 +2,7 @@ import pandas as pd
 import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
-class processTop(object):
+class Topology(object):
     def __init__(self, name, repeat=False):
         self.name = name
         self.repeat = repeat
@@ -246,11 +246,11 @@ class processTop(object):
 
         self.top = top0
 
-    def main(self):
+    def generate(self):
         lst = self.getTopInfo()
         self.genTop(lst)
 
 if __name__ == '__main__':
-    a = processTop('STY')
+    a = Topology('STY')
     a1 = a.getTopInfo()
     a.genTop(a1)

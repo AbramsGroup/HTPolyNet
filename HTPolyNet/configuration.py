@@ -22,14 +22,14 @@ def getOrDie(D,k,basetype=None,subtype=str,source='config'):
             if type(s)==list:
                 r=list(map(subtype,s))
             else:
-                raise Exception(f'Value at keyword {k} is not type {basetype}.')
+                raise KeyError(f'Value at keyword {k} is not type {basetype}.')
         elif basetype!=list: # ignore subtype
             if basetype==None:
                 r=s
             else:
                 r=basetype(s)
     else:
-        raise Exception(s)
+        raise KeyError(s)
     return r
 
 class Configuration(object):
@@ -164,9 +164,6 @@ class Configuration(object):
         # print(r)
         return r
 
-    # def setName(self, filename):
-    #     # this method will be superseded
-    #     self.name = filename
     def calMaxBonds(self):
         maxRct = 0
         for i in self.monInfo:
@@ -183,11 +180,8 @@ class Configuration(object):
                 tmp += ii[1]
             maxRct += molNum * tmp
         
-#        print('type of maxRct',type(maxRct))
         self.maxBonds = int(maxRct * 0.5)
-#        print('type of maxBonds',type(self.maxBonds))
         self.desConv = self.bondsRatio
-#        print('type of desConv',type(self.desConv))
         self.desBonds = int(self.desConv * self.maxBonds)
 
     def getMolNames(self):
@@ -199,12 +193,6 @@ class Configuration(object):
         for n in self.croInfo:
             names.append(n[1])
         self.molNames = names
-
-    def mol2sNeeded(self):
-        # is this right, or do we also need mol2 for "unreacted/inactive"
-        L=self.monInfo+self.croInfo
-        for n in L:
-            yield n[1]
 
     def parseCfg(self):
         self.cappingMolPair=[]
@@ -278,169 +266,3 @@ class Configuration(object):
         # anything that can be calculated immediately from data in the config
         self.calMaxBonds()
         self.getMolNames()
-
-    # def readCfg(self):
-    #     # this method will be superseded
-    #     monInfo = []
-    #     croInfo = []
-        
-    #     monNum = ''
-    #     monR_list = {}
-    #     croNum = ''
-    #     croR_list = {}
-        
-    #     df = pd.read_csv(self.name, header=None, sep='\n', skip_blank_lines=True)
-    #     df = df[df[0].str.startswith('#') == False]
-    #     baseList = df.iloc[:][0]
-
-    #     # Get capping parameters
-    #     i = 1
-    #     while i < 10:
-    #         for l1 in baseList:
-    #             if 'mol{}'.format(i) in l1:
-    #                 tmpMolPair = l1.split('=')[1].split(',')
-    #                 self.cappingMolPair.append(tmpMolPair)
-    #                 self.unrctStruct.append(tmpMolPair[1].strip())
-    #         i += 1
-
-    #     for l1 in baseList:
-    #         if l1.startswith('cappingBonds'):
-    #             self.cappingBonds.append(l1.split('=')[1].split(','))
-
-    #     # Get monomer and crosslinker info
-    #     i = 1
-    #     while i < 5:
-    #         for l1 in baseList:
-    #             if 'monName{}'.format(i) in l1:
-    #                 monName = l1.split('=')[1].strip(' ')
-    #                 for l2 in baseList:
-    #                     key1 = 'monNum{}'.format(i)
-    #                     if key1 in l2:
-    #                         monNum = l2.split('=')[1].strip(' ')
-                    
-    #                 for l2 in baseList:
-    #                     key2 = 'mon{}R_list'.format(i)
-    #                     if key2 in l2:
-    #                         monR_list_tmp = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-                    
-    #                 for l2 in baseList:
-    #                     key3 = 'mon{}R_rNum'.format(i)
-    #                     if key3 in l2:
-    #                         monR_rNum = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-                    
-    #                 for l2 in baseList:
-    #                     key4 = 'mon{}R_rct'.format(i)
-    #                     if key4 in l2:
-    #                         monR_rct = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-
-    #                 for l2 in baseList:
-    #                     key4 = 'mon{}R_group'.format(i)
-    #                     if key4 in l2:
-    #                         monR_group = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-
-    #                 for idx in range(len(monR_list_tmp)):
-    #                     monR_list_tmp[idx] = [monR_list_tmp[idx].strip(), monR_rNum[idx].strip(),
-    #                                           monR_rct[idx].strip(), monR_group[idx].strip()]
-                    
-    #                 monInfo.append([i, monName, monNum, monR_list_tmp])
-    #                 monR_list[monName] = monR_list_tmp
-    #         i += 1
-
-    #     i = 1
-    #     while i < 5:
-    #         for l1 in baseList:
-    #             if 'croName{}'.format(i) in l1:
-    #                 croName = l1.split('=')[1].strip(' ')
-    #                 for l2 in baseList:
-    #                     key1 = 'croNum{}'.format(i)
-    #                     if key1 in l2:
-    #                         croNum = l2.split('=')[1].strip(' ')
-                    
-    #                 for l2 in baseList:
-    #                     key2 = 'cro{}R_list'.format(i)
-    #                     if key2 in l2:
-    #                         croR_list_tmp = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-                                                
-    #                 for l2 in baseList:
-    #                     key3 = 'cro{}R_rNum'.format(i)
-    #                     if key3 in l2:
-    #                         croR_rNum = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-                    
-    #                 for l2 in baseList:
-    #                     key4 = 'cro{}R_rct'.format(i)
-    #                     if key4 in l2:
-    #                         croR_rct = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-
-    #                 for l2 in baseList:
-    #                     key4 = 'cro{}R_group'.format(i)
-    #                     if key4 in l2:
-    #                         croR_group = l2.split('=')[1].strip(' ').split('#')[0].split(',')
-
-    #                 for idx in range(len(croR_list_tmp)):
-    #                     croR_list_tmp[idx] = [croR_list_tmp[idx].strip(), croR_rNum[idx].strip(),
-    #                                           croR_rct[idx].strip(), croR_group[idx].strip()]
-                                                
-    #                 croInfo.append([i, croName, croNum, croR_list_tmp])
-    #                 croR_list[croName] = croR_list_tmp
-    #         i += 1
-
-    #     reProject = '' # para could be missing in the options file
-
-    #     for line in baseList: # Basic Info
-    #         if 'boxSize' in line:
-    #             boxSize = line.split('=')[1].strip(' ').split()    
-    #         if 'cutoff' in line:
-    #             cutoff = float(line.split('=')[1].strip(' '))
-    #         if 'bondsRatio' in line:
-    #             bondsRatio = line.split('=')[1].strip(' ')
-    #         if 'HTProcess' in line:
-    #             HTProcess = line.split('=')[1].strip(' ')
-    #         if 'CPU' in line:
-    #             CPU = line.split('=')[1].strip(' ')
-    #         if 'GPU' in line:
-    #             GPU = line.split('=')[1].strip(' ')
-    #         if 'trials' in line:
-    #             trials = line.split('=')[1].strip(' ')
-    #         if 'reProject' in line:
-    #             reProject = line.split('=')[1].strip(' ')
-    #         if 'stepwise' in line:
-    #             tmpStr =  line.split('=')[1]
-    #             stepwise = tmpStr.split(',')
-    #         if 'boxLimit' in line:
-    #             boxLimit = line.split('=')[1].strip(' ')
-    #         if 'boxDir' in line:
-    #             boxDir = line.split('=')[1].strip(' ')
-    #         if 'layerConvLimit' in line:
-    #             layerConvLimit = line.split('=')[1].strip(' ')
-    #     rctInfo = []
-    #     for line in baseList: # React Info
-    #         if '+' in line:
-    #             rct = [x.split() for x in line.split('+')]
-    #             rctInfo.append(rct)
-            
-    #     self.monInfo = monInfo
-    #     self.croInfo = croInfo
-    #     self.boxSize = boxSize
-    #     self.monR_list = monR_list
-    #     self.croR_list = croR_list
-    #     self.cutoff = cutoff
-    #     self.bondsRatio = bondsRatio
-    #     self.rctInfo = rctInfo
-    #     try:
-    #         self.CPU = CPU
-    #     except:
-    #         self.CPU = 0
-    #     try:
-    #         self.GPU = GPU
-    #     except:
-    #         self.GPU = 0
-    #     self.trials = trials
-    #     self.HTProcess = HTProcess
-    #     self.reProject = reProject
-    #     self.stepwise = stepwise
-    #     self.boxLimit = boxLimit
-    #     self.layerDir = boxDir
-    #     self.layerConvLimit = layerConvLimit
-        
-# if __name__ == '__main__':
-#     pass

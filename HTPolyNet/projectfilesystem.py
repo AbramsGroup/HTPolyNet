@@ -31,8 +31,8 @@ class ProjectFileSystem:
         self.cwd=self.rootPath
         self.verbose=verbose
         self.cd(self.rootPath)
-        self.nextProjectDir(reProject='')
-        self.setupProjectRoot()
+        self._nextProjectDir(reProject='')
+        self._setupProjectRoot()
         self.cd(self.rootPath)
 
     def cd(self,dest=''):
@@ -41,10 +41,17 @@ class ProjectFileSystem:
         if (self.verbose):
             print(f'cwd: {self.cwd}')
 
+    def goToProjectRoot(self):
+        self.cd(self.projPath)
+
+    def goToProjectSubPath(self,toplevel):
+        if toplevel in self.projSubPaths:
+            self.cd(self.projSubPaths[toplevel])
+
     def __str__(self):
         return f'root {self.rootPath}: {self.D} cwd {self.cwd}'
 
-    def nextProjectDir(self,reProject=''):
+    def _nextProjectDir(self,reProject=''):
         if reProject=='': # this is a fresh project
             i=0
             while(os.path.isdir(os.path.join(self.rootPath,f'proj{i}'))):
@@ -56,10 +63,8 @@ class ProjectFileSystem:
         self.projPath=os.path.join(self.rootPath,reProject)
         os.mkdir(reProject)
 
-    def goToProjectRoot(self):
-        self.cd(self.projPath)
 
-    def setupProjectRoot(self):
+    def _setupProjectRoot(self):
         self.goToProjectRoot()
         self.projSubPaths={}
         for tops in ['basic','mdp','systems','results']:
@@ -78,9 +83,6 @@ class ProjectFileSystem:
         self.rctPath=self.systemsSubPaths['rctSystems']
         self.typePath=self.systemsSubPaths['typeSystems']
 
-    def goToProjectSubPath(self,toplevel):
-        if toplevel in self.projSubPaths:
-            self.cd(self.projSubPaths[toplevel])
 
 if __name__=='__main__':
     pfs=ProjectFileSystem(verbose=True)

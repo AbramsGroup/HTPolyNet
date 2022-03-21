@@ -163,78 +163,78 @@ class createRctMol(object):
                 value[i].outMol2(n)
                 idx += 1
 
-if __name__ == '__main__':
-    path = '../systems/unrctSystem/'
-    rctPath = '../systems/tmp/'
-    # Get connect info from options.txt
-    import HTPolyNet.configuration as configuration
+# if __name__ == '__main__':
+#     path = '../systems/unrctSystem/'
+#     rctPath = '../systems/tmp/'
+#     # Get connect info from options.txt
+#     import HTPolyNet.configuration as configuration
 
-    a = configuration.parameters()
-    a.setName('../basic/options.txt')
-    a.readParam()
-    mainMol = createRctMol()
-    mainMol.getRctInfo(a) # assume only contain 1 cro
-    keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
-    print('keys: ', keys)
-    croName = '{}{}.mol2'.format(path, list(mainMol.rctInfo['cro'][0].keys())[0])
-    mainMol.croResName = 'CRO'
+#     a = configuration.parameters()
+#     a.setName('../basic/options.txt')
+#     a.readParam()
+#     mainMol = createRctMol()
+#     mainMol.getRctInfo(a) # assume only contain 1 cro
+#     keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
+#     print('keys: ', keys)
+#     croName = '{}{}.mol2'.format(path, list(mainMol.rctInfo['cro'][0].keys())[0])
+#     mainMol.croResName = 'CRO'
 
-    croMol = readMol.readMol(croName)
-    croMol.main()
-    croMol.mol2.updateResName(mainMol.croResName)
-    molList = {}
+#     croMol = readMol.readMol(croName)
+#     croMol.main()
+#     croMol.mol2.updateResName(mainMol.croResName)
+#     molList = {}
 
-    # generateChargeDb.py
-    # for i in range(len(keys)):
-    #     name = '{}{}.mol2'.format(path, keys[i])
-    #     monMol = readMol.readMol(name)
-    #     monMol.main()
-    #     mainMol.base = monMol.mol2
-    #     mainMol.connect = croMol.mol2
-    #     rctTimes = 1
-    #     for ii in range(rctTimes):
-    #         unrctMol = mainMol.mergeMol(ii + 1)
-    #         a1 = mainMol.creatMol(ii + 1, unrctMol, keys[i])
-    #         key = '{}{}'.format(monMol.resname, ii + 1)
-    #         molList[key] = a1
-    # mainMol.mol2List = molList
-    # mainMol.symmetry()
-    # mainMol.outMolLst(rctPath)
+#     # generateChargeDb.py
+#     # for i in range(len(keys)):
+#     #     name = '{}{}.mol2'.format(path, keys[i])
+#     #     monMol = readMol.readMol(name)
+#     #     monMol.main()
+#     #     mainMol.base = monMol.mol2
+#     #     mainMol.connect = croMol.mol2
+#     #     rctTimes = 1
+#     #     for ii in range(rctTimes):
+#     #         unrctMol = mainMol.mergeMol(ii + 1)
+#     #         a1 = mainMol.creatMol(ii + 1, unrctMol, keys[i])
+#     #         key = '{}{}'.format(monMol.resname, ii + 1)
+#     #         molList[key] = a1
+#     # mainMol.mol2List = molList
+#     # mainMol.symmetry()
+#     # mainMol.outMolLst(rctPath)
 
-    rctNum = []
-    tmp_para = a.croInfo + a.monInfo
-    for k in keys:
-        for i in tmp_para:
-            if i[1] == k:
-                rctNum.append(len(i[3]))
+#     rctNum = []
+#     tmp_para = a.croInfo + a.monInfo
+#     for k in keys:
+#         for i in tmp_para:
+#             if i[1] == k:
+#                 rctNum.append(len(i[3]))
 
-    # generateTypeInfo
-    for i in range(len(keys)):
-        name1 = keys[i]
-        molName1 = '{}/{}.mol2'.format(path, name1)
-        mol1 = readMol.readMol(molName1)
-        mol1.main()
-        for name2 in mainMol.getKeys('mon'):
-            molName2 = '{}/{}.mol2'.format(path, name2)
-            mol2 = readMol.readMol(molName2)
-            mol2.main()
-            print('mainMol.croResName: ', mainMol.croResName)
-            mol2.mol2.updateResName(mainMol.croResName)
-            mainMol.base = mol1.mol2
-            mainMol.connect = mol2.mol2
+#     # generateTypeInfo
+#     for i in range(len(keys)):
+#         name1 = keys[i]
+#         molName1 = '{}/{}.mol2'.format(path, name1)
+#         mol1 = readMol.readMol(molName1)
+#         mol1.main()
+#         for name2 in mainMol.getKeys('mon'):
+#             molName2 = '{}/{}.mol2'.format(path, name2)
+#             mol2 = readMol.readMol(molName2)
+#             mol2.main()
+#             print('mainMol.croResName: ', mainMol.croResName)
+#             mol2.mol2.updateResName(mainMol.croResName)
+#             mainMol.base = mol1.mol2
+#             mainMol.connect = mol2.mol2
 
-            unrctMol = mainMol.mergeMol(rctNum[i])
-            a1 = mainMol.creatMol(rctNum[i], unrctMol, name1)
-            key = '{}-{}'.format(mol1.resname, mol2.resname)
-            molList[key] = a1
-    mainMol.mol2List = molList
-    mainMol.outMolLst(rctPath)
+#             unrctMol = mainMol.mergeMol(rctNum[i])
+#             a1 = mainMol.creatMol(rctNum[i], unrctMol, name1)
+#             key = '{}-{}'.format(mol1.resname, mol2.resname)
+#             molList[key] = a1
+#     mainMol.mol2List = molList
+#     mainMol.outMolLst(rctPath)
 
-    seqList = {}
-    for keys, value in molList.items():
-        seq = []
-        for m in value:
-            seq.append(m.seq)
-        seqList[keys] = seq
+#     seqList = {}
+#     for keys, value in molList.items():
+#         seq = []
+#         for m in value:
+#             seq.append(m.seq)
+#         seqList[keys] = seq
             
     

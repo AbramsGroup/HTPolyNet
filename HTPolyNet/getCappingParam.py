@@ -1,5 +1,5 @@
-import os
-import sys
+#import os
+#import sys
 
 #import HTPolyNet.configuration as configuration
 import HTPolyNet.readTop2 as readTop2
@@ -52,9 +52,9 @@ def compareAtoms(topObj1, topObj2, cappingBonds):
 
     return goalRes, outBonds
 
-def genUnrctMapping(inParam):
+def genUnrctMapping(cfg):
     unrctMap = {}
-    for molPair in inParam.cappingMolPair:
+    for molPair in cfg.cappingMolPair:
         bonds = []
         mol1 = readTop2.initTop()
         mol2 = readTop2.initTop()
@@ -63,7 +63,7 @@ def genUnrctMapping(inParam):
         mol1.genTopSession()
         mol2.genTopSession()
 
-        for b in inParam.cappingBonds:
+        for b in cfg.cappingBonds:
             if molPair[0].strip() in b[0].strip():
                 bonds.append(b)
         resKey, resBonds = compareAtoms(mol1, mol2, bonds)
