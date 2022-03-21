@@ -201,6 +201,7 @@ class Configuration(object):
         self.molNames = names
 
     def mol2sNeeded(self):
+        # is this right, or do we also need mol2 for "unreacted/inactive"
         L=self.monInfo+self.croInfo
         for n in L:
             yield n[1]

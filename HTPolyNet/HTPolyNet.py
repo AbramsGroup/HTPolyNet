@@ -57,6 +57,7 @@ class HTPolyNet(object):
         self.cfg=Configuration.read(cfgFile)
         # session filesystem
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.reProject)
+        # fetch mol2 files
         self.findMol2()
 
 
@@ -187,11 +188,16 @@ class HTPolyNet(object):
 #            subprocess.call(cmd0, shell=True)
 
     def findMol2(self):
+        mol2searchpath=[self.pfs.rootPath,self.pfs.projPath,self.LibraryResourcePaths['mol2']]
         for m in self.cfg.mol2sNeeded():
-            libm=os.path.join(self.LibraryResourcePaths['mol2'],f'{m}.mol2')
-            if not os.path.exists(libm):
-                raise FileNotFoundError(f'{libm} not found.')
-            os.system(f'cp {libm} {self.pfs.unrctPath}')
+            fname=f'{m}.mol2'
+            for p in mol2searchpath:
+                afname=os.path.join(p,fname)
+                if os.path.exists(afname):
+                    os.system(f'cp {afname} {self.pfs.unrctPath}')
+                    break
+            else:
+                raise FileNotFoundError(f'{fname} not found.')
 
     # def setParam(self, name):
     #     a = readCfg.parameters()
