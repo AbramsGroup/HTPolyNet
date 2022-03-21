@@ -648,12 +648,14 @@ class HTPolyNet(object):
         self.unrctMap = unrctMap
 
     def preparePara(self,log=True):
-        os.chdir(self.unrctFolder)
+        os.chdir(self.pfs.unrctPath)
         if log:
             logf=open('parameterization.log','w')
+            logf.write('Beginning parameterizations.\n')
+            logf.write('self.cfg.molNames: '+','.join(self.cfg.molNames)+'\n')
         A=ambertools.Parameterization()
         self.Topologies=[]
-        for n in self.molNames:
+        for n in self.cfg.molNames:
             mol2Name=f'{n}.mol2'
             if os.path.isfile(f'{n}.gro') and os.path.isfile(f'{n}.top'):
                 T=processTop.Topology(n,repeat=True)
@@ -732,5 +734,6 @@ def cli():
     elif args.command=='run':
         a=HTPolyNet(software=software,cfgFile=args.cfg)
         a.initreport()
+        a.preparePara()
     else:
         print(f'HTPolyNet command {args.command} not recognized')

@@ -2,6 +2,46 @@ import pandas as pd
 import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
+
+def cfaReadTop(fname):
+    ''' reads stanzas from a gromacs topology file into individual
+        pandas dataframes.  Each dataframe is stored in a dictionary
+        keyed by the stanza name, and this dictionary is returned. '''
+    dfs={}
+    with open(fname,'r') as f:
+        lines=f.read().split('\n')  # list of lines in file
+        for i in range(len(lines)):
+            l=lines[i]
+            w=l.split()
+            if len(w)>0:  #line is not blank
+                if w[0][0]=='[' and w[2][0]==']':
+                    # this line opens a stanza
+                    stanzaname=w[1]
+                    i+=1
+                    # read the headers
+                    header=lines[i].replace(';','').strip().split()
+                    i+=1
+                    # if there are additional headers, ignore
+                    while (lines[i][0]==';'):
+                        i+=1
+                    series={k:[] for k in header}
+                    # read data until EOF or a blank line (which ends the stanza)
+                    while i<len(lines) and len(lines[i].strip())>0:
+                        pruned=lines[i].strip().split(';')[0]  # some in-line comments begin with ';'
+                        for k,d in zip(series.keys(),pruned.split()):
+                            series[k].append(d.strip())
+                        i+=1
+                    # zero or more trailing columns might be empty; just make them zeros
+                    hasdata={k:v for k,v in series.items() if len(v)>0}
+                    for v in hasdata.values():
+                        ndata=len(v)
+                        break
+                    empties={k:([0]*ndata) for k,v in series.items() if len(v)==0}
+                    series={**hasdata, **empties}
+                    dfs[stanzaname]=pd.DataFrame(series)
+    return dfs
+
+
 class Topology(object):
     def __init__(self, name, repeat=False):
         self.name = name
@@ -41,21 +81,22 @@ class Topology(object):
 
     def getTopInfo(self):
         # read old top file, and move it to the top-bk file
-        df1 = pd.read_csv(self.topName, names=['0'], comment=';', header=None, sep='\n', skip_blank_lines=True)
-        dil_indx = list(df1.loc[df1['0'].str.startswith('[')].index)
-        df_sep = []
-        for i in range(len(dil_indx)):
-            if i == 0:
-                continue
-            else:
-                df_tmp = df1.iloc[dil_indx[i - 1] + 1:dil_indx[i], :]
-                if '#' in df_tmp.to_string():
-                    continue
-                else:
-                    df_sep.append(df_tmp)
-        df_sep.append(df1.iloc[dil_indx[i] + 1:, :])
+        # df1 = pd.read_csv(self.topName, names=['0'], comment=';', header=None, sep='\n', skip_blank_lines=True)
+        # dil_indx = list(df1.loc[df1['0'].str.startswith('[')].index)
+        # df_sep = []
+        # for i in range(len(dil_indx)):
+        #     if i == 0:
+        #         continue
+        #     else:
+        #         df_tmp = df1.iloc[dil_indx[i - 1] + 1:dil_indx[i], :]
+        #         if '#' in df_tmp.to_string():
+        #             continue
+        #         else:
+        #             df_sep.append(df_tmp)
+        # df_sep.append(df1.iloc[dil_indx[i] + 1:, :])
+        dfdict=cfaReadTop(self.topName)
         copyfile(self.topName, '{}-bk'.format(self.topName))
-        return df_sep
+        return dfdict
 
     def rmDihType(self, df,
                   dupKey=False):  # Since some dih type are mulitple defined, they don't need to add to the dih type section. Detail parameters are list in the dih section
@@ -137,21 +178,36 @@ class Topology(object):
         else:
             return data[idx]
 
-    def initSession(self, df_new, df_ori, cNames):
-        newList = []
-        for index, value in df_ori.iterrows():
-            row = list(value.str.split())[0]
-            newList.append(row)
+    # def initSession(self, df_new, df_ori, cNames):
+    #     newList = []
+    #     for index, value in df_ori.iterrows():
+    #         row = list(value.str.split())[0]
+    #         newList.append(row)
 
-        df_new = pd.DataFrame(newList, columns=cNames)
-        # i = 0
-        # for c in cNames:
-        #     df_new.loc[:, c] = df_ori.apply(lambda x: self.sepData(x, len(cNames), idx=i), axis=1)
-        #     i += 1
-        return df_new
+    #     df_new = pd.DataFrame(newList, columns=cNames)
+    #     # i = 0
+    #     # for c in cNames:
+    #     #     df_new.loc[:, c] = df_ori.apply(lambda x: self.sepData(x, len(cNames), idx=i), axis=1)
+    #     #     i += 1
+    #     return df_new
 
-    def genTop(self, inLst):
+    def genTop(self,grotopDict):  # TODO:  covnert to dictionary
         '''
+        Gromacs topology stanzas (keys in grotopDict):
+
+        defaults
+        atomtypes
+        moleculetype
+        atoms
+        bonds
+        pairs
+        angles
+        dihedrals
+        impropers
+        system
+        molecules
+
+
         :param inLst: inLst is from the getTopInfo function.
         We assume top file is from the parmed.gromacs. Data is directly from the
         Antechamber. So the structure of the top file is fixed.
@@ -176,49 +232,51 @@ class Topology(object):
         '''
         #
         top0 = topInfo.top()
-        default = inLst[0]
-        system = inLst[-2]
-        molecules = inLst[-1]
+        default = grotopDict['defaults']
+        system = grotopDict['system']
+        molecules = grotopDict['molecules']
+        df_atypes=grotopDict['atomtypes']
+        df_mtypes=grotopDict['moleculetype']
+        df_atoms=grotopDict['atoms']
+        df_bonds=grotopDict['bonds']
+        df_pairs=grotopDict['pairs']
+        df_angles=grotopDict['angles']
+        df_dih=grotopDict['dihedrals']
         
-
-        atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
-        moltypeNames = ['name', 'nrexcl']
-        atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
-        bNames = ['ai', 'aj', 'funct', 'c0', 'c1']
-        pNames = ['ai', 'aj', 'funct']
-        angNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
-        dihNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
+        # atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
+        # moltypeNames = ['name', 'nrexcl']
+        # atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
+        # bNames = ['ai', 'aj', 'funct', 'c0', 'c1']
+        # pNames = ['ai', 'aj', 'funct']
+        # angNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
+        # dihNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
         impNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
-        df_atypes = pd.DataFrame(columns=atypeNames)
-        df_mtypes = pd.DataFrame(columns=moltypeNames)
-        df_atoms = pd.DataFrame(columns=atNames)
-        df_bonds = pd.DataFrame(columns=bNames)
-        df_pairs = pd.DataFrame(columns=pNames)
-        df_angles= pd.DataFrame(columns=angNames)
-        df_dih = pd.DataFrame(columns=dihNames)
+        # df_atypes = pd.DataFrame(columns=atypeNames)
+        # df_mtypes = pd.DataFrame(columns=moltypeNames)
+        # df_atoms = pd.DataFrame(columns=atNames)
+        # df_bonds = pd.DataFrame(columns=bNames)
+        # df_pairs = pd.DataFrame(columns=pNames)
+        # df_angles= pd.DataFrame(columns=angNames)
+        # df_dih = pd.DataFrame(columns=dihNames)
         df_imp = pd.DataFrame(columns=impNames)
 
-        df_lst = inLst[1:-2]
-        df_atypes = self.initSession(df_atypes, df_lst[0], atypeNames).reset_index(drop=True)
-        df_mtypes = self.initSession(df_mtypes, df_lst[1], moltypeNames).reset_index(drop=True)
-        df_atoms = self.initSession(df_atoms, df_lst[2], atNames).reset_index(drop=True)
-        df_bonds = self.initSession(df_bonds, df_lst[3], bNames).reset_index(drop=True)
-        df_pairs = self.initSession(df_pairs, df_lst[4], pNames).reset_index(drop=True)
-        df_angles = self.initSession(df_angles, df_lst[5], angNames).reset_index(drop=True)
-        df_dih = self.initSession(df_dih, df_lst[6], dihNames).reset_index(drop=True)
+        # df_atypes = self.initSession(df_atypes, grotopDict['atomtypes'], atypeNames).reset_index(drop=True)
+        # df_mtypes = self.initSession(df_mtypes, grotopDict['moleculetype'], moltypeNames).reset_index(drop=True)
+        # df_atoms = self.initSession(df_atoms, grotopDict['atoms'], atNames).reset_index(drop=True)
+        # df_bonds = self.initSession(df_bonds, grotopDict['bonds'], bNames).reset_index(drop=True)
+        # df_pairs = self.initSession(df_pairs, grotopDict['pairs'], pNames).reset_index(drop=True)
+        # df_angles = self.initSession(df_angles, grotopDict['angles'], angNames).reset_index(drop=True)
+        # df_dih = self.initSession(df_dih, grotopDict['dihedrals'], dihNames).reset_index(drop=True)
         df_bTypes = self.extractType(df_bonds, df_atoms, keys='bonds').drop_duplicates().reset_index(drop=True)
         df_angTypes = self.extractType(df_angles, df_atoms, keys='angles').drop_duplicates().reset_index(drop=True)
         df_dihTypes = self.extractType(df_dih, df_atoms, keys='dih').drop_duplicates().reset_index(drop=True)
-        df_impTypes = pd.DataFrame(impNames)
-
         df_dihTypes = self.rmDihType(df_dihTypes)
-        if len(df_lst) == 8:
-            df_imp = self.initSession(df_imp, df_lst[7], dihNames).reset_index(drop=True)
-            df_impTypes = self.extractType(df_imp, df_atoms, keys='dih').drop_duplicates().reset_index(drop=True)
-
+        if 'impropers' in grotopDict:
+            # df_imp = self.initSession(df_imp, grotopDict['impropers'], impNames).reset_index(drop=True)
+            df_imp=grotopDict['impropers']
+            df_impTypes=self.extractType(df_imp, df_atoms, keys='dih').drop_duplicates().reset_index(drop=True)
         else:
-            df_imp = df_imp
-            df_impTypes = pd.DataFrame(impNames)
+            df_impTypes=pd.DataFrame(impNames)
 
         self.aTypes = df_atypes
         self.mTypes = df_mtypes
@@ -234,7 +292,8 @@ class Topology(object):
         self.dihs = df_dih
         self.imps = df_imp
 
-        top0.default = pd.DataFrame(default)
+#        top0.default = pd.DataFrame(default)
+        top0.default = default
         self.topInfo = [system, molecules]
 
         self.sumTop = [self.topInfo, self.aTypes, self.mTypes, self.bTypes, self.angTypes, self.dihTypes, self.impTypes,
@@ -247,8 +306,8 @@ class Topology(object):
         self.top = top0
 
     def generate(self):
-        lst = self.getTopInfo()
-        self.genTop(lst)
+        stanzadict = self.getTopInfo()
+        self.genTop(stanzadict)
 
 if __name__ == '__main__':
     a = Topology('STY')

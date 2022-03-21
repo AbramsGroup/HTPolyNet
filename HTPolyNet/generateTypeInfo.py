@@ -7,9 +7,9 @@ Created on Sun Nov  1 08:57:03 2020
 
 import os
 import glob
-import subprocess
+#import subprocess
 import pandas as pd
-import parmed
+#import parmed
 
 import HTPolyNet.configuration as configuration
 import HTPolyNet.readMol as readMol
@@ -39,9 +39,9 @@ class generateTypeInfo(object):
         if len(os.listdir(self.typePath)) > 0:
             pass
         else:
-            a = configuration.configuration()
-            a.setName('{}/options.txt'.format(self.basicPath))
-            a.readParam()
+            # a = configuration.configuration()
+            # a.setName('{}/options.txt'.format(self.basicPath))
+            # a.readParam()
             # basicMol = a.unrctStruct
             #
             # # copy basic unreact mol2 file to the type folder
@@ -50,7 +50,7 @@ class generateTypeInfo(object):
             #     shutil.copy(n1, '{}/{}.mol2'.format(self.typePath, molName))
 
             mainMol = createRctMol.createRctMol()
-            mainMol.getRctInfo(a) # assume only contain 1 cro
+            mainMol.getRctInfo(self.cfg) # assume only contain 1 cro
             keys = mainMol.getKeys('mon') + mainMol.getKeys('cro')
             mainMol.croResName = 'CRO'
             rctNum = self.getRctNum(keys, a)
