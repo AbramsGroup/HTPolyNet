@@ -3,7 +3,7 @@ import subprocess
 
 class Software:
     ambertools=['antechamber','tleap','parmchk2']
-    commandsRequired=ambertools+['gmx','obabel']
+    commandsRequired=ambertools+['gmx']
     optionalCommands=['gmx_mpi','mdrun_mpi']
     def __init__(self):
         self.commands={}

@@ -93,7 +93,7 @@ class genBonds(object):
     def checkNewTypes(self, pairs, sysTop, types='bonds'):
         sysTop = self.top
         df_atoms = sysTop.atoms # Top df
-        extra_gaff=ExtraGAFFParams()
+#        extra_gaff=ExtraGAFFParams()
         if types == 'bonds':
             pairs_tmp = []
             for p in pairs:

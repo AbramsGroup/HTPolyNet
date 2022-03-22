@@ -3,6 +3,19 @@ import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
 
+# to do: populate this dictionary
+# atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
+# moltypeNames = ['name', 'nrexcl']
+# atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass,'typeB', 'chargeB', 'massB']
+# bNames = ['ai', 'aj', 'funct', 'c0', 'c1']
+# pNames = ['ai', 'aj', 'funct']
+# angNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
+# dihNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5']
+# impNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5']
+_GromacsTopologyHeaders_={
+    'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
+    }
+
 def GromacsTopToDataFrameDict(fname):
     ''' reads stanzas from a gromacs topology file into individual
         pandas dataframes.  Each dataframe is stored in a dictionary
@@ -17,10 +30,13 @@ def GromacsTopToDataFrameDict(fname):
                 if w[0][0]=='[' and w[2][0]==']':
                     # this line opens a stanza
                     stanzaname=w[1]
+                    # TODO: stanzaname might not be in _GromacsTopologyHeaders_
+                    header=_GromacsTopologyHeaders_[stanzaname]
                     i+=1
-                    # read the headers
-                    header=lines[i].replace(';','').strip().split()
-                    i+=1
+                    # read past comments
+                    # to do -- use stanza-fixed headers and read past any comments
+#                    header=lines[i].replace(';','').strip().split()
+#                    i+=1
                     # if there are additional headers, ignore
                     while (lines[i][0]==';'):
                         i+=1
@@ -28,16 +44,17 @@ def GromacsTopToDataFrameDict(fname):
                     # read data until EOF or a blank line (which ends the stanza)
                     while i<len(lines) and len(lines[i].strip())>0:
                         pruned=lines[i].strip().split(';')[0]  # some in-line comments begin with ';'
+                        # TODO: pad pruned with NaN's so that it is same length as series
                         for k,d in zip(series.keys(),pruned.split()):
                             series[k].append(d.strip())
                         i+=1
                     # zero or more trailing columns might be empty; just make them zeros
-                    hasdata={k:v for k,v in series.items() if len(v)>0}
-                    for v in hasdata.values():
-                        ndata=len(v)
-                        break
-                    empties={k:([0]*ndata) for k,v in series.items() if len(v)==0}
-                    series={**hasdata, **empties}
+                    # hasdata={k:v for k,v in series.items() if len(v)>0}
+                    # for v in hasdata.values():
+                    #     ndata=len(v)
+                    #     break
+                    # empties={k:([0]*ndata) for k,v in series.items() if len(v)==0}
+                    # series={**hasdata, **empties}
                     dfs[stanzaname]=pd.DataFrame(series)
     return dfs
 

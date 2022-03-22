@@ -132,6 +132,7 @@ class generateTypeInfo(object):
             
         return db
     
+    # maybe filter NaN's out
     def genFF(self, row, keys='bond'):
         if keys == 'bond':
             outKey = '{}-{}'.format(row.ai, row.aj)
@@ -215,6 +216,10 @@ class generateTypeInfo(object):
     #     os.rename('tmp.py', 'parameters.py')
         
     def obtainParam(self):
+        ''' 
+        1. Uses GAFF/Ambertools to generate itp file for each mol2 file
+        2. Creates a dictionary keyed by {}-{}(-{}-{}) atom type -> interaction type keys and returns
+        '''
         os.chdir(self.typePath)
         fileList = glob.glob('*.mol2')
         itpFile = glob.glob('*.itp')
@@ -234,28 +239,10 @@ class generateTypeInfo(object):
             out2 = name + '-type'
             A.GAFFParameterize(f,out2,extra_antechamber_params='-eq 1 -pl 10',parmed_save_inline=False)
             # cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'.format(name, out1)
-            # cmd2 = 'antechamber -j 4 -fi mol2 -fo mol2 -c gas -at gaff -i {}.mol2 -o {}.mol2 -pf Y -nc 0 -eq 1 -pl 10'.format(name, out2)
-            # cmd3 = 'parmchk2 -i {}.mol2 -o {}.frcmod -f mol2 -s gaff'.format(out2, out2)
-            # cmd4 = 'tleap -f tleap.in'
-            
-            # str1 = 'source leaprc.gaff \nSUS = loadmol2 {}.mol2 \ncheck SUS\nloadamberparams {}.frcmod \nsaveamberparm SUS {}.top {}.crd \nquit'.format(out2, out2, out2, out2)
-            # with open('tleap.in', 'w') as f:
-            #     f.write(str1)
-
-            # # a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # # out1, err1 = a1.communicate()
-            # a2 = subprocess.Popen(cmd2, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # a2.communicate()
-            # a3 = subprocess.Popen(cmd3, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # a3.communicate()
-            # a4 = subprocess.Popen(cmd4, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # a4.communicate()
-            
-            # file = parmed.load_file('{}.top'.format(out2), xyz='{}.crd'.format(out2))
-            # file.save('{}.gro'.format(out2))
-            # file.save('{}.top'.format(out2), parameters='{}.itp'.format(out2), overwrite=True)
             nameList.append(f'{out2}.itp')
     
+        # read all itp's in and create a single merged Topology?
+
         db = self.extractFF(nameList)
         db = self.filterFF(db)
 #        os.chdir(self.srcPath)

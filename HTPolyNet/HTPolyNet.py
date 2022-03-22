@@ -63,6 +63,8 @@ class HTPolyNet(object):
         # fetch mol2 files, or die if not found
         self.findMol2()
 
+#       self.Types=getalltypes()
+#       self.Topology=getalltopologies()
 
         # do we really need these attributes if they are all under 'cfg' anyway?
         # self.cpu = ''
@@ -82,7 +84,7 @@ class HTPolyNet(object):
 
         #self.projPath = ''
 
-        # handled by dirTree
+        # handled by fs
         # self.basicFolder = ''
         # self.mdpFolder = ''
         # self.resFolder = '' # result folder
@@ -647,6 +649,7 @@ class HTPolyNet(object):
         unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         self.unrctMap = unrctMap
 
+    # create self.Types and self.Topology, each is a dictionary of dataframes
     def preparePara(self,log=True):
         os.chdir(self.pfs.unrctPath)
         if log:
@@ -654,6 +657,8 @@ class HTPolyNet(object):
             logf.write('Beginning parameterizations.\n')
             logf.write('self.cfg.molNames: '+','.join(self.cfg.molNames)+'\n')
         A=ambertools.Parameterization()
+
+        # parameterize all user-provided mol2's
         self.Topologies=[]
         for n in self.cfg.molNames:
             mol2Name=f'{n}.mol2'
@@ -682,6 +687,7 @@ class HTPolyNet(object):
         os.chdir(self.pfs.projPath)
         print('--> Generating reacted molecules type database')
         a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
+        # TODO: catch the return of generateTypeInfo.main which is a database of all type information
         a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
         if log:
             logf.close()
