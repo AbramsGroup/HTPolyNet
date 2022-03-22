@@ -1,7 +1,5 @@
-import HTPolyNet.processTop as pt
+import parmed
 
-r=pt.GromacsTopToDataFrameDict('testDBEGA.itp')
+s=parmed.gromacs.GromacsTopologyFile('init.itp')
 
-for k,d in r.items():
-    print(k)
-    print(d)
+print(s.atomtypes)

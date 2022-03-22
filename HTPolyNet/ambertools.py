@@ -19,7 +19,7 @@ class Parameterization(object):
             message+=f'   {groOut} and {topOut} already exist.\n'
             return message
         else:
-            str1 = f'source leaprc.gaff\nSUS = loadmol2 {outputPrefix}.mol2 \ncheck SUS\nloadamberparams {outputPrefix}.frcmod \nsaveamberparm SUS {outputPrefix}-preparmed.top {outputPrefix}.crd\nquit'
+            str1 = f'source leaprc.gaff\nSUS = loadmol2 {outputPrefix}.mol2 \ncheck SUS\nloadamberparams {outputPrefix}.frcmod \nsaveamberparm SUS {outputPrefix}-gaff.top {outputPrefix}.crd\nquit'
             with open('tleap.in', 'w') as f:
                 f.write(str1)
             command1 = f'antechamber -j 4 -fi mol2 -fo mol2 -c gas -at gaff -rn {resName} -i {inputMol2} -o {outputPrefix}.mol2 -pf Y -nc 0 {extra_antechamber_params}'
@@ -41,7 +41,7 @@ class Parameterization(object):
             
             # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
             try:
-                file=parmed.load_file(f'{outputPrefix}-preparmed.top', xyz=f'{outputPrefix}.crd')
+                file=parmed.load_file(f'{outputPrefix}-gaff.top', xyz=f'{outputPrefix}.crd')
                 file.save(groOut)
                 if parmed_save_inline:
                     file.save(topOut)

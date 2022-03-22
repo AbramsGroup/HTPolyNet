@@ -15,31 +15,19 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Software Prerequisites
 
-* [AmberTools19](https://ambermd.org/GetAmber.php#ambertools)
+* [AmberTools](https://ambermd.org/GetAmber.php#ambertools)
   - Options:
      * conda: `conda install -c conda-forge ambertools` installs precompiled executables for ambertools into your Anaconda environment
      * compile from source:
        ```
-       tar jxf AmberTools20.tar.bz2
+       tar jxf AmberTools21.tar.bz2
        cd amber_src
        ./configure gnu
        source amber.sh
        make install
        ```
   - The specific executables needed are `antechamber`, `parmchk2`, and `tleap`
-* [openbabel](http://openbabel.org/wiki/Category:Installation)
-    - Options:
-       * Install using package manager (Linux)
-       * compile from source: (download tar file from the official website)
-         ```
-         tar zxf openbabel-2.3.2.tar.gz
-         cd openbabel-2.3.2
-         mkdir build
-         cd build
-         cmake ..
-         make -j4
-         make install
-         ```
+  - Note that the required python package `parmed` is used solely to convert Amber-style output of `tleap` to Gromacs format `top/itp` topology files and `gro` coordinate files.
 * [gromacs](https://manual.gromacs.org/documentation/2020/install-guide/index.html) v2016
   - Notes for 2016.6 on OpenSUSE Leap 15.2 with cuda 11 and openMPI:
     ```

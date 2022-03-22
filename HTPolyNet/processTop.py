@@ -3,23 +3,28 @@ import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
 
-# to do: populate this dictionary
-# atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
-# moltypeNames = ['name', 'nrexcl']
-# atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass,'typeB', 'chargeB', 'massB']
-# bNames = ['ai', 'aj', 'funct', 'c0', 'c1']
-# pNames = ['ai', 'aj', 'funct']
-# angNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
-# dihNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5']
-# impNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5']
 _GromacsTopologyHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
+    'pairs':['ai', 'aj', 'funct'],
+    'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
+    'angles':['ai', 'aj', 'ak', 'funct', 'c0', 'c1'],
+    'dihedrals':['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
+    'atomtypes':['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
+    'moleculetype':['name', 'nrexcl'],
+    'bondtypes':['i','j','func','b0','kb'],
+    'angletypes':['i','j','k','func','th0','cth','rub','kub'],
+    'dihedraltypes':['i','j','k','l','func','phase','kd','pn'],
+    'system':['Name'],
+    'molecules':['Compound','#mols'],
+    'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
 
 def GromacsTopToDataFrameDict(fname):
     ''' reads stanzas from a gromacs topology file into individual
         pandas dataframes.  Each dataframe is stored in a dictionary
-        keyed by the stanza name, and this dictionary is returned. '''
+        keyed by the stanza name, and this dictionary is returned.
+        In the case of dihedrals and dihedraltypes, the value is a list
+        of dictionaries  '''
     dfs={}
     with open(fname,'r') as f:
         lines=f.read().split('\n')  # list of lines in file
@@ -55,7 +60,13 @@ def GromacsTopToDataFrameDict(fname):
                     #     break
                     # empties={k:([0]*ndata) for k,v in series.items() if len(v)==0}
                     # series={**hasdata, **empties}
-                    dfs[stanzaname]=pd.DataFrame(series)
+                    tdf=pd.DataFrame(series)
+                    if stanzaname=='dihedrals' or stanzaname=='dihedraltypes':
+                        if not stanzaname in dfs:
+                            dfs[stanzaname]=[]
+                        dfs[stanzaname].append(tdf)
+                    else:
+                        dfs[stanzaname]=pd.DataFrame(series)
     return dfs
 
 
