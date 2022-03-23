@@ -1,5 +1,14 @@
-import parmed
+from HTPolyNet.topology import Topology
 
-s=parmed.gromacs.GromacsTopologyFile('init.itp')
+s=Topology.from_topfile('init.itp')
 
-print(s.atomtypes)
+for k,v in s.D.items():
+    print(f'Directive {k} has {len(v)} stanza(s):')
+    for vv in v:
+        print(vv)
+    print('---')
+
+print()
+
+with open('test.top','w') as f:
+    f.write(str(s))

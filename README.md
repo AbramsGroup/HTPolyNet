@@ -18,11 +18,11 @@ Once installed, the user has access to the main `htpolynet` command.
 * [AmberTools](https://ambermd.org/GetAmber.php#ambertools)
   - Options:
      * conda: `conda install -c conda-forge ambertools` installs precompiled executables for ambertools into your Anaconda environment
-     * compile from source:
+     * compile from source (requires `csh`, `flex`, and `bison`):
        ```
        tar jxf AmberTools21.tar.bz2
        cd amber_src
-       ./configure gnu
+       ./configure --no-X11 --skip-python gnu
        source amber.sh
        make install
        ```
