@@ -3,13 +3,13 @@ import HTPolyNet.topInfo as topInfo
 from shutil import copyfile
 import os
 
-_GromacsTopologyHeaders_={
+_GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
     'pairs':['ai', 'aj', 'funct'],
     'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
     'angles':['ai', 'aj', 'ak', 'funct', 'c0', 'c1'],
     'dihedrals':['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
-    'atomtypes':['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
+    'atomtypes':['name', 'atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
     'moleculetype':['name', 'nrexcl'],
     'bondtypes':['i','j','func','b0','kb'],
     'angletypes':['i','j','k','func','th0','cth','rub','kub'],
@@ -20,55 +20,41 @@ _GromacsTopologyHeaders_={
     }
 
 def GromacsTopToDataFrameDict(fname):
-    ''' reads stanzas from a gromacs topology file into individual
-        pandas dataframes.  Each dataframe is stored in a dictionary
-        keyed by the stanza name, and this dictionary is returned.
-        In the case of dihedrals and dihedraltypes, the value is a list
-        of dictionaries  '''
+    '''
+    Reads a Gromacs-style topology file 'fname' and returns a dictionary keyed on directive names.
+    Each value in the dictionary is a list containing one or more pandas dataframes.  Each such
+    dataframe represents an individual stanza found with its directive in the file.  Gromacs
+    directives can be repeated in a file (well, *some* of them can), so this is the most
+    general solution.
+    '''
     dfs={}
     with open(fname,'r') as f:
-        lines=f.read().split('\n')  # list of lines in file
-        for i in range(len(lines)):
-            l=lines[i]
-            w=l.split()
-            if len(w)>0:  #line is not blank
-                if w[0][0]=='[' and w[2][0]==']':
-                    # this line opens a stanza
-                    stanzaname=w[1]
-                    # TODO: stanzaname might not be in _GromacsTopologyHeaders_
-                    header=_GromacsTopologyHeaders_[stanzaname]
-                    i+=1
-                    # read past comments
-                    # to do -- use stanza-fixed headers and read past any comments
-#                    header=lines[i].replace(';','').strip().split()
-#                    i+=1
-                    # if there are additional headers, ignore
-                    while (lines[i][0]==';'):
-                        i+=1
-                    series={k:[] for k in header}
-                    # read data until EOF or a blank line (which ends the stanza)
-                    while i<len(lines) and len(lines[i].strip())>0:
-                        pruned=lines[i].strip().split(';')[0]  # some in-line comments begin with ';'
-                        # TODO: pad pruned with NaN's so that it is same length as series
-                        for k,d in zip(series.keys(),pruned.split()):
-                            series[k].append(d.strip())
-                        i+=1
-                    # zero or more trailing columns might be empty; just make them zeros
-                    # hasdata={k:v for k,v in series.items() if len(v)>0}
-                    # for v in hasdata.values():
-                    #     ndata=len(v)
-                    #     break
-                    # empties={k:([0]*ndata) for k,v in series.items() if len(v)==0}
-                    # series={**hasdata, **empties}
-                    tdf=pd.DataFrame(series)
-                    if stanzaname=='dihedrals' or stanzaname=='dihedraltypes':
-                        if not stanzaname in dfs:
-                            dfs[stanzaname]=[]
-                        dfs[stanzaname].append(tdf)
-                    else:
-                        dfs[stanzaname]=pd.DataFrame(series)
+        data=f.read().split('[')
+        stanzas=[('['+x).split('\n') for x in data][1:]
+        for s in stanzas:
+            directive=s[0].split()[1].strip()
+            contentlines=[l for l in s[1:] if not (len(l.strip())==0 or l.strip().startswith(';'))]
+            if not directive in _GromacsTopologyDirectiveHeaders_:
+                raise KeyError(f'unrecognized topology directive "{directive}"')
+            header=_GromacsTopologyDirectiveHeaders_[directive]
+            series={k:[] for k in header}
+            for line in contentlines:
+                if directive!='system':  # no need to split line
+                    tokens=[x.strip() for x in line.split()]
+                else:
+                    tokens=[line]
+                padded=tokens[:]
+                # pad with NaN's so that it is same length as series
+                for _ in range(len(tokens),len(header)):
+                    padded.append(pd.NA)
+                assert len(padded)==len(header), f'Error: Padding solution does not work! {directive} {len(tokens)}:{len(padded)}!={len(header)} {",".join(tokens)} {",".join(header)}'
+                for k,v in zip(header,padded):
+                    series[k].append(v)
+            tdf=pd.DataFrame(series)
+            if not directive in dfs:
+                dfs[directive]=[]
+            dfs[directive].append(tdf)
     return dfs
-
 
 class Topology(object):
     def __init__(self, name, repeat=False):

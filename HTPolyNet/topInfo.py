@@ -7,7 +7,7 @@ Created on Mon Sep 28 15:34:47 2020
 import pandas as pd
 from HTPolyNet.countTime import *
 from copy import deepcopy
-import numpy as np
+#import numpy as np
 import decimal
 decimal.getcontext().prec = 6
 

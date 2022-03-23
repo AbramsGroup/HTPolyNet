@@ -61,7 +61,7 @@ class HTPolyNet(object):
         # session filesystem
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.reProject)
         # fetch mol2 files, or die if not found
-        self.findMol2()
+        self.pfs.fetchMol2(molNames=self.cfg.molNames,libpath=self.LibraryResourcePaths['mol2'])
 
 #       self.Types=getalltypes()
 #       self.Topology=getalltopologies()
@@ -131,92 +131,6 @@ class HTPolyNet(object):
         print(self.cfg)
         print()
         print(self.software)
-
-
-    # def initFolder(self):
-    #     if self.reProject == '':
-    #         i = 0
-    #         while(os.path.isdir(os.path.join(self.topPath, 'proj{}'.format(i)))):
-    #             i += 1
-    #         self.projPath = os.path.join(self.topPath, 'proj{}'.format(i))
-    #         os.mkdir('proj{}'.format(i))
-    #     else:
-    #         self.projPath = os.path.join(self.topPath, self.reProject)
-
-    #     # basicFolder contains charges.txt (and options.txt) and all monomer mol2 files
-    #     self.basicFolder = os.path.join(self.projPath, 'basic')
-    #     # copies of all mdp files in Library/mdp/
-    #     self.mdpFolder = os.path.join(self.projPath, 'mdp')
-    #     # Results, with subdirectories init, step0, step1, step2, etc... 
-    #     # 'init' has 5ns NPT of liquid
-    #     # 'step' directories run until desired conversion is met
-    #     # each step does SCUR iterations with increasing search radius (according to Ming's special recipe)
-    #     # that terminate when either enough bonds are made or not enough bonds are 
-    #     # made but no new bonds can be found.  Then it enters NPT md relaxation, followed 
-    #     # by creation of a capped structure for reference and an uncapped structure for 
-    #     # further crosslinking if desired.
-    #     self.resFolder = os.path.join(self.projPath, 'results')
-
-    #     # storage of GAFF parameter templates in subdirectories
-    #     self.systemsFolder = os.path.join(self.projPath, 'systems')
-    #     # Contains Gromacs top, itp, and gro files for liquid system
-    #     self.unrctFolder = os.path.join(self.systemsFolder, 'unrctSystem')
-    #     # Partial charges for oligomers from antechamber in mol2 files for oligomer templates
-    #     self.rctFolder = os.path.join(self.systemsFolder, 'rctSystem')
-    #     # Contains Gromacs top and itp files for oligomer templates
-    #     self.typeFolder = os.path.join(self.systemsFolder, 'typeSystem')
-    #     if self.reProject == '':
-    #         os.mkdir(self.basicFolder)
-    #         os.mkdir(self.mdpFolder)
-    #         os.mkdir(self.resFolder)
-    #         os.mkdir(self.systemsFolder)
-    #         os.mkdir(self.unrctFolder)
-    #         os.mkdir(self.rctFolder)
-    #         os.mkdir(self.typeFolder)
-
-    #         # need to fix these 
-    #         # I would expect the user to copy/edit a *.cfg file, rather than this program doing it first
-    #         # also, shouldn't you only copy the mol2 files for the 
-    #         # molecules indicated in the config file?
-    #         copyCmds=[
-    #             'cp {}/VEA-VEB-STY-example.cfg {}/editme.cfg'.format(self.LibraryResourcePaths['cfg'], self.basicFolder),
-    #             'cp {}/*mol2 {}/'.format(self.LibraryResourcePaths['mol2'], self.unrctFolder),
-    #             'cp -r {}/* {}'.format(self.LibraryResourcePaths['mdp'], self.mdpFolder)
-    #             ]
-
-    #         for c in copyCmds:
-    #             os.system(c)
-
-    #     else:
-    #         pass
-#            cmd0 = 'rm -r {}/*'.format(self.resFolder)
-#            subprocess.call(cmd0, shell=True)
-
-    def findMol2(self):
-        mol2searchpath=[self.pfs.rootPath,self.pfs.projPath,self.LibraryResourcePaths['mol2']]
-        for m in self.cfg.molNames:
-            fname=f'{m}.mol2'
-            for p in mol2searchpath:
-                afname=os.path.join(p,fname)
-                if os.path.exists(afname):
-                    os.system(f'cp {afname} {self.pfs.unrctPath}')
-                    break
-            else:
-                raise FileNotFoundError(f'{fname} not found.')
-
-    # def setParam(self, name):
-    #     a = readCfg.parameters()
-    #     a.setName(name)
-    #     a.readParam()
-    #     self.basicParameter = a
-    #     self.cpu = int(a.CPU)
-    #     self.gpu = int(a.GPU)
-    #     self.trials = int(a.trials)
-    #     self.reProject = a.reProject
-    #     self.stepwise = a.stepwise
-    #     self.cappingBonds = a.cappingBonds
-    #     self.boxLimit = float(a.boxLimit)
-    #     self.layerConvLimit = float(a.layerConvLimit)
 
     def getGroInfo(self, name):
         a = readGro.initGro()
