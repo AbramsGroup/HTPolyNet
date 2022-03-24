@@ -24,6 +24,7 @@ import pandas as pd
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
+from HTPolyNet.coordinates import Coordinates
 import HTPolyNet.mergeTop as mergeTop
 import HTPolyNet.readTop2 as readTop2
 import HTPolyNet.readGro as readGro
@@ -187,9 +188,12 @@ class HTPolyNet(object):
         import HTPolyNet.extendSys as extendSys
         a = extendSys.extendSys('gmx_mpi')
         a.extendSys(param.monInfo, param.croInfo, param.boxSize, 'init')
+        # creates init.gro ONLY
         
         # Get df of gro file
         self.getGroInfo('init')
+        # my syntax:
+        #self.gro=Coordinates.from_groFile('init.gro')
         
         # Get parameters from parameters file
         topList = []

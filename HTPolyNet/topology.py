@@ -15,7 +15,9 @@ _GromacsTopologyDirectiveHeaders_={
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
-
+# dihedral funct==(2,4) means improper
+# merge_top does not edit molecule_type, system, molecules, defaults
+# 
 class Topology:
 
     def __init__(self,name=''):
@@ -23,6 +25,8 @@ class Topology:
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
         self.D={}
+        # allowable keys include all keys in _GromacsTopologyDirectiveHeaders_ plus "impropers"
+        self.bondlist={}
 
     @classmethod
     def from_topfile(cls,filename):
@@ -59,22 +63,19 @@ class Topology:
                         series[k].append(v)
                 tdf=pd.DataFrame(series)
                 # This is going to be inconvenient; most dictionary entries will have only one dataframe
-                # 'dihedrals' and 'dihedraltypes' can have two (or more), but can others?
+                # 'dihedrals' can have two
                 if not directive in inst.D:
                     inst.D[directive]=[]
                 inst.D[directive].append(tdf)
+            # TODO: create bondlist
             return inst
 
     def df(self,directive):
         if directive in self.D:
             if directive=='impropers':
                 rdf=self.D['dihedrals'][1]
-            elif directive=='impropertypes':
-                rdf=self.D['dihedraltypes'][1]
             elif directive=='dihedrals':
                 rdf=self.D['dihedrals'][0]
-            elif directive=='dihedraltypes':
-                rdf=self.D['dihedraltypes'][0]
             else:
                 rdf=self.D[directive][0]
             return rdf
@@ -95,7 +96,8 @@ class Topology:
                     retstr+='\t'.join(row[~row.isna()])+'\n'
         return retstr
 
-    def add_bond(self):
+    def add_bonds(self,bondlist=[]):
+        # 
         pass
 
     def delete_atoms(self,idx=[],reindex=True):
@@ -127,4 +129,20 @@ class Topology:
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)      
             d.ak=d.ak.map(mapper)
-        # TODO: dihedrals   
+        # TODO: dihedrals
+        # TODO: update bondlist using idx
+
+    def merge_top(self,other):
+
+        # TODO: must update bondlist
+        pass
+
+    def make_bondlist(self):
+        self.bondlist={}
+
+        pass
+
+    def delete_from_bondlist(self,idx=[]):
+        # TODO: delete (ai in idx)'s entry in bondlist
+        # and remove all instances of (ai in idx) in other atoms' bondlists
+        pass
