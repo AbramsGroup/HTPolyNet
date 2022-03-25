@@ -1,4 +1,4 @@
-''' a simple class for constructing a bondlist dictionary '''
+''' a simple class for constructing a two-way bondlist dictionary '''
 
 class Bondlist:
     def __init__(self):
@@ -7,13 +7,24 @@ class Bondlist:
     @classmethod
     def fromDataFrame(cls,df):
         if not 'ai' in df.columns and not 'aj' in df.columns:
-            raise Exception('Cannot build bondlist from non-bonds DF.')
+            raise Exception('Bondlist expects a dataframe with columns "ai" and "aj".')
         inst=cls()
-        keys=list(set(df.ai)).sort()
+        keys=sorted(list(set(df.ai).update(set(df.aj))))
         inst.B={k:[] for k in keys}
         for i,row in df.iterrows():
             inst.B[row.ai].append(row.aj)
+            inst.B[row.aj].append(row.ai)
         return inst
+
+    def append(self,pair=[]):
+        if len(pair)==2:
+            ai,aj=min(pair),max(pair)
+            if not ai in self.B:
+                self.B[ai]=[]
+            self.B[ai].append(aj)
+            if not aj in self.B:
+                self.B[aj]=[]
+            self.B[aj].append(ai)
 
     def delete_atoms(self,idx=[]):
         ''' delete entries '''
