@@ -1,4 +1,5 @@
 import pandas as pd
+from HTPolyNet.bondlist import Bondlist
 
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
@@ -17,7 +18,7 @@ _GromacsTopologyDirectiveHeaders_={
     }
 # dihedral funct==(2,4) means improper
 # merge_top does not edit molecule_type, system, molecules, defaults
-# 
+#
 class Topology:
 
     def __init__(self,name=''):
@@ -25,7 +26,7 @@ class Topology:
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
         self.D={}
-        # allowable keys include all keys in _GromacsTopologyDirectiveHeaders_ plus "impropers"
+        ''' bondlist: a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist={}
 
     @classmethod
@@ -33,10 +34,9 @@ class Topology:
         inst=cls()
         '''
         Reads a Gromacs-style topology file 'filename' and returns a dictionary keyed on directive names.
-        Each value in the dictionary is a list containing one or more pandas dataframes.  Each
-        dataframe represents an individual section found with its directive in the file.  Gromacs
-        directives can be repeated in a file (well, *some* of them can), so this is the most
-        general solution.
+        Each value in the dictionary is a pandas dataframe.  Each
+        dataframe represents an individual section found with its directive in the file, with columns corresponding to the fields in the section.  Note that the directive 'dihedrals' can appear twice, and we assume a *second* 'dihedrals'
+        section enumerates improper dihedrals.
         '''
         inst.D={}
         with open(filename,'r') as f:
@@ -62,87 +62,79 @@ class Topology:
                     for k,v in zip(header,padded):
                         series[k].append(v)
                 tdf=pd.DataFrame(series)
-                # This is going to be inconvenient; most dictionary entries will have only one dataframe
-                # 'dihedrals' can have two
-                if not directive in inst.D:
-                    inst.D[directive]=[]
-                inst.D[directive].append(tdf)
-            # TODO: create bondlist
+                if directive=='dihedrals':
+                    if directive in inst.D:
+                        inst.D['impropers']=tdf
+                    else:
+                        inst.D['dihedrals']=tdf
+                else:
+                    inst.D[directive]=tdf
+            inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
             return inst
-
-    def df(self,directive):
-        if directive in self.D:
-            if directive=='impropers':
-                rdf=self.D['dihedrals'][1]
-            elif directive=='dihedrals':
-                rdf=self.D['dihedrals'][0]
-            else:
-                rdf=self.D[directive][0]
-            return rdf
-        return None
 
     def __str__(self):
         ''' Generates a string in the proper top format '''
         retstr=''
-        for k,v in self.D.items():
-            for vv in v:
-                if vv.empty:
-                    ''' an empty stanza will not be output '''
-                    continue
-                retstr+='[ '+k+' ]\n'
-                retstr+='; '+'\t'.join(vv.columns)+'\n'
-                for i,row in vv.iterrows():
-                    ''' assumes NaN's are only allowed in trailing columns '''
-                    retstr+='\t'.join(row[~row.isna()])+'\n'
+        for k,vv in self.D.items():
+            if vv.empty:
+                ''' an empty stanza will not be output '''
+                continue
+            ''' our internal directive 'impropers' must be
+                reported as 'dihedrals' in the top file '''
+            retstr+='[ '+(k if k!='impropers' else 'dihedrals')+' ]\n'
+            retstr+='; '+'\t'.join(vv.columns)+'\n'
+            for i,row in vv.iterrows():
+                ''' assumes NaN's are only allowed in trailing columns '''
+                retstr+='\t'.join(row[~row.isna()])+'\n'
         return retstr
 
     def add_bonds(self,bondlist=[]):
-        # 
+        #
         pass
 
     def delete_atoms(self,idx=[],reindex=True):
-        d=self.D['atoms'][0]
+        d=self.D['atoms']
         indexes_to_drop=d[d.nr.isin(idx)].index
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-        self.D['atoms'][0]=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:
-            d=self.D['atoms'][0]
+            d=self.D['atoms']
             oldGI=d['nr'].copy()
             d['old_nr']=oldGI
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(d['old_nr'],d['nr'])}
             d['nr_shift']=d['nr']-oldGI  # probably not necessary
-        d=self.D['bonds'][0]
+        d=self.D['bonds']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-        self.D['bonds'][0]=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        self.D['bonds']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:
-            d=self.D['bonds'][0]
+            d=self.D['bonds']
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)
-        d=self.D['angles'][0]
+            self.bondlist=Bondlist.fromDataFrame(d)
+        d=self.D['angles']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-        self.D['angles'][0]=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        self.D['angles']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:
-            d=self.D['angles'][0]
+            d=self.D['angles']
             d.ai=d.ai.map(mapper)
-            d.aj=d.aj.map(mapper)      
+            d.aj=d.aj.map(mapper)
             d.ak=d.ak.map(mapper)
-        # TODO: dihedrals
-        # TODO: update bondlist using idx
+        for four_body_type in ['dihedrals','impropers']:
+            d=self.D[four_body_type]
+            indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
+            indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+            self.D[four_body_type]=d.take(list(indexes_to_keep)).reset_index(drop=True)
+            if reindex:
+                d=self.D[four_body_type]
+                d.ai=d.ai.map(mapper)
+                d.aj=d.aj.map(mapper)
+                d.ak=d.ak.map(mapper)
+                d.al=d.al.map(mapper)
 
-    def merge_top(self,other):
+    def merge(self,other):
 
         # TODO: must update bondlist
-        pass
-
-    def make_bondlist(self):
-        self.bondlist={}
-
-        pass
-
-    def delete_from_bondlist(self,idx=[]):
-        # TODO: delete (ai in idx)'s entry in bondlist
-        # and remove all instances of (ai in idx) in other atoms' bondlists
         pass
