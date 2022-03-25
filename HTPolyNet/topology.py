@@ -1,6 +1,18 @@
 import pandas as pd
 from HTPolyNet.bondlist import Bondlist
 
+def typeorder(a):
+    ''' correctly order the tuple of atom types for particular 
+        interaction types to maintain sorted type dataframes '''
+    assert type(a)==tuple, 'error: typeorder() requires a tuple argument'
+    if len(a)==2: # bond
+        return a if a[0]<a[1] else a[::-1]
+    elif len(a)==3: # angle
+        return a if a[0]<a[2] else a[::-1]
+    elif len(a)==4: # dihedral
+        return a if a[1]<a[2] else a[::-1]
+idxorder=typeorder
+
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
     'pairs':['ai', 'aj', 'funct'],
@@ -110,102 +122,130 @@ class Topology:
         return retstr
 
     def add_bonds(self,pairs=[]):
+        ''' add bonds to a topology
+            pairs:  list of 2-tuples of atom global indices '''
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).index
         newbonds=[]
         for b in pairs:
-            ai,aj=min(b),max(b)
+            ai,aj=idxorder(b)
             # if this bond is not in the topology
             if not (ai,aj) in bmi:
                 newbonds.append([ai,aj])
                 it=at[ai-1].type
                 jt=at[aj-1].type
-                if (it,jt) in ij.index:
-                    bt=ij.loc[(it,jt),'func']
-                elif (jt,it) in ij.index:
-                    bt=ij.loc[(it,jt),'func']
+                idx=typeorder((it,jt))
+                if idx in ij.index:
+                    bt=ij.loc[idx,'func']
                 else:
-                    raise Exception(f'no bondtype for {it} {jt} found.')
+                    raise Exception(f'no bondtype {idx} found.')
                 # add a new bond!
                 self.D['bonds'].append({'ai':ai,'aj':aj,'func':bt,'c0':pd.NA,'c1':pd.NA})
                 # update the bondlist
                 self.bondlist.append([ai,aj])
             else:
                 raise Exception(f'attempt to add already existing bond {ai}-{aj}')
+        ''' maintain sort of bonds df if new bonds were added '''
         if len(newbonds)>0:
             self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
-            bmi=self.D['bonds'].set_index(['ai','aj']).index
 
         ijk=self.D['angletypes'].set_index(['i','j','k'])
+        ijkl=self.D['dihedraltype'].set_index(['i','j','k','l'])
         newangles=[]
+        newdihedrals=[]
         for b in newbonds:
-            # new angles due to other neighbors of b[0]
+            ''' new angles due to other neighbors of b[0] '''
             for ai in [i for i in self.bondlist[b[0]] if i!=b[1]]:
                 aj=b[0]
                 ak=b[1]
-                order=[ai,ak]
-                ai,ak=min(order),max(order)
-                # indices are ordered ai,aj,ak where ai<=ak and aj is the angle vertex
                 it=at[ai-1].type
                 jt=at[aj-1].type
                 kt=at[ak-1].type
-                order=[it,kt]
-                it,kt=min(order),max(order)
-                # types are ordered it,jt,kt where it<kt and jt is the angle vertex
-                if (it,jt,kt) in ijk.index:
-                    angletype=ijk.loc[(it,jt,kt),'func']
-                    self.D['angles'].append({'ai':ai,'aj':aj,'ak':ak,'funct':angletype,'c0':pd.NA,'c1':pd.NA})
-                    newangles.append([ai,aj,ak])
+                idx=typeorder((it,jt,kt))
+                if idx in ijk.index:
+                    angletype=ijk.loc[idx,'func']
+                    i,j,k=idxorder((ai,aj,ak))
+                    self.D['angles'].append({'ai':i,'aj':j,'ak':k,'funct':angletype,'c0':pd.NA,'c1':pd.NA})
+                    newangles.append([i,j,k])
                 else:
-                    raise Exception(f'Angle type {it}-{jt}-{kt} not found.')
-            # new angles due to other neighbors of b[1]
+                    raise Exception(f'Angle type {idx} not found.')
+            ''' new angles due to other neighbors of b[1] '''
             for ak in [k for k in self.bondlist[b[1]] if k!=b[0]]:
                 ai=b[0]
                 aj=b[1]
-                order=[ai,ak]
-                ai,ak=min(order),max(order)
-                # indices are ordered ai,aj,ak where ai<=ak and aj is the angle vertex
                 it=at[ai-1].type
                 jt=at[aj-1].type
                 kt=at[ak-1].type
-                order=[it,kt]
-                it,kt=min(order),max(order)
-                # types are ordered it,jt,kt where it<kt and jt is the angle vertex
-                if (it,jt,kt) in ijk.index:
-                    angletype=ijk.loc[(it,jt,kt),'func']
-                    self.D['angles'].append({'ai':ai,'aj':aj,'ak':ak,'funct':angletype,'c0':pd.NA,'c1':pd.NA})
-                    newangles.append([ai,aj,ak])
+                idx=typeorder((it,jt,kt))
+                if idx in ijk.index:
+                    angletype=ijk.loc[idx,'func']
+                    i,j,k=idxorder((ai,aj,ak))
+                    self.D['angles'].append({'ai':i,'aj':j,'ak':k,'funct':angletype,'c0':pd.NA,'c1':pd.NA})
+                    newangles.append([i,j,k])
                 else:
-                    raise Exception(f'Angle type {it}-{jt}-{kt} not found.')
+                    raise Exception(f'Angle type {idx} not found.')
 
-        # TODO: Identify and type all new dihedrals        
-            for ak in [k for k in self.bondlist[ai] if k!=aj]:
-                for al in [l for l in self.bondlist[aj] if l!=ai]:
-                    di=ak
-                    dj=ai
-                    dk=aj
-                    dl=al
-                    dit=at[di-1].type
-                    djt=at[dj-1].type
-                    dkt=at[dk-1].type
-                    dlt=at[dl-1].type
-                    
-                    # di,dj,dk,dl are the i,j,k,l defined by Gromacs for a dihedral around the j-k bond.
+            ''' DIHEDRALS i-j-k-l 
+                j-k is the torsion bond
+                angle is measured between the i-j-k plane and the j-k-l plane 
+                a new bond could be one of i-j, j-k, or k-l
+            '''
 
-                    pass # TODO: process ak,ai,aj,al quad
-                    # NOTE: the order of the indices for a dihedral entry are i,j,k,l
-                    # where the angle is measured between the ijk and jkl planes (that is,
-                    # around the j--k bond).  HERE, I'm using python identifiers ai and aj
-                    # to represent the diehdral's bond, and ak is the neighbor of ai
-                    # while al is the neighbor of aj.  So the order these indices
-                    # MUST appear in the topology are ak,ai,aj,al.  To facilitate this, in
-                    # the loop body, I use *local* dihedral atom indices di,dj,dk,dl.
-            
-        nt=self.D['angletypes']
-        dt=self.D['dihedraltypes']
-        mt=self.D['impropertypes']
+            ''' new proper dihedrals for which the new bond is the central j-k bond '''
+            aj,ak=idxorder(b)        
+            for ai in [i for i in self.bondlist[aj] if i!=ak]:
+                for al in [l for l in self.bondlist[ak] if l!=aj]:
+                    it=at[ai-1].type
+                    jt=at[aj-1].type
+                    kt=at[ak-1].type
+                    lt=at[al-1].type
+                    idx=typeorder((it,jt,kt,lt))
+                    if idx in ijkl.index:
+                        dihedtype=ijkl.loc[idx,'func']
+                        i,j,k,l=idxorder((ai,aj,ak,al))
+                        self.D['dihedrals'].append({'ai':i,'aj':j,'ak':k, 'al':l,'funct':dihedtype,'c0':pd.NA,'c1':pd.NA,'c2':pd.NA,'c3':pd.NA,'c4':pd.NA,'c5':pd.NA})
+                    newdihedrals.append([i,j,k,l])
+                else:
+                    raise Exception(f'Dihedral type {idx} not found.')   
         
+            ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
+            for ai,aj in zip(b,reversed(b)):
+                for ak in [k for k in self.bondlist[aj] if k!=ai]:
+                    for al in [l for l in self.bondlist[ak] if l!=ak]:
+                        it=at[ai-1].type
+                        jt=at[aj-1].type
+                        kt=at[ak-1].type
+                        lt=at[al-1].type
+                        idx=typeorder((it,jt,kt,lt))
+                        if idx in ijkl.index:
+                            dihedtype=ijkl.loc[idx,'func']
+                            i,j,k,l=idxorder((ai,aj,ak,al))
+                            self.D['dihedrals'].append({'ai':i,'aj':j,'ak':k, 'al':l,'funct':dihedtype,'c0':pd.NA,'c1':pd.NA,'c2':pd.NA,'c3':pd.NA,'c4':pd.NA,'c5':pd.NA})
+                            newdihedrals.append([i,j,k,l])
+                        else:
+                            raise Exception(f'Dihedral type {idx} not found.')   
+        
+            ''' new proper dihedrals for which the new bond is the k-l or l-k bond '''
+            for ak,al in zip(b,reversed(b)):
+                for aj in [j for j in self.bondlist[ak] if j!=al]:
+                    for ai in [i for i in self.bondlist[aj] if i!=ak]:
+                        it=at[ai-1].type
+                        jt=at[aj-1].type
+                        kt=at[ak-1].type
+                        lt=at[al-1].type
+                        idx=typeorder((it,jt,kt,lt))
+                        if idx in ijkl.index:
+                            dihedtype=ijkl.loc[idx,'func']
+                            i,j,k,l=idxorder((ai,aj,ak,al))
+                            self.D['dihedrals'].append({'ai':i,'aj':j,'ak':k, 'al':l,'funct':dihedtype,'c0':pd.NA,'c1':pd.NA,'c2':pd.NA,'c3':pd.NA,'c4':pd.NA,'c5':pd.NA})
+                            newdihedrals.append([i,j,k,l])
+                        else:
+                            raise Exception(f'Dihedral type {idx} not found.')   
+
+            ''' new improper dihedrals '''
+            # TODO
+            # I don't know if this is necessary
 
     def delete_atoms(self,idx=[],reindex=True):
         d=self.D['atoms']

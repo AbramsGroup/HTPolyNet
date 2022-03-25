@@ -9,7 +9,10 @@ class Bondlist:
         if not 'ai' in df.columns and not 'aj' in df.columns:
             raise Exception('Bondlist expects a dataframe with columns "ai" and "aj".')
         inst=cls()
-        keys=sorted(list(set(df.ai).update(set(df.aj))))
+        aiset=set(df.ai)
+        ajset=set(df.aj)
+        keyset=aiset.union(ajset)
+        keys=sorted(list(keyset))
         inst.B={k:[] for k in keys}
         for i,row in df.iterrows():
             inst.B[row.ai].append(row.aj)
