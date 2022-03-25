@@ -1,15 +1,16 @@
-from HTPolyNet.topology import Topology,typeorder
+from HTPolyNet.topology import Topology,typeorder,typedata
 
-s=Topology.from_topfile('init.itp')
 
-for k,v in s.D.items():
-    print(f'Directive {k} section has {len(v)} entries')
-    print('---')
+s1=Topology()
 
-print()
+for _ in range(10):
+    s2=Topology.from_topfile('STY.itp')
+    s1.merge(s2)
+    s2=Topology.from_topfile('VEA.itp')
+    s1.merge(s2)
 
 with open('test.top','w') as f:
-    f.write(str(s))
+    f.write(str(s1))
 
 # a=('cc','ca','ca','ca')
 # print(typeorder(a))

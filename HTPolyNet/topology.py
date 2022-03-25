@@ -11,7 +11,19 @@ def typeorder(a):
         return a if a[0]<a[2] else a[::-1]
     elif len(a)==4: # dihedral
         return a if a[1]<a[2] else a[::-1]
-idxorder=typeorder
+idxorder=typeorder  # same syntax to order global atom indices in an interaction index
+
+def typedata(s):
+    ''' s: a string that might be a string, integer, or float
+        typecast it correctly
+    '''
+    if s.replace('.','').isnumeric():
+        try:
+            return int(s)
+        except:
+            return float(s)
+    else:
+        return s
 
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
@@ -66,7 +78,7 @@ class Topology:
                         tokens=[x.strip() for x in line.split()]
                     else:
                         tokens=[line]
-                    padded=tokens[:]
+                    padded=[typedata(_) for _ in tokens]
                     # pad with NaN's so that it is same length as series
                     for _ in range(len(tokens),len(header)):
                         padded.append(pd.NA)
@@ -91,6 +103,10 @@ class Topology:
                 inst.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
             if 'bondtypes' in inst.D:
                 inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
+            if 'pairs' in inst.D:
+                inst.D['pairs'].sort_values(by=['ai','aj'],inplace=True)
+            if 'pairtypes' in inst.D:
+                inst.D['pairtypes'].sort_values(by=['i','j'],inplace=True)
             if 'angles' in inst.D:
                 # central atom (aj) is the primary index
                 inst.D['angles'].sort_values(by=['aj','ai','ak'],inplace=True)
@@ -118,7 +134,7 @@ class Topology:
             retstr+='; '+'\t'.join(vv.columns)+'\n'
             for i,row in vv.iterrows():
                 ''' assumes NaN's are only allowed in trailing columns '''
-                retstr+='\t'.join(row[~row.isna()])+'\n'
+                retstr+='\t'.join(row[~row.isna()].apply(str))+'\n'
         return retstr
 
     def add_bonds(self,pairs=[]):
@@ -127,6 +143,7 @@ class Topology:
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).index
+        pmi=self.D['pairs'].set_index(['ai','aj']).index
         newbonds=[]
         for b in pairs:
             ai,aj=idxorder(b)
@@ -144,6 +161,12 @@ class Topology:
                 self.D['bonds'].append({'ai':ai,'aj':aj,'func':bt,'c0':pd.NA,'c1':pd.NA})
                 # update the bondlist
                 self.bondlist.append([ai,aj])
+                # remove this pair from pairs if it's in there (it won't be)
+                if idx in pmi:
+                    d=self.D['pairs']
+                    indexes_to_drop=d[(d.ai.isin(idx))&(d.aj.isin(idx))].index
+                    indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+                    self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
                 raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         ''' maintain sort of bonds df if new bonds were added '''
@@ -268,6 +291,14 @@ class Topology:
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)
             self.bondlist=Bondlist.fromDataFrame(d)
+        d=self.D['pairs']
+        indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+        indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+        self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        if reindex:
+            d=self.D['pairs']
+            d.ai=d.ai.map(mapper)
+            d.aj=d.aj.map(mapper)
         d=self.D['angles']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
@@ -289,7 +320,27 @@ class Topology:
                 d.ak=d.ak.map(mapper)
                 d.al=d.al.map(mapper)
 
-    def merge(self,other):
+    def _myconcat(self,other,directive='',idxlabel=[],idxshift=0):
+        if not directive in other.D:
+            return
+        if directive in self.D:
+            for i in idxlabel:
+                other.D[directive][i]+=idxshift
+            self.D[directive]=pd.concat((self.D[directive],other.D[directive]),ignore_index=True)
+        else:
+            self.D[directive]=other.D[directive]
 
-        # TODO: must update bondlist
-        pass
+    def merge(self,other):
+        idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
+        self._myconcat(other,directive='atoms',idxlabel=['nr'],idxshift=idxshift)
+        self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
+        self._myconcat(other,directive='pairs',idxlabel=['ai','aj'],idxshift=idxshift)
+        self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)
+        self._myconcat(other,directive='dihedrals',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
+        self._myconcat(other,directive='impropers',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
+        ''' merge types but drop duplicates '''
+        for t in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
+            if t in self.D:
+                self.D[t]=pd.concat((self.D[t],other.D[t]),ignore_index=True).drop_duplicates()
+            else:
+                self.D[t]=other.D[t]
