@@ -41,8 +41,7 @@ _GromacsTopologyDirectiveHeaders_={
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
 # dihedral funct==(2,4) means improper
-# merge_top does not edit molecule_type, system, molecules, defaults
-#
+
 class Topology:
 
     def __init__(self,name=''):
