@@ -6,19 +6,35 @@ class Bondlist:
     
     @classmethod
     def fromDataFrame(cls,df):
+        inst=cls()
+        inst.update(df)
+        return inst
+
+    def update(self,df):
         if not 'ai' in df.columns and not 'aj' in df.columns:
             raise Exception('Bondlist expects a dataframe with columns "ai" and "aj".')
-        inst=cls()
         aiset=set(df.ai)
         ajset=set(df.aj)
         keyset=aiset.union(ajset)
         keys=sorted(list(keyset))
-        inst.B={k:[] for k in keys}
+#        print(aiset,ajset,keyset,keys)
+        self.B.update({k:[] for k in keys})
         for i,row in df.iterrows():
-            inst.B[row.ai].append(row.aj)
-            inst.B[row.aj].append(row.ai)
-        return inst
+            self.B[row.loc['ai']].append(row.loc['aj'])
+            self.B[row.loc['aj']].append(row.loc['ai'])
+#        print(self.B)
 
+    def __str__(self):
+        retstr=''
+        for k,v in self.B.items():
+            retstr+=f'{k}: '+' '.join(str(vv) for vv in v)+'\n'
+        return retstr
+    
+    def partners_of(self,idx):
+        if idx in self.B:
+            return self.B[idx]
+        return []
+        
     def append(self,pair=[]):
         if len(pair)==2:
             ai,aj=min(pair),max(pair)
