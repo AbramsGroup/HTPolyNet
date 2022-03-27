@@ -245,8 +245,12 @@ class Topology:
                     if idx in ijkl.index:
                         dihedtype=ijkl.loc[idx,'func']
                         i,j,k,l=idxorder((ai,aj,ak,al))
-                        self.D['dihedrals'].append({'ai':i,'aj':j,'ak':k, 'al':l,'funct':dihedtype,'c0':pd.NA,'c1':pd.NA,'c2':pd.NA,'c3':pd.NA,'c4':pd.NA,'c5':pd.NA})
-                    newdihedrals.append([i,j,k,l])
+                        h=_GromacsTopologyDirectiveHeaders_['dihedrals']
+                        data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
+                        assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
+                        diheddict={k:[v] for k,v in zip(h,data)}
+                        pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                        newdihedrals.append([i,j,k,l])
                 else:
                     raise Exception(f'Dihedral type {idx} not found.')   
         
@@ -262,7 +266,11 @@ class Topology:
                         if idx in ijkl.index:
                             dihedtype=ijkl.loc[idx,'func']
                             i,j,k,l=idxorder((ai,aj,ak,al))
-                            self.D['dihedrals'].append({'ai':i,'aj':j,'ak':k, 'al':l,'funct':dihedtype,'c0':pd.NA,'c1':pd.NA,'c2':pd.NA,'c3':pd.NA,'c4':pd.NA,'c5':pd.NA})
+                            h=_GromacsTopologyDirectiveHeaders_['dihedrals']
+                            data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
+                            assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
+                            diheddict={k:[v] for k,v in zip(h,data)}
+                            pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
                             raise Exception(f'Dihedral type {idx} not found.')   
@@ -279,7 +287,11 @@ class Topology:
                         if idx in ijkl.index:
                             dihedtype=ijkl.loc[idx,'func']
                             i,j,k,l=idxorder((ai,aj,ak,al))
-                            self.D['dihedrals'].append({'ai':i,'aj':j,'ak':k, 'al':l,'funct':dihedtype,'c0':pd.NA,'c1':pd.NA,'c2':pd.NA,'c3':pd.NA,'c4':pd.NA,'c5':pd.NA})
+                            h=_GromacsTopologyDirectiveHeaders_['dihedrals']
+                            data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
+                            assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
+                            diheddict={k:[v] for k,v in zip(h,data)}
+                            pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
                             raise Exception(f'Dihedral type {idx} not found.')   
