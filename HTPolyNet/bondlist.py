@@ -17,12 +17,10 @@ class Bondlist:
         ajset=set(df.aj)
         keyset=aiset.union(ajset)
         keys=sorted(list(keyset))
-#        print(aiset,ajset,keyset,keys)
         self.B.update({k:[] for k in keys})
         for i,row in df.iterrows():
             self.B[row.loc['ai']].append(row.loc['aj'])
             self.B[row.loc['aj']].append(row.loc['ai'])
-#        print(self.B)
 
     def __str__(self):
         retstr=''

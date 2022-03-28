@@ -24,6 +24,9 @@ def typedata(h,s):
         return float(s)
     return s
 
+# 'impropers' is not a real gromacs directive, but we use it for our purposes here
+_GromacsExtensiveDirectives_=('atoms','pairs','bonds','angles','dihedrals','impropers')
+
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
     'pairs':['ai', 'aj', 'funct'],
@@ -122,6 +125,15 @@ class Topology:
                 inst.D['impropers'].sort_values(by=['aj','ak','ai','al'],inplace=True)
             return inst
 
+    @classmethod
+    def from_ex(cls,other):
+        ''' make a new Topology instance by copying only the extensive dataframes 
+            from an existing topology '''
+        inst=cls()
+        for t in _GromacsExtensiveDirectives_:
+            inst.D[t]=other.D[t].copy()
+        return inst
+
     def __str__(self):
         ''' Generates a string in the proper top format '''
         retstr=''
@@ -138,10 +150,26 @@ class Topology:
                 retstr+='\t'.join(row[~row.isna()].apply(str))+'\n'
         return retstr
 
+    def write(self,outfile):
+        with open(outfile,'w') as f:
+            f.write(str(self))
+
     def total_charge(self):
         if 'atoms' in self.D:
             return self.D['atoms']['charge'].sum()
         return 0.0
+
+    def atomcount(self):
+        if 'atoms' in self.D:
+            return len(self.D['atoms'])
+        return 0
+
+    def replicate(self,n):
+        spawned=Topology()
+        for i in range(n):
+            s=Topology.from_ex(self)
+            spawned.merge(s)
+        self.merge(spawned)
 
     def add_bonds(self,pairs=[]):
         ''' add bonds to a topology
@@ -365,6 +393,16 @@ class Topology:
             self.D[directive]=other.D[directive]
 
     def merge(self,other):
+        self.merge_ex(other)
+        ''' merge types but drop duplicates '''
+        for t in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
+            if t in self.D:
+                self._myconcat(other,directive=t,drop_duplicates=True)
+            else:
+                self.D[t]=other.D[t]
+
+    def merge_ex(self,other):
+        ''' merge EXTENSIVE quantities '''
         idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
         self._myconcat(other,directive='atoms',idxlabel=['nr'],idxshift=idxshift)
         self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
@@ -373,11 +411,6 @@ class Topology:
         self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)
         self._myconcat(other,directive='dihedrals',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
         self._myconcat(other,directive='impropers',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
-        ''' merge types but drop duplicates '''
-        for t in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
-            if t in self.D:
-                self._myconcat(other,directive=t,drop_duplicates=True)
-            else:
-                self.D[t]=other.D[t]
+
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]

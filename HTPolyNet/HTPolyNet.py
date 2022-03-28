@@ -38,7 +38,9 @@ import HTPolyNet.generateTypeInfo as generateTypeInfo
 import HTPolyNet.processTop as processTop
 import HTPolyNet.endCapping as endCapping
 import HTPolyNet.getCappingParam as getCappingParam
-import HTPolyNet.ambertools as ambertools
+
+from HTPolyNet.ambertools import GAFFParameterize
+from HTPolyNet.topology import Topology
 
 from HTPolyNet.software import Software
 from HTPolyNet.libraries import *
@@ -47,22 +49,97 @@ from HTPolyNet.projectfilesystem import ProjectFileSystem
 
 class HTPolyNet(object):
     ''' Class for a single HTPolyNet session '''
-    def __init__(self,software=None,cfgFile=''):
+    def __init__(self,software=None,cfgfile='',logfile=''):
+        self._openlog(logfile)
+        self.log('HTPolyNet begins.\n')
+        self.log(str(self.software))
         if not software:
             # will die if software requirements are not met
             self.software=Software()
         else:
             self.software=software
-        if cfgFile=='':
+        if cfgfile=='':
             raise RuntimeError('HTPolyNet requires a configuration file.')
         
         self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
-        self.cfgFile=cfgFile
-        self.cfg=Configuration.read(cfgFile)
+        self.cfgFile=cfgfile
+        self.cfg=Configuration.read(cfgfile)
+        self.log(str(self.cfg))
         # session filesystem
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.reProject)
+        if self.logio:
+            self.logio.write('Finished initialization.\n')
+        self.Topology=Topology()
+        self.urctTopols=[]
+
+    def _openlog(self,filename):
+        self.logio=None
+        if filename!='':
+            self.logio=open(filename,'w')
+
+    def log(self,msg):
+        if self.logio:
+            self.logio(msg)
+            self.logio.flush()
+
+    def prepareUnreactedSystem(self):
         # fetch mol2 files, or die if not found
         self.pfs.fetchMol2(molNames=self.cfg.molNames,libpath=self.LibraryResourcePaths['mol2'])
+        self.psf.cd(self.unrctPath)
+        # self.unrctMap = getCappingParam.genUnrctMapping(self.cfg)
+        # seems like we should specify either a *-un.mol2 for each
+        # monomer OR specify capping parameters in the cfg, not both.
+
+        # GAFF-parameterize all input mol2 files, generating Gromacs top,itp,gro
+        # files
+        for mol in self.cfg.molNames: #includes all mol2, including *-un.mol2
+            msg=GAFFParameterize(f'{mol}.mol2',mol,resname=mol,force=False,parmed_save_inline=False)
+            self.log(msg+'\n')
+        for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
+            for f in ['top','itp']:
+                t=Topology.from_topfile(f'{mol}.{f}')
+                if count>1:
+                    t.replicate(count-1)
+                self.Topology.merge(t)
+        self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
+
+        # generate unreacted molecule topologies for later use (?)
+        for mol in self.cfg.unrctStruct:
+            ut=Topology()
+            for f in ['top','itp']:
+                t=Topology.from_topfile(f'{mol}.{f}')
+                ut.merge(t)
+            self.unrctTopols.append(ut)
+
+        # generate the charge map
+        # charges_file=f'{self.pfs.basicPath}/charges.txt'
+        # if os.path.isfile(charges_file):
+        #     self.log(f'--> Reading charge database from {charges_file}\n')
+        #     self.chargeMap=self.getChargeMaps(charges_file)
+        # else:
+        #     self.log('--> Generating new charge database\n')
+        #     a1=generateChargeDb.generateChargeDb()
+        #     self.chargeMap=a1.main(self.pfs.unrctPath,self.pfs.rctPath,4) # could be more
+        
+        self.pfs.goToProjectRoot()
+        self.log('--> Generating reacted molecules type database\n')
+        a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
+        # TODO: catch the return of generateTypeInfo.main which is a database of all type information
+        a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
+
+
+        # go to the results path, make the directory 'init', cd into it
+        self.pfs.cd(self.pfs.resPath)
+        self.pfs.mkdir('init')
+        self.pfs.cd('init')
+
+        # write the system topology
+        self.Topology.write('init.top')
+
+        # TODO: extend system, make gro file
+        # TODO: gromacs minimization
+        # TODO: gromacs MD simulation
+        # TODO: write final frame as gro file
 
 #       self.Types=getalltypes()
 #       self.Topology=getalltopologies()
@@ -76,51 +153,35 @@ class HTPolyNet(object):
 
         # end capping
 #        self.cappingBonds = [] # potential bonds for capping
-        self.unrctMap = {}
+        # self.unrctMap = {}
 
-        # layer limit
-        # self.boxLimit = 1
-        # self.layerConvLimit = 1
-
-
-        #self.projPath = ''
-
-        # handled by fs
-        # self.basicFolder = ''
-        # self.mdpFolder = ''
-        # self.resFolder = '' # result folder
-        # self.systemsFolder = ''
-        # self.unrctFolder = ''
-        # self.rctFolder = ''
-        # self.typeFolder = ''
-
-        self.topMap = {}
-        self.initGro = ''
-        self.initTop = ''
-        self.dumpPairs = {} # pair map when check circuit
+        # self.topMap = {}
+        # self.initGro = ''
+        # self.initTop = ''
+        # self.dumpPairs = {} # pair map when check circuit
 
         # cfg
         # self.basicParameter = ''
 
-        self.basicFFType = []
-        self.molNames = []
-        self.chargeMap = {}
+        # self.basicFFType = []
+        # self.molNames = []
+        # self.chargeMap = {}
 
-        self.prevGro = ''
-        self.prevTop = ''
+        # self.prevGro = ''
+        # self.prevTop = ''
 
-        self.gro = '' # save gro object
-        self.top = '' # save top object
+        # self.gro = '' # save gro object
+        # self.top = '' # save top object
 
-        self.chains = []
-        self.old_pairs = []
-        self.pairs_detail = {}
+        # self.chains = []
+        # self.old_pairs = []
+        # self.pairs_detail = {}
 
         # needed parameters
-        self.conv = 0
+        # self.conv = 0
         # self.desConv = 0
         # self.desBonds = 0
-        self.layer_status = False # status whether layer reached desired conversion
+        # self.layer_status = False # status whether layer reached desired conversion
 
     def initreport(self):
         print('Libraries:')
@@ -646,17 +707,19 @@ def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
+    parser.add_argument('-log',type=str,default='out.log',help='log file')
     args=parser.parse_args()
 
     # Determine if required and optional software is available
     software=Software()
 
     if args.command=='init':
-        init()
+        #init()
+        pass
     elif args.command=='info':
         info(software)
     elif args.command=='run':
-        a=HTPolyNet(software=software,cfgFile=args.cfg)
+        a=HTPolyNet(software=software,cfgfile=args.cfg,logfile=args.log)
         a.initreport()
         a.preparePara()
     else:

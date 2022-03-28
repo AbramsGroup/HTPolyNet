@@ -6,9 +6,6 @@ read cfg file
 
 """
 
-# import pandas as pd
-# import os
-
 def getOrDie(D,k,basetype=None,subtype=str,source='config'):
     '''
     Strict assignment provider from dictionary 'D' at key 'k'.
