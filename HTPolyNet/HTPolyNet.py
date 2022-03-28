@@ -111,6 +111,7 @@ class HTPolyNet(object):
                 ut.merge(t)
             self.unrctTopols.append(ut)
 
+        # TODO: figure out what this is
         # generate the charge map
         # charges_file=f'{self.pfs.basicPath}/charges.txt'
         # if os.path.isfile(charges_file):
@@ -120,7 +121,8 @@ class HTPolyNet(object):
         #     self.log('--> Generating new charge database\n')
         #     a1=generateChargeDb.generateChargeDb()
         #     self.chargeMap=a1.main(self.pfs.unrctPath,self.pfs.rctPath,4) # could be more
-        
+
+        # TODO: figure out what this is
         self.pfs.goToProjectRoot()
         self.log('--> Generating reacted molecules type database\n')
         a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
