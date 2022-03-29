@@ -1,5 +1,5 @@
 '''
-coordinates.py -- simple class for handling Gromacs coordinates
+coordinates.py -- simple classes for handling Gromacs commands and data
 '''
 
 import pandas as pd
@@ -43,6 +43,7 @@ class Coordinates:
                     del series['velX']
                     del series['velY']
                     del series['velZ']
+                assert inst.N==len(series['globalIdx']), f'Atom count mismatch inside {filename}'
                 inst.DF=pd.DataFrame(series)
                 boxdataline=data[-1]
                 n=10
@@ -57,6 +58,9 @@ class Coordinates:
         if filename!='':
             with open(filename,'w') as f:
                 f.write(str(self))
+
+    def atomcount(self):
+        return self.N
 
     def delete_atoms(self,idx=[],reindex=True):
         '''

@@ -9,6 +9,8 @@ import subprocess
 from shutil import copyfile
 from shutil import move
 
+from HTPolyNet.gromacs import GMXCommand
+
 
 class md(object):
     def __init__(self, GMX, MPI, nCPU, nGPU=0):
@@ -171,3 +173,16 @@ class md(object):
                         sys.exit('NPT failed')
                     else:
                         return False
+
+def energy_minimization(groName,topName,outName,size=True,boxSize=[0, 0, 0],check=True):
+    msg=''
+    if size:
+        c=GMXCommand('editconf',f=f'{groName}.gro',o=groName,
+                     box=' '.join([f'{x:.8f}' for x in boxSize]))
+        msg+=c.run()
+    c=GMXCommand('grompp',f='em.mdp',c=f'{groName}.gro',p=f'{topName}.top',o=f'{outName}.tpr',maxwarn=2)
+    msg+=c.run()
+    c=GMXCommand('mdrun',deffnm=outName)
+    msg+=c.run()
+    assert os.path.exists(f'{outName}.gro'), 'Error: minimization failed.'
+    

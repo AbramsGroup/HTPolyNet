@@ -2,41 +2,29 @@
 """
 Created on Sun Oct 18 15:03:09 2020
 
-@author: huang
+@author: huang, abrams
 """
-import subprocess
 import os
+from gromacs import GMXCommand
 
-class extendSys(object):
-    def __init__(self, gmx):
-        self.GMX = gmx
-    
-    def insertMol(self, molInfo, boxSize, outName):
-        GMX = self.GMX
-        if isinstance(boxSize, list):
-            if len(boxSize) == 3:
-                pass
-            else:
-                raise ValueError(f'wrong boxSize: {boxSize}')
+def insert_molecules(molInfo,boxSize,outName):
+    if type(boxSize)==float:
+        boxSize=[boxSize]*3
+    assert len(boxSize)==3, f'Error: malformed boxsize {boxSize}'
+    message=''
+    for mol in molInfo:
+        name = mol[1]
+        num = mol[2]
+        if os.path.isfile(f'{outName}.gro'):
+            ''' final gro file exists; we must insert into it '''
+            c=GMXCommand('insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=0.4)
         else:
-            boxSize = [boxSize, boxSize, boxSize]
-
-        for mol in molInfo:
-            name = mol[1]
-            num = mol[2]
-            if os.path.isfile('{}.gro'.format(outName)):
-                cmd1 = '{} insert-molecules -f {}.gro -ci {}.gro -nmol {} -o {} -box {} {} {} -scale 0.4'.format(
-                    GMX, outName, name, num, outName, boxSize[0], boxSize[1], boxSize[2])
-                a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                out, err = a1.communicate()
-            else:
-                cmd1 = '{} insert-molecules -ci {}.gro -nmol {} -o {} -box {} {} {} -scale 0.4'.format(
-                    GMX, name, num, outName, boxSize[0], boxSize[1], boxSize[2])
-                a1 = subprocess.Popen(cmd1, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                out, err = a1.communicate()
+            ''' no final gro file yet; make it '''
+            c=GMXCommand('insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=0.4)
+        message+=c.run()
+    return message
                 
-    def extendSys(self, monInfo, croInfo, boxSize, fileName):
-        print('Box size: ', boxSize)
-        self.insertMol(monInfo, boxSize, fileName)
-        self.insertMol(croInfo, boxSize, fileName)
+def extendSys(monInfo,croInfo,boxSize,fileName):
+    insert_molecules(monInfo,boxSize,fileName)
+    insert_molecules(croInfo,boxSize,fileName)
         

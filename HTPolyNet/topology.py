@@ -234,6 +234,7 @@ class Topology:
                     pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
                     newangles.append([i,j,k])
                 else:
+                    # no longer exception but warning
                     raise Exception(f'Angle type {idx} not found.')
             ''' new angles due to other neighbors of b[1] '''
             for ak in [k for k in self.bondlist.partners_of(b[1]) if k!=b[0]]:

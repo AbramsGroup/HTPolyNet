@@ -46,6 +46,7 @@ from HTPolyNet.software import Software
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem
+from HTPolyNet.extendSys import  extendSys
 
 class HTPolyNet(object):
     ''' Class for a single HTPolyNet session '''
@@ -79,13 +80,13 @@ class HTPolyNet(object):
 
     def log(self,msg):
         if self.logio:
-            self.logio(msg)
+            self.logio.write(msg)
             self.logio.flush()
 
     def prepareUnreactedSystem(self):
         # fetch mol2 files, or die if not found
         self.pfs.fetchMol2(molNames=self.cfg.molNames,libpath=self.LibraryResourcePaths['mol2'])
-        self.psf.cd(self.unrctPath)
+        self.pfs.cd(self.unrctPath)
         # self.unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         # seems like we should specify either a *-un.mol2 for each
         # monomer OR specify capping parameters in the cfg, not both.
@@ -111,6 +112,32 @@ class HTPolyNet(object):
                 ut.merge(t)
             self.unrctTopols.append(ut)
 
+        # go to the results path, make the directory 'init', cd into it
+        self.pfs.cd(self.pfs.nextResultsDir())
+        # write the system topology
+        self.Topology.write('init.top')
+        # fetch mdp files, or die if not found
+        self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['mdp'])
+        # TODO: extend system, make gro file
+        extendSys(self.cfg.monInfo,self.cfg.croInfo,self.cfg.boxSize,'init')
+        self.Coordinates=Coordinates.from_groFile('init.gro')
+        assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
+        self.log('Generated init.top and init.gro.\n')
+        msg=md.energy_minimization('init','init','min-1',size=False)
+        self.log(msg)
+        # TODO: gromacs MD simulation
+        # TODO: write final frame as gro file
+        self.pfs.goToProjectRoot()
+
+    def typeAndChargeOligomerTemplates(self):
+
+        # TODO: Typing and charging calculations for all oligomer templates
+        #       Types added to topology
+        #       Charges added to charge database
+        #       1. create all oligomer templates -> mol2
+        #       2. antechamber to get charges
+        #       3. parmchk2 and tleap to get types
+
         # TODO: figure out what this is
         # generate the charge map
         # charges_file=f'{self.pfs.basicPath}/charges.txt'
@@ -129,19 +156,6 @@ class HTPolyNet(object):
         # TODO: catch the return of generateTypeInfo.main which is a database of all type information
         a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
 
-
-        # go to the results path, make the directory 'init', cd into it
-        self.pfs.cd(self.pfs.resPath)
-        self.pfs.mkdir('init')
-        self.pfs.cd('init')
-
-        # write the system topology
-        self.Topology.write('init.top')
-
-        # TODO: extend system, make gro file
-        # TODO: gromacs minimization
-        # TODO: gromacs MD simulation
-        # TODO: write final frame as gro file
 
 #       self.Types=getalltypes()
 #       self.Topology=getalltopologies()
@@ -723,6 +737,6 @@ def cli():
     elif args.command=='run':
         a=HTPolyNet(software=software,cfgfile=args.cfg,logfile=args.log)
         a.initreport()
-        a.preparePara()
+        a.prepareUnreactedSystem()
     else:
         print(f'HTPolyNet command {args.command} not recognized')

@@ -47,18 +47,34 @@ class ProjectFileSystem:
         if toplevel in self.projSubPaths:
             self.cd(self.projSubPaths[toplevel])
 
-    def fetchMol2(self,molNames=[],libpath=None,destPath=None):
+    def fetchMol2(self,molNames=[],libpath=None,destpath=None):
         mol2searchpath=[self.rootPath,self.projPath]
         if libpath!=None:
             mol2searchpath.append(libpath)
-        if destPath==None:
-            destPath=self.unrctPath
+        if destpath==None:
+            destpath=self.unrctPath
         for m in molNames:
             fname=f'{m}.mol2'
             for p in mol2searchpath:
                 afname=os.path.join(p,fname)
                 if os.path.exists(afname):
-                    os.system(f'cp {afname} {self.unrctPath}')
+                    os.system(f'cp {afname} {destpath}')
+                    break
+            else:
+                raise FileNotFoundError(f'{fname} not found.')
+
+    def fetchMdp(self,filePrefixes=[],libpath=None,destpath=None):
+        mdpsearchpath=[self.rootPath,self.projPath]
+        if libpath!=None:
+            mdpsearchpath.append(libpath)
+        if destpath==None:
+            destpath=self.resultsSubPaths['init']
+        for m in filePrefixes:
+            fname=f'{m}.mdp'
+            for p in mdpsearchpath:
+                afname=os.path.join(p,fname)
+                if os.path.exists(afname):
+                    os.system(f'cp {afname} {destpath}')
                     break
             else:
                 raise FileNotFoundError(f'{fname} not found.')
@@ -90,12 +106,24 @@ class ProjectFileSystem:
         self.resPath=self.projSubPaths['results']
         self.cd(self.systemsPath)
         self.systemsSubPaths={}
+        self.resultsSubPaths={}
         for tops in ['rctSystems','unrctSystems','typeSystems']:
             self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
             os.mkdir(tops)
         self.unrctPath=self.systemsSubPaths['unrctSystems']
         self.rctPath=self.systemsSubPaths['rctSystems']
         self.typePath=self.systemsSubPaths['typeSystems']
+
+    def nextResultsDir(self):
+        possibles=['init',*[f'step{i}' for i in range(30)]]
+        for p in possibles:
+            if not p in self.resultsSubPaths:
+                break
+        newpath=os.path.join(self.resPath,p)
+        os.mkdir(newpath)
+        self.resultsSubPaths[p]=newpath
+        return newpath
+        
 
 if __name__=='__main__':
     pfs=ProjectFileSystem(verbose=True)
