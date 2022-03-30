@@ -5,7 +5,7 @@ Created on Sun Oct 18 15:03:09 2020
 @author: huang, abrams
 """
 import os
-from gromacs import GMXCommand
+from HTPolyNet.gromacs import GMXCommand
 
 def insert_molecules(molInfo,boxSize,outName):
     if type(boxSize)==float:
@@ -25,6 +25,8 @@ def insert_molecules(molInfo,boxSize,outName):
     return message
                 
 def extendSys(monInfo,croInfo,boxSize,fileName):
-    insert_molecules(monInfo,boxSize,fileName)
-    insert_molecules(croInfo,boxSize,fileName)
+    msg=''
+    msg+=insert_molecules(monInfo,boxSize,fileName)
+    msg+=insert_molecules(croInfo,boxSize,fileName)
+    return msg
         

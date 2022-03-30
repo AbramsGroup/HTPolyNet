@@ -20,7 +20,7 @@ class GMXCommand:
         if self.logio:
             self.logio.close()
     def run(self):
-        c=f'gmx {self.command}'+' '.join([f'-{k} {v}' for k,v in self.options.items])
+        c=f'gmx {self.command} '+' '.join([f'-{k} {v}' for k,v in self.options.items()])
         message=f'Issuing command "{c}"...\n'
         process=subprocess.Popen(c,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         out,err=process.communicate()

@@ -56,6 +56,7 @@ class Configuration(object):
         self.boxLimit = 1
         self.layerConvLimit = 1
         self.layerDir       = ''
+        self.system='A Generic System Name'
 
     @classmethod
     def read(cls,filename):
@@ -246,7 +247,7 @@ class Configuration(object):
         self.GPU=int(self.baseDict.get('GPU','0'))
         self.stepwise=self.baseDict.get('stepwise','')
         self.layerDir=self.baseDict.get('boxDir','')
-
+        self.system=self.baseDict.get('system','A Generic System Name')
         # basic parameters that must be specified in the config file
         # boxSize can be specified by a single float for a cubic box
         # or as three floats for an orthorhombic box

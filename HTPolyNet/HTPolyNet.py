@@ -14,9 +14,7 @@ step 2: init systems
 ''' built-ins '''
 import os
 import sys
-from shutil import copyfile
-from shutil import move
-from shutil import rmtree
+from shutil import copyfile, copy, move, rmtree
 from copy import deepcopy
 import subprocess
 import argparse as ap
@@ -53,12 +51,12 @@ class HTPolyNet(object):
     def __init__(self,software=None,cfgfile='',logfile=''):
         self._openlog(logfile)
         self.log('HTPolyNet begins.\n')
-        self.log(str(self.software))
         if not software:
             # will die if software requirements are not met
             self.software=Software()
         else:
             self.software=software
+        self.log(str(self.software))
         if cfgfile=='':
             raise RuntimeError('HTPolyNet requires a configuration file.')
         
@@ -68,9 +66,8 @@ class HTPolyNet(object):
         self.log(str(self.cfg))
         # session filesystem
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.reProject)
-        if self.logio:
-            self.logio.write('Finished initialization.\n')
-        self.Topology=Topology()
+        self.log('Finished initialization.\n')
+        self.Topology=Topology(system=self.cfg.system,filename='init')
         self.urctTopols=[]
 
     def _openlog(self,filename):
@@ -86,7 +83,7 @@ class HTPolyNet(object):
     def prepareUnreactedSystem(self):
         # fetch mol2 files, or die if not found
         self.pfs.fetchMol2(molNames=self.cfg.molNames,libpath=self.LibraryResourcePaths['mol2'])
-        self.pfs.cd(self.unrctPath)
+        self.pfs.cd(self.pfs.unrctPath)
         # self.unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         # seems like we should specify either a *-un.mol2 for each
         # monomer OR specify capping parameters in the cfg, not both.
@@ -94,33 +91,40 @@ class HTPolyNet(object):
         # GAFF-parameterize all input mol2 files, generating Gromacs top,itp,gro
         # files
         for mol in self.cfg.molNames: #includes all mol2, including *-un.mol2
-            msg=GAFFParameterize(f'{mol}.mol2',mol,resname=mol,force=False,parmed_save_inline=False)
+            self.log(f'Parameterizing {mol}...\n')
+            msg=GAFFParameterize(f'{mol}.mol2',mol,resName=mol,force=False,parmed_save_inline=False)
             self.log(msg+'\n')
         for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
-            for f in ['top','itp']:
-                t=Topology.from_topfile(f'{mol}.{f}')
-                if count>1:
-                    t.replicate(count-1)
-                self.Topology.merge(t)
+            self.log(f'Reading {mol}.top...\n')
+            t=Topology.from_topfile(f'{mol}.top',replicate=count)
+            # if count>1:
+            #     self.log(f'Replicating {mol} by {count}...\n')
+            #     t.replicate(count-1,logstream=self.logio)
+            self.Topology.merge(t)
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
-
+        self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
+        assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
         # generate unreacted molecule topologies for later use (?)
+        self.unrctTopols=[]
         for mol in self.cfg.unrctStruct:
-            ut=Topology()
-            for f in ['top','itp']:
-                t=Topology.from_topfile(f'{mol}.{f}')
-                ut.merge(t)
+            self.log(f'Reading inactive {mol}.top...\n')
+            ut=Topology.from_topfile(f'{mol}.top')
             self.unrctTopols.append(ut)
 
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.nextResultsDir())
+        for mol in [a[1] for a in self.cfg.monInfo+self.cfg.croInfo]:
+            copy(f'{self.pfs.unrctPath}/{mol}.gro','.')
         # write the system topology
-        self.Topology.write('init.top')
+        self.Topology.to_file('init.top')
+        self.log('Wrote init.top')
+        # exit()
         # fetch mdp files, or die if not found
-        self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['mdp'])
-        # TODO: extend system, make gro file
-        extendSys(self.cfg.monInfo,self.cfg.croInfo,self.cfg.boxSize,'init')
-        self.Coordinates=Coordinates.from_groFile('init.gro')
+        self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['Gromacs_mdp'])
+        # extend system, make gro file
+        msg=extendSys(self.cfg.monInfo,self.cfg.croInfo,self.cfg.boxSize,'init')
+        self.log(msg)
+        self.Coordinates=Coordinates.fromGroFile('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         self.log('Generated init.top and init.gro.\n')
         msg=md.energy_minimization('init','init','min-1',size=False)
@@ -645,47 +649,47 @@ class HTPolyNet(object):
         self.unrctMap = unrctMap
 
     # create self.Types and self.Topology, each is a dictionary of dataframes
-    def preparePara(self,log=True):
-        os.chdir(self.pfs.unrctPath)
-        if log:
-            logf=open('parameterization.log','w')
-            logf.write('Beginning parameterizations.\n')
-            logf.write('self.cfg.molNames: '+','.join(self.cfg.molNames)+'\n')
-        A=ambertools.Parameterization()
+    # def preparePara(self,log=True):
+    #     os.chdir(self.pfs.unrctPath)
+    #     if log:
+    #         logf=open('parameterization.log','w')
+    #         logf.write('Beginning parameterizations.\n')
+    #         logf.write('self.cfg.molNames: '+','.join(self.cfg.molNames)+'\n')
+    #     #A=ambertools.Parameterization()
 
-        # parameterize all user-provided mol2's
-        self.Topologies=[]
-        for n in self.cfg.molNames:
-            mol2Name=f'{n}.mol2'
-            if os.path.isfile(f'{n}.gro') and os.path.isfile(f'{n}.top'):
-                T=processTop.Topology(n,repeat=True)
-            else:
-                msg=A.GAFFParameterize(mol2Name,n,resName=n)
-                if log:
-                    logf.write(msg)
-                T=processTop.Topology(n) # process the top file, make it standard
-            T.generate()
-            self.Topologies.append(T)
-            self.topMap[T.name] = T.top
+    #     # parameterize all user-provided mol2's
+    #     self.Topologies=[]
+    #     for n in self.cfg.molNames:
+    #         mol2Name=f'{n}.mol2'
+    #         if os.path.isfile(f'{n}.gro') and os.path.isfile(f'{n}.top'):
+    #             T=processTop.Topology(n,repeat=True)
+    #         else:
+    #             msg=A.GAFFParameterize(mol2Name,n,resName=n)
+    #             if log:
+    #                 logf.write(msg)
+    #             T=processTop.Topology(n) # process the top file, make it standard
+    #         T.generate()
+    #         self.Topologies.append(T)
+    #         self.topMap[T.name] = T.top
 
-        self.getUnrctPara()
+    #     self.getUnrctPara()
 
-        os.chdir(self.pfs.projPath)
-        charges_file=f'{self.pfs.basicPath}/charges.txt'
-        if os.path.isfile(charges_file):
-            self.chargeMap=self.getChargeMaps(charges_file)
-        else:
-            print('--> Generating new charge database')
-            a1=generateChargeDb.generateChargeDb()
-            self.chargeMap=a1.main(self.pfs.unrctPath,self.pfs.rctPath,4) # could be more
+    #     os.chdir(self.pfs.projPath)
+    #     charges_file=f'{self.pfs.basicPath}/charges.txt'
+    #     if os.path.isfile(charges_file):
+    #         self.chargeMap=self.getChargeMaps(charges_file)
+    #     else:
+    #         print('--> Generating new charge database')
+    #         a1=generateChargeDb.generateChargeDb()
+    #         self.chargeMap=a1.main(self.pfs.unrctPath,self.pfs.rctPath,4) # could be more
         
-        os.chdir(self.pfs.projPath)
-        print('--> Generating reacted molecules type database')
-        a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
-        # TODO: catch the return of generateTypeInfo.main which is a database of all type information
-        a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
-        if log:
-            logf.close()
+    #     os.chdir(self.pfs.projPath)
+    #     print('--> Generating reacted molecules type database')
+    #     a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
+    #     # TODO: catch the return of generateTypeInfo.main which is a database of all type information
+    #     a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
+    #     if log:
+    #         logf.close()
 
 # def init():
 #     LibraryResourcePaths=IdentifyLibraryResourcePaths()

@@ -185,4 +185,5 @@ def energy_minimization(groName,topName,outName,size=True,boxSize=[0, 0, 0],chec
     c=GMXCommand('mdrun',deffnm=outName)
     msg+=c.run()
     assert os.path.exists(f'{outName}.gro'), 'Error: minimization failed.'
+    return msg
     

@@ -1,8 +1,10 @@
 import pandas as pd
+from sympy import EX
 from HTPolyNet.bondlist import Bondlist
+import os
 
 def typeorder(a):
-    ''' correctly order the tuple of atom types for particular 
+    ''' correctly order the tuple of atom types for particular
         interaction types to maintain sorted type dataframes '''
     assert type(a)==tuple, 'error: typeorder() requires a tuple argument'
     if len(a)==2: # bond
@@ -13,8 +15,7 @@ def typeorder(a):
         return a if a[1]<a[2] else a[::-1]
 idxorder=typeorder  # same syntax to order global atom indices in an interaction index
 
-
-_GromacsIntegers_=('nr','atnum','resnr','ai','aj','ak','al','#nmols','nrexcl','funct','func','nbfunc','comb-rule')
+_GromacsIntegers_=('nr','atnum','resnr','ai','aj','ak','al','#mols','nrexcl','funct','func','nbfunc','comb-rule')
 _GromacsFloats_=('charge','mass','chargeB','massB',*tuple([f'c{i}' for i in range(5)]),
                  'b0','kb','th0','cth','rub','kub','phase','kd','pn','fudgeLJ','fudgeQQ')
 def typedata(h,s):
@@ -24,9 +25,8 @@ def typedata(h,s):
         return float(s)
     return s
 
-# 'impropers' is not a real gromacs directive, but we use it for our purposes here
-_GromacsExtensiveDirectives_=('atoms','pairs','bonds','angles','dihedrals','impropers')
-
+_GromacsExtensiveDirectives_=('atoms','pairs','bonds','angles','dihedrals')
+_GromacsTopologyDirectiveOrder_=['defaults','atomtypes','bondtypes','angletypes','dihedraltypes','moleculetype','atoms','pairs','bonds','angles','dihedrals','system','molecules']
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
     'pairs':['ai', 'aj', 'funct'],
@@ -42,28 +42,42 @@ _GromacsTopologyDirectiveHeaders_={
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
+_GromacsTopologyDirectiveDefaults_={
+    'system':['A_generic_system'],
+    'molecules':['None',1],
+    'moleculetype':['None',3],
+    'defaults':[1,2,'yes',0.5,0.83333333]
+}
 # dihedral funct==(2,4) means improper
 
 class Topology:
 
-    def __init__(self,name=''):
-        self.name=name
+    def __init__(self,filename='',system=''):
+        self.filename=filename
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
         self.D={}
+        for k,v in _GromacsTopologyDirectiveDefaults_.items():
+            hdr=_GromacsTopologyDirectiveHeaders_[k]
+            dfdict={k:[a] for k,a in zip(hdr,v)}
+            self.D[k]=pd.DataFrame(dfdict)
+        self.D['system']=pd.DataFrame({'name':[system]})
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
 
     @classmethod
-    def from_topfile(cls,filename):
+    def from_topfile(cls,filename,replicate=0):
+        assert os.path.exists(filename), f'Error: {filename} not found.'
         inst=cls()
+        inst.filename=filename
         '''
         Reads a Gromacs-style topology file 'filename' and returns a dictionary keyed on directive names.
         Each value in the dictionary is a pandas dataframe.  Each
-        dataframe represents an individual section found with its directive in the file, with columns corresponding to the fields in the section.  Note that the directive 'dihedrals' can appear twice, and we assume a *second* 'dihedrals'
-        section enumerates improper dihedrals.
+        dataframe represents an individual section found with its directive in the file, with columns corresponding to the fields in the section.  Note that the we allow for input topology/itp files to have two 'dihedrals' and 'dihedraltypes' sections; these
+        are merged in the result.
         '''
         inst.D={}
+        inst.includes=[]
         with open(filename,'r') as f:
             data=f.read().split('[')
             stanzas=[('['+x).split('\n') for x in data][1:]
@@ -75,6 +89,12 @@ class Topology:
                 header=_GromacsTopologyDirectiveHeaders_[directive]
                 series={k:[] for k in header}
                 for line in contentlines:
+                    if line.startswith('#include'):
+                        tokens=[x.strip() for x in line.split()]
+                        inst.includes.append(tokens[1].replace('"',''))
+                        continue
+                    # ignore anything after a ';'
+                    line=line.split(';')[0].strip()
                     if directive!='system':  # no need to split line
                         tokens=[x.strip() for x in line.split()]
                     else:
@@ -87,17 +107,23 @@ class Topology:
                     for k,v in zip(header,padded):
                         series[k].append(v)
                 tdf=pd.DataFrame(series)
-                if directive=='dihedrals':
-                    # if there is already a dihedrals section, assume
-                    # this new one is for impropers
-                    # TODO: Check this against the funct Series
+                if directive=='dihedraltypes':
                     if directive in inst.D:
-                        inst.D['impropers']=tdf
+                        # print(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
+                        # we have already read-in a dihedraltypes section
+                        # so let's append this one
+                        inst.D['dihedraltypes']=pd.concat([inst.D['dihedraltypes'],tdf],ignore_index=True).drop_duplicates()
+                        # print(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
                     else:
-                        inst.D['dihedrals']=tdf
+                        inst.D[directive]=tdf
+                elif directive=='dihedrals':
+                    # if there is already a dihedrals section, assume
+                    if directive in inst.D:
+                        inst.D['dihedrals']=pd.concat([inst.D['dihedrals'],tdf],ignore_index=True)
+                    else:
+                        inst.D[directive]=tdf
                 else:
                     inst.D[directive]=tdf
-            inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
             # we must assume the 'atoms' are sorted by global index; however, all other
             # sections need not be sorted.  For convenience, we will keep them sorted by
             # atom indices or atom type name, where appropriate.
@@ -120,19 +146,79 @@ class Topology:
                 # central atoms (aj,ak) are the primary index
                 inst.D['dihedrals'].sort_values(by=['aj','ak','ai','al'],inplace=True)
             if 'dihedraltypes' in inst.D:
+                # print(f'    -> pre sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
                 inst.D['dihedraltypes'].sort_values(by=['j','k','i','l'],inplace=True)
-            if 'impropers' in inst.D:
-                inst.D['impropers'].sort_values(by=['aj','ak','ai','al'],inplace=True)
+                # print(f'    -> post sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
+            for f in inst.includes:
+                # print(f'reading included topology {f}')
+                inst.merge(Topology.from_topfile(f))
+            if replicate>0:
+                inst.rep_ex(replicate)
+            if 'bonds' in inst.D:
+                inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
+            # print(f'{filename}',inst.D.keys())
+            #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
             return inst
+
+    def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
+        if directive in self.D:
+            cols=self.D[directive].columns.get_indexer(idxlabels)
+            # print(f'directive {directive} idxlabels {idxlabels} idxshift {idxshift} rows {rows} cols {cols}')
+            self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
+
+    def rep_ex(self,count=0):
+        if count>0:
+            counts={k:0 for k in _GromacsExtensiveDirectives_}
+            for t in _GromacsExtensiveDirectives_:
+                if t in self.D:
+                    counts[t]=len(self.D[t])
+            try:
+                idxshift=counts['atoms']
+            except:
+                raise Exception(f'Error: expected an "atoms" dataframe')
+            for t in _GromacsExtensiveDirectives_:
+                if t in self.D:
+                    # print(f'replicating {t} by {count}')
+                    self.D[t]=pd.concat([self.D[t]]*count,ignore_index=True)
+            # print(f'new raw atom count (pre-index-shifted) {len(self.D["atoms"])}')
+            for c in range(1,count):
+                # if c%100 == 0:
+                # print(f'  -> shifting indices in replica {c}...')
+                # print(f'     -> atoms')
+                self.shiftatomsidx(idxshift*c,'atoms',rows=[(c*counts['atoms']),((c+1)*counts['atoms'])],idxlabels=['nr'])
+                self.shiftatomsidx(c,'atoms',rows=[(c*counts['atoms']),((c+1)*counts['atoms'])],idxlabels=['resnr'])
+                # print(f'     -> bonds')
+                self.shiftatomsidx(idxshift*c,'bonds',rows=[(c*counts['bonds']),((c+1)*counts['bonds'])],idxlabels=['ai','aj'])
+                # print(f'     -> pairs')
+                self.shiftatomsidx(idxshift*c,'pairs',rows=[(c*counts['pairs']),((c+1)*counts['pairs'])],idxlabels=['ai','aj'])
+                self.shiftatomsidx(idxshift*c,'angles',rows=[(c*counts['angles']),((c+1)*counts['angles'])],idxlabels=['ai','aj','ak'])
+                self.shiftatomsidx(idxshift*c,'dihedrals',rows=[(c*counts['dihedrals']),((c+1)*counts['dihedrals'])],idxlabels=['ai','aj','ak','al'])
 
     @classmethod
     def from_ex(cls,other):
-        ''' make a new Topology instance by copying only the extensive dataframes 
+        ''' make a new Topology instance by copying only the extensive dataframes
             from an existing topology '''
         inst=cls()
         for t in _GromacsExtensiveDirectives_:
-            inst.D[t]=other.D[t].copy()
+            if t in other.D:
+                inst.D[t]=other.D[t].copy()
         return inst
+
+    def to_file(self,filename=''):
+        if filename=='':
+            return
+        with open(filename,'w') as f:
+            f.write('; Gromacs-format topology written by HTPolyNet\n')
+        assert 'defaults' in self.D, 'Error: no [ defaults ] in topology?'
+        for k in _GromacsTopologyDirectiveOrder_:
+            if k in self.D:
+                with open(filename,'a') as f:
+                    f.write(f'[ {k} ]\n; ')
+                self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
+                with open(filename,'a') as f:
+                    f.write('\n')
+        with open(filename,'a') as f:
+            f.write('; end\n')
 
     def __str__(self):
         ''' Generates a string in the proper top format '''
@@ -141,9 +227,7 @@ class Topology:
             if vv.empty:
                 ''' an empty stanza will not be output '''
                 continue
-            ''' our internal directive 'impropers' must be
-                reported as 'dihedrals' in the top file '''
-            retstr+='[ '+(k if k!='impropers' else 'dihedrals')+' ]\n'
+            retstr+='[ '+k+' ]\n'
             retstr+='; '+'\t'.join(vv.columns)+'\n'
             for i,row in vv.iterrows():
                 ''' assumes NaN's are only allowed in trailing columns '''
@@ -164,11 +248,14 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
-    def replicate(self,n):
+    def replicate(self,n,logstream=None):
         spawned=Topology()
         for i in range(n):
             s=Topology.from_ex(self)
             spawned.merge(s)
+            if logstream:
+                logstream.write(f'  replica {i+1} of {n}...\n')
+                logstream.flush()
         self.merge(spawned)
 
     def add_bonds(self,pairs=[]):
@@ -256,14 +343,14 @@ class Topology:
                 else:
                     raise Exception(f'Angle type {idx} not found.')
 
-            ''' DIHEDRALS i-j-k-l 
+            ''' DIHEDRALS i-j-k-l
                 j-k is the torsion bond
-                angle is measured between the i-j-k plane and the j-k-l plane 
+                angle is measured between the i-j-k plane and the j-k-l plane
                 a new bond could be one of i-j, j-k, or k-l
             '''
 
             ''' new proper dihedrals for which the new bond is the central j-k bond '''
-            aj,ak=idxorder(b)        
+            aj,ak=idxorder(b)
             for ai in [i for i in self.bondlist.partners_of(aj) if i!=ak]:
                 for al in [l for l in self.bondlist.partners_of(ak) if l!=aj]:
                     it=at.iloc[ai-1].type
@@ -281,8 +368,8 @@ class Topology:
                         pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                         newdihedrals.append([i,j,k,l])
                 else:
-                    raise Exception(f'Dihedral type {idx} not found.')   
-        
+                    raise Exception(f'Dihedral type {idx} not found.')
+
             ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
             for ai,aj in zip(b,reversed(b)):
                 for ak in [k for k in self.bondlist.partners_of(aj) if k!=ai]:
@@ -302,8 +389,8 @@ class Topology:
                             pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
-                            raise Exception(f'Dihedral type {idx} not found.')   
-        
+                            raise Exception(f'Dihedral type {idx} not found.')
+
             ''' new proper dihedrals for which the new bond is the k-l or l-k bond '''
             for ak,al in zip(b,reversed(b)):
                 for aj in [j for j in self.bondlist.partners_of(ak) if j!=al]:
@@ -323,11 +410,7 @@ class Topology:
                             pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
-                            raise Exception(f'Dihedral type {idx} not found.')   
-
-            ''' new improper dihedrals '''
-            # TODO
-            # I don't know if this is necessary
+                            raise Exception(f'Dihedral type {idx} not found.')
 
     def delete_atoms(self,idx=[],reindex=True):
         d=self.D['atoms']
@@ -367,7 +450,7 @@ class Topology:
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)
             d.ak=d.ak.map(mapper)
-        for four_body_type in ['dihedrals','impropers']:
+        for four_body_type in ['dihedrals']:
             d=self.D[four_body_type]
             indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
             indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
@@ -394,24 +477,44 @@ class Topology:
             self.D[directive]=other.D[directive]
 
     def merge(self,other):
+        # print('Merging topologies...')
+        # print(f'pre merge self {self.filename}',self.D.keys())
+        # print(f'pre merge other {other.filename}',other.D.keys())
         self.merge_ex(other)
         ''' merge types but drop duplicates '''
+        # print('   intensive merging...')
+        # ldt=0
+        # if 'dihedraltypes' in self.D:
+        #     ldt=len(self.D["dihedraltypes"])
+        # print(f'merge self ndihedraltypes {ldt}')
+        # if 'dihedraltypes' in other.D:
+        #     print(f'merge other ndihedraltypes {len(other.D["dihedraltypes"])}')
         for t in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
+            # print(f'      {t}')
             if t in self.D:
                 self._myconcat(other,directive=t,drop_duplicates=True)
             else:
-                self.D[t]=other.D[t]
+                if t in other.D:
+                    self.D[t]=other.D[t]
+        # if 'dihedraltypes' in self.D:
+        #     print(f'post merge self ndihedraltypes {len(self.D["dihedraltypes"])}')
+        
+        # print('post merge',self.D.keys())
 
     def merge_ex(self,other):
+        # print('   extensive merging...')
         ''' merge EXTENSIVE quantities '''
         idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
+        rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['resnr']
+        if 'atoms' in other.D:
+            other.D['atoms']['resnr']+=rdxshift
         self._myconcat(other,directive='atoms',idxlabel=['nr'],idxshift=idxshift)
         self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
-        self.bondlist.update(other.D['bonds'])
+        if 'bonds' in other.D:
+            self.bondlist.update(other.D['bonds'])
         self._myconcat(other,directive='pairs',idxlabel=['ai','aj'],idxshift=idxshift)
         self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)
         self._myconcat(other,directive='dihedrals',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
-        self._myconcat(other,directive='impropers',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
 
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]
