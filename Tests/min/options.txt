@@ -25,7 +25,7 @@ layerConvLimit = 1
 
 # For croslinker 1
 croName1 = DFA
-croNum1 = 10
+croNum1 = 500
 cro1R_list = N1, N2
 cro1R_rNum = 2, 2
 cro1R_rct = H, H
@@ -33,7 +33,7 @@ cro1R_group = 1, 2
 
 # For monomer 1
 monName1 = FDE
-monNum1 = 20
+monNum1 = 1000
 mon1R_list = C1, C2
 mon1R_rNum = 1, 1
 mon1R_rct = H, H

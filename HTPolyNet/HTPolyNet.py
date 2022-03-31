@@ -80,7 +80,7 @@ class HTPolyNet(object):
             self.logio.write(msg)
             self.logio.flush()
 
-    def prepareUnreactedSystem(self):
+    def initializeTopology(self):
         # fetch mol2 files, or die if not found
         self.pfs.fetchMol2(molNames=self.cfg.molNames,libpath=self.LibraryResourcePaths['mol2'])
         self.pfs.cd(self.pfs.unrctPath)
@@ -97,20 +97,21 @@ class HTPolyNet(object):
         for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
             self.log(f'Reading {mol}.top...\n')
             t=Topology.from_topfile(f'{mol}.top',replicate=count)
-            # if count>1:
-            #     self.log(f'Replicating {mol} by {count}...\n')
-            #     t.replicate(count-1,logstream=self.logio)
             self.Topology.merge(t)
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
         # generate unreacted molecule topologies for later use (?)
-        self.unrctTopols=[]
+        self.unrctTopols={}
         for mol in self.cfg.unrctStruct:
             self.log(f'Reading inactive {mol}.top...\n')
             ut=Topology.from_topfile(f'{mol}.top')
-            self.unrctTopols.append(ut)
+            self.unrctTopols[mol]=ut
 
+        # TODO: Generate oligomer templates and their parameterizations
+        self.rctTopols={}
+
+    def generateLiquidSimulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.nextResultsDir())
         for mol in [a[1] for a in self.cfg.monInfo+self.cfg.croInfo]:
@@ -118,7 +119,6 @@ class HTPolyNet(object):
         # write the system topology
         self.Topology.to_file('init.top')
         self.log('Wrote init.top')
-        # exit()
         # fetch mdp files, or die if not found
         self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['Gromacs_mdp'])
         # extend system, make gro file
@@ -127,10 +127,11 @@ class HTPolyNet(object):
         self.Coordinates=Coordinates.fromGroFile('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         self.log('Generated init.top and init.gro.\n')
-        msg=md.energy_minimization('init','init','min-1',size=False)
+        msg=md.grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
         self.log(msg)
-        # TODO: gromacs MD simulation
-        # TODO: write final frame as gro file
+        msg=md.grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
+        self.log(msg)
+        self.log('Final configuration in npt-1.gro\n')
         self.pfs.goToProjectRoot()
 
     def typeAndChargeOligomerTemplates(self):
@@ -648,6 +649,11 @@ class HTPolyNet(object):
         unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         self.unrctMap = unrctMap
 
+    def main(self):
+        self.initializeTopology()
+        self.generateLiquidSimulation()
+#        self.SCUR()
+
     # create self.Types and self.Topology, each is a dictionary of dataframes
     # def preparePara(self,log=True):
     #     os.chdir(self.pfs.unrctPath)
@@ -723,6 +729,7 @@ def info(sw):
             print(f'       {f}')
     sw.info()
 
+
 def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
@@ -740,7 +747,6 @@ def cli():
         info(software)
     elif args.command=='run':
         a=HTPolyNet(software=software,cfgfile=args.cfg,logfile=args.log)
-        a.initreport()
-        a.prepareUnreactedSystem()
+        a.main()
     else:
         print(f'HTPolyNet command {args.command} not recognized')

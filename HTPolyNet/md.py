@@ -174,16 +174,18 @@ class md(object):
                     else:
                         return False
 
-def energy_minimization(groName,topName,outName,size=True,boxSize=[0, 0, 0],check=True):
+def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[]):
+    if gro=='' or top=='' or out=='' or mdp=='':
+        raise Exception('grompp_and_run requires gro, top, out, and mdp filename prefixes.')
     msg=''
-    if size:
-        c=GMXCommand('editconf',f=f'{groName}.gro',o=groName,
+    if len(boxSize)>0:
+        c=GMXCommand('editconf',f=f'{gro}.gro',o=gro,
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         msg+=c.run()
-    c=GMXCommand('grompp',f='em.mdp',c=f'{groName}.gro',p=f'{topName}.top',o=f'{outName}.tpr',maxwarn=2)
+    c=GMXCommand('grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=2)
     msg+=c.run()
-    c=GMXCommand('mdrun',deffnm=outName)
+    c=GMXCommand('mdrun',deffnm=out)
     msg+=c.run()
-    assert os.path.exists(f'{outName}.gro'), 'Error: minimization failed.'
+    assert os.path.exists(f'{out}.gro'), 'Error: mdrun failed.'
     return msg
     

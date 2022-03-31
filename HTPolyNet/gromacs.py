@@ -30,7 +30,7 @@ class GMXCommand:
             self.log(message)
             raise subprocess.SubprocessError(message)
         else:
-            message+=f'Command "{c}" successful.  Output:\n'
+            message+=f'Command "{c}" successful.\n'
             message+=out+'\n'
             self.log(message)
         self._closelog()

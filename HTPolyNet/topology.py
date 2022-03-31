@@ -1,5 +1,4 @@
 import pandas as pd
-from sympy import EX
 from HTPolyNet.bondlist import Bondlist
 import os
 
