@@ -5,6 +5,7 @@ read cfg file
 @author: huang, abrams
 
 """
+import json
 
 def getOrDie(D,k,basetype=None,subtype=str,source='config'):
     '''
@@ -28,6 +29,31 @@ def getOrDie(D,k,basetype=None,subtype=str,source='config'):
     else:
         raise KeyError(s)
     return r
+
+class ReactiveAtom:
+    def __init__(self,datadict):
+        self.z=int(datadict.get("z",1))
+        self.ht=datadict.get("ht","H")
+
+class CappingBond:
+    def __init__(self,datalist):
+        self.pairnames=datalist[0:2]
+        self.bondorder=int(datalist[2])
+
+class Monomer:
+    def __init__(self,jsondict):
+        self.name=jsondict["name"]
+        self.reactive_atoms={name:ReactiveAtom(data) for name,data in jsondict["reactive_atoms"].items()}
+        if "capping_bonds" in jsondict:
+            self.capping_bonds=[CappingBond(data) for data in jsondict["capping_bonds"]]
+    def __str__(self):
+        s=self.name
+        return s
+
+class Reaction:
+    def __init__(self,jsondict):
+        self.reactants=jsondict.get("reactants",[])
+        self.probability=jsondict.get("probability",1.0)
 
 class Configuration(object):
     def __init__(self):
@@ -85,14 +111,8 @@ class Configuration(object):
                 keyCounts[k]+=1
                 if ',' in v:  # is it a csv?
                     v=[a.strip() for a in v.split(',')]
-                elif ' ' in v:  # does it have spaces?
-                    v=[a.strip() for a in v.split(',')]
-                elif '\t' in v: # does it have tabs?
-                    v=[a.strip() for a in v.split('\t')]
-                # repeated keys build lists
-                if keyCounts[k]>1:
-                    if keyCounts[k]==2:
-                        baseDict[k]=[baseDict[k]]
+                elif ' ' in v:  # does it have spaces?self
+                    baseDict[k]=[baseDict[k]]
                     baseDict[k].append(v)
                 else:    
                     baseDict[k]=v
@@ -107,6 +127,24 @@ class Configuration(object):
         inst.rctInfo=rctInfo
         inst.parseCfg()
         return inst
+
+    @classmethod
+    def read_json(cls,filename):
+        inst=cls()
+        with open(filename,'r') as f:
+            inst.basedict=json.load(f)
+        inst.monomers={datadict["name"]:Monomer(datadict) for datadict in inst.basedict["monomers"]}
+        inst.reactions=[Reaction(r) for r in inst.basedict["reactions"]]
+        for i,r in enumerate(inst.reactions):
+            for a in r.reactants:
+                if not a in inst.monomers:
+                    raise Exception(f'Monomer {a} in reaction {i} not found in monomers.')
+        inst.__dict__.update(inst.basedict["parameters"])
+        return inst
+        
+    def print_json(self):
+        for m in self.monomers:
+            print(str(m))
 
     def __str__(self):
         r=f'Configuration read in from {self.cfgFile}:\n'

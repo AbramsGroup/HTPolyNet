@@ -30,6 +30,13 @@ cro1R_list = N1, N2
 cro1R_rNum = 2, 2
 cro1R_rct = H, H
 cro1R_group = 1, 2
+monomers : [
+    {name:"FDE", reactive_atoms:{"C1":{z:1,ht:H},"C2":{z:1,ht:H}}}, capping_bonds:[[O1,C1,1],[O2,C2,1]],
+    {name:"DFA", reactive_atoms:{"N1":{z:2,ht:H},"N2":{z:2,ht:H}}}
+]
+reactions : [
+    {reactants:[DFA,FDE],probability=1.0}
+]
 
 # For monomer 1
 monName1 = FDE

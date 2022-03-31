@@ -1,0 +1,11 @@
+{
+    "monomers" : [
+        {"name":"FDE", "reactive_atoms":{"C1":{"z":1,"ht":"H"},"C2":{"z":1,"ht":"H"}}, "capping_bonds":[["O1","C1",1],["O2","C2",1]]},
+        {"name":"DFA", "reactive_atoms":{"N1":{"z":2,"ht":"H"},"N2":{"z":2,"ht":"H"}}}
+    ],
+    "reactions" : [
+        {"reactants":["DFA","FDE"], "probability":1.0}
+    ],
+    "composition" : {"FDE":1000, "DFA":500},
+    "parameters" : {"initial_boxsize":15, "SCUR_cutoff":0.5, "conversion":0.95}
+}   

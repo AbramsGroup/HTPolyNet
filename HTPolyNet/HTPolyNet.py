@@ -28,7 +28,7 @@ import HTPolyNet.readTop2 as readTop2
 import HTPolyNet.readGro as readGro
 import HTPolyNet.groInfo as groInfo
 import HTPolyNet.topInfo as topInfo
-import HTPolyNet.md as md
+# import HTPolyNet.md as md
 import HTPolyNet.searchBonds as searchBonds
 import HTPolyNet.genBonds as genBonds
 import HTPolyNet.generateChargeDb as generateChargeDb
@@ -44,7 +44,8 @@ from HTPolyNet.software import Software
 from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem
-from HTPolyNet.extendSys import  extendSys
+# from HTPolyNet.extendSys import  extendSys
+from HTPolyNet.gromacs import extendSys, grompp_and_mdrun
 
 class HTPolyNet(object):
     ''' Class for a single HTPolyNet session '''
@@ -127,9 +128,9 @@ class HTPolyNet(object):
         self.Coordinates=Coordinates.fromGroFile('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         self.log('Generated init.top and init.gro.\n')
-        msg=md.grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
+        msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
         self.log(msg)
-        msg=md.grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
+        msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
         self.log(msg)
         self.log('Final configuration in npt-1.gro\n')
         self.pfs.goToProjectRoot()

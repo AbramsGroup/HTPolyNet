@@ -219,23 +219,23 @@ class Topology:
         with open(filename,'a') as f:
             f.write('; end\n')
 
-    def __str__(self):
-        ''' Generates a string in the proper top format '''
-        retstr=''
-        for k,vv in self.D.items():
-            if vv.empty:
-                ''' an empty stanza will not be output '''
-                continue
-            retstr+='[ '+k+' ]\n'
-            retstr+='; '+'\t'.join(vv.columns)+'\n'
-            for i,row in vv.iterrows():
-                ''' assumes NaN's are only allowed in trailing columns '''
-                retstr+='\t'.join(row[~row.isna()].apply(str))+'\n'
-        return retstr
+    # def __str__(self):
+    #     ''' Generates a string in the proper top format '''
+    #     retstr=''
+    #     for k,vv in self.D.items():
+    #         if vv.empty:
+    #             ''' an empty stanza will not be output '''
+    #             continue
+    #         retstr+='[ '+k+' ]\n'
+    #         retstr+='; '+'\t'.join(vv.columns)+'\n'
+    #         for i,row in vv.iterrows():
+    #             ''' assumes NaN's are only allowed in trailing columns '''
+    #             retstr+='\t'.join(row[~row.isna()].apply(str))+'\n'
+    #     return retstr
 
-    def write(self,outfile):
-        with open(outfile,'w') as f:
-            f.write(str(self))
+    # def write(self,outfile):
+    #     with open(outfile,'w') as f:
+    #         f.write(str(self))
 
     def total_charge(self):
         if 'atoms' in self.D:
@@ -247,15 +247,15 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
-    def replicate(self,n,logstream=None):
-        spawned=Topology()
-        for i in range(n):
-            s=Topology.from_ex(self)
-            spawned.merge(s)
-            if logstream:
-                logstream.write(f'  replica {i+1} of {n}...\n')
-                logstream.flush()
-        self.merge(spawned)
+    # def replicate(self,n,logstream=None):
+    #     spawned=Topology()
+    #     for i in range(n):
+    #         s=Topology.from_ex(self)
+    #         spawned.merge(s)
+    #         if logstream:
+    #             logstream.write(f'  replica {i+1} of {n}...\n')
+    #             logstream.flush()
+    #     self.merge(spawned)
 
     def add_bonds(self,pairs=[]):
         ''' add bonds to a topology
