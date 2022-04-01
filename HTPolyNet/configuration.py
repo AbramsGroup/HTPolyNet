@@ -49,11 +49,15 @@ def boc(b):
         return ''
 
 class CappingBond:
-    def __init__(self,datalist):
-        self.pairnames=datalist[0:2]
-        self.bondorder=int(datalist[2])
+    def __init__(self,jsondict):
+        self.pairnames=jsondict["pair"]
+        self.bondorder=jsondict.get("order",1)
+        self.deletes=jsondict["deletes"]
     def __str__(self):
-        return self.pairnames[0]+boc(self.bondorder)+self.pairnames[1]
+        s=self.pairnames[0]+boc(self.bondorder)+self.pairnames[1]
+        if len(self.deletes)>0:
+            s+=' D['+','.join(self.deletes)+']'
+        return s
 
 class Monomer:
     def __init__(self,jsondict):
@@ -138,14 +142,15 @@ class Configuration(object):
                 keyCounts[k]+=1
                 if ',' in v:  # is it a csv?
                     v=[a.strip() for a in v.split(',')]
-                elif ' ' in v:  # does it have spaces?self
+                elif ' ' in v:  # does it have spaces?
+                    v=[a.strip() for a in v.split()]
+                if keyCounts[k]>1:
                     baseDict[k]=[baseDict[k]]
                     baseDict[k].append(v)
                 else:    
                     baseDict[k]=v
                 # print(k,baseDict[k])
         inst.baseDict=baseDict
-
         rctInfo = []
         for line in baseList: # Reaction Info
             if '+' in line:
@@ -221,6 +226,7 @@ class Configuration(object):
                 r+=f'    {p[0]:<6s} {p[1]:<6s}\n'
             r+='    Mol    Atom1  Atom2  BondOrder\n'
             for p in self.cappingBonds:
+                print(p)
                 r+=f'    {p[0]:<6s} {p[1]:<6s} {p[2]:<6s} {p[3]:<6s}\n'
             r+='    UnreactedNames\n'
             for p in self.unrctStruct:
@@ -285,6 +291,7 @@ class Configuration(object):
             mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
             mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
             mrgrp=self.baseDict.get(f'mon{i}R_group',f'Error: mon{i}R_group not found')
+            print(mrnum)
             mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
             monInfo.append([i,mname,mnum,mrlist])
             monR_list[mname] = mrlist

@@ -653,7 +653,7 @@ class HTPolyNet(object):
     def main(self):
         self.initializeTopology()
 #        self.typeAndChargeOligomerTemplates()
-        self.generateLiquidSimulation()
+#        self.generateLiquidSimulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes

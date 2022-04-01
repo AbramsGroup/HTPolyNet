@@ -9,12 +9,10 @@
             "capping_bonds" : [
                 {
                     "pair" : ["O1","C1"],
-                    "order" : 1,
                     "deletes" : []
                 },
                 {
                     "pair" : ["O2","C2"],
-                    "order" : 1,
                     "deletes":[]
                 }
             ]
