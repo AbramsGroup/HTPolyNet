@@ -6,6 +6,7 @@ read cfg file
 
 """
 import json
+from HTPolyNet.topology import Topology
 
 def getOrDie(D,k,basetype=None,subtype=str,source='config'):
     '''
@@ -57,13 +58,19 @@ class CappingBond:
 class Monomer:
     def __init__(self,jsondict):
         self.name=jsondict["name"]
+        self.Topology={}
+        self.Topology["active"]=None
         self.reactive_atoms={name:ReactiveAtom(data) for name,data in jsondict["reactive_atoms"].items()}
         if "capping_bonds" in jsondict:
             self.capping_bonds=[CappingBond(data) for data in jsondict["capping_bonds"]]
+            self.Topology["inactive"]=None
+        else:
+            self.capping_bonds=[]
+
     def __str__(self):
         s=self.name+'\n'
         for r,a in self.reactive_atoms.items():
-            s+=f'   reactive atom: {r}:'+str(s)+'\n'
+            s+=f'   reactive atom: {r}:'+str(a)+'\n'
         for c in self.capping_bonds:
             s+='   cap: '+str(c)+'\n'
         return s
@@ -72,6 +79,8 @@ class Reaction:
     def __init__(self,jsondict):
         self.reactants=jsondict.get("reactants",[])
         self.probability=jsondict.get("probability",1.0)
+    def __str__(self):
+        return 'Reaction: '+'+'.join(self.reactants)+' : '+str(self.probability)
 
 class Configuration(object):
     def __init__(self):
@@ -157,12 +166,16 @@ class Configuration(object):
             for a in r.reactants:
                 if not a in inst.monomers:
                     raise Exception(f'Monomer {a} in reaction {i} not found in monomers.')
-        inst.__dict__.update(inst.basedict["parameters"])
+        inst.parameters=inst.basedict["parameters"]
         return inst
         
     def print_json(self):
-        for m in self.monomers:
+        for p,v in self.parameters.items():
+            print(f'{p} = {v}')
+        for m in self.monomers.values():
             print(str(m))
+        for r in self.reactions:
+            print(str(r))
 
     def __str__(self):
         r=f'Configuration read in from {self.cfgFile}:\n'
