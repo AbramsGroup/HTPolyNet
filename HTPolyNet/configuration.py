@@ -34,11 +34,25 @@ class ReactiveAtom:
     def __init__(self,datadict):
         self.z=int(datadict.get("z",1))
         self.ht=datadict.get("ht","H")
+    def __str__(self):
+        return f'{self.z}:{self.ht}'
+        
+def boc(b):
+    if b==1:
+        return '-'
+    elif b==2:
+        return '='
+    elif b==3:
+        return '≡'
+    else:
+        return ''
 
 class CappingBond:
     def __init__(self,datalist):
         self.pairnames=datalist[0:2]
         self.bondorder=int(datalist[2])
+    def __str__(self):
+        return self.pairnames[0]+boc(self.bondorder)+self.pairnames[1]
 
 class Monomer:
     def __init__(self,jsondict):
@@ -47,7 +61,11 @@ class Monomer:
         if "capping_bonds" in jsondict:
             self.capping_bonds=[CappingBond(data) for data in jsondict["capping_bonds"]]
     def __str__(self):
-        s=self.name
+        s=self.name+'\n'
+        for r,a in self.reactive_atoms.items():
+            s+=f'   reactive atom: {r}:'+str(s)+'\n'
+        for c in self.capping_bonds:
+            s+='   cap: '+str(c)+'\n'
         return s
 
 class Reaction:

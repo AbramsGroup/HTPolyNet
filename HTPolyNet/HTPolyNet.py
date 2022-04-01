@@ -652,6 +652,7 @@ class HTPolyNet(object):
 
     def main(self):
         self.initializeTopology()
+#        self.typeAndChargeOligomerTemplates()
         self.generateLiquidSimulation()
 #        self.SCUR()
 
