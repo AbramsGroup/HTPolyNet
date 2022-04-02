@@ -226,7 +226,7 @@ class Configuration(object):
                 r+=f'    {p[0]:<6s} {p[1]:<6s}\n'
             r+='    Mol    Atom1  Atom2  BondOrder\n'
             for p in self.cappingBonds:
-                print(p)
+                # print(p)
                 r+=f'    {p[0]:<6s} {p[1]:<6s} {p[2]:<6s} {p[3]:<6s}\n'
             r+='    UnreactedNames\n'
             for p in self.unrctStruct:
@@ -291,7 +291,6 @@ class Configuration(object):
             mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
             mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
             mrgrp=self.baseDict.get(f'mon{i}R_group',f'Error: mon{i}R_group not found')
-            print(mrnum)
             mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
             monInfo.append([i,mname,mnum,mrlist])
             monR_list[mname] = mrlist
