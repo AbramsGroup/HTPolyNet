@@ -4,11 +4,16 @@ coordinates.py -- simple classes for handling Gromacs commands and data
 
 import pandas as pd
 import numpy as np
+from io import StringIO
 
 class Coordinates:
-    colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
+    gro_colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
+    mol2_atom_colnames = ['idx','name','x','y','z','type','molidx','resid','charge']
+    mol2_bond_colnames = ['idx','ai','aj','type']
+
     def __init__(self,name=''):
         self.name=name
+        self.format=None
         self.title=''
         self.N=0
         self.DF=None
@@ -17,6 +22,7 @@ class Coordinates:
     @classmethod
     def fromGroFile(cls,filename=''):
         inst=cls(filename)
+        inst.format='gro'
         if filename!='':
             with open(filename,'r') as f:
                 data=f.read().split('\n')
@@ -24,7 +30,7 @@ class Coordinates:
                     data.remove('')
                 inst.title=data[0]
                 inst.N=int(data[1])
-                series={k:[] for k in cls.colnames}
+                series={k:[] for k in cls.gro_colnames}
                 for x in data[2:-1]:
                     series['molNum'].append(int(x[0:5].strip()))
                     series['molName'].append(x[5:10].strip())
@@ -52,6 +58,27 @@ class Coordinates:
                     inst.box[0][0],inst.box[1][1],inst.box[2][2]=boxdata[0:3]
                 if len(boxdata)==9:
                     inst.box[0][1],inst.box[0][2],inst.box[1][0],inst.box[1][2],inst.box[2][0],inst.box[2][1]=boxdata[3:]
+        return inst
+
+    @classmethod
+    def fromMol2File(cls,filename=''):
+        inst=cls(filename)
+        inst.format='mol2'
+        if filename=='':
+            return inst
+        with open(filename,'r') as f:
+            rawsections=f.read().split('@<TRIPOS>')[1:]
+            sections={}
+            for rs in rawsections:
+                s=rs.split('\n')
+                key=s[0].strip().lower()
+                val=[a.strip() for a in s[1:] if len(a)>0]
+                if key=='atom' or key=='bond':
+                    val=StringIO('\n'.join(val))
+                sections[key]=val
+            inst.DF=pd.read_csv(sections['atom'],sep='\s+',names=Coordinates.mol2_atom_colnames)
+            inst.N=len(inst.DF)
+            inst.BDF=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames)
         return inst
 
     def write_gro(self,filename=''):

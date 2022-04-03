@@ -1,10 +1,8 @@
 from HTPolyNet.coordinates import Coordinates
 
-c=Coordinates.fromGroFile('init.gro')
-
+c=Coordinates.fromMol2File('test.mol2')
 print(c.DF)
+if 'BDF' in c.__dict__:
+    print(c.BDF)
 
-c.delete_atoms(list(range(2000,2100)))
 
-with open('test.gro','w') as f:
-    f.write(str(c))
