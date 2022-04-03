@@ -64,9 +64,9 @@ class HTPolyNet(object):
         self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
         self.cfgFile=cfgfile
         self.cfg=Configuration.read(cfgfile)
-        self.log(str(self.cfg))
+#        self.log(str(self.cfg))
         # session filesystem
-        self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.reProject)
+        self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.restart)
         self.log('Finished initialization.\n')
         self.Topology=Topology(system=self.cfg.system,filename='init')
         self.urctTopols=[]
@@ -91,39 +91,40 @@ class HTPolyNet(object):
 
         # GAFF-parameterize all input mol2 files, generating Gromacs top,itp,gro
         # files
-        for mol in self.cfg.molNames: #includes all mol2, including *-un.mol2
-            self.log(f'Parameterizing {mol}...\n')
-            msg=GAFFParameterize(f'{mol}.mol2',mol,resName=mol,force=False,parmed_save_inline=False)
+        for n,m in self.cfg.monomers.items(): #includes all mol2, including *-un.mol2
+            self.log(f'Parameterizing {n}...\n')
+            msg=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
             self.log(msg+'\n')
-        for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
-            self.log(f'Reading {mol}.top...\n')
-            t=Topology.from_topfile(f'{mol}.top',replicate=count)
+        # for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
+            self.log(f'Reading {n}-p.top...\n')
+            t=Topology.from_topfile(f'{n}-p.top',replicate=self.cfg.composition[n])
             self.Topology.merge(t)
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
         # generate unreacted molecule topologies for later use (?)
-        self.unrctTopols={}
-        for mol in self.cfg.unrctStruct:
-            self.log(f'Reading inactive {mol}.top...\n')
-            ut=Topology.from_topfile(f'{mol}.top')
-            self.unrctTopols[mol]=ut
+        # self.unrctTopols={}
+        # for mol in self.cfg.unrctStruct:
+        #     self.log(f'Reading inactive {mol}.top...\n')
+        #     ut=Topology.from_topfile(f'{mol}.top')
+        #     self.unrctTopols[mol]=ut
 
         # TODO: Generate oligomer templates and their parameterizations
-        self.rctTopols={}
+        # self.rctTopols={}
 
     def generateLiquidSimulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.nextResultsDir())
-        for mol in [a[1] for a in self.cfg.monInfo+self.cfg.croInfo]:
-            copy(f'{self.pfs.unrctPath}/{mol}.gro','.')
+        for n,m in self.monomers.items():
+            copy(f'{self.pfs.unrctPath}/{n}.gro','.')
         # write the system topology
         self.Topology.to_file('init.top')
         self.log('Wrote init.top')
         # fetch mdp files, or die if not found
         self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['Gromacs_mdp'])
         # extend system, make gro file
-        msg=extendSys(self.cfg.monInfo,self.cfg.croInfo,self.cfg.boxSize,'init')
+        # msg=extendSys(self.cfg.monInfo,self.cfg.croInfo,self.cfg.boxSize,'init')
+        msg=extendSys(self.cfg.monomers,self.cfg.parameters['boxsize'],'init')
         self.log(msg)
         self.Coordinates=Coordinates.fromGroFile('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'

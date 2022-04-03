@@ -40,8 +40,13 @@ class Command:
         self._closelog()
         return message
 
-def GAFFParameterize(inputMol2,outputPrefix,parmed_save_inline=True,force=False):
-    message=f'Ambertools: parameterizing {inputMol2}\n'
+def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=False):
+    message=f'Ambertools: parameterizing {inputPrefix}\n'
+    mol2in=f'{inputPrefix}.mol2'
+    mol2out=f'{outputPrefix}.mol2'
+    frcmodout=f'{outputPrefix}.frcmod'
+    if mol2in==mol2out:
+        message+=f'Warning: Antechamber will overwrite {mol2in}\n'
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
@@ -49,21 +54,15 @@ def GAFFParameterize(inputMol2,outputPrefix,parmed_save_inline=True,force=False)
         message+=f'   {groOut} and {topOut} already exist,\n'
         message+=f'   and GAFFParameterize called with force=False.\n'
         return message
-    user_Mol2=read_mol2(inputMol2)
-    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c='bcc',at='gaff',i=inputMol2,o=f'{outputPrefix}.mol2',pf='Y',nc=0,eq=1,pl=10)
+    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c='bcc',at='gaff',i=mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
     message+=c.run()
-    ante_Mol2=read_mol2(f'{outputPrefix}.mol2')
-    
-    # TODO: antechamber will give atoms unique names that will persist, and they might not match what is in the input mol2 files
-    # unfortunately, atom names in the input mol2 files are how users refer to particular atoms for describing reactions
-    # and capping.  So, we need to map the user-specified names to current names.
-    c=Command('parmchk2',i=f'{outputPrefix}.mol2',o=f'{outputPrefix}.frcmod',f='mol2',s='gaff')
+    c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
     message+=c.run()
     with open('tleap.in', 'w') as f:
         f.write(f'source leaprc.gaff\n')
-        f.write(f'SUS = loadmol2 {inputMol2}\n')
+        f.write(f'SUS = loadmol2 {mol2out}\n')
         f.write(f'check SUS\n')
-        f.write(f'loadamberparams {outputPrefix}.frcmod\n')
+        f.write(f'loadamberparams {frcmodout}\n')
         f.write(f'saveamberparm SUS {outputPrefix}-tleap.top {outputPrefix}-tleap.crd\n')
         f.write('quit\n')
     c=Command('tleap',f='tleap.in')

@@ -37,7 +37,7 @@ class GMXCommand:
         self._closelog()
         return message
 
-def insert_molecules(molInfo,boxSize,outName,**kwargs):
+def insert_molecules(gro,num,outName,**kwargs):
     ''' launcher for `gmx insert-molecules` 
         molInfo:  list of information about the molecule being inserted
                   only element 1 and 2 are used
@@ -63,11 +63,12 @@ def insert_molecules(molInfo,boxSize,outName,**kwargs):
             c=GMXCommand('insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
         message+=c.run()
     return message
-                
-def extendSys(monInfo,croInfo,boxSize,fileName):
+
+# TODO: fix to match new cfg format in HTPolyNet  
+def extendSys(gro,num,boxSize,fileName):
     msg=''
-    msg+=insert_molecules(monInfo,boxSize,fileName)
-    msg+=insert_molecules(croInfo,boxSize,fileName)
+    msg+=insert_molecules(gro,num,boxSize,fileName)
+    # msg+=insert_molecules(croInfo,boxSize,fileName)
     return msg
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
