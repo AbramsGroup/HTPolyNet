@@ -37,12 +37,10 @@ class GMXCommand:
         self._closelog()
         return message
 
-def insert_molecules(gro,num,outName,**kwargs):
-    ''' launcher for `gmx insert-molecules` 
-        molInfo:  list of information about the molecule being inserted
-                  only element 1 and 2 are used
-                  element 1 is name of molecule
-                  element 2 is how many to insert
+def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
+    ''' launcher for `gmx insert-molecules`
+        monomers:  list of Monomer instances
+        composition: dictionary keyed on monomer name with value monomer count
         boxSize:  3-element list of floats OR a single float (cubic box)
         outName:  output filename basename.  If {outName}.gro exists,
                   insertions are made into it.
@@ -52,9 +50,9 @@ def insert_molecules(gro,num,outName,**kwargs):
     assert len(boxSize)==3, f'Error: malformed boxsize {boxSize}'
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     message=''
-    for mol in molInfo:
-        name = mol[1]
-        num = mol[2]
+    for mol in monomers:
+        name = mol.name
+        num = composition['name']
         if os.path.isfile(f'{outName}.gro'):
             ''' final gro file exists; we must insert into it '''
             c=GMXCommand('insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
@@ -64,15 +62,14 @@ def insert_molecules(gro,num,outName,**kwargs):
         message+=c.run()
     return message
 
-# TODO: fix to match new cfg format in HTPolyNet  
-def extendSys(gro,num,boxSize,fileName):
-    msg=''
-    msg+=insert_molecules(gro,num,boxSize,fileName)
-    # msg+=insert_molecules(croInfo,boxSize,fileName)
-    return msg
+# def extendSys(monomers,composition,boxSize,fileName):
+#     msg=''
+#     msg+=insert_molecules(gro,num,boxSize,fileName)
+#     # msg+=insert_molecules(croInfo,boxSize,fileName)
+#     return msg
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
-    ''' launcher for grompp and mdrun 
+    ''' launcher for grompp and mdrun
         gro: prefix for input coordinate file
         top: prefix for input topology
         out: prefix for desired output files

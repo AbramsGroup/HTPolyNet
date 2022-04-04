@@ -18,7 +18,10 @@ from shutil import copyfile, copy, move, rmtree
 from copy import deepcopy
 import subprocess
 import argparse as ap
+from numpy import insert
 import pandas as pd
+
+from HTPolyNet.extendSys import insert_molecules
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
@@ -28,7 +31,6 @@ import HTPolyNet.readTop2 as readTop2
 import HTPolyNet.readGro as readGro
 import HTPolyNet.groInfo as groInfo
 import HTPolyNet.topInfo as topInfo
-# import HTPolyNet.md as md
 import HTPolyNet.searchBonds as searchBonds
 import HTPolyNet.genBonds as genBonds
 import HTPolyNet.generateChargeDb as generateChargeDb
@@ -45,7 +47,7 @@ from HTPolyNet.libraries import *
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem
 # from HTPolyNet.extendSys import  extendSys
-from HTPolyNet.gromacs import extendSys, grompp_and_mdrun
+from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
 
 class HTPolyNet(object):
     ''' Class for a single HTPolyNet session '''
@@ -64,11 +66,11 @@ class HTPolyNet(object):
         self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
         self.cfgFile=cfgfile
         self.cfg=Configuration.read(cfgfile)
-#        self.log(str(self.cfg))
+        self.log(str(self.cfg))
         # session filesystem
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.restart)
         self.log('Finished initialization.\n')
-        self.Topology=Topology(system=self.cfg.system,filename='init')
+        self.Topology=Topology(system=self.cfg.Title,filename='init')
         self.urctTopols=[]
 
     def _openlog(self,filename):
@@ -83,7 +85,7 @@ class HTPolyNet(object):
 
     def initializeTopology(self):
         # fetch mol2 files, or die if not found
-        self.pfs.fetchMol2(molNames=self.cfg.molNames,libpath=self.LibraryResourcePaths['mol2'])
+        self.pfs.fetchMol2(molNames=self.cfg.monomers.keys(),libpath=self.LibraryResourcePaths['mol2'])
         self.pfs.cd(self.pfs.unrctPath)
         # self.unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         # seems like we should specify either a *-un.mol2 for each
@@ -91,13 +93,14 @@ class HTPolyNet(object):
 
         # GAFF-parameterize all input mol2 files, generating Gromacs top,itp,gro
         # files
+        comp=self.cfg.parameters['composition']
         for n,m in self.cfg.monomers.items(): #includes all mol2, including *-un.mol2
             self.log(f'Parameterizing {n}...\n')
             msg=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
             self.log(msg+'\n')
         # for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
             self.log(f'Reading {n}-p.top...\n')
-            t=Topology.from_topfile(f'{n}-p.top',replicate=self.cfg.composition[n])
+            t=Topology.from_topfile(f'{n}-p.top',replicate=comp[n])
             self.Topology.merge(t)
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
@@ -115,7 +118,7 @@ class HTPolyNet(object):
     def generateLiquidSimulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.nextResultsDir())
-        for n,m in self.monomers.items():
+        for n,m in self.cfg.monomers.items():
             copy(f'{self.pfs.unrctPath}/{n}.gro','.')
         # write the system topology
         self.Topology.to_file('init.top')
@@ -123,8 +126,7 @@ class HTPolyNet(object):
         # fetch mdp files, or die if not found
         self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['Gromacs_mdp'])
         # extend system, make gro file
-        # msg=extendSys(self.cfg.monInfo,self.cfg.croInfo,self.cfg.boxSize,'init')
-        msg=extendSys(self.cfg.monomers,self.cfg.parameters['boxsize'],'init')
+        msg=insert_molecules(self.cfg.monomers,self.cfg.composition,self.cfg.parameters['boxsize'],'init')
         self.log(msg)
         self.Coordinates=Coordinates.fromGroFile('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
@@ -654,7 +656,7 @@ class HTPolyNet(object):
     def main(self):
         self.initializeTopology()
 #        self.typeAndChargeOligomerTemplates()
-#        self.generateLiquidSimulation()
+        self.generateLiquidSimulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes
