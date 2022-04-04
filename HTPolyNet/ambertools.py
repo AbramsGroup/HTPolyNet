@@ -70,10 +70,13 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
     try:
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')
+        message+=f'Writing {groOut}\n'
         file.save(groOut)
         if parmed_save_inline:
+            message+=f'Writing {topOut}\n'
             file.save(topOut)
         else:
+            message+=f'Writing {topOut} and {itpOut}\n'
             file.save(topOut,parameters=itpOut,overwrite=True)
     except Exception as m:
         raise parmed.exceptions.GromacsError(m)

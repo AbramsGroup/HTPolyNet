@@ -20,6 +20,7 @@ import subprocess
 import argparse as ap
 from numpy import insert
 import pandas as pd
+import parmed
 
 from HTPolyNet.extendSys import insert_molecules
 
@@ -97,11 +98,24 @@ class HTPolyNet(object):
         for n,m in self.cfg.monomers.items(): #includes all mol2, including *-un.mol2
             self.log(f'Parameterizing {n}...\n')
             msg=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
-            self.log(msg+'\n')
-        # for mol,count in [(a[1],a[2]) for a in self.cfg.monInfo+self.cfg.croInfo]:
-            self.log(f'Reading {n}-p.top...\n')
-            t=Topology.from_topfile(f'{n}-p.top',replicate=comp[n])
+            self.log(msg+'\n'+f'Reading {n}-p.top...\n')
+            t=Topology.read_gro(f'{n}-p.top')
+            m.Topology['active']=t
+            t.rep_ex(comp[n])
             self.Topology.merge(t)
+            userMol2=Coordinates.read_mol2(f'{n}.mol2')
+            paramMol2=Coordinates.read_mol2(f'{n}-p.mol2')
+            m.update_atom_specs(paramMol2,userMol2)
+            m.Coords['active']=paramMol2
+            if len(m.capping_bonds)>0:
+                m.Coords['inactive']=paramMol2.cap(m.capping_bonds)
+                # m.Coords['inactive'].to_mol2(f'{n}-cr.mol2')
+                # msg=GAFFParameterize(f'{n}-cr',f'{n}-cr-p',force=False,parmed_save_inline=False)
+                # self.log(msg+'\n'+f'Reading {n}-cr-p.top...\n')
+                # t=Topology.read_gro(f'{n}-cr-p.top')
+                # m.Topology['inactive']=t
+                # self.Topology.merge_types(t)
+        exit
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
@@ -118,15 +132,15 @@ class HTPolyNet(object):
     def generateLiquidSimulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.nextResultsDir())
-        for n,m in self.cfg.monomers.items():
-            copy(f'{self.pfs.unrctPath}/{n}.gro','.')
         # write the system topology
         self.Topology.to_file('init.top')
         self.log('Wrote init.top')
         # fetch mdp files, or die if not found
         self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['Gromacs_mdp'])
         # extend system, make gro file
-        msg=insert_molecules(self.cfg.monomers,self.cfg.composition,self.cfg.parameters['boxsize'],'init')
+        for n in self.cfg.monomers.keys():
+            copy(f'{self.pfs.unrctPath}/{n}-p.gro','.')
+        msg=insert_molecules(self.cfg.monomers,self.cfg.composition,self.cfg.parameters['initial_boxsize'],'init',basename_modifier='-p')
         self.log(msg)
         self.Coordinates=Coordinates.fromGroFile('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'

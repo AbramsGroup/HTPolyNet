@@ -1,26 +1,30 @@
 '''
-coordinates.py -- simple classes for handling Gromacs commands and data
+coordinates.py -- simple class for handling atom coordinates from gro and mol2 files
 '''
 
 import pandas as pd
 import numpy as np
 from io import StringIO
 
+from HTPolyNet.bondlist import Bondlist
+from HTPolyNet.topology import idxorder
+
 class Coordinates:
     gro_colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
-    mol2_atom_colnames = ['idx','name','x','y','z','type','molidx','resid','charge']
-    mol2_bond_colnames = ['idx','ai','aj','type']
+    mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','molNum','molName','charge']
+    mol2_bond_colnames = ['globalIdx','ai','aj','type']
 
     def __init__(self,name=''):
         self.name=name
         self.format=None
         self.title=''
         self.N=0
-        self.DF=None
+        ''' dataframes: 'atoms' and 'bonds' '''
+        self.D={}
         self.box=np.zeros((3,3))
         
     @classmethod
-    def fromGroFile(cls,filename=''):
+    def read_gro(cls,filename=''):
         inst=cls(filename)
         inst.format='gro'
         if filename!='':
@@ -50,7 +54,7 @@ class Coordinates:
                     del series['velY']
                     del series['velZ']
                 assert inst.N==len(series['globalIdx']), f'Atom count mismatch inside {filename}'
-                inst.DF=pd.DataFrame(series)
+                inst.D['atoms']=pd.DataFrame(series)
                 boxdataline=data[-1]
                 n=10
                 boxdata=list(map(float,[boxdataline[i:i+n].strip() for i in range(0,len(boxdataline),n)]))
@@ -61,7 +65,7 @@ class Coordinates:
         return inst
 
     @classmethod
-    def fromMol2File(cls,filename=''):
+    def read_mol2(cls,filename=''):
         inst=cls(filename)
         inst.format='mol2'
         if filename=='':
@@ -76,10 +80,56 @@ class Coordinates:
                 if key=='atom' or key=='bond':
                     val=StringIO('\n'.join(val))
                 sections[key]=val
-            inst.DF=pd.read_csv(sections['atom'],sep='\s+',names=Coordinates.mol2_atom_colnames)
-            inst.N=len(inst.DF)
-            inst.BDF=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames)
+            inst.name=sections['molecule'][0]
+            metadat=sections['molecule'][1].strip().split()
+            imetadat=list(map(int,metadat))
+            inst.N=imetadat[0]
+            inst.nBonds=imetadat[1]
+            inst.nSubs=imetadat[2]
+            inst.nFeatures=imetadat[3]
+            inst.nSets=imetadat[4]
+            inst.mol2type=sections['molecule'][2]
+            inst.mol2chargetype=sections['molecule'][3]
+            inst.D['atoms']=pd.read_csv(sections['atom'],sep='\s+',names=Coordinates.mol2_atom_colnames)
+            inst.N=len(inst.D['atoms'])
+            inst.D['bonds']=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames)
+            inst.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+            inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
         return inst
+
+    def write_mol2(self,filename=''):
+        if filename!='':
+            atomformatters = [
+                lambda x: f'{x:>7d}',
+                lambda x: f'{x:<8s}',
+                lambda x: f'{x:>9.4f}',
+                lambda x: f'{x:>9.4f}',
+                lambda x: f'{x:>9.4f}',
+                lambda x: f'{x:<5s}',
+                lambda x: f'{x:>3d}',
+                lambda x: f' {x:<7s}',
+                lambda x: f'{x:>9.4f}'
+            ]
+            bondformatters = [
+                lambda x: f'{x:>6d}',
+                lambda x: f'{x:>5d}',
+                lambda x: f'{x:>5d}',
+                lambda x: f'{x:>4s}'
+            ]
+            with open(filename,'w') as f:
+                f.write('@<TRIPOS>MOLECULE\n')
+                f.write(f'{self.name}\n')
+                f.write('{:>3d}{:>3d}{:>2d}{:>2d}{:>2d}\n'.format(self.N,self.nBonds,self.nSubs,self.nFeatures,self.nSets))
+                f.write(f'{self.mol2type}\n')
+                f.write(f'{self.mol2chargetype}\n')
+                f.write('\n')
+                f.write('@<TRIPOS>ATOM\n')
+                f.write(self.D['atoms'].to_string(header=False,index=False,formatters=atomformatters))
+                f.write('\n')
+                f.write('@<TRIPOS>BOND\n')
+                f.write(self.D['bonds'].to_string(header=False,index=False,formatters=bondformatters))
+                f.write('\n')
+                
 
     def write_gro(self,filename=''):
         if filename!='':
@@ -88,6 +138,64 @@ class Coordinates:
 
     def atomcount(self):
         return self.N
+
+    def cap(self,capping_bonds=[]):
+        ''' generate all capping bonds '''
+        adf=self.D['atoms']
+        pairs=[]
+        orders=[]
+        deletes=[]
+        for c in capping_bonds:
+            ai,aj=c.pairnames
+            o=c.bondorder
+            idxi=adf[adf['atomName']==ai]['globalIdx'].values[0]
+            ri=adf[adf['atomName']==ai][['posX','posY','posZ']].values[0]
+            idxj=adf[adf['atomName']==aj]['globalIdx'].values[0]
+            rj=adf[adf['atomName']==aj][['posX','posY','posZ']].values[0]
+            pairs.append((idxi,idxj))
+            orders.append(o)
+            idxinidx=self.bondlist.partners_of(idxi)
+            idxjnidx=self.bondlist.partners_of(idxj)
+            inn=[k for k,v in zip(idxinidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxinidx]) if 'H' in v]
+            jnn=[k for k,v in zip(idxjnidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxjnidx]) if 'H' in v]
+            if len(inn)>0 and len(jnn)>0:
+                jdists=[]
+                for nj in jnn:
+                    rnj=adf[adf['globalIdx']==nj][['posX','posY','posZ']].values[0]
+                    r=np.sqrt(((ri-rnj)**2).sum())
+                    jdists.append((nj,r))
+                jsac=sorted(jdists,key=lambda x: x[1])[0][0]
+                deletes.append(jsac)
+                idists=[]
+                for ni in inn:
+                    rni=adf[adf['globalIdx']==ni][['posX','posY','posZ']].values[0]
+                    r=np.sqrt(((rj-rni)**2).sum())
+                    idists.append((ni,r))
+                isac=sorted(idists,key=lambda x: x[1])[0][0]
+                deletes.append(isac)
+        print('capping summary:')
+        print('pairs:',pairs)
+        print('orders:',orders)
+        print('deletes:',deletes)
+        self.add_bonds(pairs=pairs,orders=orders)
+        self.delete_atoms(idx=deletes)
+        self.write_mol2(f'{self.name}-capped-unminimized.mol2')
+        return self
+
+
+    def add_bonds(self,pairs=[],orders=[]):
+        ''' add bonds to a set of coordinates
+            pairs:  list of 2-tuples of atom global indices '''
+        bmi=self.D['bonds'].set_index(['ai','aj']).index
+        h=self.mol2_bond_colnames
+        for b,o in zip(pairs,orders):
+            ai,aj=idxorder(b)
+            if not (ai,aj) in bmi:
+                data=[ai,aj,o]
+                bonddict={k:[v] for k,v in zip(h,data)}
+                pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
+        self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+        self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
     def delete_atoms(self,idx=[],reindex=True):
         '''
@@ -100,23 +208,36 @@ class Coordinates:
           - 'globalIdxShift' is the change from the old to the new
              global index for each atom.
         '''
-        indexes_to_drop=self.DF[self.DF.globalIdx.isin(idx)].index
-        indexes_to_keep=set(range(self.DF.shape[0]))-set(indexes_to_drop)
-        self.DF=self.DF.take(list(indexes_to_keep)).reset_index(drop=True)
+        adf=self.D['atoms']
+        indexes_to_drop=adf[adf.globalIdx.isin(idx)].index
+        indexes_to_keep=set(range(adf.shape[0]))-set(indexes_to_drop)
+        self.D['atoms']=adf.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:
-            oldGI=self.DF['globalIdx'].copy()
-            self.DF['oldGlobalIdx']=oldGI
-            self.DF['globalIdx']=self.DF.index+1
-            self.DF['globalIdxShift']=self.DF['globalIdx']-oldGI
+            adf=self.D['atoms']
+            oldGI=adf['globalIdx'].copy()
+            adf['globalIdx']=adf.index+1
+            mapper={k:v for k,v in zip(oldGI,adf['globalIdx'])}
         self.N-=len(idx)
-    
+        ''' delete bonds '''
+        if 'bonds' in self.D:
+            d=self.D['bonds']
+            indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+            indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+            self.D['bonds']=d.take(list(indexes_to_keep)).reset_index(drop=True)
+            if reindex:
+                d=self.D['bonds']
+                d.ai=d.ai.map(mapper)
+                d.aj=d.aj.map(mapper)
+            self.nBonds=len(self.D['bonds'])
+            self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
+
     def __str__(self):
         '''
         Generates contents of a *.gro file
         '''
         retstr=self.title+'\n'+f'{self.N:>5d}\n'
-        has_vel='velX' in self.DF.columns
-        for i,r in self.DF.iterrows():
+        has_vel='velX' in self.D['atoms'].columns
+        for i,r in self.D['atoms'].iterrows():
             retstr+=f'{r.molNum:5d}{r.molName:>5s}{r.atomName:>5s}{r.globalIdx:5d}{r.posX:8.3f}{r.posY:8.3f}{r.posZ:8.3f}'
             if has_vel:
                 retstr+=f'{r.velX:8.4f}{r.velY:8.4f}{r.velZ:8.4f}'

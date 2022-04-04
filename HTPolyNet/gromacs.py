@@ -39,19 +39,21 @@ class GMXCommand:
 
 def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`
-        monomers:  list of Monomer instances
+        monomers:  dictionary of Monomer instances
         composition: dictionary keyed on monomer name with value monomer count
         boxSize:  3-element list of floats OR a single float (cubic box)
         outName:  output filename basename.  If {outName}.gro exists,
                   insertions are made into it.
     '''
+    if type(boxSize)==int:
+        boxSize=float(boxSize)
     if type(boxSize)==float:
         boxSize=[boxSize]*3
     assert len(boxSize)==3, f'Error: malformed boxsize {boxSize}'
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     message=''
-    for mol in monomers:
-        name = mol.name
+    for n,m in monomers.items():
+        name = n.name+kwargs.get('basename_modifier','')
         num = composition['name']
         if os.path.isfile(f'{outName}.gro'):
             ''' final gro file exists; we must insert into it '''

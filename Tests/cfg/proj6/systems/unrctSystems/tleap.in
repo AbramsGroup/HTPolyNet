@@ -1,6 +1,0 @@
-source leaprc.gaff
-SUS = loadmol2 DFA-p.mol2
-check SUS
-loadamberparams DFA-p.frcmod
-saveamberparm SUS DFA-p-tleap.top DFA-p-tleap.crd
-quit

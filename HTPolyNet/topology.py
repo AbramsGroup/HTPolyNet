@@ -1,6 +1,7 @@
 import pandas as pd
 from HTPolyNet.bondlist import Bondlist
 import os
+from copy import deepcopy
 
 def typeorder(a):
     ''' correctly order the tuple of atom types for particular
@@ -65,7 +66,7 @@ class Topology:
         self.bondlist=Bondlist()
 
     @classmethod
-    def from_topfile(cls,filename,replicate=0):
+    def read_gro(cls,filename,replicate=0):
         assert os.path.exists(filename), f'Error: {filename} not found.'
         inst=cls()
         inst.filename=filename
@@ -150,11 +151,9 @@ class Topology:
                 # print(f'    -> post sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
             for f in inst.includes:
                 # print(f'reading included topology {f}')
-                inst.merge(Topology.from_topfile(f))
-            if replicate>0:
-                inst.rep_ex(replicate)
-            if 'bonds' in inst.D:
-                inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
+                inst.merge(Topology.read_gro(f))
+            # if replicate>0:
+            #     inst.rep_ex(replicate)
             # print(f'{filename}',inst.D.keys())
             #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
             return inst
@@ -192,6 +191,8 @@ class Topology:
                 self.shiftatomsidx(idxshift*c,'pairs',rows=[(c*counts['pairs']),((c+1)*counts['pairs'])],idxlabels=['ai','aj'])
                 self.shiftatomsidx(idxshift*c,'angles',rows=[(c*counts['angles']),((c+1)*counts['angles'])],idxlabels=['ai','aj','ak'])
                 self.shiftatomsidx(idxshift*c,'dihedrals',rows=[(c*counts['dihedrals']),((c+1)*counts['dihedrals'])],idxlabels=['ai','aj','ak','al'])
+            if 'bonds' in self.D:
+                self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
     @classmethod
     def from_ex(cls,other):
@@ -219,24 +220,6 @@ class Topology:
         with open(filename,'a') as f:
             f.write('; end\n')
 
-    # def __str__(self):
-    #     ''' Generates a string in the proper top format '''
-    #     retstr=''
-    #     for k,vv in self.D.items():
-    #         if vv.empty:
-    #             ''' an empty stanza will not be output '''
-    #             continue
-    #         retstr+='[ '+k+' ]\n'
-    #         retstr+='; '+'\t'.join(vv.columns)+'\n'
-    #         for i,row in vv.iterrows():
-    #             ''' assumes NaN's are only allowed in trailing columns '''
-    #             retstr+='\t'.join(row[~row.isna()].apply(str))+'\n'
-    #     return retstr
-
-    # def write(self,outfile):
-    #     with open(outfile,'w') as f:
-    #         f.write(str(self))
-
     def total_charge(self):
         if 'atoms' in self.D:
             return self.D['atoms']['charge'].sum()
@@ -246,16 +229,6 @@ class Topology:
         if 'atoms' in self.D:
             return len(self.D['atoms'])
         return 0
-
-    # def replicate(self,n,logstream=None):
-    #     spawned=Topology()
-    #     for i in range(n):
-    #         s=Topology.from_ex(self)
-    #         spawned.merge(s)
-    #         if logstream:
-    #             logstream.write(f'  replica {i+1} of {n}...\n')
-    #             logstream.flush()
-    #     self.merge(spawned)
 
     def add_bonds(self,pairs=[]):
         ''' add bonds to a topology
@@ -476,29 +449,17 @@ class Topology:
             self.D[directive]=other.D[directive]
 
     def merge(self,other):
-        # print('Merging topologies...')
-        # print(f'pre merge self {self.filename}',self.D.keys())
-        # print(f'pre merge other {other.filename}',other.D.keys())
         self.merge_ex(other)
+        self.merge_types(other)
+
+    def merge_types(self,other):
         ''' merge types but drop duplicates '''
-        # print('   intensive merging...')
-        # ldt=0
-        # if 'dihedraltypes' in self.D:
-        #     ldt=len(self.D["dihedraltypes"])
-        # print(f'merge self ndihedraltypes {ldt}')
-        # if 'dihedraltypes' in other.D:
-        #     print(f'merge other ndihedraltypes {len(other.D["dihedraltypes"])}')
         for t in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
-            # print(f'      {t}')
             if t in self.D:
                 self._myconcat(other,directive=t,drop_duplicates=True)
             else:
                 if t in other.D:
                     self.D[t]=other.D[t]
-        # if 'dihedraltypes' in self.D:
-        #     print(f'post merge self ndihedraltypes {len(self.D["dihedraltypes"])}')
-        
-        # print('post merge',self.D.keys())
 
     def merge_ex(self,other):
         # print('   extensive merging...')
@@ -517,3 +478,17 @@ class Topology:
 
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]
+
+    def capped(self,capping_bonds):
+        if len(capping_bonds)>0:
+            adf=self.D['atoms']
+            bdf=self.D['bonds']
+            newtop=deepcopy(self)
+            for cb in capping_bonds:
+                ni,nj=cb.pairnames
+                idxi=adf[adf['name']==ni]['nr'].values[0]
+                idxj=adf[adf['name']==nj]['nr'].values[0]
+            return self
+        return None
+
+        
