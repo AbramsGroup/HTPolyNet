@@ -7,12 +7,13 @@ import numpy as np
 from io import StringIO
 
 from HTPolyNet.bondlist import Bondlist
-from HTPolyNet.topology import idxorder
+from HTPolyNet.ambertools import Command
 
 class Coordinates:
     gro_colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
     mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','molNum','molName','charge']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
+    mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
 
     def __init__(self,name=''):
         self.name=name
@@ -92,8 +93,7 @@ class Coordinates:
             inst.mol2chargetype=sections['molecule'][3]
             inst.D['atoms']=pd.read_csv(sections['atom'],sep='\s+',names=Coordinates.mol2_atom_colnames)
             inst.N=len(inst.D['atoms'])
-            inst.D['bonds']=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames)
-            inst.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+            inst.D['bonds']=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames,dtype=Coordinates.mol2_bond_types)
             inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
         return inst
 
@@ -114,7 +114,7 @@ class Coordinates:
                 lambda x: f'{x:>6d}',
                 lambda x: f'{x:>5d}',
                 lambda x: f'{x:>5d}',
-                lambda x: f'{x:>4s}'
+                lambda x: f'{str(x):>4s}'
             ]
             with open(filename,'w') as f:
                 f.write('@<TRIPOS>MOLECULE\n')
@@ -139,8 +139,9 @@ class Coordinates:
     def atomcount(self):
         return self.N
 
-    def cap(self,capping_bonds=[]):
+    def cap(self,capping_bonds=[],**kwargs):
         ''' generate all capping bonds '''
+        logf=kwargs.get('logf',None)
         adf=self.D['atoms']
         pairs=[]
         orders=[]
@@ -149,18 +150,21 @@ class Coordinates:
             ai,aj=c.pairnames
             o=c.bondorder
             idxi=adf[adf['atomName']==ai]['globalIdx'].values[0]
+            # TODO: use iloc to get ri
             ri=adf[adf['atomName']==ai][['posX','posY','posZ']].values[0]
             idxj=adf[adf['atomName']==aj]['globalIdx'].values[0]
+            # TODO: use iloc to get rj
             rj=adf[adf['atomName']==aj][['posX','posY','posZ']].values[0]
             pairs.append((idxi,idxj))
             orders.append(o)
             idxinidx=self.bondlist.partners_of(idxi)
             idxjnidx=self.bondlist.partners_of(idxj)
-            inn=[k for k,v in zip(idxinidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxinidx]) if 'H' in v]
-            jnn=[k for k,v in zip(idxjnidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxjnidx]) if 'H' in v]
+            inn=[k for k,v in zip(idxinidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxinidx]) if v.startswith('H')]
+            jnn=[k for k,v in zip(idxjnidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxjnidx]) if v.startswith('H')]
             if len(inn)>0 and len(jnn)>0:
                 jdists=[]
                 for nj in jnn:
+                    # TODO: use iloc -- assuming globalIdx [1...N]
                     rnj=adf[adf['globalIdx']==nj][['posX','posY','posZ']].values[0]
                     r=np.sqrt(((ri-rnj)**2).sum())
                     jdists.append((nj,r))
@@ -168,6 +172,7 @@ class Coordinates:
                 deletes.append(jsac)
                 idists=[]
                 for ni in inn:
+                    # TODO: use iloc -- assuming globalIdx [1...N]
                     rni=adf[adf['globalIdx']==ni][['posX','posY','posZ']].values[0]
                     r=np.sqrt(((rj-rni)**2).sum())
                     idists.append((ni,r))
@@ -180,21 +185,27 @@ class Coordinates:
         self.add_bonds(pairs=pairs,orders=orders)
         self.delete_atoms(idx=deletes)
         self.write_mol2(f'{self.name}-capped-unminimized.mol2')
+        # cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'
+        c=Command(f'obabel {self.name}-capped-unminimized.mol2 --minimize --sd --c 1.e-5',O=f'{self.name}-capped-minimized.mol2')
+        msg=c.run()
+        if logf:
+            logf(msg)
+        self.read_mol2(f'{self.name}-capped-minimized.mol2')
         return self
-
 
     def add_bonds(self,pairs=[],orders=[]):
         ''' add bonds to a set of coordinates
             pairs:  list of 2-tuples of atom global indices '''
         bmi=self.D['bonds'].set_index(['ai','aj']).index
         h=self.mol2_bond_colnames
-        for b,o in zip(pairs,orders):
-            ai,aj=idxorder(b)
-            if not (ai,aj) in bmi:
-                data=[ai,aj,o]
+        for i,(b,o) in enumerate(zip(pairs,orders)):
+            ai,aj=b
+            if not (ai,aj) in bmi and not (aj,ai) in bmi:
+                data=[len(bmi)+i,ai,aj,o]
+                # print('adding',data)
                 bonddict={k:[v] for k,v in zip(h,data)}
-                pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
-        self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+                self.D['bonds']=pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
+#        self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
         self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
     def delete_atoms(self,idx=[],reindex=True):
@@ -208,6 +219,7 @@ class Coordinates:
           - 'globalIdxShift' is the change from the old to the new
              global index for each atom.
         '''
+        # print('delete_atoms',idx)
         adf=self.D['atoms']
         indexes_to_drop=adf[adf.globalIdx.isin(idx)].index
         indexes_to_keep=set(range(adf.shape[0]))-set(indexes_to_drop)
@@ -218,16 +230,23 @@ class Coordinates:
             adf['globalIdx']=adf.index+1
             mapper={k:v for k,v in zip(oldGI,adf['globalIdx'])}
         self.N-=len(idx)
+        # print('mapper',mapper)
         ''' delete bonds '''
+        # print('delete bonds containing',idx)
         if 'bonds' in self.D:
             d=self.D['bonds']
+            # print('bonds before deletion:\n',d.to_string(index=False))
+#            print(d.ai.isin(idx),d.aj.isin(idx))
             indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+            # print(self.D['bonds'].iloc[indexes_to_drop].to_string(index=False))
             indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
             self.D['bonds']=d.take(list(indexes_to_keep)).reset_index(drop=True)
+            # print('bonds after deletion:\n',self.D['bonds'].to_string(index=False))
             if reindex:
                 d=self.D['bonds']
                 d.ai=d.ai.map(mapper)
                 d.aj=d.aj.map(mapper)
+                # print('bonds after reindexing:\n',self.D['bonds'].to_string(index=False))
             self.nBonds=len(self.D['bonds'])
             self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 

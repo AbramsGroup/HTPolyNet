@@ -108,14 +108,13 @@ class HTPolyNet(object):
             m.update_atom_specs(paramMol2,userMol2)
             m.Coords['active']=paramMol2
             if len(m.capping_bonds)>0:
-                m.Coords['inactive']=paramMol2.cap(m.capping_bonds)
-                # m.Coords['inactive'].to_mol2(f'{n}-cr.mol2')
-                # msg=GAFFParameterize(f'{n}-cr',f'{n}-cr-p',force=False,parmed_save_inline=False)
-                # self.log(msg+'\n'+f'Reading {n}-cr-p.top...\n')
-                # t=Topology.read_gro(f'{n}-cr-p.top')
-                # m.Topology['inactive']=t
-                # self.Topology.merge_types(t)
-        exit
+                m.Coords['inactive']=userMol2.cap(m.capping_bonds,logf=self.log)
+                msg=GAFFParameterize(f'{n}-capped-minimized',f'{n}-capped-parameterized',force=False,parmed_save_inline=False)
+                self.log(msg+'\n'+f'Reading {n}-capped-parameterized.top...\n')
+                t=Topology.read_gro(f'{n}-capped-parameterized.top')
+                m.Topology['inactive']=t
+                self.Topology.merge_types(t)
+        
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
