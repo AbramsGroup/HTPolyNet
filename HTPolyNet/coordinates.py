@@ -7,7 +7,9 @@ import numpy as np
 from io import StringIO
 
 from HTPolyNet.bondlist import Bondlist
-from HTPolyNet.ambertools import Command
+from HTPolyNet.ambertools import Command,GAFFParameterize
+from HTPolyNet.libraries import Library
+from HTPolyNet.gromacs import grompp_and_mdrun
 
 class Coordinates:
     gro_colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
@@ -19,6 +21,7 @@ class Coordinates:
         self.name=name
         self.format=None
         self.title=''
+        self.metadat={}
         self.N=0
         ''' dataframes: 'atoms' and 'bonds' '''
         self.D={}
@@ -82,22 +85,64 @@ class Coordinates:
                     val=StringIO('\n'.join(val))
                 sections[key]=val
             inst.name=sections['molecule'][0]
-            metadat=sections['molecule'][1].strip().split()
-            imetadat=list(map(int,metadat))
-            inst.N=imetadat[0]
-            inst.nBonds=imetadat[1]
-            inst.nSubs=imetadat[2]
-            inst.nFeatures=imetadat[3]
-            inst.nSets=imetadat[4]
-            inst.mol2type=sections['molecule'][2]
-            inst.mol2chargetype=sections['molecule'][3]
+            imetadat=list(map(int,sections['molecule'][1].strip().split()))
+            inst.metadat['N']=inst.N=imetadat[0]
+            inst.metadat['nBonds']=imetadat[1]
+            inst.metadat['nSubs']=imetadat[2]
+            inst.metadat['nFeatures']=imetadat[3]
+            inst.metadat['nSets']=imetadat[4]
+            inst.metadat['mol2type']=sections['molecule'][2]
+            inst.metadat['mol2chargetype']=sections['molecule'][3]
             inst.D['atoms']=pd.read_csv(sections['atom'],sep='\s+',names=Coordinates.mol2_atom_colnames)
             inst.N=len(inst.D['atoms'])
             inst.D['bonds']=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames,dtype=Coordinates.mol2_bond_types)
             inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
         return inst
 
+    def copy_coords(self,other):
+        for c in ['posX','posY','posZ']:
+            self.D['atoms'][c]=other.D['atoms'][c].copy()
+
+    def translate_coords(self,v=[0.,0.,0.]):
+        self.D['atoms']['posX']+=v[0]
+        self.D['atoms']['posY']+=v[1]
+        self.D['atoms']['posZ']+=v[2]
+
+    def geometric_center(self):
+        a=self.D['atoms']
+        return [a.posX.mean(),a.posY.mean(),a.posZ.mean()]
+
+    def merge(self,other):
+        idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
+        bdxshift=0 if 'bonds' not in self.D else len(self.D['bonds'])
+        rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['molNum']
+        if 'atoms' in other.D:
+            other.D['atoms']['molNum']+=rdxshift
+        nOtherBonds=0
+        if 'bonds' in other.D:
+            nOtherBonds=len(other.D['bonds'])
+            other.D['bonds']['globalIdx']+=bdxshift
+        self.N+=len(other.D['atoms'])
+        self.metadat['N']=self.N
+        self.metadat['nBonds']+=nOtherBonds
+        self._myconcat(other,directive='atoms',idxlabel=['globalIdx'],idxshift=idxshift)
+        self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
+        if 'bonds' in other.D:
+            self.bondlist.update(other.D['bonds'])
+
+    def _myconcat(self,other,directive,idxlabel=[],idxshift=0):
+        if not directive in other.D:
+            return
+        if directive in self.D:
+            for i in idxlabel:
+                other.D[directive][i]+=idxshift
+            self.D[directive]=pd.concat((self.D[directive],other.D[directive]),ignore_index=True)
+        else:
+            self.D[directive]=other.D[directive]
+
     def write_mol2(self,filename=''):
+        if self.format!='mol2':
+            raise Exception('was this a gro file?')
         if filename!='':
             atomformatters = [
                 lambda x: f'{x:>7d}',
@@ -119,9 +164,14 @@ class Coordinates:
             with open(filename,'w') as f:
                 f.write('@<TRIPOS>MOLECULE\n')
                 f.write(f'{self.name}\n')
-                f.write('{:>3d}{:>3d}{:>2d}{:>2d}{:>2d}\n'.format(self.N,self.nBonds,self.nSubs,self.nFeatures,self.nSets))
-                f.write(f'{self.mol2type}\n')
-                f.write(f'{self.mol2chargetype}\n')
+                N=self.N
+                nBonds=self.metadat.get('nBonds',0)
+                nSubs=self.metadat.get('nSubs',0)
+                nFeatures=self.metadat.get('nFeatures',0)
+                nSets=self.metadat.get('nSets',0)
+                f.write('{:>6d}{:>6d}{:>3d}{:>3d}{:>3d}\n'.format(N,nBonds,nSubs, nFeatures,nSets))
+                f.write(f"{self.metadat.get('mol2type','SMALL')}\n")
+                f.write(f"{self.metadat.get('mol2chargetype','GASTEIGER')}\n")
                 f.write('\n')
                 f.write('@<TRIPOS>ATOM\n')
                 f.write(self.D['atoms'].to_string(header=False,index=False,formatters=atomformatters))
@@ -130,7 +180,6 @@ class Coordinates:
                 f.write(self.D['bonds'].to_string(header=False,index=False,formatters=bondformatters))
                 f.write('\n')
                 
-
     def write_gro(self,filename=''):
         if filename!='':
             with open(filename,'w') as f:
@@ -141,7 +190,7 @@ class Coordinates:
 
     def cap(self,capping_bonds=[],**kwargs):
         ''' generate all capping bonds '''
-        logf=kwargs.get('logf',None)
+        minimize=kwargs.get('minimize',False)
         adf=self.D['atoms']
         pairs=[]
         orders=[]
@@ -178,19 +227,24 @@ class Coordinates:
                     idists.append((ni,r))
                 isac=sorted(idists,key=lambda x: x[1])[0][0]
                 deletes.append(isac)
-        print('capping summary:')
-        print('pairs:',pairs)
-        print('orders:',orders)
-        print('deletes:',deletes)
+        # print('capping summary:')
+        # print('pairs:',pairs)
+        # print('orders:',orders)
+        # print('deletes:',deletes)
         self.add_bonds(pairs=pairs,orders=orders)
         self.delete_atoms(idx=deletes)
         self.write_mol2(f'{self.name}-capped-unminimized.mol2')
-        # cmd1 = 'obabel {}.mol2 -O {}.mol2 --minimize --sd --c 1e-5'
-        c=Command(f'obabel {self.name}-capped-unminimized.mol2 --minimize --sd --c 1.e-5',O=f'{self.name}-capped-minimized.mol2')
-        msg=c.run()
-        if logf:
-            logf(msg)
-        self.read_mol2(f'{self.name}-capped-minimized.mol2')
+        if minimize:
+            l=Library()
+            l.fetch('em-single-molecule.mdp')
+            GAFFParameterize(f'{self.name}-capped-unminimized',f'{self.name}-capped-unminimized-parameterized',force=False,parmed_save_inline=False)
+            grompp_and_mdrun(gro=f'{self.name}-capped-unminimized-parameterized',
+                             top=f'{self.name}-capped-unminimized-parameterized',
+                             mdp='em-single-molecule',
+                             out=f'{self.name}-capped-minimized',boxSize=[15,15,15])
+            mc=Coordinates.read_gro(f'{self.name}-capped-minimized.gro')
+            self.copy_coords(mc)
+            self.write_mol2(f'{self.name}-capped-minimized.mol2')
         return self
 
     def add_bonds(self,pairs=[],orders=[]):

@@ -32,11 +32,22 @@ def getOrDie(D,k,basetype=None,subtype=str,source='config'):
     return r
 
 class ReactiveAtom:
-    def __init__(self,datadict):
+    def __init__(self,datadict,name=''):
+        self.name=name
+        # z: maximum number of bonds this atom will form
+        # in a crosslinking reaction
         self.z=int(datadict.get("z",1))
-        self.ht=datadict.get("ht","H")
+        # ht: a Head or Tail designation; Heads can only 
+        # react with Tails, and vice versa, if specified
+        self.ht=datadict.get("ht",None)
+        # sym: list of other reactive atoms in the
+        # owning monomer that are in the same symmetry class
+        # THIS MUST BE USER-SPECIFIED 
+        self.sym=datadict.get("sym",[])
     def __str__(self):
-        return f'{self.z}:{self.ht}'
+        return f'{self.name}: ({self.z})({self.ht})({self.sym})'
+    def to_yaml(self):
+        return r'{'+f'z: {self.z}, ht: {self.ht}, sym: {self.sym}'+r'}'
         
 def boc(b):
     if b==1:
@@ -53,6 +64,8 @@ class CappingBond:
         self.pairnames=jsondict["pair"]
         self.bondorder=jsondict.get("order",1)
         self.deletes=jsondict.get("deletes",[])
+    def to_yaml(self):
+        return r'{'+f'pair: {self.pairnames}, order: {self.bondorder}, deletes: {self.deletes}'+r'}'
     def __str__(self):
         s=self.pairnames[0]+boc(self.bondorder)+self.pairnames[1]
         if len(self.deletes)>0:
@@ -66,7 +79,7 @@ class Monomer:
         self.Topology["active"]=None
         self.Coords={}
         self.Coords["active"]=None
-        self.reactive_atoms={name:ReactiveAtom(data) for name,data in jsondict["reactive_atoms"].items()}
+        self.reactive_atoms={name:ReactiveAtom(data,name=name) for name,data in jsondict["reactive_atoms"].items()}
         if "capping_bonds" in jsondict:
             self.capping_bonds=[CappingBond(data) for data in jsondict["capping_bonds"]]
             self.Topology["inactive"]=None

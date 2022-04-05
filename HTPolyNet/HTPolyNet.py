@@ -1,54 +1,43 @@
 #!/usr/bin/env python
 """
-step 1: read needed parameters from basic/option.txt
-step 2: init systems 
-        - merge molecules 
-          - Using GROMACS to insert the molecules
-          - Merge top to generate a total topology dataframe
-        - Export the gro and top file to the folder
-        - copy the needed files to the folder (.mdp file)
-        - update the coordinate in the gro df
-
 @author: huang, abrams
 """
-''' built-ins '''
+
 import os
 import sys
 from shutil import copyfile, copy, move, rmtree
 from copy import deepcopy
 import subprocess
 import argparse as ap
-from numpy import insert
 import pandas as pd
-import parmed
 
-from HTPolyNet.extendSys import insert_molecules
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
-import HTPolyNet.mergeTop as mergeTop
-import HTPolyNet.readTop2 as readTop2
-import HTPolyNet.readGro as readGro
-import HTPolyNet.groInfo as groInfo
-import HTPolyNet.topInfo as topInfo
+#import HTPolyNet.mergeTop as mergeTop
+#import HTPolyNet.readTop2 as readTop2
+#import HTPolyNet.readGro as readGro
+#import HTPolyNet.groInfo as groInfo
+#import HTPolyNet.topInfo as topInfo
 import HTPolyNet.searchBonds as searchBonds
 import HTPolyNet.genBonds as genBonds
 import HTPolyNet.generateChargeDb as generateChargeDb
 import HTPolyNet.generateTypeInfo as generateTypeInfo
-import HTPolyNet.processTop as processTop
-import HTPolyNet.endCapping as endCapping
-import HTPolyNet.getCappingParam as getCappingParam
+#import HTPolyNet.processTop as processTop
+#import HTPolyNet.endCapping as endCapping
+#import HTPolyNet.getCappingParam as getCappingParam
 
 from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.topology import Topology
 
 from HTPolyNet.software import Software
-from HTPolyNet.libraries import *
+from HTPolyNet.libraries import Library
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem
 # from HTPolyNet.extendSys import  extendSys
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
+from HTPolyNet.oligo import react_mol2
 
 class HTPolyNet(object):
     ''' Class for a single HTPolyNet session '''
@@ -64,7 +53,7 @@ class HTPolyNet(object):
         if cfgfile=='':
             raise RuntimeError('HTPolyNet requires a configuration file.')
         
-        self.LibraryResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
+        self.Library=Library()#ResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
         self.cfgFile=cfgfile
         self.cfg=Configuration.read(cfgfile)
         self.log(str(self.cfg))
@@ -84,16 +73,10 @@ class HTPolyNet(object):
             self.logio.write(msg)
             self.logio.flush()
 
-    def initializeTopology(self):
+    def initialize_topology(self):
         # fetch mol2 files, or die if not found
-        self.pfs.fetchMol2(molNames=self.cfg.monomers.keys(),libpath=self.LibraryResourcePaths['mol2'])
         self.pfs.cd(self.pfs.unrctPath)
-        # self.unrctMap = getCappingParam.genUnrctMapping(self.cfg)
-        # seems like we should specify either a *-un.mol2 for each
-        # monomer OR specify capping parameters in the cfg, not both.
-
-        # GAFF-parameterize all input mol2 files, generating Gromacs top,itp,gro
-        # files
+        self.pfs.fetch(names=[f'{a}.mol2' for a in self.cfg.monomers.keys()],libpath=self.Library.dir('mol2'))
         comp=self.cfg.parameters['composition']
         for n,m in self.cfg.monomers.items(): #includes all mol2, including *-un.mol2
             self.log(f'Parameterizing {n}...\n')
@@ -108,40 +91,48 @@ class HTPolyNet(object):
             m.update_atom_specs(paramMol2,userMol2)
             m.Coords['active']=paramMol2
             if len(m.capping_bonds)>0:
-                m.Coords['inactive']=userMol2.cap(m.capping_bonds,logf=self.log)
+                m.Coords['inactive']=paramMol2.cap(m.capping_bonds,minimize=True)
                 msg=GAFFParameterize(f'{n}-capped-minimized',f'{n}-capped-parameterized',force=False,parmed_save_inline=False)
                 self.log(msg+'\n'+f'Reading {n}-capped-parameterized.top...\n')
-                t=Topology.read_gro(f'{n}-capped-parameterized.top')
-                m.Topology['inactive']=t
+                m.Topology['inactive']=Topology.read_gro(f'{n}-capped-parameterized.top')
                 self.Topology.merge_types(t)
         
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
-        # generate unreacted molecule topologies for later use (?)
-        # self.unrctTopols={}
-        # for mol in self.cfg.unrctStruct:
-        #     self.log(f'Reading inactive {mol}.top...\n')
-        #     ut=Topology.from_topfile(f'{mol}.top')
-        #     self.unrctTopols[mol]=ut
+        for r in self.cfg.reactions:
+            self.log(f'Executing reaction(s) for {r.reactants}')
+            mname,nname=r.reactants
+            m=self.cfg.monomers[mname]
+            n=self.cfg.monomers[nname]
+            self.cfg.oligomers={}
+            oligos=react_mol2(m,n)
+            for o in oligos:
+                msg=GAFFParameterize(f'{o}',f'{o}-parameterized',force=False,parmed_save_inline=False)
+                self.log(msg+'\n'+f'Reading {o}-parameterized.top...\n')
+                t=Topology.read_gro(f'{t}.top')
+                self.cfg.oligomers[o]=t
+                self.Topology.merge_types(t)
+
+
 
         # TODO: Generate oligomer templates and their parameterizations
         # self.rctTopols={}
 
-    def generateLiquidSimulation(self):
+    def generate_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
-        self.pfs.cd(self.pfs.nextResultsDir())
+        self.pfs.cd(self.pfs.next_results_dir())
         # write the system topology
         self.Topology.to_file('init.top')
         self.log('Wrote init.top')
         # fetch mdp files, or die if not found
-        self.pfs.fetchMdp(filePrefixes=['em','npt-1'],libpath=self.LibraryResourcePaths['Gromacs_mdp'])
+        self.pfs.fetch(names=['em.mdp','npt-1.mdp'],libpath=self.Library.dir('mdp'))
         # extend system, make gro file
         for n in self.cfg.monomers.keys():
             copy(f'{self.pfs.unrctPath}/{n}-p.gro','.')
-        msg=insert_molecules(self.cfg.monomers,self.cfg.composition,self.cfg.parameters['initial_boxsize'],'init',basename_modifier='-p')
+        msg=insert_molecules(self.cfg.monomers,self.cfg.parameters['composition'],self.cfg.parameters['initial_boxsize'],'init',basename_modifier='-p')
         self.log(msg)
-        self.Coordinates=Coordinates.fromGroFile('init.gro')
+        self.Coordinates=Coordinates.read_gro('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         self.log('Generated init.top and init.gro.\n')
         msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
@@ -149,9 +140,11 @@ class HTPolyNet(object):
         msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
         self.log(msg)
         self.log('Final configuration in npt-1.gro\n')
-        self.pfs.goToProjectRoot()
+        sacmol=Coordinates.read_gro('npt-1.gro')
+        self.Coordinates.copy_coords(sacmol)
+        self.pfs.cdroot()
 
-    def typeAndChargeOligomerTemplates(self):
+    def make_oligomer_templates(self):
 
         # TODO: Typing and charging calculations for all oligomer templates
         #       Types added to topology
@@ -223,10 +216,7 @@ class HTPolyNet(object):
 
     def initreport(self):
         print('Libraries:')
-        for n,l in self.LibraryResourcePaths.items():
-            print(f'    Type {n}:')
-            for f in os.listdir(l):
-                print(f'       {f}')
+        print(self.Library)
         print()
         print(self.cfg)
         print()
@@ -667,9 +657,8 @@ class HTPolyNet(object):
         self.unrctMap = unrctMap
 
     def main(self):
-        self.initializeTopology()
-#        self.typeAndChargeOligomerTemplates()
-        self.generateLiquidSimulation()
+        self.initialize_topology()
+        # self.generate_liquid_simulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes
@@ -740,11 +729,8 @@ class HTPolyNet(object):
 def info(sw):
     print('This is some information on your installed version of HTPolyNet')
     print('Libraries:')
-    LibraryResourcePaths=IdentifyLibraryResourcePaths()
-    for n,l in LibraryResourcePaths.items():
-        print(f'    Type {n}:')
-        for f in os.listdir(l):
-            print(f'       {f}')
+    l=Library()
+    print(l)
     sw.info()
 
 

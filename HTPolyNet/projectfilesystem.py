@@ -30,8 +30,8 @@ class ProjectFileSystem:
         self.cwd=self.rootPath
         self.verbose=verbose
         self.cd(self.rootPath)
-        self._nextProjectDir(reProject=reProject)
-        self._setupProjectRoot()
+        self._next_project_dir(reProject=reProject)
+        self._setup_project_root()
         self.cd(self.rootPath)
 
     def cd(self,dest=''):
@@ -40,49 +40,30 @@ class ProjectFileSystem:
         if (self.verbose):
             print(f'cwd: {self.cwd}')
 
-    def goToProjectRoot(self):
+    def cdroot(self):
         self.cd(self.projPath)
 
-    def goToProjectSubPath(self,toplevel):
+    def cdrootsub(self,toplevel):
         if toplevel in self.projSubPaths:
             self.cd(self.projSubPaths[toplevel])
 
-    def fetchMol2(self,molNames=[],libpath=None,destpath=None):
-        mol2searchpath=[self.rootPath,self.projPath]
+    def fetch(self,names=[],libpath=None,destpath='.'):
+        searchpath=[self.rootPath,self.projPath]
         if libpath!=None:
-            mol2searchpath.append(libpath)
-        if destpath==None:
-            destpath=self.unrctPath
-        for m in molNames:
-            fname=f'{m}.mol2'
-            for p in mol2searchpath:
+            searchpath.append(libpath)
+        for fname in names:
+            for p in searchpath:
                 afname=os.path.join(p,fname)
                 if os.path.exists(afname):
                     os.system(f'cp {afname} {destpath}')
                     break
             else:
-                raise FileNotFoundError(f'{fname} not found.')
-
-    def fetchMdp(self,filePrefixes=[],libpath=None,destpath=None):
-        mdpsearchpath=[self.rootPath,self.projPath]
-        if libpath!=None:
-            mdpsearchpath.append(libpath)
-        if destpath==None:
-            destpath=self.resultsSubPaths['init']
-        for m in filePrefixes:
-            fname=f'{m}.mdp'
-            for p in mdpsearchpath:
-                afname=os.path.join(p,fname)
-                if os.path.exists(afname):
-                    os.system(f'cp {afname} {destpath}')
-                    break
-            else:
-                raise FileNotFoundError(f'{fname} not found.')
+                raise FileNotFoundError(f'{afname} not found.')
 
     def __str__(self):
-        return f'root {self.rootPath}: {self.D} cwd {self.cwd}'
+        return f'root {self.rootPath}: cwd {self.cwd}'
 
-    def _nextProjectDir(self,reProject=''):
+    def _next_project_dir(self,reProject=''):
         if reProject=='': # this is a fresh project
             i=0
             while(os.path.isdir(os.path.join(self.rootPath,f'proj{i}'))):
@@ -94,8 +75,8 @@ class ProjectFileSystem:
         self.projPath=os.path.join(self.rootPath,reProject)
         os.mkdir(reProject)
 
-    def _setupProjectRoot(self):
-        self.goToProjectRoot()
+    def _setup_project_root(self):
+        self.cdroot()
         self.projSubPaths={}
         for tops in ['basic','mdp','systems','results']:
             self.projSubPaths[tops]=os.path.join(self.projPath,tops)
@@ -114,7 +95,7 @@ class ProjectFileSystem:
         self.rctPath=self.systemsSubPaths['rctSystems']
         self.typePath=self.systemsSubPaths['typeSystems']
 
-    def nextResultsDir(self):
+    def next_results_dir(self):
         possibles=['init',*[f'step{i}' for i in range(30)]]
         for p in possibles:
             if not p in self.resultsSubPaths:
@@ -124,7 +105,6 @@ class ProjectFileSystem:
         self.resultsSubPaths[p]=newpath
         return newpath
         
-
 if __name__=='__main__':
     pfs=ProjectFileSystem(verbose=True)
 

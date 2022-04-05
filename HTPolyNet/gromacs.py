@@ -53,8 +53,8 @@ def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     message=''
     for n,m in monomers.items():
-        name = n.name+kwargs.get('basename_modifier','')
-        num = composition['name']
+        name = n+kwargs.get('basename_modifier','')
+        num = composition[n]
         if os.path.isfile(f'{outName}.gro'):
             ''' final gro file exists; we must insert into it '''
             c=GMXCommand('insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
