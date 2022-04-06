@@ -37,11 +37,11 @@ from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem
 # from HTPolyNet.extendSys import  extendSys
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
-from HTPolyNet.oligo import react_mol2
+from HTPolyNet.molecule import react_mol2
 
 class HTPolyNet(object):
     ''' Class for a single HTPolyNet session '''
-    def __init__(self,software=None,cfgfile='',logfile=''):
+    def __init__(self,software=None,cfgfile='',logfile='',restart=False):
         self._openlog(logfile)
         self.log('HTPolyNet begins.\n')
         if not software:
@@ -52,16 +52,17 @@ class HTPolyNet(object):
         self.log(str(self.software))
         if cfgfile=='':
             raise RuntimeError('HTPolyNet requires a configuration file.')
+
+        self.restart=False
         
         self.Library=Library()#ResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
-        self.cfgFile=cfgfile
+        # self.cfgFile=cfgfile
         self.cfg=Configuration.read(cfgfile)
         self.log(str(self.cfg))
-        # session filesystem
-        self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.cfg.restart)
+        self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.restart)
         self.log('Finished initialization.\n')
         self.Topology=Topology(system=self.cfg.Title,filename='init')
-        self.urctTopols=[]
+#        self.urctTopols=[]
 
     def _openlog(self,filename):
         self.logio=None
@@ -73,17 +74,20 @@ class HTPolyNet(object):
             self.logio.write(msg)
             self.logio.flush()
 
-    def initialize_topology(self):
-        # fetch mol2 files, or die if not found
+    def initialize_topology(self,force_parameterize=False):
         self.pfs.cd(self.pfs.unrctPath)
-        self.pfs.fetch(names=[f'{a}.mol2' for a in self.cfg.monomers.keys()],libpath=self.Library.dir('mol2'))
+        if os.path.isfile('init.top'):
+            self.log('init.top already exists in {self.pfs.unrctPath} but we will rebuild it anyway!')
+        self.pfs.fetch(names=[f'{a}.mol2' for a in self.cfg.monomers.keys()],libpath=self.Library.dir('mol2'),overwrite='if_newer')
         comp=self.cfg.parameters['composition']
-        for n,m in self.cfg.monomers.items(): #includes all mol2, including *-un.mol2
-            self.log(f'Parameterizing {n}...\n')
-            msg=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
+        for n,m in self.cfg.monomers.items():
+            if force_parameterize or (not os.path.exists(f'{n}-p.top') or not os.path.exists(f'{n}-p.gro')):
+                self.log(f'Parameterizing {n}...\n')
+                msg=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
             self.log(msg+'\n'+f'Reading {n}-p.top...\n')
             t=Topology.read_gro(f'{n}-p.top')
             m.Topology['active']=t
+            self.log(f'...replicating\n')
             t.rep_ex(comp[n])
             self.Topology.merge(t)
             userMol2=Coordinates.read_mol2(f'{n}.mol2')
@@ -91,8 +95,10 @@ class HTPolyNet(object):
             m.update_atom_specs(paramMol2,userMol2)
             m.Coords['active']=paramMol2
             if len(m.capping_bonds)>0:
-                m.Coords['inactive']=paramMol2.cap(m.capping_bonds,minimize=True)
-                msg=GAFFParameterize(f'{n}-capped-minimized',f'{n}-capped-parameterized',force=False,parmed_save_inline=False)
+                m.Coords['inactive']=paramMol2.cap(m.capping_bonds,minimize=True,force_parameterize=force_parameterize)
+                if force_parameterize or not os.path.exists(f'{n}-capped-parameterized.top') or not os.path.exists(f'{n}-capped-parameterized.gro'):
+                    self.log(f'Parameterizing {n}-capped-minimized...\n')
+                    msg=GAFFParameterize(f'{n}-capped-minimized',f'{n}-capped-parameterized',force=False,parmed_save_inline=False)
                 self.log(msg+'\n'+f'Reading {n}-capped-parameterized.top...\n')
                 m.Topology['inactive']=Topology.read_gro(f'{n}-capped-parameterized.top')
                 self.Topology.merge_types(t)
@@ -114,17 +120,15 @@ class HTPolyNet(object):
                 self.cfg.oligomers[o]=t
                 self.Topology.merge_types(t)
 
-
-
-        # TODO: Generate oligomer templates and their parameterizations
-        # self.rctTopols={}
+        # write the system topology
+        self.Topology.to_file('init.top')
+        self.log('Wrote init.top')
 
     def generate_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.next_results_dir())
-        # write the system topology
-        self.Topology.to_file('init.top')
-        self.log('Wrote init.top')
+        # fetch unreacted init.top
+        self.pfs.fetch(names=['init.top'],libpath=self.pfs.unrctPath)
         # fetch mdp files, or die if not found
         self.pfs.fetch(names=['em.mdp','npt-1.mdp'],libpath=self.Library.dir('mdp'))
         # extend system, make gro file
@@ -739,6 +743,7 @@ def cli():
     parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
     parser.add_argument('-log',type=str,default='out.log',help='log file')
+    parser.add_argument('-restart',type=bool, default=False, action='store_true',help='restart in latest proj dir')
     args=parser.parse_args()
 
     # Determine if required and optional software is available
@@ -750,7 +755,7 @@ def cli():
     elif args.command=='info':
         info(software)
     elif args.command=='run':
-        a=HTPolyNet(software=software,cfgfile=args.cfg,logfile=args.log)
+        a=HTPolyNet(software=software,cfgfile=args.cfg,logfile=args.log,restart=args.restart)
         a.main()
     else:
         print(f'HTPolyNet command {args.command} not recognized')
