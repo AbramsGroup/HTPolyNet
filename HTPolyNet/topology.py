@@ -51,9 +51,8 @@ _GromacsTopologyDirectiveDefaults_={
 # dihedral funct==(2,4) means improper
 
 class Topology:
-
-    def __init__(self,filename='',system=''):
-        self.filename=filename
+    ''' Gromacs topology handler '''
+    def __init__(self,system=''):
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
         self.D={}
@@ -159,12 +158,14 @@ class Topology:
             return inst
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
+        ''' shift all global atom indices (referenced by labels in idxlables[]) '''
         if directive in self.D:
             cols=self.D[directive].columns.get_indexer(idxlabels)
             # print(f'directive {directive} idxlabels {idxlabels} idxshift {idxshift} rows {rows} cols {cols}')
             self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
 
     def rep_ex(self,count=0):
+        ''' replicate extensive components (atoms, pairs, bonds, angles, dihedrals) '''
         if count>0:
             counts={k:0 for k in _GromacsExtensiveDirectives_}
             for t in _GromacsExtensiveDirectives_:
@@ -479,16 +480,16 @@ class Topology:
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]
 
-    def capped(self,capping_bonds):
-        if len(capping_bonds)>0:
-            adf=self.D['atoms']
-            bdf=self.D['bonds']
-            newtop=deepcopy(self)
-            for cb in capping_bonds:
-                ni,nj=cb.pairnames
-                idxi=adf[adf['name']==ni]['nr'].values[0]
-                idxj=adf[adf['name']==nj]['nr'].values[0]
-            return self
-        return None
+    # def capped(self,capping_bonds):
+    #     if len(capping_bonds)>0:
+    #         adf=self.D['atoms']
+    #         bdf=self.D['bonds']
+    #         newtop=deepcopy(self)
+    #         for cb in capping_bonds:
+    #             ni,nj=cb.pairnames
+    #             idxi=adf[adf['name']==ni]['nr'].values[0]
+    #             idxj=adf[adf['name']==nj]['nr'].values[0]
+    #         return self
+    #     return None
 
         

@@ -1,6 +1,25 @@
 ''' Check for presence of required software '''
 import subprocess
 
+class Command:
+    def __init__(self,command,**options):
+        self.command=command
+        self.options=options
+        
+    def run(self):
+        c=f'{self.command} '+' '.join([f'-{k} {v}' for k,v in self.options.items()])
+        message=f'Issuing command "{c}"...\n'
+        process=subprocess.Popen(c,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        out,err=process.communicate()
+        if process.returncode!=0:
+            message=f'Command "{c}" failed with returncode {process.returncode}:\n'
+            message+=out+'\n'+err+'\n'
+            raise subprocess.SubprocessError(message)
+        else:
+            message+=f'Command "{c}" successful.\n'
+            message+=out+'\n'
+        return message
+
 class Software:
     ambertools=['antechamber','tleap','parmchk2']
     commandsRequired=ambertools+['gmx']

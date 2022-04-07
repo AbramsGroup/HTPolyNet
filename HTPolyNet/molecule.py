@@ -1,4 +1,5 @@
 from itertools import combinations_with_replacement, product
+from copy import deepcopy
 
 class ReactiveAtom:
     def __init__(self,datadict,name=''):
@@ -40,6 +41,11 @@ class CappingBond:
         if len(self.deletes)>0:
             s+=' D['+','.join(self.deletes)+']'
         return s
+
+class Oligomer:
+    def __init__(self,top,coord):
+        self.topology=top
+        self.coord=coord
 
 class Monomer:
     def __init__(self,jsondict,name=''):
@@ -106,40 +112,69 @@ def get_conn(mol):
             conn.append(mrname)
     return conn
 
-# def nextconn(partners,conns):
-#     hic=conns[-1]
-#     for i in range(len(partners)):
-#         if partners[i]!=hic:
-#             break
-#     else:
-#         return False
-#     partners[i]=conns[0] if partners[i]==[] else conns[conns.index(partners[i])+1]
-#     print('inside',partners)
-#     return True
-
 def react_mol2(m,n,minimize=True):
-    ''' m and n are Monomer instances (defined in configuration.py) '''
+    ''' m and n are Monomer instances (defined in here) '''
     if not isinstance(m,Monomer) or not isinstance(n,Monomer):
         raise Exception(f'react_mol2 needs Monomers not {type(m)} and {type(n)}')
     if not 'active' in m.Topology or not 'active' in n.Topology:
         raise Exception('react_mol2 needs Monomers with active topologies')
     if minimize and (not 'active' in m.Coords or not 'active' in n.Coords):
         raise Exception('react_mol2 needs Monomers with active coordinates')
-
+    retdict={}
     print(f'react_mol2: {m.name} and {n.name}')
     for basemol,othermol in zip([m,n],[n,m]):
+        # list of all asymmetric reactive atoms on base
         basera=get_conn(basemol)
+        # number of connections for each of those reactive atoms
         baseconn=[basemol.reactive_atoms[i].z for i in basera]
+        # list of all asymmetric reactive atoms on other
         otherra=get_conn(othermol)
-        # otherconn=[othermol.reactive_atoms[i].z for i in otherra]
+        # options for a connection on basemol are empty ('') or any one of 
+        # asymmetric atoms on other
         otherra=['']+otherra
+        # enumerate all symmetry-unique configurations of oligomers
+        # on *each* reactive atom on basemol *independently*, for all
+        # connections on each reactive atom
         basearr=[]
-        for b,z in zip(basera,baseconn):
+        for z in baseconn:
+            # this reactive atom has z connections, each of which can be
+            # 'occupied' by one member of otherra in all possible combinations
             basearr.append(list(combinations_with_replacement(otherra,z)))
-        print(*basearr)
+        for n,c in zip(basera,basearr):
+            print(f'{n} can have following connection configurations:',c)
+        # enumerate all unique configurations of connections on all reactive
+        # atoms.  This is relevant if there is more than one asymmetric 
+        # reactive atom on basemol.
         o=product(*basearr)
+        # the first one is one where all connections on all reactive atoms
+        # of basemol are empty, so skip it
         next(o)
         for oligo in o:
             print('making oligo',oligo)
+            # TODO: make working copy of basemol coordinates
+            wc=deepcopy(basemol.Coords['active'])
+            oname=basemol.name
+            for c,b in zip(oligo,basera):
+                print(f'establishing connection(s) to atom {b} of {basemol.name}:')
+                nconn=len([x for x in c if x!=''])
+                if nconn>0:
+                    oname+=f'@{b}-'+','.join([f'{othermol.name}#{a}' for a in c if a!=''])
+                for a in c:
+                    print(f'  to atom {a} of {othermol.name}')
+                    if a != '':
+                        # TODO
+                        owc=deepcopy(othermol.Coords['active'])
+                        # bring copy of coords from othermol into 
+                        # working copy of basemol
+                        wc.bond_to(owc,acc=b,don=a)
+                        # establish bond
+                        #  --identify global indices of the two reactive atoms!
+                        # delete hydrogens
+                        # translate/rotate coordinates of othermol to 
+                        # roughly make a nice looking molecule
+                        pass
+            print('-> prefix',oname)
 
-    return []
+            # TODO: construct coords with bonds
+
+    return {}

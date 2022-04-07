@@ -15,54 +15,42 @@ import pandas as pd
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
-#import HTPolyNet.mergeTop as mergeTop
-#import HTPolyNet.readTop2 as readTop2
-#import HTPolyNet.readGro as readGro
-#import HTPolyNet.groInfo as groInfo
-#import HTPolyNet.topInfo as topInfo
 import HTPolyNet.searchBonds as searchBonds
 import HTPolyNet.genBonds as genBonds
 import HTPolyNet.generateChargeDb as generateChargeDb
 import HTPolyNet.generateTypeInfo as generateTypeInfo
-#import HTPolyNet.processTop as processTop
-#import HTPolyNet.endCapping as endCapping
-#import HTPolyNet.getCappingParam as getCappingParam
 
 from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.topology import Topology
 
 from HTPolyNet.software import Software
-from HTPolyNet.libraries import Library
 from HTPolyNet.countTime import *
-from HTPolyNet.projectfilesystem import ProjectFileSystem
-# from HTPolyNet.extendSys import  extendSys
+from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
-from HTPolyNet.molecule import react_mol2
+from HTPolyNet.molecule import react_mol2, Oligomer
 
-class HTPolyNet(object):
-    ''' Class for a single HTPolyNet session '''
-    def __init__(self,software=None,cfgfile='',logfile='',restart=False):
+class HTPolyNet:
+    ''' Class for a single HTPolyNet runtime session '''
+    def __init__(self,cfgfile='',logfile='',restart=False):
         self._openlog(logfile)
-        self.log('HTPolyNet begins.\n')
-        if not software:
-            # will die if software requirements are not met
-            self.software=Software()
-        else:
-            self.software=software
+        self.log('HTPolyNet runtime begins.\n')
+        # will die if software requirements are not met
+        self.software=Software()
         self.log(str(self.software))
+        
         if cfgfile=='':
             raise RuntimeError('HTPolyNet requires a configuration file.')
 
-        self.restart=False
+        self.restart=restart
         
-        self.Library=Library()#ResourcePaths=IdentifyLibraryResourcePaths(['cfg','Gromacs_mdp','mol2'])
-        # self.cfgFile=cfgfile
         self.cfg=Configuration.read(cfgfile)
         self.log(str(self.cfg))
+        ''' Create the initial file system for the project.  If this is 
+            a restart, reference the newest project directory in the current
+            directory.  If this is not a restart, generate the *next* 
+            project directory. '''
         self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.restart)
         self.log('Finished initialization.\n')
-        self.Topology=Topology(system=self.cfg.Title,filename='init')
-#        self.urctTopols=[]
 
     def _openlog(self,filename):
         self.logio=None
@@ -74,50 +62,101 @@ class HTPolyNet(object):
             self.logio.write(msg)
             self.logio.flush()
 
-    def initialize_topology(self,force_parameterize=False):
+    def initialize_topology(self,force_parameterize=False,force_capping=False):
+        ''' Create a full gromacs topology that includes all directives necessary 
+            for an initial liquid simulation.  This will NOT use any #include's;
+            all types will be explicitly in-lined. '''
         self.pfs.cd(self.pfs.unrctPath)
+        fetch=self.pfs.fetch
+        exist=self.pfs.exist
+        store=self.pfs.store
+        ''' initialize an empty topology '''
+        self.Topology=Topology(system=self.cfg.Title)
         if os.path.isfile('init.top'):
             self.log('init.top already exists in {self.pfs.unrctPath} but we will rebuild it anyway!')
-        self.pfs.fetch(names=[f'{a}.mol2' for a in self.cfg.monomers.keys()],libpath=self.Library.dir('mol2'),overwrite='if_newer')
         comp=self.cfg.parameters['composition']
         for n,m in self.cfg.monomers.items():
-            if force_parameterize or (not os.path.exists(f'{n}-p.top') or not os.path.exists(f'{n}-p.gro')):
+            if not fetch(f'{n}.mol2'):
+                raise FileNotFoundError(f'{n}.mol2 not found in project root, parent, or library')
+            already_parameterized = all([exist(f'{n}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
+            msg=''
+            if force_parameterize or not already_parameterized:
+                fetch(f'{n}.mol2')
                 self.log(f'Parameterizing {n}...\n')
-                msg=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
+                msg+=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
+                for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
+                    store(f'{n}{ex}',overwrite='if_newer')
+            else:
+                for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
+                    fetch(f'{n}{ex}')
             self.log(msg+'\n'+f'Reading {n}-p.top...\n')
             t=Topology.read_gro(f'{n}-p.top')
             m.Topology['active']=t
             self.log(f'...replicating\n')
             t.rep_ex(comp[n])
             self.Topology.merge(t)
+            ''' just in case antechamber changed any user-defined atom names... '''
             userMol2=Coordinates.read_mol2(f'{n}.mol2')
             paramMol2=Coordinates.read_mol2(f'{n}-p.mol2')
             m.update_atom_specs(paramMol2,userMol2)
             m.Coords['active']=paramMol2
             if len(m.capping_bonds)>0:
-                m.Coords['inactive']=paramMol2.cap(m.capping_bonds,minimize=True,force_parameterize=force_parameterize)
-                if force_parameterize or not os.path.exists(f'{n}-capped-parameterized.top') or not os.path.exists(f'{n}-capped-parameterized.gro'):
-                    self.log(f'Parameterizing {n}-capped-minimized...\n')
-                    msg=GAFFParameterize(f'{n}-capped-minimized',f'{n}-capped-parameterized',force=False,parmed_save_inline=False)
-                self.log(msg+'\n'+f'Reading {n}-capped-parameterized.top...\n')
-                m.Topology['inactive']=Topology.read_gro(f'{n}-capped-parameterized.top')
+                msg=''
+                already_parameterized = all([exist(f'{n}-capped{ex}') for ex in  ['.mol2','.top','.itp','.gro']])
+                if force_capping or not already_parameterized:
+                    capped=paramMol2.cap(m.capping_bonds)
+                    capped.write_mol2(f'{n}-capped-unminimized.mol2')
+                    self.log(f'Parameterizing {n}-capped...\n')
+                    msg=GAFFParameterize(f'{n}-capped-unminimized',f'{n}-capped',force=False,parmed_save_inline=False)
+                    fetch('em-single-molecule.mdp')
+                    grompp_and_mdrun(gro=f'{n}-capped',
+                                    top=f'{n}-capped',
+                                    mdp='em-single-molecule',
+                                    out=f'{n}-capped',boxSize=[15.,15.,15.])
+                    m.Coords['inactive']=Coordinates.read_gro(f'{n}-capped.gro')
+                    capped.copy_coords(m.Coords['inactive'])
+                    capped.write_mol2(f'{n}-capped.mol2')
+                    for ex in ['-capped.mol2','-capped.top','-capped.itp','-capped.gro']:
+                        store(f'{n}{ex}',overwrite='if_newer')
+                else:
+                    for ex in ['-capped.mol2','-capped.top','-capped.itp','-capped.gro']:
+                        fetch(f'{n}{ex}')
+                m.Coords['inactive']=Coordinates.read_gro(f'{n}-capped.gro')
+                self.log(msg+'\n'+f'Reading {n}-capped.top...\n')
+                m.Topology['inactive']=Topology.read_gro(f'{n}-capped.top')
                 self.Topology.merge_types(t)
         
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
+        self.cfg.oligomers={}
         for r in self.cfg.reactions:
             self.log(f'Executing reaction(s) for {r.reactants}')
             mname,nname=r.reactants
             m=self.cfg.monomers[mname]
             n=self.cfg.monomers[nname]
-            self.cfg.oligomers={}
-            oligos=react_mol2(m,n)
-            for o in oligos:
-                msg=GAFFParameterize(f'{o}',f'{o}-parameterized',force=False,parmed_save_inline=False)
+            these_oligos=react_mol2(m,n)
+            for o,mol in these_oligos.items():
+                already_parameterized=all([exist(f'{o}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
+                if force_parameterize or not already_parameterized:
+                    self.log(f'Parameterizing {o}...')
+                    mol.write_mol2(f'{o}.mol2')
+                    msg=GAFFParameterize(f'{o}',f'{o}-p',force=False,parmed_save_inline=False)
+                    fetch('em-single-molecule.mdp')
+                    grompp_and_mdrun(gro=f'{o}-p',
+                                    top=f'{o}-p',
+                                    mdp='em-single-molecule',
+                                    out=f'{o}-p',boxSize=[20.,20.,20.])
+                    tmp=Coordinates.read_gro(f'{o}-p.gro')
+                    mol.copy_coords(tmp)
+                    mol.write_mol2(f'{o}-p.mol2')
+                    for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
+                        store(f'{o}{ex}',overwrite='if_newer')
+                else:
+                    for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
+                        fetch(f'{o}{ex}')
                 self.log(msg+'\n'+f'Reading {o}-parameterized.top...\n')
-                t=Topology.read_gro(f'{t}.top')
-                self.cfg.oligomers[o]=t
+                self.cfg.oligomers[o]=Oligomer(Topology.read_gro(f'{o}-p.top'),Coordinates.read_gro(f'{o}-p.gro'))
                 self.Topology.merge_types(t)
 
         # write the system topology
@@ -127,13 +166,15 @@ class HTPolyNet(object):
     def generate_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.next_results_dir())
-        # fetch unreacted init.top
-        self.pfs.fetch(names=['init.top'],libpath=self.pfs.unrctPath)
-        # fetch mdp files, or die if not found
-        self.pfs.fetch(names=['em.mdp','npt-1.mdp'],libpath=self.Library.dir('mdp'))
-        # extend system, make gro file
+        # fetch unreacted init.top amd all monomer gro's 
+        # from parameterization directory
+        self.pfs.fetch('init.top',altpath=self.pfs.unrctPath)
         for n in self.cfg.monomers.keys():
-            copy(f'{self.pfs.unrctPath}/{n}-p.gro','.')
+            self.pfs.fetch(f'{n}-p.gro',altpath=self.pfs.unrctPath)
+        # fetch mdp files from library, or die if not found
+        self.pfs.fetch('em.mdp')
+        self.pfs.fetch('npt-1.mdp')
+        # extend system, make gro file
         msg=insert_molecules(self.cfg.monomers,self.cfg.parameters['composition'],self.cfg.parameters['initial_boxsize'],'init',basename_modifier='-p')
         self.log(msg)
         self.Coordinates=Coordinates.read_gro('init.gro')
@@ -660,9 +701,11 @@ class HTPolyNet(object):
         unrctMap = getCappingParam.genUnrctMapping(self.cfg)
         self.unrctMap = unrctMap
 
-    def main(self):
-        self.initialize_topology()
-        # self.generate_liquid_simulation()
+    def main(self,**kwargs):
+        force_capping=kwargs.get('force_capping',False)
+        force_parameterize=kwargs.get('force_parameterize',False)
+        self.initialize_topology(force_capping=force_capping,force_parameterize=force_parameterize)
+        self.generate_liquid_simulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes
@@ -672,16 +715,7 @@ class HTPolyNet(object):
     #         logf=open('parameterization.log','w')
     #         logf.write('Beginning parameterizations.\n')
     #         logf.write('self.cfg.molNames: '+','.join(self.cfg.molNames)+'\n')
-    #     #A=ambertools.Parameterization()
-
-    #     # parameterize all user-provided mol2's
-    #     self.Topologies=[]
-    #     for n in self.cfg.molNames:
-    #         mol2Name=f'{n}.mol2'
-    #         if os.path.isfile(f'{n}.gro') and os.path.isfile(f'{n}.top'):
-    #             T=processTop.Topology(n,repeat=True)
-    #         else:
-    #             msg=A.GAFFParameterize(mol2Name,n,resName=n)
+    #     #A=ambertools.Parameterization()    print(args)
     #             if log:
     #                 logf.write(msg)
     #             T=processTop.Topology(n) # process the top file, make it standard
@@ -730,32 +764,27 @@ class HTPolyNet(object):
 #     # a.mainProcess(a.trials)
 #     pass
 
-def info(sw):
+def info():
     print('This is some information on your installed version of HTPolyNet')
-    print('Libraries:')
     l=Library()
-    print(l)
+    l.info()
+    sw=Software()
     sw.info()
-
 
 def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
     parser.add_argument('-log',type=str,default='out.log',help='log file')
-    parser.add_argument('-restart',type=bool, default=False, action='store_true',help='restart in latest proj dir')
+    parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
+    parser.add_argument('--force-capping',default=False,action='store_true',help='force GAFF reparameterization any monomer capping directives in config file')
+    parser.add_argument('--force-parameterize',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     args=parser.parse_args()
 
-    # Determine if required and optional software is available
-    software=Software()
-
-    if args.command=='init':
-        #init()
-        pass
-    elif args.command=='info':
-        info(software)
+    if args.command=='info':
+        info()
     elif args.command=='run':
-        a=HTPolyNet(software=software,cfgfile=args.cfg,logfile=args.log,restart=args.restart)
-        a.main()
+        a=HTPolyNet(cfgfile=args.cfg,logfile=args.log,restart=args.restart)
+        a.main(force_capping=args.force_capping,force_parameterize=args.force_parameterize)
     else:
         print(f'HTPolyNet command {args.command} not recognized')

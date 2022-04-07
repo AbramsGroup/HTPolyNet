@@ -1,7 +1,7 @@
 integrator	= steep;
 emtol		= 10.0;
 emstep		= 0.01;
-nsteps		= 1000;
+nsteps		= 10000;
 cutoff-scheme	= Verlet;
 coulombtype	= PME;
 rcoulomb	= 1.0;

@@ -5,10 +5,11 @@ coordinates.py -- simple class for handling atom coordinates from gro and mol2 f
 import pandas as pd
 import numpy as np
 from io import StringIO
+from shutil import copyfile
 
 from HTPolyNet.bondlist import Bondlist
-from HTPolyNet.ambertools import Command,GAFFParameterize
-from HTPolyNet.libraries import Library
+from HTPolyNet.ambertools import GAFFParameterize
+from HTPolyNet.projectfilesystem import Library
 from HTPolyNet.gromacs import grompp_and_mdrun
 
 class Coordinates:
@@ -129,6 +130,7 @@ class Coordinates:
         self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
         if 'bonds' in other.D:
             self.bondlist.update(other.D['bonds'])
+        return (idxshift,bdxshift,rdxshift)
 
     def _myconcat(self,other,directive,idxlabel=[],idxshift=0):
         if not directive in other.D:
@@ -233,19 +235,54 @@ class Coordinates:
         # print('deletes:',deletes)
         self.add_bonds(pairs=pairs,orders=orders)
         self.delete_atoms(idx=deletes)
-        self.write_mol2(f'{self.name}-capped-unminimized.mol2')
-        if minimize:
-            l=Library()
-            l.fetch('em-single-molecule.mdp')
-            GAFFParameterize(f'{self.name}-capped-unminimized',f'{self.name}-capped-unminimized-parameterized',force=False,parmed_save_inline=False)
-            grompp_and_mdrun(gro=f'{self.name}-capped-unminimized-parameterized',
-                             top=f'{self.name}-capped-unminimized-parameterized',
-                             mdp='em-single-molecule',
-                             out=f'{self.name}-capped-minimized',boxSize=[15,15,15])
-            mc=Coordinates.read_gro(f'{self.name}-capped-minimized.gro')
-            self.copy_coords(mc)
-            self.write_mol2(f'{self.name}-capped-minimized.mol2')
+
         return self
+
+    def bond_to(self,other,acc=None,don=None):
+        ''' creates a new bond from atom acc in self to atom don of other '''
+        aadf=self.D['atoms']
+        dadf=other.D['atoms']
+        # get pre-merge indices of reactive atoms and any H's bound to them
+        accidx=aadf[aadf['atomName']==acc]['globalIdx'].values[0]
+        accr=aadf[aadf['atomName']==acc][['posX','posY','posZ']].values[0]
+        donidx=dadf[dadf['atomName']==don]['globalIdx'].values[0]
+        donr=dadf[dadf['atomName']==don][['posX','posY','posZ']].values[0]
+        idxaccn=self.bondlist.partners_of(accidx)
+        idxdonn=other.bondlist.partners_of(donidx)
+        acch=[k for k,v in zip(idxaccn,[aadf[aadf['globalIdx']==i]['atomName'].values[0] for i in idxaccn]) if v.startswith('H')]
+        donh=[k for k,v in zip(idxdonn,[dadf[dadf['globalIdx']==i]['atomName'].values[0] for i in idxdonn]) if v.startswith('H')]
+        # Try out some bonds:  for each pair of H's (accH,donH), determine
+        # the transformation matrix that will align the acc->accH vector 
+        # and the donH->don vector, apply this transformation to all atoms in 
+        # the donor, make a determination of degree of steric clash
+        # find the pair of H's that gives zero steric clash!
+        for accH in acch:
+            accHr=aadf[aadf['globalIdx']==accH][['posX','posY','posZ']].values[0]
+            accb=accr-accHr
+            accb*=1.0/np.linalg.norm(accb)
+            for donH in donh:
+                donHr=dadf[dadf['globalIdx']==donH][['posX','posY','posZ']].values[0]
+                donb=donHr-donr
+                donb*=1.0/np.linalg.norm(donb)
+                # accb and donb are the two vectors
+                cp=np.cross(donb,accb)
+                c=np.dot(donb,accb)
+                print(accb,donb,cp)
+                v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
+                v2=np.dot(v,v)
+                I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
+                # R is the rotation matrix that will rotate donb to align with accb
+                R=I+v+v2/(1.+c)
+                # TODO: rotate translate all donor atoms!
+                print(R)
+                pass
+        # merge and grab the idxshift
+        # add idxshift to don's original index -> you've got the new index!
+        # add_bond
+        # delete hydrogens (remember to idxshift the one from the donor)
+        # this is a ready-to-minimize molecule!
+        exit()
+        pass
 
     def add_bonds(self,pairs=[],orders=[]):
         ''' add bonds to a set of coordinates

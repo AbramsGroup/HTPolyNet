@@ -1,6 +1,4 @@
-''' subdirectory tree for a run directory '''
-import os
-import pathlib
+''' Classes for handling a runtime file system '''
 '''
 root
     |-->proj0
@@ -24,6 +22,54 @@ root
 
 
 '''
+import os
+import pathlib
+import importlib.resources
+
+_DefaultResourceTypes_=['cfg','mdp','mol2','top','itp','gro']
+_DefaultResourcePackageDir_='Library'
+
+class Library:
+    def __init__(self,ResourceTypes=_DefaultResourceTypes_,basepath=_DefaultResourcePackageDir_):
+        self.types=ResourceTypes
+        self.basepath=basepath
+        self.libdir={}
+        tt=importlib.resources.files(basepath)
+        for n in tt.iterdir():
+            if os.path.isdir(n) and '__' not in str(n):
+                bn=str(n).split('/')[-1]
+                if bn in ResourceTypes:
+                    self.libdir[bn]=n
+
+    def dir(self,typestr):
+        return self.libdir.get(typestr,None)
+
+    def __str__(self):
+        s=''
+        for k,v in self.libdir.items():
+            s+=f'{k}: {v}\n'
+        return s
+
+    def info(self):
+        print('\nHTPolyNet libraries:')
+        for k,v in self.libdir.items():
+            f=list(os.listdir(v))
+            l=len(f)
+            ess='' if l==1 else 's'
+            c=':' if l>0 else '.'
+            print(f'  {k} ({v}) has {len(f)} file{ess}{c}')
+            if len(f)>0:
+                maxlen=max([len(i) for i in f])
+                ncol=70//(maxlen+2)
+                outstr=r'  {:>'+str(maxlen)+r's}'
+                for i in range(0,len(f),ncol):
+                    print('    ',end='')
+                    for j in range(i,i+ncol):
+                        if j<len(f):
+                            print(outstr.format(f[j]),end='')
+                    print()
+
+
 class ProjectFileSystem:
     def __init__(self,root='.',verbose=False,reProject=False):
         self.rootPath=pathlib.Path(root).resolve()
@@ -33,6 +79,7 @@ class ProjectFileSystem:
         self._next_project_dir(reProject=reProject)
         self._setup_project_root()
         self.cd(self.rootPath)
+        self.library=Library()
 
     def cd(self,dest=''):
         os.chdir(dest)
@@ -47,30 +94,57 @@ class ProjectFileSystem:
         if toplevel in self.projSubPaths:
             self.cd(self.projSubPaths[toplevel])
 
-    def fetch(self,names=[],libpath=None,destpath='.',overwrite='yes'):
-        searchpath=[self.rootPath,self.projPath]
-        if libpath!=None:
-            searchpath.append(libpath)
-        for fname in names:
-            destfname=os.path.join(destpath,fname)
-            for p in searchpath:
-                afname=os.path.join(p,fname)
-                if os.path.exists(afname):
-                    if os.path.exists(destfname):
-                        if overwrite=='yes':
-                            print(f'Notice: copying {afname} over {destfname}')
-                            os.system(f'cp {afname} {destpath}')
-                        elif overwrite=='if_newer':
-                            print(f'Notice: copying newer {afname} over {destfname}')
-                            if os.path.getctime(destfname) < os.path.getctime(afname):
-                                os.system(f'cp {afname} {destpath}')
-                        else:
-                            print(f'Notice: opting not to copy older {afname} over {destfname}')
-                    else:
+    def exist(self,name):
+        ext=name.split('.')[-1]
+        fullname=os.path.join(self.library.dir(ext),name)
+        return os.path.exists(fullname)
+
+    def fetch(self,name,destpath='.',overwrite='yes',altpath=None):
+        ''' default fetch behavior:  if filename exists in rootPath or projPath,
+            take that one, otherwise look in the Library '''
+        ext=name.split('.')[-1]
+        searchpath=[self.rootPath,self.projPath,self.library.dir(ext)]
+        if altpath!=None:
+            searchpath=[altpath]+searchpath
+        destfname=os.path.join(destpath,name)
+        for p in searchpath:
+            afname=os.path.join(p,name)
+            if os.path.exists(afname):
+                if os.path.exists(destfname):
+                    if overwrite=='yes':
+                        print(f'Notice: copying {afname} over {destfname}')
                         os.system(f'cp {afname} {destpath}')
-                    break
+                    elif overwrite=='if_newer':
+                        print(f'Notice: copying newer {afname} over {destfname}')
+                        if os.path.getctime(destfname) < os.path.getctime(afname):
+                            os.system(f'cp {afname} {destpath}')
+                    else:
+                        print(f'Notice: opting not to copy older {afname} over {destfname}')
+                else:
+                    print(f'Notice: copying {afname} into {destpath}')
+                    os.system(f'cp {afname} {destpath}')
+                return True
+        else:
+            return False
+
+    def store(self,name,altdestpath=None,overwrite='yes'):
+        ''' stores files in package library or in an alternate location'''
+        ext=name.split('.')[-1]
+        libdestpath=self.library.dir(ext)
+        destfullname=os.path.join(libdestpath if not altdestpath else altdestpath,name)
+        if os.path.exists(destfullname):
+            if overwrite=='yes':
+                print(f'Notice: copying {name} over {destfullname}')
+                os.system(f'cp {name} {destfullname}')
+            elif overwrite=='if_newer':
+                print(f'Notice: copying newer {name} over {destfullname}')
+                if os.path.getctime(destfullname) < os.path.getctime(name):
+                    os.system(f'cp {name} {destfullname}')
             else:
-                raise FileNotFoundError(f'{afname} not found.')
+                print(f'Notice: opting not to copy older {name} over {destfullname}')
+        else:
+            print(f'Notice: copying {name} to {destfullname}')
+            os.system(f'cp {name} {destfullname}')
 
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
@@ -88,7 +162,7 @@ class ProjectFileSystem:
             else:
                 currentprojdir=f'proj{i}'
             self.projPath=os.path.join(self.rootPath,currentprojdir)
-            os.mkdir(reProject)
+            os.mkdir(currentprojdir)
         else:
             self.projPath=os.path.join(self.rootPath,lastprojdir)
 
@@ -108,7 +182,7 @@ class ProjectFileSystem:
         self.resultsSubPaths={}
         for tops in ['rctSystems','unrctSystems','typeSystems']:
             self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
-            if not os.path.isdir(self.systemSubPaths[tops]):
+            if not os.path.isdir(self.systemsSubPaths[tops]):
                 os.mkdir(tops)
         self.unrctPath=self.systemsSubPaths['unrctSystems']
         self.rctPath=self.systemsSubPaths['rctSystems']
