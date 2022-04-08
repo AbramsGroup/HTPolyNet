@@ -238,7 +238,45 @@ class Coordinates:
 
         return self
 
+    def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
+        ''' computes the minimum distance between two configurations '''
+        sp=self.D['atoms'][~self.D['atoms']['globalIdx'].isin(self_excludes)][['posX','posY','posZ']]
+        op=other.D['atoms'][~other.D['atoms']['globalIdx'].isin(other_excludes)][['posX','posY','posZ']]
+        minD=1.e9
+        for i,srow in sp.iterrows():
+            ri=srow.values
+            for j,orow in op.iterrows():
+                rj=orow.values
+                rij=ri-rj
+                # print(i,j,rij)
+                D=np.sqrt(np.dot(rij,rij))
+                if D<minD:
+                    minD=D
+        return minD
+
+    def rotate(self,R):
+        ''' multiplies rotation matrix R by position of each atom '''
+        # print('rotate R.shape',R.shape)
+        sp=self.D['atoms'][['posX','posY','posZ']]
+        for i,srow in sp.iterrows():
+            ri=srow.values
+            # print(i,ri,ri.shape)
+            newri=np.matmul(R,ri)
+            # print('rot ri',ri,'newri',newri)
+            self.D['atoms'].loc[i,'posX':'posZ']=newri
+            # print(sp.loc[i,'posX':'posZ'])
+
+    def translate(self,L):
+        ''' translates all atom positions by L '''
+        sp=self.D['atoms'][['posX','posY','posZ']]
+        for i,srow in sp.iterrows():
+            ri=srow.values
+            newri=ri+L
+            # print('tra ri',ri,'newri',newri)
+            self.D['atoms'].loc[i,'posX':'posZ']=newri
+
     def bond_to(self,other,acc=None,don=None):
+        self.write_mol2(f'TMP-{self.name}-base.mol2')
         ''' creates a new bond from atom acc in self to atom don of other '''
         aadf=self.D['atoms']
         dadf=other.D['atoms']
@@ -246,7 +284,6 @@ class Coordinates:
         accidx=aadf[aadf['atomName']==acc]['globalIdx'].values[0]
         accr=aadf[aadf['atomName']==acc][['posX','posY','posZ']].values[0]
         donidx=dadf[dadf['atomName']==don]['globalIdx'].values[0]
-        donr=dadf[dadf['atomName']==don][['posX','posY','posZ']].values[0]
         idxaccn=self.bondlist.partners_of(accidx)
         idxdonn=other.bondlist.partners_of(donidx)
         acch=[k for k,v in zip(idxaccn,[aadf[aadf['globalIdx']==i]['atomName'].values[0] for i in idxaccn]) if v.startswith('H')]
@@ -256,48 +293,86 @@ class Coordinates:
         # and the donH->don vector, apply this transformation to all atoms in 
         # the donor, make a determination of degree of steric clash
         # find the pair of H's that gives zero steric clash!
+        opt_idxstr='None'
+        overall_maximum=-11.e10
         for accH in acch:
             accHr=aadf[aadf['globalIdx']==accH][['posX','posY','posZ']].values[0]
             accb=accr-accHr
             accb*=1.0/np.linalg.norm(accb)
             for donH in donh:
+                idxstr=f'TMP-{self.name}@{accidx}-{accH}+{other.name}@{donidx}-{donH}'
+                donr=dadf[dadf['atomName']==don][['posX','posY','posZ']].values[0]
                 donHr=dadf[dadf['globalIdx']==donH][['posX','posY','posZ']].values[0]
+                delHr=accr-donHr
                 donb=donHr-donr
                 donb*=1.0/np.linalg.norm(donb)
                 # accb and donb are the two vectors
                 cp=np.cross(donb,accb)
                 c=np.dot(donb,accb)
-                print(accb,donb,cp)
+                # print(accb,donb,cp)
                 v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
                 v2=np.dot(v,v)
                 I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
                 # R is the rotation matrix that will rotate donb to align with accb
                 R=I+v+v2/(1.+c)
-                # TODO: rotate translate all donor atoms!
-                print(R)
-                pass
+                # rotate translate all donor atoms!
+                other.rotate(R)
+                donHr=dadf[dadf['globalIdx']==donH][['posX','posY','posZ']].values[0]
+                delHr=accr-donHr
+                other.translate(delHr)
+                other.write_mol2(idxstr+'.mol2')
+                minD=self.minimum_distance(other,self_excludes=[accH],other_excludes=[donH])
+                # print(minD)
+                if minD>overall_maximum:
+                     overall_maximum=minD
+                     opt_idxstr=idxstr
+                # print(R)
+        print(f'best config is {opt_idxstr}')
+        take_me=Coordinates.read_mol2(opt_idxstr+'.mol2')
+        other.copy_coords(take_me)
+        other.write_mol2(f'TMP-opt-{other.name}.mol2')
         # merge and grab the idxshift
+        shifts=self.merge(other)
+        self.write_mol2(f'TMP-opt-{self.name}+{other.name}.mol2')
+        idxshift=shifts[0]
         # add idxshift to don's original index -> you've got the new index!
+        opt_bondstrs=opt_idxstr.replace('TMP-','').split('+')
+        acc_strs=opt_bondstrs[0].split('@')
+        accidx,accHidx=list(map(int,acc_strs[1].split('-')))
+        don_strs=opt_bondstrs[1].split('@')
+        donidx,donHidx=list(map(int,don_strs[1].split('-')))
+        donidx+=idxshift
+        donHidx+=idxshift
         # add_bond
+        print(f'preparing to add bond {accidx}-{donidx}...')
+        self.add_bonds(pairs=[(accidx,donidx)])
         # delete hydrogens (remember to idxshift the one from the donor)
+        print(f'preparing to delete {accHidx} and {donHidx}...')
+        self.delete_atoms(idx=[accHidx,donHidx])
         # this is a ready-to-minimize molecule!
-        exit()
+        # exit()
         pass
 
     def add_bonds(self,pairs=[],orders=[]):
+        if len(orders)==0:
+            orders=[1]*len(pairs)
         ''' add bonds to a set of coordinates
             pairs:  list of 2-tuples of atom global indices '''
         bmi=self.D['bonds'].set_index(['ai','aj']).index
         h=self.mol2_bond_colnames
         for i,(b,o) in enumerate(zip(pairs,orders)):
             ai,aj=b
+            # print(f'looking for {ai}-{aj}...')
             if not (ai,aj) in bmi and not (aj,ai) in bmi:
                 data=[len(bmi)+i,ai,aj,o]
                 # print('adding',data)
                 bonddict={k:[v] for k,v in zip(h,data)}
                 self.D['bonds']=pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
 #        self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+        self.D['bonds'].globalIdx=self.D['bonds'].index
         self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
+        if 'nBonds' in self.metadat:
+            self.metadat['nBonds']=len(self.D['bonds'])
 
     def delete_atoms(self,idx=[],reindex=True):
         '''
@@ -337,8 +412,10 @@ class Coordinates:
                 d=self.D['bonds']
                 d.ai=d.ai.map(mapper)
                 d.aj=d.aj.map(mapper)
+                d.globalIdx=d.index+1
                 # print('bonds after reindexing:\n',self.D['bonds'].to_string(index=False))
-            self.nBonds=len(self.D['bonds'])
+            if 'nBonds' in self.metadat:
+                self.metadat['nBonds']=len(self.D['bonds'])
             self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
     def __str__(self):

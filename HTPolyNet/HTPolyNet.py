@@ -129,6 +129,7 @@ class HTPolyNet:
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
+        self.pfs.cd(self.pfs.rctPath)
         self.cfg.oligomers={}
         for r in self.cfg.reactions:
             self.log(f'Executing reaction(s) for {r.reactants}')
@@ -136,6 +137,7 @@ class HTPolyNet:
             m=self.cfg.monomers[mname]
             n=self.cfg.monomers[nname]
             these_oligos=react_mol2(m,n)
+            print(these_oligos)
             for o,mol in these_oligos.items():
                 already_parameterized=all([exist(f'{o}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
                 if force_parameterize or not already_parameterized:
@@ -156,12 +158,14 @@ class HTPolyNet:
                     for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
                         fetch(f'{o}{ex}')
                 self.log(msg+'\n'+f'Reading {o}-parameterized.top...\n')
-                self.cfg.oligomers[o]=Oligomer(Topology.read_gro(f'{o}-p.top'),Coordinates.read_gro(f'{o}-p.gro'))
+                t=Topology.read_gro(f'{o}-p.top')
+                self.cfg.oligomers[o]=Oligomer(t,Coordinates.read_gro(f'{o}-p.gro'))
                 self.Topology.merge_types(t)
 
         # write the system topology
+        self.pfs.cd(self.pfs.unrctPath)
         self.Topology.to_file('init.top')
-        self.log('Wrote init.top')
+        self.log(f'Wrote init.top to {self.pfs.unrctPath}\n')
 
     def generate_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
@@ -705,7 +709,7 @@ class HTPolyNet:
         force_capping=kwargs.get('force_capping',False)
         force_parameterize=kwargs.get('force_parameterize',False)
         self.initialize_topology(force_capping=force_capping,force_parameterize=force_parameterize)
-        self.generate_liquid_simulation()
+        #self.generate_liquid_simulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes

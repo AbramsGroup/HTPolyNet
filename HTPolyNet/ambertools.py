@@ -3,7 +3,7 @@
 
 @author: huang
 """
-import subprocess
+import hashlib
 import os
 import parmed
 from HTPolyNet.software import Command
@@ -27,15 +27,21 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     message+=c.run()
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
     message+=c.run()
+    # tleap can't handle symbols in file names
+    leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
+    Command(f'cp {mol2out} {leapprefix}.mol2').run()
+    Command(f'cp {frcmodout} {leapprefix}.frcmod').run()
     with open('tleap.in', 'w') as f:
         f.write(f'source leaprc.gaff\n')
-        f.write(f'SUS = loadmol2 {mol2out}\n')
+        f.write(f'SUS = loadmol2 {leapprefix}.mol2\n')
         f.write(f'check SUS\n')
-        f.write(f'loadamberparams {frcmodout}\n')
-        f.write(f'saveamberparm SUS {outputPrefix}-tleap.top {outputPrefix}-tleap.crd\n')
+        f.write(f'loadamberparams {leapprefix}.frcmod\n')
+        f.write(f'saveamberparm SUS {leapprefix}-tleap.top {leapprefix}-tleap.crd\n')
         f.write('quit\n')
     c=Command('tleap',f='tleap.in')
     message+=c.run()
+    Command(f'cp {leapprefix}-tleap.top {outputPrefix}-tleap.top').run()
+    Command(f'cp {leapprefix}-tleap.crd {outputPrefix}-tleap.crd').run()
     # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
     try:
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')

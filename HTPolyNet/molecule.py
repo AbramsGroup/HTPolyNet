@@ -121,7 +121,7 @@ def react_mol2(m,n,minimize=True):
     if minimize and (not 'active' in m.Coords or not 'active' in n.Coords):
         raise Exception('react_mol2 needs Monomers with active coordinates')
     retdict={}
-    print(f'react_mol2: {m.name} and {n.name}')
+    # print(f'react_mol2: {m.name} and {n.name}')
     for basemol,othermol in zip([m,n],[n,m]):
         # list of all asymmetric reactive atoms on base
         basera=get_conn(basemol)
@@ -150,31 +150,24 @@ def react_mol2(m,n,minimize=True):
         # of basemol are empty, so skip it
         next(o)
         for oligo in o:
-            print('making oligo',oligo)
-            # TODO: make working copy of basemol coordinates
+            # print('making oligo',oligo)
+            # make working copy of basemol coordinates
             wc=deepcopy(basemol.Coords['active'])
             oname=basemol.name
             for c,b in zip(oligo,basera):
-                print(f'establishing connection(s) to atom {b} of {basemol.name}:')
+                # print(f'establishing connection(s) to atom {b} of {basemol.name}:')
                 nconn=len([x for x in c if x!=''])
                 if nconn>0:
                     oname+=f'@{b}-'+','.join([f'{othermol.name}#{a}' for a in c if a!=''])
                 for a in c:
-                    print(f'  to atom {a} of {othermol.name}')
+                    # print(f'  to atom {a} of {othermol.name}')
                     if a != '':
-                        # TODO
                         owc=deepcopy(othermol.Coords['active'])
                         # bring copy of coords from othermol into 
                         # working copy of basemol
                         wc.bond_to(owc,acc=b,don=a)
-                        # establish bond
-                        #  --identify global indices of the two reactive atoms!
-                        # delete hydrogens
-                        # translate/rotate coordinates of othermol to 
-                        # roughly make a nice looking molecule
-                        pass
-            print('-> prefix',oname)
+            # print('-> prefix',oname)
+            # wc.write_mol2(f'OLIG-{oname}.mol2')
+            retdict[oname]=wc
 
-            # TODO: construct coords with bonds
-
-    return {}
+    return retdict
