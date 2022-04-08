@@ -192,6 +192,7 @@ class HTPolyNet:
         self.log('Generated init.top and init.gro.\n')
         msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
         self.log(msg)
+        # TODO: modify this to run in stages until volume is equilibrated
         msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
         self.log(msg)
         self.log('Final configuration in npt-1.gro\n')
