@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: cfa (1000)
 ;	On host: panacea
-;	At date: Fri Apr  8 16:55:54 2022
+;	At date: Fri Apr  8 17:16:49 2022
 ;
 ;	Created by:
 ;	                     :-) GROMACS - gmx grompp, 2021.2 (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  /usr/local/gromacs
 ;	Working dir:  /home/cfa/Git/HTPolyNet/Tests/oligo/proj0/systems/rctSystems
 ;	Command line:
-;	  gmx grompp -f em-single-molecule.mdp -c FDE@C1-DFA#N1-p.gro -p FDE@C1-DFA#N1-p.top -o FDE@C1-DFA#N1-p.tpr -maxwarn 2
+;	  gmx grompp -f em-single-molecule.mdp -c DFA@N2-FDE#C2-p.gro -p DFA@N2-FDE#C2-p.top -o DFA@N2-FDE#C2-p.tpr -maxwarn 2
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.

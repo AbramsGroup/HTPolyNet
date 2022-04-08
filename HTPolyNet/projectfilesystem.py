@@ -34,12 +34,13 @@ class Library:
         self.types=ResourceTypes
         self.basepath=basepath
         self.libdir={}
-        tt=importlib.resources.files(basepath)
-        for n in tt.iterdir():
-            if os.path.isdir(n) and '__' not in str(n):
-                bn=str(n).split('/')[-1]
-                if bn in ResourceTypes:
-                    self.libdir[bn]=n
+        if basepath==_DefaultResourcePackageDir_:
+            tt=importlib.resources.files(basepath)
+            for n in tt.iterdir():
+                if os.path.isdir(n) and '__' not in str(n):
+                    bn=str(n).split('/')[-1]
+                    if bn in ResourceTypes:
+                        self.libdir[bn]=n
 
     def dir(self,typestr):
         return self.libdir.get(typestr,None)

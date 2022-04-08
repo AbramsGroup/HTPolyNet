@@ -47,10 +47,10 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     try:
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')
         message+=f'Writing {groOut}\n'
-        file.save(groOut)
+        file.save(groOut,overwrite=True)
         if parmed_save_inline:
             message+=f'Writing {topOut}\n'
-            file.save(topOut)
+            file.save(topOut,overwrite=True)
         else:
             message+=f'Writing {topOut} and {itpOut}\n'
             file.save(topOut,parameters=itpOut,overwrite=True)
