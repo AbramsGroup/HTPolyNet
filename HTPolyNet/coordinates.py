@@ -5,22 +5,25 @@ coordinates.py -- simple class for handling atom coordinates from gro and mol2 f
 import pandas as pd
 import numpy as np
 from io import StringIO
-from shutil import copyfile
+from copy import deepcopy
+import hashlib
 
 from HTPolyNet.bondlist import Bondlist
-from HTPolyNet.ambertools import GAFFParameterize
-from HTPolyNet.projectfilesystem import Library
-from HTPolyNet.gromacs import grompp_and_mdrun
 
 class Coordinates:
     gro_colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
+    gro_colunits = ['*','*','*','*','nm','nm','nm','nm/ps','nm/ps','nm/ps']
     mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','molNum','molName','charge']
+    mol2_atom_colunits = ['*','*','Angstrom','Angstrom','Angstrom','*','*']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
 
     def __init__(self,name=''):
         self.name=name
-        self.format=None
+        self.format='gro'
+        self.units={}
+        self.units['length']='nm'
+        self.units['velocity']='nm/ps'
         self.title=''
         self.metadat={}
         self.N=0
@@ -31,7 +34,6 @@ class Coordinates:
     @classmethod
     def read_gro(cls,filename=''):
         inst=cls(filename)
-        inst.format='gro'
         if filename!='':
             with open(filename,'r') as f:
                 data=f.read().split('\n')
@@ -73,6 +75,8 @@ class Coordinates:
     def read_mol2(cls,filename=''):
         inst=cls(filename)
         inst.format='mol2'
+        inst.units['length']='Angstrom'
+        inst.units['velocity']='Angstrom/ps'
         if filename=='':
             return inst
         with open(filename,'r') as f:
@@ -101,9 +105,16 @@ class Coordinates:
         return inst
 
     def copy_coords(self,other):
+        otherfac=1.0
+        if self.units['length']=='nm' and other.units['length']=='Angstrom':
+            otherfac=0.1
+        elif self.units['length']=='Angstrom' and other.units['length']=='nm':
+            otherfac=10.0
         for c in ['posX','posY','posZ']:
-            self.D['atoms'][c]=other.D['atoms'][c].copy()
-
+            otherpos=other.D['atoms'][c].copy()
+            otherpos*=otherfac
+            self.D['atoms'][c]=otherpos
+            
     def translate_coords(self,v=[0.,0.,0.]):
         self.D['atoms']['posX']+=v[0]
         self.D['atoms']['posY']+=v[1]
@@ -111,9 +122,11 @@ class Coordinates:
 
     def geometric_center(self):
         a=self.D['atoms']
-        return [a.posX.mean(),a.posY.mean(),a.posZ.mean()]
+        return np.array([a.posX.mean(),a.posY.mean(),a.posZ.mean()])
 
     def merge(self,other):
+        if self.units['length']!=other.units['length']:
+            raise Exception('Cannot merge coordinates in different units')
         idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
         bdxshift=0 if 'bonds' not in self.D else len(self.D['bonds'])
         rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['molNum']
@@ -145,6 +158,10 @@ class Coordinates:
     def write_mol2(self,filename=''):
         if self.format!='mol2':
             raise Exception('was this a gro file?')
+        posscale=1.0
+        if self.units['length']=='nm':
+            posscale=10.0
+        com=self.geometric_center()
         if filename!='':
             atomformatters = [
                 lambda x: f'{x:>7d}',
@@ -176,7 +193,13 @@ class Coordinates:
                 f.write(f"{self.metadat.get('mol2chargetype','GASTEIGER')}\n")
                 f.write('\n')
                 f.write('@<TRIPOS>ATOM\n')
-                f.write(self.D['atoms'].to_string(header=False,index=False,formatters=atomformatters))
+                if posscale!=1.0:
+                    sdf=self.D['atoms'].copy()
+                    pos=(sdf.loc[:,['posX','posY','posZ']]-com)*posscale
+                    sdf.loc[:,['posX','posY','posZ']]=pos
+                    f.write(sdf.to_string(header=False,index=False,formatters=atomformatters))
+                else:
+                    f.write(self.D['atoms'].to_string(header=False,index=False,formatters=atomformatters))
                 f.write('\n')
                 f.write('@<TRIPOS>BOND\n')
                 f.write(self.D['bonds'].to_string(header=False,index=False,formatters=bondformatters))
@@ -191,9 +214,10 @@ class Coordinates:
         return self.N
 
     def cap(self,capping_bonds=[],**kwargs):
+        inst=deepcopy(self)
         ''' generate all capping bonds '''
         minimize=kwargs.get('minimize',False)
-        adf=self.D['atoms']
+        adf=inst.D['atoms']
         pairs=[]
         orders=[]
         deletes=[]
@@ -208,8 +232,8 @@ class Coordinates:
             rj=adf[adf['atomName']==aj][['posX','posY','posZ']].values[0]
             pairs.append((idxi,idxj))
             orders.append(o)
-            idxinidx=self.bondlist.partners_of(idxi)
-            idxjnidx=self.bondlist.partners_of(idxj)
+            idxinidx=inst.bondlist.partners_of(idxi)
+            idxjnidx=inst.bondlist.partners_of(idxj)
             inn=[k for k,v in zip(idxinidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxinidx]) if v.startswith('H')]
             jnn=[k for k,v in zip(idxjnidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxjnidx]) if v.startswith('H')]
             if len(inn)>0 and len(jnn)>0:
@@ -233,10 +257,10 @@ class Coordinates:
         # print('pairs:',pairs)
         # print('orders:',orders)
         # print('deletes:',deletes)
-        self.add_bonds(pairs=pairs,orders=orders)
-        self.delete_atoms(idx=deletes)
+        inst.add_bonds(pairs=pairs,orders=orders)
+        inst.delete_atoms(idx=deletes)
 
-        return self
+        return inst
 
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         ''' computes the minimum distance between two configurations '''
@@ -276,7 +300,7 @@ class Coordinates:
             self.D['atoms'].loc[i,'posX':'posZ']=newri
 
     def bond_to(self,other,acc=None,don=None):
-        self.write_mol2(f'TMP-{self.name}-base.mol2')
+        # self.write_mol2(f'TMP-{self.name}-base.mol2')
         ''' creates a new bond from atom acc in self to atom don of other '''
         aadf=self.D['atoms']
         dadf=other.D['atoms']
@@ -294,6 +318,7 @@ class Coordinates:
         # the donor, make a determination of degree of steric clash
         # find the pair of H's that gives zero steric clash!
         opt_idxstr='None'
+        opt_oligidx=()
         overall_maximum=-11.e10
         for accH in acch:
             accHr=aadf[aadf['globalIdx']==accH][['posX','posY','posZ']].values[0]
@@ -301,6 +326,7 @@ class Coordinates:
             accb*=1.0/np.linalg.norm(accb)
             for donH in donh:
                 idxstr=f'TMP-{self.name}@{accidx}-{accH}+{other.name}@{donidx}-{donH}'
+                oligidx=(accidx,accH,donidx,donH)
                 donr=dadf[dadf['atomName']==don][['posX','posY','posZ']].values[0]
                 donHr=dadf[dadf['globalIdx']==donH][['posX','posY','posZ']].values[0]
                 delHr=accr-donHr
@@ -320,38 +346,37 @@ class Coordinates:
                 donHr=dadf[dadf['globalIdx']==donH][['posX','posY','posZ']].values[0]
                 delHr=accr-donHr
                 other.translate(delHr)
-                other.write_mol2(idxstr+'.mol2')
+                fileprefix=hashlib.shake_128(idxstr.encode("utf-8")).hexdigest(8)
+                other.write_mol2(fileprefix+'.mol2')
                 minD=self.minimum_distance(other,self_excludes=[accH],other_excludes=[donH])
                 # print(minD)
                 if minD>overall_maximum:
-                     overall_maximum=minD
-                     opt_idxstr=idxstr
+                    overall_maximum=minD
+                    opt_idxstr=idxstr
+                    opt_oligidx=oligidx
                 # print(R)
-        print(f'best config is {opt_idxstr}')
-        take_me=Coordinates.read_mol2(opt_idxstr+'.mol2')
+        # print(f'best config is {opt_idxstr}')
+        fileprefix=hashlib.shake_128(opt_idxstr.encode("utf-8")).hexdigest(8)
+        take_me=Coordinates.read_mol2(fileprefix+'.mol2')
         other.copy_coords(take_me)
-        other.write_mol2(f'TMP-opt-{other.name}.mol2')
+        # other.write_mol2(f'TMP-opt-{other.name}.mol2')
         # merge and grab the idxshift
         shifts=self.merge(other)
-        self.write_mol2(f'TMP-opt-{self.name}+{other.name}.mol2')
+        # self.write_mol2(f'TMP-opt-{self.name}+{other.name}.mol2')
         idxshift=shifts[0]
         # add idxshift to don's original index -> you've got the new index!
-        opt_bondstrs=opt_idxstr.replace('TMP-','').split('+')
-        acc_strs=opt_bondstrs[0].split('@')
-        accidx,accHidx=list(map(int,acc_strs[1].split('-')))
-        don_strs=opt_bondstrs[1].split('@')
-        donidx,donHidx=list(map(int,don_strs[1].split('-')))
-        donidx+=idxshift
-        donHidx+=idxshift
+        accidx,accHidx,donidx_unshifted,donHidx_unshifted=opt_oligidx
+        donidx=donidx_unshifted+idxshift
+        donHidx=donHidx_unshifted+idxshift
         # add_bond
-        print(f'preparing to add bond {accidx}-{donidx}...')
+        # print(f'preparing to add bond {accidx}-{donidx}...')
         self.add_bonds(pairs=[(accidx,donidx)])
         # delete hydrogens (remember to idxshift the one from the donor)
-        print(f'preparing to delete {accHidx} and {donHidx}...')
+        # print(f'preparing to delete {accHidx} and {donHidx}...')
         self.delete_atoms(idx=[accHidx,donHidx])
+        self.name+=f'+{other.name}'
         # this is a ready-to-minimize molecule!
         # exit()
-        pass
 
     def add_bonds(self,pairs=[],orders=[]):
         if len(orders)==0:

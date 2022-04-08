@@ -29,6 +29,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     message+=c.run()
     # tleap can't handle symbols in file names
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
+    message+='Replacing string "{mol2out}" with hash "{leapprefix}" for leap input files.\n'
     Command(f'cp {mol2out} {leapprefix}.mol2').run()
     Command(f'cp {frcmodout} {leapprefix}.frcmod').run()
     with open('tleap.in', 'w') as f:
@@ -40,8 +41,8 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
         f.write('quit\n')
     c=Command('tleap',f='tleap.in')
     message+=c.run()
-    Command(f'cp {leapprefix}-tleap.top {outputPrefix}-tleap.top').run()
-    Command(f'cp {leapprefix}-tleap.crd {outputPrefix}-tleap.crd').run()
+    Command(f'mv {leapprefix}-tleap.top {outputPrefix}-tleap.top').run()
+    Command(f'mv {leapprefix}-tleap.crd {outputPrefix}-tleap.crd').run()
     # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
     try:
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')

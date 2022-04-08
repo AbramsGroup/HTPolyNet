@@ -107,7 +107,10 @@ class HTPolyNet:
                     capped=paramMol2.cap(m.capping_bonds)
                     capped.write_mol2(f'{n}-capped-unminimized.mol2')
                     self.log(f'Parameterizing {n}-capped...\n')
-                    msg=GAFFParameterize(f'{n}-capped-unminimized',f'{n}-capped',force=False,parmed_save_inline=False)
+                    msg+=GAFFParameterize(f'{n}-capped-unminimized',f'{n}-capped',force=force_capping,parmed_save_inline=False)
+                    self.log(msg+'\n')
+                    if 'Error!' in msg:
+                        raise Exception('tleap reported an error. Check the log.')
                     fetch('em-single-molecule.mdp')
                     grompp_and_mdrun(gro=f'{n}-capped',
                                     top=f'{n}-capped',
@@ -132,18 +135,21 @@ class HTPolyNet:
         self.pfs.cd(self.pfs.rctPath)
         self.cfg.oligomers={}
         for r in self.cfg.reactions:
-            self.log(f'Executing reaction(s) for {r.reactants}')
+            self.log(f'Executing reaction(s) for {r.reactants}\n')
             mname,nname=r.reactants
             m=self.cfg.monomers[mname]
             n=self.cfg.monomers[nname]
             these_oligos=react_mol2(m,n)
-            print(these_oligos)
+            # print(these_oligos)
             for o,mol in these_oligos.items():
                 already_parameterized=all([exist(f'{o}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
                 if force_parameterize or not already_parameterized:
                     self.log(f'Parameterizing {o}...')
                     mol.write_mol2(f'{o}.mol2')
-                    msg=GAFFParameterize(f'{o}',f'{o}-p',force=False,parmed_save_inline=False)
+                    msg=GAFFParameterize(f'{o}',f'{o}-p',force=force_parameterize,parmed_save_inline=False)
+                    self.log(msg+'\n')
+                    if 'Error!' in msg:
+                        raise Exception('tleap reported an error. Check the log.')
                     fetch('em-single-molecule.mdp')
                     grompp_and_mdrun(gro=f'{o}-p',
                                     top=f'{o}-p',
@@ -157,7 +163,7 @@ class HTPolyNet:
                 else:
                     for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
                         fetch(f'{o}{ex}')
-                self.log(msg+'\n'+f'Reading {o}-parameterized.top...\n')
+                self.log(f'Reading {o}-parameterized.top...\n')
                 t=Topology.read_gro(f'{o}-p.top')
                 self.cfg.oligomers[o]=Oligomer(t,Coordinates.read_gro(f'{o}-p.gro'))
                 self.Topology.merge_types(t)

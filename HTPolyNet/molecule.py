@@ -112,13 +112,13 @@ def get_conn(mol):
             conn.append(mrname)
     return conn
 
-def react_mol2(m,n,minimize=True):
+def react_mol2(m,n):
     ''' m and n are Monomer instances (defined in here) '''
     if not isinstance(m,Monomer) or not isinstance(n,Monomer):
         raise Exception(f'react_mol2 needs Monomers not {type(m)} and {type(n)}')
     if not 'active' in m.Topology or not 'active' in n.Topology:
         raise Exception('react_mol2 needs Monomers with active topologies')
-    if minimize and (not 'active' in m.Coords or not 'active' in n.Coords):
+    if not 'active' in m.Coords or not 'active' in n.Coords:
         raise Exception('react_mol2 needs Monomers with active coordinates')
     retdict={}
     # print(f'react_mol2: {m.name} and {n.name}')
@@ -140,8 +140,8 @@ def react_mol2(m,n,minimize=True):
             # this reactive atom has z connections, each of which can be
             # 'occupied' by one member of otherra in all possible combinations
             basearr.append(list(combinations_with_replacement(otherra,z)))
-        for n,c in zip(basera,basearr):
-            print(f'{n} can have following connection configurations:',c)
+        # for n,c in zip(basera,basearr):
+        #     print(f'{n} can have following connection configurations:',c)
         # enumerate all unique configurations of connections on all reactive
         # atoms.  This is relevant if there is more than one asymmetric 
         # reactive atom on basemol.

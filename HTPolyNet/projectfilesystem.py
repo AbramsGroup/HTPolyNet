@@ -156,7 +156,7 @@ class ProjectFileSystem:
         while(os.path.isdir(os.path.join(self.rootPath,f'proj{i}'))):
             lastprojdir=f'proj{i}'
             i+=1
-        if not reProject: # this is a fresh project
+        if not reProject or lastprojdir=='': # this is a fresh project
             if lastprojdir=='':
                 currentprojdir='proj0'
             else:
