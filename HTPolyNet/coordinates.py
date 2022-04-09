@@ -11,9 +11,9 @@ import hashlib
 from HTPolyNet.bondlist import Bondlist
 
 class Coordinates:
-    gro_colnames = ['molNum', 'molName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
+    gro_colnames = ['resNum', 'resName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
     gro_colunits = ['*','*','*','*','nm','nm','nm','nm/ps','nm/ps','nm/ps']
-    mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','molNum','molName','charge']
+    mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
     mol2_atom_colunits = ['*','*','Angstrom','Angstrom','Angstrom','*','*']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
@@ -43,8 +43,8 @@ class Coordinates:
                 inst.N=int(data[1])
                 series={k:[] for k in cls.gro_colnames}
                 for x in data[2:-1]:
-                    series['molNum'].append(int(x[0:5].strip()))
-                    series['molName'].append(x[5:10].strip())
+                    series['resNum'].append(int(x[0:5].strip()))
+                    series['resName'].append(x[5:10].strip())
                     series['atomName'].append(x[10:15].strip())
                     series['globalIdx'].append(int(x[15:20].strip()))
                     numbers=list(map(float,[y.strip() for y in x[20:].split()]))
@@ -129,9 +129,9 @@ class Coordinates:
             raise Exception('Cannot merge coordinates in different units')
         idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
         bdxshift=0 if 'bonds' not in self.D else len(self.D['bonds'])
-        rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['molNum']
+        rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['resNum']
         if 'atoms' in other.D:
-            other.D['atoms']['molNum']+=rdxshift
+            other.D['atoms']['resNum']+=rdxshift
         nOtherBonds=0
         if 'bonds' in other.D:
             nOtherBonds=len(other.D['bonds'])
@@ -180,12 +180,22 @@ class Coordinates:
                 lambda x: f'{x:>5d}',
                 lambda x: f'{str(x):>4s}'
             ]
+            substructureformatters = [
+                lambda x: f'{x:>6d}',
+                lambda x: f'{x:<7s}',
+                lambda x: f'{x:>6d}',
+                lambda x: f'{x:<7s}'
+            ]
             with open(filename,'w') as f:
                 f.write('@<TRIPOS>MOLECULE\n')
                 f.write(f'{self.name}\n')
                 N=self.N
+                # Infer the residue names and resids from the atom records
+                rdf=self.D['atoms'][['resNum','resName']].copy().drop_duplicates()
+                rdf['rootatom']=[1]*len(rdf)
+                rdf['residue']=['RESIDUE']*len(rdf)
                 nBonds=self.metadat.get('nBonds',0)
-                nSubs=self.metadat.get('nSubs',0)
+                nSubs=len(rdf)
                 nFeatures=self.metadat.get('nFeatures',0)
                 nSets=self.metadat.get('nSets',0)
                 f.write('{:>6d}{:>6d}{:>3d}{:>3d}{:>3d}\n'.format(N,nBonds,nSubs, nFeatures,nSets))
@@ -204,6 +214,8 @@ class Coordinates:
                 f.write('@<TRIPOS>BOND\n')
                 f.write(self.D['bonds'].to_string(header=False,index=False,formatters=bondformatters))
                 f.write('\n')
+                f.write('@<TRIPOS>SUBSTRUCTURE\n')
+                f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
                 
     def write_gro(self,filename=''):
         if filename!='':
@@ -450,7 +462,7 @@ class Coordinates:
         retstr=self.title+'\n'+f'{self.N:>5d}\n'
         has_vel='velX' in self.D['atoms'].columns
         for i,r in self.D['atoms'].iterrows():
-            retstr+=f'{r.molNum:5d}{r.molName:>5s}{r.atomName:>5s}{r.globalIdx:5d}{r.posX:8.3f}{r.posY:8.3f}{r.posZ:8.3f}'
+            retstr+=f'{r.resNum:5d}{r.resName:>5s}{r.atomName:>5s}{r.globalIdx:5d}{r.posX:8.3f}{r.posY:8.3f}{r.posZ:8.3f}'
             if has_vel:
                 retstr+=f'{r.velX:8.4f}{r.velY:8.4f}{r.velZ:8.4f}'
             retstr+='\n'
@@ -460,8 +472,50 @@ class Coordinates:
         if not all(x==y):
             retstr+=f'{self.box[0][1]:10.5f}{self.box[0][2]:10.5f}'
             retstr+=f'{self.box[1][0]:10.5f}{self.box[1][2]:10.5f}'
-            retstr+=f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}'
-        retstr+='\n'
-        return retstr
+            retstr+=f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}' 
 
 
+"""
+MOL2 Format
+
+SUBSTRUCTURE
+
+@<TRIPOS>SUBSTRUCTURE
+Each data record associated with this RTI consists of a single data line. The data
+line contains the substructure ID, name, root atom of the substructure,
+substructure type, dictionary type, chain type, subtype, number of inter
+substructure bonds, SYBYL status bits, and user defined comment.
+Format:
+subst_id subst_name root_atom [subst_type [dict_type
+[chain [sub_type [inter_bonds [status
+[comment]]]]]]]
+• subst_id (integer) = the ID number of the substructure. This is provided
+for reference only and is not used by the MOL2 command when reading
+the file.
+• subst_name (string) = the name of the substructure.
+• root_atom (integer) = the ID number of the substructures root atom.
+• subst_type - string) = the substructure type: temp, perm, residue, group
+or domain.
+• dict_type (integer) = the type of dictionary associated with the
+substructure.
+• chain (string) = the chain to which the substructure belongs (ð 4 chars).
+• sub_type (string) = the subtype of the chain.
+• inter_bonds (integer) = the number of inter substructure bonds.
+• status (string) = the internal SYBYL status bits. These should never be
+set by the user. Valid status bit values are LEAF, ROOT, TYPECOL, DICT,
+BACKWARD and BLOCK.
+• comment (remaining strings on data line) = the comment for the
+substructure.
+Example:
+1 ALA1 1 RESIDUE 1 A ALA 1 ROOT|DICT Comment here
+The substructure has 1 as ID, ALA1 as name and atom 1 as root atom. It is
+of type RESIDUE and the associated dictionary type is 1 (protein). It is part
+of the A chain in the molecule and it is an ALAnine. There is only one inter
+substructure bonds. The SYBYL status bits indicate it is the ROOT
+substructure of the chain and it came from a dictionary. The comment reads
+“Comment here”.
+1 ALA1 1
+Minimal representation of a substructure.
+
+
+"""

@@ -4,21 +4,15 @@
 """
 
 import os
-import sys
-from shutil import copyfile, copy, move, rmtree
-from copy import deepcopy
-import subprocess
 import argparse as ap
-import pandas as pd
-
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
-import HTPolyNet.searchBonds as searchBonds
-import HTPolyNet.genBonds as genBonds
-import HTPolyNet.generateChargeDb as generateChargeDb
-import HTPolyNet.generateTypeInfo as generateTypeInfo
+# import HTPolyNet.searchBonds as searchBonds
+# import HTPolyNet.genBonds as genBonds
+# import HTPolyNet.generateChargeDb as generateChargeDb
+# import HTPolyNet.generateTypeInfo as generateTypeInfo
 
 from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.topology import Topology
@@ -132,6 +126,12 @@ class HTPolyNet:
         self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
         self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
         assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
+
+    def make_oligomer_templates(self,force_parameterize=False):
+        self.log(f'Building oligomer templates in {self.pfs.rctPath}...\n')
+        fetch=self.pfs.fetch
+        exist=self.pfs.exist
+        store=self.pfs.store
         self.pfs.cd(self.pfs.rctPath)
         self.cfg.oligomers={}
         for r in self.cfg.reactions:
@@ -200,76 +200,6 @@ class HTPolyNet:
         self.Coordinates.copy_coords(sacmol)
         self.pfs.cdroot()
 
-    def make_oligomer_templates(self):
-
-        # TODO: Typing and charging calculations for all oligomer templates
-        #       Types added to topology
-        #       Charges added to charge database
-        #       1. create all oligomer templates -> mol2
-        #       2. antechamber to get charges
-        #       3. parmchk2 and tleap to get types
-
-        # TODO: figure out what this is
-        # generate the charge map
-        # charges_file=f'{self.pfs.basicPath}/charges.txt'
-        # if os.path.isfile(charges_file):
-        #     self.log(f'--> Reading charge database from {charges_file}\n')
-        #     self.chargeMap=self.getChargeMaps(charges_file)
-        # else:
-        #     self.log('--> Generating new charge database\n')
-        #     a1=generateChargeDb.generateChargeDb()
-        #     self.chargeMap=a1.main(self.pfs.unrctPath,self.pfs.rctPath,4) # could be more
-
-        # TODO: figure out what this is
-        self.pfs.goToProjectRoot()
-        self.log('--> Generating reacted molecules type database\n')
-        a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
-        # TODO: catch the return of generateTypeInfo.main which is a database of all type information
-        a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
-
-
-#       self.Types=getalltypes()
-#       self.Topology=getalltopologies()
-
-        # do we really need these attributes if they are all under 'cfg' anyway?
-        # self.cpu = ''
-        # self.gpu = ''
-        # self.trials = ''
-        # self.reProject = ''
-        # self.stepwise = ''
-
-        # end capping
-#        self.cappingBonds = [] # potential bonds for capping
-        # self.unrctMap = {}
-
-        # self.topMap = {}
-        # self.initGro = ''
-        # self.initTop = ''
-        # self.dumpPairs = {} # pair map when check circuit
-
-        # cfg
-        # self.basicParameter = ''
-
-        # self.basicFFType = []
-        # self.molNames = []
-        # self.chargeMap = {}
-
-        # self.prevGro = ''
-        # self.prevTop = ''
-
-        # self.gro = '' # save gro object
-        # self.top = '' # save top object
-
-        # self.chains = []
-        # self.old_pairs = []
-        # self.pairs_detail = {}
-
-        # needed parameters
-        # self.conv = 0
-        # self.desConv = 0
-        # self.desBonds = 0
-        # self.layer_status = False # status whether layer reached desired conversion
-
     def initreport(self):
         print('Libraries:')
         print(self.Library)
@@ -278,148 +208,148 @@ class HTPolyNet:
         print()
         print(self.software)
 
-    def getGroInfo(self, name):
-        a = readGro.initGro()
-        a.setName(name)
-        df_init, sysName, atNum, boxSize = a.readGRO()
-        m = groInfo.gro()
-        m.setGroInfo(df_init, sysName, atNum, boxSize)
-        self.gro = m
+    # def getGroInfo(self, name):
+    #     a = readGro.initGro()
+    #     a.setName(name)
+    #     df_init, sysName, atNum, boxSize = a.readGRO()
+    #     m = groInfo.gro()
+    #     m.setGroInfo(df_init, sysName, atNum, boxSize)
+    #     self.gro = m
 
-    def getTopInfo(self, topName, itpName):
-        a = readTop2.initTop()
-        a.setName(topName, itpName)
-        a.genTopSession()
-        b = topInfo.top()
-        b.setInfo(a.sumTop)
-        b.checkCharge()
-        return b
+    # def getTopInfo(self, topName, itpName):
+    #     a = readTop2.initTop()
+    #     a.setName(topName, itpName)
+    #     a.genTopSession()
+    #     b = topInfo.top()
+    #     b.setInfo(a.sumTop)
+    #     b.checkCharge()
+    #     return b
 
-    @countTime
-    def updateCoord(self, name):
-        a = readGro.initGro()
-        a.setName(name)
-        df_init, sysName, atNum, boxSize = a.readGRO()
-        a1 = groInfo.gro()
-        a1.setGroInfo(df_init, sysName, atNum, boxSize)
-        self.gro.updateCoord(a1)
-        self.initGro.updateCoord(a1)
+    # @countTime
+    # def updateCoord(self, name):
+    #     a = readGro.initGro()
+    #     a.setName(name)
+    #     df_init, sysName, atNum, boxSize = a.readGRO()
+    #     a1 = groInfo.gro()
+    #     a1.setGroInfo(df_init, sysName, atNum, boxSize)
+    #     self.gro.updateCoord(a1)
+    #     self.initGro.updateCoord(a1)
         
-    def initSys(self):
-        print('-> Creating mixture...')
-        param = self.basicParameter
-        molInfo = {}
-        nameList = []
-        monInfo = param.monInfo
-        croInfo = param.croInfo
-        for i in monInfo:
-            molInfo[i[1]] = i[2]
-            nameList.append(i[1])
+    # def initSys(self):
+    #     print('-> Creating mixture...')
+    #     param = self.basicParameter
+    #     molInfo = {}
+    #     nameList = []
+    #     monInfo = param.monInfo
+    #     croInfo = param.croInfo
+    #     for i in monInfo:
+    #         molInfo[i[1]] = i[2]
+    #         nameList.append(i[1])
         
-        for i in croInfo:
-            molInfo[i[1]] = i[2]
-            nameList.append(i[1])
+    #     for i in croInfo:
+    #         molInfo[i[1]] = i[2]
+    #         nameList.append(i[1])
 
-        os.mkdir('init'); os.chdir('init')
-        copyfile('{}/npt-1.mdp'.format(self.mdpFolder), 'npt-1.mdp')
-        copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
+    #     os.mkdir('init'); os.chdir('init')
+    #     copyfile('{}/npt-1.mdp'.format(self.mdpFolder), 'npt-1.mdp')
+    #     copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
 
-        for n in nameList:
-            copyfile('{}/{}.gro'.format(self.unrctFolder, n), '{}.gro'.format(n))
-            copyfile('{}/{}.top'.format(self.unrctFolder, n), '{}.top'.format(n))
-            copyfile('{}/{}.itp'.format(self.unrctFolder, n), '{}.itp'.format(n))
+    #     for n in nameList:
+    #         copyfile('{}/{}.gro'.format(self.unrctFolder, n), '{}.gro'.format(n))
+    #         copyfile('{}/{}.top'.format(self.unrctFolder, n), '{}.top'.format(n))
+    #         copyfile('{}/{}.itp'.format(self.unrctFolder, n), '{}.itp'.format(n))
             
-        # Insert molecules to systems
-        import HTPolyNet.extendSys as extendSys
-        a = extendSys.extendSys('gmx_mpi')
-        a.extendSys(param.monInfo, param.croInfo, param.boxSize, 'init')
-        # creates init.gro ONLY
+    #     # Insert molecules to systems
+    #     import HTPolyNet.extendSys as extendSys
+    #     a = extendSys.extendSys('gmx_mpi')
+    #     a.extendSys(param.monInfo, param.croInfo, param.boxSize, 'init')
+    #     # creates init.gro ONLY
         
-        # Get df of gro file
-        self.getGroInfo('init')
-        # my syntax:
-        #self.gro=Coordinates.from_groFile('init.gro')
+    #     # Get df of gro file
+    #     self.getGroInfo('init')
+    #     # my syntax:
+    #     #self.gro=Coordinates.from_groFile('init.gro')
         
-        # Get parameters from parameters file
-        topList = []
-        for n in nameList:
-            a = self.topMap[n]
-            # a = self.getTopInfo('{}.top'.format(n), '{}.itp'.format(n))
-            nNum = int(molInfo[n])
-            for i in range(nNum):
-                topList.append(a)
+    #     # Get parameters from parameters file
+    #     topList = []
+    #     for n in nameList:
+    #         a = self.topMap[n]
+    #         # a = self.getTopInfo('{}.top'.format(n), '{}.itp'.format(n))
+    #         nNum = int(molInfo[n])
+    #         for i in range(nNum):
+    #             topList.append(a)
                 
-        # Get sum of top
-        topSum = mergeTop.mergeTopList(topList)
-        sysTop = topSum.outDf('init')
-        self.top = topSum
-        self.initTop = deepcopy(self.top)
+    #     # Get sum of top
+    #     topSum = mergeTop.mergeTopList(topList)
+    #     sysTop = topSum.outDf('init')
+    #     self.top = topSum
+    #     self.initTop = deepcopy(self.top)
 
-        print('-> Successful creating mixture!!')
+    #     print('-> Successful creating mixture!!')
 
-        # EM and NPT to equilibrate the structure
-        print('-> Conduct energy minization on the new mixture')
-        a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
-        a.emSimulation('init', 'init', 'min-1', size=False)
-        print('-> Conduct NPT on the new mixture')
-        boxSize = param.boxSize
-        if boxSize[0] == boxSize[1] == boxSize[2]:
-            a.NPTSimulation('min-1', 'init', 'npt-1', 'npt-1', check=True, re=False)
-        else:
-            copyfile('{}/npt-l.mdp'.format(self.mdpFolder), 'npt-l.mdp')
-            a.NPTSimulation('min-1', 'init', 'npt-l', 'npt-l', check=True, re=False)
-            a.NPTSimulation('npt-l', 'init', 'npt-1', 'npt-1', check=True, re=False)
-        i = 0
-        # TODO: can not ensure the NPT is finished well
-        print('-> The mixture is good to go!!')
-        while(not a.checkMDFinish('npt-1')):
-            if i > 5:
-                print('Still cannot converge NPT system, restart')
-                sys.exit()
-            elif i == 0:
-                inName = 'npt-1'
-            else:
-                inName = 'npt-1' + str(i)
-            a.extraRun(inName, 'init', i)
-            if os.path.isfile('npt.gro'):
-                move('npt.gro', 'npt-1.gro')
-            i += 1
+    #     # EM and NPT to equilibrate the structure
+    #     print('-> Conduct energy minization on the new mixture')
+    #     a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
+    #     a.emSimulation('init', 'init', 'min-1', size=False)
+    #     print('-> Conduct NPT on the new mixture')
+    #     boxSize = param.boxSize
+    #     if boxSize[0] == boxSize[1] == boxSize[2]:
+    #         a.NPTSimulation('min-1', 'init', 'npt-1', 'npt-1', check=True, re=False)
+    #     else:
+    #         copyfile('{}/npt-l.mdp'.format(self.mdpFolder), 'npt-l.mdp')
+    #         a.NPTSimulation('min-1', 'init', 'npt-l', 'npt-l', check=True, re=False)
+    #         a.NPTSimulation('npt-l', 'init', 'npt-1', 'npt-1', check=True, re=False)
+    #     i = 0
+    #     # TODO: can not ensure the NPT is finished well
+    #     print('-> The mixture is good to go!!')
+    #     while(not a.checkMDFinish('npt-1')):
+    #         if i > 5:
+    #             print('Still cannot converge NPT system, restart')
+    #             sys.exit()
+    #         elif i == 0:
+    #             inName = 'npt-1'
+    #         else:
+    #             inName = 'npt-1' + str(i)
+    #         a.extraRun(inName, 'init', i)
+    #         if os.path.isfile('npt.gro'):
+    #             move('npt.gro', 'npt-1.gro')
+    #         i += 1
 
-        # init rct info for potential atoms, add rct columns to the df in the gro object df
-        self.gro.initRctInfo(self.basicParameter)
-        self.initGro = deepcopy(self.gro)
+    #     # init rct info for potential atoms, add rct columns to the df in the gro object df
+    #     self.gro.initRctInfo(self.basicParameter)
+    #     self.initGro = deepcopy(self.gro)
 
-        # Update coord to the gro df
-        self.updateCoord('npt-1')
+    #     # Update coord to the gro df
+    #     self.updateCoord('npt-1')
 
-        # Back to the working directory and start crosslinking approach
-        os.chdir(self.resFolder)
+    #     # Back to the working directory and start crosslinking approach
+    #     os.chdir(self.resFolder)
 
-    def countConv(self):
-        num1 = 0
-        for i in self.old_pairs:
-            num1 += len(i)
+    # def countConv(self):
+    #     num1 = 0
+    #     for i in self.old_pairs:
+    #         num1 += len(i)
 
-        conv = round(num1 / int(self.cfg.maxBonds), 2)
-        return conv
+    #     conv = round(num1 / int(self.cfg.maxBonds), 2)
+    #     return conv
 
-    def stepCapping(self):
-        os.mkdir('capping')
-        os.chdir('capping')
-        gro = deepcopy(self.gro)
-        top = deepcopy(self.top)
-        a = endCapping.endCapping(gro, top, self.basicFFType, self.unrctMap, self.cappingBonds)
-        gro = a.gro
-        top = a.top
-        top.endCappingtopClean()
+    # def stepCapping(self):
+    #     os.mkdir('capping')
+    #     os.chdir('capping')
+    #     gro = deepcopy(self.gro)
+    #     top = deepcopy(self.top)
+    #     a = endCapping.endCapping(gro, top, self.basicFFType, self.unrctMap, self.cappingBonds)
+    #     gro = a.gro
+    #     top = a.top
+    #     top.endCappingtopClean()
 
-        gro.outDf('sys')
-        top.topClean(key='bonds')
-        top.outDf('sys')
-        os.chdir('..')
+    #     gro.outDf('sys')
+    #     top.topClean(key='bonds')
+    #     top.outDf('sys')
+    #     os.chdir('..')
 
-    def finishSim(self, folderName, conv, step=0):
-        os.chdir('..')
+    # def finishSim(self, folderName, conv, step=0):
+    #     os.chdir('..')
         #os.mkdir('Final'); os.chdir('Final')
 
         #if conv >= self.desConv:
@@ -445,278 +375,279 @@ class HTPolyNet:
                 # self.prevTop.topClean(key='bonds')
                 #top.outDf('sys')
 
-        os.chdir(self.resFolder)
-        conv = self.countConv()
-        move(folderName, '{}-{}'.format(folderName, conv))
-        self.old_pairs = []
-        self.reInitSys()
+#         os.chdir(self.resFolder)
+#         conv = self.countConv()
+#         move(folderName, '{}-{}'.format(folderName, conv))
+#         self.old_pairs = []
+#         self.reInitSys()
         
-    def reInitSys(self):
-        path = '{}/init'.format(self.resFolder)
-        os.chdir(path)
-        # Get df of gro file
-        gro = readGro.initGro()
-        top = readTop2.initTop()
+#     def reInitSys(self):
+#         path = '{}/init'.format(self.resFolder)
+#         os.chdir(path)
+#         # Get df of gro file
+#         gro = readGro.initGro()
+#         top = readTop2.initTop()
         
-        gro.setName('init')
-        df_init, sysName, atNum, boxSize = gro.readGRO()
-        atomsDf = groInfo.gro()
-        atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
+#         gro.setName('init')
+#         df_init, sysName, atNum, boxSize = gro.readGRO()
+#         atomsDf = groInfo.gro()
+#         atomsDf.setGroInfo(df_init, sysName, atNum, boxSize)
         
-        self.gro = atomsDf
-        self.gro.initRctInfo(self.basicParameter)
-        if os.path.isfile('npt-init.gro'):
-            self.updateCoord('npt-init')
-        else:
-            self.updateCoord('npt-1')
-        topDf = topInfo.top()
-        top.setName('init.top', 'init.itp')
-        top.genTopSession()
-        topDf.setInfo(top.sumTop)
-        # topDf.checkCharge()
-        self.top = topDf
-        os.chdir(self.resFolder)
+#         self.gro = atomsDf
+#         self.gro.initRctInfo(self.basicParameter)
+#         if os.path.isfile('npt-init.gro'):
+#             self.updateCoord('npt-init')
+#         else:
+#             self.updateCoord('npt-1')
+#         topDf = topInfo.top()
+#         top.setName('init.top', 'init.itp')
+#         top.genTopSession()
+#         topDf.setInfo(top.sumTop)
+#         # topDf.checkCharge()
+#         self.top = topDf
+#         os.chdir(self.resFolder)
     
-    def setupFolder(self, idx):
-        if os.path.isdir('step{}'.format(idx)):
-            rmtree('step{}'.format(idx))
-        os.mkdir('step{}'.format(idx))
-        copyfile('{}/em.mdp'.format(self.mdpFolder), '{}/em.mdp'.format('step{}'.format(idx)))
-        copyfile('{}/npt-cl.mdp'.format(self.mdpFolder), '{}/npt-cl.mdp'.format('step{}'.format(idx)))
-        copyfile('{}/npt-sw.mdp'.format(self.mdpFolder), '{}/npt-sw.mdp'.format('step{}'.format(idx)))
-        return 'step{}'.format(idx)
+#     def setupFolder(self, idx):
+#         if os.path.isdir('step{}'.format(idx)):
+#             rmtree('step{}'.format(idx))
+#         os.mkdir('step{}'.format(idx))
+#         copyfile('{}/em.mdp'.format(self.mdpFolder), '{}/em.mdp'.format('step{}'.format(idx)))
+#         copyfile('{}/npt-cl.mdp'.format(self.mdpFolder), '{}/npt-cl.mdp'.format('step{}'.format(idx)))
+#         copyfile('{}/npt-sw.mdp'.format(self.mdpFolder), '{}/npt-sw.mdp'.format('step{}'.format(idx)))
+#         return 'step{}'.format(idx)
     
 
 
-    def logBonds(self, step, cutoff):
-        num1 = 0
-        for i in self.old_pairs:
-            num1 += len(i)
-#        num1 = len(self.old_pairs)
-        conv = num1/self.maxBonds
-        self.conv = conv
+#     def logBonds(self, step, cutoff):
+#         num1 = 0
+#         for i in self.old_pairs:
+#             num1 += len(i)
+# #        num1 = len(self.old_pairs)
+#         conv = num1/self.maxBonds
+#         self.conv = conv
 
-        with open('../bond.txt', 'a') as f1:
-#            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
-#                         num1, self.maxBonds - num1, conv)
-            str1 = 'step {}: {} bonds are formed, within cutoff {}nm. {} bonds left. Reach conversion {:.2f}\n'.format(step,
-                         len(self.old_pairs[int(step)]), round(cutoff, 2), self.maxBonds - num1, conv)
-            f1.write(str1)
+#         with open('../bond.txt', 'a') as f1:
+# #            str1 = 'step {} generate {} bonds. {} bonds left. Reach conversion {:.2f}\n'.format(step, 
+# #                         num1, self.maxBonds - num1, conv)
+#             str1 = 'step {}: {} bonds are formed, within cutoff {}nm. {} bonds left. Reach conversion {:.2f}\n'.format(step,
+#                          len(self.old_pairs[int(step)]), round(cutoff, 2), self.maxBonds - num1, conv)
+#             f1.write(str1)
         
-        with open('../bonds_connect_Info.txt', 'w') as f2:
-            str0 = 'Total bonds: {}\n'.format(self.maxBonds)
-            # values = self.pairs_detail['step{}'.format(step)]
-            f2.write(str0)
-            for keys, values in self.pairs_detail.items():
-                f2.write('{}: \n'.format(keys))
-                for index, row in values.iterrows():
-                    f2.write('atom1: {}\t{}\t atom2: {}\t{}\t mol1: {}\t mol2: {}\n'.format(
-                        row.amon, row.monAtomName, row.acro, row.croAtomName, row.monMol, row.croMol))
+#         with open('../bonds_connect_Info.txt', 'w') as f2:
+#             str0 = 'Total bonds: {}\n'.format(self.maxBonds)
+#             # values = self.pairs_detail['step{}'.format(step)]
+#             f2.write(str0)
+#             for keys, values in self.pairs_detail.items():
+#                 f2.write('{}: \n'.format(keys))
+#                 for index, row in values.iterrows():
+#                     f2.write('atom1: {}\t{}\t atom2: {}\t{}\t mol1: {}\t mol2: {}\n'.format(
+#                         row.amon, row.monAtomName, row.acro, row.croAtomName, row.monMol, row.croMol))
 
-    @countTime
-    def stepwiseRelax(self):
-        print('----> Start stepwise relaxation step to relax the system')
-        k = self.stepwise
-        outName = 'sw'
-        for i in range(len(k)):
-            groName = outName
-            topName = '{}-{}'.format(outName, i)
-            self.gro.outDf(groName)
-            self.top.outDf(topName, float(k[i]), simple=False, stepRelax=True)
-            a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
-            cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
-            if cond0 == False:
-                print('----> Stepwised EM failed')
-                return False
+#     @countTime
+#     def stepwiseRelax(self):
+#         print('----> Start stepwise relaxation step to relax the system')
+#         k = self.stepwise
+#         outName = 'sw'
+#         for i in range(len(k)):
+#             groName = outName
+#             topName = '{}-{}'.format(outName, i)
+#             self.gro.outDf(groName)
+#             self.top.outDf(topName, float(k[i]), simple=False, stepRelax=True)
+#             a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
+#             cond0 = a.emSimulation(groName, topName, 'sw-min-{}'.format(i), size=False, check=False)
+#             if cond0 == False:
+#                 print('----> Stepwised EM failed')
+#                 return False
 
-            cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
-                                    'sw-npt-{}'.format(i), 'npt-sw',
-                                    check=False, re=True)
-            if cond1 == False:
-                print('----> Stepwised NPT failed')
-                return False
+#             cond1 = a.NPTSimulation('sw-min-{}'.format(i), topName,
+#                                     'sw-npt-{}'.format(i), 'npt-sw',
+#                                     check=False, re=True)
+#             if cond1 == False:
+#                 print('----> Stepwised NPT failed')
+#                 return False
 
-            print('----> Stepwised step for k = {} is succuessful'.format(k[i]))
-            self.updateCoord('sw-npt-{}'.format(i))
+#             print('----> Stepwised step for k = {} is succuessful'.format(k[i]))
+#             self.updateCoord('sw-npt-{}'.format(i))
 
-        return True
+#         return True
 
-    def mainProcess(self, repeatTimes):
-        # Init systems
-        os.chdir(self.resFolder)
-        self.initSys()  # returns to resFolder
-        conv = 0
-        # calculate max bonds
-        # self.calMaxBonds()
+#     def mainProcess(self, repeatTimes):
+#         # Init systems
+#         os.chdir(self.resFolder)
+#         self.initSys()  # returns to resFolder
+#         conv = 0
+#         # calculate max bonds
+#         # self.calMaxBonds()
 
-        # Start crosslinking approach
-        step = 0        
-        for i in range(repeatTimes):
-            print('--> Start crosslinking procedure on replica {}!!'.format(i))
-            folderName = 'sim{}'.format(i)
-            os.mkdir(folderName); os.chdir(folderName)
-            print('---> A new NPT to mix the system at 300K to create new replica')
-            os.mkdir('init'); os.chdir('init')
+#         # Start crosslinking approach
+#         step = 0        
+#         for i in range(repeatTimes):
+#             print('--> Start crosslinking procedure on replica {}!!'.format(i))
+#             folderName = 'sim{}'.format(i)
+#             os.mkdir(folderName); os.chdir(folderName)
+#             print('---> A new NPT to mix the system at 300K to create new replica')
+#             os.mkdir('init'); os.chdir('init')
 
-            self.top.outDf('init')
-            self.gro.outDf('init')
+#             self.top.outDf('init')
+#             self.gro.outDf('init')
 
-            copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
-            copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
-            a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
-            a.emSimulation('init', 'init', 'min-1', size=False)
-            a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
+#             copyfile('{}/npt-init.mdp'.format(self.mdpFolder), 'npt-init.mdp')
+#             copyfile('{}/em.mdp'.format(self.mdpFolder), 'em.mdp')
+#             a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
+#             a.emSimulation('init', 'init', 'min-1', size=False)
+#             a.NPTSimulation('min-1', 'init', 'npt-init', 'npt-init', check=False, re=False)
             
-            # complete structs
-            tmpGro = readGro.initGro()
-            tmpGro.setName('npt-init')
-            tmp_df, tmp_name, tmp_atNum, tmp_boxSize = tmpGro.readGRO()
-            cmd1 = f'echo 0 0 | gmx_mpi trjconv -s npt-init.tpr -f npt-init.gro -o npt-init.gro -center -pbc atom -box {tmp_boxSize}'
-            subprocess.call(cmd1, shell=True)
-            self.updateCoord('npt-init')
-            os.chdir('..')
-            print('---> New replica is good to go')
-            boxLimit = self.boxLimit # setup layer curing condition
+#             # complete structs
+#             tmpGro = readGro.initGro()
+#             tmpGro.setName('npt-init')
+#             tmp_df, tmp_name, tmp_atNum, tmp_boxSize = tmpGro.readGRO()
+#             cmd1 = f'echo 0 0 | gmx_mpi trjconv -s npt-init.tpr -f npt-init.gro -o npt-init.gro -center -pbc atom -box {tmp_boxSize}'
+#             subprocess.call(cmd1, shell=True)
+#             self.updateCoord('npt-init')
+#             os.chdir('..')
+#             print('---> New replica is good to go')
+#             boxLimit = self.boxLimit # setup layer curing condition
             
-            while(len(self.old_pairs) < int(self.maxBonds)):
-                print('---> step {}'.format(step))
-                folderName1 = self.setupFolder(step)
-                os.chdir(folderName1)
-                print('     (Content can be found under folder {})'.format(os.getcwd()))
-                # searching potential bonds
-                print('----> Start searching bonds')
-                if not self.layer_status:
-                    if conv < boxLimit * self.layerConvLimit:
-                        boxLimit = self.boxLimit
-                    else:
-                        print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
-                        boxLimit = 1
-                        self.layer_status = True
-                sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
-                                                    self.conv, self.desBonds, self.chains, boxLimit)
-                pairs, chains, rMols, cutoff = sbonds.sBonds()
-                # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
-                self.chains = chains
-                if len(pairs) > 0:
-                    print('----> Start generating bonds')
-                    self.pairs_detail['step{}'.format(step)] = pairs
+#             while(len(self.old_pairs) < int(self.maxBonds)):
+#                 print('---> step {}'.format(step))
+#                 folderName1 = self.setupFolder(step)
+#                 os.chdir(folderName1)
+#                 print('     (Content can be found under folder {})'.format(os.getcwd()))
+#                 # searching potential bonds
+#                 print('----> Start searching bonds')
+#                 if not self.layer_status:
+#                     if conv < boxLimit * self.layerConvLimit:
+#                         boxLimit = self.boxLimit
+#                     else:
+#                         print('1st layer conversion reached desired {} conversion'.format(self.layerConvLimit))
+#                         boxLimit = 1
+#                         self.layer_status = True
+#                 sbonds = searchBonds.searchBonds(self.cpu, self.basicParameter, self.old_pairs, self.gro, self.top,
+#                                                     self.conv, self.desBonds, self.chains, boxLimit)
+#                 pairs, chains, rMols, cutoff = sbonds.sBonds()
+#                 # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+#                 self.chains = chains
+#                 if len(pairs) > 0:
+#                     print('----> Start generating bonds')
+#                     self.pairs_detail['step{}'.format(step)] = pairs
 
-                    # generate bonds
-                    gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
-                    gbonds.gBonds() # update atom's rct status
+#                     # generate bonds
+#                     gbonds = genBonds.genBonds(self.gro, self.top, pairs, self.chargeMap, rMols, cat='map')
+#                     gbonds.gBonds() # update atom's rct status
 
-                    self.gro = gbonds.gro
-                    self.top = gbonds.top
-                    self.top.checkCharge()
+#                     self.gro = gbonds.gro
+#                     self.top = gbonds.top
+#                     self.top.checkCharge()
 
-                    cond = self.stepwiseRelax()
-                    if cond == False:
-                        print('----> Stepwised cannot relax the systems, some wired bonds may formed in the step, will start a new replica')
-                        self.finishSim(folderName, 0, step=step)
-                        step = 0
-                        break
+#                     cond = self.stepwiseRelax()
+#                     if cond == False:
+#                         print('----> Stepwised cannot relax the systems, some wired bonds may formed in the step, will start a new replica')
+#                         self.finishSim(folderName, 0, step=step)
+#                         step = 0
+#                         break
 
-                    groName = 'cl-{}'.format(i); topName = 'init'
-                    self.gro.outDf(groName)
-                    self.top.outDf(topName)
+#                     groName = 'cl-{}'.format(i); topName = 'init'
+#                     self.gro.outDf(groName)
+#                     self.top.outDf(topName)
 
-                    # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
+#                     # intDf = self.gro.df_atoms.loc[self.gro.df_atoms.rct == 'True']
 
-                    # Equilibrate system
-                    print('----> Energy minimization on the normal system')
-                    a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
-                    cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
-                    if cond0 == False:
-                        print('EM failed')
-                        self.finishSim(folderName, 0, step=step)
-                        step = 0
-                        break
-                    print('----> NPT on the normal system')
-                    cond1 = a.NPTSimulation('min-1', topName, 'npt-cl', 'npt-cl', check=False, re=True)
-                    if cond1 == False:
-                        print('NPT failed')
-                        self.finishSim(folderName, 0, step=step)
-                        step = 0
-                        break
+#                     # Equilibrate system
+#                     print('----> Energy minimization on the normal system')
+#                     a = md.md('gmx_mpi', 'mpirun', self.cpu, nGPU=self.gpu)
+#                     cond0 = a.emSimulation(groName, topName, 'min-1', size=False, check=False)
+#                     if cond0 == False:
+#                         print('EM failed')
+#                         self.finishSim(folderName, 0, step=step)
+#                         step = 0
+#                         break
+#                     print('----> NPT on the normal system')
+#                     cond1 = a.NPTSimulation('min-1', topName, 'npt-cl', 'npt-cl', check=False, re=True)
+#                     if cond1 == False:
+#                         print('NPT failed')
+#                         self.finishSim(folderName, 0, step=step)
+#                         step = 0
+#                         break
                     
-                    # Update coord
-                    self.updateCoord('npt-cl')
-                    self.old_pairs.append(pairs)
-                    self.logBonds(step, cutoff)
-                    # self.stepCapping()
-                    conv = self.countConv()
-                    print('----> step {} reaches {} conversion'.format(step, round(conv, 2)))
-                    if conv >= self.desConv:
-                        self.finishSim(folderName, conv, step=step)
-                        step = 0
-                        break
+#                     # Update coord
+#                     self.updateCoord('npt-cl')
+#                     self.old_pairs.append(pairs)
+#                     self.logBonds(step, cutoff)
+#                     # self.stepCapping()
+#                     conv = self.countConv()
+#                     print('----> step {} reaches {} conversion'.format(step, round(conv, 2)))
+#                     if conv >= self.desConv:
+#                         self.finishSim(folderName, conv, step=step)
+#                         step = 0
+#                         break
 
-                    self.prevGro = deepcopy(self.gro)
-                    self.prevTop = deepcopy(self.top)
-                    os.chdir('..')
-                    step += 1
-                else:
-                    self.finishSim(folderName, conv, step=step)
-                    step = 0
-                    break
+#                     self.prevGro = deepcopy(self.gro)
+#                     self.prevTop = deepcopy(self.top)
+#                     os.chdir('..')
+#                     step += 1
+#                 else:
+#                     self.finishSim(folderName, conv, step=step)
+#                     step = 0
+#                     break
 
-            self.gro = deepcopy(self.initGro)
-            self.top = deepcopy(self.initTop)
+#             self.gro = deepcopy(self.initGro)
+#             self.top = deepcopy(self.initTop)
 
 
     
-    def getChargeMaps(self, name):
-        maps = {}
-        with open(name, 'r') as f:
-            for i in f.readlines():
-                key, value = i.split(':')
-                maps[key] = value
-        return maps
+#     def getChargeMaps(self, name):
+#         maps = {}
+#         with open(name, 'r') as f:
+#             for i in f.readlines():
+#                 key, value = i.split(':')
+#                 maps[key] = value
+#         return maps
 
-    def getUnrctPara(self):
-        atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
-        btypeNames = ['ai', 'aj', 'funct', 'c0', 'c1']
-        angTypeNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
-        dihTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
-        impTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
-        atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
+#     def getUnrctPara(self):
+#         atypeNames = ['name', 'bond_type', 'mass', 'charge', 'ptype', 'sigma', 'epsilon']
+#         btypeNames = ['ai', 'aj', 'funct', 'c0', 'c1']
+#         angTypeNames = ['ai', 'aj', 'ak', 'funct', 'c0', 'c1']
+#         dihTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
+#         impTypeNames = ['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2']
+#         atNames = ['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass']
 
-        basicName = self.cfg.unrctStruct
-        aTypes = pd.DataFrame(columns=atypeNames)
-        bTypes = pd.DataFrame(columns=btypeNames)
-        angTypes = pd.DataFrame(columns=angTypeNames)
-        dihTypes = pd.DataFrame(columns=dihTypeNames)
-        impTypes = pd.DataFrame(columns=impTypeNames)
-        atoms = pd.DataFrame(columns=atNames)
+#         basicName = self.cfg.unrctStruct
+#         aTypes = pd.DataFrame(columns=atypeNames)
+#         bTypes = pd.DataFrame(columns=btypeNames)
+#         angTypes = pd.DataFrame(columns=angTypeNames)
+#         dihTypes = pd.DataFrame(columns=dihTypeNames)
+#         impTypes = pd.DataFrame(columns=impTypeNames)
+#         atoms = pd.DataFrame(columns=atNames)
 
-        for name in basicName:
-            top = readTop2.initTop()
-            top.setName('{}.top'.format(name), '{}.itp'.format(name))
-            top.genTopSession()
-            topSum = top.sumTop
-            aTypes = aTypes.append(topSum[1], ignore_index=True)
-            bTypes = bTypes.append(topSum[3], ignore_index=True)
-            angTypes = angTypes.append(topSum[4], ignore_index=True)
-            dihTypes = dihTypes.append(top.fullDihTypes, ignore_index=True)
-            impTypes = impTypes.append(topSum[6], ignore_index=True)
-            topSum[7].residue = name.split('-')[0]
-            atoms = atoms.append(topSum[7], ignore_index=True)
+#         for name in basicName:
+#             top = readTop2.initTop()
+#             top.setName('{}.top'.format(name), '{}.itp'.format(name))
+#             top.genTopSession()
+#             topSum = top.sumTop
+#             aTypes = aTypes.append(topSum[1], ignore_index=True)
+#             bTypes = bTypes.append(topSum[3], ignore_index=True)
+#             angTypes = angTypes.append(topSum[4], ignore_index=True)
+#             dihTypes = dihTypes.append(top.fullDihTypes, ignore_index=True)
+#             impTypes = impTypes.append(topSum[6], ignore_index=True)
+#             topSum[7].residue = name.split('-')[0]
+#             atoms = atoms.append(topSum[7], ignore_index=True)
 
-        aTypes.drop_duplicates(inplace=True, ignore_index=True)
-        bTypes.drop_duplicates(inplace=True, ignore_index=True)
-        angTypes.drop_duplicates(inplace=True, ignore_index=True)
-        dihTypes.drop_duplicates(inplace=True, ignore_index=True)
-        impTypes.drop_duplicates(inplace=True, ignore_index=True)
-        self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes, atoms]
+#         aTypes.drop_duplicates(inplace=True, ignore_index=True)
+#         bTypes.drop_duplicates(inplace=True, ignore_index=True)
+#         angTypes.drop_duplicates(inplace=True, ignore_index=True)
+#         dihTypes.drop_duplicates(inplace=True, ignore_index=True)
+#         impTypes.drop_duplicates(inplace=True, ignore_index=True)
+#         self.basicFFType = [aTypes, bTypes, angTypes, dihTypes, impTypes, atoms]
 
-        unrctMap = getCappingParam.genUnrctMapping(self.cfg)
-        self.unrctMap = unrctMap
+#         unrctMap = getCappingParam.genUnrctMapping(self.cfg)
+#         self.unrctMap = unrctMap
 
     def main(self,**kwargs):
         force_capping=kwargs.get('force_capping',False)
         force_parameterize=kwargs.get('force_parameterize',False)
         self.initialize_topology(force_capping=force_capping,force_parameterize=force_parameterize)
-        #self.generate_liquid_simulation()
+        self.make_oligomer_templates(force_parameterize=force_parameterize)
+        self.generate_liquid_simulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes

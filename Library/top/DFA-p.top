@@ -2,7 +2,7 @@
 ;   File DFA-p.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Fri. April  5 16:51:42 2022
+;   At date: Sat. April  6 10:58:30 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping -restart
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping
 ;
 
 [ defaults ]
@@ -27,36 +27,36 @@ DFA          3
 
 [ atoms ]
 ;   nr       type  resnr residue  atom   cgnr    charge       mass  typeB    chargeB      massB
-; residue    1 DFA rtp DFA q -0.0
-    1         n3      1    DFA     N1      1 -0.32482100  14.010000   ; qtot -0.324821
-    2         c3      1    DFA      C      2 0.04028700  12.010000   ; qtot -0.284534
-    3         cc      1    DFA     C1      3 0.07250200  12.010000   ; qtot -0.212032
-    4         h1      1    DFA      H      4 0.04982500   1.008000   ; qtot -0.162207
-    5         h1      1    DFA     H1      5 0.04982500   1.008000   ; qtot -0.112382
-    6         os      1    DFA      O      6 -0.31740100  16.000000   ; qtot -0.429783
-    7         cd      1    DFA     C2      7 -0.03187400  12.010000   ; qtot -0.461657
-    8         cc      1    DFA     C3      8 0.06541300  12.010000   ; qtot -0.396244
-    9         cd      1    DFA     C4      9 -0.03274100  12.010000   ; qtot -0.428985
-   10         c3      1    DFA     C5     10 0.04183300  12.010000   ; qtot -0.387152
-   11         cc      1    DFA     C6     11 0.06541300  12.010000   ; qtot -0.321739
-   12         hc      1    DFA     H2     12 0.04085600   1.008000   ; qtot -0.280883
-   13         hc      1    DFA     H3     13 0.04085600   1.008000   ; qtot -0.240027
-   14         cd      1    DFA     C7     14 -0.03274100  12.010000   ; qtot -0.272768
-   15         cd      1    DFA     C8     15 -0.03187400  12.010000   ; qtot -0.304642
-   16         os      1    DFA     O1     16 -0.31740100  16.000000   ; qtot -0.622043
-   17         cc      1    DFA     C9     17 0.07250200  12.010000   ; qtot -0.549541
-   18         c3      1    DFA    C10     18 0.04028700  12.010000   ; qtot -0.509254
-   19         n3      1    DFA     N2     19 -0.32482100  14.010000   ; qtot -0.834075
-   20         h1      1    DFA     H4     20 0.04982500   1.008000   ; qtot -0.784250
-   21         h1      1    DFA     H5     21 0.04982500   1.008000   ; qtot -0.734425
-   22         hn      1    DFA     H6     22 0.11878300   1.008000   ; qtot -0.615642
-   23         hn      1    DFA     H7     23 0.11878300   1.008000   ; qtot -0.496859
-   24         hn      1    DFA     H8     24 0.11878300   1.008000   ; qtot -0.378076
-   25         hn      1    DFA     H9     25 0.11878300   1.008000   ; qtot -0.259293
-   26         ha      1    DFA    H10     26 0.06484100   1.008000   ; qtot -0.194452
-   27         ha      1    DFA    H11     27 0.06480400   1.008000   ; qtot -0.129648
-   28         ha      1    DFA    H12     28 0.06480400   1.008000   ; qtot -0.064844
-   29         ha      1    DFA    H13     29 0.06484100   1.008000   ; qtot -0.000003
+; residue    1 DFA rtp DFA q 0.0
+    1         n3      1    DFA     N1      1 -0.32480000  14.010000   ; qtot -0.324800
+    2         c3      1    DFA      C      2 0.04030000  12.010000   ; qtot -0.284500
+    3         cc      1    DFA     C1      3 0.07250000  12.010000   ; qtot -0.212000
+    4         h1      1    DFA      H      4 0.04980000   1.008000   ; qtot -0.162200
+    5         h1      1    DFA     H1      5 0.04980000   1.008000   ; qtot -0.112400
+    6         os      1    DFA      O      6 -0.31740000  16.000000   ; qtot -0.429800
+    7         cd      1    DFA     C2      7 -0.03190000  12.010000   ; qtot -0.461700
+    8         cc      1    DFA     C3      8 0.06540000  12.010000   ; qtot -0.396300
+    9         cd      1    DFA     C4      9 -0.03270000  12.010000   ; qtot -0.429000
+   10         c3      1    DFA     C5     10 0.04180000  12.010000   ; qtot -0.387200
+   11         cc      1    DFA     C6     11 0.06540000  12.010000   ; qtot -0.321800
+   12         hc      1    DFA     H2     12 0.04090000   1.008000   ; qtot -0.280900
+   13         hc      1    DFA     H3     13 0.04090000   1.008000   ; qtot -0.240000
+   14         cd      1    DFA     C7     14 -0.03270000  12.010000   ; qtot -0.272700
+   15         cd      1    DFA     C8     15 -0.03190000  12.010000   ; qtot -0.304600
+   16         os      1    DFA     O1     16 -0.31740000  16.000000   ; qtot -0.622000
+   17         cc      1    DFA     C9     17 0.07250000  12.010000   ; qtot -0.549500
+   18         c3      1    DFA    C10     18 0.04030000  12.010000   ; qtot -0.509200
+   19         n3      1    DFA     N2     19 -0.32480000  14.010000   ; qtot -0.834000
+   20         h1      1    DFA     H4     20 0.04980000   1.008000   ; qtot -0.784200
+   21         h1      1    DFA     H5     21 0.04980000   1.008000   ; qtot -0.734400
+   22         hn      1    DFA     H6     22 0.11880000   1.008000   ; qtot -0.615600
+   23         hn      1    DFA     H7     23 0.11880000   1.008000   ; qtot -0.496800
+   24         hn      1    DFA     H8     24 0.11880000   1.008000   ; qtot -0.378000
+   25         hn      1    DFA     H9     25 0.11880000   1.008000   ; qtot -0.259200
+   26         ha      1    DFA    H10     26 0.06480000   1.008000   ; qtot -0.194400
+   27         ha      1    DFA    H11     27 0.06480000   1.008000   ; qtot -0.129600
+   28         ha      1    DFA    H12     28 0.06480000   1.008000   ; qtot -0.064800
+   29         ha      1    DFA    H13     29 0.06480000   1.008000   ; qtot 0.000000
 
 [ bonds ]
 ;    ai     aj funct         c0         c1         c2         c3

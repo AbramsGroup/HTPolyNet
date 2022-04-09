@@ -2,7 +2,7 @@
 ;   File FDE-capped.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Fri. April  5 17:13:56 2022
+;   At date: Sat. April  6 10:57:56 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping -restart
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping
 ;
 
 [ defaults ]
@@ -27,37 +27,37 @@ FDE          3
 
 [ atoms ]
 ;   nr       type  resnr residue  atom   cgnr    charge       mass  typeB    chargeB      massB
-; residue    1 FDE rtp FDE q -0.0
-    1         os      1    FDE      O      1 -0.32116100  16.000000   ; qtot -0.321161
-    2         cc      1    FDE      C      2 0.04553800  12.010000   ; qtot -0.275623
-    3         cd      1    FDE     C3      3 -0.03641300  12.010000   ; qtot -0.312036
-    4         cc      1    FDE     C4      4 0.07254900  12.010000   ; qtot -0.239487
-    5         cd      1    FDE     C5      5 -0.03216900  12.010000   ; qtot -0.271656
-    6         c3      1    FDE     C6      6 0.04567900  12.010000   ; qtot -0.225977
-    7         n3      1    FDE      N      7 -0.29170300  14.010000   ; qtot -0.517680
-    8         h1      1    FDE      H      8 0.05029000   1.008000   ; qtot -0.467390
-    9         h1      1    FDE     H1      9 0.05029000   1.008000   ; qtot -0.417100
-   10         c3      1    FDE     C7     10 0.02737100  12.010000   ; qtot -0.389729
-   11         c3      1    FDE     C8     11 0.02737100  12.010000   ; qtot -0.362358
-   12         cx      1    FDE     C9     12 0.09360400  12.010000   ; qtot -0.268754
-   13         h1      1    FDE     H2     13 0.04588100   1.008000   ; qtot -0.222873
-   14         h1      1    FDE     H3     14 0.04588100   1.008000   ; qtot -0.176992
-   15         cx      1    FDE     C1     15 0.07465500  12.010000   ; qtot -0.102337
-   16         h1      1    FDE     H4     16 0.05949500   1.008000   ; qtot -0.042842
-   17         h1      1    FDE     H6     17 0.05949500   1.008000   ; qtot 0.016653
-   18         op      1    FDE     O1     18 -0.37174400  16.000000   ; qtot -0.355091
-   19         h1      1    FDE     H7     19 0.06417500   1.008000   ; qtot -0.290916
-   20         cx      1    FDE    C10     20 0.09360400  12.010000   ; qtot -0.197312
-   21         h1      1    FDE     H8     21 0.04588100   1.008000   ; qtot -0.151431
-   22         h1      1    FDE     H9     22 0.04588100   1.008000   ; qtot -0.105550
-   23         op      1    FDE     O2     23 -0.37174400  16.000000   ; qtot -0.477294
-   24         cx      1    FDE     C2     24 0.07465500  12.010000   ; qtot -0.402639
-   25         h1      1    FDE    H10     25 0.06417500   1.008000   ; qtot -0.338464
-   26         h1      1    FDE    H11     26 0.05949500   1.008000   ; qtot -0.278969
-   27         h1      1    FDE    H13     27 0.05949500   1.008000   ; qtot -0.219474
-   28         h4      1    FDE    H16     28 0.09015200   1.008000   ; qtot -0.129322
-   29         ha      1    FDE    H17     29 0.06448800   1.008000   ; qtot -0.064834
-   30         ha      1    FDE    H18     30 0.06483100   1.008000   ; qtot -0.000003
+; residue    1 FDE rtp FDE q 0.0
+    1         os      1    FDE      O      1 -0.32120000  16.000000   ; qtot -0.321200
+    2         cc      1    FDE      C      2 0.04550000  12.010000   ; qtot -0.275700
+    3         cd      1    FDE     C3      3 -0.03640000  12.010000   ; qtot -0.312100
+    4         cc      1    FDE     C4      4 0.07250000  12.010000   ; qtot -0.239600
+    5         cd      1    FDE     C5      5 -0.03220000  12.010000   ; qtot -0.271800
+    6         c3      1    FDE     C6      6 0.04570000  12.010000   ; qtot -0.226100
+    7         n3      1    FDE      N      7 -0.29170000  14.010000   ; qtot -0.517800
+    8         h1      1    FDE      H      8 0.05030000   1.008000   ; qtot -0.467500
+    9         h1      1    FDE     H1      9 0.05030000   1.008000   ; qtot -0.417200
+   10         c3      1    FDE     C7     10 0.02740000  12.010000   ; qtot -0.389800
+   11         c3      1    FDE     C8     11 0.02740000  12.010000   ; qtot -0.362400
+   12         cx      1    FDE     C9     12 0.09360000  12.010000   ; qtot -0.268800
+   13         h1      1    FDE     H2     13 0.04590000   1.008000   ; qtot -0.222900
+   14         h1      1    FDE     H3     14 0.04590000   1.008000   ; qtot -0.177000
+   15         cx      1    FDE     C1     15 0.07470000  12.010000   ; qtot -0.102300
+   16         h1      1    FDE     H4     16 0.05950000   1.008000   ; qtot -0.042800
+   17         h1      1    FDE     H6     17 0.05950000   1.008000   ; qtot 0.016700
+   18         op      1    FDE     O1     18 -0.37170000  16.000000   ; qtot -0.355000
+   19         h1      1    FDE     H7     19 0.06420000   1.008000   ; qtot -0.290800
+   20         cx      1    FDE    C10     20 0.09360000  12.010000   ; qtot -0.197200
+   21         h1      1    FDE     H8     21 0.04590000   1.008000   ; qtot -0.151300
+   22         h1      1    FDE     H9     22 0.04590000   1.008000   ; qtot -0.105400
+   23         op      1    FDE     O2     23 -0.37170000  16.000000   ; qtot -0.477100
+   24         cx      1    FDE     C2     24 0.07470000  12.010000   ; qtot -0.402400
+   25         h1      1    FDE    H10     25 0.06420000   1.008000   ; qtot -0.338200
+   26         h1      1    FDE    H11     26 0.05950000   1.008000   ; qtot -0.278700
+   27         h1      1    FDE    H13     27 0.05950000   1.008000   ; qtot -0.219200
+   28         h4      1    FDE    H16     28 0.09020000   1.008000   ; qtot -0.129000
+   29         ha      1    FDE    H17     29 0.06450000   1.008000   ; qtot -0.064500
+   30         ha      1    FDE    H18     30 0.06480000   1.008000   ; qtot 0.000300
 
 [ bonds ]
 ;    ai     aj funct         c0         c1         c2         c3

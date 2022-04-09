@@ -1,6 +1,0 @@
-source leaprc.gaff
-SUS = loadmol2 7e057d79e20c2556.mol2
-check SUS
-loadamberparams 7e057d79e20c2556.frcmod
-saveamberparm SUS 7e057d79e20c2556-tleap.top 7e057d79e20c2556-tleap.crd
-quit
