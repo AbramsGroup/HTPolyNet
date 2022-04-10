@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: unknown (1000)
 ;	On host: abrams-Latitude-E5470
-;	At date: Sun Apr 10 16:28:36 2022
+;	At date: Sun Apr 10 16:36:42 2022
 ;
 ;	Created by:
 ;	             :-) GROMACS - gmx grompp, 2020.1-Ubuntu-2020.1-1 (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  /usr
 ;	Working dir:  /home/cfa/Git/HTPolyNet/Tests/oligo/proj1/systems/rctSystems
 ;	Command line:
-;	  gmx grompp -f em-single-molecule.mdp -c DFA@N1-FDE#C1,FDE#C1-p.gro -p DFA@N1-FDE#C1,FDE#C1-p.top -o DFA@N1-FDE#C1,FDE#C1-p.tpr -maxwarn 2
+;	  gmx grompp -f em-single-molecule.mdp -c FDE@C1-DFA#N1-p.gro -p FDE@C1-DFA#N1-p.top -o FDE@C1-DFA#N1-p.tpr -maxwarn 2
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.

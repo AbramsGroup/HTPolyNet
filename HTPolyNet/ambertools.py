@@ -54,7 +54,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
         f.write(f'saveamberparm SUS {leapprefix}-tleap.top {leapprefix}-tleap.crd\n')
         f.write('quit\n')
     c=Command('tleap',f='tleap.in')
-    c.run(override=('Error','unspecified tleap error'))
+    c.run(override=('Error!','Unspecified tleap error'))
     Command(f'rm -f {leapprefix}.mol2 {leapprefix}.frcmod').run()
     Command(f'mv {leapprefix}-tleap.top {outputPrefix}-tleap.top').run()
     Command(f'mv {leapprefix}-tleap.crd {outputPrefix}-tleap.crd').run()

@@ -15,15 +15,20 @@ class Command:
         out,err=process.communicate()
         if process.returncode!=0:
             logging.error(f'Command "{self.c}" exited with returncode {process.returncode}')
-            logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
-            logging.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
-            raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
+            if len(out)>0:
+                logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
+            if len(err)>0:
+                logging.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)            raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
         else:
             logging.info(f'Command "{self.c}" exited with returncode {process.returncode}.')
             if len(override)==2:
                 needle,msg=override
                 if needle in out or needle in err:
-                    logging.error('*'*self.linelen+'\n'+msg+'*'*self.linelen)
+                    logging.error(msg)
+                    if len(out)>0:
+                        logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
+                    if len(err)>0:
+                        logging.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
         return out,err
 
 class Software:
