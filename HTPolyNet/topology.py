@@ -1,4 +1,5 @@
 import pandas as pd
+import logging
 from HTPolyNet.bondlist import Bondlist
 import os
 from copy import deepcopy
@@ -155,6 +156,7 @@ class Topology:
             #     inst.rep_ex(replicate)
             # print(f'{filename}',inst.D.keys())
             #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
+            inst.dup_check(die=False)
             return inst
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
@@ -453,14 +455,24 @@ class Topology:
         self.merge_ex(other)
         self.merge_types(other)
 
+    def dup_check(self,die=True):
+        L=[('atomtypes',['name']),
+           ('bondtypes',['i','j']),
+           ('angletypes',['i','j','k']),
+           ('dihedraltypes',['i','j','k','l'])]
+        for t,i in L:
+            ''' checking for types with duplicate atom-type indices '''
+            dups=self.D[t].duplicated(subset=i,keep=False)
+            if any(dups):
+                logging.error(f'Duplicate {t} with different parameters detected\n'+self.D[t][dups].to_string())
+                if die:
+                    raise Exception('duplicate topology types with different parameters detected')
+
     def merge_types(self,other):
         ''' merge types but drop duplicates '''
-        for t in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
-            if t in self.D:
-                self._myconcat(other,directive=t,drop_duplicates=True)
-            else:
-                if t in other.D:
-                    self.D[t]=other.D[t]
+        L=['atomtypes','bondtypes','angletypes','dihedraltypes']
+        for t in L:
+            self._myconcat(other,directive=t,drop_duplicates=True)
 
     def merge_ex(self,other):
         # print('   extensive merging...')
@@ -480,16 +492,5 @@ class Topology:
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]
 
-    # def capped(self,capping_bonds):
-    #     if len(capping_bonds)>0:
-    #         adf=self.D['atoms']
-    #         bdf=self.D['bonds']
-    #         newtop=deepcopy(self)
-    #         for cb in capping_bonds:
-    #             ni,nj=cb.pairnames
-    #             idxi=adf[adf['name']==ni]['nr'].values[0]
-    #             idxj=adf[adf['name']==nj]['nr'].values[0]
-    #         return self
-    #     return None
 
         

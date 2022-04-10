@@ -2,7 +2,7 @@
 """
 @author: huang, abrams
 """
-
+import logging
 import os
 import argparse as ap
 
@@ -26,35 +26,22 @@ from HTPolyNet.molecule import react_mol2, Oligomer
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
     def __init__(self,cfgfile='',logfile='',restart=False):
-        self._openlog(logfile)
-        self.log('HTPolyNet runtime begins.\n')
-        # will die if software requirements are not met
         self.software=Software()
-        self.log(str(self.software))
+        logging.info(str(self.software))
         
         if cfgfile=='':
+            logging.error('HTPolyNet requires a configuration file.\n')
             raise RuntimeError('HTPolyNet requires a configuration file.')
 
         self.restart=restart
         
         self.cfg=Configuration.read(cfgfile)
-        self.log(str(self.cfg))
+        logging.info(f'Read configuration from {cfgfile}')
         ''' Create the initial file system for the project.  If this is 
             a restart, reference the newest project directory in the current
             directory.  If this is not a restart, generate the *next* 
             project directory. '''
-        self.pfs=ProjectFileSystem(root=os.getcwd(),reProject=self.restart)
-        self.log('Finished initialization.\n')
-
-    def _openlog(self,filename):
-        self.logio=None
-        if filename!='':
-            self.logio=open(filename,'w')
-
-    def log(self,msg):
-        if self.logio:
-            self.logio.write(msg)
-            self.logio.flush()
+        self.pfs=ProjectFileSystem(root=os.getcwd(),verbose=True,reProject=self.restart)
 
     def initialize_topology(self,force_parameterize=False,force_capping=False):
         ''' Create a full gromacs topology that includes all directives necessary 
@@ -67,26 +54,27 @@ class HTPolyNet:
         ''' initialize an empty topology '''
         self.Topology=Topology(system=self.cfg.Title)
         if os.path.isfile('init.top'):
-            self.log('init.top already exists in {self.pfs.unrctPath} but we will rebuild it anyway!')
+            logging.info(f'init.top already exists in {self.pfs.unrctPath} but we will rebuild it anyway!')
         comp=self.cfg.parameters['composition']
         for n,m in self.cfg.monomers.items():
             if not fetch(f'{n}.mol2'):
+                logging.error(f'{n}.mol2 not found in project root, parent, or library')
                 raise FileNotFoundError(f'{n}.mol2 not found in project root, parent, or library')
             already_parameterized = all([exist(f'{n}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
-            msg=''
             if force_parameterize or not already_parameterized:
+                logging.info(f'Fetching input monomer structure {n}.mol2')
                 fetch(f'{n}.mol2')
-                self.log(f'Parameterizing {n}...\n')
-                msg+=GAFFParameterize(n,f'{n}-p',force=False,parmed_save_inline=False)
+                logging.info(f'Parameterizing monomer {n}')
+                GAFFParameterize(n,f'{n}-p',force=force_parameterize,parmed_save_inline=False)
                 for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
                     store(f'{n}{ex}',overwrite='if_newer')
             else:
+                logging.info(f'Fetching parameterized monomer {n}')
                 for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
                     fetch(f'{n}{ex}')
-            self.log(msg+'\n'+f'Reading {n}-p.top...\n')
+            logging.info(f'Reading {n}-p.top, replicating, merging into global topology.')
             t=Topology.read_gro(f'{n}-p.top')
             m.Topology['active']=t
-            self.log(f'...replicating\n')
             t.rep_ex(comp[n])
             self.Topology.merge(t)
             ''' just in case antechamber changed any user-defined atom names... '''
@@ -95,61 +83,54 @@ class HTPolyNet:
             m.update_atom_specs(paramMol2,userMol2)
             m.Coords['active']=paramMol2
             if len(m.capping_bonds)>0:
-                msg=''
-                already_parameterized = all([exist(f'{n}-capped{ex}') for ex in  ['.mol2','.top','.itp','.gro']])
+                already_parameterized = all([exist(f'{n}-capped.{ex}') for ex in  ['mol2','top','itp','gro']])
                 if force_capping or not already_parameterized:
+                    logging.info('Building capped version of monomer {m}')
                     capped=paramMol2.cap(m.capping_bonds)
                     capped.write_mol2(f'{n}-capped-unminimized.mol2')
-                    self.log(f'Parameterizing {n}-capped...\n')
-                    msg+=GAFFParameterize(f'{n}-capped-unminimized',f'{n}-capped',force=force_capping,parmed_save_inline=False)
-                    self.log(msg+'\n')
-                    if 'Error!' in msg:
-                        raise Exception('tleap reported an error. Check the log.')
+                    logging.info(f'Parameterizing {n}-capped\n')
+                    GAFFParameterize(f'{n}-capped-unminimized',f'{n}-capped',force=force_capping,parmed_save_inline=False)
+                    logging.info(f'Minimizing {n}-capped')
                     fetch('em-single-molecule.mdp')
-                    grompp_and_mdrun(gro=f'{n}-capped',
-                                    top=f'{n}-capped',
+                    grompp_and_mdrun(gro=f'{n}-capped',top=f'{n}-capped',
                                     mdp='em-single-molecule',
                                     out=f'{n}-capped',boxSize=[15.,15.,15.])
                     m.Coords['inactive']=Coordinates.read_gro(f'{n}-capped.gro')
                     capped.copy_coords(m.Coords['inactive'])
                     capped.write_mol2(f'{n}-capped.mol2')
-                    for ex in ['-capped.mol2','-capped.top','-capped.itp','-capped.gro']:
-                        store(f'{n}{ex}',overwrite='if_newer')
+                    for ex in ['mol2','top','itp','gro']:
+                        store(f'{n}-capped.{ex}',overwrite='if_newer')
                 else:
-                    for ex in ['-capped.mol2','-capped.top','-capped.itp','-capped.gro']:
-                        fetch(f'{n}{ex}')
+                    logging.info(f'Fetching parameterization of capped version of monomer {n}')
+                    for ex in ['mol2','top','itp','gro']:
+                        fetch(f'{n}-capped.{ex}')
                 m.Coords['inactive']=Coordinates.read_gro(f'{n}-capped.gro')
-                self.log(msg+'\n'+f'Reading {n}-capped.top...\n')
+                logging.info(f'Reading {n}-capped.top and merging types into global topology')
                 m.Topology['inactive']=Topology.read_gro(f'{n}-capped.top')
                 self.Topology.merge_types(t)
-        
-        self.log(f'Extended topology has {self.Topology.atomcount()} atoms.\n')
-        self.log(f'Extended topology has {len(self.Topology.D["dihedraltypes"])} dihedraltypes.\n')
-        assert 'defaults' in self.Topology.D, 'Error: lost defaults?'
+        logging.info(f'Extended topology has {self.Topology.atomcount()} atoms.')
 
     def make_oligomer_templates(self,force_parameterize=False):
-        self.log(f'Building oligomer templates in {self.pfs.rctPath}...\n')
+        logging.info(f'Building oligomer templates in {self.pfs.rctPath}')
         fetch=self.pfs.fetch
         exist=self.pfs.exist
         store=self.pfs.store
         self.pfs.cd(self.pfs.rctPath)
         self.cfg.oligomers={}
         for r in self.cfg.reactions:
-            self.log(f'Executing reaction(s) for {r.reactants}\n')
+            logging.info(f'Executing reaction(s) for {r.reactants}')
             mname,nname=r.reactants
             m=self.cfg.monomers[mname]
             n=self.cfg.monomers[nname]
             these_oligos=react_mol2(m,n)
             # print(these_oligos)
             for o,mol in these_oligos.items():
-                already_parameterized=all([exist(f'{o}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
+                already_parameterized=all([exist(f'{o}-p.{ex}') for ex in ['mol2','top','itp','gro']])
                 if force_parameterize or not already_parameterized:
-                    self.log(f'Parameterizing {o}...')
+                    logging.info(f'Parameterizing oligomer template {o}')
                     mol.write_mol2(f'{o}.mol2')
-                    msg=GAFFParameterize(f'{o}',f'{o}-p',force=force_parameterize,parmed_save_inline=False)
-                    self.log(msg+'\n')
-                    if 'Error!' in msg:
-                        raise Exception('tleap reported an error. Check the log.')
+                    GAFFParameterize(f'{o}',f'{o}-p',force=force_parameterize,parmed_save_inline=False)
+                    logging.info(f'Minimizing oligomer template {o}')
                     fetch('em-single-molecule.mdp')
                     grompp_and_mdrun(gro=f'{o}-p',
                                     top=f'{o}-p',
@@ -158,22 +139,24 @@ class HTPolyNet:
                     tmp=Coordinates.read_gro(f'{o}-p.gro')
                     mol.copy_coords(tmp)
                     mol.write_mol2(f'{o}-p.mol2')
-                    for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
-                        store(f'{o}{ex}',overwrite='if_newer')
+                    for ex in ['mol2','top','itp','gro']:
+                        store(f'{o}-p.{ex}',overwrite='if_newer')
                 else:
-                    for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
-                        fetch(f'{o}{ex}')
-                self.log(f'Reading {o}-parameterized.top...\n')
+                    for ex in ['mol2','top','itp','gro']:
+                        fetch(f'{o}-p.{ex}')
+                logging.info(f'Reading {o}-parameterized.top and merging types into global topology')
                 t=Topology.read_gro(f'{o}-p.top')
                 self.cfg.oligomers[o]=Oligomer(t,Coordinates.read_gro(f'{o}-p.gro'))
                 self.Topology.merge_types(t)
 
-        # write the system topology
-        self.pfs.cd(self.pfs.unrctPath)
-        self.Topology.to_file('init.top')
-        self.log(f'Wrote init.top to {self.pfs.unrctPath}\n')
+    def write_global_topology(self,filename='init.top',dest=''):
+        if dest=='':
+            dest=self.pfs.unrctPath
+        self.pfs.cd(dest)
+        self.Topology.to_file(filename)
+        logging.info(f'Wrote {filename} to {dest}')
 
-    def generate_liquid_simulation(self):
+    def do_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
         self.pfs.cd(self.pfs.next_results_dir())
         # fetch unreacted init.top amd all monomer gro's 
@@ -186,16 +169,16 @@ class HTPolyNet:
         self.pfs.fetch('npt-1.mdp')
         # extend system, make gro file
         msg=insert_molecules(self.cfg.monomers,self.cfg.parameters['composition'],self.cfg.parameters['initial_boxsize'],'init',basename_modifier='-p')
-        self.log(msg)
+        logging.info(msg)
         self.Coordinates=Coordinates.read_gro('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
-        self.log('Generated init.top and init.gro.\n')
+        logging.info('Generated init.top and init.gro.')
         msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
-        self.log(msg)
+        logging.info(msg)
         # TODO: modify this to run in stages until volume is equilibrated
         msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
-        self.log(msg)
-        self.log('Final configuration in npt-1.gro\n')
+        logging.info(msg)
+        logging.info('Final configuration in npt-1.gro\n')
         sacmol=Coordinates.read_gro('npt-1.gro')
         self.Coordinates.copy_coords(sacmol)
         self.pfs.cdroot()
@@ -647,7 +630,8 @@ class HTPolyNet:
         force_parameterize=kwargs.get('force_parameterize',False)
         self.initialize_topology(force_capping=force_capping,force_parameterize=force_parameterize)
         self.make_oligomer_templates(force_parameterize=force_parameterize)
-        self.generate_liquid_simulation()
+        self.write_global_topology(dest=self.pfs.unrctPath)
+        self.do_liquid_simulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes
@@ -717,16 +701,22 @@ def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
-    parser.add_argument('-log',type=str,default='out.log',help='log file')
+    parser.add_argument('-log',type=str,default='htpolynet_runtime.log',help='log file')
     parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     parser.add_argument('--force-capping',default=False,action='store_true',help='force GAFF reparameterization any monomer capping directives in config file')
     parser.add_argument('--force-parameterize',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     args=parser.parse_args()
 
+
+    logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
+    logging.info('HTPolyNet Runtime begins.')
+
     if args.command=='info':
         info()
     elif args.command=='run':
-        a=HTPolyNet(cfgfile=args.cfg,logfile=args.log,restart=args.restart)
+        a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
         a.main(force_capping=args.force_capping,force_parameterize=args.force_parameterize)
     else:
         print(f'HTPolyNet command {args.command} not recognized')
+    
+    logging.info('HTPolynet Runtime ends.')
