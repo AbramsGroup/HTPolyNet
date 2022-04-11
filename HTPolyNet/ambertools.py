@@ -23,11 +23,12 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     itpOut=f'{outputPrefix}.itp'
     if os.path.isfile(groOut) and os.path.isfile(topOut) and not force:
         logging.warning(f'{groOut} and {topOut} already exist')
-        logging.warning(f'and GAFFParameterize called with force=False')
+        logging.warning(f'and GAFFParameterize called with keyword force=False')
         logging.warning(f'No parameterization performed.')
         return
-    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemodel,at='gaff',i=mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
+    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemodel,at='gaff',i=mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10,seq='no')
     c.run()
+    logging.info(f'Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
     c.run()
     # Antechamber ignores SUBSTRUCTURES but we would like tleap to 

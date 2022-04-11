@@ -3,6 +3,7 @@ gromacs.py -- simple class for handling gromacs commands
 '''
 import logging
 import os
+import pandas as pd
 from HTPolyNet.software import Command
 
 def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
@@ -28,7 +29,19 @@ def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
         else:
             ''' no final gro file yet; make it '''
             c=Command('gmx insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
-        c.run()
+        out,err=c.run()
+        out+=err
+        logging.info(f'Output of "gmx insert-molecules"\n'+out)
+        if 'Added' in out:
+            outlines=out.split('\n')
+            for ol in outlines:
+                if 'Added' in ol:
+                    tokens=ol.split()
+                    numadded=int(tokens[1])
+                    break
+            if numadded!=num:
+                logging.error(f'gmx insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your boxsize.')
+                raise Exception('need bigger box')
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     ''' launcher for grompp and mdrun
@@ -53,3 +66,14 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     else:
         logging.error(f'gmx mdrun ended prematurely; {gro}.gro not found.')
         raise Exception(f'gmx mdrun ended prematurely; {gro}.gro not found.')
+
+def density_trace(edr='',**kwargs):
+    if edr=='':
+        raise Exception('density_trace requires and edr filename prefix.')
+    with open('gmx.in','w') as f:
+        f.write('22\n\n')
+    c=Command(f'gmx energy -f {edr}.edr -o {edr}-density.dat -xvg none < gmx.in')
+    c.run()
+    density=pd.read_csv(f'{edr}-density.dat',sep='\s+',names=['time(ps)','density(kg/m^3)'])
+    density['ra']=density['density(kg/m^3)'].expanding(1).mean()
+    logging.info(density.to_string())

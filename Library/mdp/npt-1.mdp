@@ -1,20 +1,19 @@
 title       = NPT Equilibration 
-;define      = -DPOSRES          ; position restrain the protein
 ; Run parameters
 integrator  = md                ; leap-frog integrator
-nsteps      = 200000             ; 2 * 50,000 = 100 ps
+nsteps      = 100000             ; 2 * 50,000 = 100 ps
 dt          = 0.002             ; 2 fs
 ; Output control
-nstxout     = 5000              ; save coordinates every 2 ps
+nstxout     = 500              ; save coordinates every 2 ps
 nstvout     = 0              ; save velocities every 2 ps
-nstenergy   = 5000              ; save energies every 2 ps
-nstlog      = 5000              ; update log file every 2 ps
+nstenergy   = 500              ; save energies every 2 ps
+nstlog      = 500              ; update log file every 2 ps
 ; Bond parameters
 continuation         = no        ; Initial simulation 
 constraint_algorithm = lincs     ; holonomic constraints 
 constraints          = none ; all bonds (even heavy atom-H bonds) constrained
 ; Neighborsearching
-ns_type     = grid              ; search neighboring grid cels
+; ns_type     = grid              ; search neighboring grid cels
 nstlist     = 10                 ; 10 fs
 rlist       = 0.9               ; short-range neighborlist cutoff (in nm)
 rcoulomb    = 0.9               ; short-range electrostatic cutoff (in nm)

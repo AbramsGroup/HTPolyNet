@@ -1,5 +1,7 @@
 from itertools import combinations_with_replacement, product
 from copy import deepcopy
+import pandas as pd
+import logging
 
 class ReactiveAtom:
     def __init__(self,datadict,name=''):
@@ -43,9 +45,35 @@ class CappingBond:
         return s
 
 class Oligomer:
-    def __init__(self,top,coord):
+    def __init__(self,top=None,coord=None,stoich=[]):
         self.topology=top
         self.coord=coord
+        self.stoich=stoich
+        self.unlinked_topology=None
+    
+    def analyze(self):
+        logging.info('Oligomer.analyze begins.')
+        L=self.topology
+        U=self.unlinked_topology
+        for typ in ['atomtypes','bondtypes','angletypes','dihedraltypes']:
+            l=L.D[typ]
+            u=U.D[typ]
+            mdf=pd.concat((l,u),ignore_index=True)
+            # logging.info(f'L:\n'+l.to_string())
+            # logging.info(f'u:\n'+u.to_string())
+            # logging.info(f'mdf:\n'+mdf.to_string())
+            dups=mdf.duplicated(keep=False)
+            xsec=mdf[dups]
+            sd=mdf[~dups]
+            # logging.info(f'sd:\n'+sd.to_string())
+            smdf=pd.concat((l,xsec),ignore_index=True)
+            dups=smdf.duplicated(keep=False)
+            l_not_u=xsec[~dups]
+        #     logging.info(f'l!u:\n'+l_not_u.to_string())
+
+        #     logging.info(f'Oligomer.analyze: L.D[{typ}].shape {l.shape} U.D[{typ}].shape {u.shape}')
+            logging.info(f'{typ}: in oligomer top but not in union of monomer tops: {l_not_u.shape[0]}')
+        # logging.info('Oligomer.analyze ends.')
 
 class Monomer:
     def __init__(self,jsondict,name=''):
@@ -112,7 +140,7 @@ def get_conn(mol):
             conn.append(mrname)
     return conn
 
-def react_mol2(m,n):
+def oligomerize(m,n):
     ''' m and n are Monomer instances (defined in here) '''
     if not isinstance(m,Monomer) or not isinstance(n,Monomer):
         raise Exception(f'react_mol2 needs Monomers not {type(m)} and {type(n)}')
@@ -120,7 +148,7 @@ def react_mol2(m,n):
         raise Exception('react_mol2 needs Monomers with active topologies')
     if not 'active' in m.Coords or not 'active' in n.Coords:
         raise Exception('react_mol2 needs Monomers with active coordinates')
-    retdict={}
+    oligdict={}
     # print(f'react_mol2: {m.name} and {n.name}')
     for basemol,othermol in zip([m,n],[n,m]):
         # list of all asymmetric reactive atoms on base
@@ -150,24 +178,29 @@ def react_mol2(m,n):
         # of basemol are empty, so skip it
         next(o)
         for oligo in o:
-            # print('making oligo',oligo)
+            # logging.debug('making oligo',oligo)
             # make working copy of basemol coordinates
             wc=deepcopy(basemol.Coords['active'])
+            stoich=[(basemol,1)]
             oname=basemol.name
             for c,b in zip(oligo,basera):
                 # print(f'establishing connection(s) to atom {b} of {basemol.name}:')
                 nconn=len([x for x in c if x!=''])
                 if nconn>0:
                     oname+=f'@{b}-'+','.join([f'{othermol.name}#{a}' for a in c if a!=''])
+                oc=0
                 for a in c:
                     # print(f'  to atom {a} of {othermol.name}')
                     if a != '':
                         owc=deepcopy(othermol.Coords['active'])
+                        oc+=1
                         # bring copy of coords from othermol into 
                         # working copy of basemol
                         wc.bond_to(owc,acc=b,don=a)
+                if oc>0:
+                    stoich.append((othermol,oc))
             # print('-> prefix',oname)
             # wc.write_mol2(f'OLIG-{oname}.mol2')
-            retdict[oname]=wc
+            oligdict[oname]=Oligomer(coord=wc,stoich=stoich)
 
-    return retdict
+    return oligdict

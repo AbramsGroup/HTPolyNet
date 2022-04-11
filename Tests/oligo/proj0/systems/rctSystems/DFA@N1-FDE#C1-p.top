@@ -1,17 +1,17 @@
 ;
 ;   File DFA@N1-FDE#C1-p.top  was generated
 ;   By user: cfa (1000)
-;   On host: panacea
-;   At date: Sat. April  6 10:58:33 2022
+;   On host: abrams-Latitude-E5470
+;   At date: Sun. April  0 16:22:44 2022
 ;
 ;   This is a standalone topology file
 ;
 ;   Created by:
 ;   ParmEd:       htpolynet, VERSION 3.4.3
 ;   Executable:   htpolynet
-;   Library dir:  /usr/local/gromacs/share/gromacs/top
+;   Library dir:  /usr/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping
+;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize
 ;
 
 [ defaults ]

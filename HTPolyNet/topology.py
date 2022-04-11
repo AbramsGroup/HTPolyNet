@@ -3,6 +3,7 @@ import logging
 from HTPolyNet.bondlist import Bondlist
 import os
 from copy import deepcopy
+from scipy.constants import physical_constants
 
 def typeorder(a):
     ''' correctly order the tuple of atom types for particular
@@ -13,8 +14,15 @@ def typeorder(a):
     elif len(a)==3: # angle
         return a if a[0]<a[2] else a[::-1]
     elif len(a)==4: # dihedral
+        if a[1]==a[2]:
+            return a if a[0]<a[3] else a[::-1]
         return a if a[1]<a[2] else a[::-1]
 idxorder=typeorder  # same syntax to order global atom indices in an interaction index
+
+def df_typeorder(df,typs):
+    for i in df.index:
+        df.loc[i,typs]=typeorder(tuple(df.loc[i,typs]))
+
 
 _GromacsIntegers_=('nr','atnum','resnr','ai','aj','ak','al','#mols','nrexcl','funct','func','nbfunc','comb-rule')
 _GromacsFloats_=('charge','mass','chargeB','massB',*tuple([f'c{i}' for i in range(5)]),
@@ -43,10 +51,33 @@ _GromacsTopologyDirectiveHeaders_={
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
+_GromacsTopologyHashables_={
+    'atoms':['nr'],
+    'pairs':['ai', 'aj'],
+    'bonds':['ai', 'aj'],
+    'angles':['ai', 'aj', 'ak'],
+    'dihedrals':['ai', 'aj', 'ak', 'al',],
+    'atomtypes':['name'],
+    'bondtypes':['i','j'],
+    'angletypes':['i','j','k'],
+    'dihedraltypes':['i','j','k','l']
+    }
+_GromacsTopologyDataFields_={
+    'atoms':['type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
+    'pairs':['funct'],
+    'bonds':['funct', 'c0', 'c1'],
+    'angles':['funct', 'c0', 'c1'],
+    'dihedrals':['funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
+    'atomtypes':['atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
+    'bondtypes':['func','b0','kb'],
+    'angletypes':['func','th0','cth','rub','kub'],
+    'dihedraltypes':['func','phase','kd','pn']
+    }
 _GromacsTopologyDirectiveDefaults_={
     'system':['A_generic_system'],
     'molecules':['None',1],
     'moleculetype':['None',3],
+#    'defaults':[1,2,'no',0.5,0.83333333]
     'defaults':[1,2,'yes',0.5,0.83333333]
 }
 # dihedral funct==(2,4) means improper
@@ -109,11 +140,11 @@ class Topology:
                 tdf=pd.DataFrame(series)
                 if directive=='dihedraltypes':
                     if directive in inst.D:
-                        # print(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
+                        logging.info(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
                         # we have already read-in a dihedraltypes section
                         # so let's append this one
                         inst.D['dihedraltypes']=pd.concat([inst.D['dihedraltypes'],tdf],ignore_index=True).drop_duplicates()
-                        # print(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
+                        logging.info(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
                     else:
                         inst.D[directive]=tdf
                 elif directive=='dihedrals':
@@ -127,25 +158,30 @@ class Topology:
             # we must assume the 'atoms' are sorted by global index; however, all other
             # sections need not be sorted.  For convenience, we will keep them sorted by
             # atom indices or atom type name, where appropriate.
+            # TODO: sort each row's hashables before sorting whole dataframes
             if 'atomtypes' in inst.D:
                 inst.D['atomtypes'].sort_values(by='name',inplace=True)
             if 'bonds' in inst.D:
                 inst.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
             if 'bondtypes' in inst.D:
+                df_typeorder(inst.D['bondtypes'],typs=['i','j'])
                 inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
             if 'pairs' in inst.D:
                 inst.D['pairs'].sort_values(by=['ai','aj'],inplace=True)
             if 'pairtypes' in inst.D:
+                df_typeorder(inst.D['pairtypes'],typs=['i','j'])
                 inst.D['pairtypes'].sort_values(by=['i','j'],inplace=True)
             if 'angles' in inst.D:
                 # central atom (aj) is the primary index
                 inst.D['angles'].sort_values(by=['aj','ai','ak'],inplace=True)
             if 'angletypes' in inst.D:
+                df_typeorder(inst.D['angletypes'],typs=['i','j','k'])
                 inst.D['angletypes'].sort_values(by=['j','i','k'],inplace=True)
             if 'dihedrals' in inst.D:
                 # central atoms (aj,ak) are the primary index
                 inst.D['dihedrals'].sort_values(by=['aj','ak','ai','al'],inplace=True)
             if 'dihedraltypes' in inst.D:
+                df_typeorder(inst.D['dihedraltypes'],typs=['i','j','k','l'])
                 # print(f'    -> pre sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
                 inst.D['dihedraltypes'].sort_values(by=['j','k','i','l'],inplace=True)
                 # print(f'    -> post sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
@@ -156,7 +192,9 @@ class Topology:
             #     inst.rep_ex(replicate)
             # print(f'{filename}',inst.D.keys())
             #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
+            logging.debug(f'Checking for duplicates in just-read-in gro topology {filename}')
             inst.dup_check(die=False)
+            logging.debug(f'read_gro ends')
             return inst
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
@@ -217,7 +255,11 @@ class Topology:
             if k in self.D:
                 with open(filename,'a') as f:
                     f.write(f'[ {k} ]\n; ')
-                self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
+                if k in _GromacsTopologyHashables_:
+                    odf=self.D[k].sort_values(by=_GromacsTopologyHashables_[k])
+                    odf.to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
+                else:
+                    self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
                 with open(filename,'a') as f:
                     f.write('\n')
         with open(filename,'a') as f:
@@ -227,6 +269,15 @@ class Topology:
         if 'atoms' in self.D:
             return self.D['atoms']['charge'].sum()
         return 0.0
+
+    def total_mass(self,units='gromacs'):
+        fac=1.0
+        if units=='SI':
+            fac=physical_constants['atomic mass constant'][0]
+        if 'atoms' in self.D:
+            M_amu=self.D["atoms"]["mass"].sum()
+            logging.info(f'total mass says {M_amu}')
+            return M_amu*fac
 
     def atomcount(self):
         if 'atoms' in self.D:
@@ -452,27 +503,78 @@ class Topology:
             self.D[directive]=other.D[directive]
 
     def merge(self,other):
+        # TODO: duplicate dihedral type check
+        logging.debug('Topology.merge begins')
         self.merge_ex(other)
         self.merge_types(other)
+        logging.debug('Topology.merge ends')
+
+    def force_overrides(self,other,types):
+        # If there are any dihedraltypes in other with same atomtypes as any dihedraltypes
+        # in self but with DIFFERENT parameters, IMMEDIATELY copy other's parameters to
+        # the override fields of the actual dihedrals in other and then DROP the
+        # dihedral types from other.
+        logging.debug(f'force_overrides begins')
+        for typ,ext in types:
+            if typ not in self.D or typ not in other.D:
+                continue
+            typfields=_GromacsTopologyHashables_[typ]
+            datafields=_GromacsTopologyDataFields_[typ]
+            idxfields=_GromacsTopologyHashables_[ext]
+            stdf=self.D[typ]
+            otdf=other.D[typ]
+            oedf=other.D[ext]
+            mdf=pd.concat((stdf,otdf),ignore_index=True).drop_duplicates()
+            dups=mdf.duplicated(subset=typfields,keep='first')
+            if any(dups):
+                logging.debug(f'Duplicate {typ}(s) with differing parameters:')
+                logging.debug('\n'+mdf[dups].to_string())
+                for i,p in mdf[dups].iterrows():
+                    # get the atom types
+                    if typ=='dihedraltypes' and p.func==9:
+                        continue
+                    typvalues=p[typfields]
+                    logging.debug(f'Searching {ext} for type(s) {list(typvalues)}')
+                    for j,q in oedf.iterrows():
+#                        logging.debug(f'\ni {i}\nq {q}\nq[idxfields] {q[idxfields]}')
+                        # find any extensive entry in other whose atom indices refer to atoms of the stipulated types
+                        typs=all([self.get_atomtype(x)==y for x,y in zip(list(q[idxfields]),typvalues)])
+                        if typs:
+                            logging.debug(f'Found {list(q[idxfields])}')
+                            # overwrite datafields in the extensive dataframe entry for other
+                            logging.debug(f'Existing extensive entry:\n{oedf.iloc[j].to_string()}')
+                            #oedf.iloc[j][datafields]=p[datafields]
+                            # logging.debug(f'After overwrite:\n{oedf.iloc[j]}')
+                            # # drop the type entry in the other dataframe
+                            # otdf.set_index(typfields)
+                            # idx=otdf[typ].index
+                            # otdf.drop(idx,inplace=True)
+                            # otdf.reset_index().reindex()
+            logging.debug('\n'+otdf.to_string())
+        logging.debug('force_overrides ends')
 
     def dup_check(self,die=True):
-        L=[('atomtypes',['name']),
-           ('bondtypes',['i','j']),
-           ('angletypes',['i','j','k']),
-           ('dihedraltypes',['i','j','k','l'])]
-        for t,i in L:
+        logging.debug('dup_check begins')
+        L=['atomtypes','bondtypes','angletypes','dihedraltypes']
+        for t in L:
+            i=_GromacsTopologyHashables_[t]
             ''' checking for types with duplicate atom-type indices '''
             dups=self.D[t].duplicated(subset=i,keep=False)
             if any(dups):
                 logging.error(f'Duplicate {t} with different parameters detected\n'+self.D[t][dups].to_string())
+                # TODO: for duplicates, find the actual dihedrals which contributed them and override parameters
+                # how the hell am i going to go that??
                 if die:
                     raise Exception('duplicate topology types with different parameters detected')
+        logging.debug('dup_check ends')
 
     def merge_types(self,other):
         ''' merge types but drop duplicates '''
         L=['atomtypes','bondtypes','angletypes','dihedraltypes']
+#        self.force_overrides(other,[('dihedraltypes','dihedrals')])
         for t in L:
             self._myconcat(other,directive=t,drop_duplicates=True)
+
 
     def merge_ex(self,other):
         # print('   extensive merging...')
@@ -492,5 +594,8 @@ class Topology:
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]
 
+    def get_atomtype(self,idx):
+#        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')
+        return self.D['atoms'].iloc[idx-1].type
 
-        
+

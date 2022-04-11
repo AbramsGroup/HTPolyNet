@@ -102,8 +102,6 @@ class ProjectFileSystem:
         return os.path.exists(fullname)
 
     def fetch(self,name,destpath='.',overwrite='yes',altpath=None):
-        ''' default fetch behavior:  if filename exists in rootPath or projPath,
-            take that one, otherwise look in the Library '''
         ext=name.split('.')[-1]
         searchpath=[self.rootPath,self.projPath,self.library.dir(ext)]
         if altpath!=None:
@@ -114,16 +112,16 @@ class ProjectFileSystem:
             if os.path.exists(afname):
                 if os.path.exists(destfname):
                     if overwrite=='yes':
-                        logging.info(f'Notice: copying {afname} over {destfname}')
+                        logging.info(f'Fetching {afname} into {destpath} (overwriting {destfname})')
                         os.system(f'cp {afname} {destpath}')
                     elif overwrite=='if_newer':
-                        logging.info(f'Notice: copying newer {afname} over {destfname}')
+                        logging.info(f'Fecthing newer {afname} into {destpath} (overwriting {destfname})')
                         if os.path.getctime(destfname) < os.path.getctime(afname):
                             os.system(f'cp {afname} {destpath}')
                     else:
-                        logging.info(f'Notice: opting not to copy older {afname} over {destfname}')
+                        logging.info(f'Refusing to fetch older {afname} into {destpath} because existing {destfname} is newer')
                 else:
-                    logging.info(f'Notice: copying {afname} into {destpath}')
+                    logging.info(f'Fetching {afname} into {destpath}')
                     os.system(f'cp {afname} {destpath}')
                 return True
         else:
@@ -136,16 +134,16 @@ class ProjectFileSystem:
         destfullname=os.path.join(libdestpath if not altdestpath else altdestpath,name)
         if os.path.exists(destfullname):
             if overwrite=='yes':
-                logging.info(f'Notice: copying {name} over {destfullname}')
+                logging.info(f'Storing {name} over {destfullname}')
                 os.system(f'cp {name} {destfullname}')
             elif overwrite=='if_newer':
-                logging.info(f'Notice: copying newer {name} over {destfullname}')
+                logging.info(f'Storing newer {name} over {destfullname}')
                 if os.path.getctime(destfullname) < os.path.getctime(name):
                     os.system(f'cp {name} {destfullname}')
             else:
-                logging.info(f'Notice: opting not to copy older {name} over {destfullname}')
+                logging.info(f'Refusing to store older {name} over {destfullname}')
         else:
-            logging.info(f'Notice: copying {name} to {destfullname}')
+            logging.info(f'Storing {name} to {destfullname}')
             os.system(f'cp {name} {destfullname}')
 
     def __str__(self):

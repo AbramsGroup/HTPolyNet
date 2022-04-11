@@ -21,7 +21,7 @@ from HTPolyNet.software import Software
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
-from HTPolyNet.molecule import react_mol2, Oligomer
+from HTPolyNet.molecule import oligomerize, Oligomer
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -76,6 +76,7 @@ class HTPolyNet:
             t=Topology.read_gro(f'{n}-p.top')
             m.Topology['active']=t
             t.rep_ex(comp[n])
+            logging.debug('initialize_topology merging {comp[n]} copies of {n} into global topology')
             self.Topology.merge(t)
             ''' just in case antechamber changed any user-defined atom names... '''
             userMol2=Coordinates.read_mol2(f'{n}.mol2')
@@ -122,13 +123,14 @@ class HTPolyNet:
             mname,nname=r.reactants
             m=self.cfg.monomers[mname]
             n=self.cfg.monomers[nname]
-            these_oligos=react_mol2(m,n)
-            # print(these_oligos)
-            for o,mol in these_oligos.items():
+            these_oligos=oligomerize(m,n)
+            logging.debug(f'Preparing to parameterize {len(these_oligos)} oligomers')
+            for o,olig in these_oligos.items():
+                logging.debug(f'   olig {o}')
                 already_parameterized=all([exist(f'{o}-p.{ex}') for ex in ['mol2','top','itp','gro']])
                 if force_parameterize or not already_parameterized:
                     logging.info(f'Parameterizing oligomer template {o}')
-                    mol.write_mol2(f'{o}.mol2')
+                    olig.coord.write_mol2(f'{o}.mol2')
                     GAFFParameterize(f'{o}',f'{o}-p',force=force_parameterize,parmed_save_inline=False)
                     logging.info(f'Minimizing oligomer template {o}')
                     fetch('em-single-molecule.mdp')
@@ -137,17 +139,32 @@ class HTPolyNet:
                                     mdp='em-single-molecule',
                                     out=f'{o}-p',boxSize=[20.,20.,20.])
                     tmp=Coordinates.read_gro(f'{o}-p.gro')
-                    mol.copy_coords(tmp)
-                    mol.write_mol2(f'{o}-p.mol2')
+                    olig.coord.copy_coords(tmp)
+                    olig.coord.write_mol2(f'{o}-p.mol2')
                     for ex in ['mol2','top','itp','gro']:
                         store(f'{o}-p.{ex}',overwrite='if_newer')
                 else:
+                    logging.info(f'Oligomer {o} is already parameterized.')
                     for ex in ['mol2','top','itp','gro']:
                         fetch(f'{o}-p.{ex}')
-                logging.info(f'Reading {o}-parameterized.top and merging types into global topology')
+                logging.info(f'Reading {o}-p.top and merging types into global topology')
                 t=Topology.read_gro(f'{o}-p.top')
-                self.cfg.oligomers[o]=Oligomer(t,Coordinates.read_gro(f'{o}-p.gro'))
-                self.Topology.merge_types(t)
+                olig.topology=t
+                olig.unlinked_topology=Topology()
+                logging.info(f'Oligo {o} stoich: {olig.stoich}')
+                for m,c in olig.stoich:
+                    logging.info(f'Providing oligo {o} base topology from {m.name}')
+                    fetch(f'{m.name}-p.top')
+                    fetch(f'{m.name}-p.itp')
+                    t=Topology.read_gro(f'{m.name}-p.top')
+                    t.rep_ex(c)
+                    olig.unlinked_topology.merge(t)
+                
+                #olig.analyze()
+
+                self.cfg.oligomers[o]=olig
+
+                self.Topology.merge_types(olig.topology)
 
     def write_global_topology(self,filename='init.top',dest=''):
         if dest=='':
@@ -167,8 +184,17 @@ class HTPolyNet:
         # fetch mdp files from library, or die if not found
         self.pfs.fetch('em.mdp')
         self.pfs.fetch('npt-1.mdp')
+        if 'initial_boxsize' in self.cfg.parameters:
+            boxsize=self.cfg.parameters['initial_boxsize']
+        elif 'initial_density' in self.cfg.parameters:
+            mass_kg=self.Topology.total_mass(units='SI')
+            V0_m3=mass_kg/self.cfg.parameters['initial_density']
+            L0_m=V0_m3**(1./3.)
+            L0_nm=L0_m*1.e9
+            logging.info(f'Initial density {self.cfg.parameters["initial_density"]} kg/m^3 and total mass {mass_kg} kg dictate an initial box side length of {L0_nm} nm')
+            boxsize=[L0_nm,L0_nm,L0_nm]
         # extend system, make gro file
-        msg=insert_molecules(self.cfg.monomers,self.cfg.parameters['composition'],self.cfg.parameters['initial_boxsize'],'init',basename_modifier='-p')
+        msg=insert_molecules(self.cfg.monomers,self.cfg.parameters['composition'],boxsize,'init',basename_modifier='-p')
         logging.info(msg)
         self.Coordinates=Coordinates.read_gro('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'

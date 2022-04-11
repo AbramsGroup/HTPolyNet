@@ -7,6 +7,7 @@ import numpy as np
 from io import StringIO
 from copy import deepcopy
 import hashlib
+import logging
 
 from HTPolyNet.bondlist import Bondlist
 
@@ -48,10 +49,9 @@ class Coordinates:
                     series['atomName'].append(x[10:15].strip())
                     series['globalIdx'].append(int(x[15:20].strip()))
                     numbers=list(map(float,[y.strip() for y in x[20:].split()]))
-                    if len(numbers)<4:
-                        series['posX'].append(numbers[0])
-                        series['posY'].append(numbers[1])
-                        series['posZ'].append(numbers[2])
+                    series['posX'].append(numbers[0])
+                    series['posY'].append(numbers[1])
+                    series['posZ'].append(numbers[2])
                     if len(numbers)==6:
                         series['velX'].append(numbers[3])
                         series['velY'].append(numbers[4])
@@ -61,6 +61,8 @@ class Coordinates:
                     del series['velY']
                     del series['velZ']
                 assert inst.N==len(series['globalIdx']), f'Atom count mismatch inside {filename}'
+                for k,v in series.items():
+                    logging.debug(f'in coordinates.read_gro: {k} has {len(v)} items.')
                 inst.D['atoms']=pd.DataFrame(series)
                 boxdataline=data[-1]
                 n=10
@@ -105,6 +107,7 @@ class Coordinates:
         return inst
 
     def copy_coords(self,other):
+        assert len(self.D['atoms'])==len(other.D['atoms']),f'Cannot copy -- atom count mismatch {len(self.D["atoms"])} vs {len(other.D["atoms"])}'
         otherfac=1.0
         if self.units['length']=='nm' and other.units['length']=='Angstrom':
             otherfac=0.1
