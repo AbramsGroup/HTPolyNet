@@ -20,18 +20,9 @@ class ReactiveAtom:
         return f'{self.name}: ({self.z})({self.ht})({self.sym})'
     def to_yaml(self):
         return r'{'+f'z: {self.z}, ht: {self.ht}, sym: {self.sym}'+r'}'
-        
-def boc(b):
-    if b==1:
-        return '-'
-    elif b==2:
-        return '='
-    elif b==3:
-        return '≡'
-    else:
-        return ''
 
 class CappingBond:
+    boc={1:'-',2:'=',3:'≡'}
     def __init__(self,jsondict):
         self.pairnames=jsondict["pair"]
         self.bondorder=jsondict.get("order",1)
@@ -39,7 +30,7 @@ class CappingBond:
     def to_yaml(self):
         return r'{'+f'pair: {self.pairnames}, order: {self.bondorder}, deletes: {self.deletes}'+r'}'
     def __str__(self):
-        s=self.pairnames[0]+boc(self.bondorder)+self.pairnames[1]
+        s=self.pairnames[0]+CappingBond.boc[self.bondorder]+self.pairnames[1]
         if len(self.deletes)>0:
             s+=' D['+','.join(self.deletes)+']'
         return s
@@ -52,6 +43,7 @@ class Oligomer:
         self.unlinked_topology=None
     
     def analyze(self):
+        # this is not really used
         logging.info('Oligomer.analyze begins.')
         L=self.topology
         U=self.unlinked_topology

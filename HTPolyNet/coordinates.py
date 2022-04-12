@@ -69,8 +69,7 @@ class Coordinates:
                 boxdataline=data[-1]
                 n=10
                 boxdata=list(map(float,[boxdataline[i:i+n].strip() for i in range(0,len(boxdataline),n)]))
-                if len(boxdata)<4:
-                    inst.box[0][0],inst.box[1][1],inst.box[2][2]=boxdata[0:3]
+                inst.box[0][0],inst.box[1][1],inst.box[2][2]=boxdata[0:3]
                 if len(boxdata)==9:
                     inst.box[0][1],inst.box[0][2],inst.box[1][0],inst.box[1][2],inst.box[2][0],inst.box[2][1]=boxdata[3:]
         return inst
@@ -132,6 +131,29 @@ class Coordinates:
     def geometric_center(self):
         a=self.D['atoms']
         return np.array([a.posX.mean(),a.posY.mean(),a.posZ.mean()])
+
+    def rij(self,i,j,pbc=[1,1,1]):
+        ri=self.D['atoms'].iloc[i-1][['posX','posY','posZ']].values
+        rj=self.D['atoms'].iloc[j-1][['posX','posY','posZ']].values
+        rij=ri-rj
+        for c in range(3):
+            if pbc[c]:
+                hbx=self.box[c][c]/2
+                if rij[c]<-hbx:
+                    rij[c]+=self.box[c][c]
+                elif rij[c]>hbx:
+                    rij[c]-=self.box[c][c]
+        logging.info(f'i {i} j {j} rij {rij} mag {np.sqrt(rij.dot(rij))}')
+        logging.info(f'pbc {pbc} box {self.box[0][0]} {self.box[1][1]} {self.box[2][2]}')
+        return np.sqrt(rij.dot(rij))
+
+    def calc_distance_matrix(self):
+        M=np.zeros((self.N,self.N))
+        for i in range(self.N-1):
+            for j in range(i+1,self.N):
+                d=self.rij(i,j)
+                M[i][j]=M[j][i]=d
+        self.distance_matrix=M
 
     def merge(self,other):
         if self.units['length']!=other.units['length']:
@@ -239,7 +261,12 @@ class Coordinates:
     def atomcount(self):
         return self.N
 
-    def cap(self,capping_bonds=[],**kwargs)error
+    def cap(self,capping_bonds=[],**kwargs):
+        inst=deepcopy(self)
+        ''' generate all capping bonds '''
+        adf=inst.D['atoms']
+        pairs=[]
+        orders=[]
         deletes=[]
         for c in capping_bonds:
             ai,aj=c.pairnames

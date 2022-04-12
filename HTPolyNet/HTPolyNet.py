@@ -28,13 +28,10 @@ class HTPolyNet:
     def __init__(self,cfgfile='',logfile='',restart=False):
         self.software=Software()
         logging.info(str(self.software))
-        
         if cfgfile=='':
             logging.error('HTPolyNet requires a configuration file.\n')
             raise RuntimeError('HTPolyNet requires a configuration file.')
-
         self.restart=restart
-        
         self.cfg=Configuration.read(cfgfile)
         logging.info(f'Read configuration from {cfgfile}')
         ''' Create the initial file system for the project.  If this is 
@@ -42,6 +39,8 @@ class HTPolyNet:
             directory.  If this is not a restart, generate the *next* 
             project directory. '''
         self.pfs=ProjectFileSystem(root=os.getcwd(),verbose=True,reProject=self.restart)
+        ''' initialize an empty topology '''
+        self.Topology=Topology(system=self.cfg.Title)
 
     def initialize_topology(self,force_parameterize=False,force_capping=False):
         ''' Create a full gromacs topology that includes all directives necessary 
@@ -51,8 +50,6 @@ class HTPolyNet:
         fetch=self.pfs.fetch
         exist=self.pfs.exist
         store=self.pfs.store
-        ''' initialize an empty topology '''
-        self.Topology=Topology(system=self.cfg.Title)
         if os.path.isfile('init.top'):
             logging.info(f'init.top already exists in {self.pfs.unrctPath} but we will rebuild it anyway!')
         comp=self.cfg.parameters['composition']
@@ -208,6 +205,9 @@ class HTPolyNet:
         sacmol=Coordinates.read_gro('npt-1.gro')
         self.Coordinates.copy_coords(sacmol)
         self.pfs.cdroot()
+
+    def SCUR(self):
+        pass
 
     def initreport(self):
         print('Libraries:')
