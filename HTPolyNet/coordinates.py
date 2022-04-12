@@ -11,11 +11,13 @@ import logging
 
 from HTPolyNet.bondlist import Bondlist
 
+_ANGSTROM_='Ångström'
+
 class Coordinates:
     gro_colnames = ['resNum', 'resName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
     gro_colunits = ['*','*','*','*','nm','nm','nm','nm/ps','nm/ps','nm/ps']
     mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
-    mol2_atom_colunits = ['*','*','Angstrom','Angstrom','Angstrom','*','*']
+    mol2_atom_colunits = ['*','*',_ANGSTROM_,_ANGSTROM_,_ANGSTROM_,'*','*']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
 
@@ -61,8 +63,8 @@ class Coordinates:
                     del series['velY']
                     del series['velZ']
                 assert inst.N==len(series['globalIdx']), f'Atom count mismatch inside {filename}'
-                for k,v in series.items():
-                    logging.debug(f'in coordinates.read_gro: {k} has {len(v)} items.')
+                # for k,v in series.items():
+                #     logging.debug(f'in coordinates.read_gro: {k} has {len(v)} items.')
                 inst.D['atoms']=pd.DataFrame(series)
                 boxdataline=data[-1]
                 n=10
@@ -75,10 +77,14 @@ class Coordinates:
 
     @classmethod
     def read_mol2(cls,filename=''):
+        ''' Reads in a Sybyl MOL2 file into a Coordinates instance. 
+            Note that this method only reads in
+            MOLECULE, ATOM, and BOND sections.  '''
         inst=cls(filename)
         inst.format='mol2'
-        inst.units['length']='Angstrom'
-        inst.units['velocity']='Angstrom/ps'
+        ''' Length units in MOL2 are always Ångström '''
+        inst.units['length']=_ANGSTROM_
+        inst.units['velocity']=_ANGSTROM_+'/ps'
         if filename=='':
             return inst
         with open(filename,'r') as f:
@@ -109,9 +115,9 @@ class Coordinates:
     def copy_coords(self,other):
         assert len(self.D['atoms'])==len(other.D['atoms']),f'Cannot copy -- atom count mismatch {len(self.D["atoms"])} vs {len(other.D["atoms"])}'
         otherfac=1.0
-        if self.units['length']=='nm' and other.units['length']=='Angstrom':
+        if self.units['length']=='nm' and other.units['length']==_ANGSTROM_:
             otherfac=0.1
-        elif self.units['length']=='Angstrom' and other.units['length']=='nm':
+        elif self.units['length']==_ANGSTROM_ and other.units['length']=='nm':
             otherfac=10.0
         for c in ['posX','posY','posZ']:
             otherpos=other.D['atoms'][c].copy()
@@ -130,14 +136,18 @@ class Coordinates:
     def merge(self,other):
         if self.units['length']!=other.units['length']:
             raise Exception('Cannot merge coordinates in different units')
+        ''' get atom index, bond index, and resnum index shifts '''
         idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
         bdxshift=0 if 'bonds' not in self.D else len(self.D['bonds'])
         rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['resNum']
         if 'atoms' in other.D:
+            ''' shift residue indices in other before merging '''
             other.D['atoms']['resNum']+=rdxshift
         nOtherBonds=0
         if 'bonds' in other.D:
+            ''' count number of bonds in other '''
             nOtherBonds=len(other.D['bonds'])
+            ''' shift bond indices in other '''
             other.D['bonds']['globalIdx']+=bdxshift
         self.N+=len(other.D['atoms'])
         self.metadat['N']=self.N
@@ -160,7 +170,7 @@ class Coordinates:
 
     def write_mol2(self,filename=''):
         if self.format!='mol2':
-            raise Exception('was this a gro file?')
+            raise Exception('This config instance is not in mol2 format')
         posscale=1.0
         if self.units['length']=='nm':
             posscale=10.0
@@ -217,6 +227,7 @@ class Coordinates:
                 f.write('@<TRIPOS>BOND\n')
                 f.write(self.D['bonds'].to_string(header=False,index=False,formatters=bondformatters))
                 f.write('\n')
+                ''' write substructure section '''
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
                 
@@ -228,13 +239,7 @@ class Coordinates:
     def atomcount(self):
         return self.N
 
-    def cap(self,capping_bonds=[],**kwargs):
-        inst=deepcopy(self)
-        ''' generate all capping bonds '''
-        minimize=kwargs.get('minimize',False)
-        adf=inst.D['atoms']
-        pairs=[]
-        orders=[]
+    def cap(self,capping_bonds=[],**kwargs)error
         deletes=[]
         for c in capping_bonds:
             ai,aj=c.pairnames

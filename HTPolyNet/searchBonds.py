@@ -321,10 +321,10 @@ class searchBonds(object):
         filterIdx = []
         p = Pool(processes=self.cpu)
         atomDf_split = np.array_split(atomDf, self.cpu)
-        idxList = p.map(partial(self.getHname), atomDf_split)
+        idxList = p.map(partial(self.getHname), atomDf_split) # list of indices of H atoms
         p.close(); p.join()
         for i in idxList:
-            filterIdx += i
+            filterIdx += i  # filterIdx.append(i);
 
         outDf = atomDf.loc[atomDf.globalIdx.isin(filterIdx)]
         return outDf
@@ -335,17 +335,17 @@ class searchBonds(object):
         atoms = self.gro.df_atoms
         top = self.top
         rctDf = []
-        if 'molCon' in atoms.keys():
+        if 'molCon' in atoms.keys():  # if 'molCon' in atoms.columns:
             pass
         else:
-            atoms['molCon'] = '0'
+            atoms['molCon'] = '0'  # adding a new column to atoms dataframe
 
         top.atoms['molCon'] = atoms['molCon']
         top.atoms['molNum'] = atoms['molNum']
 
         atomNames = self.getAllMolNames()
 
-        # select all atoms
+        # select all reactive atoms
         if self.layerDir == 'x':
             df_tmp0 = atoms.loc[(atoms.rct == 'True') & (atoms.molName.isin(atomNames)) & (atoms.posX.astype(float) < self.dimLimit)]
         elif self.layerDir == 'y':
@@ -770,7 +770,7 @@ class searchBonds(object):
 
         self.mol = mols
 
-    # links-cell algorithm
+    # links-cell algorithm -- generate cell struc
     def genCell(self, parts):
         parts = parts - 1
         xdiv = 0
@@ -818,7 +818,7 @@ class searchBonds(object):
                     zCom = com[2] + zdiv * zNum
                     zNum += 1
                     id = ''.join([str(i), str(j), str(k)])
-                    info = [id, [xCom, yCom, zCom]]  # [[id], [center coord]]
+                    info = [id, [xCom, yCom, zCom]]  # this is a cell id # [[id], [center coord]]
                     cell_id.append(info)
             xMax = xNum
             maxCellId = [xMax - 1, yMax - 1, zMax - 1]  # Since it starts from 0
@@ -898,7 +898,7 @@ class searchBonds(object):
         # df_layer = self.gro.df_atoms.loc[(self.gro.df_atoms.posY.astype(float) < self.dimLimit)]
         # layerLst = list(set(df_layer['molNum'].to_list()))
         layerLst = self.splitLayer()
-        print('layerLst: ', layerLst)
+        print('layerLst: ', layerLst) # assigns molecules to layers
         with open('molLayer.txt', 'w') as f:
             for i in layerLst:
                 f.write('{}\t'.format(i))
@@ -961,13 +961,13 @@ class searchBonds(object):
         elif self.layerDir == 'z':
             self.dimLimit = float(self.boxSize[2]) * self.boxLimit
 
-        print('self.boxLimit: ', self.boxLimit)
+        print('self.boxLimit: ', self.boxLimit) # fraction between 0 and 1 defining layer boundary along layerdir
         print('self.dimLimit: ', self.dimLimit)
 
     @countTime
     def sBonds(self):
-        count = 5
-        parts = 8
+        count = 5 # number of trials within one cutoff before cutoff is incremented 
+        parts = 8 # parallel calculation
         self.updateBoxSize()
         self.genCell(parts)
         pairs = self.collectBonds(count)
