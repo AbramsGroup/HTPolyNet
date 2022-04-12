@@ -2,6 +2,10 @@ from pytrr import GroTrrReader
 import numpy as np
 # idea: from a long NVT MD, use mean interatomic distance matrix
 # to determine atom symmetry classes
+#
+# seems to work!  need to implement as an htpolynet command to
+# allow for standalone symmetry class detection
+#
 import matplotlib.pyplot as plt
 
 def symm(d):
@@ -14,6 +18,8 @@ def symm(d):
             if i<j: 
                 l.append((i,j,np.sqrt(ij.dot(ij))))
     L=sorted(l,key=lambda x: x[2])
+    # TODO: must analyze this to derive clusters/classes and assign
+    # class id to each atom
     return L
 
 with GroTrrReader('nvt.trr') as trrfile:
