@@ -490,6 +490,11 @@ class Coordinates:
                 self.metadat['nBonds']=len(self.D['bonds'])
             self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
+    def determine_sea(self,gro,top):
+        ''' Use a short 1000-K NVT MD simulation to generate a bunch of config samples
+            in order to determine symmetry-equivalent atoms.  '''
+        fetch('nvt-sea.mdp')
+
     def __str__(self):
         '''
         Generates contents of a *.gro file

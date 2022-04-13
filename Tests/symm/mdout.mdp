@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: cfa (1000)
 ;	On host: panacea
-;	At date: Tue Apr 12 16:18:21 2022
+;	At date: Wed Apr 13 14:27:03 2022
 ;
 ;	Created by:
 ;	                     :-) GROMACS - gmx grompp, 2021.2 (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  /usr/local/gromacs
 ;	Working dir:  /home/cfa/Git/HTPolyNet/Tests/symm
 ;	Command line:
-;	  gmx grompp -f npt-1.mdp -c FDE-p.gro -p FDE-p.top -o nvt -maxwarn 2
+;	  gmx grompp -f nvt-sea.mdp -c DFA-p.gro -p DFA-p.top -o nvt1000 -maxwarn 2
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -25,7 +25,7 @@ integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.002
-nsteps                   = 100000
+nsteps                   = 50000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
@@ -61,7 +61,7 @@ rtpi                     = 0.05
 
 ; OUTPUT CONTROL OPTIONS
 ; Output frequency for coords (x), velocities (v) and forces (f)
-nstxout                  = 500
+nstxout                  = 50
 nstvout                  = 0
 nstfout                  = 0
 ; Output frequency for energies to log file and energy file
@@ -109,7 +109,7 @@ vdw-modifier             = Potential-shift-Verlet
 rvdw-switch              = 0
 rvdw                     = 0.9
 ; Apply long range dispersion corrections for Energy and Pressure
-DispCorr                 = EnerPres
+DispCorr                 = No
 ; Extension of the potential lookup tables beyond the cut-off
 table-extension          = 1
 ; Separate tables between energy group pairs
@@ -174,7 +174,7 @@ gen-seed                 = -1
 ; OPTIONS FOR BONDS    
 constraints              = none
 ; Type of constraint algorithm
-constraint_algorithm     = lincs
+constraint-algorithm     = Lincs
 ; Do not constrain the start configuration
 continuation             = no
 ; Use successive overrelaxation to reduce the number of shake iterations

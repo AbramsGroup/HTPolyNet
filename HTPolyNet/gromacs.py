@@ -4,6 +4,8 @@ gromacs.py -- simple class for handling gromacs commands
 import logging
 import os
 import pandas as pd
+import numpy as np
+from pytrr import GroTrrReader
 from HTPolyNet.software import Command
 
 def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
@@ -77,3 +79,26 @@ def density_trace(edr='',**kwargs):
     density=pd.read_csv(f'{edr}-density.dat',sep='\s+',names=['time(ps)','density(kg/m^3)'])
     density['ra']=density['density(kg/m^3)'].expanding(1).mean()
     logging.info(density.to_string())
+
+def analyze_sea(deffnm,thresh=0.1):
+    with GroTrrReader(f'{deffnm}.trr') as trrfile:
+        d=np.array((0,))
+        nframes=0
+        for mobydick in trrfile:
+            frame_natoms=mobydick['natoms']
+            if d.shape==(1,):
+                print(frame_natoms)
+                d=np.zeros((frame_natoms,frame_natoms))
+                natoms=frame_natoms
+            data=trrfile.get_data()
+            for i,ri in enumerate(data['x']):
+                for j,rj in enumerate(data['x']):
+                    rij=ri-rj
+                    dist=np.sqrt(rij.dot(rij))
+                    d[i][j]+=dist
+            nframes+=1
+        print(nframes)
+        d/=nframes
+        c,cids=symm(d,thresh=args.t)
+        for i,v in c.items():
+            print(i,v)

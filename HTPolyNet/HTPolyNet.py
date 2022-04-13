@@ -20,25 +20,26 @@ from HTPolyNet.topology import Topology
 from HTPolyNet.software import Software
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
-from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
+#import HTPolyNet.projectfilesystem as pfs
+
+from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, analyze_sea
 from HTPolyNet.molecule import oligomerize, Oligomer
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
-    def __init__(self,cfgfile='',logfile='',restart=False):
+    def __init__(self,cfgfile='',restart=Fales):
         self.software=Software()
         logging.info(str(self.software))
         if cfgfile=='':
             logging.error('HTPolyNet requires a configuration file.\n')
             raise RuntimeError('HTPolyNet requires a configuration file.')
-        self.restart=restart
         self.cfg=Configuration.read(cfgfile)
-        logging.info(f'Read configuration from {cfgfile}')
         ''' Create the initial file system for the project.  If this is 
             a restart, reference the newest project directory in the current
             directory.  If this is not a restart, generate the *next* 
             project directory. '''
-        self.pfs=ProjectFileSystem(root=os.getcwd(),verbose=True,reProject=self.restart)
+        self.pfs=ProjectFileSystem(root=os.getcwd(),verbose=True,reProject=restart)
+        logging.info(f'Read configuration from {cfgfile}')
         ''' initialize an empty topology '''
         self.Topology=Topology(system=self.cfg.Title)
 
@@ -107,6 +108,32 @@ class HTPolyNet:
                 m.Topology['inactive']=Topology.read_gro(f'{n}-capped.top')
                 self.Topology.merge_types(t)
         logging.info(f'Extended topology has {self.Topology.atomcount()} atoms.')
+
+    def determine_monomer_sea(self,seamdp='nvt-sea',boxSize=[4,4,4]):
+        ''' Determine symmetry-equivalent atoms in every monomer '''
+        self.pfs.cd(self.pfs.unrctPath)
+        fetch=self.pfs.fetch
+        if not os.path.exists(seamdp+'.mdp'):
+            fetch(seamdp+'.mdp')
+        # exist=self.pfs.exist
+        store=self.pfs.store
+        for n,m in self.cfg.monomers.items():
+            for ex in ['top','itp','gro']:
+                fetch(f'{n}-p.{ex}')
+            grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
+                            mdp=seamdp,out=f'{n}-p-sea',boxSize=boxSize)
+            m.Coords['active'].D['atoms']['sea-id']=analyze_sea(f'{n}-p-sea')
+            m.Coords['active'].write_sea(f'{n}-p.sea')
+            store(f'{n}-p.sea')
+            if len(m.capping_bonds)>0:
+                logging.info(f'Fetching parameterization of capped version of monomer {n}')
+                for ex in ['mol2','top','itp','gro']:
+                        fetch(f'{n}-capped.{ex}')
+                grompp_and_mdrun(gro=f'{n}-capped',top=f'{n}-capped',
+                                mdp=seamdp,out=f'{n}-capped-sea',boxSize=boxSize)
+                m.Coords['inactive'].D['atoms']['sea-id']=analyze_sea(f'{n}-capped-sea')
+                m.Coords['inactive'].write_sea(f'{n}-capped.sea')
+                store(f'{n}-capped.sea')
 
     def make_oligomer_templates(self,force_parameterize=False):
         logging.info(f'Building oligomer templates in {self.pfs.rctPath}')
@@ -688,7 +715,7 @@ class HTPolyNet:
         
     #     os.chdir(self.pfs.projPath)
     #     print('--> Generating reacted molecules type database')
-    #     a=generateTypeInfo.generateTypeInfo(self.pfs,self.cfg)
+    #     a=generateTypeInfo.generateTypeInfo(pfs,self.cfg)
     #     # TODO: catch the return of generateTypeInfo.main which is a database of all type information
     #     a.main(self.pfs.unrctFolder,self.pfs.typeFolder)
     #     if log:
@@ -733,9 +760,9 @@ def cli():
     parser.add_argument('--force-parameterize',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     args=parser.parse_args()
 
-
     logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
     logging.info('HTPolyNet Runtime begins.')
+
 
     if args.command=='info':
         info()
