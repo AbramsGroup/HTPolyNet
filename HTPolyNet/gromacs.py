@@ -80,25 +80,84 @@ def density_trace(edr='',**kwargs):
     density['ra']=density['density(kg/m^3)'].expanding(1).mean()
     logging.info(density.to_string())
 
+
+def encluster(i,j,c):
+    if c[i]==c[j]:
+        return True
+    if c[j]>c[i]:
+        for k in range(len(c)):
+            if c[k]==c[j]:
+                c[k]=c[i]
+    elif c[j]<c[i]:
+        for k in range(len(c)):
+            if c[k]==c[i]:
+                c[k]=c[j]
+    return False        
+
+def symm(d,thresh=0.10):
+    na=d.shape[0]
+    # initialize per-atom cluster id's to atom indexes (0-)
+    cluster_ids=np.arange(na)
+    # sort every column of distance matrix
+    d=np.sort(d,axis=0)
+    # make a list of columns
+    c=np.array([d[:,i] for i in range(d.shape[1])])
+    l=[]
+    # compute magnitude of distance between columns for 
+    # all unique pairs of columns, store as a list
+    # of 3-tuples (i,j,distance)
+    for i,ri in enumerate(c):
+        for j,rj in enumerate(c):
+            if i<j: 
+                ij=ri-rj
+                l.append((i,j,np.sqrt(ij.dot(ij))))
+
+    # sort the list by distances (not strictly necessary)
+    L=sorted(l,key=lambda x: x[2])
+        
+    # clusterize the i,j entries of each element of L
+    all_done=False
+    cpass=0
+    while not all_done:
+        all_done=True
+        for i,j,r in L:
+            if r<thresh:
+                all_done=encluster(i,j,cluster_ids)
+        cpass+=1
+
+    # reindex cluster id 
+    cpop={}
+    for i,c in enumerate(cluster_ids):
+        if not c in cpop:
+            cpop[c]=[]
+        cpop[c].append(i)
+    rc=set(cpop.keys())
+    for i,r in enumerate(rc):
+        for j in cpop[r]:
+            cluster_ids[j]=i
+    return cluster_ids
+
 def analyze_sea(deffnm,thresh=0.1):
+    if not os.path.exists(f'{deffnm}.trr'):
+        logging.error(f'{deffnm}.trr not found.')
+        return []
+    
     with GroTrrReader(f'{deffnm}.trr') as trrfile:
         d=np.array((0,))
         nframes=0
         for mobydick in trrfile:
             frame_natoms=mobydick['natoms']
             if d.shape==(1,):
-                print(frame_natoms)
                 d=np.zeros((frame_natoms,frame_natoms))
-                natoms=frame_natoms
             data=trrfile.get_data()
+            # tally all interatomic distances
             for i,ri in enumerate(data['x']):
                 for j,rj in enumerate(data['x']):
                     rij=ri-rj
                     dist=np.sqrt(rij.dot(rij))
                     d[i][j]+=dist
             nframes+=1
-        print(nframes)
+        # averages over frames
         d/=nframes
-        c,cids=symm(d,thresh=args.t)
-        for i,v in c.items():
-            print(i,v)
+        # send the distance matrix to be processed
+        return symm(d,thresh=thresh)

@@ -20,6 +20,7 @@ class Coordinates:
     mol2_atom_colunits = ['*','*',_ANGSTROM_,_ANGSTROM_,_ANGSTROM_,'*','*']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
+    coord_aux_attributes = ['sea-idx','reactive-role']
 
     def __init__(self,name=''):
         self.name=name
@@ -49,6 +50,7 @@ class Coordinates:
                     series['resNum'].append(int(x[0:5].strip()))
                     series['resName'].append(x[5:10].strip())
                     series['atomName'].append(x[10:15].strip())
+                    ''' if formatted correctly, globalIdx is row index + 1 always! '''
                     series['globalIdx'].append(int(x[15:20].strip()))
                     numbers=list(map(float,[y.strip() for y in x[20:].split()]))
                     series['posX'].append(numbers[0])
@@ -133,6 +135,9 @@ class Coordinates:
         return np.array([a.posX.mean(),a.posY.mean(),a.posZ.mean()])
 
     def rij(self,i,j,pbc=[1,1,1]):
+        ''' compute distance between atoms i and j
+            We assume that the DF row index is the
+            globalIdx-1! '''
         ri=self.D['atoms'].iloc[i-1][['posX','posY','posZ']].values
         rj=self.D['atoms'].iloc[j-1][['posX','posY','posZ']].values
         rij=ri-rj
@@ -190,6 +195,15 @@ class Coordinates:
         else:
             self.D[directive]=other.D[directive]
 
+    def write_sea(self,filename=''):
+        if not 'sea-id' in self.D['atoms'].columns:
+            raise Exception('There is no sea-id in this atoms dataframe')
+        if filename=='':
+            raise Exception('Please provide a file name to write sea data')
+        with open(filename,'w') as f:
+            seaformatters = [ lambda x: f'{x:>7d}', lambda x: f'{x:>7d}' ]
+            f.write(self.D['atoms'][['globalIdx','sea-idx']].to_string(header=False,index=False,formatters=seaformatters))
+
     def write_mol2(self,filename=''):
         if self.format!='mol2':
             raise Exception('This config instance is not in mol2 format')
@@ -242,7 +256,7 @@ class Coordinates:
                     sdf=self.D['atoms'].copy()
                     pos=(sdf.loc[:,['posX','posY','posZ']]-com)*posscale
                     sdf.loc[:,['posX','posY','posZ']]=pos
-                    f.write(sdf.to_string(header=False,index=False,formatters=atomformatters))
+                    f.write(sdf.to_string(colums=self.mol2_atom_colnames,header=False,index=False,formatters=atomformatters))
                 else:
                     f.write(self.D['atoms'].to_string(header=False,index=False,formatters=atomformatters))
                 f.write('\n')
@@ -253,11 +267,6 @@ class Coordinates:
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
                 
-    def write_gro(self,filename=''):
-        if filename!='':
-            with open(filename,'w') as f:
-                f.write(str(self))
-
     def atomcount(self):
         return self.N
 
@@ -490,31 +499,31 @@ class Coordinates:
                 self.metadat['nBonds']=len(self.D['bonds'])
             self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
-    def determine_sea(self,gro,top):
-        ''' Use a short 1000-K NVT MD simulation to generate a bunch of config samples
-            in order to determine symmetry-equivalent atoms.  '''
-        fetch('nvt-sea.mdp')
-
-    def __str__(self):
-        '''
-        Generates contents of a *.gro file
-        '''
-        retstr=self.title+'\n'+f'{self.N:>5d}\n'
+    def write_gro(self,filename=''):
+        ''' write coordinates in Gromacs format '''
+        if filename=='':
+            raise Exception('write_gro needs a filename')
         has_vel='velX' in self.D['atoms'].columns
-        for i,r in self.D['atoms'].iterrows():
-            retstr+=f'{r.resNum:5d}{r.resName:>5s}{r.atomName:>5s}{r.globalIdx:5d}{r.posX:8.3f}{r.posY:8.3f}{r.posZ:8.3f}'
+        with open(filename,'w') as f:
+            f.write(self.title+'\n')
+            f.write(f'{self.N:>5d}\n')
+            # TODO
+            atomformatters = [
+                lambda x: f'{x:>5d}',
+                lambda x: f'{x:>5s}',
+                lambda x: f'{x:>5s}',
+                lambda x: f'{x:>5d}']+[lambda x: f'{x:>8.3f}']*6
             if has_vel:
-                retstr+=f'{r.velX:8.4f}{r.velY:8.4f}{r.velZ:8.4f}'
-            retstr+='\n'
-        retstr+=f'{self.box[0][0]:10.5f}{self.box[1][1]:10.5f}{self.box[2][2]:10.5f}'
-        # output off-diagonals only if at least one of them is non-zero
-        x,y=self.box.nonzero()
-        if not all(x==y):
-            retstr+=f'{self.box[0][1]:10.5f}{self.box[0][2]:10.5f}'
-            retstr+=f'{self.box[1][0]:10.5f}{self.box[1][2]:10.5f}'
-            retstr+=f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}' 
-
-
+                f.write(self.D['atoms'].to_string(columns=self.gro_colnames),header=False,index=False,formatters=atomformatters)
+            else:
+                f.write(self.D['atoms'].to_string(columns=self.gro_colnames[:-3]),header=False,index=False,formatters=atomformatters[:-3])
+            f.write(f'{self.box[0][0]:10.5f}{self.box[1][1]:10.5f}{self.box[2][2]:10.5f}')
+            # output off-diagonals only if at least one of them is non-zero
+            x,y=self.box.nonzero()
+            if not all(x==y):
+                f.write(f'{self.box[0][1]:10.5f}{self.box[0][2]:10.5f}')
+                f.write(f'{self.box[1][0]:10.5f}{self.box[1][2]:10.5f}')
+                f.write(f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}')
 """
 MOL2 Format
 

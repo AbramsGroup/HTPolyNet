@@ -1,47 +1,40 @@
-''' Classes for handling a runtime file system '''
-'''
-root
-    |-->proj0
-    |-->proj1
-    |...
-    +-->projn
-            |-->basic
-            |-->mdp
-            |-->systems
-            |       |-->unrctSystems
-            |       |-->rctSystems
-            |       +-->typeSystems
-            |
-            +-->results
-                    |-->init
-                    |-->sim0
-                    |-->sim1
-                    |...
-                    +-->simn
-                            |-->init
+''' Classes for handling resource library and a runtime file system '''
 
-
-'''
 import logging
 import os
 import pathlib
 import importlib.resources
 
-_DefaultResourceTypes_=['cfg','mdp','mol2','top','itp','gro']
-_DefaultResourcePackageDir_='Library'
+_MolecularDataFileTypes_=['mol2','gro','top','itp','sea']
+_MoleculeClasses_=['monomers','oligomers']
 
 class Library:
-    def __init__(self,ResourceTypes=_DefaultResourceTypes_,basepath=_DefaultResourcePackageDir_):
-        self.types=ResourceTypes
-        self.basepath=basepath
-        self.libdir={}
-        if basepath==_DefaultResourcePackageDir_:
-            tt=importlib.resources.files(basepath)
-            for n in tt.iterdir():
-                if os.path.isdir(n) and '__' not in str(n):
-                    bn=str(n).split('/')[-1]
-                    if bn in ResourceTypes:
-                        self.libdir[bn]=n
+    ''' a library object -- default creation references the Library resource package. '''
+    def __init__(self,libpackage='Library'):
+        self.fullpaths={}
+        try:
+            # Important! This will allow the HTPolyNet runtime to know where the 
+            # Library package lives on the system without the user needing to know
+            tt=importlib.resources.files(libpackage)
+        except:
+            raise ImportError(f'Could not find library package {libpackage}.  Your HTPolyNet installation is corrupt.')
+        for n in tt.iterdir():
+            if os.path.isdir(n) and '__pycache__' not in str(n):
+                bn=os.path.basename(n)
+                self.fullpaths[bn]=n
+
+    def dir(self,filename):
+        prefix,ext=os.path.splitext(filename)
+        try:
+            ldir=os.path.join(self.fullpaths[ext],filename)
+        except KeyError as msg:
+            raise Exception(f'No top-level resource directory "{ext}"')
+        if ext in _MolecularDataFileTypes_:
+            for sd in _MoleculeClasses_:
+                testfile=os.path.join(ldir,sd,filename)
+                if os.path.exists(testfile):
+                    return os.path.join(ldir,sd)
+
 
     def dir(self,typestr):
         return self.libdir.get(typestr,None)

@@ -20,14 +20,13 @@ from HTPolyNet.topology import Topology
 from HTPolyNet.software import Software
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
-#import HTPolyNet.projectfilesystem as pfs
 
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, analyze_sea
 from HTPolyNet.molecule import oligomerize, Oligomer
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
-    def __init__(self,cfgfile='',restart=Fales):
+    def __init__(self,cfgfile='',restart=False):
         self.software=Software()
         logging.info(str(self.software))
         if cfgfile=='':
@@ -115,25 +114,30 @@ class HTPolyNet:
         fetch=self.pfs.fetch
         if not os.path.exists(seamdp+'.mdp'):
             fetch(seamdp+'.mdp')
-        # exist=self.pfs.exist
+        exist=self.pfs.exist
         store=self.pfs.store
         for n,m in self.cfg.monomers.items():
-            for ex in ['top','itp','gro']:
-                fetch(f'{n}-p.{ex}')
-            grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
-                            mdp=seamdp,out=f'{n}-p-sea',boxSize=boxSize)
-            m.Coords['active'].D['atoms']['sea-id']=analyze_sea(f'{n}-p-sea')
-            m.Coords['active'].write_sea(f'{n}-p.sea')
-            store(f'{n}-p.sea')
+            if not exist(f'{n}-p.sea'):
+                logging.info(f'Determining SEA for molecule {n}')
+                for ex in ['top','itp','gro']:
+                    fetch(f'{n}-p.{ex}')
+                logging.info(f'  hot md running...output to {n}-p-sea')
+                grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
+                                mdp=seamdp,out=f'{n}-p-sea',boxSize=boxSize)
+                m.Coords['active'].D['atoms']['sea-id']=analyze_sea(f'{n}-p-sea')
+                m.Coords['active'].write_sea(f'{n}-p.sea')
+                store(f'{n}-p.sea')
             if len(m.capping_bonds)>0:
-                logging.info(f'Fetching parameterization of capped version of monomer {n}')
-                for ex in ['mol2','top','itp','gro']:
-                        fetch(f'{n}-capped.{ex}')
-                grompp_and_mdrun(gro=f'{n}-capped',top=f'{n}-capped',
-                                mdp=seamdp,out=f'{n}-capped-sea',boxSize=boxSize)
-                m.Coords['inactive'].D['atoms']['sea-id']=analyze_sea(f'{n}-capped-sea')
-                m.Coords['inactive'].write_sea(f'{n}-capped.sea')
-                store(f'{n}-capped.sea')
+                if not exist(f'{n}-capped.sea'):
+                    logging.info(f'Determining SEA for molecule {n}-capped')
+                    for ex in ['mol2','top','itp','gro']:
+                            fetch(f'{n}-capped.{ex}')
+                    logging.info(f'  hot md running...output to {n}-capped-sea')
+                    grompp_and_mdrun(gro=f'{n}-capped',top=f'{n}-capped',
+                                    mdp=seamdp,out=f'{n}-capped-sea',boxSize=boxSize)
+                    m.Coords['inactive'].D['atoms']['sea-id']=analyze_sea(f'{n}-capped-sea')
+                    m.Coords['inactive'].write_sea(f'{n}-capped.sea')
+                    store(f'{n}-capped.sea')
 
     def make_oligomer_templates(self,force_parameterize=False):
         logging.info(f'Building oligomer templates in {self.pfs.rctPath}')
@@ -682,6 +686,7 @@ class HTPolyNet:
         force_capping=kwargs.get('force_capping',False)
         force_parameterize=kwargs.get('force_parameterize',False)
         self.initialize_topology(force_capping=force_capping,force_parameterize=force_parameterize)
+        self.determine_monomer_sea()
         self.make_oligomer_templates(force_parameterize=force_parameterize)
         self.write_global_topology(dest=self.pfs.unrctPath)
         self.do_liquid_simulation()
