@@ -260,16 +260,15 @@ class HTPolyNet:
         iter=0
         while not scur_complete:
             scur_complete=True
-
             # TODO: everything
             curr_nxlinkbonds=max_nxlinkbonds-self.D['atoms']['z'].sum()
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
-
             scur_complete = scur_complete or iter>maxiter
             if not scur_complete:
                 # update search radius?
                 pass
+            iter+=1
         pass
 
     def initialize_reactive_topology(self):
