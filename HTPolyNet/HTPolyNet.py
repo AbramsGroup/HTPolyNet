@@ -282,15 +282,25 @@ class HTPolyNet:
         logging.info(f'SCUR iterations complete.')
 
     def make_scur_bonds(self,radius):
-        #TODO: implement all this!!
         adf=self.Coord.D['atoms']
+        # get atoms that have H or T only
         raset=adf[(adf['rctvty'].isin('HT'))&(adf['z']>0)]
         newbonds=[]
         for i in range(len(raset)-1):
             for j in range(i+1,len(raset)):
-                if bond_allowed(i,j,radius):
-                    newbonds.append([i,j])
+                # atoms must have H or T in opposition
+                if adf.iloc[i]['rctvty']!=adf.iloc[j]['rctvty']:
+                    # TODO: implement bond_allowed filter
+                    if bond_allowed(i,j,radius):
+                        newbonds.append([i,j])
         if len(newbonds)>0:
+            # TODO: all the hard stuff
+            # newbonds->update topology
+            # update charges
+            # update coords/bonds/rctivity info
+            # write gro/top
+            # grompp_and_run minimization + NPT relaxation
+            # update coords
             pass
         return 0
 
