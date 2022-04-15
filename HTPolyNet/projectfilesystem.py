@@ -5,68 +5,149 @@ import os
 import pathlib
 import importlib.resources
 
+from HTPolyNet.software import Command
+
 _MolecularDataFileTypes_=['mol2','gro','top','itp','sea']
 _MoleculeClasses_=['monomers','oligomers']
 
 class Library:
     ''' a library object -- default creation references the Library resource package. '''
-    def __init__(self,libpackage='Library'):
-        self.fullpaths={}
+    def __init__(self):
+        self.alldirs=[]
+        self.allfiles=[]
+        self.molecule_class_subdirs={}
+        self.designation='Empty'
+    
+    @classmethod
+    def system(cls,libpackage='Library',verbose=False):
+        inst=cls()
+        inst.designation='System'
         try:
-            # Important! This will allow the HTPolyNet runtime to know where the 
-            # Library package lives on the system without the user needing to know
             tt=importlib.resources.files(libpackage)
         except:
-            raise ImportError(f'Could not find library package {libpackage}.  Your HTPolyNet installation is corrupt.')
+            raise ImportError(f'Could not find package {libpackage}.  Your HTPolyNet installation is corrupt.')
         for n in tt.iterdir():
-            if os.path.isdir(n) and '__pycache__' not in str(n):
-                bn=os.path.basename(n)
-                self.fullpaths[bn]=n
+            inst.allfiles.extend(inst._frec(n))
+            inst.alldirs.extend(inst._drec(n))
+        for c in _MoleculeClasses_:
+            dir=[x for x in inst.alldirs if c in str(x)]
+            if len(dir)==0:
+                raise Exception(f'No "molecules/{dir}" directory in {libpackage}')
+            inst.molecule_class_subdirs[c]=dir[0]
+        logging.info(inst.info(verbose=verbose))
+        return inst
 
-    def dir(self,filename):
-        prefix,ext=os.path.splitext(filename)
-        try:
-            ldir=os.path.join(self.fullpaths[ext],filename)
-        except KeyError as msg:
-            raise Exception(f'No top-level resource directory "{ext}"')
-        if ext in _MolecularDataFileTypes_:
-            for sd in _MoleculeClasses_:
-                testfile=os.path.join(ldir,sd,filename)
-                if os.path.exists(testfile):
-                    return os.path.join(ldir,sd)
+    @classmethod
+    def user(cls,pathname='.'):
+        inst=cls()
+        inst.designation='User'
+        tt=os.path.abspath(pathname)
+        logging.warning('User-level data libraries are not yet implemented. Sorry!')
+        if not tt.is_dir():
+            logging.error('error')
+        return inst
 
+    def _frec(self,n):
+        if n.is_file():
+            return [n]
+        elif n.is_dir():
+            ret=[]
+            for m in n.iterdir():
+                ret.extend(self._frec(m))
+            return ret
+        else:
+            return []
 
-    def dir(self,typestr):
-        return self.libdir.get(typestr,None)
+    def _drec(self,n):
+        if n.is_dir():
+            if n!='__pycache__':
+                ret=[n]
+                for m in n.iterdir():
+                    ret.extend(self._drec(m))
+                return ret
+            else:
+                return []
+        else:
+            return []
 
-    def __str__(self):
-        s=''
-        for k,v in self.libdir.items():
-            s+=f'{k}: {v}\n'
-        return s
+    def path(self,basefilename):
+        ''' return the absolute path of the provided basename in the Library, or, if the basename is not in the library, return the path to the subdirectory it *should* go in.  Return False if no such path exists in the Library. '''
+        if os.path.sep in basefilename:
+            logging.warning(f'basefilename {basefilename} seems to have path separators.  It should be a base name only.')
+            basefilename=os.path.basename(basefilename)
+            logging.warning(f'...interpreting as {basefilename}')
+        matches = [x for x in self.allfiles if basefilename in str(x)]
+        if len(matches)==0:
+            ''' this file is not found, but we will return the path where it should go '''
+            root,ext=os.path.splitext(basefilename)
+            ext=ext.replace('.','')
+            if not ext in _MolecularDataFileTypes_:
+                ''' this is not a molecular data file '''
+                matches = [x for x in self.alldirs if ext in str(x)]
+                if len(matches)==0:
+                    return False
+                return matches[0]
+            else:
+                ''' this is a molecular data file '''
+                ''' an oligomer will have @ in its file name '''
+                if '@' in basefilename:
+                    return self.molecule_class_subdirs['oligomers']
+                else:
+                    return self.molecule_class_subdirs['monomers']
+        return matches[0]
 
-    def info(self):
-        print('\nHTPolyNet libraries:')
-        for k,v in self.libdir.items():
-            f=list(os.listdir(v))
-            l=len(f)
-            ess='' if l==1 else 's'
-            c=':' if l>0 else '.'
-            print(f'  {k} ({v}) has {len(f)} file{ess}{c}')
-            if len(f)>0:
-                maxlen=max([len(i) for i in f])
-                ncol=70//(maxlen+2)
-                outstr=r'  {:>'+str(maxlen)+r's}'
-                for i in range(0,len(f),ncol):
-                    print('    ',end='')
-                    for j in range(i,i+ncol):
-                        if j<len(f):
-                            print(outstr.format(f[j]),end='')
-                    print()
+    def checkin(self,basefilename,overwrite=False):
+        if not os.path.exists(basefilename):
+            logging.info(f'{basefilename} not found. No check-in performed.')
+            return False
+        ''' add the local file basefilename to the Library if it is not already there '''
+        p=self.path(basefilename)
+        if p.is_file():
+            if overwrite:
+                out,err=Command(f'cp -f {basefilename} {p}').run()
+                return True
+            else:
+                logging.info(f'Check-in of {basefilename} to {self.designation} library is not necessary.')
+                logging.info(f'    {p} is already there.')
+        elif p.is_dir():
+            out,err=Command(f'cp {basefilename} {p}').run()
+            self.allfiles.append(os.path.join(p,basefilename))
+            return True
+        return False  # this would be the result of an unspecified error
 
+    def checkout(self,basefilename):
+        p=self.path(basefilename)
+        if p and p.is_file():
+            logging.info(f'Checking {basefilename} out of {self.designation} library into {os.getcwd()}')
+            Command(f'cp {p} .').run()
+            return True
+        else:
+            logging.info(f'{basefilename} is not found in the {self.designation} library')
+            if p and p.is_dir():
+                logging.info(f'    but I expected to find it in {p}.')
+            else:
+                root,ext=os.path.splitext(basefilename)
+                logging.info(f'    because I have no information on where {ext} files should go.')
+            return False
+    
+    def exists(self,basefilename):
+        p=self.path(basefilename)
+        if p and p.is_file():
+            return True
+        return False
+
+    def info(self,verbose=False):
+        retstr=f'HTPolyNet Library {self.designation} Directories:\n'
+        for d in self.alldirs:
+            retstr+=f'   {d}\n'
+        if verbose:
+            retstr+=f'HTPolyNet Library {self.designation} Files:\n'
+            for f in self.allfiles:
+                retstr+=f'    {f}\n'
+        return retstr
 
 class ProjectFileSystem:
-    def __init__(self,root='.',verbose=False,reProject=False):
+    def __init__(self,root='.',verbose=False,reProject=False,userlibrary=None):
         self.rootPath=pathlib.Path(root).resolve()
         self.cwd=self.rootPath
         self.verbose=verbose
@@ -74,7 +155,10 @@ class ProjectFileSystem:
         self._next_project_dir(reProject=reProject)
         self._setup_project_root()
         self.cd(self.rootPath)
-        self.library=Library()
+        self.library=Library.system()
+        self.userlibrary=userlibrary
+        if userlibrary:
+            self.userlibrary=Library.user(userlibrary)
 
     def cd(self,dest=''):
         os.chdir(dest)
@@ -93,51 +177,6 @@ class ProjectFileSystem:
         ext=name.split('.')[-1]
         fullname=os.path.join(self.library.dir(ext),name)
         return os.path.exists(fullname)
-
-    def fetch(self,name,destpath='.',overwrite='yes',altpath=None):
-        ext=name.split('.')[-1]
-        searchpath=[self.rootPath,self.projPath,self.library.dir(ext)]
-        if altpath!=None:
-            searchpath=[altpath]+searchpath
-        destfname=os.path.join(destpath,name)
-        for p in searchpath:
-            afname=os.path.join(p,name)
-            if os.path.exists(afname):
-                if os.path.exists(destfname):
-                    if overwrite=='yes':
-                        logging.info(f'Fetching {afname} into {destpath} (overwriting {destfname})')
-                        os.system(f'cp {afname} {destpath}')
-                    elif overwrite=='if_newer':
-                        logging.info(f'Fecthing newer {afname} into {destpath} (overwriting {destfname})')
-                        if os.path.getctime(destfname) < os.path.getctime(afname):
-                            os.system(f'cp {afname} {destpath}')
-                    else:
-                        logging.info(f'Refusing to fetch older {afname} into {destpath} because existing {destfname} is newer')
-                else:
-                    logging.info(f'Fetching {afname} into {destpath}')
-                    os.system(f'cp {afname} {destpath}')
-                return True
-        else:
-            return False
-
-    def store(self,name,altdestpath=None,overwrite='yes'):
-        ''' stores files in package library or in an alternate location'''
-        ext=name.split('.')[-1]
-        libdestpath=self.library.dir(ext)
-        destfullname=os.path.join(libdestpath if not altdestpath else altdestpath,name)
-        if os.path.exists(destfullname):
-            if overwrite=='yes':
-                logging.info(f'Storing {name} over {destfullname}')
-                os.system(f'cp {name} {destfullname}')
-            elif overwrite=='if_newer':
-                logging.info(f'Storing newer {name} over {destfullname}')
-                if os.path.getctime(destfullname) < os.path.getctime(name):
-                    os.system(f'cp {name} {destfullname}')
-            else:
-                logging.info(f'Refusing to store older {name} over {destfullname}')
-        else:
-            logging.info(f'Storing {name} to {destfullname}')
-            os.system(f'cp {name} {destfullname}')
 
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'

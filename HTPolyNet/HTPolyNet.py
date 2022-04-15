@@ -41,34 +41,47 @@ class HTPolyNet:
         logging.info(f'Read configuration from {cfgfile}')
         ''' initialize an empty topology '''
         self.Topology=Topology(system=self.cfg.Title)
+        self.local_data_searchpath=[self.pfs.rootPath,self.pfs.projPath]
+
+    def checkout(self,filename,altpath=None):
+        if not self.pfs.library.checkout(filename):
+            searchpath=self.local_data_searchpath
+            if altpath:
+                searchpath.append(altpath)
+            for p in searchpath:
+                if os.path.exists(os.path.join(p,filename)):
+                    Software.Command(f'cp {os.path.join(p,filename)} .').run()
+                    return True
+            return False
+        return True
 
     def initialize_topology(self,force_parameterize=False,force_capping=False):
         ''' Create a full gromacs topology that includes all directives necessary 
             for an initial liquid simulation.  This will NOT use any #include's;
             all types will be explicitly in-lined. '''
         self.pfs.cd(self.pfs.unrctPath)
-        fetch=self.pfs.fetch
-        exist=self.pfs.exist
-        store=self.pfs.store
+        exists=self.pfs.library.exists
+        checkin=self.pfs.library.checkin
         if os.path.isfile('init.top'):
             logging.info(f'init.top already exists in {self.pfs.unrctPath} but we will rebuild it anyway!')
         comp=self.cfg.parameters['composition']
         for n,m in self.cfg.monomers.items():
-            if not fetch(f'{n}.mol2'):
-                logging.error(f'{n}.mol2 not found in project root, parent, or library')
-                raise FileNotFoundError(f'{n}.mol2 not found in project root, parent, or library')
-            already_parameterized = all([exist(f'{n}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
+            already_parameterized = all([exists(f'{n}{ex}') for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']])
             if force_parameterize or not already_parameterized:
                 logging.info(f'Fetching input monomer structure {n}.mol2')
-                fetch(f'{n}.mol2')
-                logging.info(f'Parameterizing monomer {n}')
-                GAFFParameterize(n,f'{n}-p',force=force_parameterize,parmed_save_inline=False)
-                for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
-                    store(f'{n}{ex}',overwrite='if_newer')
+                if self.checkout(f'{n}.mol2'):
+                    logging.info(f'Parameterizing monomer {n}')
+                    GAFFParameterize(n,f'{n}-p',force=force_parameterize,parmed_save_inline=False)
+                    for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
+                        checkin(f'{n}{ex}',overwrite=True)
+                else:
+                    logging.error(f'No {n}.mol2 found.')
+                    raise FileNotFoundError(f'No {n}.mol2 found.')
             else:
                 logging.info(f'Fetching parameterized monomer {n}')
+                self.checkout(f'{n}.mol2')
                 for ex in ['-p.mol2','-p.top','-p.itp','-p.gro']:
-                    fetch(f'{n}{ex}')
+                    self.checkout(f'{n}{ex}')
             logging.info(f'Reading {n}-p.top, replicating, merging into global topology.')
             t=Topology.read_gro(f'{n}-p.top')
             m.Topology['active']=t
@@ -81,7 +94,7 @@ class HTPolyNet:
             m.update_atom_specs(paramMol2,userMol2)
             m.Coords['active']=paramMol2
             if len(m.capping_bonds)>0:
-                already_parameterized = all([exist(f'{n}-capped.{ex}') for ex in  ['mol2','top','itp','gro']])
+                already_parameterized = all([exists(f'{n}-capped.{ex}') for ex in  ['mol2','top','itp','gro']])
                 if force_capping or not already_parameterized:
                     logging.info('Building capped version of monomer {m}')
                     capped=paramMol2.cap(m.capping_bonds)
@@ -89,7 +102,7 @@ class HTPolyNet:
                     logging.info(f'Parameterizing {n}-capped\n')
                     GAFFParameterize(f'{n}-capped-unminimized',f'{n}-capped',force=force_capping,parmed_save_inline=False)
                     logging.info(f'Minimizing {n}-capped')
-                    fetch('em-single-molecule.mdp')
+                    self.checkout('em-single-molecule.mdp')
                     grompp_and_mdrun(gro=f'{n}-capped',top=f'{n}-capped',
                                     mdp='em-single-molecule',
                                     out=f'{n}-capped',boxSize=[15.,15.,15.])
@@ -97,53 +110,52 @@ class HTPolyNet:
                     capped.copy_coords(m.Coords['inactive'])
                     capped.write_mol2(f'{n}-capped.mol2')
                     for ex in ['mol2','top','itp','gro']:
-                        store(f'{n}-capped.{ex}',overwrite='if_newer')
+                        checkin(f'{n}-capped.{ex}',overwrite='if_newer')
                 else:
                     logging.info(f'Fetching parameterization of capped version of monomer {n}')
                     for ex in ['mol2','top','itp','gro']:
-                        fetch(f'{n}-capped.{ex}')
+                        self.checkout(f'{n}-capped.{ex}')
                 m.Coords['inactive']=Coordinates.read_gro(f'{n}-capped.gro')
                 logging.info(f'Reading {n}-capped.top and merging types into global topology')
                 m.Topology['inactive']=Topology.read_gro(f'{n}-capped.top')
                 self.Topology.merge_types(t)
         logging.info(f'Extended topology has {self.Topology.atomcount()} atoms.')
 
-    def determine_monomer_sea(self,seamdp='nvt-sea',boxSize=[4,4,4]):
+    def determine_monomer_sea(self,seamdp='nvt-sea',boxSize=[4,4,4],force_sea_calculation=False):
         ''' Determine symmetry-equivalent atoms in every monomer '''
         self.pfs.cd(self.pfs.unrctPath)
-        fetch=self.pfs.fetch
-        if not os.path.exists(seamdp+'.mdp'):
-            fetch(seamdp+'.mdp')
-        exist=self.pfs.exist
-        store=self.pfs.store
+        #exists=self.pfs.library.exists
+        checkin=self.pfs.library.checkin
+        self.checkout(f'{seamdp}.mdp')
         for n,m in self.cfg.monomers.items():
-            if not exist(f'{n}-p.sea'):
+            success=self.checkout(f'{n}-p.sea')
+            logging.debug(f'Should be false {not success} or {force_sea_calculation}')
+            if not success or force_sea_calculation:
                 logging.info(f'Determining SEA for molecule {n}')
                 for ex in ['top','itp','gro']:
-                    fetch(f'{n}-p.{ex}')
+                    self.checkout(f'{n}-p.{ex}')
                 logging.info(f'  hot md running...output to {n}-p-sea')
                 grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
                                 mdp=seamdp,out=f'{n}-p-sea',boxSize=boxSize)
-                m.Coords['active'].D['atoms']['sea-id']=analyze_sea(f'{n}-p-sea')
+                m.Coords['active'].D['atoms']['sea-idx']=analyze_sea(f'{n}-p-sea')
                 m.Coords['active'].write_sea(f'{n}-p.sea')
-                store(f'{n}-p.sea')
+                checkin(f'{n}-p.sea')
             if len(m.capping_bonds)>0:
-                if not exist(f'{n}-capped.sea'):
+                if not self.checkout(f'{n}-capped.sea') or force_sea_calculation:
                     logging.info(f'Determining SEA for molecule {n}-capped')
                     for ex in ['mol2','top','itp','gro']:
-                            fetch(f'{n}-capped.{ex}')
+                        self.checkout(f'{n}-capped.{ex}')
                     logging.info(f'  hot md running...output to {n}-capped-sea')
                     grompp_and_mdrun(gro=f'{n}-capped',top=f'{n}-capped',
                                     mdp=seamdp,out=f'{n}-capped-sea',boxSize=boxSize)
-                    m.Coords['inactive'].D['atoms']['sea-id']=analyze_sea(f'{n}-capped-sea')
+                    m.Coords['inactive'].D['atoms']['sea-idx']=analyze_sea(f'{n}-capped-sea')
                     m.Coords['inactive'].write_sea(f'{n}-capped.sea')
-                    store(f'{n}-capped.sea')
+                    checkin(f'{n}-capped.sea')
 
     def make_oligomer_templates(self,force_parameterize=False):
         logging.info(f'Building oligomer templates in {self.pfs.rctPath}')
-        fetch=self.pfs.fetch
-        exist=self.pfs.exist
-        store=self.pfs.store
+        exists=self.pfs.library.exists
+        checkin=self.pfs.library.checkin
         self.pfs.cd(self.pfs.rctPath)
         self.cfg.oligomers={}
         for r in self.cfg.reactions:
@@ -155,13 +167,13 @@ class HTPolyNet:
             logging.debug(f'Preparing to parameterize {len(these_oligos)} oligomers')
             for o,olig in these_oligos.items():
                 logging.debug(f'   olig {o}')
-                already_parameterized=all([exist(f'{o}-p.{ex}') for ex in ['mol2','top','itp','gro']])
+                already_parameterized=all([exists(f'{o}-p.{ex}') for ex in ['mol2','top','itp','gro']])
                 if force_parameterize or not already_parameterized:
                     logging.info(f'Parameterizing oligomer template {o}')
                     olig.coord.write_mol2(f'{o}.mol2')
                     GAFFParameterize(f'{o}',f'{o}-p',force=force_parameterize,parmed_save_inline=False)
                     logging.info(f'Minimizing oligomer template {o}')
-                    fetch('em-single-molecule.mdp')
+                    self.checkout('em-single-molecule.mdp')
                     grompp_and_mdrun(gro=f'{o}-p',
                                     top=f'{o}-p',
                                     mdp='em-single-molecule',
@@ -170,11 +182,11 @@ class HTPolyNet:
                     olig.coord.copy_coords(tmp)
                     olig.coord.write_mol2(f'{o}-p.mol2')
                     for ex in ['mol2','top','itp','gro']:
-                        store(f'{o}-p.{ex}',overwrite='if_newer')
+                        checkin(f'{o}-p.{ex}',overwrite='if_newer')
                 else:
                     logging.info(f'Oligomer {o} is already parameterized.')
                     for ex in ['mol2','top','itp','gro']:
-                        fetch(f'{o}-p.{ex}')
+                        self.checkout(f'{o}-p.{ex}')
                 logging.info(f'Reading {o}-p.top and merging types into global topology')
                 t=Topology.read_gro(f'{o}-p.top')
                 olig.topology=t
@@ -182,8 +194,8 @@ class HTPolyNet:
                 logging.info(f'Oligo {o} stoich: {olig.stoich}')
                 for m,c in olig.stoich:
                     logging.info(f'Providing oligo {o} base topology from {m.name}')
-                    fetch(f'{m.name}-p.top')
-                    fetch(f'{m.name}-p.itp')
+                    self.checkout(f'{m.name}-p.top')
+                    self.checkout(f'{m.name}-p.itp')
                     t=Topology.read_gro(f'{m.name}-p.top')
                     t.rep_ex(c)
                     olig.unlinked_topology.merge(t)
@@ -206,12 +218,12 @@ class HTPolyNet:
         self.pfs.cd(self.pfs.next_results_dir())
         # fetch unreacted init.top amd all monomer gro's 
         # from parameterization directory
-        self.pfs.fetch('init.top',altpath=self.pfs.unrctPath)
+        self.checkout('init.top',altpath=self.pfs.unrctPath)
         for n in self.cfg.monomers.keys():
-            self.pfs.fetch(f'{n}-p.gro',altpath=self.pfs.unrctPath)
+            self.checkout(f'{n}-p.gro',altpath=self.pfs.unrctPath)
         # fetch mdp files from library, or die if not found
-        self.pfs.fetch('em.mdp')
-        self.pfs.fetch('npt-1.mdp')
+        self.checkout('em.mdp')
+        self.checkout('npt-1.mdp')
         if 'initial_boxsize' in self.cfg.parameters:
             boxsize=self.cfg.parameters['initial_boxsize']
         elif 'initial_density' in self.cfg.parameters:
@@ -241,9 +253,6 @@ class HTPolyNet:
         pass
 
     def initreport(self):
-        print('Libraries:')
-        print(self.Library)
-        print()
         print(self.cfg)
         print()
         print(self.software)
@@ -685,8 +694,9 @@ class HTPolyNet:
     def main(self,**kwargs):
         force_capping=kwargs.get('force_capping',False)
         force_parameterize=kwargs.get('force_parameterize',False)
+        force_sea_calculation=kwargs.get('force_sea_calculation',False)
         self.initialize_topology(force_capping=force_capping,force_parameterize=force_parameterize)
-        self.determine_monomer_sea()
+        self.determine_monomer_sea(force_sea_calculation=force_sea_calculation)
         self.make_oligomer_templates(force_parameterize=force_parameterize)
         self.write_global_topology(dest=self.pfs.unrctPath)
         self.do_liquid_simulation()
@@ -763,6 +773,7 @@ def cli():
     parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     parser.add_argument('--force-capping',default=False,action='store_true',help='force GAFF reparameterization any monomer capping directives in config file')
     parser.add_argument('--force-parameterize',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
+    parser.add_argument('--force-sea-calculation',default=False,action='store_true',help='force calculation of symmetry-equivalent atoms in any input mol2 structures')
     args=parser.parse_args()
 
     logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
@@ -773,7 +784,7 @@ def cli():
         info()
     elif args.command=='run':
         a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
-        a.main(force_capping=args.force_capping,force_parameterize=args.force_parameterize)
+        a.main(force_capping=args.force_capping,force_parameterize=args.force_parameterize,force_sea_calculation=args.force_sea_calculation)
     else:
         print(f'HTPolyNet command {args.command} not recognized')
     

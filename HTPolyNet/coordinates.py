@@ -196,7 +196,7 @@ class Coordinates:
             self.D[directive]=other.D[directive]
 
     def write_sea(self,filename=''):
-        if not 'sea-id' in self.D['atoms'].columns:
+        if not 'sea-idx' in self.D['atoms'].columns:
             raise Exception('There is no sea-id in this atoms dataframe')
         if filename=='':
             raise Exception('Please provide a file name to write sea data')
@@ -256,9 +256,9 @@ class Coordinates:
                     sdf=self.D['atoms'].copy()
                     pos=(sdf.loc[:,['posX','posY','posZ']]-com)*posscale
                     sdf.loc[:,['posX','posY','posZ']]=pos
-                    f.write(sdf.to_string(colums=self.mol2_atom_colnames,header=False,index=False,formatters=atomformatters))
+                    f.write(sdf.to_string(columns=self.mol2_atom_colnames,header=False,index=False,formatters=atomformatters))
                 else:
-                    f.write(self.D['atoms'].to_string(header=False,index=False,formatters=atomformatters))
+                    f.write(self.D['atoms'].to_string(columns=self.mol2_atom_colnames,header=False,index=False,formatters=atomformatters))
                 f.write('\n')
                 f.write('@<TRIPOS>BOND\n')
                 f.write(self.D['bonds'].to_string(header=False,index=False,formatters=bondformatters))
