@@ -148,8 +148,8 @@ class Coordinates:
                     rij[c]+=self.box[c][c]
                 elif rij[c]>hbx:
                     rij[c]-=self.box[c][c]
-        logging.info(f'i {i} j {j} rij {rij} mag {np.sqrt(rij.dot(rij))}')
-        logging.info(f'pbc {pbc} box {self.box[0][0]} {self.box[1][1]} {self.box[2][2]}')
+        # logging.info(f'i {i} j {j} rij {rij} mag {np.sqrt(rij.dot(rij))}')
+        # logging.info(f'pbc {pbc} box {self.box[0][0]} {self.box[1][1]} {self.box[2][2]}')
         return np.sqrt(rij.dot(rij))
 
     def calc_distance_matrix(self):
@@ -465,7 +465,7 @@ class Coordinates:
                     adf.iloc[a-1]['rctvty']='N'
                 if adf.iloc[b-1]['z']==0:
                     adf.iloc[b-1]['rctvty']='N'
-                    
+
     def delete_atoms(self,idx=[],reindex=True):
         '''
         Deletes atoms whose global indices appear in the list idx.

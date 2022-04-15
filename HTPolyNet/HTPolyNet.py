@@ -250,26 +250,41 @@ class HTPolyNet:
         self.pfs.cdroot()
 
     def SCUR(self):
-        # TODO:
+        # Search - Connect - Update - Relax
         self.initialize_reactive_topology()
         max_nxlinkbonds=self.D['atoms']['z'].sum()/2
         scur_complete=False
         scur_search_radius=self.cfg.parameters['SCUR_cutoff']
         desired_conversion=self.cfg.parameters['conversion']
+        radial_increment=self.cfg.parameters.get('SCUR_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('maxSCURiter',20)
         iter=0
         while not scur_complete:
+            logging.info(f'SCUR iteration {iter} begins')
             scur_complete=True
-            # TODO: everything
+            # TODO: everything -- identify bonds less than radius
+            # make bonds, relax
+            num_newbonds=self.scur_make_bonds(scur_search_radius)
             curr_nxlinkbonds=max_nxlinkbonds-self.D['atoms']['z'].sum()
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
-            scur_complete = scur_complete or iter>maxiter
+            scur_complete=scur_complete or iter>maxiter
             if not scur_complete:
-                # update search radius?
-                pass
+                if num_newbonds==0:
+                    logging.info(f'No new bonds in SCUR iteration {iter}')
+                    logging.info(f'-> updating search radius to {scur_search_radius}')
+                    scur_search_radius += radial_increment
+                    logging.info(f'-> updating search radius to {scur_search_radius}')
             iter+=1
-        pass
+            logging.info(f'SCUR iteration {iter} ends')
+            logging.info(f'Current conversion: {curr_conversion}')
+            logging.info(f'   SCUR complete? {scur_complete}')
+        logging.info(f'SCUR iterations complete.')
+
+    def make_scur_bonds(self,radius):
+        adf=self.Coord.D['atoms']
+        raset=adf[(adf['rctvty'].isin('HT'))&(adf['z']>0)]
+        return 0
 
     def initialize_reactive_topology(self):
         ''' adds the 'rctvty' and 'z' attributes to each Coord atom 
