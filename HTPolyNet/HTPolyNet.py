@@ -282,8 +282,16 @@ class HTPolyNet:
         logging.info(f'SCUR iterations complete.')
 
     def make_scur_bonds(self,radius):
+        #TODO: implement all this!!
         adf=self.Coord.D['atoms']
         raset=adf[(adf['rctvty'].isin('HT'))&(adf['z']>0)]
+        newbonds=[]
+        for i in range(len(raset)-1):
+            for j in range(i+1,len(raset)):
+                if bond_allowed(i,j,radius):
+                    newbonds.append([i,j])
+        if len(newbonds)>0:
+            pass
         return 0
 
     def initialize_reactive_topology(self):
