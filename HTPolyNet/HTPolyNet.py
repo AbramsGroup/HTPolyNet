@@ -251,17 +251,39 @@ class HTPolyNet:
 
     def SCUR(self):
         # TODO:
-        # 1. Using monomer templates, indicate reactive atoms in 
-        #    coordinates, e.g., self.D['atoms']['rctvty']='H'|'T'|'N'
-        #    This will require the bondlist and the monomer info
-        self.update_reactive_topology()
-        # 
+        self.initialize_reactive_topology()
+        max_nxlinkbonds=self.D['atoms']['z'].sum()/2
+        scur_complete=False
+        scur_search_radius=self.cfg.parameters['SCUR_cutoff']
+        desired_conversion=self.cfg.parameters['conversion']
+        maxiter=self.cfg.parameters.get('maxSCURiter',20)
+        iter=0
+        while not scur_complete:
+            scur_complete=True
+
+            # TODO: everything
+            curr_nxlinkbonds=max_nxlinkbonds-self.D['atoms']['z'].sum()
+            curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
+            scur_complete=curr_conversion>desired_conversion
+
+            scur_complete = scur_complete or iter>maxiter
+            if not scur_complete:
+                # update search radius?
+                pass
         pass
 
-    def update_reactive_topology(self):
+    def initialize_reactive_topology(self):
+        ''' adds the 'rctvty' and 'z' attributes to each Coord atom 
+            rctvty: reactivity flag, 'H' or 'T' or 'N'
+            H's may only bond to 'T's, and 'N''s cannot bond.
+            z: number of crosslink bonding positions available at 
+            this atom
+        '''
         adf=self.Coords.D['atoms']
-        bondlist=self.Coords.bondlist
         rctvty=[]
+        atz=[]
+        ''' first pass -- assign independently using
+            monomer templates '''
         for i,r in adf.iterrows():
             molname=r['resName']
             if not molname in self.cfg.monomers:
@@ -272,14 +294,40 @@ class HTPolyNet:
             if atomname in m.reactive_atoms:
                 ht=m.reactive_atoms[atomname].ht
                 z=m.reactive_atoms[atomname].z
-                rctvty.append(ht)
             else:
-                rctvty.append('N')
+                ht='N'
                 z=0
-            atomidx=r['globalIdx']
-            if z>0:
-                # check this atoms bondlist for reactive neighbors?
-                pass
+            rctvty.append(ht)
+            atz.append(z)
+        adf['rctvty']=rctvty
+        adf['z']=atz
+
+        ''' second pass -- update individual atoms rctvty and z based
+            on current bonding topology '''
+        # for i in range(len(adf)):
+        #     idx=i+1
+        #     iz=adf.iloc[i]['z']
+        #     ir=adf.iloc[i]['rctvty']
+        #     imolname=adf.iloc[i]['resName']
+        #     iatomname=adf.iloc[i]['atomName']
+        #     im=self.cfg.monomers[imolname]
+        #     imaxz=0
+        #     if iatomname in im.reactive_atoms:
+        #         imaxz=im.reactive_atoms[iatomname].z
+        #     jni=bondlist.partners_of(idx)
+        #     for jdx in jni:
+        #         j=jdx-1
+        #         jr=adf.iloc[j]['rctvty']
+        #         if list(sorted([ir,jr]))==['H','T']:
+        #             adf.iloc[i]['z']-=1
+        #             jmolname=adf.iloc[j]['resName']
+        #             jatomname=adf.iloc[j]['atomName']
+        #             jm=self.cfg.monomers[jmolname]
+        #             jmaxz=0
+        #             if jatomname in jm.reactive_atoms:
+        #                 jmaxz=jm.reactive_atoms[jatomname].z
+
+
 
 
     def initreport(self):

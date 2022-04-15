@@ -14,8 +14,8 @@ monomers:
       N2: {z: 2, ht: T, sym: [N1]}
     }
 composition: {
-  FDE: 100,
-  DFA: 200
+  FDE: 200,
+  DFA: 100
 }
 reactions: 
    - {reactants: [DFA,FDE], probability: 1.0}

@@ -446,18 +446,26 @@ class Coordinates:
         h=self.mol2_bond_colnames
         for i,(b,o) in enumerate(zip(pairs,orders)):
             ai,aj=b
-            # print(f'looking for {ai}-{aj}...')
+            logging.info(f'add_bonds looking for {ai}-{aj}...')
             if not (ai,aj) in bmi and not (aj,ai) in bmi:
                 data=[len(bmi)+i,ai,aj,o]
-                # print('adding',data)
+                logging.info(f'    adding {data}')
                 bonddict={k:[v] for k,v in zip(h,data)}
                 self.D['bonds']=pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
-#        self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
         self.D['bonds'].globalIdx=self.D['bonds'].index
         self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
         if 'nBonds' in self.metadat:
             self.metadat['nBonds']=len(self.D['bonds'])
-
+        adf=self.D['atoms']
+        if 'rctvty' in adf and 'z' in adf:
+            for a,b in pairs:
+                adf.iloc[a-1]['z']-=1
+                adf.iloc[b-1]['z']-=1
+                if adf.iloc[a-1]['z']==0:
+                    adf.iloc[a-1]['rctvty']='N'
+                if adf.iloc[b-1]['z']==0:
+                    adf.iloc[b-1]['rctvty']='N'
+                    
     def delete_atoms(self,idx=[],reindex=True):
         '''
         Deletes atoms whose global indices appear in the list idx.
