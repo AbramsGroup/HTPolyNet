@@ -250,7 +250,37 @@ class HTPolyNet:
         self.pfs.cdroot()
 
     def SCUR(self):
+        # TODO:
+        # 1. Using monomer templates, indicate reactive atoms in 
+        #    coordinates, e.g., self.D['atoms']['rctvty']='H'|'T'|'N'
+        #    This will require the bondlist and the monomer info
+        self.update_reactive_topology()
+        # 
         pass
+
+    def update_reactive_topology(self):
+        adf=self.Coords.D['atoms']
+        bondlist=self.Coords.bondlist
+        rctvty=[]
+        for i,r in adf.iterrows():
+            molname=r['resName']
+            if not molname in self.cfg.monomers:
+                logging.error(f'Molecule {molname} is not in the monomer list.')
+                raise Exception('bug')
+            m=self.cfg.monomers[molname]
+            atomname=r['atomName']
+            if atomname in m.reactive_atoms:
+                ht=m.reactive_atoms[atomname].ht
+                z=m.reactive_atoms[atomname].z
+                rctvty.append(ht)
+            else:
+                rctvty.append('N')
+                z=0
+            atomidx=r['globalIdx']
+            if z>0:
+                # check this atoms bondlist for reactive neighbors?
+                pass
+
 
     def initreport(self):
         print(self.cfg)

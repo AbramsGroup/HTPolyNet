@@ -357,7 +357,10 @@ class Coordinates:
 
     def bond_to(self,other,acc=None,don=None):
         # self.write_mol2(f'TMP-{self.name}-base.mol2')
-        ''' creates a new bond from atom acc in self to atom don of other '''
+        ''' creates a new bond from atom acc in self to atom don of other 
+            self and other are monomers 
+            this is used in oligomer building, not SCUR
+        '''
         aadf=self.D['atoms']
         dadf=other.D['atoms']
         # get pre-merge indices of reactive atoms and any H's bound to them
