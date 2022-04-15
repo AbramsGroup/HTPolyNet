@@ -115,19 +115,20 @@ class Library:
             return True
         return False  # this would be the result of an unspecified error
 
-    def checkout(self,basefilename):
+    def checkout(self,basefilename,nowarn=False):
         p=self.path(basefilename)
         if p and p.is_file():
             logging.info(f'Checking {basefilename} out of {self.designation} library into {os.getcwd()}')
             Command(f'cp {p} .').run()
             return True
         else:
-            logging.info(f'{basefilename} is not found in the {self.designation} library')
-            if p and p.is_dir():
-                logging.info(f'    but I expected to find it in {p}.')
-            else:
-                root,ext=os.path.splitext(basefilename)
-                logging.info(f'    because I have no information on where {ext} files should go.')
+            if not nowarn:
+                logging.info(f'{basefilename} is not found in the {self.designation} library')
+                if p and p.is_dir():
+                    logging.info(f'    but I expected to find it in {p}.')
+                else:
+                    root,ext=os.path.splitext(basefilename)
+                    logging.info(f'    because I have no information on where {ext} files should go.')
             return False
     
     def exists(self,basefilename):

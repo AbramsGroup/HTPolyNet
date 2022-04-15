@@ -17,7 +17,7 @@ from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.topology import Topology
 
-from HTPolyNet.software import Software
+from HTPolyNet.software import Software, Command
 from HTPolyNet.countTime import *
 from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
 
@@ -44,13 +44,13 @@ class HTPolyNet:
         self.local_data_searchpath=[self.pfs.rootPath,self.pfs.projPath]
 
     def checkout(self,filename,altpath=None):
-        if not self.pfs.library.checkout(filename):
+        if not self.pfs.library.checkout(filename,nowarn=True):
             searchpath=self.local_data_searchpath
             if altpath:
                 searchpath.append(altpath)
             for p in searchpath:
                 if os.path.exists(os.path.join(p,filename)):
-                    Software.Command(f'cp {os.path.join(p,filename)} .').run()
+                    Command(f'cp {os.path.join(p,filename)} .').run()
                     return True
             return False
         return True
