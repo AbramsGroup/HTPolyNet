@@ -2,7 +2,7 @@
 ;   File FDE-capped.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Sat. April  6 10:57:56 2022
+;   At date: Mon. April  1 11:23:39 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterize --force-capping --force-sea-calculation
 ;
 
 [ defaults ]

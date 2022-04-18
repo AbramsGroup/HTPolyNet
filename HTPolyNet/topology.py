@@ -270,6 +270,15 @@ class Topology:
             return self.D['atoms']['charge'].sum()
         return 0.0
 
+    def adjust_charges(self,desired_charge=0.0):
+        apparent_charge=self.total_charge()
+        overcharge=apparent_charge-desired_charge
+        logging.info(f'Adjusting charges due to overcharge of {overcharge}')
+        cpa=-overcharge/len(self.D['atoms'])
+        self.D['atoms']['charge']+=cpa
+        logging.info(f'New total charge after adjustment: {self.total_charge()}')
+        return self
+        
     def total_mass(self,units='gromacs'):
         fac=1.0
         if units=='SI':

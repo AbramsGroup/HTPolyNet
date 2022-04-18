@@ -355,6 +355,16 @@ class Coordinates:
             # print('tra ri',ri,'newri',newri)
             self.D['atoms'].loc[i,'posX':'posZ']=newri
 
+    def maxspan(self):
+        sp=self.D['atoms'][['posX','posY','posZ']]
+        return np.array(
+            [
+                sp.posX.max()-sp.posX.min(),
+                sp.posY.max()-sp.posY.min(),
+                sp.posZ.max()-sp.posZ.min()
+            ]
+        )
+
     def bond_to(self,other,acc=None,don=None):
         # self.write_mol2(f'TMP-{self.name}-base.mol2')
         ''' creates a new bond from atom acc in self to atom don of other 
@@ -446,7 +456,7 @@ class Coordinates:
         h=self.mol2_bond_colnames
         for i,(b,o) in enumerate(zip(pairs,orders)):
             ai,aj=b
-            logging.info(f'add_bonds looking for {ai}-{aj}...')
+            logging.info(f'coodinates:add_bonds looking for {ai}-{aj}...')
             if not (ai,aj) in bmi and not (aj,ai) in bmi:
                 data=[len(bmi)+i,ai,aj,o]
                 logging.info(f'    adding {data}')
@@ -461,6 +471,8 @@ class Coordinates:
             for a,b in pairs:
                 adf.iloc[a-1]['z']-=1
                 adf.iloc[b-1]['z']-=1
+                logging.info(f'Available bonds for {a}({adf.iloc[a-1]["rctvty"]}) now {adf.iloc[a-1]["z"]}')
+                logging.info(f'Available bonds for {b}({adf.iloc[b-1]["rctvty"]}) now {adf.iloc[b-1]["z"]}')
                 if adf.iloc[a-1]['z']==0:
                     adf.iloc[a-1]['rctvty']='N'
                 if adf.iloc[b-1]['z']==0:

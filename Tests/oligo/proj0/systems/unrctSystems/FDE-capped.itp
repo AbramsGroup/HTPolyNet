@@ -91,21 +91,21 @@ ha     cd     cd     ha      9   180.00   16.736000   2
 
 [ dihedraltypes ]
 ;i  j   k  l  func      phase      kd      pn
-cd     os     cc     c3      4   180.00   0.262906   2
-cd     c3     cc     os      4   180.00   0.262906   2
-os     cd     cc     c3      4   180.00   0.262906   2
-os     c3     cc     cd      4   180.00   0.262906   2
 c3     cd     cc     os      4   180.00   0.262906   2
 c3     os     cc     cd      4   180.00   0.262906   2
-cd     os     cc     h4      4   180.00   0.262906   2
-cd     h4     cc     os      4   180.00   0.262906   2
-os     cd     cc     h4      4   180.00   0.262906   2
-os     h4     cc     cd      4   180.00   0.262906   2
-h4     cd     cc     os      4   180.00   0.262906   2
+cd     c3     cc     os      4   180.00   0.262906   2
+cd     os     cc     c3      4   180.00   0.262906   2
+os     c3     cc     cd      4   180.00   0.262906   2
+os     cd     cc     c3      4   180.00   0.262906   2
 h4     os     cc     cd      4   180.00   0.262906   2
-cd     ha     cd     cc      4   180.00   0.262906   2
-cd     cc     cd     ha      4   180.00   0.262906   2
-ha     cd     cd     cc      4   180.00   0.262906   2
-ha     cc     cd     cd      4   180.00   0.262906   2
+h4     cd     cc     os      4   180.00   0.262906   2
+os     h4     cc     cd      4   180.00   0.262906   2
+os     cd     cc     h4      4   180.00   0.262906   2
+cd     h4     cc     os      4   180.00   0.262906   2
+cd     os     cc     h4      4   180.00   0.262906   2
+cc     cd     cd     ha      4   180.00   0.262906   2
 cc     ha     cd     cd      4   180.00   0.262906   2
+cd     cc     cd     ha      4   180.00   0.262906   2
+cd     ha     cd     cc      4   180.00   0.262906   2
+ha     cc     cd     cd      4   180.00   0.262906   2
 

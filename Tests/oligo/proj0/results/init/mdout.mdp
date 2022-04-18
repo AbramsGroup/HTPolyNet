@@ -1,14 +1,14 @@
 ;
 ;	File 'mdout.mdp' was generated
-;	By user: unknown (1000)
-;	On host: abrams-Latitude-E5470
-;	At date: Fri Apr 15 12:09:23 2022
+;	By user: cfa (1000)
+;	On host: panacea
+;	At date: Mon Apr 18 11:28:10 2022
 ;
 ;	Created by:
-;	             :-) GROMACS - gmx grompp, 2020.1-Ubuntu-2020.1-1 (-:
+;	                     :-) GROMACS - gmx grompp, 2021.2 (-:
 ;	
-;	Executable:   /usr/bin/gmx
-;	Data prefix:  /usr
+;	Executable:   /usr/local/gromacs/bin/gmx
+;	Data prefix:  /usr/local/gromacs
 ;	Working dir:  /home/cfa/Git/HTPolyNet/Tests/oligo/proj0/results/init
 ;	Command line:
 ;	  gmx grompp -f npt-1.mdp -c min-1.gro -p init.top -o npt-1.tpr -maxwarn 2
@@ -30,6 +30,8 @@ nsteps                   = 100000
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
 simulation-part          = 1
+; Multiple time-stepping
+mts                      = no
 ; mode for center of mass motion removal
 comm-mode                = Linear
 ; number of steps for center of mass motion removal
@@ -151,28 +153,8 @@ refcoord_scaling         = com
 
 ; OPTIONS FOR QMMM calculations
 QMMM                     = no
-; Groups treated Quantum Mechanically
+; Groups treated with MiMiC
 QMMM-grps                = 
-; QM method             
-QMmethod                 = 
-; QMMM scheme           
-QMMMscheme               = normal
-; QM basisset           
-QMbasis                  = 
-; QM charge             
-QMcharge                 = 
-; QM multiplicity       
-QMmult                   = 
-; Surface Hopping       
-SH                       = 
-; CAS space options     
-CASorbitals              = 
-CASelectrons             = 
-SAon                     = 
-SAoff                    = 
-SAsteps                  = 
-; Scale factor for MM charges
-MMChargeScaleFactor      = 1
 
 ; SIMULATED ANNEALING  
 ; Type of annealing for each temperature group (no/single/periodic)

@@ -11,7 +11,7 @@ from HTPolyNet.software import Command
 from HTPolyNet.coordinates import Coordinates
 
 def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=False,**kwargs):
-    chargemodel=kwargs.get('chargemodel','gas')
+    chargemodel=kwargs.get('chargemodel','bcc')
     logging.info(f'Ambertools: parameterizing {inputPrefix}')
     mol2in=f'{inputPrefix}.mol2'
     mol2out=f'{outputPrefix}.mol2'
@@ -45,14 +45,14 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     # goodMol2.D['bonds']=acOutMol2.D['bonds'] # necessary?
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
     goodMol2.write_mol2(f'{leapprefix}.mol2')
-    logging.info(f'Replacing string "{mol2out}" with hash "{leapprefix}" for leap input files.')
+    logging.info(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
     Command(f'cp {frcmodout} {leapprefix}.frcmod').run()
     with open('tleap.in', 'w') as f:
         f.write(f'source leaprc.gaff\n')
-        f.write(f'SUS = loadmol2 {leapprefix}.mol2\n')
-        f.write(f'check SUS\n')
+        f.write(f'mymol = loadmol2 {leapprefix}.mol2\n')
+        f.write(f'check mymol\n')
         f.write(f'loadamberparams {leapprefix}.frcmod\n')
-        f.write(f'saveamberparm SUS {leapprefix}-tleap.top {leapprefix}-tleap.crd\n')
+        f.write(f'saveamberparm mymol {leapprefix}-tleap.top {leapprefix}-tleap.crd\n')
         f.write('quit\n')
     c=Command('tleap',f='tleap.in')
     c.run(override=('Error!','Unspecified tleap error'))

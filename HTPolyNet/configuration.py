@@ -7,129 +7,56 @@ read cfg file
 """
 import json
 import yaml
-from HTPolyNet.molecule import Monomer, Reaction
+import logging
+from HTPolyNet.molecule import Monomer, Molecule, Reaction
 
-def getOrDie(D,k,basetype=None,subtype=str,source='config'):
-    '''
-    Strict assignment provider from dictionary 'D' at key 'k'.
-    If key k is in dict D, it is cast to type:subtype and returned
-    otherwise, an error is raised
-    '''
-    s=D.get(k,f'Error: Keyword {k} not found in {source}')
-    if not 'Error:' in s:
-        if basetype==list:
-            # print(k,s,type(s))
-            if type(s)==list:
-                r=list(map(subtype,s))
-            else:
-                raise KeyError(f'Value at keyword {k} is not type {basetype}.')
-        elif basetype!=list: # ignore subtype
-            if basetype==None:
-                r=s
-            else:
-                r=basetype(s)
-    else:
-        raise KeyError(s)
-    return r
+# def getOrDie(D,k,basetype=None,subtype=str,source='config'):
+#     '''
+#     Strict assignment provider from dictionary 'D' at key 'k'.
+#     If key k is in dict D, it is cast to type:subtype and returned
+#     otherwise, an error is raised
+#     '''
+#     s=D.get(k,f'Error: Keyword {k} not found in {source}')
+#     if not 'Error:' in s:
+#         if basetype==list:
+#             # print(k,s,type(s))
+#             if type(s)==list:
+#                 r=list(map(subtype,s))
+#             else:
+#                 raise KeyError(f'Value at keyword {k} is not type {basetype}.')
+#         elif basetype!=list: # ignore subtype
+#             if basetype==None:
+#                 r=s
+#             else:
+#                 r=basetype(s)
+#     else:
+#         raise KeyError(s)
+#     return r
 
-class Configuration(object):
+class Configuration:
     def __init__(self):
         self.cfgFile = ''
+        ''' name:Monomer '''
         self.monomers = {}
+        ''' name(monomer):count '''
+        self.composition = {}
+        ''' name:Molecule '''
+        self.molecules = {}
+        ''' Reaction instances '''
         self.reactions = []
+        ''' all other parameters in cfg file '''
         self.parameters = {}
-        # self.composition = {}
-        # self.conversion = 1.0
-        # self.initial_boxsize = -1.0
-        self.Title = 'A Generic System Name'
-        # self.SCUR_cutoff = 0.5
-        self.restart=''
-
-        # self.cappingMolPair = []
-        # self.cappingBonds = []
-        # self.unrctStruct = []
-        # self.monInfo = ''
-        # self.croInfo = ''
-        # self.boxSize = ''
-        # self.monR_list = ''
-        # self.croR_list = ''
-        # self.cutoff = ''
-        # self.bondsRatio = 0.0
-        # self.maxBonds = 0
-        # self.desBonds = 0
-        # self.desConv = 0.0
-        # self.HTProcess = ''
-        # self.CPU = ''
-        # self.GPU = ''
-        # self.trials = ''
-        # self.reProject = ''
-        # self.rctInfo = ''
-        # self.stepwise = ''
-        # self.cappingBonds = []
-        # self.boxLimit = 1
-        # self.layerConvLimit = 1
-        # self.layerDir       = ''
+        self.Title = ''
 
     @classmethod
     def read(cls,filename):
         extension=filename.split('.')[-1]
-        if extension=='txt' or extension=='cfg':
-            return cls.read_txt(filename)
-        elif extension=='json':
+        if extension=='json':
             return cls.read_json(filename)
         elif extension=='yaml' or extension=='yml':
             return cls.read_yaml(filename)
         else:
             raise Exception(f'Unknown config file extension {extension}')
-
-    @classmethod
-    def read_txt(cls,filename):
-        ''' reads Ming's initial options.txt config file format '''
-        inst=cls()
-        inst.cfgFile=filename
-        baseList=[]
-        # read all lines, append each to baseList.
-        # skip any lines beginning with '#'
-        # and ignore anything after '#' on a line
-        with open(filename,'r') as f:
-            for l in f:
-                if l[0]!='#':
-                    try:
-                        l=l[:l.index('#')].strip()
-                    except:
-                        pass
-                    baseList.append(l)
-        # parse each item in baseList to build baseDict
-        baseDict={}
-        keyCounts={}
-        for l in baseList:
-            if '=' in l:  # this item is a parameter assignment
-                k,v=[a.strip() for a in l.split('=')]
-                if not k in keyCounts:
-                    keyCounts[k]=0
-                keyCounts[k]+=1
-                if ',' in v:  # is it a csv?
-                    v=[a.strip() for a in v.split(',')]
-                elif ' ' in v:  # does it have spaces?
-                    v=[a.strip() for a in v.split()]
-                if keyCounts[k]>1:
-                    baseDict[k]=[baseDict[k]]
-                    baseDict[k].append(v)
-                else:    
-                    baseDict[k]=v
-                # print(k,baseDict[k])
-        inst.baseDict=baseDict
-        inst.reactions=[]
-        for line in baseList: # Reaction Info
-            if '+' in line:
-                rct = [x.strip() for x in line.split('+')]
-                p=float(rct[2].replace('%',''))
-                if p>1.0:
-                    p/=100.
-                rdict={'reactants':rct[0:2],'probability':p}
-                inst.reactions.append(Reaction(rdict))
-        inst.parseTxtDict()
-        return inst
 
     @classmethod
     def read_json(cls,filename):
@@ -150,33 +77,49 @@ class Configuration(object):
         return inst
     
     def parseDict(self):
-        self.monomers={k:Monomer(v,name=k) for k,v in self.basedict["monomers"].items()}
-        self.reactions=[Reaction(r) for r in self.basedict["reactions"]]
-        for i,r in enumerate(self.reactions):
-            for a in r.reactants:
-                if not a in self.monomers:
-                    raise Exception(f'Monomer {a} in reaction {i} not found in monomers.')
+        ''' monomers are the basic building blocks whose structures must
+            be supplied by the user as mol2 files '''
+        self.monomers={d['name']:Monomer(name=d['name']) for d in self.basedict['monomers']}
+        self.composition={d['name']:int(d['count']) for d in self.basedict['monomers']}
+        ''' initializing reactions also gives reactive_atoms to each monomer '''
+        self.reactions=[Reaction(r,self.monomers) for r in self.basedict['reactions']]
+        ''' molecules are made of one or more monomers and serve as parameterization templates
+            each monomer creates its own molecule, and every reaction product is
+            also its own molecule
+        '''
+        self.molecules={k:Molecule(name=k) for k in self.monomers}
+        for r in self.reactions:
+            product=r.template['product']
+            reactants=r.template['reactants']
+            self.molecules[product]=Molecule(name=product,parents=reactants)
+
+        ''' pass through molecules to make parents links active '''
+        for m in self.molecules:
+            if m.parents:
+                par=[]
+                for i in range(len(m.parents)):
+                    par=self.molecules[m.parents[i]]
+                m.parents=par
+
+        self.Title=self.basedict.get('Title','No Title Provided')
         del self.basedict['monomers']
         del self.basedict['reactions']
         del self.basedict['Title']
-        if 'restart' in self.basedict:
-            self.restart=self.basedict['restart']
-            del self.basedict['restart']
         self.parameters=self.basedict
         return self
     
-    def __str__(self):
-        s=f'Configuration read in from {self.cfgFile}:\n'
-        s+='    restart? '+(self.restart if self.restart!='' else '<no>')+'\n'
-        for p,v in self.parameters.items():
-            s+=f'{p} = {v}\n'
-        s+='Monomers:\n'
-        for m in self.monomers.values():
-            s+=str(m)+'\n'
-        s+='Reactions:\n'
-        for r in self.reactions:
-            s+=str(r)+'\n'
-        return s 
+    # def __str__(self):
+    #     s=f'Configuration read in from {self.cfgFile}:\n'
+    #     s+='    restart? '+(self.restart if self.restart!='' else '<no>')+'\n'
+    #     for p,v in self.parameters.items():
+    #         s+=f'{p} = {v}\n'
+    #     s+='Monomers:\n'
+    #     for m in self.monomers.values():
+    #         s+=str(m)+'\n'
+    #     s+='Reactions:\n'
+    #     for r in self.reactions:
+    #         s+=str(r)+'\n'
+    #     return s 
 
     # def __str__(self):
     #     r=f'Configuration read in from {self.cfgFile}:\n'
