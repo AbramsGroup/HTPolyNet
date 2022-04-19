@@ -64,7 +64,7 @@ class Configuration:
         inst.cfgFile=filename
         with open(filename,'r') as f:
             inst.basedict=json.load(f)
-        inst.parseDict()
+        inst.parse()
         return inst
 
     @classmethod
@@ -73,33 +73,20 @@ class Configuration:
         inst.cfgFile=filename
         with open(filename,'r') as f:
             inst.basedict=yaml.safe_load(f)
-        inst.parseDict()
+        inst.parse()
         return inst
     
-    def parseDict(self):
-        ''' monomers are the basic building blocks whose structures must
-            be supplied by the user as mol2 files '''
-        self.monomers={d['name']:Monomer(name=d['name']) for d in self.basedict['monomers']}
-        self.composition={d['name']:int(d['count']) for d in self.basedict['monomers']}
-        ''' initializing reactions also gives reactive_atoms to each monomer '''
-        self.reactions=[Reaction(r,self.monomers) for r in self.basedict['reactions']]
-        ''' molecules are made of one or more monomers and serve as parameterization templates
-            each monomer creates its own molecule, and every reaction product is
-            also its own molecule
-        '''
-        self.molecules={k:Molecule(name=k) for k in self.monomers}
-        for r in self.reactions:
-            product=r.template['product']
-            reactants=r.template['reactants']
-            self.molecules[product]=Molecule(name=product,parents=reactants)
+    def parse(self):
+        ''' initialize monomer instances '''
+        for mdict in self.basedict['monomers']:
+            m=Monomer(name=mdict['name'],use_sea=mdict.get('use_sea',False))
+            self.monomers[mdict['name']]=m
+            self.composition[mdict['name']]=int(mdict['count'])
 
-        ''' pass through molecules to make parents links active '''
-        for m in self.molecules:
-            if m.parents:
-                par=[]
-                for i in range(len(m.parents)):
-                    par=self.molecules[m.parents[i]]
-                m.parents=par
+        ''' initializing reactions also gives reactive_atoms to each monomer '''
+        self.reactions=[Reaction(r) for r in self.basedict['reactions']]
+        for r in self.reactions:
+            r.pass_reactive_atoms(self.monomers)
 
         self.Title=self.basedict.get('Title','No Title Provided')
         del self.basedict['monomers']
@@ -108,6 +95,8 @@ class Configuration:
         self.parameters=self.basedict
         return self
     
+    
+
     # def __str__(self):
     #     s=f'Configuration read in from {self.cfgFile}:\n'
     #     s+='    restart? '+(self.restart if self.restart!='' else '<no>')+'\n'
@@ -176,17 +165,17 @@ class Configuration:
     #     # print(r)
     #     return r
 
-    def calMaxBonds(self):
-        maxRct = 0
-        for n,m in self.monomers.items():
-            molNum = self.parameters['composition'][n]
-            z=0
-            for r in m.reactive_atoms:
-                z+=r.z
-            maxRct += molNum * z
-        self.maxBonds = int(maxRct * 0.5)
-        self.desConv = self.parameters['conversion']
-        self.desBonds = int(self.desConv * self.maxBonds)
+    # def calMaxBonds(self):
+    #     maxRct = 0
+    #     for n,m in self.monomers.items():
+    #         molNum = self.parameters['composition'][n]
+    #         z=0
+    #         for r in m.reactive_atoms:
+    #             z+=r.z
+    #         maxRct += molNum * z
+    #     self.maxBonds = int(maxRct * 0.5)
+    #     self.desConv = self.parameters['conversion']
+    #     self.desBonds = int(self.desConv * self.maxBonds)
         
 
     # def calMaxBonds(self):
@@ -219,69 +208,69 @@ class Configuration:
     #         names.append(n[1])
     #     self.molNames = names
 
-    def parseTxtDict(self):
-        self.parameters['composition']={}
-        i=1
-        while f'monName{i}' in self.baseDict:
-            mname=self.baseDict[f'monName{i}']
-            mnum=getOrDie(self.baseDict,f'monNum{i}',basetype=int,source=self.cfgFile)
-            self.parameters['composition'][mname]=mnum
-            mrnames=self.baseDict.get(f'mon{i}R_list',f'Error: mon{i}R_list not found')
-            mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
-            mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
-            d={}
-            d['name']=mname
-            d['reactive_atoms']={k:{'z':z,'ht':h} for k,z,h in zip(mrnames,mrnum,mrrct)}
-            self.monomers[mname]=Monomer(d)
-            # mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
-            # monInfo.append([i,mname,mnum,mrlist])
-            # monR_list[mname] = mrlist
-            del self.baseDict[f'monName{i}']
-            del self.baseDict[f'monNum{i}']
-            del self.baseDict[f'mon{i}R_list']
-            del self.baseDict[f'mon{i}R_rNum']
-            del self.baseDict[f'mon{i}R_rct']
-            del self.baseDict[f'mon{i}R_group']
-            i+=1
-        i=1
-        while f'croName{i}' in self.baseDict:
-            cname=self.baseDict[f'croName{i}']
-            cnum=getOrDie(self.baseDict,f'croNum{i}',basetype=int,source=self.cfgFile)
-            self.parameters['composition'][cname]=cnum
-            crnames=self.baseDict.get(f'cro{i}R_list',f'Error: cro{i}R_list not found')
-            crnum=self.baseDict.get(f'cro{i}R_rNum',f'Error: cro{i}R_rNum not found')
-            crrct=self.baseDict.get(f'cro{i}R_rct',f'Error: cro{i}R_rct not found')
-            crgrp=self.baseDict.get(f'cro{i}R_group',f'Error: cro{i}R_group not found')
-            d={}
-            d['name']=cname
-            d['reactive_atoms']={k:{'z':z,'ht':h} for k,z,h in zip(crnames,crnum,crrct)}
-            self.monomers[cname]=Monomer(d)
-            # crlist=[[r,int(n),x,g] for r,n,x,g in zip(crnames,crnum,crrct,crgrp)]
-            # croInfo.append([i,cname,cnum,crlist])
-            # croR_list[cname] = crlist
-            del self.baseDict[f'croName{i}']
-            del self.baseDict[f'croNum{i}']
-            del self.baseDict[f'cro{i}R_list']
-            del self.baseDict[f'cro{i}R_rNum']
-            del self.baseDict[f'cro{i}R_rct']
-            del self.baseDict[f'cro{i}R_group']
-            i+=1
-        if 'cappingBonds' in self.baseDict:
-            for cp in self.baseDict['cappingBonds']:
-                if cp[0] in self.monomers:
-                    d={}
-                    d['pair']=cp[1:3]
-                    d['order']=int(cp[3])
-                    self.monomers[cp[0]].capping_bonds.append(CappingBond(d))
-            del self.baseDict['cappingBonds']
+    # def parseTxtDict(self):
+    #     self.parameters['composition']={}
+    #     i=1
+    #     while f'monName{i}' in self.baseDict:
+    #         mname=self.baseDict[f'monName{i}']
+    #         mnum=getOrDie(self.baseDict,f'monNum{i}',basetype=int,source=self.cfgFile)
+    #         self.parameters['composition'][mname]=mnum
+    #         mrnames=self.baseDict.get(f'mon{i}R_list',f'Error: mon{i}R_list not found')
+    #         mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
+    #         mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
+    #         d={}
+    #         d['name']=mname
+    #         d['reactive_atoms']={k:{'z':z,'ht':h} for k,z,h in zip(mrnames,mrnum,mrrct)}
+    #         self.monomers[mname]=Monomer(d)
+    #         # mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
+    #         # monInfo.append([i,mname,mnum,mrlist])
+    #         # monR_list[mname] = mrlist
+    #         del self.baseDict[f'monName{i}']
+    #         del self.baseDict[f'monNum{i}']
+    #         del self.baseDict[f'mon{i}R_list']
+    #         del self.baseDict[f'mon{i}R_rNum']
+    #         del self.baseDict[f'mon{i}R_rct']
+    #         del self.baseDict[f'mon{i}R_group']
+    #         i+=1
+    #     i=1
+    #     while f'croName{i}' in self.baseDict:
+    #         cname=self.baseDict[f'croName{i}']
+    #         cnum=getOrDie(self.baseDict,f'croNum{i}',basetype=int,source=self.cfgFile)
+    #         self.parameters['composition'][cname]=cnum
+    #         crnames=self.baseDict.get(f'cro{i}R_list',f'Error: cro{i}R_list not found')
+    #         crnum=self.baseDict.get(f'cro{i}R_rNum',f'Error: cro{i}R_rNum not found')
+    #         crrct=self.baseDict.get(f'cro{i}R_rct',f'Error: cro{i}R_rct not found')
+    #         crgrp=self.baseDict.get(f'cro{i}R_group',f'Error: cro{i}R_group not found')
+    #         d={}
+    #         d['name']=cname
+    #         d['reactive_atoms']={k:{'z':z,'ht':h} for k,z,h in zip(crnames,crnum,crrct)}
+    #         self.monomers[cname]=Monomer(d)
+    #         # crlist=[[r,int(n),x,g] for r,n,x,g in zip(crnames,crnum,crrct,crgrp)]
+    #         # croInfo.append([i,cname,cnum,crlist])
+    #         # croR_list[cname] = crlist
+    #         del self.baseDict[f'croName{i}']
+    #         del self.baseDict[f'croNum{i}']
+    #         del self.baseDict[f'cro{i}R_list']
+    #         del self.baseDict[f'cro{i}R_rNum']
+    #         del self.baseDict[f'cro{i}R_rct']
+    #         del self.baseDict[f'cro{i}R_group']
+    #         i+=1
+    #     if 'cappingBonds' in self.baseDict:
+    #         for cp in self.baseDict['cappingBonds']:
+    #             if cp[0] in self.monomers:
+    #                 d={}
+    #                 d['pair']=cp[1:3]
+    #                 d['order']=int(cp[3])
+    #                 self.monomers[cp[0]].capping_bonds.append(CappingBond(d))
+    #         del self.baseDict['cappingBonds']
         
-        updated_names={'boxSize':'initial_boxsize','bondsRatio':'conversion','cutoff':'SCUR_cutoff'}
-        for o,n in updated_names.items():
-            if o in self.baseDict:
-                self.parameters[n]=self.baseDict[o]
-                del self.baseDict[o]
+    #     updated_names={'boxSize':'initial_boxsize','bondsRatio':'conversion','cutoff':'SCUR_cutoff'}
+    #     for o,n in updated_names.items():
+    #         if o in self.baseDict:
+    #             self.parameters[n]=self.baseDict[o]
+    #             del self.baseDict[o]
 
-        self.parameters.update(self.baseDict)
+    #     self.parameters.update(self.baseDict)
         
 
     # def parseCfg(self):

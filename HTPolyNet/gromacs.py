@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import numpy as np
 from pytrr import GroTrrReader
-from HTPolyNet.software import Command
+from HTPolyNet.command import Command
 
 def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`

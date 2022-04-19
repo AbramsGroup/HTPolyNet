@@ -1,12 +1,11 @@
 Title: FDE/DFDA thermoset
-initial_density: 300.0  # kg/m3 -- make it low to increase likelihood of successful insertions
+initial_density: 300.0  # kg/m3
 SCUR_cutoff: 0.5 # nm
 conversion: 0.95
-chargemodel: gas  # bcc is better but takes longer
-monomers: {
-  -{name: FDE, count: 200},
-  -{name: DFA, count: 100}
-}
+chargemethod: gas  # bcc
+monomers:
+  - {name: FDE, count: 200, use_sea: True}
+  - {name: DFA, count: 100, use_sea: True}
 reactions:
   - {
       name: 'Primary-to-secondary-amine',
@@ -14,13 +13,14 @@ reactions:
         A: {monomer: DFA, atom: N1, z: 2},
         B: {monomer: FDE, atom: C1, z: 1}
       },
-      bonds: 
-        -{atoms: [A, B], probability: 1.0},
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ],
       template: {
         reactants: [DFA, FDE],
         product: DFAFDE
       },
-      type: cure
+      stage: cure
      }
   - {
       name: 'Secondary-to-tertiary-amine',
@@ -28,13 +28,14 @@ reactions:
         A: {monomer: DFA, atom: N1, z: 1},
         B: {monomer: FDE, atom: C1, z: 1}
       },
-      bonds: 
-        -{atoms: [A, B], probability: 0.5},
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ],
       template: {
         reactants: [DFAFDE, FDE],
         product: DFAFDE2
       },
-      type: cure
+      stage: cure
     }
   - { 
       name: 'Oxirane-formation',
@@ -42,13 +43,15 @@ reactions:
         A: {monomer: FDE, atom: O1, z: 1},
         B: {monomer: FDE, atom: C1, z: 1}
       },
-      bonds:
-        -{atoms: [A, B], probability: 1.0},
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ],
       template: {
         reactants: [FDE],
         product: FDEC
       },
-      type: post-cure # bonds of this type are searched for after SCUR iterations
+      restrictions: {intramonomer: True, symmetry: as_pair},
+      stage: post-cure # bonds of this type are searched for after SCUR iterations
     }
    #- {reactants: [DFA+FDE,FDE], probability: 0.5}
 #reactions: # reactants [base,other]

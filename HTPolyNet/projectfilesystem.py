@@ -5,9 +5,10 @@ import os
 import pathlib
 import importlib.resources
 
-from HTPolyNet.software import Command
+from HTPolyNet.command import Command
 
 _MolecularDataFileTypes_=['mol2','gro','top','itp','sea']
+_mdf_last_required_=_MolecularDataFileTypes_.index('sea')
 _MoleculeClasses_=['monomers','oligomers']
 
 class Library:
@@ -39,12 +40,12 @@ class Library:
 
     @classmethod
     def user(cls,pathname='.'):
+        assert os.path.exists(pathname),f'Please ensure {pathname} exists.'
+        tt=os.path.abspath(pathname)
+        assert tt.is_dir(),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
         inst.designation='User'
-        tt=os.path.abspath(pathname)
-        logging.warning('User-level data libraries are not yet implemented. Sorry!')
-        if not tt.is_dir():
-            logging.error('error')
+        inst.root=tt
         return inst
 
     def _frec(self,n):
@@ -60,7 +61,7 @@ class Library:
 
     def _drec(self,n):
         if n.is_dir():
-            if n!='__pycache__':
+            if '__pycache__' not in str(n):
                 ret=[n]
                 for m in n.iterdir():
                     ret.extend(self._drec(m))
@@ -157,7 +158,7 @@ class ProjectFileSystem:
         self._setup_project_root()
         self.cd(self.rootPath)
         self.library=Library.system()
-        self.userlibrary=userlibrary
+        self.userlibrary=None
         if userlibrary:
             self.userlibrary=Library.user(userlibrary)
 
@@ -166,18 +167,22 @@ class ProjectFileSystem:
         self.cwd=os.getcwd()
         if (self.verbose):
             logging.info(f'cwd: {self.cwd}')
+        return self.cwd
 
     def cdroot(self):
-        self.cd(self.projPath)
+        return self.cd(self.projPath)
 
     def cdrootsub(self,toplevel):
         if toplevel in self.projSubPaths:
-            self.cd(self.projSubPaths[toplevel])
+            return self.cd(self.projSubPaths[toplevel])
 
-    def exist(self,name):
-        ext=name.split('.')[-1]
-        fullname=os.path.join(self.library.dir(ext),name)
-        return os.path.exists(fullname)
+    def exists(self,name):
+        ''' look in user library first, if it exists '''
+        if self.userlibrary:
+            fullname=os.path.join(self.userlibrary.tt,name)
+            if os.path.exists(fullname):
+                return True
+        return self.library.exists(name)
 
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
@@ -213,24 +218,60 @@ class ProjectFileSystem:
         self.cd(self.systemsPath)
         self.systemsSubPaths={}
         self.resultsSubPaths={}
-        for tops in ['rctSystems','unrctSystems','typeSystems']:
+        for tops in ['rctSystems','unrctSystems']:
             self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
             if not os.path.isdir(self.systemsSubPaths[tops]):
                 os.mkdir(tops)
         self.unrctPath=self.systemsSubPaths['unrctSystems']
         self.rctPath=self.systemsSubPaths['rctSystems']
-        self.typePath=self.systemsSubPaths['typeSystems']
 
-    def next_results_dir(self):
-        possibles=['init',*[f'step{i}' for i in range(30)]]
-        for p in possibles:
-            if not p in self.resultsSubPaths:
-                break
-        newpath=os.path.join(self.resPath,p)
-        os.mkdir(newpath)
-        self.resultsSubPaths[p]=newpath
-        return newpath
-        
+_PFS_=None
+
+def pfs_setup(root='.',verbose=False,reProject=False,userlibrary=None):
+    global _PFS_
+    _PFS_=ProjectFileSystem(root=root,verbose=verbose,reProject=reProject,userlibrary=userlibrary)
+
+def checkout(filename):
+    _PFS_.library.checkout(filename)
+
+def exists(filename):
+    return _PFS_.exists(filename)
+
+def in_library(filename):
+    in_system=all([exists(filename) for ex in _MolecularDataFileTypes_[:_mdf_last_required_]])
+    return in_system
+
+def checkin(filename):
+    _PFS_.library.checkin(filename)
+
+def cd(pathstring):
+    if pathstring=='root':
+        return _PFS_.cdroot()
+    cats=[_PFS_.projSubPaths,_PFS_.systemsSubPaths,_PFS_.resultsSubPaths]
+    for cat in cats:
+        if pathstring in cat:
+            _PFS_.cd(cat[pathstring])
+            return _PFS_.cwd
+    raise Exception(f'Path {pathstring} cannot be located in the project file system')
+    
+def next_results_dir(maxstages=100):
+    possibles=['init',*[f'step{i}' for i in range(maxstages)]]
+    for p in possibles:
+        if not p in _PFS_.resultsSubPaths:
+            break
+    newpath=os.path.join(_PFS_.resPath,p)
+    os.mkdir(newpath)
+    _PFS_.resultsSubPaths[p]=newpath
+    return cd(newpath)
+
+def local_data_searchpath():
+    return [_PFS_.rootPath,_PFS_.projPath]
+
+def info():
+    if _PFS_.userlibrary:
+        print(f'User library is {str(_PFS_.userlibrary.path)}')
+    print(_PFS_.library.info())
+
 if __name__=='__main__':
     pfs=ProjectFileSystem(verbose=True)
 

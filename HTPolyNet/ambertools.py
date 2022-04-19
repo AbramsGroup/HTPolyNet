@@ -5,13 +5,13 @@
 """
 import logging
 import hashlib
-import os
+#import os
 import parmed
-from HTPolyNet.software import Command
+from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
 
-def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=False,**kwargs):
-    chargemodel=kwargs.get('chargemodel','bcc')
+def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
+    chargemethod=kwargs.get('chargemethod','bcc')
     logging.info(f'Ambertools: parameterizing {inputPrefix}')
     mol2in=f'{inputPrefix}.mol2'
     mol2out=f'{outputPrefix}.mol2'
@@ -21,12 +21,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
-    if os.path.isfile(groOut) and os.path.isfile(topOut) and not force:
-        logging.warning(f'{groOut} and {topOut} already exist')
-        logging.warning(f'and GAFFParameterize called with keyword force=False')
-        logging.warning(f'No parameterization performed.')
-        return
-    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemodel,at='gaff',i=mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
+    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemethod,at='gaff',i=mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
     c.run()
     logging.info(f'Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
@@ -42,19 +37,18 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
     adf['resName']=goodMol2.D['atoms']['resName'].copy()
     adf['resNum']=goodMol2.D['atoms']['resNum'].copy()
     goodMol2.D['atoms']=adf
-    # goodMol2.D['bonds']=acOutMol2.D['bonds'] # necessary?
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
     goodMol2.write_mol2(f'{leapprefix}.mol2')
     logging.info(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
     Command(f'cp {frcmodout} {leapprefix}.frcmod').run()
-    with open('tleap.in', 'w') as f:
+    with open(f'{inputPrefix}-tleap.in', 'w') as f:
         f.write(f'source leaprc.gaff\n')
         f.write(f'mymol = loadmol2 {leapprefix}.mol2\n')
         f.write(f'check mymol\n')
         f.write(f'loadamberparams {leapprefix}.frcmod\n')
         f.write(f'saveamberparm mymol {leapprefix}-tleap.top {leapprefix}-tleap.crd\n')
         f.write('quit\n')
-    c=Command('tleap',f='tleap.in')
+    c=Command('tleap',f=f'{inputPrefix}-tleap.in')
     c.run(override=('Error!','Unspecified tleap error'))
     Command(f'rm -f {leapprefix}.mol2 {leapprefix}.frcmod').run()
     Command(f'mv {leapprefix}-tleap.top {outputPrefix}-tleap.top').run()
@@ -64,12 +58,8 @@ def GAFFParameterize(inputPrefix,outputPrefix,parmed_save_inline=True,force=Fals
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')
         logging.info(f'Writing {groOut}')
         file.save(groOut,overwrite=True)
-        if parmed_save_inline:
-            logging.info(f'Writing {topOut}')
-            file.save(topOut,overwrite=True)
-        else:
-            logging.info(f'Writing {topOut} and {itpOut}')
-            file.save(topOut,parameters=itpOut,overwrite=True)
+        logging.info(f'Writing {topOut} and {itpOut}')
+        file.save(topOut,parameters=itpOut,overwrite=True)
     except Exception as m:
         logging.error('Unspecified parmed error')
         raise parmed.exceptions.GromacsError(m)

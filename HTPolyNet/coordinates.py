@@ -14,20 +14,21 @@ from HTPolyNet.bondlist import Bondlist
 _ANGSTROM_='Ångström'
 
 class Coordinates:
+    ''' Handle coordinates from mol2 or gro files 
+        A Coordinates instance has a dictionary of dataframes D with keys 'atoms' and 'bonds' 
+        ** The bonds entry is only set by a mol2 file and only needed to write mol2 output ** '''
     gro_colnames = ['resNum', 'resName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
     gro_colunits = ['*','*','*','*','nm','nm','nm','nm/ps','nm/ps','nm/ps']
     mol2_atom_colnames = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
     mol2_atom_colunits = ['*','*',_ANGSTROM_,_ANGSTROM_,_ANGSTROM_,'*','*']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
-    coord_aux_attributes = ['sea-idx','reactive-role']
+    coord_aux_attributes = ['sea-idx','rctvty']
 
     def __init__(self,name=''):
         self.name=name
-        self.format='gro'
+        self.format=''
         self.units={}
-        self.units['length']='nm'
-        self.units['velocity']='nm/ps'
         self.title=''
         self.metadat={}
         self.N=0
@@ -38,6 +39,9 @@ class Coordinates:
     @classmethod
     def read_gro(cls,filename=''):
         inst=cls(filename)
+        inst.format='gro'
+        inst.units['length']='nm'
+        inst.units['velocity']='nm/ps'
         if filename!='':
             with open(filename,'r') as f:
                 data=f.read().split('\n')
@@ -45,6 +49,7 @@ class Coordinates:
                     data.remove('')
                 inst.title=data[0]
                 inst.N=int(data[1])
+                inst.metadat['N']=inst.N
                 series={k:[] for k in cls.gro_colnames}
                 for x in data[2:-1]:
                     series['resNum'].append(int(x[0:5].strip()))
@@ -178,7 +183,8 @@ class Coordinates:
             other.D['bonds']['globalIdx']+=bdxshift
         self.N+=len(other.D['atoms'])
         self.metadat['N']=self.N
-        self.metadat['nBonds']+=nOtherBonds
+        if 'nBonds' in self.metadat:
+            self.metadat['nBonds']+=nOtherBonds
         self._myconcat(other,directive='atoms',idxlabel=['globalIdx'],idxshift=idxshift)
         self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
         if 'bonds' in other.D:
@@ -197,12 +203,18 @@ class Coordinates:
 
     def write_sea(self,filename=''):
         if not 'sea-idx' in self.D['atoms'].columns:
-            raise Exception('There is no sea-id in this atoms dataframe')
+            raise Exception('There is no sea-idx column in this atoms dataframe')
         if filename=='':
             raise Exception('Please provide a file name to write sea data')
         with open(filename,'w') as f:
             seaformatters = [ lambda x: f'{x:>7d}', lambda x: f'{x:>7d}' ]
             f.write(self.D['atoms'][['globalIdx','sea-idx']].to_string(header=False,index=False,formatters=seaformatters))
+
+    def read_sea(self,filename=''):
+        if filename=='':
+            raise Exception('Please provide a file name to write sea data')
+        df=pd.read_csv(filename,sep='\s+',names=['globalIdx','sea-idx'])
+        self.D['atoms']=self.D['atoms'].merge(df,how='outer',on='globalIdx')
 
     def write_mol2(self,filename=''):
         if self.format!='mol2':
@@ -530,16 +542,18 @@ class Coordinates:
         with open(filename,'w') as f:
             f.write(self.title+'\n')
             f.write(f'{self.N:>5d}\n')
-            # TODO
+            # C-format: “%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f”
             atomformatters = [
                 lambda x: f'{x:>5d}',
+                lambda x: f'{x:<5s}',
                 lambda x: f'{x:>5s}',
-                lambda x: f'{x:>5s}',
-                lambda x: f'{x:>5d}']+[lambda x: f'{x:>8.3f}']*6
-            if has_vel:
-                f.write(self.D['atoms'].to_string(columns=self.gro_colnames),header=False,index=False,formatters=atomformatters)
-            else:
-                f.write(self.D['atoms'].to_string(columns=self.gro_colnames[:-3]),header=False,index=False,formatters=atomformatters[:-3])
+                lambda x: f'{x:5d}']+[lambda x: f'{x:8.3f}']*3 + [lambda x: f'{x:8.4f}']*3
+            # unfortunately, DataFrame.to_string() can't write fields with zero whitespace
+            for i,r in self.D['atoms'].iterrows():
+                if has_vel:
+                    f.write(''.join([atomformatters[i](v) for i,v in enumerate(list(r[self.gro_colnames]))])+'\n')
+                else:
+                    f.write(''.join([atomformatters[i](v) for i,v in enumerate(list(r[self.gro_colnames[:-3]]))])+'\n')
             f.write(f'{self.box[0][0]:10.5f}{self.box[1][1]:10.5f}{self.box[2][2]:10.5f}')
             # output off-diagonals only if at least one of them is non-zero
             x,y=self.box.nonzero()
@@ -547,6 +561,7 @@ class Coordinates:
                 f.write(f'{self.box[0][1]:10.5f}{self.box[0][2]:10.5f}')
                 f.write(f'{self.box[1][0]:10.5f}{self.box[1][2]:10.5f}')
                 f.write(f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}')
+            f.write('\n')
 """
 MOL2 Format
 
