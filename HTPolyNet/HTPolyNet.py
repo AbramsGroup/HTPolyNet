@@ -58,7 +58,42 @@ class HTPolyNet:
             return False
         return True
 
-    def initialize_topology(self,force_parameterize=False,force_sea_calculation=False):
+    def make_molecules(self,force_parameterize=False,force_sea_calculation=False):
+        self.molecules={}
+        ''' makes all molecules implied by configuration '''
+        cwd=pfs.cd('unrctSystems')
+        checkin=pfs.checkin
+        exists=pfs.exists
+        all_made=all([m in self.molecules for m in self.cfg.molecules])
+        while not all_made:
+            for mname,M in self.cfg.molecules.items():
+                precursors_available=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants]))
+                if precursors_available:
+                    already_parameterized = pfs.in_library(mname)
+                    if force_parameterize or not already_parameterized:
+                        logging.info(f'Generating {mname}')
+                        M.generate(outname=f'{mname}-p',available_molecules=self.molecules,
+                        **self.cfg.parameters)
+                        for ex in ['mol2','top','itp','gro']:
+                            checkin(f'{mname}-p.{ex}')
+                    else:
+                        logging.info(f'Fetching parameterized {mname}')
+                        self.checkout(f'{mname}.mol2')
+                        for ex in ['mol2','top','itp','gro']:
+                            self.checkout(f'{mname}-p.{ex}')
+                        M.read_topology(f'{mname}-p.top')
+                        M.read_coords(f'{mname}-p.gro')
+                        M.read_coords(f'{mname}-p.mol2')
+                if mname in self.cfg.use_sea:
+                    if force_sea_calculation or not exists(f'{mname}-p.sea'):
+                        M.calculate_sea()
+                    else:
+                        self.checkout(f'{mname}-p.sea')
+                        M.read_sea(f'{mname}-p.sea')
+                self.molecules[mname]=M
+            all_made=all([m in self.molecules for m in self.cfg.molecules])
+
+    def initialize_topology(self):
         ''' Create a full gromacs topology that includes all directives necessary 
             for an initial liquid simulation.  This will NOT use any #include's;
             all types will be explicitly in-lined. '''
@@ -71,19 +106,7 @@ class HTPolyNet:
         ''' for each monomer named in the cfg, either parameterize it or fetch its parameterization '''
         for mname,M in self.cfg.monomers.items():
             already_parameterized = pfs.in_library(mname)
-            if force_parameterize or not already_parameterized:
-                logging.info(f'Parameterizing {mname}')
-                M.parameterize(outname=f'{mname}-p',**self.cfg.parameters)
-                for ex in ['mol2','top','itp','gro']:
-                    checkin(f'{mname}-p.{ex}')
-            else:
-                logging.info(f'Fetching parameterized {mname}')
-                self.checkout(f'{mname}.mol2')
-                for ex in ['mol2','top','itp','gro']:
-                    self.checkout(f'{mname}-p.{ex}')
-                M.read_topology(f'{mname}-p.top')
-                M.read_coords(f'{mname}-p.gro')
-                M.read_coords(f'{mname}-p.mol2')
+
             
             ''' just in case antechamber changed any user-defined atom names... '''
             M.update_atom_specs(Coordinates.read_mol2(f'{mname}.mol2'))

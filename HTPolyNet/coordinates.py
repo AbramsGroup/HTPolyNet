@@ -11,6 +11,20 @@ import logging
 
 from HTPolyNet.bondlist import Bondlist
 
+def get_atom_attribute(df,name,attributes):
+    ga={k:v for k,v in attributes.items() if k in df}
+    que=' & '.join(f'(df["{k}"]=={v})' for k,v in ga.items())
+    ndf=pd.eval(que)
+    try:
+        hits=df[ndf][name].values
+        if len(hits)>1:
+            raise Exception(f'Attibutes {attributes} are not specific enough to locate only one atom.')
+        ret_val=hits[0]
+    except IndexError as error:
+        print(f'Error: no row with these attributes: {attributes}')
+        ret_val=None
+    return ret_val
+
 _ANGSTROM_='Ångström'
 
 class Coordinates:
@@ -216,6 +230,9 @@ class Coordinates:
         df=pd.read_csv(filename,sep='\s+',names=['globalIdx','sea-idx'])
         self.D['atoms']=self.D['atoms'].merge(df,how='outer',on='globalIdx')
 
+    def set_attribute(self,name,srs):
+        self.D['atoms'][name]=srs
+
     def write_mol2(self,filename=''):
         if self.format!='mol2':
             raise Exception('This config instance is not in mol2 format')
@@ -377,14 +394,31 @@ class Coordinates:
             ]
         )
 
-    def bond_to(self,other,acc=None,don=None):
+    def get_idx(self,attributes):
+        df=self.D['atoms']
+        return get_atom_attribute(df,'globalIdx',attributes)
+    
+    def get_R(self,idx):
+        df=self.D['atoms']
+        return df[df['globalIdx']==idx][['posX','posY','posZ']].values[0]
+
+    def bond_to(self,other,myatom={},otheratom={},**kwargs):
         # self.write_mol2(f'TMP-{self.name}-base.mol2')
         ''' creates a new bond from atom acc in self to atom don of other 
             self and other are monomers 
             this is used in oligomer building, not SCUR
         '''
+        for atoms in [myatom,otheratom]:
+            assert 'molecule' in atoms
+            assert 'resid' in atoms
+            assert 'atom' in atoms
+            assert 'z' in atoms
+        
         aadf=self.D['atoms']
         dadf=other.D['atoms']
+
+        
+
         # get pre-merge indices of reactive atoms and any H's bound to them
         accidx=aadf[aadf['atomName']==acc]['globalIdx'].values[0]
         accr=aadf[aadf['atomName']==acc][['posX','posY','posZ']].values[0]
@@ -428,7 +462,7 @@ class Coordinates:
                 delHr=accr-donHr
                 other.translate(delHr)
                 fileprefix=hashlib.shake_128(idxstr.encode("utf-8")).hexdigest(8)
-                other.write_mol2(fileprefix+'.mol2')
+                # other.write_mol2(fileprefix+'.mol2')
                 minD=self.minimum_distance(other,self_excludes=[accH],other_excludes=[donH])
                 # print(minD)
                 if minD>overall_maximum:

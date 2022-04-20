@@ -11,42 +11,124 @@ from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import grompp_and_mdrun, analyze_sea
 
-class Atom:
-    def __init__(self,datadict):
-        self.monomer=datadict['monomer']
-        self.name=datadict['atom']
-        # z: maximum number of bonds this atom will form
-        # in a crosslinking reaction
-        self.z=int(datadict.get('z',0))
-    def __str__(self):
-        return f'{self.monomer}_{self.name}({self.z})'
-    def to_yaml(self):
-        return r'{'+f'monomer: {self.monomer}, atom: {self.name}, z: {self.z}'+r'}'
-
-
-# class CappingBond:
-#     boc={1:'-',2:'=',3:'≡'}
-#     def __init__(self,jsondict):
-#         self.pairnames=jsondict["pair"]
-#         self.bondorder=jsondict.get("order",1)
-#         self.deletes=jsondict.get("deletes",[])
-#     def to_yaml(self):
-#         return r'{'+f'pair: {self.pairnames}, order: {self.bondorder}, deletes: {self.deletes}'+r'}'
+# class Atom:
+#     def __init__(self,datadict):
+#         self.monomer=datadict['monomer']
+#         self.name=datadict['atom']
+#         # z: maximum number of bonds this atom will form
+#         # in a crosslinking reaction
+#         self.z=int(datadict.get('z',0))
 #     def __str__(self):
-#         s=self.pairnames[0]+CappingBond.boc[self.bondorder]+self.pairnames[1]
-#         if len(self.deletes)>0:
-#             s+=' D['+','.join(self.deletes)+']'
-#         return s
+#         return f'{self.monomer}_{self.name}({self.z})'
+#     def to_yaml(self):
+#         return r'{'+f'monomer: {self.monomer}, atom: {self.name}, z: {self.z}'+r'}'
 
+class Reaction:
+    ''' reactions may only be initialized after monomers '''
+    def __init__(self,jsondict):
+        self.jsondict=jsondict
+        ''' attributes expected in cfg file '''
+        self.name=jsondict.get('name','unnamed reaction')
+        self.atoms=jsondict.get('atoms','empty reaction')
+        self.bonds=jsondict.get('bonds','empty reaction')
+        self.reactants=jsondict.get('reactants','empty reaction')
+        self.product=jsondict.get('product','empty reaction')
+        self.restrictions=jsondict.get('restrictions',{})
+        self.stage=jsondict.get('stage','cure')
 
-class Monomer:
-    def __init__(self,name='',use_sea=False):
+    def __str__(self):
+        return f'Reaction "{self.name}"'
+
+class Molecule:
+    def __init__(self,name='',generator=None):
         self.name=name
-        self.use_sea=use_sea
-        self.reactive_atoms=[]
         self.Topology=None
-        self.Coords={}  # 'gro' and 'mol2' are the two keys
+        self.Coords={}
+        self.generator=generator
         self.cstale=''  # ['','gro','mol2']
+
+    def __str__(self):
+        restr=f'{self.name} '
+        if not self.Topology:
+            restr+=f'(empty topology) '
+        if len(self.Coords)==0:
+            restr+=f'(empty coords) '
+        return restr+'\n'
+
+    def parameterize(self,outname='',**kwargs):
+        pfs.checkout(f'{self.name}.mol2')
+        assert os.path.exists(f'{self.name}.mol2'),f'Cannot parameterize molecule {self.name} without {self.name}.mol2'
+        if outname=='':
+            outname=f'{self.name}-p'
+        GAFFParameterize(self.name,outname,**kwargs)
+        self.read_topology(f'{outname}.top')
+        self.read_coords(f'{outname}.gro')
+        self.read_coords(f'{outname}.mol2')
+        assert self.cstale=='',f'Error: {self.cstale} coords are stale'
+
+    def calculate_sea(self):
+        ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
+        n=self.name
+        boxsize=np.array(self.Coords['gro'].maxspan())+2*np.ones(3)
+        pfs.checkout('nvt-sea.mdp')
+        for ex in ['top','itp','gro']:
+            pfs.checkout(f'{n}-p.{ex}')
+        logging.info(f'Hot md running...output to {n}-p-sea')
+        grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
+                        mdp='nvt-sea',out=f'{n}-p-sea',boxSize=boxsize)
+        self.Coords['gro'].set_attribute('sea-idx',analyze_sea(f'{n}-p-sea'))
+        self.Coords['gro'].write_sea(f'{n}-p.sea')
+
+    def read_sea(self,filename):
+        assert os.path.exists(filename),f'SEA file {filename} not found.'
+        self.Coords['gro'].read_sea(filename)
+
+    def generate(self,outname='',available_molecules={},**kwargs):
+        logging.info(f'Generating Molecule {self.name}')
+        if outname=='':
+            outname=f'{self.name}-p'
+        if self.generator:
+            R=self.generator
+            logging.info(f'Using reaction {R.name} to generate {self.name}.mol2')
+            # this molecule is to be generated using a reaction
+            # check to make sure this reactions reactants are among the available molecules
+            can_react=all([a in available_molecules for a in R.reactants.values()])
+            if not can_react:
+                raise Exception(f'Cannot generate {self.name} because reactants not available')
+            # add z attribute to molecules in input list based on bonds
+            for b in R.bonds:
+                atoms=[R.atoms[i] for i in b.atoms]
+                mols=[available_molecules[R.reactants[a.reactant]] for a in atoms]
+                for a,m in zip(atoms,mols):
+                    if not 'z' in m.Coords['gro']:
+                        logging.info(f'Initializing z attribute of all atoms in {m.name}')
+                        m.Coords['gro']['z']=np.zeros(m.Coords['gro'].shape[0])
+                    idx=m.Coords['gro'].get_idx({'atomName':a.atom,'resNum':a.resid})-1
+                    logging.info(f'Modifing z attribute of molecule {m.name} atom {idx+1}')
+                    m.Coords['gro']['z'].iloc[idx]=a.z
+
+            self.reactants={}
+            for n,r in R.reactants.items():
+                self.reactants[n]=deepcopy(available_molecules[r])
+            base=None
+            for b in R.bonds:
+                # every bond names exactly two atoms, A and B
+                # here we associate the identifiers A and B with
+                # their entry in the atoms dictionary for this reaction
+                A,B=[R.atoms[i] for i in b.atoms]
+                mA,mB=[self.reactants[a.reactant] for a in [A,B]]
+                if not base:
+                    base=mA          
+                Aidx=m.Coords['gro'].get_idx({'atomName':A.atom,'resNum':A.resid})
+                Bidx=m.Coords['gro'].get_idx({'atomName':B.atom,'resNum':B.resid})
+                mA.react_with(mB,Aidx,Bidx)
+            self.merge(base)
+            self.toggle('gro')
+            self.sync_coords()
+            self.write_mol2()
+        else:
+            logging.info(f'Using {self.name}.mol2 as a source.')
+        self.parameterize(outname,**kwargs)
 
     def toggle(self,t):  # toggle stalecoords after update of type t
         def other(t):
@@ -90,123 +172,6 @@ class Monomer:
         else:
             raise Exception(f'Coordinate filename extension {ext} is not recognized.')
 
-    def read_sea(self,filename):
-        assert os.path.exists(filename),f'SEA file {filename} not found.'
-        self.Coords['gro'].read_sea(filename)
-
-    def calculate_sea(self):
-        ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
-        n=self.name
-        boxsize=np.array(self.Coords['gro'].maxspan())+2*np.ones(3)
-        pfs.checkout('nvt-sea.mdp')
-        for ex in ['top','itp','gro']:
-            pfs.checkout(f'{n}-p.{ex}')
-        logging.info(f'hot md running...output to {n}-p-sea')
-        grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
-                        mdp='nvt-sea',out=f'{n}-p-sea',boxSize=boxsize)
-        self.Coords['gro'].D['atoms']['sea-idx']=analyze_sea(f'{n}-p-sea')
-        self.Coords['gro'].write_sea(f'{n}-p.sea')
-
-    def parameterize(self,outname='',**kwargs):
-        pfs.checkout(f'{self.name}.mol2')
-        assert os.path.exists(f'{self.name}.mol2'),f'Cannot parameterize monomer {self.name} without {self.name}.mol2'
-        if outname=='':
-            outname=f'{self.name}-p'
-        GAFFParameterize(self.name,outname,**kwargs)
-        self.read_topology(f'{outname}.top')
-        self.read_coords(f'{outname}.gro')
-        self.read_coords(f'{outname}.mol2')
-        assert self.cstale=='',f'Error: {self.cstale} coords are stale'
-
-    def add_reactive_atom(self,ra):
-        # add this reactive atom if its z is greater than any z
-        # for an ra with the same name
-        assert type(ra)==Atom,f'Argument to add_reactive_atom must be type Atom not {type(ra)}'
-        found=False
-        #logging.info(f'add_reactive_atom at monomer {self.name}({id(self)}), currently with {len(self.reactive_atoms)} reactive atoms.')
-        for i in range(len(self.reactive_atoms)):
-            if self.reactive_atoms[i].name==ra.name:
-                #logging.info(f'   found {self.reactive_atoms[i].name} at {i}; z {self.reactive_atoms[i].z}')
-                if ra.z>self.reactive_atoms[i].z:
-                    logging.info(f'Overwriting zmax of {ra.name}')
-                    self.reactive_atoms[i].z=ra.z
-                found=True
-        if not found:
-            logging.info(f'Adding reactive atom {ra.name}(zmax={ra.z}) to monomer {self.name}')
-            self.reactive_atoms.append(ra)
-
-    def update_atom_specs(self,oldmol2):
-        ''' Atom specifications from the configuration file refer to atom names in the
-            user-provided mol2 files.  After processing via ambertools, the output mol2
-            files have renamed atoms (potentially) in the same order as the atoms in the
-            user-provided mol2.  This method updates the user-provided atom specifications
-            so that they reflect the atom names generated by ambertools. This should not
-            be necessary if antechamber obeys the atom ordering in the input mol2 file. '''
-        oa=oldmol2.D['atoms']
-        na=self.Coords['mol2'].D['atoms']
-        for ra in self.reactive_atoms:
-            assert type(ra)==Atom
-            n=ra.name
-            idx=oa[oa['atomName']==n]['globalIdx'].values[0]
-            ra.name=na[na['globalIdx']==idx]['atomName'].values[0]
-            if n!=ra.name:
-                logging.info('Good thing you did this: the atom names changed!')
-
-        # for c in self.capping_bonds:
-        #     p=c.pairnames
-        #     newpairnames=[]
-        #     for n in p:
-        #         idx=oa[oa['atomName']==n]['globalIdx'].values[0]
-        #         nn=na[na['globalIdx']==idx]['atomName'].values[0]
-        #         newpairnames.append(nn)
-        #     c.pairnames=newpairnames
-
-    def __str__(self):
-        s=self.name+'\n'
-        for r,a in self.reactive_atoms.items():
-            s+=f'   reactive atom: {r}:'+str(a)+'\n'
-        # for c in self.capping_bonds:
-        #     s+='   cap: '+str(c)+'\n'
-        return s
-
-class Molecule:
-    def __init__(self,name=''):
-        self.name=name
-        self.Topology=None
-        self.Coords={}
-
-    def __str__(self):
-        restr=f'{self.name} '
-        if not self.Topology:
-            restr+=f'(empty topology) '
-        if len(self.Coords)==0:
-            restr+=f'(empty coords) '
-        return restr+'\n'
-
-    def populate_from_monomer(self,monomer=None):
-        if monomer:
-            self.name=monomer.name
-            self.Topology=monomer.Topology
-            self.Coords=monomer.Coords
-
-    @classmethod
-    def generate_from_monomer(cls,monomer=None):
-        inst=cls('empty')
-        if monomer:
-            inst=cls()
-            inst.populate_from_monomer(monomer)
-        return inst
-
-    @classmethod
-    def generate_from_reaction(cls,R,moldict):
-        assert type(moldict)==dict
-        inst=cls(R.template['product'])
-        inst.merge(deepcopy(moldict[R.template['reactants'][0]]))
-        for name in R.template['reactants'][1:]:
-            inst.merge(deepcopy(moldict[name]))
-        # TODO -- get atoms and make new bond
-        return inst
-
     def merge(self,other):
         if not self.Topology:
             self.Topology=other.Topology
@@ -220,65 +185,40 @@ class Molecule:
                 if typ in other.Coords:
                     self.Coords[typ].merge(other.Coords[typ])
 
-    def parameterize(self):
-        pass
-        '''
-        1. write mol2
-        2. Gaff-parameterize -> gro/top
-        3. minimize->new gro
-        4. read top->Topology, read gro->Coord
-        '''
-
-    def read_topology(self,filename):
-        assert os.path.exists(filename),f'Topology file {filename} not found.'
-        if self.Topology:
-            logging.warning(f'overwriting topology of molecule {self.name} from file {filename}')
-        self.Topology=Topology.read_gro(filename)
-
-    def read_coords(self,filename):
-        assert os.path.exists(filename),f'Coordinate file {filename} not found.'
-        if self.Coords:
-            logging.warning(f'overwriting coordinates of molecule {self.name} from file {filename}')
-        basename,ext=os.path.splitext(filename)
-        if ext=='mol2':
-            self.Coords=Coordinates.read_mol2(filename)
-        elif ext=='gro':
-            self.Coords=Coordinates.read_gro(filename)
-        else:
-            raise Exception(f'Coordinate filename extension {ext} is not recognized.')
-
     def update_topology(self,t):
         self.Topology.merge(t)
 
     def update_coords(self,c):
         self.Coords.copy_coords(c)
 
-class Reaction:
-    ''' reactions may only be initialized after monomers '''
-    def __init__(self,jsondict):
-        self.jsondict=jsondict
-        ''' attributes expected in cfg file '''
-        self.name=jsondict.get('name','unnamed reaction')
-        self.atoms=jsondict.get('atoms','empty reaction')
-        self.bonds=jsondict.get('bonds','empty reaction')
-        self.template=jsondict.get('template','empty reaction')
-        self.restrictions=jsondict.get('restrictions',None)
-        self.stage=jsondict.get('stage','cure')
+    def react_with(self,other,myidx,otidx,**kwargs):
+        myC=self.Coords['gro']
+        myA=myC['atoms']
+        myT=self.Topology
+        otC=other.Coords['gro']
+        otA=otC['atoms']
+        otT=other.Topology
 
-        ''' attributes set up by other methods'''
-        self.molecules={}
+        mypartners=myT.bondlist.partners_of(myidx)
+        otpartners=otT.bondlist.partners_of(otidx)
+        myHpartners=[k for k,v in zip(mypartners,[myA[myA['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')]
+        otHpartners=[k for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')]
+        assert len(myHpartners)>0,f'Error: atom {myidx} does not have a deletable H atom!'
+        assert len(otHpartners)>0,f'Error: atom {otidx} does not have a deletable H atom!'
 
-    def pass_reactive_atoms(self,monomer_dict):
-        ''' a reaction identifies reactive atoms in a monomer, so we must
-            parse the reaction to add this reactive atom to the monomer '''
-        for i,at in self.atoms.items():
-            # 'monomer' entry in atoms dict is the name of the monomer to which this atom belongs
-            assert at['monomer'] in monomer_dict,f'Reaction {self.name} references non-existent monomer {at["monomer"]}'
-            logging.info(f'Reaction "{self.name}" seeks to add reactive atom {at["atom"]} to monomer {at["monomer"]}')
-            monomer_dict[at['monomer']].add_reactive_atom(Atom(at))
+        Ri=myC.get_R(myidx)
+        Rj=otC.get_R(otidx)
+        if self!=other: # not an intramolecular reaction
+            # TODO: optimize position/orientation of other
+            pass
 
-    def __str__(self):
-        return f'Reaction "{self.name}"'
+        # TODO: get the H on myidx that is closest to otidx
+        # and the H on otidx that is closest to myidx
+        # these are the H's to delete
+
+        pass
+
+
 
 def get_conn(mol):
     conn=[]

@@ -95,6 +95,16 @@ def encluster(i,j,c):
     return False        
 
 def symm(d,thresh=0.10):
+    ''' Builds and returns an atom-idx-ordered list of sea-cluster indexes.
+        Any two atoms with the same sea-cluster-index are considered
+        symmetry equivalent.
+        
+        Parameters:
+           - d: interatomic distance matrix
+           - thresh:  threshhold below which two sorted columns of d are considered
+                      the "same" when compared to the magnitude of their straight
+                      difference
+    '''
     na=d.shape[0]
     # initialize per-atom cluster id's to atom indexes (0-)
     cluster_ids=np.arange(na)
@@ -138,6 +148,24 @@ def symm(d,thresh=0.10):
     return cluster_ids
 
 def analyze_sea(deffnm,thresh=0.1):
+    ''' Builds and returns an atom-idx-ordered list of sea-cluster indexes.
+        Any two atoms with the same sea-cluster-index are considered
+        symmetry equivalent.
+        
+        Parameters:
+           - deffnm: ouput filename prefix for the Gromacs mdrun that generated the 
+                     trajectory file we are analyzing here
+           - thresh: threshhold below which two sorted columns of d are considered
+                     the "same" when compared to the magnitude of their straight
+                     difference
+
+        The main job of this method is to compute the time-averaged interatomic
+        distance matrix.  This matrix, if computed from a "hot" md simulation,
+        should reveal atoms that are topologically symmetric, since the set of 
+        average interatomic distances from atom A to all other atoms and the set
+        of average interatomic distances from atom B to all other atoms are the 
+        same if A and B are symmetry-equivalent.
+    '''
     if not os.path.exists(f'{deffnm}.trr'):
         logging.error(f'{deffnm}.trr not found.')
         return []
@@ -159,5 +187,6 @@ def analyze_sea(deffnm,thresh=0.1):
             nframes+=1
         # averages over frames
         d/=nframes
-        # send the distance matrix to be processed
+        # send the distance matrix to be processed, return
+        # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh)
