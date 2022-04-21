@@ -1,22 +1,22 @@
 ''' Classes for handling resource library and a runtime file system '''
 
+from email.mime import base
 import logging
 import os
 import pathlib
 import importlib.resources
 
 from HTPolyNet.command import Command
+from Library import _LIBRARY_EXT_DIR_, which_ldir
 
 _MolecularDataFileTypes_=['mol2','gro','top','itp','sea']
 _mdf_last_required_=_MolecularDataFileTypes_.index('sea')
-_MoleculeClasses_=['monomers','oligomers']
 
-class Library:
+class RuntimeLibrary:
     ''' a library object -- default creation references the Library resource package. '''
     def __init__(self):
         self.alldirs=[]
         self.allfiles=[]
-        self.molecule_class_subdirs={}
         self.designation='Empty'
     
     @classmethod
@@ -27,14 +27,17 @@ class Library:
             tt=importlib.resources.files(libpackage)
         except:
             raise ImportError(f'Could not find package {libpackage}.  Your HTPolyNet installation is corrupt.')
+        # make flat lists of absolute paths for all files
         for n in tt.iterdir():
             inst.allfiles.extend(inst._frec(n))
             inst.alldirs.extend(inst._drec(n))
-        for c in _MoleculeClasses_:
-            dir=[x for x in inst.alldirs if c in str(x)]
-            if len(dir)==0:
-                raise Exception(f'No "molecules/{dir}" directory in {libpackage}')
-            inst.molecule_class_subdirs[c]=dir[0]
+        inst.ext_dirs=which_ldir
+        basenames=[os.path.basename(x) for x in inst.allfiles]
+        basenameset=set(basenames)
+        for b in basenameset:
+            if basenames.count(b)>1:
+                logging.warning(f'Two or more files with basename {b} are detected in the system library.')
+                logging.warning(f'checkout/checkin will resolve to {inst.allfiles[basenames.index(b)]}')
         logging.info(inst.info(verbose=verbose))
         return inst
 
@@ -73,29 +76,17 @@ class Library:
 
     def path(self,basefilename):
         ''' return the absolute path of the provided basename in the Library, or, if the basename is not in the library, return the path to the subdirectory it *should* go in.  Return False if no such path exists in the Library. '''
-        if os.path.sep in basefilename:
-            logging.warning(f'basefilename {basefilename} seems to have path separators.  It should be a base name only.')
-            basefilename=os.path.basename(basefilename)
-            logging.warning(f'...interpreting as {basefilename}')
+        assert not os.path.sep in basefilename
         matches = [x for x in self.allfiles if basefilename in str(x)]
-        if len(matches)==0:
-            ''' this file is not found, but we will return the path where it should go '''
-            root,ext=os.path.splitext(basefilename)
-            ext=ext.replace('.','')
-            if not ext in _MolecularDataFileTypes_:
-                ''' this is not a molecular data file '''
-                matches = [x for x in self.alldirs if ext in str(x)]
-                if len(matches)==0:
-                    return False
-                return matches[0]
-            else:
-                ''' this is a molecular data file '''
-                ''' an oligomer will have @ in its file name '''
-                if '@' in basefilename:
-                    return self.molecule_class_subdirs['oligomers']
-                else:
-                    return self.molecule_class_subdirs['monomers']
-        return matches[0]
+        if len(matches)==1:
+            return matches[0]
+        elif len(matches)==0:
+            prefix,ext=os.path.splitext(basefilename)
+            ext=ext[1:]
+            return self.ext_dirs(ext)
+        else:
+            logging.warning(f'More than one file {basefilename} found in library.  Only returning {matches[0]}')
+            return matches[0]
 
     def checkin(self,basefilename,overwrite=False):
         if not os.path.exists(basefilename):
@@ -103,29 +94,30 @@ class Library:
             return False
         ''' add the local file basefilename to the Library if it is not already there '''
         p=self.path(basefilename)
-        if p.is_file():
+        if p and os.path.isfile(p):
             if overwrite:
                 out,err=Command(f'cp -f {basefilename} {p}').run()
                 return True
             else:
                 logging.info(f'Check-in of {basefilename} to {self.designation} library is not necessary.')
                 logging.info(f'    {p} is already there.')
-        elif p.is_dir():
+        elif p and os.path.isdir(p):
             out,err=Command(f'cp {basefilename} {p}').run()
             self.allfiles.append(os.path.join(p,basefilename))
             return True
-        return False  # this would be the result of an unspecified error
+        logging.warning(f'Failed to check in {basefilename} -- I do not know where to put it.')
+        return False
 
     def checkout(self,basefilename,nowarn=False):
         p=self.path(basefilename)
-        if p and p.is_file():
+        if p and os.path.isfile(p):
             logging.info(f'Checking {basefilename} out of {self.designation} library into {os.getcwd()}')
             Command(f'cp {p} .').run()
             return True
         else:
             if not nowarn:
                 logging.info(f'{basefilename} is not found in the {self.designation} library')
-                if p and p.is_dir():
+                if p and os.path.isdir(p):
                     logging.info(f'    but I expected to find it in {p}.')
                 else:
                     root,ext=os.path.splitext(basefilename)
@@ -134,7 +126,7 @@ class Library:
     
     def exists(self,basefilename):
         p=self.path(basefilename)
-        if p and p.is_file():
+        if p and os.path.isfile(p):
             return True
         return False
 
@@ -157,10 +149,10 @@ class ProjectFileSystem:
         self._next_project_dir(reProject=reProject)
         self._setup_project_root()
         self.cd(self.rootPath)
-        self.library=Library.system()
+        self.library=RuntimeLibrary.system()
         self.userlibrary=None
         if userlibrary:
-            self.userlibrary=Library.user(userlibrary)
+            self.userlibrary=RuntimeLibrary.user(userlibrary)
 
     def cd(self,dest=''):
         os.chdir(dest)
@@ -238,7 +230,8 @@ def exists(filename):
     return _PFS_.exists(filename)
 
 def in_library(filename):
-    in_system=all([exists(filename) for ex in _MolecularDataFileTypes_[:_mdf_last_required_]])
+    in_system=all([exists(f'{filename}.{ex}') for ex in _MolecularDataFileTypes_[:_mdf_last_required_]])
+    logging.info(f'in_library for {filename}: {in_system}')
     return in_system
 
 def checkin(filename):

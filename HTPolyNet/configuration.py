@@ -8,7 +8,8 @@ read cfg file
 import json
 import yaml
 import logging
-from HTPolyNet.molecule import Monomer, Molecule, Reaction
+
+from HTPolyNet.molecule import Molecule, Reaction
 
 # def getOrDie(D,k,basetype=None,subtype=str,source='config'):
 #     '''
@@ -87,7 +88,7 @@ class Configuration:
             if not R.product in self.molecules:
                 self.molecules[R.product]=Molecule(R.product,generator=R)
         for R in self.reactions:
-            for r in R.reactants:
+            for rkey,r in R.reactants.items():
                 ''' reactants do not get assigned generators if they are *only* reactants '''
                 if not r in self.molecules:
                     self.molecules[r]=Molecule(r)
@@ -99,7 +100,7 @@ class Configuration:
         ''' any molecules lists in the initial composition
         may not have been declared in reactions '''
         for item in self.initial_composition:
-            m=item.molecule
+            m=item['molecule']
             if m not in self.molecules:
                 self.molecules[m]=Molecule(m)
 

@@ -1,5 +1,5 @@
 from matplotlib.pyplot import get
-from HTPolyNet.coordinates import get_atom_attribute
+from HTPolyNet.coordinates import get_atom_attribute,set_atom_attribute
 import pandas as pd
 import numpy as np
 
@@ -10,5 +10,8 @@ print(df1.to_string())
 
 print(2,4,get_atom_attribute(df1,'D',{'A':2,'B':4}))
 
-df1['A'].iloc[1]=8
+set_atom_attribute(df1,'C',99,{'A':2,'B':4})
+
+#df1.loc[[True,False,False,False,False],[True,False,False,False]]=99
+
 print(df1.to_string())

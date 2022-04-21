@@ -13,17 +13,31 @@ from HTPolyNet.bondlist import Bondlist
 
 def get_atom_attribute(df,name,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
-    que=' & '.join(f'(df["{k}"]=={v})' for k,v in ga.items())
-    ndf=pd.eval(que)
-    try:
-        hits=df[ndf][name].values
-        if len(hits)>1:
-            raise Exception(f'Attibutes {attributes} are not specific enough to locate only one atom.')
-        ret_val=hits[0]
-    except IndexError as error:
-        print(f'Error: no row with these attributes: {attributes}')
-        ret_val=None
-    return ret_val
+    if type(name)==list:
+        name_in_df=all([n in df for n in name])
+    else:
+        name_in_df= name in df
+    if name_in_df and len(ga)>0:
+        c=[df[k] for k in ga]
+        V=list(ga.values())
+        l=[True]*df.shape[0]
+        for i in range(len(c)):
+            l = (l) & (c[i]==V[i])
+#        print(name,attributes,df[list(l)][name].values)
+        return df[list(l)][name].values[0]
+    return None
+
+def set_atom_attribute(df,name,value,attributes):
+    ga={k:v for k,v in attributes.items() if k in df}
+    if name in df and len(ga)>0:
+        c=[df[k] for k in ga]
+        V=list(ga.values())
+        l=[True]*df.shape[0]
+        for i in range(len(c)):
+            l = (l) & (c[i]==V[i])
+        cidx=[c==name for c in df.columns]
+        df.loc[list(l),cidx]=value
+
 
 _ANGSTROM_='Ångström'
 
@@ -234,8 +248,7 @@ class Coordinates:
         self.D['atoms'][name]=srs
 
     def write_mol2(self,filename=''):
-        if self.format!='mol2':
-            raise Exception('This config instance is not in mol2 format')
+        assert self.format=='mol2','This config instance is not in mol2 format'
         posscale=1.0
         if self.units['length']=='nm':
             posscale=10.0
@@ -400,8 +413,16 @@ class Coordinates:
     
     def get_R(self,idx):
         df=self.D['atoms']
-        return df[df['globalIdx']==idx][['posX','posY','posZ']].values[0]
+        return get_atom_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})
+    
+    def get_atom_attribute(self,name,attributes):
+        df=self.D['atoms']
+        return get_atom_attribute(df,name,attributes)
 
+    def set_atom_attribute(self,name,value,attributes):
+        df=self.D['atoms']
+        set_atom_attribute(df,name,value,attributes)
+        
     def bond_to(self,other,myatom={},otheratom={},**kwargs):
         # self.write_mol2(f'TMP-{self.name}-base.mol2')
         ''' creates a new bond from atom acc in self to atom don of other 
@@ -494,6 +515,7 @@ class Coordinates:
         # exit()
 
     def add_bonds(self,pairs=[],orders=[]):
+        assert self.format=='mol2',f'Can only add bonds to mol2-Coords'
         if len(orders)==0:
             orders=[1]*len(pairs)
         ''' add bonds to a set of coordinates

@@ -28,13 +28,13 @@ class Reaction:
     def __init__(self,jsondict):
         self.jsondict=jsondict
         ''' attributes expected in cfg file '''
-        self.name=jsondict.get('name','unnamed reaction')
-        self.atoms=jsondict.get('atoms','empty reaction')
-        self.bonds=jsondict.get('bonds','empty reaction')
-        self.reactants=jsondict.get('reactants','empty reaction')
-        self.product=jsondict.get('product','empty reaction')
+        self.name=jsondict.get('name','')
+        self.atoms=jsondict.get('atoms',{})
+        self.bonds=jsondict.get('bonds',{})
+        self.reactants=jsondict.get('reactants',{})
+        self.product=jsondict.get('product','')
         self.restrictions=jsondict.get('restrictions',{})
-        self.stage=jsondict.get('stage','cure')
+        self.stage=jsondict.get('stage','')
 
     def __str__(self):
         return f'Reaction "{self.name}"'
@@ -56,7 +56,6 @@ class Molecule:
         return restr+'\n'
 
     def parameterize(self,outname='',**kwargs):
-        pfs.checkout(f'{self.name}.mol2')
         assert os.path.exists(f'{self.name}.mol2'),f'Cannot parameterize molecule {self.name} without {self.name}.mol2'
         if outname=='':
             outname=f'{self.name}-p'
@@ -96,39 +95,48 @@ class Molecule:
             if not can_react:
                 raise Exception(f'Cannot generate {self.name} because reactants not available')
             # add z attribute to molecules in input list based on bonds
+            print(R)
             for b in R.bonds:
-                atoms=[R.atoms[i] for i in b.atoms]
-                mols=[available_molecules[R.reactants[a.reactant]] for a in atoms]
+                atoms=[R.atoms[i] for i in b['atoms']]
+                mols=[available_molecules[R.reactants[a['reactant']]] for a in atoms]
                 for a,m in zip(atoms,mols):
-                    if not 'z' in m.Coords['gro']:
+                    if not 'z' in m.Coords['gro'].D['atoms']:
                         logging.info(f'Initializing z attribute of all atoms in {m.name}')
-                        m.Coords['gro']['z']=np.zeros(m.Coords['gro'].shape[0])
-                    idx=m.Coords['gro'].get_idx({'atomName':a.atom,'resNum':a.resid})-1
+                        m.Coords['gro'].set_attribute('z',np.zeros(m.Coords['gro'].D['atoms'].shape[0]))
+                    idx=m.Coords['gro'].get_idx({'atomName':a['atom'],'resNum':a['resid']})-1
                     logging.info(f'Modifing z attribute of molecule {m.name} atom {idx+1}')
-                    m.Coords['gro']['z'].iloc[idx]=a.z
+                    m.Coords['gro'].set_atom_attribute('z',a['z'],{'globalIdx':idx})#   D['atoms']['z'].iloc[idx]=a.z
 
-            self.reactants={}
+            # local copies of all reactant molecules
+            reactants={}
             for n,r in R.reactants.items():
-                self.reactants[n]=deepcopy(available_molecules[r])
-            base=None
+                reactants[n]=deepcopy(available_molecules[r])
+            bases=[]
             for b in R.bonds:
                 # every bond names exactly two atoms, A and B
                 # here we associate the identifiers A and B with
                 # their entry in the atoms dictionary for this reaction
-                A,B=[R.atoms[i] for i in b.atoms]
-                mA,mB=[self.reactants[a.reactant] for a in [A,B]]
-                if not base:
-                    base=mA          
-                Aidx=m.Coords['gro'].get_idx({'atomName':A.atom,'resNum':A.resid})
-                Bidx=m.Coords['gro'].get_idx({'atomName':B.atom,'resNum':B.resid})
-                mA.react_with(mB,Aidx,Bidx)
-            self.merge(base)
-            self.toggle('gro')
-            self.sync_coords()
-            self.write_mol2()
+                A,B=[R.atoms[i] for i in b['atoms']]
+                mA,mB=[reactants[a['reactant']] for a in [A,B]]
+                Aidx=mA.Coords['gro'].get_idx({'atomName':A['atom'],'resNum':A['resid']})
+                Bidx=mB.Coords['gro'].get_idx({'atomName':B['atom'],'resNum':B['resid']})
+                mA.new_bond(mB,Aidx,Bidx)
+                if len(bases)==0 or mA not in bases:
+                    bases.append(mA)
+            assert len(bases)==1,f'Error: Reaction {R.name} results in more than one molecular fragment product'
+            base=bases[0]
+            # at this point, base.Coord['mol'] contains our coordinates, and base.Coord['gro'] still
+            # reflects the original base, so we need to fully generate a new base.Coord['gro'] from 
+            # the base.Coord['mol2']
+            base.regenerate_coordinates('gro')
+            self.merge_coordinates(base)
+            self.Coords['mol2'].write_mol2(filename=f'{self.name}.mol2')
         else:
-            logging.info(f'Using {self.name}.mol2 as a source.')
+            logging.info(f'Using existing {self.name}.mol2 as a source.')
+            pfs.checkout(f'{self.name}.mol2')
+
         self.parameterize(outname,**kwargs)
+
 
     def toggle(self,t):  # toggle stalecoords after update of type t
         def other(t):
@@ -152,6 +160,23 @@ class Molecule:
         else:
             pass
 
+    def regenerate_coordinates(self,typ):
+        assert typ in ['gro','mol2']
+        if typ=='gro':  # we have to generate gro from mol2
+            self.Coords['gro'].D['atoms']=pd.DataFrame()
+            df=self.Coords['gro'].D['atoms']
+            for c in Coordinates.gro_colnames[:-3]:
+                df[c]=self.Coords['mol2'].D['atoms'][c]
+            for c in ['posX','posY','posZ']:
+                df[c]/=10.0 # nm!
+        else: # we have to generate mol2 from gro
+            self.Coords['mol2'].D['atoms']=pd.DataFrame()
+            df=self.Coords['mol2'].D['atoms']
+            for c in Coordinates.gro_colnames[:-3]:
+                df[c]=self.Coords['gro'].D['atoms'][c]
+            for c in ['posX','posY','posZ']:
+                df[c]*=10.0 # A!
+
     def read_topology(self,filename):
         assert os.path.exists(filename),f'Topology file {filename} not found.'
         if self.Topology:
@@ -173,10 +198,16 @@ class Molecule:
             raise Exception(f'Coordinate filename extension {ext} is not recognized.')
 
     def merge(self,other):
+        self.merge_topologies(other)
+        self.merge_coordinates(other)
+    
+    def merge_topologies(self,other):
         if not self.Topology:
             self.Topology=other.Topology
         else:
             self.Topology.merge(other.Topology)
+
+    def merge_coordinates(self,other):
         for typ in ['gro','mol2']:
             if not typ in self.Coords:
                 if typ in other.Coords:
@@ -191,33 +222,87 @@ class Molecule:
     def update_coords(self,c):
         self.Coords.copy_coords(c)
 
-    def react_with(self,other,myidx,otidx,**kwargs):
-        myC=self.Coords['gro']
-        myA=myC['atoms']
-        myT=self.Topology
-        otC=other.Coords['gro']
-        otA=otC['atoms']
-        otT=other.Topology
+    def new_bond(self,other,myidx,otidx,**kwargs):
+        myC=self.Coords['mol2']
+        myA=myC.D['atoms']
+        otC=other.Coords['mol2']
+        otA=otC.D['atoms']
 
-        mypartners=myT.bondlist.partners_of(myidx)
-        otpartners=otT.bondlist.partners_of(otidx)
+        mypartners=myC.bondlist.partners_of(myidx)
+        otpartners=otC.bondlist.partners_of(otidx)
         myHpartners=[k for k,v in zip(mypartners,[myA[myA['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')]
         otHpartners=[k for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')]
         assert len(myHpartners)>0,f'Error: atom {myidx} does not have a deletable H atom!'
         assert len(otHpartners)>0,f'Error: atom {otidx} does not have a deletable H atom!'
-
+            
         Ri=myC.get_R(myidx)
         Rj=otC.get_R(otidx)
-        if self!=other: # not an intramolecular reaction
-            # TODO: optimize position/orientation of other
-            pass
-
-        # TODO: get the H on myidx that is closest to otidx
-        # and the H on otidx that is closest to myidx
-        # these are the H's to delete
-
-        pass
-
+        minHH=(1.e9,-1,-1)
+        if self!=other:
+            overall_maximum=(-1.e9,-1,-1)
+        ''' Identify the H atom on each atom in be pair to
+            be bonded that result in the "optimum" choice
+            for deletion or, if this is intermolecular,
+            the "optimum" choice for the location/orientation
+            of the other. '''
+        totc={}
+        for myH in myHpartners:
+            Rh=myC.get_R(myH)
+            Rih=Ri-Rh
+            Rih*=1.0/np.linalg.norm(Rih)
+            for otH in otHpartners:
+                totc[otH]=deepcopy(otC)
+                Rk=totc[otH].get_R(otH)
+                Rjk=Rj-Rk
+                Rjk*=1.0/np.linalg.norm(Rjk)
+                Rhk=Rh-Rk
+                rhk=np.linalg.norm(Rhk)
+                if self!=other: # this is intermolecular
+                    cp=np.cross(Rjk,Rih)
+                    c=np.dot(Rjk,Rih)
+                    v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
+                    v2=np.dot(v,v)
+                    I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
+                    # R is the rotation matrix that will rotate donb to align with accb
+                    R=I+v+v2/(1.+c)
+                    # rotate translate all donor atoms!
+                    totc[otH].rotate(R)
+                    Rj=totc[otH].get_R(otidx)
+                    Rk=totc[otH].get_R(otH)
+                    Rjk=Rj-Rk
+                    Rjk*=1.0/np.linalg.norm(Rjk)
+                    Rhk=Rh-Rk
+                    rhk=np.linalg.norm(Rhk)
+                    # overlap the other H atom with self's 
+                    # reactive atom by translation
+                    Rik=Ri-Rk
+                    totc[otH].translate(Rik)
+                    Rj=totc[otH].get_R(otidx)
+                    Rk=totc[otH].get_R(otH)
+                    Rjk=Rj-Rk
+                    Rjk*=1.0/np.linalg.norm(Rjk)
+                    Rhk=Rh-Rk
+                    rhk=np.linalg.norm(Rhk)
+                    minD=myC.minimum_distance(totc[otH],self_excludes=[myH],other_excludes=[otH])
+                    if minD>overall_maximum[0]:
+                        overall_maximum=(minD,myH,otH)
+                else:
+                    if rhk<minHH[0]:
+                        minHH=(rhk,myH,otH)
+        if self!=other:
+            minD,myH,otH=overall_maximum
+            shifts=myC.merge(totc[otH])
+            myC.write_mol2('tmp.mol2')
+            idxshift=shifts[0]
+            otidx+=idxshift
+            otH+=idxshift
+        else:
+            mhh,myH,otH=minHH
+            logging.info(f'Executing intramolecular reaction  in {self.name}')
+            logging.info(f'Two Hs closest to each other are {myH} and {otH}')
+    
+        myC.delete_atoms(idx=[myH,otH])
+        myC.add_bonds(pairs=[(myidx,otidx)])
 
 
 def get_conn(mol):
