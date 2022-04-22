@@ -4,6 +4,7 @@
 """
 import logging
 import os
+import shutil
 import argparse as ap
 #import numpy as np
 from copy import deepcopy
@@ -24,9 +25,9 @@ from HTPolyNet.topology import Topology
 #from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.command import Command
+#from HTPolyNet.command import Command
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
-from HTPolyNet.molecule import Molecule
+#from HTPolyNet.molecule import Molecule
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -47,11 +48,15 @@ class HTPolyNet:
     def checkout(self,filename,altpath=None):
         if not pfs.checkout(filename):
             searchpath=pfs.local_data_searchpath()
+            logging.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
             if altpath:
                 searchpath.append(altpath)
+                logging.info(f'and alternative path {altpath}')
             for p in searchpath:
-                if os.path.exists(os.path.join(p,filename)):
-                    Command(f'cp {os.path.join(p,filename)} .').run()
+                fullfilename=os.path.join(p,filename)
+                if os.path.exists(fullfilename):
+                    basefilename=os.path.basename(filename)
+                    shutil.copyfile(fullfilename,basefilename)
                     return True
             return False
         return True
@@ -84,18 +89,16 @@ class HTPolyNet:
                         logging.info(f'No precursors needed...should be a go!')
                     precursors_available=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
                     if precursors_available:
-                        already_parameterized = pfs.in_library(f'{mname}')
-                        if force_parameterization or not already_parameterized:
+                        if force_parameterization or not M.previously_parameterized():
                             logging.info(f'Generating {mname}')
                             M.generate(available_molecules=self.molecules,
                             **self.cfg.parameters)
                             for ex in ['mol2','top','itp','gro']:
-                                checkin(f'{mname}.{ex}')
+                                checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=True)
                         else:
                             logging.info(f'Fetching parameterized {mname}')
-                            #self.checkout(f'{mname}.mol2')
                             for ex in ['mol2','top','itp','gro']:
-                                self.checkout(f'{mname}.{ex}')
+                                self.checkout(f'molecules/parameterized/{mname}.{ex}')
                             M.read_topology(f'{mname}.top')
                             M.read_coords(f'{mname}.gro')
                             M.read_coords(f'{mname}.mol2')
@@ -106,10 +109,10 @@ class HTPolyNet:
                     ''' The cfg allows user to indicate whether or not to determine and use
                         symmetry-equivalent atoms in any molecule. '''
                     if mname in self.cfg.use_sea:
-                        if force_sea_calculation or not exists(f'{mname}-p.sea'):
+                        if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
                             M.calculate_sea()
                         else:
-                            self.checkout(f'{mname}.sea')
+                            self.checkout(f'molecules/parameterized/{mname}.sea')
                             M.read_sea(f'{mname}.sea')
             all_made=all([m in self.molecules for m in self.cfg.molecules])
             for m in self.cfg.molecules:
@@ -212,10 +215,10 @@ class HTPolyNet:
         # from parameterization directory
         self.checkout('init.top',altpath=pfs.systemsSubPaths['unrctSystems'])
         for n in self.cfg.monomers.keys():
-            self.checkout(f'{n}-p.gro',altpath=pfs.systemsSubPaths['unrctSystems'])
+            self.checkout(f'{n}.gro',altpath=pfs.systemsSubPaths['unrctSystems'])
         # fetch mdp files from library, or die if not found
-        self.checkout('em.mdp')
-        self.checkout('npt-1.mdp')
+        self.checkout('mdp/em.mdp')
+        self.checkout('mdp/npt-1.mdp')
         if 'initial_boxsize' in self.cfg.parameters:
             boxsize=self.cfg.parameters['initial_boxsize']
         elif 'initial_density' in self.cfg.parameters:

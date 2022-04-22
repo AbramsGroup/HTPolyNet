@@ -55,6 +55,12 @@ class Molecule:
             restr+=f'(empty coords) '
         return restr+'\n'
 
+    def previously_parameterized(self):
+        rval=True
+        for ext in ['mol2','top','itp','gro']:
+            rval=rval and pfs.exists(os.path.join('molecules/parameterized',f'{self.name}.{ext}'))
+        return rval
+
     def parameterize(self,outname='',**kwargs):
         assert os.path.exists(f'{self.name}.mol2'),f'Cannot parameterize molecule {self.name} without {self.name}.mol2'
         if outname=='':
@@ -69,14 +75,14 @@ class Molecule:
         ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
         n=self.name
         boxsize=np.array(self.Coords['gro'].maxspan())+2*np.ones(3)
-        pfs.checkout('nvt-sea.mdp')
+        pfs.checkout('mdp/nvt-sea.mdp')
         for ex in ['top','itp','gro']:
-            pfs.checkout(f'{n}-p.{ex}')
-        logging.info(f'Hot md running...output to {n}-p-sea')
-        grompp_and_mdrun(gro=f'{n}-p',top=f'{n}-p',
-                        mdp='nvt-sea',out=f'{n}-p-sea',boxSize=boxsize)
-        self.Coords['gro'].set_attribute('sea-idx',analyze_sea(f'{n}-p-sea'))
-        self.Coords['gro'].write_sea(f'{n}-p.sea')
+            pfs.checkout(f'molecules/parameterized/{n}.{ex}')
+        logging.info(f'Hot md running...output to {n}-sea')
+        grompp_and_mdrun(gro=f'{n}',top=f'{n}',
+                        mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
+        self.Coords['gro'].set_attribute('sea-idx',analyze_sea(f'{n}-sea'))
+        self.Coords['gro'].write_sea(f'{n}.sea')
 
     def read_sea(self,filename):
         assert os.path.exists(filename),f'SEA file {filename} not found.'
@@ -85,7 +91,7 @@ class Molecule:
     def generate(self,outname='',available_molecules={},**kwargs):
         logging.info(f'Generating Molecule {self.name}')
         if outname=='':
-            outname=f'{self.name}-p'
+            outname=f'{self.name}'
         if self.generator:
             R=self.generator
             logging.info(f'Using reaction {R.name} to generate {self.name}.mol2')
@@ -112,6 +118,7 @@ class Molecule:
             for n,r in R.reactants.items():
                 reactants[n]=deepcopy(available_molecules[r])
             bases=[]
+            # TODO: enforce any symmetries
             for b in R.bonds:
                 # every bond names exactly two atoms, A and B
                 # here we associate the identifiers A and B with
@@ -132,11 +139,11 @@ class Molecule:
             self.merge_coordinates(base)
             self.Coords['mol2'].write_mol2(filename=f'{self.name}.mol2')
         else:
-            logging.info(f'Using existing {self.name}.mol2 as a source.')
-            pfs.checkout(f'{self.name}.mol2')
+            logging.info(f'Using existing molecules/inputs/{self.name}.mol2 as a source.')
+            pfs.checkout(f'molecules/inputs/{self.name}.mol2')
 
         self.parameterize(outname,**kwargs)
-
+        # TODO: minimize and overwrite
 
     def toggle(self,t):  # toggle stalecoords after update of type t
         def other(t):

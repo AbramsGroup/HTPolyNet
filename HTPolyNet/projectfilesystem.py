@@ -1,13 +1,13 @@
 ''' Classes for handling resource library and a runtime file system '''
 
-from email.mime import base
+import shutil
 import logging
 import os
 import pathlib
 import importlib.resources
 
-from HTPolyNet.command import Command
-from Library import _LIBRARY_EXT_DIR_, which_ldir
+#from HTPolyNet.command import Command
+#from Library import _LIBRARY_EXT_DIR_#, which_ldir
 
 _MolecularDataFileTypes_=['mol2','gro','top','itp','sea']
 _mdf_last_required_=_MolecularDataFileTypes_.index('sea')
@@ -23,27 +23,35 @@ class RuntimeLibrary:
     def system(cls,libpackage='Library',verbose=False):
         inst=cls()
         inst.designation='System'
+        inst.package=libpackage
         try:
-            tt=importlib.resources.files(libpackage)
+            tt=importlib.resources.files(inst.package)
         except:
             raise ImportError(f'Could not find package {libpackage}.  Your HTPolyNet installation is corrupt.')
         # make flat lists of absolute paths for all files
         for n in tt.iterdir():
             inst.allfiles.extend(inst._frec(n))
             inst.alldirs.extend(inst._drec(n))
-        inst.ext_dirs=which_ldir
-        basenames=[os.path.basename(x) for x in inst.allfiles]
-        basenameset=set(basenames)
-        for b in basenameset:
-            if basenames.count(b)>1:
-                logging.warning(f'Two or more files with basename {b} are detected in the system library.')
-                logging.warning(f'checkout/checkin will resolve to {inst.allfiles[basenames.index(b)]}')
+        inst.root=os.path.commonpath(inst.alldirs)
+
+        # inst.parameterized_molecule_containiner=None
+        # for d in inst.alldirs:
+        #     if 'parameterized' in d:
+        #         inst.parameterized_molecule_container=d
+#        print(inst.alldirs)
+        #inst.ext_dirs=which_ldir
+        # basenames=[os.path.basename(x) for x in inst.allfiles]
+        # basenameset=set(basenames)
+        # for b in basenameset:
+        #     if basenames.count(b)>1:
+        #         logging.warning(f'Two or more files with basename {b} are detected in the system library.')
+        #         logging.warning(f'checkout/checkin will resolve to {inst.allfiles[basenames.index(b)]}')
         logging.info(inst.info(verbose=verbose))
         return inst
 
     @classmethod
     def user(cls,pathname='.'):
-        assert os.path.exists(pathname),f'Please ensure {pathname} exists.'
+        assert os.path.exists(pathname),f'Cannot find {pathname} in {os.getcwd()}'
         tt=os.path.abspath(pathname)
         assert tt.is_dir(),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
@@ -74,63 +82,66 @@ class RuntimeLibrary:
         else:
             return []
 
-    def path(self,basefilename,direction='out'):
-        ''' return the absolute path of the provided basename in the Library, or, if the basename is not in the library, return the path to the subdirectory it *should* go in.  Return False if no such path exists in the Library. '''
-        assert not os.path.sep in basefilename
-        matches = [x for x in self.allfiles if basefilename in str(x)]
-        if len(matches)==1:
-            return matches[0]
-        elif len(matches)==0:
-            prefix,ext=os.path.splitext(basefilename)
-            ext=ext[1:]
-            return self.ext_dirs(ext)
-        elif len(matches)==2:
-            if direction=='out':
-                
-            logging.warning(f'More than one file {basefilename} found in library.  Only returning {matches[0]}')
-            return matches[0]
+    # def checkin(self,basefilename):
+    #     assert os.path.exists(basefilename)
+    #     pref,ext=os.path.splitext(basefilename)
+    #     ext=ext[1:]
+    #     if ext=='mol2':
+    #         destdir=self.parameterized_molecules_container
+    #     else:
+    #         destdir=
 
-    def checkin(self,basefilename,overwrite=False):
+
+
+    # def path(self,basefilename,source=None):
+    #     ''' return the absolute path of the provided basename in the Library, or, if the basename is not in the library, return the path to the subdirectory it *should* go in.  Return False if no such path exists in the Library. '''
+    #     assert not os.path.sep in basefilename
+    #     if source:
+    #         basefilename=os.path.join(source,basefilename)
+    #     matches = [x for x in self.allfiles if basefilename in str(x)]
+    #     if len(matches)==1:
+    #         return matches[0]
+    #     elif len(matches)==0:
+    #         prefix,ext=os.path.splitext(basefilename)
+    #         ext=ext[1:]
+    #         return self.ext_dirs(ext)
+    #     elif len(matches)==2:
+    #         logging.warning(f'More than one file {basefilename} found in library.  Only returning {matches[0]}')
+    #         return matches[0]
+
+    def checkin(self,filename,overwrite=False):
+        ''' filename must be a fully resolved pathname under the 
+        system library.  We expect that the basename is in the current working directory'''
+        basefilename=os.path.basename(filename)
         if not os.path.exists(basefilename):
-            logging.info(f'{basefilename} not found. No check-in performed.')
+            logging.info(f'{basefilename} not found in {os.getcwd()}. No check-in performed.')
             return False
-        ''' add the local file basefilename to the Library if it is not already there '''
-        p=self.path(basefilename,direction='in')
-        if p and os.path.isfile(p):
+        fullfilename=os.path.join(self.root,filename)
+        if os.path.exists(fullfilename):
             if overwrite:
-                out,err=Command(f'cp -f {basefilename} {p}').run()
-                return True
+                shutil.copyfile(basefilename,fullfilename)
             else:
-                logging.info(f'Check-in of {basefilename} to {self.designation} library is not necessary.')
-                logging.info(f'    {p} is already there.')
-        elif p and os.path.isdir(p):
-            out,err=Command(f'cp {basefilename} {p}').run()
-            self.allfiles.append(os.path.join(p,basefilename))
-            return True
-        logging.warning(f'Failed to check in {basefilename} -- I do not know where to put it.')
-        return False
+                logging.info(f'{filename} already exists in system library.  No check-in performed.')
+        else:
+            shutil.copyfile(basefilename,fullfilename)
+        return True
 
-    def checkout(self,basefilename,nowarn=False):
-        p=self.path(basefilename,direction='out')
-        if p and os.path.isfile(p):
-            logging.info(f'Checking {basefilename} out of {self.designation} library into {os.getcwd()}')
-            Command(f'cp {p} .').run()
+    def checkout(self,filename):
+        basefilename=os.path.basename(filename)
+        fullfilename=os.path.join(self.root,filename)
+        if os.path.exists(fullfilename):
+            shutil.copyfile(fullfilename,os.path.join(os.getcwd(),basefilename))
             return True
         else:
-            if not nowarn:
-                logging.info(f'{basefilename} is not found in the {self.designation} library')
-                if p and os.path.isdir(p):
-                    logging.info(f'    but I expected to find it in {p}.')
-                else:
-                    root,ext=os.path.splitext(basefilename)
-                    logging.info(f'    because I have no information on where {ext} files should go.')
+            logging.warning(f'Could not find {filename} in system library.  No check-out performed.')
             return False
     
-    def exists(self,basefilename):
-        p=self.path(basefilename,direction='out')
-        if p and os.path.isfile(p):
+    def exists(self,filename):
+        fullfilename=os.path.join(self.root,filename)
+        if os.path.exists(fullfilename):
             return True
-        return False
+        else:
+            return False
 
     def info(self,verbose=False):
         retstr=f'HTPolyNet Library {self.designation} Directories:\n'
@@ -143,14 +154,15 @@ class RuntimeLibrary:
         return retstr
 
 class ProjectFileSystem:
-    def __init__(self,root='.',verbose=False,reProject=False,userlibrary=None):
+    def __init__(self,root='.',verbose=False,reProject=False,userlibrary=None,mock=False):
         self.rootPath=pathlib.Path(root).resolve()
         self.cwd=self.rootPath
         self.verbose=verbose
         self.cd(self.rootPath)
-        self._next_project_dir(reProject=reProject)
-        self._setup_project_root()
-        self.cd(self.rootPath)
+        if not mock:
+            self._next_project_dir(reProject=reProject)
+            self._setup_project_root()
+            os.chdir(self.rootPath)
         self.library=RuntimeLibrary.system()
         self.userlibrary=None
         if userlibrary:
@@ -170,13 +182,13 @@ class ProjectFileSystem:
         if toplevel in self.projSubPaths:
             return self.cd(self.projSubPaths[toplevel])
 
-    def exists(self,name):
-        ''' look in user library first, if it exists '''
-        if self.userlibrary:
-            fullname=os.path.join(self.userlibrary.tt,name)
-            if os.path.exists(fullname):
-                return True
-        return self.library.exists(name)
+    # def exists(self,name):
+    #     ''' look in user library first, if it exists '''
+    #     if self.userlibrary:
+    #         fullname=os.path.join(self.userlibrary.root,name)
+    #         if os.path.exists(fullname):
+    #             return True
+    #     return self.library.exists(name)
 
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
@@ -199,7 +211,8 @@ class ProjectFileSystem:
             self.projPath=os.path.join(self.rootPath,lastprojdir)
 
     def _setup_project_root(self):
-        self.cdroot()
+#        self.cdroot()
+        os.chdir(self.projPath)
         self.projSubPaths={}
         for tops in ['basic','mdp','systems','results']:
             self.projSubPaths[tops]=os.path.join(self.projPath,tops)
@@ -209,7 +222,7 @@ class ProjectFileSystem:
         self.mdpPath=self.projSubPaths['mdp']
         self.systemsPath=self.projSubPaths['systems']
         self.resPath=self.projSubPaths['results']
-        self.cd(self.systemsPath)
+        os.chdir(self.systemsPath)
         self.systemsSubPaths={}
         self.resultsSubPaths={}
         for tops in ['rctSystems','unrctSystems']:
@@ -221,23 +234,25 @@ class ProjectFileSystem:
 
 _PFS_=None
 
-def pfs_setup(root='.',verbose=False,reProject=False,userlibrary=None):
+def pfs_setup(root='.',verbose=False,reProject=False,userlibrary=None,mock=False):
     global _PFS_
-    _PFS_=ProjectFileSystem(root=root,verbose=verbose,reProject=reProject,userlibrary=userlibrary)
+    _PFS_=ProjectFileSystem(root=root,verbose=verbose,reProject=reProject,userlibrary=userlibrary,mock=mock)
 
 def checkout(filename):
-    _PFS_.library.checkout(filename)
+    if _PFS_.userlibrary and _PFS_.userlibrary.checkout(filename):
+        return True
+    return _PFS_.library.checkout(filename)
 
 def exists(filename):
-    return _PFS_.exists(filename)
+    if _PFS_.userlibrary and _PFS_.userlibrary.exists(filename):
+        return True
+    return _PFS_.library.exists(filename)
 
-def in_library(filename):
-    in_system=all([exists(f'{filename}.{ex}') for ex in _MolecularDataFileTypes_[:_mdf_last_required_]])
-    logging.info(f'in_library for {filename}: {in_system}')
-    return in_system
-
-def checkin(filename):
-    _PFS_.library.checkin(filename)
+def checkin(filename,overwrite=False,priority='user'):
+    if _PFS_.userlibrary and priority=='user':
+        _PFS_.userlibrary.checkin(filename,overwrite=overwrite)
+    else:
+        _PFS_.library.checkin(filename,overwrite=overwrite)
 
 def cd(pathstring):
     if pathstring=='root':

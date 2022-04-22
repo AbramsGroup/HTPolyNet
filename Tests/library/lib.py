@@ -1,12 +1,8 @@
-from sympy import li
-from HTPolyNet.projectfilesystem import Library
+#import importlib.resources
+import HTPolyNet.projectfilesystem as pfs
 import logging
 
 logging.basicConfig(filename='test.log',encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
 
-l=Library.system(verbose=True)
-
-l.checkout('FDE-p.mol2')
-l.checkin('FDE-p.mol2')
-l.checkout('DFA@N1-KENLAUSUCKS#C1-p.gro')
-l.checkout('DFA@N1-KENLAUSUCKS#C1-p.gor')
+pfs.pfs_setup(mock=True)
+pfs.checkout('molecules/parameterized/KENLAUSUCKS.mol2')
