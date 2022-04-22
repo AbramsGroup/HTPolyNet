@@ -17,7 +17,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
     if mol2in==mol2out:
-        logging.info(f'Warning: Antechamber will overwrite {mol2in}')
+        logging.info(f'Antechamber overwrites {mol2in}')
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'

@@ -84,21 +84,21 @@ class HTPolyNet:
                         logging.info(f'No precursors needed...should be a go!')
                     precursors_available=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
                     if precursors_available:
-                        already_parameterized = pfs.in_library(f'{mname}-p')
+                        already_parameterized = pfs.in_library(f'{mname}')
                         if force_parameterization or not already_parameterized:
                             logging.info(f'Generating {mname}')
-                            M.generate(outname=f'{mname}-p',available_molecules=self.molecules,
+                            M.generate(available_molecules=self.molecules,
                             **self.cfg.parameters)
                             for ex in ['mol2','top','itp','gro']:
-                                checkin(f'{mname}-p.{ex}')
+                                checkin(f'{mname}.{ex}')
                         else:
                             logging.info(f'Fetching parameterized {mname}')
-                            self.checkout(f'{mname}.mol2')
+                            #self.checkout(f'{mname}.mol2')
                             for ex in ['mol2','top','itp','gro']:
-                                self.checkout(f'{mname}-p.{ex}')
-                            M.read_topology(f'{mname}-p.top')
-                            M.read_coords(f'{mname}-p.gro')
-                            M.read_coords(f'{mname}-p.mol2')
+                                self.checkout(f'{mname}.{ex}')
+                            M.read_topology(f'{mname}.top')
+                            M.read_coords(f'{mname}.gro')
+                            M.read_coords(f'{mname}.mol2')
                         self.molecules[mname]=M
                         logging.info(f'Generated {mname}')
                     else:
@@ -109,8 +109,8 @@ class HTPolyNet:
                         if force_sea_calculation or not exists(f'{mname}-p.sea'):
                             M.calculate_sea()
                         else:
-                            self.checkout(f'{mname}-p.sea')
-                            M.read_sea(f'{mname}-p.sea')
+                            self.checkout(f'{mname}.sea')
+                            M.read_sea(f'{mname}.sea')
             all_made=all([m in self.molecules for m in self.cfg.molecules])
             for m in self.cfg.molecules:
                 logging.info(f'Mol {m} made? {m in self.molecules}')

@@ -74,7 +74,7 @@ class RuntimeLibrary:
         else:
             return []
 
-    def path(self,basefilename):
+    def path(self,basefilename,direction='out'):
         ''' return the absolute path of the provided basename in the Library, or, if the basename is not in the library, return the path to the subdirectory it *should* go in.  Return False if no such path exists in the Library. '''
         assert not os.path.sep in basefilename
         matches = [x for x in self.allfiles if basefilename in str(x)]
@@ -84,7 +84,9 @@ class RuntimeLibrary:
             prefix,ext=os.path.splitext(basefilename)
             ext=ext[1:]
             return self.ext_dirs(ext)
-        else:
+        elif len(matches)==2:
+            if direction=='out':
+                
             logging.warning(f'More than one file {basefilename} found in library.  Only returning {matches[0]}')
             return matches[0]
 
@@ -93,7 +95,7 @@ class RuntimeLibrary:
             logging.info(f'{basefilename} not found. No check-in performed.')
             return False
         ''' add the local file basefilename to the Library if it is not already there '''
-        p=self.path(basefilename)
+        p=self.path(basefilename,direction='in')
         if p and os.path.isfile(p):
             if overwrite:
                 out,err=Command(f'cp -f {basefilename} {p}').run()
@@ -109,7 +111,7 @@ class RuntimeLibrary:
         return False
 
     def checkout(self,basefilename,nowarn=False):
-        p=self.path(basefilename)
+        p=self.path(basefilename,direction='out')
         if p and os.path.isfile(p):
             logging.info(f'Checking {basefilename} out of {self.designation} library into {os.getcwd()}')
             Command(f'cp {p} .').run()
@@ -125,7 +127,7 @@ class RuntimeLibrary:
             return False
     
     def exists(self,basefilename):
-        p=self.path(basefilename)
+        p=self.path(basefilename,direction='out')
         if p and os.path.isfile(p):
             return True
         return False

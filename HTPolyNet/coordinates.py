@@ -515,6 +515,7 @@ class Coordinates:
         # exit()
 
     def add_bonds(self,pairs=[],orders=[]):
+        logging.info(f'add_bonds pairs {pairs}')
         assert self.format=='mol2',f'Can only add bonds to mol2-Coords'
         if len(orders)==0:
             orders=[1]*len(pairs)

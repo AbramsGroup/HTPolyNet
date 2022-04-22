@@ -58,7 +58,7 @@ class Molecule:
     def parameterize(self,outname='',**kwargs):
         assert os.path.exists(f'{self.name}.mol2'),f'Cannot parameterize molecule {self.name} without {self.name}.mol2'
         if outname=='':
-            outname=f'{self.name}-p'
+            outname=f'{self.name}'
         GAFFParameterize(self.name,outname,**kwargs)
         self.read_topology(f'{outname}.top')
         self.read_coords(f'{outname}.gro')
@@ -175,7 +175,7 @@ class Molecule:
             for c in Coordinates.gro_colnames[:-3]:
                 df[c]=self.Coords['gro'].D['atoms'][c]
             for c in ['posX','posY','posZ']:
-                df[c]*=10.0 # A!
+                df[c]*=10.0 # A!            
 
     def read_topology(self,filename):
         assert os.path.exists(filename),f'Topology file {filename} not found.'
@@ -228,12 +228,16 @@ class Molecule:
         otC=other.Coords['mol2']
         otA=otC.D['atoms']
 
+        logging.debug(f'new_bond {myidx}:{self.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":myidx})} - {otidx}:{other.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":otidx})}')
+
         mypartners=myC.bondlist.partners_of(myidx)
         otpartners=otC.bondlist.partners_of(otidx)
         myHpartners=[k for k,v in zip(mypartners,[myA[myA['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')]
         otHpartners=[k for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')]
         assert len(myHpartners)>0,f'Error: atom {myidx} does not have a deletable H atom!'
         assert len(otHpartners)>0,f'Error: atom {otidx} does not have a deletable H atom!'
+        logging.debug(f'Hs on {myidx}: '+','.join([f'{h}:{self.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":h})}' for h in myHpartners]))
+        logging.debug(f'Hs on {otidx}: '+','.join([f'{h}:{other.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":h})}' for h in otHpartners]))
             
         Ri=myC.get_R(myidx)
         Rj=otC.get_R(otidx)
@@ -247,43 +251,49 @@ class Molecule:
             of the other. '''
         totc={}
         for myH in myHpartners:
+            totc[myH]={}
             Rh=myC.get_R(myH)
+            logging.debug(f'myH {myH} Rh {Rh}')
             Rih=Ri-Rh
             Rih*=1.0/np.linalg.norm(Rih)
+            logging.debug(f'    Rih {Rih}')
             for otH in otHpartners:
-                totc[otH]=deepcopy(otC)
-                Rk=totc[otH].get_R(otH)
-                Rjk=Rj-Rk
-                Rjk*=1.0/np.linalg.norm(Rjk)
+                totc[myH][otH]=deepcopy(otC)
+                Rk=totc[myH][otH].get_R(otH)
+                logging.debug(f'   otH {otH} Rk {Rk}')
+                Rkj=Rk-Rj
+                Rkj*=1.0/np.linalg.norm(Rkj)
                 Rhk=Rh-Rk
                 rhk=np.linalg.norm(Rhk)
                 if self!=other: # this is intermolecular
-                    cp=np.cross(Rjk,Rih)
-                    c=np.dot(Rjk,Rih)
+                    cp=np.cross(Rkj,Rih)
+                    c=np.dot(Rkj,Rih)
                     v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
                     v2=np.dot(v,v)
                     I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
                     # R is the rotation matrix that will rotate donb to align with accb
                     R=I+v+v2/(1.+c)
+                    logging.debug(f'   R {R}')
                     # rotate translate all donor atoms!
-                    totc[otH].rotate(R)
-                    Rj=totc[otH].get_R(otidx)
-                    Rk=totc[otH].get_R(otH)
-                    Rjk=Rj-Rk
-                    Rjk*=1.0/np.linalg.norm(Rjk)
-                    Rhk=Rh-Rk
-                    rhk=np.linalg.norm(Rhk)
+                    totc[myH][otH].rotate(R)
+                    #Rj=totc[otH].get_R(otidx)
+                    Rk=totc[myH][otH].get_R(otH)
+                    #Rkj=Rk-Rj
+                    #Rkj*=1.0/np.linalg.norm(Rkj)
+                    #Rhk=Rh-Rk
+                    #rhk=np.linalg.norm(Rhk)
                     # overlap the other H atom with self's 
                     # reactive atom by translation
                     Rik=Ri-Rk
-                    totc[otH].translate(Rik)
-                    Rj=totc[otH].get_R(otidx)
-                    Rk=totc[otH].get_R(otH)
-                    Rjk=Rj-Rk
-                    Rjk*=1.0/np.linalg.norm(Rjk)
-                    Rhk=Rh-Rk
-                    rhk=np.linalg.norm(Rhk)
-                    minD=myC.minimum_distance(totc[otH],self_excludes=[myH],other_excludes=[otH])
+                    totc[myH][otH].translate(Rik)
+                    totc[myH][otH].write_mol2(f'tmp-{myH}-{otH}.mol2')
+                    #Rj=totc[otH].get_R(otidx)
+                    #Rk=totc[otH].get_R(otH)
+                    #Rkj=Rk-Rj
+                    #Rkj*=1.0/np.linalg.norm(Rkj)
+                    #Rhk=Rh-Rk
+                    #rhk=np.linalg.norm(Rhk)
+                    minD=myC.minimum_distance(totc[myH][otH],self_excludes=[myH],other_excludes=[otH])
                     if minD>overall_maximum[0]:
                         overall_maximum=(minD,myH,otH)
                 else:
@@ -291,7 +301,7 @@ class Molecule:
                         minHH=(rhk,myH,otH)
         if self!=other:
             minD,myH,otH=overall_maximum
-            shifts=myC.merge(totc[otH])
+            shifts=myC.merge(totc[myH][otH])
             myC.write_mol2('tmp.mol2')
             idxshift=shifts[0]
             otidx+=idxshift
@@ -301,8 +311,8 @@ class Molecule:
             logging.info(f'Executing intramolecular reaction  in {self.name}')
             logging.info(f'Two Hs closest to each other are {myH} and {otH}')
     
-        myC.delete_atoms(idx=[myH,otH])
         myC.add_bonds(pairs=[(myidx,otidx)])
+        myC.delete_atoms(idx=[myH,otH])
 
 
 def get_conn(mol):
