@@ -109,8 +109,10 @@ class HTPolyNet:
                     ''' The cfg allows user to indicate whether or not to determine and use
                         symmetry-equivalent atoms in any molecule. '''
                     if mname in self.cfg.use_sea:
+                        logging.info(f'Doing SEA calculation on {mname}')
                         if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
                             M.calculate_sea()
+                            checkin(f'molecules/parameterized/{mname}.sea')
                         else:
                             self.checkout(f'molecules/parameterized/{mname}.sea')
                             M.read_sea(f'{mname}.sea')
@@ -133,9 +135,8 @@ class HTPolyNet:
             t=deepcopy(M.Topology)
             t.adjust_charges(0)
             t.rep_ex(N)
-            logging.debug('initialize_topology merging {N} copies of {mname} into global topology')
+            logging.info(f'initialize_topology merging {N} copies of {M.name} into global topology')
             self.Topology.merge(t)
-
         logging.info(f'Extended topology has {self.Topology.atomcount()} atoms.')
 
     # def make_reaction_product_templates(self,force_parameterize=False):
@@ -804,7 +805,7 @@ class HTPolyNet:
 #        force_capping=kwargs.get('force_capping',False)
         force_parameterization=kwargs.get('force_parameterization',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
-        self.generate_molecules(force_parameterization=False,force_sea_calculation=False)
+        self.generate_molecules(force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation)
         self.initialize_topology()
 #        self.make_reaction_product_templates(force_parameterize=force_parameterize)
         #self.determine_monomer_sea()

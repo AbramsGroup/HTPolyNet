@@ -11,18 +11,6 @@ from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import grompp_and_mdrun, analyze_sea
 
-# class Atom:
-#     def __init__(self,datadict):
-#         self.monomer=datadict['monomer']
-#         self.name=datadict['atom']
-#         # z: maximum number of bonds this atom will form
-#         # in a crosslinking reaction
-#         self.z=int(datadict.get('z',0))
-#     def __str__(self):
-#         return f'{self.monomer}_{self.name}({self.z})'
-#     def to_yaml(self):
-#         return r'{'+f'monomer: {self.monomer}, atom: {self.name}, z: {self.z}'+r'}'
-
 class Reaction:
     ''' reactions may only be initialized after monomers '''
     def __init__(self,jsondict):
@@ -84,6 +72,23 @@ class Molecule:
         self.Coords['gro'].set_attribute('sea-idx',analyze_sea(f'{n}-sea'))
         self.Coords['gro'].write_sea(f'{n}.sea')
 
+    def minimize(self,outname='',**kwargs):
+        if outname=='':
+            outname=f'{self.name}'
+        n=self.name
+        boxsize=np.array(self.Coords['gro'].maxspan())+2*np.ones(3)
+        pfs.checkout('mdp/em-single-molecule.mdp')
+        if 'checkout_required' in kwargs:
+            for ex in ['top','itp','gro']:
+                pfs.checkout(f'molecules/parameterized/{n}.{ex}')
+        logging.info(f'Hot md running...output to {n}-sea')
+        grompp_and_mdrun(gro=f'{n}',top=f'{n}',
+                        mdp='em-single-molecule',out=f'{outname}',boxSize=boxsize)
+        self.read_coords(f'{n}.gro')
+        self.toggle('gro')
+        self.sync_coords()
+        # TODO: sync mol2 coords
+
     def read_sea(self,filename):
         assert os.path.exists(filename),f'SEA file {filename} not found.'
         self.Coords['gro'].read_sea(filename)
@@ -143,7 +148,7 @@ class Molecule:
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
 
         self.parameterize(outname,**kwargs)
-        # TODO: minimize and overwrite
+        self.minimize(outname,**kwargs)
 
     def toggle(self,t):  # toggle stalecoords after update of type t
         def other(t):
