@@ -31,7 +31,7 @@ class Molecule:
     def __init__(self,name='',generator=None):
         self.name=name
         self.Topology=None
-        self.Coords={}
+        self.Coords={} # ['gro', 'mol2]
         self.generator=generator
         self.cstale=''  # ['','gro','mol2']
 
@@ -43,6 +43,15 @@ class Molecule:
             restr+=f'(empty coords) '
         return restr+'\n'
 
+    def num_atoms(self):
+        N=[]
+        for typ in ['gro','mol2']:
+            n=self.Coords[typ].N
+            if not n in N:
+                N.append(n)
+        assert len(N)==1,'gro and mol2 coordinates are not in sync'
+        return N[0]
+        
     def previously_parameterized(self):
         rval=True
         for ext in ['mol2','top','itp','gro']:
@@ -69,8 +78,8 @@ class Molecule:
         logging.info(f'Hot md running...output to {n}-sea')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
-        self.Coords['gro'].set_attribute('sea-idx',analyze_sea(f'{n}-sea'))
-        self.Coords['gro'].write_sea(f'{n}.sea')
+        self.Coords['gro'].set_atomset_attribute(attribute='sea-idx',srs=analyze_sea(f'{n}-sea'))
+        self.Coords['gro'].write_atomset_attributes(attributes=['sea-idx'],filename=f'{n}.sea')
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
@@ -87,11 +96,20 @@ class Molecule:
         self.read_coords(f'{n}.gro')
         self.toggle('gro')
         self.sync_coords()
-        # TODO: sync mol2 coords
 
-    def read_sea(self,filename):
-        assert os.path.exists(filename),f'SEA file {filename} not found.'
-        self.Coords['gro'].read_sea(filename)
+    def has_atom_attribute(self,attribute):
+        hasit=True
+        for typ in ['gro','mol2']:
+            hasit = hasit and self.Coords[typ].has_atom_attribute(attribute)
+        return hasit
+
+    def set_atomset_attribute(self,name,srs):
+        for typ in ['gro','mol2']:
+            self.Coords[typ].set_atomset_attribute(name,srs)
+
+    def set_atom_attribute(self,name,value,attributes):
+        for typ in ['gro','mol2']:
+            self.Coords[typ].set_atom_attribute(name,value,attributes)
 
     def generate(self,outname='',available_molecules={},**kwargs):
         logging.info(f'Generating Molecule {self.name}')
@@ -111,12 +129,12 @@ class Molecule:
                 atoms=[R.atoms[i] for i in b['atoms']]
                 mols=[available_molecules[R.reactants[a['reactant']]] for a in atoms]
                 for a,m in zip(atoms,mols):
-                    if not 'z' in m.Coords['gro'].D['atoms']:
-                        logging.info(f'Initializing z attribute of all atoms in {m.name}')
-                        m.Coords['gro'].set_attribute('z',np.zeros(m.Coords['gro'].D['atoms'].shape[0]))
-                    idx=m.Coords['gro'].get_idx({'atomName':a['atom'],'resNum':a['resid']})-1
-                    logging.info(f'Modifing z attribute of molecule {m.name} atom {idx+1}')
-                    m.Coords['gro'].set_atom_attribute('z',a['z'],{'globalIdx':idx})#   D['atoms']['z'].iloc[idx]=a.z
+                    if not m.has_atom_attribute('z'):
+#                    if not 'z' in m.Coords['mol2'].D['atoms']:
+                        logging.info(f'Initializing z attribute of all atoms in molecule {m.name}')
+                        m.set_atomset_attribute('z',np.zeros(m.num_atoms()))
+                    logging.info(f'Modifing z attribute of molecule {m.name} resnum {a["resid"]} atom {a["atom"]}')
+                    m.set_atom_attribute('z',a['z'],{'atomName':a['atom'],'resNum':a['resid']})
 
             # local copies of all reactant molecules
             reactants={}
@@ -239,8 +257,9 @@ class Molecule:
         myA=myC.D['atoms']
         otC=other.Coords['mol2']
         otA=otC.D['atoms']
-
-        logging.debug(f'new_bond {myidx}:{self.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":myidx})} - {otidx}:{other.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":otidx})}')
+        myz=myC.get_atom_attribute('z',{'globalIdx':myidx})
+        otz=otC.get_atom_attribute('z',{'globalIdx':otidx})
+        assert myz>0 and otz>0,f'No bond permissible: z({myidx}):{myz}, z({otidx}):{otz}'
 
         mypartners=myC.bondlist.partners_of(myidx)
         otpartners=otC.bondlist.partners_of(otidx)
@@ -248,8 +267,6 @@ class Molecule:
         otHpartners=[k for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')]
         assert len(myHpartners)>0,f'Error: atom {myidx} does not have a deletable H atom!'
         assert len(otHpartners)>0,f'Error: atom {otidx} does not have a deletable H atom!'
-        logging.debug(f'Hs on {myidx}: '+','.join([f'{h}:{self.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":h})}' for h in myHpartners]))
-        logging.debug(f'Hs on {otidx}: '+','.join([f'{h}:{other.Coords["mol2"].get_atom_attribute("atomName",{"globalIdx":h})}' for h in otHpartners]))
             
         Ri=myC.get_R(myidx)
         Rj=otC.get_R(otidx)
@@ -265,10 +282,8 @@ class Molecule:
         for myH in myHpartners:
             totc[myH]={}
             Rh=myC.get_R(myH)
-            logging.debug(f'myH {myH} Rh {Rh}')
             Rih=Ri-Rh
             Rih*=1.0/np.linalg.norm(Rih)
-            logging.debug(f'    Rih {Rih}')
             for otH in otHpartners:
                 totc[myH][otH]=deepcopy(otC)
                 Rk=totc[myH][otH].get_R(otH)
@@ -285,26 +300,13 @@ class Molecule:
                     I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
                     # R is the rotation matrix that will rotate donb to align with accb
                     R=I+v+v2/(1.+c)
-                    logging.debug(f'   R {R}')
                     # rotate translate all donor atoms!
                     totc[myH][otH].rotate(R)
-                    #Rj=totc[otH].get_R(otidx)
                     Rk=totc[myH][otH].get_R(otH)
-                    #Rkj=Rk-Rj
-                    #Rkj*=1.0/np.linalg.norm(Rkj)
-                    #Rhk=Rh-Rk
-                    #rhk=np.linalg.norm(Rhk)
                     # overlap the other H atom with self's 
                     # reactive atom by translation
                     Rik=Ri-Rk
                     totc[myH][otH].translate(Rik)
-                    totc[myH][otH].write_mol2(f'tmp-{myH}-{otH}.mol2')
-                    #Rj=totc[otH].get_R(otidx)
-                    #Rk=totc[otH].get_R(otH)
-                    #Rkj=Rk-Rj
-                    #Rkj*=1.0/np.linalg.norm(Rkj)
-                    #Rhk=Rh-Rk
-                    #rhk=np.linalg.norm(Rhk)
                     minD=myC.minimum_distance(totc[myH][otH],self_excludes=[myH],other_excludes=[otH])
                     if minD>overall_maximum[0]:
                         overall_maximum=(minD,myH,otH)
@@ -314,7 +316,6 @@ class Molecule:
         if self!=other:
             minD,myH,otH=overall_maximum
             shifts=myC.merge(totc[myH][otH])
-            myC.write_mol2('tmp.mol2')
             idxshift=shifts[0]
             otidx+=idxshift
             otH+=idxshift
@@ -324,96 +325,6 @@ class Molecule:
             logging.info(f'Two Hs closest to each other are {myH} and {otH}')
     
         myC.add_bonds(pairs=[(myidx,otidx)])
+        myC.set_atom_attribute('z',myz-1,{'globalIdx':myidx})
+        otC.set_atom_attribute('z',otz-1,{'globalIdx':otidx})
         myC.delete_atoms(idx=[myH,otH])
-
-
-def get_conn(mol):
-    conn=[]
-    for mrname,mr in mol.reactive_atoms.items():
-        ''' check to see if this atom's symmetry partners are already on the list '''
-        donotadd=False
-        adf=mol.Coords['active'].D['atoms']
-        if 'sea-idx' in adf:
-            isea=adf[adf['atomName']==mrname]['sea-idx'].values[0]
-            logging.info(f'get_conn: looking for other atoms with sea-idx = {isea}')
-            for s in adf[adf['sea-idx']==isea]['atomName']:
-                logging.info(f'...found {s}')
-                if s in conn:
-                    donotadd=True
-        if not donotadd:
-            conn.append(mrname)
-    return conn
-
-def get_oligomers(m,n):
-    ''' m and n are Monomer instances (defined in here) '''
-    if not isinstance(m,Monomer) or not isinstance(n,Monomer):
-        raise Exception(f'react_mol2 needs Monomers not {type(m)} and {type(n)}')
-    if not 'active' in m.Topology or not 'active' in n.Topology:
-        raise Exception('react_mol2 needs Monomers with active topologies')
-    if not 'active' in m.Coords or not 'active' in n.Coords:
-        raise Exception('react_mol2 needs Monomers with active coordinates')
-
-    oligdict=_oligomerize(m,n)
-    # check to see if we need to consider n as a basemol
-    # we do if any reactive atom on n has z>1
-    nbase=any([n.reactive_atoms[i].z>1 for i in get_conn(n)])
-    if nbase:
-        oligdict.update(_oligomerize(n,m))
-    return oligdict
-
-def _oligomerize(basemol,othermol):
-    oligdict={}
-    logging.info(f'react_mol2: basemol {basemol.name} and othermol {othermol.name}')
-    # list of all asymmetric reactive atoms on base
-    basera=get_conn(basemol)
-    # number of connections for each of those reactive atoms
-    baseconn=[basemol.reactive_atoms[i].z for i in basera]
-    # list of all asymmetric reactive atoms on other
-    otherra=get_conn(othermol)
-    # options for a connection on basemol are empty ('') or any one of 
-    # asymmetric atoms on other
-    otherra=['']+otherra
-    # enumerate all symmetry-unique configurations of oligomers
-    # on *each* reactive atom on basemol *independently*, for all
-    # connections on each reactive atom
-    basearr=[]
-    for z in baseconn:
-        # this reactive atom has z connections, each of which can be
-        # 'occupied' by one member of otherra in all possible combinations
-        basearr.append(list(combinations_with_replacement(otherra,z)))
-    # for n,c in zip(basera,basearr):
-    #     print(f'{n} can have following connection configurations:',c)
-    # enumerate all unique configurations of connections on all reactive
-    # atoms.  This is relevant if there is more than one asymmetric 
-    # reactive atom on basemol.
-    o=product(*basearr)
-    # the first one is one where all connections on all reactive atoms
-    # of basemol are empty, so skip it
-    next(o)
-    for oligo in o:
-        # logging.debug('making oligo',oligo)
-        # make working copy of basemol coordinates
-        wc=deepcopy(basemol.Coords['active'])
-        stoich=[(basemol,1)]
-        oname=basemol.name
-        for c,b in zip(oligo,basera):
-            # print(f'establishing connection(s) to atom {b} of {basemol.name}:')
-            nconn=len([x for x in c if x!=''])
-            if nconn>0:
-                oname+=f'@{b}-'+','.join([f'{othermol.name}#{a}' for a in c if a!=''])
-            oc=0
-            for a in c:
-                # print(f'  to atom {a} of {othermol.name}')
-                if a != '':
-                    owc=deepcopy(othermol.Coords['active'])
-                    oc+=1
-                    # bring copy of coords from othermol into 
-                    # working copy of basemol
-                    wc.bond_to(owc,acc=b,don=a)
-            if oc>0:
-                stoich.append((othermol,oc))
-        # print('-> prefix',oname)
-        # wc.write_mol2(f'OLIG-{oname}.mol2')
-        oligdict[oname]=Oligomer(coord=wc,stoich=stoich)
-
-    return oligdict

@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: unknown (1000)
 ;	On host: abrams-Latitude-E5470
-;	At date: Fri Apr 22 16:28:41 2022
+;	At date: Sat Apr 23 12:48:34 2022
 ;
 ;	Created by:
 ;	             :-) GROMACS - gmx grompp, 2020.1-Ubuntu-2020.1-1 (-:
@@ -11,7 +11,7 @@
 ;	Data prefix:  /usr
 ;	Working dir:  /home/cfa/Git/HTPolyNet/Tests/oligo/proj0/systems/unrctSystems
 ;	Command line:
-;	  gmx grompp -f nvt-sea.mdp -c DFA.gro -p DFA.top -o DFA-sea.tpr -maxwarn 2
+;	  gmx grompp -f nvt-sea.mdp -c FDE.gro -p FDE.top -o FDE-sea.tpr -maxwarn 2
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.

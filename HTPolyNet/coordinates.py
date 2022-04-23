@@ -13,19 +13,19 @@ from HTPolyNet.bondlist import Bondlist
 
 def get_atom_attribute(df,name,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
+    assert len(ga)>0,f'Cannot find atom with attributes {attributes}'
     if type(name)==list:
         name_in_df=all([n in df for n in name])
     else:
         name_in_df= name in df
-    if name_in_df and len(ga)>0:
-        c=[df[k] for k in ga]
-        V=list(ga.values())
-        l=[True]*df.shape[0]
-        for i in range(len(c)):
-            l = (l) & (c[i]==V[i])
+    assert name_in_df,f'Attribute(s) {name} not found'
+    c=[df[k] for k in ga]
+    V=list(ga.values())
+    l=[True]*df.shape[0]
+    for i in range(len(c)):
+        l = (l) & (c[i]==V[i])
 #        print(name,attributes,df[list(l)][name].values)
-        return df[list(l)][name].values[0]
-    return None
+    return df[list(l)][name].values[0]
 
 def set_atom_attribute(df,name,value,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
@@ -37,7 +37,6 @@ def set_atom_attribute(df,name,value,attributes):
             l = (l) & (c[i]==V[i])
         cidx=[c==name for c in df.columns]
         df.loc[list(l),cidx]=value
-
 
 _ANGSTROM_='Ångström'
 
@@ -51,7 +50,7 @@ class Coordinates:
     mol2_atom_colunits = ['*','*',_ANGSTROM_,_ANGSTROM_,_ANGSTROM_,'*','*']
     mol2_bond_colnames = ['globalIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_colnames, [int, int, int, str])}
-    coord_aux_attributes = ['sea-idx','rctvty']
+    coord_aux_attributes = ['sea-idx','z']
 
     def __init__(self,name=''):
         self.name=name
@@ -158,10 +157,10 @@ class Coordinates:
             otherpos*=otherfac
             self.D['atoms'][c]=otherpos
             
-    def translate_coords(self,v=[0.,0.,0.]):
-        self.D['atoms']['posX']+=v[0]
-        self.D['atoms']['posY']+=v[1]
-        self.D['atoms']['posZ']+=v[2]
+    # def translate_coords(self,v=[0.,0.,0.]):
+    #     self.D['atoms']['posX']+=v[0]
+    #     self.D['atoms']['posY']+=v[1]
+    #     self.D['atoms']['posZ']+=v[2]
 
     def geometric_center(self):
         a=self.D['atoms']
@@ -229,23 +228,27 @@ class Coordinates:
         else:
             self.D[directive]=other.D[directive]
 
-    def write_sea(self,filename=''):
-        if not 'sea-idx' in self.D['atoms'].columns:
-            raise Exception('There is no sea-idx column in this atoms dataframe')
+    def write_atomset_attributes(self,attributes=[],formatters=[],filename=''):
+        for a in attributes:
+            if not a in self.D['atoms'].columns:
+                raise Exception(f'There is no column "{a}" in this atoms dataframe')
         if filename=='':
             raise Exception('Please provide a file name to write sea data')
         with open(filename,'w') as f:
-            seaformatters = [ lambda x: f'{x:>7d}', lambda x: f'{x:>7d}' ]
-            f.write(self.D['atoms'][['globalIdx','sea-idx']].to_string(header=False,index=False,formatters=seaformatters))
+            if len(formatters)>0:
+                f.write(self.D['atoms'][['globalIdx']+attributes].to_string(header=False,index=False,formatters=formatters))
+            else:
+                f.write(self.D['atoms'][['globalIdx']+attributes].to_string(header=False,index=False))
 
-    def read_sea(self,filename=''):
+    def read_atomset_attributes(self,attributes=[],filename=''):
         if filename=='':
             raise Exception('Please provide a file name to write sea data')
-        df=pd.read_csv(filename,sep='\s+',names=['globalIdx','sea-idx'])
+        df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes)
         self.D['atoms']=self.D['atoms'].merge(df,how='outer',on='globalIdx')
 
-    def set_attribute(self,name,srs):
-        self.D['atoms'][name]=srs
+    def set_atomset_attribute(self,attribute='',srs=[]):
+        if attribute!='':
+           self.D['atoms'][attribute]=srs
 
     def write_mol2(self,filename=''):
         assert self.format=='mol2','This config instance is not in mol2 format'
@@ -312,54 +315,6 @@ class Coordinates:
     def atomcount(self):
         return self.N
 
-    def cap(self,capping_bonds=[],**kwargs):
-        inst=deepcopy(self)
-        ''' generate all capping bonds '''
-        adf=inst.D['atoms']
-        pairs=[]
-        orders=[]
-        deletes=[]
-        for c in capping_bonds:
-            ai,aj=c.pairnames
-            o=c.bondorder
-            idxi=adf[adf['atomName']==ai]['globalIdx'].values[0]
-            # TODO: use iloc to get ri
-            ri=adf[adf['atomName']==ai][['posX','posY','posZ']].values[0]
-            idxj=adf[adf['atomName']==aj]['globalIdx'].values[0]
-            # TODO: use iloc to get rj
-            rj=adf[adf['atomName']==aj][['posX','posY','posZ']].values[0]
-            pairs.append((idxi,idxj))
-            orders.append(o)
-            idxinidx=inst.bondlist.partners_of(idxi)
-            idxjnidx=inst.bondlist.partners_of(idxj)
-            inn=[k for k,v in zip(idxinidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxinidx]) if v.startswith('H')]
-            jnn=[k for k,v in zip(idxjnidx,[adf[adf['globalIdx']==i]['atomName'].values[0] for i in idxjnidx]) if v.startswith('H')]
-            if len(inn)>0 and len(jnn)>0:
-                jdists=[]
-                for nj in jnn:
-                    # TODO: use iloc -- assuming globalIdx [1...N]
-                    rnj=adf[adf['globalIdx']==nj][['posX','posY','posZ']].values[0]
-                    r=np.sqrt(((ri-rnj)**2).sum())
-                    jdists.append((nj,r))
-                jsac=sorted(jdists,key=lambda x: x[1])[0][0]
-                deletes.append(jsac)
-                idists=[]
-                for ni in inn:
-                    # TODO: use iloc -- assuming globalIdx [1...N]
-                    rni=adf[adf['globalIdx']==ni][['posX','posY','posZ']].values[0]
-                    r=np.sqrt(((rj-rni)**2).sum())
-                    idists.append((ni,r))
-                isac=sorted(idists,key=lambda x: x[1])[0][0]
-                deletes.append(isac)
-        # print('capping summary:')
-        # print('pairs:',pairs)
-        # print('orders:',orders)
-        # print('deletes:',deletes)
-        inst.add_bonds(pairs=pairs,orders=orders)
-        inst.delete_atoms(idx=deletes)
-
-        return inst
-
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         ''' computes the minimum distance between two configurations '''
         sp=self.D['atoms'][~self.D['atoms']['globalIdx'].isin(self_excludes)][['posX','posY','posZ']]
@@ -422,6 +377,10 @@ class Coordinates:
     def set_atom_attribute(self,name,value,attributes):
         df=self.D['atoms']
         set_atom_attribute(df,name,value,attributes)
+
+    def has_atom_attribute(self,name):
+        df=self.D['atoms']
+        return name in df
         
     def bond_to(self,other,myatom={},otheratom={},**kwargs):
         # self.write_mol2(f'TMP-{self.name}-base.mol2')

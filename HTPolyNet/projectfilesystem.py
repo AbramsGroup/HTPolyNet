@@ -214,23 +214,22 @@ class ProjectFileSystem:
 #        self.cdroot()
         os.chdir(self.projPath)
         self.projSubPaths={}
-        for tops in ['basic','mdp','systems','results']:
+        for tops in ['molecules','systems','results']:
             self.projSubPaths[tops]=os.path.join(self.projPath,tops)
             if not os.path.isdir(self.projSubPaths[tops]):
                 os.mkdir(tops)
-        self.basicPath=self.projSubPaths['basic']
-        self.mdpPath=self.projSubPaths['mdp']
+        self.moleculesPath=self.projSubPaths['molecules']
         self.systemsPath=self.projSubPaths['systems']
         self.resPath=self.projSubPaths['results']
         os.chdir(self.systemsPath)
-        self.systemsSubPaths={}
+#        self.systemsSubPaths={}
         self.resultsSubPaths={}
-        for tops in ['rctSystems','unrctSystems']:
-            self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
-            if not os.path.isdir(self.systemsSubPaths[tops]):
-                os.mkdir(tops)
-        self.unrctPath=self.systemsSubPaths['unrctSystems']
-        self.rctPath=self.systemsSubPaths['rctSystems']
+        # for tops in ['rctSystems','unrctSystems']:
+        #     self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
+        #     if not os.path.isdir(self.systemsSubPaths[tops]):
+        #         os.mkdir(tops)
+        # self.unrctPath=self.systemsSubPaths['unrctSystems']
+        # self.rctPath=self.systemsSubPaths['rctSystems']
 
 _PFS_=None
 
@@ -257,7 +256,7 @@ def checkin(filename,overwrite=False,priority='user'):
 def cd(pathstring):
     if pathstring=='root':
         return _PFS_.cdroot()
-    cats=[_PFS_.projSubPaths,_PFS_.systemsSubPaths,_PFS_.resultsSubPaths]
+    cats=[_PFS_.projSubPaths,_PFS_.resultsSubPaths]
     for cat in cats:
         if pathstring in cat:
             _PFS_.cd(cat[pathstring])

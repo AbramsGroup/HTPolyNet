@@ -63,7 +63,7 @@ class HTPolyNet:
 
     def generate_molecules(self,force_parameterization=False,force_sea_calculation=False):
         self.molecules={}
-        cwd=pfs.cd('unrctSystems')
+        cwd=pfs.cd('molecules')
         checkin=pfs.checkin
         exists=pfs.exists
         ''' Each molecule implied by the cfg is 'generated' here, either by
@@ -121,11 +121,11 @@ class HTPolyNet:
                 logging.info(f'Mol {m} made? {m in self.molecules}')
             logging.info(f'Done making molecules: {all_made}')
 
-    def initialize_topology(self):
+    def initialize_topology(self,filename='init.top'):
         ''' Create a full gromacs topology that includes all directives necessary 
             for an initial liquid simulation.  This will NOT use any #include's;
             all types will be explicitly in-lined. '''
-        cwd=pfs.cd('unrctSystems')
+        cwd=pfs.cd('systems')
         if os.path.isfile('init.top'):
             logging.info(f'init.top already exists in {cwd} but we will rebuild it anyway!')
         ''' for each monomer named in the cfg, either parameterize it or fetch its parameterization '''
@@ -138,6 +138,10 @@ class HTPolyNet:
             logging.info(f'initialize_topology merging {N} copies of {M.name} into global topology')
             self.Topology.merge(t)
         logging.info(f'Extended topology has {self.Topology.atomcount()} atoms.')
+        cwd=pfs.cd('systems')
+        self.Topology.to_file(filename)
+        logging.info(f'Wrote {filename} to {cwd}')
+
 
     # def make_reaction_product_templates(self,force_parameterize=False):
     #     cwd=pfs.cd('rctSystems')
@@ -204,19 +208,15 @@ class HTPolyNet:
 
     #             self.Topology.merge_types(olig.topology)
 
-    def write_global_topology(self,filename='init.top'):
-        cwd=pfs.cd('unrctSystems')
-        self.Topology.to_file(filename)
-        logging.info(f'Wrote {filename} to {cwd}')
 
     def do_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
         cwd=pfs.next_results_dir()
         # fetch unreacted init.top amd all monomer gro's 
         # from parameterization directory
-        self.checkout('init.top',altpath=pfs.systemsSubPaths['unrctSystems'])
+        self.checkout('init.top',altpath=pfs.systemsPath)
         for n in self.cfg.monomers.keys():
-            self.checkout(f'{n}.gro',altpath=pfs.systemsSubPaths['unrctSystems'])
+            self.checkout(f'{n}.gro',altpath=pfs.moleculesPath)
         # fetch mdp files from library, or die if not found
         self.checkout('mdp/em.mdp')
         self.checkout('mdp/npt-1.mdp')
@@ -805,13 +805,12 @@ class HTPolyNet:
 #        force_capping=kwargs.get('force_capping',False)
         force_parameterization=kwargs.get('force_parameterization',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
-        self.generate_molecules(force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation)
-        self.initialize_topology()
-#        self.make_reaction_product_templates(force_parameterize=force_parameterize)
-        #self.determine_monomer_sea()
-        #self.make_oligomer_templates(force_parameterize=force_parameterize)
- #       self.write_global_topology()
-        #self.do_liquid_simulation()
+        self.generate_molecules(
+            force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation
+        )
+        self.initialize_global_topology()
+        #self.write_global_topology()
+        self.do_liquid_simulation()
 #        self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes

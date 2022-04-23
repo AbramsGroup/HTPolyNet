@@ -50,7 +50,8 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
         f.write('quit\n')
     c=Command('tleap',f=f'{inputPrefix}-tleap.in')
     c.run(override=('Error!','Unspecified tleap error'))
-    Command(f'rm -f {leapprefix}.mol2 {leapprefix}.frcmod').run()
+    Command(f'rm -f {leapprefix}.frcmod').run()
+    Command(f'mv {leapprefix}.mol2 {outputPrefix}.mol2').run()
     Command(f'mv {leapprefix}-tleap.top {outputPrefix}-tleap.top').run()
     Command(f'mv {leapprefix}-tleap.crd {outputPrefix}-tleap.crd').run()
     # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
