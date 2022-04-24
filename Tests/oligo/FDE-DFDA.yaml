@@ -42,7 +42,7 @@ reactions:
       },
       bonds: [
         {atoms: [A, B], probability: 1.0}
-      ] # bonds of this type are searched for after SCUR iterations
+      ]
     }
 initial_composition:
   - {molecule: FDE, count: 200}

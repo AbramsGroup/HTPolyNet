@@ -30,10 +30,9 @@ class Reaction:
 class Molecule:
     def __init__(self,name='',generator=None):
         self.name=name
-        self.Topology=None
-        self.Coords={} # ['gro', 'mol2]
+        self.Topology=Topology()
+        self.Coords=Coordinates()
         self.generator=generator
-        self.cstale=''  # ['','gro','mol2']
 
     def __str__(self):
         restr=f'{self.name} '
@@ -44,14 +43,11 @@ class Molecule:
         return restr+'\n'
 
     def num_atoms(self):
-        N=[]
-        for typ in ['gro','mol2']:
-            n=self.Coords[typ].N
-            if not n in N:
-                N.append(n)
-        assert len(N)==1,'gro and mol2 coordinates are not in sync'
-        return N[0]
-        
+        if hasattr(self.Coors,'N'):
+            return self.Coords.N
+        else:
+            return self.Coords.shape[0]
+
     def previously_parameterized(self):
         rval=True
         for ext in ['mol2','top','itp','gro']:
@@ -64,9 +60,9 @@ class Molecule:
             outname=f'{self.name}'
         GAFFParameterize(self.name,outname,**kwargs)
         self.read_topology(f'{outname}.top')
-        self.read_coords(f'{outname}.gro')
+        # self.read_coords(f'{outname}.gro')
         self.read_coords(f'{outname}.mol2')
-        assert self.cstale=='',f'Error: {self.cstale} coords are stale'
+        #assert self.cstale=='',f'Error: {self.cstale} coords are stale'
 
     def calculate_sea(self):
         ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
@@ -78,8 +74,8 @@ class Molecule:
         logging.info(f'Hot md running...output to {n}-sea')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
-        self.Coords['gro'].set_atomset_attribute(attribute='sea-idx',srs=analyze_sea(f'{n}-sea'))
-        self.Coords['gro'].write_atomset_attributes(attributes=['sea-idx'],filename=f'{n}.sea')
+        self.set_atomset_attribute(attribute='sea-idx',srs=analyze_sea(f'{n}-sea'))
+        self.write_atomset_attributes(attributes=['sea-idx'],filename=f'{n}.sea')
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
@@ -107,6 +103,10 @@ class Molecule:
         for typ in ['gro','mol2']:
             self.Coords[typ].set_atomset_attribute(name,srs)
 
+    def write_atomset_attributes(self,name,filename):
+        if self.has_atom_attribute(name):
+            self.Coords['gro'].write_atomset_attributes(name,filename)
+
     def set_atom_attribute(self,name,value,attributes):
         for typ in ['gro','mol2']:
             self.Coords[typ].set_atom_attribute(name,value,attributes)
@@ -124,7 +124,7 @@ class Molecule:
             if not can_react:
                 raise Exception(f'Cannot generate {self.name} because reactants not available')
             # add z attribute to molecules in input list based on bonds
-            print(R)
+#            print(R)
             for b in R.bonds:
                 atoms=[R.atoms[i] for i in b['atoms']]
                 mols=[available_molecules[R.reactants[a['reactant']]] for a in atoms]
@@ -148,85 +148,61 @@ class Molecule:
                 # their entry in the atoms dictionary for this reaction
                 A,B=[R.atoms[i] for i in b['atoms']]
                 mA,mB=[reactants[a['reactant']] for a in [A,B]]
-                Aidx=mA.Coords['gro'].get_idx({'atomName':A['atom'],'resNum':A['resid']})
-                Bidx=mB.Coords['gro'].get_idx({'atomName':B['atom'],'resNum':B['resid']})
+                Aidx=mA.Coords.get_idx({'atomName':A['atom'],'resNum':A['resid']})
+                Bidx=mB.Coords.get_idx({'atomName':B['atom'],'resNum':B['resid']})
+                # Asea=mA.Coords.get_atom_attribute('sea-idx',{'globalIdx':Aidx})
+                # Bsea=mB.Coords.get_atom_attribute('sea-idx',{'globalIdx':Bidx})
                 mA.new_bond(mB,Aidx,Bidx)
                 if len(bases)==0 or mA not in bases:
                     bases.append(mA)
             assert len(bases)==1,f'Error: Reaction {R.name} results in more than one molecular fragment product'
             base=bases[0]
-            # at this point, base.Coord['mol'] contains our coordinates, and base.Coord['gro'] still
-            # reflects the original base, so we need to fully generate a new base.Coord['gro'] from 
-            # the base.Coord['mol2']
-            base.regenerate_coordinates('gro')
             self.merge_coordinates(base)
-            self.Coords['mol2'].write_mol2(filename=f'{self.name}.mol2')
+            self.write_mol2(filename=f'{self.name}.mol2')
         else:
             logging.info(f'Using existing molecules/inputs/{self.name}.mol2 as a source.')
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
 
         self.parameterize(outname,**kwargs)
-        self.minimize(outname,**kwargs)
-
-    def toggle(self,t):  # toggle stalecoords after update of type t
-        def other(t):
-            return 'gro' if t=='mol2' else 'mol2'
-        if self.cstale==t: # indicates we just updated stale coords
-            self.cstale='' # none are stale
-        else:
-            if self.cstale=='': # none are stale, but we just updated t ...
-                self.cstale=other(t) #... so other is now stale
-            else: # other is stale (cstale is not t nor '') ...
-                pass # ... do nothing
-    
-    def sync_coords(self):
-        ''' keep the gro and mol2 format coordinates in sync '''
-        if self.cstale=='gro':
-            self.Coords['gro'].copy_coords(self.Coords['mol2'])
-            self.toggle('gro')
-        elif self.cstale=='mol2':
-            self.Coords['mol2'].copy_coords(self.Coords['gro'])
-            self.toggle('mol2')
-        else:
-            pass
-
-    def regenerate_coordinates(self,typ):
-        assert typ in ['gro','mol2']
-        if typ=='gro':  # we have to generate gro from mol2
-            self.Coords['gro'].D['atoms']=pd.DataFrame()
-            df=self.Coords['gro'].D['atoms']
-            for c in Coordinates.gro_colnames[:-3]:
-                df[c]=self.Coords['mol2'].D['atoms'][c]
-            for c in ['posX','posY','posZ']:
-                df[c]/=10.0 # nm!
-        else: # we have to generate mol2 from gro
-            self.Coords['mol2'].D['atoms']=pd.DataFrame()
-            df=self.Coords['mol2'].D['atoms']
-            for c in Coordinates.gro_colnames[:-3]:
-                df[c]=self.Coords['gro'].D['atoms'][c]
-            for c in ['posX','posY','posZ']:
-                df[c]*=10.0 # A!            
+        self.minimize(outname,**kwargs)  
 
     def read_topology(self,filename):
         assert os.path.exists(filename),f'Topology file {filename} not found.'
-        if self.Topology:
+        if not self.Topology.empty:
             logging.warning(f'Overwriting topology of monomer {self.name} from file {filename}')
+        sv=pd.DataFrame
+        if 'mol2_bonds' in self.Topology.D:
+            sv=self.Topology.D['mol2_bonds'].copy()
         self.Topology=Topology.read_gro(filename)
+        if not sv.empty:
+            self.Topology.D['mol2_bonds']=sv
+            self.Topology.bond_source_check()
 
     def read_coords(self,filename):
         assert os.path.exists(filename),f'Coordinate file {filename} not found.'
-        if self.Coords:
+        if not self.Coords.empty:
             logging.warning(f'Overwriting coordinates of monomer {self.name} from file {filename}')
         basename,ext=os.path.splitext(filename)
         if ext=='.mol2':
-            self.Coords['mol2']=Coordinates.read_mol2(filename)
-            self.toggle('mol2')
+            self.read_mol2(filename)
         elif ext=='.gro':
-            self.Coords['gro']=Coordinates.read_gro(filename)
-            self.toggle('gro')
+            self.read_gro(filename)
         else:
             raise Exception(f'Coordinate filename extension {ext} is not recognized.')
+        if not self.Coords.mol2_bonds.empty: # we just read in some bonding info
+            self.Topology['mol2_bonds']=self.Coords.mol2_bonds.copy()
+            if 'bonds' in self.Topology.D: # this molecule has bonds already defined in its topology
+                self.Topology.bond_source_check()
 
+    def read_mol2(self,filename):
+        self.Coords.read_mol2(filename)
+
+    def read_gro(self,filename):
+        self.Coords.read_gro(filename)
+
+    def write_mol2(self,filename):
+        self.Coords.write_mol2(filename,bondsDF=self.Topology.D['mol2_bonds'])
+    
     def merge(self,other):
         self.merge_topologies(other)
         self.merge_coordinates(other)
@@ -238,13 +214,7 @@ class Molecule:
             self.Topology.merge(other.Topology)
 
     def merge_coordinates(self,other):
-        for typ in ['gro','mol2']:
-            if not typ in self.Coords:
-                if typ in other.Coords:
-                    self.Coords[typ]=other.Coords[typ]
-            else:
-                if typ in other.Coords:
-                    self.Coords[typ].merge(other.Coords[typ])
+        self.Coords.merge(other.Coords)
 
     def update_topology(self,t):
         self.Topology.merge(t)
@@ -252,17 +222,28 @@ class Molecule:
     def update_coords(self,c):
         self.Coords.copy_coords(c)
 
+    def add_bonds(self,pairs=[]):
+        self.Topology.add_bonds(pairs)
+
+    def delete_atoms(self,idx=[]):
+        self.Topology.delete_atoms(idx)
+        self.Coords.delete_atoms(idx)
+
     def new_bond(self,other,myidx,otidx,**kwargs):
-        myC=self.Coords['mol2']
-        myA=myC.D['atoms']
-        otC=other.Coords['mol2']
-        otA=otC.D['atoms']
+        myC=self.Coords
+        myA=myC.A
+        myT=self.Topology
+        otC=other.Coords
+        otA=otC.A
+        otT=other.Topology
+        assert not myT.empty,f'Error: empty topology -- cannot make a new bond'
+        assert not otT.empty,f'Error: empty topology -- cannot make a new bond'
         myz=myC.get_atom_attribute('z',{'globalIdx':myidx})
         otz=otC.get_atom_attribute('z',{'globalIdx':otidx})
         assert myz>0 and otz>0,f'No bond permissible: z({myidx}):{myz}, z({otidx}):{otz}'
 
-        mypartners=myC.bondlist.partners_of(myidx)
-        otpartners=otC.bondlist.partners_of(otidx)
+        mypartners=myT.bondlist.partners_of(myidx)
+        otpartners=otT.bondlist.partners_of(otidx)
         myHpartners=[k for k,v in zip(mypartners,[myA[myA['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')]
         otHpartners=[k for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')]
         assert len(myHpartners)>0,f'Error: atom {myidx} does not have a deletable H atom!'
@@ -292,7 +273,7 @@ class Molecule:
                 Rkj*=1.0/np.linalg.norm(Rkj)
                 Rhk=Rh-Rk
                 rhk=np.linalg.norm(Rhk)
-                if self!=other: # this is intermolecular
+                if self!=other: # this is intermolecular--most likely building a molecule
                     cp=np.cross(Rkj,Rih)
                     c=np.dot(Rkj,Rih)
                     v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
@@ -324,7 +305,8 @@ class Molecule:
             logging.info(f'Executing intramolecular reaction  in {self.name}')
             logging.info(f'Two Hs closest to each other are {myH} and {otH}')
     
-        myC.add_bonds(pairs=[(myidx,otidx)])
+        self.add_bonds(pairs=[(myidx,otidx)])
         myC.set_atom_attribute('z',myz-1,{'globalIdx':myidx})
         otC.set_atom_attribute('z',otz-1,{'globalIdx':otidx})
-        myC.delete_atoms(idx=[myH,otH])
+        self.delete_atoms(idx=[myH,otH])
+        self.Topology.bond_source_check()

@@ -101,7 +101,7 @@ class HTPolyNet:
                                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
                             M.read_topology(f'{mname}.top')
                             M.read_coords(f'{mname}.gro')
-                            M.read_coords(f'{mname}.mol2')
+#                            M.read_coords(f'{mname}.mol2') # should not be necessary
                         self.molecules[mname]=M
                         logging.info(f'Generated {mname}')
                     else:
@@ -109,8 +109,8 @@ class HTPolyNet:
                     ''' The cfg allows user to indicate whether or not to determine and use
                         symmetry-equivalent atoms in any molecule. '''
                     if mname in self.cfg.use_sea:
-                        logging.info(f'Doing SEA calculation on {mname}')
                         if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
+                            logging.info(f'Doing SEA calculation on {mname}')
                             M.calculate_sea()
                             checkin(f'molecules/parameterized/{mname}.sea')
                         else:

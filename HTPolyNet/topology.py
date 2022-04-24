@@ -35,11 +35,12 @@ def typedata(h,s):
     return s
 
 _GromacsExtensiveDirectives_=('atoms','pairs','bonds','angles','dihedrals')
+_NonGromacsExtensiveDirectives_=('mol2_bonds')
 _GromacsTopologyDirectiveOrder_=['defaults','atomtypes','bondtypes','angletypes','dihedraltypes','moleculetype','atoms','pairs','bonds','angles','dihedrals','system','molecules']
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
     'pairs':['ai', 'aj', 'funct'],
-    'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
+    'bonds':['ai', 'aj', 'funct', 'c0', 'c1', 'mol2_type'],
     'angles':['ai', 'aj', 'ak', 'funct', 'c0', 'c1'],
     'dihedrals':['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
     'atomtypes':['name', 'atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
@@ -95,9 +96,10 @@ class Topology:
         self.D['system']=pd.DataFrame({'name':[system]})
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
+        self.empty=True
 
     @classmethod
-    def read_gro(cls,filename,replicate=0):
+    def read_gro(cls,filename):
         assert os.path.exists(filename), f'Error: {filename} not found.'
         inst=cls()
         inst.filename=filename
@@ -192,10 +194,19 @@ class Topology:
             #     inst.rep_ex(replicate)
             # print(f'{filename}',inst.D.keys())
             #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
-            logging.debug(f'Checking for duplicates in just-read-in gro topology {filename}')
+#            logging.debug(f'Checking for duplicates in just-read-in gro topology {filename}')
             inst.dup_check(die=False)
-            logging.debug(f'read_gro ends')
+ #           logging.debug(f'read_gro ends')
+            inst.empty=False
             return inst
+
+    def bond_source_check(self):
+        if 'bonds' in self.D and 'mol2_bonds' in self.D:
+            logging.info(f'Bond data source check requested.')
+            bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+            mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+            check=all([x==y for x,y in zip(bmi,mbmi)])
+            logging.info(f'Result: {check}')
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
         ''' shift all global atom indices (referenced by labels in idxlables[]) '''
@@ -210,6 +221,8 @@ class Topology:
             counts={k:0 for k in _GromacsExtensiveDirectives_}
             for t in _GromacsExtensiveDirectives_:
                 if t in self.D:
+                    counts[t]=len(self.D[t])
+                for t in _NonGromacsExtensiveDirectives_:
                     counts[t]=len(self.D[t])
             try:
                 idxshift=counts['atoms']
@@ -228,6 +241,7 @@ class Topology:
                 self.shiftatomsidx(c,'atoms',rows=[(c*counts['atoms']),((c+1)*counts['atoms'])],idxlabels=['resnr'])
                 # print(f'     -> bonds')
                 self.shiftatomsidx(idxshift*c,'bonds',rows=[(c*counts['bonds']),((c+1)*counts['bonds'])],idxlabels=['ai','aj'])
+                self.shiftatomsidx(idxshift*c,'mol2_bonds',rows=[(c*counts['mol2_bonds']),((c+1)*counts['mol2_bonds'])],idxlabels=['ai','aj'])
                 # print(f'     -> pairs')
                 self.shiftatomsidx(idxshift*c,'pairs',rows=[(c*counts['pairs']),((c+1)*counts['pairs'])],idxlabels=['ai','aj'])
                 self.shiftatomsidx(idxshift*c,'angles',rows=[(c*counts['angles']),((c+1)*counts['angles'])],idxlabels=['ai','aj','ak'])
@@ -321,6 +335,9 @@ class Topology:
                 pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
                 # update the bondlist
                 self.bondlist.append([ai,aj])
+                if 'mol2_bonds' in self.D:
+                    data=data[:3]
+                    pd.concat((self.D['mol2_bonds'],pd.DataFrame(bonddict)),ignore_index=True)
                 # remove this pair from pairs if it's in there (it won't be)
                 if idx in pmi:
                     d=self.D['pairs']
@@ -459,23 +476,19 @@ class Topology:
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(d['old_nr'],d['nr'])}
             d['nr_shift']=d['nr']-oldGI  # probably not necessary
-        d=self.D['bonds']
-        indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
-        indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-        self.D['bonds']=d.take(list(indexes_to_keep)).reset_index(drop=True)
-        if reindex:
-            d=self.D['bonds']
-            d.ai=d.ai.map(mapper)
-            d.aj=d.aj.map(mapper)
-            self.bondlist=Bondlist.fromDataFrame(d)
-        d=self.D['pairs']
-        indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
-        indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-        self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
-        if reindex:
-            d=self.D['pairs']
-            d.ai=d.ai.map(mapper)
-            d.aj=d.aj.map(mapper)
+        ptt=['bonds','mol2_bonds','pairs']
+        for pt in ptt:
+            if pt in self.D:
+                d=self.D[pt]
+                indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+                indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+                self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
+                if reindex:
+                    d=self.D[pt]
+                    d.ai=d.ai.map(mapper)
+                    d.aj=d.aj.map(mapper)
+                    if pt=='bonds':
+                        self.bondlist=Bondlist.fromDataFrame(d)
         d=self.D['angles']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
@@ -596,6 +609,7 @@ class Topology:
         self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
         if 'bonds' in other.D:
             self.bondlist.update(other.D['bonds'])
+        self._myconcat(other,directive='mol2_bonds',idxlabel=['ai','aj'],idxshift=idxshift)
         self._myconcat(other,directive='pairs',idxlabel=['ai','aj'],idxshift=idxshift)
         self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)
         self._myconcat(other,directive='dihedrals',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
