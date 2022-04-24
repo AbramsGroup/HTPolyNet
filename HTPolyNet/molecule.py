@@ -43,7 +43,7 @@ class Molecule:
         return restr+'\n'
 
     def num_atoms(self):
-        if hasattr(self.Coors,'N'):
+        if hasattr(self.Coords,'N'):
             return self.Coords.N
         else:
             return self.Coords.shape[0]
@@ -67,21 +67,21 @@ class Molecule:
     def calculate_sea(self):
         ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
         n=self.name
-        boxsize=np.array(self.Coords['gro'].maxspan())+2*np.ones(3)
+        boxsize=np.array(self.Coords.maxspan())+2*np.ones(3)
         pfs.checkout('mdp/nvt-sea.mdp')
         for ex in ['top','itp','gro']:
             pfs.checkout(f'molecules/parameterized/{n}.{ex}')
         logging.info(f'Hot md running...output to {n}-sea')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
-        self.set_atomset_attribute(attribute='sea-idx',srs=analyze_sea(f'{n}-sea'))
-        self.write_atomset_attributes(attributes=['sea-idx'],filename=f'{n}.sea')
+        self.set_atomset_attribute('sea-idx',analyze_sea(f'{n}-sea'))
+        self.write_atomset_attributes(['sea-idx'],f'{n}.sea')
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
             outname=f'{self.name}'
         n=self.name
-        boxsize=np.array(self.Coords['gro'].maxspan())+2*np.ones(3)
+        boxsize=np.array(self.Coords.maxspan())+2*np.ones(3)
         pfs.checkout('mdp/em-single-molecule.mdp')
         if 'checkout_required' in kwargs:
             for ex in ['top','itp','gro']:
@@ -90,31 +90,36 @@ class Molecule:
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp='em-single-molecule',out=f'{outname}',boxSize=boxsize)
         self.read_coords(f'{n}.gro')
-        self.toggle('gro')
-        self.sync_coords()
 
-    def has_atom_attribute(self,attribute):
-        hasit=True
-        for typ in ['gro','mol2']:
-            hasit = hasit and self.Coords[typ].has_atom_attribute(attribute)
-        return hasit
+    def has_atom_attributes(self,attributes):
+        return self.Coords.has_atom_attributes(attributes)
 
-    def set_atomset_attribute(self,name,srs):
-        for typ in ['gro','mol2']:
-            self.Coords[typ].set_atomset_attribute(name,srs)
+    def set_atomset_attribute(self,attribute,srs):
+        self.Coords.set_atomset_attribute(attribute,srs)
 
     def write_atomset_attributes(self,name,filename):
-        if self.has_atom_attribute(name):
-            self.Coords['gro'].write_atomset_attributes(name,filename)
+        if self.has_atom_attributes(name):
+            self.Coords.write_atomset_attributes(name,filename)
 
     def set_atom_attribute(self,name,value,attributes):
-        for typ in ['gro','mol2']:
-            self.Coords[typ].set_atom_attribute(name,value,attributes)
+        self.Coords.set_atom_attribute(name,value,attributes)
+
+    def read_atomset_attributes(self,filename,attributes=[]):
+        ''' filename is expected to be a column-oriented file with a 'globalIdx' header and zero or more headed columns explicitly named in attributes[] '''
+        self.Coords.read_atomset_attributes(filename,attributes=attributes)
 
     def generate(self,outname='',available_molecules={},**kwargs):
         logging.info(f'Generating Molecule {self.name}')
         if outname=='':
             outname=f'{self.name}'
+        ''' wipe topology and coordinate '''
+        if not self.Topology.empty:
+            logging.info(f'Called generate() on {self.name} with non-empty topology')
+            self.Topology=Topology()
+        if not self.Coords.empty:
+            logging.info(f'Called generate() on {self.name} with non-empty coordinates')
+            self.Coords=Coordinates()
+
         if self.generator:
             R=self.generator
             logging.info(f'Using reaction {R.name} to generate {self.name}.mol2')
@@ -129,13 +134,19 @@ class Molecule:
                 atoms=[R.atoms[i] for i in b['atoms']]
                 mols=[available_molecules[R.reactants[a['reactant']]] for a in atoms]
                 for a,m in zip(atoms,mols):
-                    if not m.has_atom_attribute('z'):
+                    if not m.has_atom_attributes(['z']):
 #                    if not 'z' in m.Coords['mol2'].D['atoms']:
                         logging.info(f'Initializing z attribute of all atoms in molecule {m.name}')
                         m.set_atomset_attribute('z',np.zeros(m.num_atoms()))
                     logging.info(f'Modifing z attribute of molecule {m.name} resnum {a["resid"]} atom {a["atom"]}')
                     m.set_atom_attribute('z',a['z'],{'atomName':a['atom'],'resNum':a['resid']})
-
+                    if m.Coords.has_atom_attributes(['sea-idx']):
+                        Aidx=m.Coords.get_atom_attribute('globalIdx',{'atomName':a['atom'],'resNum':a['resid']})
+                        Asea=m.Coords.get_atom_attribute('sea-idx',{'globalIdx':Aidx})
+                        Aclu=m.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Asea})
+                        for aa in Aclu:
+                            if aa!=Aidx:
+                                m.set_atom_attribute('z',a['z'],{'globalIdx':aa})
             # local copies of all reactant molecules
             reactants={}
             for n,r in R.reactants.items():
@@ -150,14 +161,23 @@ class Molecule:
                 mA,mB=[reactants[a['reactant']] for a in [A,B]]
                 Aidx=mA.Coords.get_idx({'atomName':A['atom'],'resNum':A['resid']})
                 Bidx=mB.Coords.get_idx({'atomName':B['atom'],'resNum':B['resid']})
-                # Asea=mA.Coords.get_atom_attribute('sea-idx',{'globalIdx':Aidx})
-                # Bsea=mB.Coords.get_atom_attribute('sea-idx',{'globalIdx':Bidx})
                 mA.new_bond(mB,Aidx,Bidx)
+                if mA.Coords.has_atom_attributes(['sea-idx']) and mB.Coords.has_atom_attributes(['sea-idx']):
+                    Asea=mA.Coords.get_atom_attribute('sea-idx',{'globalIdx':Aidx})
+                    Bsea=mB.Coords.get_atom_attribute('sea-idx',{'globalIdx':Bidx})
+                    Aclu=mA.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Asea})
+                    Bclu=mB.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Bsea})
+                    logging.info(f'A {mA.name} atom {Aidx} in clu {Aclu} ({R.name})')
+                    logging.info(f'B {mB.name} atom {Bidx} in clu {Bclu} ({R.name})')
+                    if mA==mB:
+                        for aa,bb in zip(Aclu,Bclu):
+                            if aa!=Aidx and bb!=Bidx:
+                                mA.new_bond(mB,aa,bb)
                 if len(bases)==0 or mA not in bases:
                     bases.append(mA)
             assert len(bases)==1,f'Error: Reaction {R.name} results in more than one molecular fragment product'
             base=bases[0]
-            self.merge_coordinates(base)
+            self.merge(base)
             self.write_mol2(filename=f'{self.name}.mol2')
         else:
             logging.info(f'Using existing molecules/inputs/{self.name}.mol2 as a source.')
@@ -187,22 +207,28 @@ class Molecule:
             self.read_mol2(filename)
         elif ext=='.gro':
             self.read_gro(filename)
+#            print(filename,self.Coords.A.to_string())
         else:
             raise Exception(f'Coordinate filename extension {ext} is not recognized.')
         if not self.Coords.mol2_bonds.empty: # we just read in some bonding info
-            self.Topology['mol2_bonds']=self.Coords.mol2_bonds.copy()
+            self.Topology.D['mol2_bonds']=self.Coords.mol2_bonds.copy()
             if 'bonds' in self.Topology.D: # this molecule has bonds already defined in its topology
                 self.Topology.bond_source_check()
 
     def read_mol2(self,filename):
-        self.Coords.read_mol2(filename)
+        self.Coords=Coordinates.read_mol2(filename)
 
     def read_gro(self,filename):
-        self.Coords.read_gro(filename)
+        self.Coords=Coordinates.read_gro(filename)
 
-    def write_mol2(self,filename):
-        self.Coords.write_mol2(filename,bondsDF=self.Topology.D['mol2_bonds'])
-    
+    def write_mol2(self,filename,molname=''):
+        if molname=='':
+            molname=self.name
+        if 'mol2_bonds' in self.Topology.D:
+            self.Coords.write_mol2(filename,molname=molname,bondsDF=self.Topology.D['mol2_bonds'])
+        else:
+            self.Coords.write_mol2(filename,molname=molname)
+
     def merge(self,other):
         self.merge_topologies(other)
         self.merge_coordinates(other)
@@ -244,6 +270,8 @@ class Molecule:
 
         mypartners=myT.bondlist.partners_of(myidx)
         otpartners=otT.bondlist.partners_of(otidx)
+        logging.info(f'Partners of {myidx} {mypartners}')
+        logging.info(f'Partners of {otidx} {otpartners}')
         myHpartners=[k for k,v in zip(mypartners,[myA[myA['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')]
         otHpartners=[k for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')]
         assert len(myHpartners)>0,f'Error: atom {myidx} does not have a deletable H atom!'
@@ -305,6 +333,8 @@ class Molecule:
             logging.info(f'Executing intramolecular reaction  in {self.name}')
             logging.info(f'Two Hs closest to each other are {myH} and {otH}')
     
+        if self!=other:
+            self.Topology.merge(other.Topology)
         self.add_bonds(pairs=[(myidx,otidx)])
         myC.set_atom_attribute('z',myz-1,{'globalIdx':myidx})
         otC.set_atom_attribute('z',otz-1,{'globalIdx':otidx})

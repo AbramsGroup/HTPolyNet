@@ -1,7 +1,7 @@
-%VERSION  VERSION_STAMP = V0001.000  DATE = 04/23/22  13:23:38                  
+%VERSION  VERSION_STAMP = V0001.000  DATE = 04/24/22  18:07:27                  
 %FLAG TITLE                                                                     
 %FORMAT(20a4)                                                                   
-DFA                                                                             
+DFAFDE                                                                          
 %FLAG POINTERS                                                                  
 %FORMAT(10I8)                                                                   
       61      11      31      32      68      42     127      59       0       0
@@ -12,7 +12,7 @@ DFA
 %FORMAT(20a4)                                                                   
 N1  C   C1  H   H1  O   C2  C3  C4  C5  C6  H2  H3  C7  C8  O1  C9  C10 N2  H4  
 H5  H6  H8  H9  H10 H11 H12 H13 O   C   C3  C4  C5  C6  N   H   H1  C7  C8  C9  
-H2  H3  C1  H4  H6  O1  H7  C10 H8  H9  O2  C2  H10 H11 H12 H13 H14 H15 H16 H17 
+H2  H3  C1  H5  H6  O1  H7  C10 H8  H9  O2  C2  H10 H11 H12 H13 H14 H15 H16 H17 
 H18 
 %FLAG CHARGE                                                                    
 %FORMAT(5E16.8)                                                                 

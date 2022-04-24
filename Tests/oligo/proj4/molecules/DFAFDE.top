@@ -2,7 +2,7 @@
 ;   File DFAFDE.top  was generated
 ;   By user: cfa (1000)
 ;   On host: abrams-Latitude-E5470
-;   At date: Sat. April  6 13:23:38 2022
+;   At date: Sun. April  0 18:07:27 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterization --force-sea-calculation
+;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterization
 ;
 
 [ defaults ]
@@ -72,7 +72,7 @@ system1          3
    41         h1      2    FDE     H2     41 0.04580000   1.008000   ; qtot -0.336700
    42         h1      2    FDE     H3     42 0.04580000   1.008000   ; qtot -0.290900
    43         c3      2    FDE     C1     43 0.02290000  12.010000   ; qtot -0.268000
-   44         h1      2    FDE     H4     44 0.04560000   1.008000   ; qtot -0.222400
+   44         h1      2    FDE     H5     44 0.04560000   1.008000   ; qtot -0.222400
    45         h1      2    FDE     H6     45 0.04560000   1.008000   ; qtot -0.176800
    46         oh      2    FDE     O1     46 -0.39050000  16.000000   ; qtot -0.567300
    47         h1      2    FDE     H7     47 0.06280000   1.008000   ; qtot -0.504500

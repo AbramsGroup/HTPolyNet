@@ -27,6 +27,22 @@ def get_atom_attribute(df,name,attributes):
 #        print(name,attributes,df[list(l)][name].values)
     return df[list(l)][name].values[0]
 
+def get_atoms_w_attribute(df,name,attributes):
+    ga={k:v for k,v in attributes.items() if k in df}
+    assert len(ga)>0,f'Cannot find atom with attributes {attributes}'
+    if type(name)==list:
+        name_in_df=all([n in df for n in name])
+    else:
+        name_in_df= name in df
+    assert name_in_df,f'Attribute(s) {name} not found'
+    c=[df[k] for k in ga]
+    V=list(ga.values())
+    l=[True]*df.shape[0]
+    for i in range(len(c)):
+        l = (l) & (c[i]==V[i])
+#        print(name,attributes,df[list(l)][name].values)
+    return df[list(l)][name].values
+
 def set_atom_attribute(df,name,value,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
     if name in df and len(ga)>0:
@@ -70,6 +86,8 @@ class Coordinates:
 #        inst.format='gro'
 #        inst.units['length']='nm'
 #        inst.units['velocity']='nm/ps'
+        assert filename!=''
+        logging.debug(f'coordinates:read_gro {filename}')
         if filename!='':
             with open(filename,'r') as f:
                 data=f.read().split('\n')
@@ -144,6 +162,7 @@ class Coordinates:
             inst.metadat['mol2chargetype']=sections['molecule'][3]
             inst.A=pd.read_csv(sections['atom'],sep='\s+',names=Coordinates.mol2_atom_colnames)
             inst.A[['posX','posY','posZ']]*=[0.1,0.1,0.1]
+            # print(inst.A.to_string())
             inst.N=inst.A.shape[0]
             inst.mol2_bonds=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_colnames,dtype=Coordinates.mol2_bond_types)
             inst.mol2_bondlist=Bondlist.fromDataFrame(inst.mol2_bonds)
@@ -242,11 +261,11 @@ class Coordinates:
             raise Exception('Please provide a file name to write atom attribute data')
         with open(filename,'w') as f:
             if len(formatters)>0:
-                f.write(self.C[['globalIdx']+attributes].to_string(header=False,index=False,formatters=formatters))
+                f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False,formatters=formatters))
             else:
-                f.write(self.C[['globalIdx']+attributes].to_string(header=False,index=False))
+                f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False))
 
-    def read_atomset_attributes(self,attributes=[],filename=''):
+    def read_atomset_attributes(self,filename='',attributes=[]):
         if filename=='':
             raise Exception('Please provide a file name from which you want to read atom attributes')
         df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes)
@@ -318,13 +337,17 @@ class Coordinates:
         df=self.A
         return get_atom_attribute(df,name,attributes)
 
+    def get_atoms_w_attribute(self,name,attributes):
+        df=self.A
+        return get_atoms_w_attribute(df,name,attributes)
+
     def set_atom_attribute(self,name,value,attributes):
         df=self.A
         set_atom_attribute(df,name,value,attributes)
 
-    def has_atom_attribute(self,name):
+    def has_atom_attributes(self,attributes):
         df=self.A
-        return name in df
+        return all([name in df for name in attributes])
 
     def delete_atoms(self,idx=[],reindex=True):
         '''
@@ -401,8 +424,8 @@ class Coordinates:
                 f.write(f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}')
             f.write('\n')
 
-    def write_mol2(self,filename=''):
-        if self.mol2_bonds.empty:
+    def write_mol2(self,filename='',bondsDF=pd.DataFrame(),molname=''):
+        if bondsDF.empty and self.mol2_bonds.empty:
             logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
         for i in self.mol2_atom_colnames:
             if not i in self.A.columns:
@@ -439,13 +462,18 @@ class Coordinates:
             ]
             with open(filename,'w') as f:
                 f.write('@<TRIPOS>MOLECULE\n')
-                f.write(f'{self.name}\n')
+                if molname=='':
+                    f.write(f'{self.name}\n')
+                else:
+                    f.write(f'{molname}\n')
                 N=self.N
                 # Infer the residue names and resids from the atom records
                 rdf=self.A[['resNum','resName']].copy().drop_duplicates()
                 rdf['rootatom']=[1]*len(rdf)
                 rdf['residue']=['RESIDUE']*len(rdf)
                 nBonds=self.metadat.get('nBonds',0)
+                if not nBonds:
+                    nBonds=bondsDF.shape[0]
                 nSubs=len(rdf)
                 nFeatures=self.metadat.get('nFeatures',0)
                 nSets=self.metadat.get('nSets',0)
@@ -462,10 +490,19 @@ class Coordinates:
                 # else:
                 # f.write(self.D['atoms'].to_string(columns=self.mol2_atom_colnames,header=False,index=False,formatters=atomformatters))
                 f.write('\n')
-                if not self.mol2_bonds.empty:
-                    f.write('@<TRIPOS>BOND\n')
-                    f.write(self.mol2_bonds.to_string(header=False,index=False,formatters=bondformatters))
-                    f.write('\n')
+                f.write('@<TRIPOS>BOND\n')
+                if not bondsDF.empty:
+                    logging.info(f'Mol2 bonds from outside')
+                    bdf=bondsDF[['bondIdx','ai','aj','type']]
+                    bdf['bondIdx']=bdf['bondIdx'].astype(int)
+                    bdf['ai']=bdf['ai'].astype(int)
+                    bdf['aj']=bdf['aj'].astype(int)
+                    f.write(bdf.to_string(columns=self.mol2_bond_colnames,header=False,index=False,formatters=bondformatters))
+                elif not self.mol2_bonds.empty:
+                    logging.info(f'Mol2 bonds from mol2_bonds')
+                    f.write(self.mol2_bonds.to_string(columns=self.mol2_bond_colnames,header=False,index=False,formatters=bondformatters))
+                f.write('\n')
+
                 ''' write substructure section '''
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))

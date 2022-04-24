@@ -40,7 +40,7 @@ _GromacsTopologyDirectiveOrder_=['defaults','atomtypes','bondtypes','angletypes'
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
     'pairs':['ai', 'aj', 'funct'],
-    'bonds':['ai', 'aj', 'funct', 'c0', 'c1', 'mol2_type'],
+    'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
     'angles':['ai', 'aj', 'ak', 'funct', 'c0', 'c1'],
     'dihedrals':['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
     'atomtypes':['name', 'atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
@@ -165,6 +165,7 @@ class Topology:
                 inst.D['atomtypes'].sort_values(by='name',inplace=True)
             if 'bonds' in inst.D:
                 inst.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+                inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
             if 'bondtypes' in inst.D:
                 df_typeorder(inst.D['bondtypes'],typs=['i','j'])
                 inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
@@ -207,6 +208,16 @@ class Topology:
             mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
             logging.info(f'Result: {check}')
+            logging.info(f'GROMACS:')
+            logging.info(self.D['bonds'].to_string())
+            logging.info(f'MOL2:')
+            logging.info(self.D['mol2_bonds'].to_string())
+
+    def has_bond(self,pair):
+        bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+        mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+        print(bmi,mbmi)
+        return pair in bmi and pair in mbmi
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
         ''' shift all global atom indices (referenced by labels in idxlables[]) '''
@@ -319,7 +330,8 @@ class Topology:
             ai,aj=idxorder(b)
             # if this bond is not in the topology
             if not (ai,aj) in bmi:
-                newbonds.append([ai,aj])
+                newbonds.append((ai,aj))
+                logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
                 it=at.iloc[ai-1].type
                 jt=at.iloc[aj-1].type
                 idx=typeorder((it,jt))
@@ -332,12 +344,14 @@ class Topology:
                 data=[ai,aj,bt,pd.NA,pd.NA]
                 assert len(h)==len(data), 'Error: not enough data for new bond?'
                 bonddict={k:[v] for k,v in zip(h,data)}
-                pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
+                self.D['bonds']=pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
+                logging.info(f'just added {bonddict}')
                 # update the bondlist
                 self.bondlist.append([ai,aj])
                 if 'mol2_bonds' in self.D:
-                    data=data[:3]
-                    pd.concat((self.D['mol2_bonds'],pd.DataFrame(bonddict)),ignore_index=True)
+                    data=[len(self.D['mol2_bonds']),ai,aj,1] # assume single bond
+                    bonddict={k:[v] for k,v in zip(['bondIdx','ai','aj','type'],data)}
+                    self.D['mol2_bonds']=pd.concat((self.D['mol2_bonds'],pd.DataFrame(bonddict)),ignore_index=True)
                 # remove this pair from pairs if it's in there (it won't be)
                 if idx in pmi:
                     d=self.D['pairs']
@@ -347,8 +361,8 @@ class Topology:
             else:
                 raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         ''' maintain sort of bonds df if new bonds were added '''
-        if len(newbonds)>0:
-            self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+        # if len(newbonds)>0:
+        #     self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
 
         ijk=self.D['angletypes'].set_index(['i','j','k'])
         ijkl=self.D['dihedraltypes'].set_index(['i','j','k','l'])
@@ -370,11 +384,11 @@ class Topology:
                     data=[i,j,k,angletype,pd.NA,pd.NA]
                     assert len(h)==len(data), 'Error: not enough data for new angle?'
                     angledict={k:[v] for k,v in zip(h,data)}
-                    pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
+                    self.D['angles']=pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
                     newangles.append([i,j,k])
                 else:
                     # no longer exception but warning
-                    raise Exception(f'Angle type {idx} not found.')
+                    logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
             ''' new angles due to other neighbors of b[1] '''
             for ak in [k for k in self.bondlist.partners_of(b[1]) if k!=b[0]]:
                 ai=b[0]
@@ -390,10 +404,10 @@ class Topology:
                     data=[i,j,k,angletype,pd.NA,pd.NA]
                     assert len(h)==len(data), 'Error: not enough data for new angle?'
                     angledict={k:[v] for k,v in zip(h,data)}
-                    pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
+                    self.D['angles']=pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
                     newangles.append([i,j,k])
                 else:
-                    raise Exception(f'Angle type {idx} not found.')
+                    logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
 
             ''' DIHEDRALS i-j-k-l
                 j-k is the torsion bond
@@ -417,10 +431,10 @@ class Topology:
                         data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
                         assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
                         diheddict={k:[v] for k,v in zip(h,data)}
-                        pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                        self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                         newdihedrals.append([i,j,k,l])
                 else:
-                    raise Exception(f'Dihedral type {idx} not found.')
+                    logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
 
             ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
             for ai,aj in zip(b,reversed(b)):
@@ -438,10 +452,10 @@ class Topology:
                             data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
                             assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
                             diheddict={k:[v] for k,v in zip(h,data)}
-                            pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                            self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
-                            raise Exception(f'Dihedral type {idx} not found.')
+                            logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
 
             ''' new proper dihedrals for which the new bond is the k-l or l-k bond '''
             for ak,al in zip(b,reversed(b)):
@@ -459,12 +473,14 @@ class Topology:
                             data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
                             assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
                             diheddict={k:[v] for k,v in zip(h,data)}
-                            pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                            self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
-                            raise Exception(f'Dihedral type {idx} not found.')
+                            logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+
 
     def delete_atoms(self,idx=[],reindex=True):
+        #logging.debug(f'Delete atoms: {idx}')
         d=self.D['atoms']
         indexes_to_drop=d[d.nr.isin(idx)].index
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
@@ -472,22 +488,29 @@ class Topology:
         if reindex:
             d=self.D['atoms']
             oldGI=d['nr'].copy()
-            d['old_nr']=oldGI
             d['nr']=d.index+1
-            mapper={k:v for k,v in zip(d['old_nr'],d['nr'])}
-            d['nr_shift']=d['nr']-oldGI  # probably not necessary
+            mapper={k:v for k,v in zip(oldGI,d['nr'])}
+            #logging.debug(f'delete_atoms: mapper {mapper}')
+            #d['nr_shift']=d['nr']-oldGI  # probably not necessary
         ptt=['bonds','mol2_bonds','pairs']
         for pt in ptt:
             if pt in self.D:
                 d=self.D[pt]
+                #logging.debug(f'delete atom: {pt} df prior to deleting')
+                #logging.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+                #logging.debug(f'dropping {pt} {indexes_to_drop}')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
                 if reindex:
                     d=self.D[pt]
+                    #logging.debug(f'delete atom: {pt} df prior to reindexing')
+                    #logging.debug(d.to_string())
                     d.ai=d.ai.map(mapper)
                     d.aj=d.aj.map(mapper)
                     if pt=='bonds':
+                        #logging.debug(f'delete atom: bondlist remake from')
+                        #logging.debug(d.to_string())
                         self.bondlist=Bondlist.fromDataFrame(d)
         d=self.D['angles']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index
@@ -609,6 +632,8 @@ class Topology:
         self._myconcat(other,directive='bonds',idxlabel=['ai','aj'],idxshift=idxshift)
         if 'bonds' in other.D:
             self.bondlist.update(other.D['bonds'])
+        if 'mol2_bonds' in self.D and 'mol2_bonds' in other.D:
+            other.D['mol2_bonds'].bondIdx+=self.D['mol2_bonds'].shape[0]
         self._myconcat(other,directive='mol2_bonds',idxlabel=['ai','aj'],idxshift=idxshift)
         self._myconcat(other,directive='pairs',idxlabel=['ai','aj'],idxshift=idxshift)
         self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)

@@ -104,6 +104,7 @@ class HTPolyNet:
 #                            M.read_coords(f'{mname}.mol2') # should not be necessary
                         self.molecules[mname]=M
                         logging.info(f'Generated {mname}')
+                        #logging.info(M.Coords.A.to_string())
                     else:
                         logging.info(f'No, no precursors available.')
                     ''' The cfg allows user to indicate whether or not to determine and use
@@ -115,7 +116,7 @@ class HTPolyNet:
                             checkin(f'molecules/parameterized/{mname}.sea')
                         else:
                             self.checkout(f'molecules/parameterized/{mname}.sea')
-                            M.read_sea(f'{mname}.sea')
+                            M.read_atomset_attributes(f'{mname}.sea',attributes=['sea-idx'])
             all_made=all([m in self.molecules for m in self.cfg.molecules])
             for m in self.cfg.molecules:
                 logging.info(f'Mol {m} made? {m in self.molecules}')

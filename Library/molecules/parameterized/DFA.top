@@ -2,7 +2,7 @@
 ;   File DFA.top  was generated
 ;   By user: cfa (1000)
 ;   On host: abrams-Latitude-E5470
-;   At date: Sat. April  6 13:23:15 2022
+;   At date: Sun. April  0 18:07:21 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterization --force-sea-calculation
+;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterization
 ;
 
 [ defaults ]

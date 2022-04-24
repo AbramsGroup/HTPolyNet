@@ -33,10 +33,10 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     # wacky filenames, we'll hash the outputPrefix temporarily.
     goodMol2=Coordinates.read_mol2(mol2in)
     acOutMol2=Coordinates.read_mol2(mol2out)
-    adf=acOutMol2.D['atoms']
-    adf['resName']=goodMol2.D['atoms']['resName'].copy()
-    adf['resNum']=goodMol2.D['atoms']['resNum'].copy()
-    goodMol2.D['atoms']=adf
+    adf=acOutMol2.A
+    adf['resName']=goodMol2.A['resName'].copy()
+    adf['resNum']=goodMol2.A['resNum'].copy()
+    goodMol2.A=adf
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
     goodMol2.write_mol2(f'{leapprefix}.mol2')
     logging.info(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
