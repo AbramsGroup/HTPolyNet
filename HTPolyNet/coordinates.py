@@ -45,6 +45,9 @@ def get_atoms_w_attribute(df,name,attributes):
 
 def set_atom_attribute(df,name,value,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
+    exla={k:v for k,v in attributes.items() if not k in df}
+    if len(exla)>0:
+        logging.warning(f'using unknown attributes to refer to atom: {exla}')
     if name in df and len(ga)>0:
         c=[df[k] for k in ga]
         V=list(ga.values())
@@ -53,6 +56,7 @@ def set_atom_attribute(df,name,value,attributes):
             l = (l) & (c[i]==V[i])
         cidx=[c==name for c in df.columns]
         df.loc[list(l),cidx]=value
+        logging.debug(f'Result: {df.loc[list(l),cidx]}')
 
 _ANGSTROM_='Ångström'
 
@@ -251,6 +255,7 @@ class Coordinates:
             self.metadat['nBonds']+=nOtherBonds
         else:
             self.metadat['nBonds']=nOtherBonds
+        
         return (idxshift,bdxshift,rdxshift)
             
     def write_atomset_attributes(self,attributes=[],filename='',formatters=[]):
@@ -270,6 +275,7 @@ class Coordinates:
             raise Exception('Please provide a file name from which you want to read atom attributes')
         df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes)
         self.A=self.A.merge(df,how='outer',on='globalIdx')
+        logging.debug('Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
     def set_atomset_attribute(self,attribute='',srs=[]):
         if attribute!='':

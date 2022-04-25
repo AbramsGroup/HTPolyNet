@@ -44,6 +44,8 @@ class HTPolyNet:
         logging.info(f'Read configuration from {cfgfile}')
         ''' initialize an empty topology '''
         self.Topology=Topology(system=self.cfg.Title)
+        self.Coordinates=Coordinates()
+        logging.info(f'New htpolynet runtime: empty topology {self.Topology.empty} empty coordinates {self.Coordinates.empty}')
 
     def checkout(self,filename,altpath=None):
         if not pfs.checkout(filename):
@@ -57,6 +59,7 @@ class HTPolyNet:
                 if os.path.exists(fullfilename):
                     basefilename=os.path.basename(filename)
                     shutil.copyfile(fullfilename,basefilename)
+                    logging.info(f'Found at {fullfilename}')
                     return True
             return False
         return True
@@ -115,14 +118,19 @@ class HTPolyNet:
                             M.calculate_sea()
                             checkin(f'molecules/parameterized/{mname}.sea')
                         else:
+                            logging.debug(f'reading sea data into {M.name}')
                             self.checkout(f'molecules/parameterized/{mname}.sea')
                             M.read_atomset_attributes(f'{mname}.sea',attributes=['sea-idx'])
             all_made=all([m in self.molecules for m in self.cfg.molecules])
+            logging.info(f'Done making molecules: {all_made}')
             for m in self.cfg.molecules:
                 logging.info(f'Mol {m} made? {m in self.molecules}')
-            logging.info(f'Done making molecules: {all_made}')
+        for M in self.molecules.values():
+            M.inherit_sea_from_reactants(self.molecules,self.cfg.use_sea)
 
-    def initialize_topology(self,filename='init.top'):
+        self.cfg.symmetry_expand_reactions()
+
+    def initialize_global_topology(self,filename='init.top'):
         ''' Create a full gromacs topology that includes all directives necessary 
             for an initial liquid simulation.  This will NOT use any #include's;
             all types will be explicitly in-lined. '''
@@ -215,9 +223,9 @@ class HTPolyNet:
         cwd=pfs.next_results_dir()
         # fetch unreacted init.top amd all monomer gro's 
         # from parameterization directory
-        self.checkout('init.top',altpath=pfs.systemsPath)
-        for n in self.cfg.monomers.keys():
-            self.checkout(f'{n}.gro',altpath=pfs.moleculesPath)
+        self.checkout('init.top',altpath=pfs.subpath('systems'))
+        for n in self.cfg.molecules.keys():
+            self.checkout(f'molecules/parameterized/{n}.gro',altpath=pfs.subpath('molecules'))
         # fetch mdp files from library, or die if not found
         self.checkout('mdp/em.mdp')
         self.checkout('mdp/npt-1.mdp')
@@ -231,7 +239,19 @@ class HTPolyNet:
             logging.info(f'Initial density {self.cfg.parameters["initial_density"]} kg/m^3 and total mass {mass_kg} kg dictate an initial box side length of {L0_nm} nm')
             boxsize=[L0_nm,L0_nm,L0_nm]
         # extend system, make gro file
-        msg=insert_molecules(self.cfg.monomers,self.cfg.parameters['composition'],boxsize,'init',basename_modifier='-p')
+        clist=self.cfg.initial_composition
+        c_togromacs={}
+        for cc in clist:
+            c_togromacs[cc['molecule']]=cc['count']
+        m_togromacs={}
+        for mname,M in self.cfg.molecules.items():
+            if mname in c_togromacs:
+                m_togromacs[mname]=M
+        for m,M in m_togromacs.items():
+            logging.info(f'Molecule to gromacs: {m} ({M.name})')
+        for m,c in c_togromacs.items():
+            logging.info(f'Composition to gromacs: {m} {c}')
+        msg=insert_molecules(m_togromacs,c_togromacs,boxsize,'init')
         logging.info(msg)
         self.Coordinates=Coordinates.read_gro('init.gro')
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
@@ -248,8 +268,7 @@ class HTPolyNet:
 
     def SCUR(self):
         # Search - Connect - Update - Relax
-        self.initialize_reactive_topology()
-        max_nxlinkbonds=self.D['atoms']['z'].sum()/2 # only for a stoichiometric system
+        max_nxlinkbonds=self.Coordinates.A['z'].sum()/2 # only for a stoichiometric system
         scur_complete=False
         scur_search_radius=self.cfg.parameters['SCUR_cutoff']
         desired_conversion=self.cfg.parameters['conversion']
@@ -262,7 +281,7 @@ class HTPolyNet:
             # TODO: everything -- identify bonds less than radius
             # make bonds, relax
             num_newbonds=self.scur_make_bonds(scur_search_radius)
-            curr_nxlinkbonds=max_nxlinkbonds-self.D['atoms']['z'].sum()/2
+            curr_nxlinkbonds=max_nxlinkbonds-self.Coordinates.A['z'].sum()/2
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
             scur_complete=scur_complete or iter>maxiter
@@ -281,19 +300,11 @@ class HTPolyNet:
         # TODO: any post-cure reactions handled here
 
     def scur_make_bonds(self,radius):
-        adf=self.Coord.D['atoms']
-        # get atoms that have H or T reactivity flags only
-        raset=adf[(adf['rctvty'].isin('HT'))&(adf['z']>0)]
+        adf=self.Coordinates.A
+        raset=adf[adf['z']>0]
         newbonds=[]
-        # TODO: do pair search using link-cell
-        for i in range(len(raset)-1):
-            for j in range(i+1,len(raset)):
-                # atoms must have H or T in opposition
-                if adf.iloc[i]['rctvty']!=adf.iloc[j]['rctvty']:
-                    # TODO: implement bond_allowed filter
-                    pass
-                    #if bond_allowed(i,j,radius):
-                        #newbonds.append([i,j])
+
+
         if len(newbonds)>0:
             # TODO: all the hard stuff
             # newbonds->update topology
@@ -304,64 +315,6 @@ class HTPolyNet:
             # update coords
             pass
         return 0
-
-    def initialize_reactive_topology(self):
-        ''' adds the 'rctvty' and 'z' attributes to each Coord atom 
-            rctvty: reactivity flag, 'H' or 'T' or 'N'
-            H's may only bond to 'T's, and 'N''s cannot bond.
-            z: number of crosslink bonding positions available at 
-            this atom
-        '''
-        adf=self.Coords.D['atoms']
-        rctvty=[]
-        atz=[]
-        ''' first pass -- assign independently using
-            monomer templates '''
-        for i,r in adf.iterrows():
-            molname=r['resName']
-            if not molname in self.cfg.monomers:
-                logging.error(f'Molecule {molname} is not in the monomer list.')
-                raise Exception('bug')
-            m=self.cfg.monomers[molname]
-            atomname=r['atomName']
-            if atomname in m.reactive_atoms:
-                ht=m.reactive_atoms[atomname].ht
-                z=m.reactive_atoms[atomname].z
-            else:
-                ht='N'
-                z=0
-            rctvty.append(ht)
-            atz.append(z)
-        adf['rctvty']=rctvty
-        adf['z']=atz
-
-        ''' second pass -- update individual atoms rctvty and z based
-            on current bonding topology '''
-        # for i in range(len(adf)):
-        #     idx=i+1
-        #     iz=adf.iloc[i]['z']
-        #     ir=adf.iloc[i]['rctvty']
-        #     imolname=adf.iloc[i]['resName']
-        #     iatomname=adf.iloc[i]['atomName']
-        #     im=self.cfg.monomers[imolname]
-        #     imaxz=0
-        #     if iatomname in im.reactive_atoms:
-        #         imaxz=im.reactive_atoms[iatomname].z
-        #     jni=bondlist.partners_of(idx)
-        #     for jdx in jni:
-        #         j=jdx-1
-        #         jr=adf.iloc[j]['rctvty']
-        #         if list(sorted([ir,jr]))==['H','T']:
-        #             adf.iloc[i]['z']-=1
-        #             jmolname=adf.iloc[j]['resName']
-        #             jatomname=adf.iloc[j]['atomName']
-        #             jm=self.cfg.monomers[jmolname]
-        #             jmaxz=0
-        #             if jatomname in jm.reactive_atoms:
-        #                 jmaxz=jm.reactive_atoms[jatomname].z
-
-
-
 
     def initreport(self):
         print(self.cfg)
@@ -810,9 +763,8 @@ class HTPolyNet:
             force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation
         )
         self.initialize_global_topology()
-        #self.write_global_topology()
-        self.do_liquid_simulation()
-#        self.SCUR()
+        #self.do_liquid_simulation()
+        #self.SCUR()
 
     # create self.Types and self.Topology, each is a dictionary of dataframes
     # def preparePara(self,log=True):

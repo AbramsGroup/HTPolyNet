@@ -122,6 +122,7 @@ class Molecule:
 
         if self.generator:
             R=self.generator
+            assert type(R)==Reaction,'Can only handle Reaction-type generators at the moment'
             logging.info(f'Using reaction {R.name} to generate {self.name}.mol2')
             # this molecule is to be generated using a reaction
             # check to make sure this reactions reactants are among the available molecules
@@ -138,41 +139,68 @@ class Molecule:
 #                    if not 'z' in m.Coords['mol2'].D['atoms']:
                         logging.info(f'Initializing z attribute of all atoms in molecule {m.name}')
                         m.set_atomset_attribute('z',np.zeros(m.num_atoms()))
-                    logging.info(f'Modifing z attribute of molecule {m.name} resnum {a["resid"]} atom {a["atom"]}')
+                    logging.info(f'Setting z of {m.name}-R{a["resid"]}-{a["atom"]} to {a["z"]}')
                     m.set_atom_attribute('z',a['z'],{'atomName':a['atom'],'resNum':a['resid']})
+                    logging.info(f'Are we setting z values of symmetry-equivalent atoms?')
                     if m.Coords.has_atom_attributes(['sea-idx']):
                         Aidx=m.Coords.get_atom_attribute('globalIdx',{'atomName':a['atom'],'resNum':a['resid']})
                         Asea=m.Coords.get_atom_attribute('sea-idx',{'globalIdx':Aidx})
                         Aclu=m.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Asea})
+                        logging.info(f'Yes.  Atom {Aidx} belongs to sea-class {Asea} whose total member idx list is {Aclu}')
                         for aa in Aclu:
                             if aa!=Aidx:
+                                an=m.Coords.get_atom_attribute('atomName',{'globalIdx':aa})
+                                rn=m.Coords.get_atom_attribute('resNum',{'globalIdx':aa})
+                                logging.info(f'Setting z of {m.name}-R{rn}-{an} to {a["z"]}')
                                 m.set_atom_attribute('z',a['z'],{'globalIdx':aa})
             # local copies of all reactant molecules
             reactants={}
             for n,r in R.reactants.items():
                 reactants[n]=deepcopy(available_molecules[r])
             bases=[]
-            # TODO: enforce any symmetries
             for b in R.bonds:
                 # every bond names exactly two atoms, A and B
                 # here we associate the identifiers A and B with
                 # their entry in the atoms dictionary for this reaction
                 A,B=[R.atoms[i] for i in b['atoms']]
                 mA,mB=[reactants[a['reactant']] for a in [A,B]]
+                aan=A['atom']
+                ban=B['atom']
+                arn=A['resid']
+                brn=B['resid']
                 Aidx=mA.Coords.get_idx({'atomName':A['atom'],'resNum':A['resid']})
                 Bidx=mB.Coords.get_idx({'atomName':B['atom'],'resNum':B['resid']})
-                mA.new_bond(mB,Aidx,Bidx)
-                if mA.Coords.has_atom_attributes(['sea-idx']) and mB.Coords.has_atom_attributes(['sea-idx']):
+                logging.info(f'Explicitly, I think {mA.name}-R{arn}-{aan}({Aidx}) should bond to {mB.name}-R{brn}-{ban}({Bidx})')
+                logging.info(f'Creating new bond {Aidx}-{Bidx} in molecule {mA.name}')
+                Aidx,Bidx=mA.new_bond(mB,Aidx,Bidx)
+                aan=mA.Coords.get_atom_attribute('atomName',{'globalIdx':Aidx})
+                arn=mA.Coords.get_atom_attribute('resNum',{'globalIdx':Aidx})
+                ban=mA.Coords.get_atom_attribute('atomName',{'globalIdx':Bidx})
+                brn=mA.Coords.get_atom_attribute('resNum',{'globalIdx':Bidx})
+                logging.info(f'Due to post-bonding reindexing, the two bonded atoms are now {mA.name}-R{arn}-{aan}({Aidx}) and {mB.name}-R{brn}-{ban}({Bidx})')
+                logging.info(f'Are we automatically making symmetry-equivalent bonds in molecule {mA.name}?')
+                if mA==mB and mA.Coords.has_atom_attributes(['sea-idx']):
                     Asea=mA.Coords.get_atom_attribute('sea-idx',{'globalIdx':Aidx})
-                    Bsea=mB.Coords.get_atom_attribute('sea-idx',{'globalIdx':Bidx})
+                    Bsea=mA.Coords.get_atom_attribute('sea-idx',{'globalIdx':Bidx})
                     Aclu=mA.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Asea})
-                    Bclu=mB.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Bsea})
-                    logging.info(f'A {mA.name} atom {Aidx} in clu {Aclu} ({R.name})')
-                    logging.info(f'B {mB.name} atom {Bidx} in clu {Bclu} ({R.name})')
+                    Bclu=mA.Coords.get_atoms_w_attribute('globalIdx',{'sea-idx':Bsea})
+                    Aclu=np.delete(Aclu,np.where(Aclu==Aidx))
+                    Bclu=np.delete(Bclu,np.where(Bclu==Bidx))
+                    logging.info(f'Yes.  Atom {Aidx} belongs to sea-cluster {Asea} whose other member(s) is/are {Aclu}')
+                    logging.info(f'      Atom {Bidx} belongs to sea-cluster {Bsea} whose other member(s) is/are {Bclu}')
                     if mA==mB:
                         for aa,bb in zip(Aclu,Bclu):
-                            if aa!=Aidx and bb!=Bidx:
-                                mA.new_bond(mB,aa,bb)
+                            aan=mA.Coords.get_atom_attribute('atomName',{'globalIdx':aa})
+                            arn=mA.Coords.get_atom_attribute('resNum',{'globalIdx':aa})
+                            ban=mA.Coords.get_atom_attribute('atomName',{'globalIdx':bb})
+                            brn=mA.Coords.get_atom_attribute('resNum',{'globalIdx':bb})
+                            logging.info(f'By symmetry, I think {mA.name}-R{arn}-{aan}({aa}) should bond to {mB.name}-R{brn}-{ban}({bb})')
+                            new_idx=mA.new_bond(mB,aa,bb,return_idx_of=[aa,bb]+list(Aclu)+list(Bclu))
+                            aa,bb=new_idx[0:2]
+                            Aclu=new_idx[2:2+len(Aclu)]
+                            Bclu=new_idx[2+len(Aclu):2+len(Aclu)+len(Bclu)]
+                else:
+                    logging.info('No.')
                 if len(bases)==0 or mA not in bases:
                     bases.append(mA)
             assert len(bases)==1,f'Error: Reaction {R.name} results in more than one molecular fragment product'
@@ -185,6 +213,29 @@ class Molecule:
 
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)  
+
+    def inherit_sea_from_reactants(self,molecules,sea_list):
+        R=self.generator
+        if R and len(sea_list)>0:
+            self.Coords.A['sea-idx']=np.arange(self.Coords.A.shape[0])
+            logging.debug(f'Inheriting sea: {self.name} using reaction {R.name} and sea_list {sea_list}')
+            logging.debug(f'Coords prior to inheriting sea:\n'+self.Coords.A.to_string())
+
+            donors=[molecules[x] for x in R.reactants.values() if x in sea_list]
+            for D in donors:
+                logging.debug(f'Donor {D.name}')
+                dfsea=D.Coords.A[['resNum','resName','atomName','sea-idx']]
+                logging.debug(f'  coords subset:\n'+dfsea.to_string())
+                for i,a in self.Coords.A.iterrows():
+                    if a['resName']==D.name:
+                        logging.debug(f'Inheriting from donor {D.name} to {a["resName"]}')
+                        sealist=dfsea[(dfsea['resName']==a['resName'])&(dfsea['atomName']==a['atomName'])]['sea-idx'].values
+                        logging.debug(f"atom {a['resName']} {a['atomName']} sea: {sealist}")
+                        if len(sealist)==0:
+                            logging.debug(f"atom {a['resName']} {a['atomName']} not found in sea")
+                        logging.debug(f"setting sea of {a['resName']} {a['atomName']} to {sealist[0]}")
+                        self.Coords.set_atom_attribute('sea-idx',sealist[0],{'resName':a['resName'],'atomName':a['atomName']})
+            logging.debug(f'Molecule {self.name} after inheriting sea:\n'+self.Coords.A.to_string())
 
     def read_topology(self,filename):
         assert os.path.exists(filename),f'Topology file {filename} not found.'
@@ -251,9 +302,10 @@ class Molecule:
     def add_bonds(self,pairs=[]):
         self.Topology.add_bonds(pairs)
 
-    def delete_atoms(self,idx=[]):
-        self.Topology.delete_atoms(idx)
+    def delete_atoms(self,idx=[],return_idx_of=[]):
+        new_idx=self.Topology.delete_atoms(idx,return_idx_of=return_idx_of)
         self.Coords.delete_atoms(idx)
+        return new_idx
 
     def new_bond(self,other,myidx,otidx,**kwargs):
         myC=self.Coords
@@ -262,6 +314,8 @@ class Molecule:
         otC=other.Coords
         otA=otC.A
         otT=other.Topology
+        return_idx_of=kwargs.get('return_idx_of',[myidx,otidx])
+        logging.info(f'new_bond: will request updated global indices of {return_idx_of}')
         assert not myT.empty,f'Error: empty topology -- cannot make a new bond'
         assert not otT.empty,f'Error: empty topology -- cannot make a new bond'
         myz=myC.get_atom_attribute('z',{'globalIdx':myidx})
@@ -338,5 +392,6 @@ class Molecule:
         self.add_bonds(pairs=[(myidx,otidx)])
         myC.set_atom_attribute('z',myz-1,{'globalIdx':myidx})
         otC.set_atom_attribute('z',otz-1,{'globalIdx':otidx})
-        self.delete_atoms(idx=[myH,otH])
+        new_idx=self.delete_atoms(idx=[myH,otH],return_idx_of=return_idx_of)
         self.Topology.bond_source_check()
+        return new_idx

@@ -1,3 +1,4 @@
+from hashlib import new
 import pandas as pd
 import logging
 from HTPolyNet.bondlist import Bondlist
@@ -34,8 +35,8 @@ def typedata(h,s):
         return float(s)
     return s
 
-_GromacsExtensiveDirectives_=('atoms','pairs','bonds','angles','dihedrals')
-_NonGromacsExtensiveDirectives_=('mol2_bonds')
+_GromacsExtensiveDirectives_=['atoms','pairs','bonds','angles','dihedrals']
+_NonGromacsExtensiveDirectives_=['mol2_bonds']
 _GromacsTopologyDirectiveOrder_=['defaults','atomtypes','bondtypes','angletypes','dihedraltypes','moleculetype','atoms','pairs','bonds','angles','dihedrals','system','molecules']
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
@@ -208,10 +209,10 @@ class Topology:
             mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
             logging.info(f'Result: {check}')
-            logging.info(f'GROMACS:')
-            logging.info(self.D['bonds'].to_string())
-            logging.info(f'MOL2:')
-            logging.info(self.D['mol2_bonds'].to_string())
+            # logging.info(f'GROMACS:')
+            # logging.info(self.D['bonds'].to_string())
+            # logging.info(f'MOL2:')
+            # logging.info(self.D['mol2_bonds'].to_string())
 
     def has_bond(self,pair):
         bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
@@ -230,11 +231,13 @@ class Topology:
         ''' replicate extensive components (atoms, pairs, bonds, angles, dihedrals) '''
         if count>0:
             counts={k:0 for k in _GromacsExtensiveDirectives_}
+            counts.update({k:0 for k in _NonGromacsExtensiveDirectives_})
             for t in _GromacsExtensiveDirectives_:
                 if t in self.D:
                     counts[t]=len(self.D[t])
                 for t in _NonGromacsExtensiveDirectives_:
-                    counts[t]=len(self.D[t])
+                    if t in self.D:
+                        counts[t]=len(self.D[t])
             try:
                 idxshift=counts['atoms']
             except:
@@ -364,8 +367,8 @@ class Topology:
         # if len(newbonds)>0:
         #     self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
 
-        ijk=self.D['angletypes'].set_index(['i','j','k'])
-        ijkl=self.D['dihedraltypes'].set_index(['i','j','k','l'])
+        ijk=self.D['angletypes'].set_index(['i','j','k']).sort_index()
+        ijkl=self.D['dihedraltypes'].set_index(['i','j','k','l']).sort_index()
         newangles=[]
         newdihedrals=[]
         for b in newbonds:
@@ -479,10 +482,13 @@ class Topology:
                             logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
 
 
-    def delete_atoms(self,idx=[],reindex=True):
+    def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
         #logging.debug(f'Delete atoms: {idx}')
         d=self.D['atoms']
+        new_idx=[]
         indexes_to_drop=d[d.nr.isin(idx)].index
+        logging.info(f'Deleting these atoms:')
+        logging.info(d[d.nr.isin(idx)].to_string())
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:
@@ -490,7 +496,10 @@ class Topology:
             oldGI=d['nr'].copy()
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(oldGI,d['nr'])}
-            #logging.debug(f'delete_atoms: mapper {mapper}')
+            logging.debug(f'delete_atoms: mapper {mapper}')
+            if len(return_idx_of)>0:
+                logging.info(f'Asking for updated global indexes of {return_idx_of}')
+                new_idx=[mapper[o] for o in return_idx_of]
             #d['nr_shift']=d['nr']-oldGI  # probably not necessary
         ptt=['bonds','mol2_bonds','pairs']
         for pt in ptt:
@@ -532,6 +541,7 @@ class Topology:
                 d.aj=d.aj.map(mapper)
                 d.ak=d.ak.map(mapper)
                 d.al=d.al.map(mapper)
+        return new_idx
 
     def _myconcat(self,other,directive='',idxlabel=[],idxshift=0,drop_duplicates=False):
         if not directive in other.D:

@@ -8,6 +8,9 @@ read cfg file
 import json
 import yaml
 import logging
+import numpy as np
+from copy import deepcopy
+from itertools import product
 
 from HTPolyNet.molecule import Molecule, Reaction
 
@@ -119,253 +122,38 @@ class Configuration:
         self.parameters=self.basedict
         return self
     
-    
-
-    # def __str__(self):
-    #     s=f'Configuration read in from {self.cfgFile}:\n'
-    #     s+='    restart? '+(self.restart if self.restart!='' else '<no>')+'\n'
-    #     for p,v in self.parameters.items():
-    #         s+=f'{p} = {v}\n'
-    #     s+='Monomers:\n'
-    #     for m in self.monomers.values():
-    #         s+=str(m)+'\n'
-    #     s+='Reactions:\n'
-    #     for r in self.reactions:
-    #         s+=str(r)+'\n'
-    #     return s 
-
-    # def __str__(self):
-    #     r=f'Configuration read in from {self.cfgFile}:\n'
-    #     r+='    reProject? '+(self.reProject if self.reProject!='' else '<no>')+'\n'
-    #     r+='    boxLimit '+str(self.boxLimit)+'\n'
-    #     r+='    layerConvLimit '+str(self.layerConvLimit)+'\n'
-    #     if type(self.boxSize)==list:
-    #         r+='    boxSize '+', '.join(str(x) for x in self.boxSize)+'\n'
-    #     else:
-    #         r+='    boxSize '+', '.join(str(x) for x in [self.boxSize]*3)+'\n'
-    #     r+='    cutoff '+str(self.cutoff)+'\n'
-    #     r+='    bondsRatio '+str(self.bondsRatio)+'\n'
-    #     r+='    HTProcess '+self.HTProcess+'\n'
-    #     r+='    CPU '+str(self.CPU)+'\n'
-    #     r+='    GPU '+str(self.GPU)+'\n'
-    #     r+='    trials '+str(self.trials)+'\n'
-    #     r+='    stepwise '+(', '.join(self.stepwise) if self.stepwise!='' else 'UNSET')+'\n'
-    #     r+='    layerDir '+(self.layerDir if self.layerDir!='' else 'UNSET')+'\n'
-    #     r+='Monomer info:\n'
-    #     r+='     idx     name    count    reactive-atoms\n'
-    #     for m in self.monInfo:
-    #         r+=f'     {m[0]:<8d}{m[1]:<8s}{m[2]:<8d}\n'
-    #         r+=f'                              atname  z       rct   grp\n'
-    #         for rr in m[3]:
-    #             r+=f'                              {rr[0]:<8s}{rr[1]:<8d}{rr[2]:<6s}{rr[3]:<6s}\n'
-    #     r+='Crosslinker info:\n'
-    #     r+='     idx     name    count    reactive-atoms\n'
-    #     for c in self.croInfo:
-    #         r+=f'     {c[0]:<8d}{c[1]:<8s}{c[2]:<8d}\n'
-    #         r+=f'                              atname  z       rct   grp\n'
-    #         for rr in c[3]:
-    #             r+=f'                              {rr[0]:<8s}{rr[1]:<8d}{rr[2]:<6s}{rr[3]:<6s}\n'
-    #     r+='Summary: Mol names are '+', '.join(self.molNames)+'\n'
-    #     r+='Calculated conversion info:\n'
-    #     r+=f'    Desired conversion ("bondsRatio"): {self.desConv:<.3f}\n'
-    #     r+=f'    Maximum number of new bonds:       {self.maxBonds}\n'
-    #     r+=f'       ->  Target number of new bonds: {self.desBonds}\n'
-
-    #     if len(self.cappingMolPair)>0:
-    #         r+='Capping info:\n'
-    #         r+='    Mol    unreacted\n'
-    #         for p in self.cappingMolPair:
-    #             r+=f'    {p[0]:<6s} {p[1]:<6s}\n'
-    #         r+='    Mol    Atom1  Atom2  BondOrder\n'
-    #         for p in self.cappingBonds:
-    #             # print(p)
-    #             r+=f'    {p[0]:<6s} {p[1]:<6s} {p[2]:<6s} {p[3]:<6s}\n'
-    #         r+='    UnreactedNames\n'
-    #         for p in self.unrctStruct:
-    #             r+=f'    {p:>6s}\n'
-    #     r+='React info:\n'
-    #     for x in self.rctInfo:
-    #         r+=f'     {x}\n'
-    #     # print(r)
-    #     return r
-
-    # def calMaxBonds(self):
-    #     maxRct = 0
-    #     for n,m in self.monomers.items():
-    #         molNum = self.parameters['composition'][n]
-    #         z=0
-    #         for r in m.reactive_atoms:
-    #             z+=r.z
-    #         maxRct += molNum * z
-    #     self.maxBonds = int(maxRct * 0.5)
-    #     self.desConv = self.parameters['conversion']
-    #     self.desBonds = int(self.desConv * self.maxBonds)
-        
-
-    # def calMaxBonds(self):
-    #     maxRct = 0
-    #     for i in self.monInfo:
-    #         molNum = i[2]
-    #         tmp = 0
-    #         for ii in i[3]:
-    #             tmp += ii[1]
-    #         maxRct += molNum * tmp
-            
-    #     for i in self.croInfo:
-    #         molNum = i[2]
-    #         tmp = 0
-    #         for ii in i[3]:
-    #             tmp += ii[1]
-    #         maxRct += molNum * tmp
-        
-    #     self.maxBonds = int(maxRct * 0.5)
-    #     self.desConv = self.bondsRatio
-    #     self.desBonds = int(self.desConv * self.maxBonds)
-
-    # def getMolNames(self):
-    #     names = []
-    #     for n in self.unrctStruct:
-    #         names.append(n)
-    #     for n in self.monInfo:
-    #         names.append(n[1])
-    #     for n in self.croInfo:
-    #         names.append(n[1])
-    #     self.molNames = names
-
-    # def parseTxtDict(self):
-    #     self.parameters['composition']={}
-    #     i=1
-    #     while f'monName{i}' in self.baseDict:
-    #         mname=self.baseDict[f'monName{i}']
-    #         mnum=getOrDie(self.baseDict,f'monNum{i}',basetype=int,source=self.cfgFile)
-    #         self.parameters['composition'][mname]=mnum
-    #         mrnames=self.baseDict.get(f'mon{i}R_list',f'Error: mon{i}R_list not found')
-    #         mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
-    #         mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
-    #         d={}
-    #         d['name']=mname
-    #         d['reactive_atoms']={k:{'z':z,'ht':h} for k,z,h in zip(mrnames,mrnum,mrrct)}
-    #         self.monomers[mname]=Monomer(d)
-    #         # mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
-    #         # monInfo.append([i,mname,mnum,mrlist])
-    #         # monR_list[mname] = mrlist
-    #         del self.baseDict[f'monName{i}']
-    #         del self.baseDict[f'monNum{i}']
-    #         del self.baseDict[f'mon{i}R_list']
-    #         del self.baseDict[f'mon{i}R_rNum']
-    #         del self.baseDict[f'mon{i}R_rct']
-    #         del self.baseDict[f'mon{i}R_group']
-    #         i+=1
-    #     i=1
-    #     while f'croName{i}' in self.baseDict:
-    #         cname=self.baseDict[f'croName{i}']
-    #         cnum=getOrDie(self.baseDict,f'croNum{i}',basetype=int,source=self.cfgFile)
-    #         self.parameters['composition'][cname]=cnum
-    #         crnames=self.baseDict.get(f'cro{i}R_list',f'Error: cro{i}R_list not found')
-    #         crnum=self.baseDict.get(f'cro{i}R_rNum',f'Error: cro{i}R_rNum not found')
-    #         crrct=self.baseDict.get(f'cro{i}R_rct',f'Error: cro{i}R_rct not found')
-    #         crgrp=self.baseDict.get(f'cro{i}R_group',f'Error: cro{i}R_group not found')
-    #         d={}
-    #         d['name']=cname
-    #         d['reactive_atoms']={k:{'z':z,'ht':h} for k,z,h in zip(crnames,crnum,crrct)}
-    #         self.monomers[cname]=Monomer(d)
-    #         # crlist=[[r,int(n),x,g] for r,n,x,g in zip(crnames,crnum,crrct,crgrp)]
-    #         # croInfo.append([i,cname,cnum,crlist])
-    #         # croR_list[cname] = crlist
-    #         del self.baseDict[f'croName{i}']
-    #         del self.baseDict[f'croNum{i}']
-    #         del self.baseDict[f'cro{i}R_list']
-    #         del self.baseDict[f'cro{i}R_rNum']
-    #         del self.baseDict[f'cro{i}R_rct']
-    #         del self.baseDict[f'cro{i}R_group']
-    #         i+=1
-    #     if 'cappingBonds' in self.baseDict:
-    #         for cp in self.baseDict['cappingBonds']:
-    #             if cp[0] in self.monomers:
-    #                 d={}
-    #                 d['pair']=cp[1:3]
-    #                 d['order']=int(cp[3])
-    #                 self.monomers[cp[0]].capping_bonds.append(CappingBond(d))
-    #         del self.baseDict['cappingBonds']
-        
-    #     updated_names={'boxSize':'initial_boxsize','bondsRatio':'conversion','cutoff':'SCUR_cutoff'}
-    #     for o,n in updated_names.items():
-    #         if o in self.baseDict:
-    #             self.parameters[n]=self.baseDict[o]
-    #             del self.baseDict[o]
-
-    #     self.parameters.update(self.baseDict)
-        
-
-    # def parseCfg(self):
-    #     self.cappingMolPair=[]
-    #     self.unrctStruct=[]
-    #     i=1
-    #     while f'mol{i}' in self.baseDict:
-    #         tokens=self.baseDict[f'mol{i}']
-    #         self.cappingMolPair.append(tokens)
-    #         self.unrctStruct.append(tokens[1])
-    #         i+=1
-    #     if 'cappingBonds' in self.baseDict:
-    #         for cp in self.baseDict['cappingBonds']:
-    #             tokens=cp
-    #             self.cappingBonds.append(tokens)
-
-    #     monInfo=[]
-    #     monR_list={}
-    #     i=1
-    #     while f'monName{i}' in self.baseDict:
-    #         mname=self.baseDict[f'monName{i}']
-    #         mnum=getOrDie(self.baseDict,f'monNum{i}',basetype=int,source=self.cfgFile)
-    #         mrnames=self.baseDict.get(f'mon{i}R_list',f'Error: mon{i}R_list not found')
-    #         mrnum=self.baseDict.get(f'mon{i}R_rNum',f'Error: mon{i}R_rNum not found')
-    #         mrrct=self.baseDict.get(f'mon{i}R_rct',f'Error: mon{i}R_rct not found')
-    #         mrgrp=self.baseDict.get(f'mon{i}R_group',f'Error: mon{i}R_group not found')
-    #         mrlist=[[r,int(n),x,g] for r,n,x,g in zip(mrnames,mrnum,mrrct,mrgrp)]
-    #         monInfo.append([i,mname,mnum,mrlist])
-    #         monR_list[mname] = mrlist
-    #         i+=1
-    #     croInfo=[]
-    #     croR_list={}
-    #     i=1
-    #     while f'croName{i}' in self.baseDict:
-    #         cname=self.baseDict[f'croName{i}']
-    #         cnum=getOrDie(self.baseDict,f'croNum{i}',basetype=int,source=self.cfgFile)
-    #         crnames=self.baseDict.get(f'cro{i}R_list',f'Error: cro{i}R_list not found')
-    #         crnum=self.baseDict.get(f'cro{i}R_rNum',f'Error: cro{i}R_rNum not found')
-    #         crrct=self.baseDict.get(f'cro{i}R_rct',f'Error: cro{i}R_rct not found')
-    #         crgrp=self.baseDict.get(f'cro{i}R_group',f'Error: cro{i}R_group not found')
-    #         crlist=[[r,int(n),x,g] for r,n,x,g in zip(crnames,crnum,crrct,crgrp)]
-    #         croInfo.append([i,cname,cnum,crlist])
-    #         croR_list[cname] = crlist
-    #         i+=1
-    #     self.monInfo = monInfo
-    #     self.croInfo = croInfo
-    #     self.monR_list = monR_list
-    #     self.croR_list = croR_list
-
-    #     # basic parameters that need not be specified
-    #     # along with their default values
-    #     self.reProject=self.baseDict.get('reProject','')
-    #     self.boxLimit=float(self.baseDict.get('boxLimit','1'))
-    #     self.layerConvLimit=float(self.baseDict.get('layerConvLimit','1'))
-    #     self.GPU=int(self.baseDict.get('GPU','0'))
-    #     self.stepwise=self.baseDict.get('stepwise','')
-    #     self.layerDir=self.baseDict.get('boxDir','')
-    #     self.system=self.baseDict.get('system','A Generic System Name')
-    #     # basic parameters that must be specified in the config file
-    #     # boxSize can be specified by a single float for a cubic box
-    #     # or as three floats for an orthorhombic box
-    #     try:
-    #         self.boxSize=getOrDie(self.baseDict,'boxSize',basetype=list,subtype=float,source=self.cfgFile)
-    #     except:
-    #         self.boxSize=getOrDie(self.baseDict,'boxSize',basetype=float,source=self.cfgFile)
-    #     self.cutoff=getOrDie(self.baseDict,'cutoff',basetype=float,source=self.cfgFile)
-    #     self.bondsRatio=getOrDie(self.baseDict,'bondsRatio',basetype=float,source=self.cfgFile)
-    #     self.HTProcess=getOrDie(self.baseDict,'HTProcess',basetype=str,source=self.cfgFile)
-    #     self.CPU=getOrDie(self.baseDict,'CPU',basetype=int,source=self.cfgFile)
-    #     self.trials=getOrDie(self.baseDict,'trials',basetype=int,source=self.cfgFile)
-
-    #     # anything that can be calculated immediately from data in the config
-    #     self.calMaxBonds()
-    #     self.getMolNames()
+    def symmetry_expand_reactions(self):
+        extra_reactions=[]
+        for R in self.reactions:
+            sym_partners={}
+            for atom in R.atoms.values():
+                atomName=atom['atom']
+                resNum=atom['resid']
+                molecule=self.molecules[R.reactants[atom['reactant']]]
+                # logging.debug('\n'+molecule.Coords.A.to_string())
+                logging.debug(f'Symmetry_expand: Reaction {R.name} atomName {atomName} resNum {resNum} molname {molecule.name}')
+                #product=self.molecules[R['product']]
+                Asea=molecule.Coords.get_atom_attribute('sea-idx',{'atomName':atomName,'resNum':resNum})
+                Aclu=molecule.Coords.get_atoms_w_attribute('atomName',{'sea-idx':Asea,'resNum':resNum})
+                Aclu=np.delete(Aclu,np.where(Aclu==atomName))
+                sp=[atomName]
+                for aa in Aclu:
+                    sp.append(aa)
+                sym_partners[atomName]=sp
+            if len(R.reactants)>1: # not intramolecular
+                P=product(*[x for x in sym_partners.values()])
+                O=next(P)
+                logging.debug(f'Original atoms for symmetry expansion: {O}')
+                for p in P:
+                    logging.debug(f'Replicating {R.name} using {p}')
+                    newR=deepcopy(R)
+                    for a,o in zip(p,O):
+                        for atom,oatom in zip(newR.atoms,R.atoms):
+                            if R.atoms[oatom]['atom']==o:
+                                newR.atoms[atom]['atom']=a
+                    extra_reactions.append(newR)
+            else: # intramolecular
+                pass
+        for nR in extra_reactions:
+            logging.debug(f'symmetry-derived reaction {nR.name} atoms {nR.atoms}')
+        self.reactions.extend(extra_reactions)

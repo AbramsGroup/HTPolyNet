@@ -253,6 +253,9 @@ def checkin(filename,overwrite=False,priority='user'):
     else:
         _PFS_.library.checkin(filename,overwrite=overwrite)
 
+def subpath(name):
+    return _PFS_.projSubPaths[name]
+
 def cd(pathstring):
     if pathstring=='root':
         return _PFS_.cdroot()
@@ -269,9 +272,10 @@ def next_results_dir(maxstages=100):
         if not p in _PFS_.resultsSubPaths:
             break
     newpath=os.path.join(_PFS_.resPath,p)
+    logging.debug(f'Making {newpath}')
     os.mkdir(newpath)
     _PFS_.resultsSubPaths[p]=newpath
-    return cd(newpath)
+    return cd(p)
 
 def local_data_searchpath():
     return [_PFS_.rootPath,_PFS_.projPath]

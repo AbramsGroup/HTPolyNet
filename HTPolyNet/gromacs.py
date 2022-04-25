@@ -8,10 +8,10 @@ import numpy as np
 from pytrr import GroTrrReader
 from HTPolyNet.command import Command
 
-def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
+def insert_molecules(molecules,composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`
-        monomers:  dictionary of Monomer instances
-        composition: dictionary keyed on monomer name with value monomer count
+        monomers:  dictionary of Molecule instances keyed on molecule name
+        composition: dictionary keyed on molecule name with value molecule count
         boxSize:  3-element list of floats OR a single float (cubic box)
         outName:  output filename basename.  If {outName}.gro exists,
                   insertions are made into it.
@@ -21,9 +21,9 @@ def insert_molecules(monomers,composition,boxSize,outName,**kwargs):
     if type(boxSize)==float:
         boxSize=[boxSize]*3
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
-    for n,m in monomers.items():
+    for n,num in composition.items():  # composition determines order
+        M=molecules[n]
         name = n+kwargs.get('basename_modifier','')
-        num = composition[n]
         if os.path.isfile(f'{outName}.gro'):
             logging.info(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
