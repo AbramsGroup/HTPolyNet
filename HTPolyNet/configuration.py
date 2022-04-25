@@ -140,20 +140,25 @@ class Configuration:
                 for aa in Aclu:
                     sp.append(aa)
                 sym_partners[atomName]=sp
-            if len(R.reactants)>1: # not intramolecular
+            if len(R.reactants)>1: # not intramolecular; make all combinations
+                logging.debug(f'sending to product: {[x for x in sym_partners.values()]}')
                 P=product(*[x for x in sym_partners.values()])
                 O=next(P)
-                logging.debug(f'Original atoms for symmetry expansion: {O}')
-                for p in P:
-                    logging.debug(f'Replicating {R.name} using {p}')
-                    newR=deepcopy(R)
-                    for a,o in zip(p,O):
-                        for atom,oatom in zip(newR.atoms,R.atoms):
-                            if R.atoms[oatom]['atom']==o:
-                                newR.atoms[atom]['atom']=a
-                    extra_reactions.append(newR)
-            else: # intramolecular
-                pass
+            else: # intramolecular; keep partners together
+                logging.debug(f'sym_partners.values() {sym_partners.values()}')
+                P=[p for p in zip(*[x for x in sym_partners.values()])]
+                O=P[0]
+                P=P[1:]
+            logging.debug(f'Original atoms for symmetry expansion: {O}')
+            for p in P:
+                logging.debug(f'Replicating {R.name} using {p}')
+                newR=deepcopy(R)
+                for a,o in zip(p,O):
+                    for atom,oatom in zip(newR.atoms,R.atoms):
+                        if R.atoms[oatom]['atom']==o:
+                            newR.atoms[atom]['atom']=a
+                extra_reactions.append(newR)
+
         for nR in extra_reactions:
             logging.debug(f'symmetry-derived reaction {nR.name} atoms {nR.atoms}')
         self.reactions.extend(extra_reactions)

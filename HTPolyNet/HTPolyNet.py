@@ -125,9 +125,11 @@ class HTPolyNet:
             logging.info(f'Done making molecules: {all_made}')
             for m in self.cfg.molecules:
                 logging.info(f'Mol {m} made? {m in self.molecules}')
+        ''' We need to copy all symmetry info down to atoms in each molecule based on the reactants
+            used to generate them.  We then must use this symmetry information to expand the list
+            of Reactions '''
         for M in self.molecules.values():
             M.inherit_sea_from_reactants(self.molecules,self.cfg.use_sea)
-
         self.cfg.symmetry_expand_reactions()
 
     def initialize_global_topology(self,filename='init.top'):
@@ -301,15 +303,33 @@ class HTPolyNet:
 
     def scur_make_bonds(self,radius):
         adf=self.Coordinates.A
-        raset=adf[adf['z']>0]
+        raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         newbonds=[]
+        ''' generate the list of new bonds to make '''
+        for R in self.cfg.reactions:
+            logging.debug(f'Attempting to make bonds based on reaction {R.name}')
+            for bond in R.bonds:
+                logging.debug(f'  -> bond {bond}')
+                
+                '''
+                TODO
+                - FOR EACH BOND
+                    - make selections of A-set and B-set reactive atoms for each bond in this reaction
+                    - search for A-B pairs and make a list of potential bonds
+                    - for each potential bond
+                        - determine if it is allowed
+                        - determine its reaction template and bond within that template
+                        - if it is allowed roll a dice to see if it will happen based on bond probability
+                        - if win, add it as a 2-tuple of global indices to the newbonds[] list
+                '''
 
-
+        ''' make the new bonds '''
         if len(newbonds)>0:
             # TODO: all the hard stuff
-            # newbonds->update topology
-            # update charges in global topology
-            # update coords/bonds/rctivity info
+            # - make this bond, update indexes of atoms in bonds yet to be made
+            # - determine reaction template for this bond and find the product molecule
+            # - map the system atoms to the product template bond atoms + neighbors to degree-x 
+            #   and transfer charges from template
             # write gro/top
             # grompp_and_run minimization + NPT relaxation
             # update coords
