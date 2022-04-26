@@ -121,7 +121,7 @@ class Configuration:
 
         self.parameters=self.basedict
         return self
-    
+
     def symmetry_expand_reactions(self):
         extra_reactions=[]
         for R in self.reactions:
@@ -150,9 +150,13 @@ class Configuration:
                 O=P[0]
                 P=P[1:]
             logging.debug(f'Original atoms for symmetry expansion: {O}')
+            idx=1
             for p in P:
                 logging.debug(f'Replicating {R.name} using {p}')
                 newR=deepcopy(R)
+                newR.name+=f'-{idx}'
+                newR.product+=f'-{idx}'
+                idx+=1
                 for a,o in zip(p,O):
                     for atom,oatom in zip(newR.atoms,R.atoms):
                         if R.atoms[oatom]['atom']==o:

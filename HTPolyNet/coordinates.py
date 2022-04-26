@@ -56,7 +56,7 @@ def set_atom_attribute(df,name,value,attributes):
             l = (l) & (c[i]==V[i])
         cidx=[c==name for c in df.columns]
         df.loc[list(l),cidx]=value
-        logging.debug(f'Result: {df.loc[list(l),cidx]}')
+        # logging.debug(f'Result: {df.loc[list(l),cidx]}')
 
 _ANGSTROM_='Ångström'
 
@@ -193,6 +193,20 @@ class Coordinates:
             self.A[c]=otherpos
         self.box=np.copy(other.box)
 
+    def inherit_z(self,molecules):
+        assert type(molecules)==dict,'Must pass a *dictionary* name:Molecule as parameter "molecules"'
+        a=self.A
+        a['z']=[0]*a.shape[0]
+        for mname,M in molecules.items():
+            logging.debug(f'Inheriting z from {mname}\n{M.Coords.A.to_string()}')
+            if mname in a['resName']:
+                for i,ma in M.Coords.A.iterrows():
+                    atomName=ma['atomName']
+                    resName=ma['resName']
+                    z=ma['z']
+                    set_atom_attribute(a,'z',z,{'atomName':atomName,'resName':resName})
+        logging.debug(f'Inherited z from reactants.  Here are all atoms for which z>0:\n{a[a["z"]>0].to_string()}')
+
     def geometric_center(self):
         a=self.A
         return np.array([a.posX.mean(),a.posY.mean(),a.posZ.mean()])
@@ -275,7 +289,7 @@ class Coordinates:
             raise Exception('Please provide a file name from which you want to read atom attributes')
         df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes)
         self.A=self.A.merge(df,how='outer',on='globalIdx')
-        logging.debug('Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
+        logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
     def set_atomset_attribute(self,attribute='',srs=[]):
         if attribute!='':

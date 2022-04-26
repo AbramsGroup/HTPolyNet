@@ -8,6 +8,7 @@ import shutil
 import argparse as ap
 #import numpy as np
 from copy import deepcopy
+from itertools import product
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
@@ -84,32 +85,28 @@ class HTPolyNet:
                     parameterizing an existing mol2 file or reading in a previous parameterization
                     from the library '''
                 if mname not in self.molecules:
-                    logging.info(f'Can we make {mname}?')
-                    if M.generator:
-                        for m,X in M.generator.reactants.items():
-                            logging.info(f'...needs precursor {X}...')
-                    else:
-                        logging.info(f'No precursors needed...should be a go!')
-                    precursors_available=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
-                    if precursors_available:
-                        if force_parameterization or not M.previously_parameterized():
+                    if force_parameterization or not M.previously_parameterized():
+                        logging.debug(f'Can we make {mname}?')
+                        if M.generator:
+                            for m,X in M.generator.reactants.items():
+                                logging.debug(f'...needs precursor {X}...')
+                        else:
+                            logging.bebug(f'No precursors needed...should be a go!')
+                        generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
+                        if generatable:
                             logging.info(f'Generating {mname}')
-                            M.generate(available_molecules=self.molecules,
-                            **self.cfg.parameters)
+                            M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                             for ex in ['mol2','top','itp','gro']:
                                 checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=True)
-                        else:
-                            logging.info(f'Fetching parameterized {mname}')
-                            for ex in ['mol2','top','itp','gro']:
-                                self.checkout(f'molecules/parameterized/{mname}.{ex}')
-                            M.read_topology(f'{mname}.top')
-                            M.read_coords(f'{mname}.gro')
-#                            M.read_coords(f'{mname}.mol2') # should not be necessary
-                        self.molecules[mname]=M
-                        logging.info(f'Generated {mname}')
-                        #logging.info(M.Coords.A.to_string())
+                            M.set_origin('newly parameterized')
                     else:
-                        logging.info(f'No, no precursors available.')
+                        logging.info(f'Fetching parameterized {mname}')
+                        for ex in ['mol2','top','itp','gro']:
+                            self.checkout(f'molecules/parameterized/{mname}.{ex}')
+                        M.read_topology(f'{mname}.top')
+                        M.read_coords(f'{mname}.gro')
+                        M.set_origin('previously parameterized')
+#                            M.read_coords(f'{mname}.mol2') # should not be necessary
                     ''' The cfg allows user to indicate whether or not to determine and use
                         symmetry-equivalent atoms in any molecule. '''
                     if mname in self.cfg.use_sea:
@@ -118,19 +115,28 @@ class HTPolyNet:
                             M.calculate_sea()
                             checkin(f'molecules/parameterized/{mname}.sea')
                         else:
-                            logging.debug(f'reading sea data into {M.name}')
+                            logging.debug(f'Reading sea data into {M.name}')
                             self.checkout(f'molecules/parameterized/{mname}.sea')
                             M.read_atomset_attributes(f'{mname}.sea',attributes=['sea-idx'])
+
+                    self.molecules[mname]=M
+                    logging.info(f'Generated {mname}')
             all_made=all([m in self.molecules for m in self.cfg.molecules])
             logging.info(f'Done making molecules: {all_made}')
             for m in self.cfg.molecules:
-                logging.info(f'Mol {m} made? {m in self.molecules}')
+                logging.info(f'Mol {m} made? {m in self.molecules} -- origin: {M.get_origin()}')
         ''' We need to copy all symmetry info down to atoms in each molecule based on the reactants
             used to generate them.  We then must use this symmetry information to expand the list
             of Reactions '''
         for M in self.molecules.values():
             M.inherit_sea_from_reactants(self.molecules,self.cfg.use_sea)
         self.cfg.symmetry_expand_reactions()
+        precursors=[M for M in self.molecules.values() if not M.generator]
+        for M in precursors:
+            M.propagate_z(self.cfg.reactions,self.molecules)
+        reaction_products=[M for M in self.molecules.values() if M.generator]
+        for M in reaction_products:
+            M.propagate_z(self.cfg.reactions,self.molecules)
 
     def initialize_global_topology(self,filename='init.top'):
         ''' Create a full gromacs topology that includes all directives necessary 
@@ -256,6 +262,7 @@ class HTPolyNet:
         msg=insert_molecules(m_togromacs,c_togromacs,boxsize,'init')
         logging.info(msg)
         self.Coordinates=Coordinates.read_gro('init.gro')
+        self.Coordinates.inherit_z(self.cfg.molecules)
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         logging.info('Generated init.top and init.gro.')
         msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
@@ -309,19 +316,37 @@ class HTPolyNet:
         for R in self.cfg.reactions:
             logging.debug(f'Attempting to make bonds based on reaction {R.name}')
             for bond in R.bonds:
-                logging.debug(f'  -> bond {bond}')
-                
+                A=R.atoms[bond['atoms'][0]]
+                B=R.atoms[bond['atoms'][1]]
+                logging.debug(f'  -> bond {bond}: A {A}  B {B}')
+                aname=A['atom']
+                aresname=R.reactants[A['reactant']]
+                aresid=A['resid']
+                az=A['z']
+                bname=B['atom']
+                bresname=R.reactants[B['reactant']]
+                bresid=B['resid']
+                bz=B['z']
+                Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)]
+                Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
+                logging.debug('Here are some potential pairs based on name/resname/z')
+                P=product(Aset.iterrows(),Bset.iterrows())
+                for p in P:
+                    logging.debug(p)
                 '''
                 TODO
                 - FOR EACH BOND
                     - make selections of A-set and B-set reactive atoms for each bond in this reaction
                     - search for A-B pairs and make a list of potential bonds
                     - for each potential bond
-                        - determine if it is allowed
-                        - determine its reaction template and bond within that template
-                        - if it is allowed roll a dice to see if it will happen based on bond probability
-                        - if win, add it as a 2-tuple of global indices to the newbonds[] list
+                        - determine if it is allowed based on single-bond criteria
+                           - within cutoff
+                           - no ring piercing
+                           - no loops or short circuits
+                        - add it as a 2-tuple of global indices to the newbonds[] list, include template
                 '''
+
+        ''' TODO: let potential bonds compete with each other to see which ones move forward '''
 
         ''' make the new bonds '''
         if len(newbonds)>0:
