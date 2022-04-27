@@ -5,6 +5,8 @@ from HTPolyNet.bondlist import Bondlist
 import os
 from copy import deepcopy
 from scipy.constants import physical_constants
+import numpy as np
+import networkx as nx
 
 def typeorder(a):
     ''' correctly order the tuple of atom types for particular
@@ -24,6 +26,20 @@ def df_typeorder(df,typs):
     for i in df.index:
         df.loc[i,typs]=typeorder(tuple(df.loc[i,typs]))
 
+def treadmill(L):
+    nL=L[1:]
+    nL.append(L[0])
+    return nL
+
+def treadmills(L):
+    N=len(L)
+    nL=L
+    r=[]
+    for i in range(1,N):
+        nnL=treadmill(nL)
+        r.append(nnL)
+        nL=nnL
+    return r
 
 _GromacsIntegers_=('nr','atnum','resnr','ai','aj','ak','al','#mols','nrexcl','funct','func','nbfunc','comb-rule')
 _GromacsFloats_=('charge','mass','chargeB','massB',*tuple([f'c{i}' for i in range(5)]),
@@ -226,6 +242,39 @@ class Topology:
             cols=self.D[directive].columns.get_indexer(idxlabels)
             # print(f'directive {directive} idxlabels {idxlabels} idxshift {idxshift} rows {rows} cols {cols}')
             self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
+
+    def ring_detector(self):
+        adf=self.D['atoms']
+        g=self.bondlist.graph()
+        cycles={}
+        for a in range(3,8):
+            cycles[a]=[]
+        for u in nx.simple_cycles(g):
+            u=[x+1 for x in u]
+            utl=treadmills(u)
+            ur=list(reversed(u))
+            urtl=treadmills(ur)
+            eqv=utl+[ur]+urtl
+            for l in range(3,8):
+                if len(u)==l:
+                    found=False
+                    for e in eqv:
+                        if e in cycles[l]:
+                            found=True
+                            break
+                    if not found:
+                        cycles[l].append(u)
+        cycles_by_name={}
+        for a in range(3,8):
+            cycles_by_name[a]=[]
+            for c in cycles[a]:
+                atoms=[]
+                for atom in c:
+                    atoms.append(self.get_atom_attribute(atom,'atom'))
+                cycles_by_name[a].append(atoms)
+            logging.debug(f'{a}-rings: {cycles_by_name[a]}')
+        self.Cycles=cycles_by_name
+        return cycles
 
     def rep_ex(self,count=0):
         ''' replicate extensive components (atoms, pairs, bonds, angles, dihedrals) '''
@@ -651,6 +700,9 @@ class Topology:
 
     def get_atom(self,idx):
         return self.D['atoms'].iloc[idx-1]
+
+    def get_atom_attribute(self,idx,attribute):
+        return self.D['atoms'].iloc[idx-1][attribute]
 
     def get_atomtype(self,idx):
 #        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')

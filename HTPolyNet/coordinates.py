@@ -10,6 +10,8 @@ from copy import deepcopy
 import logging
 
 from HTPolyNet.bondlist import Bondlist
+from HTPolyNet.linkcell import Linkcell
+from HTPolyNet.ring import Ring,Segment
 
 def get_atom_attribute(df,name,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
@@ -58,6 +60,21 @@ def set_atom_attribute(df,name,value,attributes):
         df.loc[list(l),cidx]=value
         # logging.debug(f'Result: {df.loc[list(l),cidx]}')
 
+def set_atoms_attributes_from_dict(df,valdict,attributes):
+    ga={k:v for k,v in attributes.items() if k in df}
+    exla={k:v for k,v in attributes.items() if not k in df}
+    if len(exla)>0:
+        logging.warning(f'using unknown attributes to refer to atom: {exla}')
+    if all([x in df for x in valdict]) and len(ga)>0:
+        c=[df[k] for k in ga]
+        V=list(ga.values())
+        l=[True]*df.shape[0]
+        for i in range(len(c)):
+            l = (l) & (c[i]==V[i])
+        for k,v in valdict.items():
+            cidx=[c==k for c in df.columns]
+            df.loc[list(l),cidx]=v 
+
 _ANGSTROM_='Ångström'
 
 class Coordinates:
@@ -81,6 +98,7 @@ class Coordinates:
         self.A=pd.DataFrame()
         self.mol2_bonds=pd.DataFrame()
         self.mol2_bondlist=Bondlist()
+        self.linkcell=Linkcell()
         self.empty=True
         self.box=np.zeros((3,3))
         
@@ -193,19 +211,104 @@ class Coordinates:
             self.A[c]=otherpos
         self.box=np.copy(other.box)
 
-    def inherit_z(self,molecules):
+    def inherit_attributes_from_molecules(self,attributes=[],molecules={}):
+        ''' transfer any resname-atomname specific attributes from molecular templates to all residues in 
+            self.  Attributes to transfer are in the list 'attributes' and the dictionary
+            of molecular templates is in 'molecules' '''
         assert type(molecules)==dict,'Must pass a *dictionary* name:Molecule as parameter "molecules"'
         a=self.A
-        a['z']=[0]*a.shape[0]
-        for mname,M in molecules.items():
-            logging.debug(f'Inheriting z from {mname}\n{M.Coords.A.to_string()}')
-            if mname in a['resName']:
-                for i,ma in M.Coords.A.iterrows():
+        logging.debug(f'{a.shape[0]} atoms inheriting values of {attributes} from molecular templates.')
+        for att in attributes:
+            a[att]=[0]*a.shape[0]
+        for resname in a['resName'].unique():
+            ''' resname is a unique residue name in the system '''
+            if resname in molecules:
+                adf=molecules[resname].Coords.A
+                for i,ma in adf.iterrows():
                     atomName=ma['atomName']
-                    resName=ma['resName']
-                    z=ma['z']
-                    set_atom_attribute(a,'z',z,{'atomName':atomName,'resName':resName})
-        logging.debug(f'Inherited z from reactants.  Here are all atoms for which z>0:\n{a[a["z"]>0].to_string()}')
+                    z=ma[attributes].to_dict()
+                    logging.debug(f'{resname} {atomName} {z}')
+                    set_atoms_attributes_from_dict(a,z,{'atomName':atomName,'resName':resname})
+            else:
+                logging.warning(f'Resname {resname} not found in molecular templates')
+
+    def rings(self): # an iterator
+        a=self.A
+        for resid in a['resNum']:
+            mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
+            if not mr.empty:
+                for ri in mr['cycle-idx'].unique():
+                    R=mr[mr['cycle-idx']==ri][['posX','posY','posZ']].values
+                    yield R
+
+    def unwrap(self,R):
+        for c in range(3):
+            hbx=self.box[c][c]/2
+            if R[c]<-hbx:
+                R[c]+=self.box[c][c]
+            elif R[c]>hbx:
+                R[c]-=self.box[c][c]
+        return R
+
+    def pierces(self,i,j,C):
+        # this filter is only called for atoms that are within 
+        # cutoff distance of each other
+        ri=self.A.iloc[i-1][['posX','posY','posZ']].values
+        rj=self.A.iloc[j-1][['posX','posY','posZ']].values
+        o=0.5*(ri+rj)
+        ris=self.unwrap(ri-o)
+        rjs=self.unwrap(rj-o)
+        CS=[]
+        for c in C:
+            CS.append(self.unwrap(c-o))
+        # we will shift all coords to this origin and then 
+        # unwrap if necessary
+        S=Segment(np.array([ris,rjs]))
+        R=Ring(np.array(CS))
+        pierces,point=R.segint(S)
+        return pierces
+
+    def linkcellrings(self,ends=[]):
+        assert len(ends)==2
+        c=[]
+        for i in ends:
+            c.append(self.get_atom_attribute('linkcell-idx',{'globalIdx':i}))
+        pass
+
+    def ringpierce(self,i,j):
+        if hasattr(self,'linkcell'):
+            # only sample rings that lie in cells through
+            # which the i-j vector passes
+            for r in self.linkcellrings([i,j]):
+                if self.pierces(i,j,r):
+                    return True
+        else:
+            for r in self.rings():
+                if self.pierces(i,j,r):
+                    return True
+        return False
+
+    def linkcelltest(self,i,j):
+        adf=self.A
+        ci=self.get_atom_attribute('linkcell-idx',{'globalIdx':i})
+        cj=self.get_atom_attribute('linkcell-idx',{'globalIdx':j})
+        if self.linkcell.neighbors(ci,cj):
+            return True
+        return False
+
+    def bondtest(self,b,radius):
+        i,j=b
+        if hasattr(self,'linkcell'):
+            if not self.linkcelltest(i,j):
+                return False
+        rij=self.rij(i,j)
+        logging.debug(f'pbond {b} rij {rij:.3f}')
+        if rij>radius:
+            return False
+        # if self.ringpierce(i,j):
+        #     return False
+        return True
+
 
     def geometric_center(self):
         a=self.A
@@ -217,6 +320,7 @@ class Coordinates:
             globalIdx-1! '''
         if np.any(pbc) and not np.any(self.box):
             logging.warning('Interatomic distance calculation using PBC with no boxsize set.')
+
         ri=self.A.iloc[i-1][['posX','posY','posZ']].values
         rj=self.A.iloc[j-1][['posX','posY','posZ']].values
         rij=ri-rj
@@ -526,6 +630,7 @@ class Coordinates:
                 ''' write substructure section '''
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
+    
 """
 MOL2 Format
 

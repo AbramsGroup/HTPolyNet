@@ -1,5 +1,5 @@
 Title: FDE/DFDA thermoset
-initial_density: 200.0  # kg/m3
+initial_density: 300.0  # kg/m3
 SCUR_cutoff: 0.5 # nm
 conversion: 0.95
 late_treshhold: 0.85  # conversion above which bond formation probabilities are ignored

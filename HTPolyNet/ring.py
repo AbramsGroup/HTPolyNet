@@ -39,25 +39,15 @@ def lawofcos(a,b):
 
 class Segment:
     def __init__(self,P):
-        self.P=P
+        self.P=P.copy()
+        # will need to recompute this when molecules are shifted
         self.V=self.P[1]-self.P[0] # p1=p0+t*(p1-p0)
     def length(self):
         return np.sqrt(np.sum(self.P[0]-self.P[1]))
-    def plot(self,ax):
-        x=[p[0] for p in self.P]
-        y=[p[1] for p in self.P]
-        z=[p[2] for p in self.P]
-        ax.plot(x,y,z,marker='o',color='blue')
-    def rotate(self,R):
-        newP=[]
-        for p in self.P:
-            newP.append(R.rotvec(p))
-        self.P=newP
-        self.V=self.P[1]-self.P[0] # p1=p0+t*(p1-p0)
 
 class Ring:
     def __init__(self,P):
-        self.V=P # Nx3 np array P[i] is point-i (x,y,z)
+        self.V=P.copy() # Nx3 np array P[i] is point-i (x,y,z)
     def analyze(self):
         # geometric center
         self.O=np.zeros(shape=(3))
@@ -97,21 +87,6 @@ class Ring:
             p=r-np.dot(r,self.n)*self.n
             newv=p+self.O
             self.vP.append(newv)
-    def plot(self,ax):
-        x=[p[0] for p in R.V]
-        x.append(R.V[0][0])
-        y=[p[1] for p in R.V]
-        y.append(R.V[0][1])
-        z=[p[2] for p in R.V]
-        z.append(R.V[0][2])
-        ax.plot(x,y,z,marker='o',color='black')
-        ax.scatter(self.O[0],self.O[1],self.O[2],marker='o',color='green')
-    def rotate(self,R):
-        newV=[]
-        for v in self.V:
-            newV.append(R.rotvec(v))
-        self.V=newV
-        self.analyze() # recompute stuff
     def segint(self,S):
         # determines if segment S pierces ring; uses ray projection method
         # and fact that scaled length must be between 0 and 1 for a plane intersection
@@ -120,7 +95,7 @@ class Ring:
             # compute point in ring plane that marks intersection with this vector
             P=S.P[0]+t*S.V
             # determine if P is inside ring:
-            # 1. project every ring vertex into the commone plane (if necessary)
+            # 1. project every ring vertex into the common plane (if necessary)
             self.self_planarize()
             OP=self.O-P
             inside=True
@@ -139,82 +114,3 @@ class Ring:
             return inside, P
         return False, np.zeros(3)*np.nan
 
-class RotMat:
-    # just a silly way to handle rotation matrices
-    def __init__(self,rdict={}):
-        self.R=np.identity(3)
-        for ax,ang in rdict.items():
-            c=np.cos(ang)
-            s=np.sin(ang)
-            if ax=='x':
-                tR=np.array([[1,0,0],[0,c,-s],[0,s,c]])
-            elif ax=='y':
-                tr=np.array([[c,0,s],[0,1,0],[-s,0,c]])
-            elif ax=='z':
-                tr=np.array([[c,-s,0],[s,c,0],[0,0,1]])
-            else:
-                tr=np.identity(3)
-            tR=np.matmul(tr,self.R)
-            self.R=tR
-    def rotvec(self,v):
-        return np.matmul(self.R,v)
-
-if __name__=='__main__':
-    # Testing and examples
-    # make a hexagon with a little z-noise
-    o3=np.sqrt(3)/2
-    R=Ring(np.array([[0, 1, 0.03],[ o3, 0.5,-0.04],[ o3,-0.5, 0.02],
-                     [0,-1,-0.06],[-o3,-0.5, 0.02],[-o3, 0.5,-0.01]]))
-    R.analyze()
-    print('planarity={:.4f}'.format(R.planarity))
-    # make a segment that crosses this plane
-    S1=Segment(np.array([[-0.65,0.5,0.5],[0.5,-0.3,-0.2]]))
-    is_in,I=R.segint(S1)
-    if is_in:
-        print('seg S1 intersects ring at',I)
-    elif not np.any(np.isnan(I)):
-        print('seg S1 intersects plane outside ring at',I)
-    else:
-        print('seg S1 does not intersect plane')
-    # make a segment that does not
-    S2=Segment(np.array([[0.5,0.5,0.5],[0.75,0.75,-0.1]]))
-    is_in2,I2=R.segint(S2)
-    if is_in2:
-        print('seg S2 intersects ring at',I2)
-    elif not np.any(np.isnan(I2)):
-        print('seg S2 intersects plane outside ring at',I2)
-    else:
-        print('seg S2 does not intersect plane')
-    
-    # now just checking if we rotate everything in 3-space
-    # arbitrarily:
-    # make a random rotation matrix
-    M=RotMat({'z':np.pi/7,'y':np.pi/12,'x':0})
-    # rotate hexagon in 3-space as rigid body
-    R.rotate(M)
-    S1.rotate(M)
-    S2.rotate(M)
-    is_in,I=R.segint(S1)
-    is_in2,I2=R.segint(S2)
-    if is_in:
-        print('seg S1 intersects ring at',I)
-    elif not np.any(np.isnan(I)):
-        print('seg S1 intersects plane outside ring at',I)
-    else:
-        print('seg S1 does not intersect plane')
-    import matplotlib.pyplot as plt
-    fig=plt.figure(figsize=(8,8))
-    ax=fig.add_subplot(projection='3d')
-    R.plot(ax)
-    S1.plot(ax)
-    S2.plot(ax)
-    if not np.any(np.isnan(I)):
-        ax.plot([I[0]],[I[1]],[I[2]],marker='o',color='red')
-    if not np.any(np.isnan(I)):
-        ax.plot([I2[0]],[I2[1]],[I2[2]],marker='o',color='purple')
-    ax.set_xlim([-1,1])
-    ax.set_ylim([-1,1])
-    ax.set_zlim([-1,1])
-    plt.show()
-    
-            

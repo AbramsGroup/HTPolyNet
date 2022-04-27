@@ -1,4 +1,6 @@
 ''' a simple class for constructing a two-way bondlist dictionary '''
+import numpy as np
+import networkx as nx
 
 class Bondlist:
     def __init__(self):
@@ -32,7 +34,12 @@ class Bondlist:
         if idx in self.B:
             return self.B[idx]
         return []
-        
+
+    def are_bonded(self,idx,jdx):
+        if idx in self.B and jdx in self.B:
+            return jdx in self.B[idx]
+        return False
+
     def append(self,pair=[]):
         if len(pair)==2:
             ai,aj=min(pair),max(pair)
@@ -54,3 +61,20 @@ class Bondlist:
                 if i in v:
                     self.B[k].remove(i)
     
+    def adjacency_matrix(self):
+        N=len(self.B)
+        A=np.zeros((N,N)).astype(int)
+        for i,n in self.B.items():
+            for j in n:
+                A[i-1,j-1]=1
+                A[j-1,i-1]=1
+        return A
+
+    def graph(self):
+        g=nx.DiGraph()
+        N=len(self.B)
+        g.add_nodes_from(list(range(N)))
+        for i,n in self.B.items():
+            for j in n:
+                g.add_edge(i-1,j-1)
+        return g

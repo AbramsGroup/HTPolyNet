@@ -1,7 +1,7 @@
 title       = NPT Equilibration 
 ; Run parameters
 integrator  = md                ; leap-frog integrator
-nsteps      = 100000             ; 2 * 50,000 = 100 ps
+nsteps      = 150000             ; 2 * 50,000 = 100 ps
 dt          = 0.002             ; 2 fs
 ; Output control
 nstxout     = 500              ; save coordinates every 2 ps
