@@ -33,20 +33,19 @@ from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
     def __init__(self,cfgfile='',restart=False):
+        logging.info(f'Generating new htpolynet runtime!')
         logging.info(software.to_string())
         if cfgfile=='':
             logging.error('HTPolyNet requires a configuration file.\n')
             raise RuntimeError('HTPolyNet requires a configuration file.')
         self.cfg=Configuration.read(cfgfile)
-        ''' Create the initial file system for the project.  If this is 
-            a restart, reference the newest project directory in the current
-            directory.  If this is not a restart, generate the *next* 
-            project directory. '''
-        logging.info(f'Read configuration from {cfgfile}')
-        ''' initialize an empty topology '''
+        logging.info(f'Configuration: {cfgfile}')
+        ''' initialize an empty topology and coordinates '''
         self.Topology=Topology(system=self.cfg.Title)
         self.Coordinates=Coordinates()
-        logging.info(f'New htpolynet runtime: empty topology {self.Topology.empty} empty coordinates {self.Coordinates.empty}')
+        self.cfg.parameters['restart']=restart
+        if self.cfg.parameters['restart']:
+            logging.info(f'***** THIS IS A RESTART *****')
 
     def checkout(self,filename,altpath=None):
         if not pfs.checkout(filename):
@@ -169,7 +168,7 @@ class HTPolyNet:
 
     def setup_liquid_simulation(self):
         # go to the results path, make the directory 'init', cd into it
-        cwd=pfs.next_results_dir()
+        cwd=pfs.next_results_dir(restart=self.cfg.parameters['restart'])
         # fetch unreacted init.top amd all monomer gro's 
         # from parameterization directory
         self.checkout('init.top',altpath=pfs.subpath('systems'))
@@ -200,8 +199,10 @@ class HTPolyNet:
             logging.info(f'Molecule to gromacs: {m} ({M.name})')
         for m,c in c_togromacs.items():
             logging.info(f'Composition to gromacs: {m} {c}')
-        msg=insert_molecules(m_togromacs,c_togromacs,boxsize,'init')
-        logging.info(msg)
+        if not os.path.exists('init.gro'): 
+            msg=insert_molecules(m_togromacs,c_togromacs,boxsize,'init')
+        else:
+            logging.info(f'init.gro exists -- not inserting any more molecules')
         self.Coordinates=Coordinates.read_gro('init.gro')
         self.Coordinates.inherit_attributes_from_molecules(['z','cycle-idx'],self.cfg.molecules)
         # for r in self.Coordinates.rings():
@@ -211,15 +212,18 @@ class HTPolyNet:
         logging.info('Generated init.top and init.gro.')
 
     def do_liquid_simulation(self):
-        msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
-        # TODO: modify this to run in stages until volume is equilibrated
-        msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
-        logging.info('Final configuration in npt-1.gro\n')
+        if os.path.exists('npt-1.gro') and self.cfg.parameters['restart']:
+            logging.info(f'npt-1.gro exists in {os.getcwd()}; skipping initial NPT md.')
+        else:
+            msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
+            # TODO: modify this to run in stages until volume is equilibrated
+            msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
+            logging.info('Generated configuration npt-1.gro\n')
         sacmol=Coordinates.read_gro('npt-1.gro')
         # ONLY copy posX, posY, and poxZ attributes!
         self.Coordinates.copy_coords(sacmol)
         self.Coordinates.box=sacmol.box.copy()
-        self.Coordinates.linkcell.update()
+        self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'])
         pfs.cd('root')
 
     def SCUR(self):
@@ -284,10 +288,12 @@ class HTPolyNet:
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
                 Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
-                logging.debug(f'   {len(Pbonds)} potential bonds to evaluate.')
+                logging.debug(f'*** {len(Pbonds)} potential bonds')
                 for p in Pbonds:
+                    logging.debug(f'-> bond {p}')
                     if self.Coordinates.bondtest(p,radius):
                         newbonds.append((p,R.product))
+                logging.debug(f'*** {len(newbonds)} out of {len(Pbonds)} bonds pass initial filter')
                 #logging.debug(f'     Aset {Aset.shape[0]}\n{Aset.to_string()}')
                 #logging.debug(f'     Bset {Bset.shape[0]}\n{Bset.to_string()}')
                 # logging.debug('Here are some potential pairs based on name/resname/z')
@@ -338,8 +344,8 @@ class HTPolyNet:
         )
         self.initialize_global_topology()
         self.setup_liquid_simulation()
-        self.do_liquid_simulation()
-        self.SCUR()
+#        self.do_liquid_simulation()
+#        self.SCUR()
 
 def info():
     print('This is some information on your installed version of HTPolyNet')
@@ -361,19 +367,18 @@ def cli():
     ''' set up logging '''
     logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
     logging.info('HTPolyNet Runtime begins.')
-
+    logging.info(f'Restart? {args.restart}')
     ''' set up the project file system and access to HTPolyNet libraries '''
     userlib=None
     if args.lib!='':
         userlib=args.lib
     pfs.pfs_setup(root=os.getcwd(),verbose=True,reProject=args.restart,userlibrary=userlib)
-
     software.sw_setup()
 
     if args.command=='info':
         info()
     elif args.command=='run':
-        a=HTPolyNet(cfgfile=args.cfg)
+        a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
         a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization,force_sea_calculation=args.force_sea_calculation)
     else:
         print(f'HTPolyNet command {args.command} not recognized')

@@ -210,8 +210,7 @@ class ProjectFileSystem:
         else:
             self.projPath=os.path.join(self.rootPath,lastprojdir)
 
-    def _setup_project_root(self):
-#        self.cdroot()
+    def _setup_project_root(self,maxstages=100):
         os.chdir(self.projPath)
         self.projSubPaths={}
         for tops in ['molecules','systems','results']:
@@ -221,16 +220,12 @@ class ProjectFileSystem:
         self.moleculesPath=self.projSubPaths['molecules']
         self.systemsPath=self.projSubPaths['systems']
         self.resPath=self.projSubPaths['results']
-        os.chdir(self.systemsPath)
-#        self.systemsSubPaths={}
+        os.chdir(self.resPath)
         self.resultsSubPaths={}
-        # for tops in ['rctSystems','unrctSystems']:
-        #     self.systemsSubPaths[tops]=os.path.join(self.systemsPath,tops)
-        #     if not os.path.isdir(self.systemsSubPaths[tops]):
-        #         os.mkdir(tops)
-        # self.unrctPath=self.systemsSubPaths['unrctSystems']
-        # self.rctPath=self.systemsSubPaths['rctSystems']
-
+        possibles=['init',*[f'step{i}' for i in range(maxstages)]]
+        for p in possibles:
+            if os.path.exists(p) and os.path.isdir(p):
+                self.resultsSubPaths[p]=os.path.join(self.resPath,p)
 _PFS_=None
 
 def pfs_setup(root='.',verbose=False,reProject=False,userlibrary=None,mock=False):
@@ -266,15 +261,21 @@ def cd(pathstring):
             return _PFS_.cwd
     raise Exception(f'Path {pathstring} cannot be located in the project file system')
     
-def next_results_dir(maxstages=100):
+def next_results_dir(restart=False,maxstages=100):
     possibles=['init',*[f'step{i}' for i in range(maxstages)]]
     for p in possibles:
-        if not p in _PFS_.resultsSubPaths:
+        if p in _PFS_.resultsSubPaths:
+            lastp=p
+        else:
             break
-    newpath=os.path.join(_PFS_.resPath,p)
-    logging.debug(f'Making {newpath}')
-    os.mkdir(newpath)
-    _PFS_.resultsSubPaths[p]=newpath
+    logging.debug(f'next_results_dir {lastp} {p} {restart}')
+    if not restart:
+        cpath=os.path.join(_PFS_.resPath,p)
+        logging.debug(f'Making {cpath}')
+        os.mkdir(cpath)
+        _PFS_.resultsSubPaths[p]=cpath
+    else:
+        p=lastp
     return cd(p)
 
 def local_data_searchpath():
