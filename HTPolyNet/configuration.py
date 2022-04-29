@@ -166,3 +166,53 @@ class Configuration:
         for nR in extra_reactions:
             logging.debug(f'symmetry-derived reaction {nR.name} atoms {nR.atoms}')
         self.reactions.extend(extra_reactions)
+
+    def calculate_maximum_conversion(self):
+        # TODO: fix this fuckin thing
+        M=0
+        atomset=[]
+        for R in self.reactions:
+            for b in R.bonds:
+                A,B=b['atoms']
+                a,b=R.atoms[A],R.atoms[B]
+                a['resName']=R.reactants[a['reactant']]
+                del a['reactant']
+                b['resName']=R.reactants[b['reactant']]
+                del b['reactant']
+                if not a in atomset:
+                    atomset.append(a)
+        logging.debug(f'atomset: {atomset}')
+
+        #         za,zb=R.atoms[A]['z'],R.atoms[B]['z']
+        #         rA,rB=R.reactants[a['reactant']],R.reactants[b['reactant']]
+        #         if rA!=rB: # ignore intramolecular reactions
+        #             nrA=nrB=0
+        #             for m in self.initial_composition:
+        #                 if m['molecule']==rA:
+        #                     nrA=m['count']
+        #                 elif m['molecule']==rB:
+        #                     nrB=m['count']
+        #             nza=nrA*za
+        #             nzb=nrB*zb
+        #             if not a in zBank:
+        #                 zBank[a]=0
+        #             zBank[a]+=nza
+        #             if not b in zBank:
+        #                 zBank[b]=0
+        #             zBank[b]+=nzb
+                    
+        #             nza_avail=min(nza,zBank[a])
+        #             nzb_avail=min(nzb,zBank[b])
+        #             b['maxconv']=np.min([nza_avail,nzb_avail])
+        #             logging.debug(f'bonds possible for {R.name}{b}: {b["maxconv"]}')
+        #             M+=b['maxconv']
+        #             zBank[a]-=nza_avail
+        #             zBank[b]-=nza_avail
+        #             bal=nrA*Az-nrB*Bz
+        #             if bal>0:
+        #                 b['limiting-reactant']=rB
+        #             elif bal<0:
+        #                 b['limiting-reactant']=rA
+        #             else:
+        #                 b['limiting-reactant']=None
+        # return M

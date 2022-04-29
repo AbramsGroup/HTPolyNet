@@ -113,6 +113,7 @@ class Topology:
         self.D['system']=pd.DataFrame({'name':[system]})
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
+        self.residue_network=nx.DiGraph()
         self.empty=True
 
     @classmethod
@@ -606,7 +607,6 @@ class Topology:
             self.D[directive]=other.D[directive]
 
     def merge(self,other):
-        # TODO: duplicate dihedral type check
         logging.debug('Topology.merge begins')
         self.merge_ex(other)
         self.merge_types(other)
@@ -706,5 +706,19 @@ class Topology:
     def get_atomtype(self,idx):
 #        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')
         return self.D['atoms'].iloc[idx-1].type
+
+    def make_resid_graph(self):
+        N=self.D['atoms'].shape[0]
+        self.residue_network=nx.DiGraph()
+        self.residue_network.add_nodes_from(list(range(1,N+1)))
+        for i in range(1,N+1):
+            ri=self.get_atom_attribute(i,'resnr')
+            for j in self.bondlist.partners_of(i):
+                rj=self.get_atom_attribute(j,'resnr')
+                if ri!=rj and not self.residue_network.has_edge(ri,rj):
+                    self.residue_network.add_edge(ri,rj)
+
+
+
 
 

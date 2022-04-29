@@ -136,6 +136,9 @@ class HTPolyNet:
         for M in self.molecules.values():
             M.inherit_sea_from_reactants(self.molecules,self.cfg.use_sea)
         self.cfg.symmetry_expand_reactions()
+        self.cfg.maxconv=self.cfg.calculate_maximum_conversion()
+        logging.info(f'Maximum conversion is {self.cfg.maxconv} bonds.')
+        # TODO: calculate maximum conversion
         precursors=[M for M in self.molecules.values() if not M.generator]
         for M in precursors:
             M.propagate_z(self.cfg.reactions,self.molecules)
@@ -210,6 +213,7 @@ class HTPolyNet:
         #     logging.debug(f'a ring: {r}')
         self.Coordinates.write_atomset_attributes(['cycle-idx','z'],'init.grx')
         self.Coordinates.make_ringlist()
+        self.Topology.make_resid_graph()
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         logging.info('Generated init.top and init.gro.')
 
@@ -222,7 +226,7 @@ class HTPolyNet:
             msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
             logging.info('Generated configuration npt-1.gro\n')
         density_trace('npt-1')
-        
+
         sacmol=Coordinates.read_gro('npt-1.gro')
         # ONLY copy posX, posY, and poxZ attributes!
         self.Coordinates.copy_coords(sacmol)
@@ -239,6 +243,7 @@ class HTPolyNet:
 
     def SCUR(self):
         # Search - Connect - Update - Relax
+        cwd=pfs.next_results_dir(restart=self.cfg.parameters['restart'])
         logging.info('*'*10+' SEARCH - CONNECT - UPDATE - RELAX  BEGINS '+'*'*10)
         max_nxlinkbonds=int(self.Coordinates.A['z'].sum()/2) # only for a stoichiometric system
         logging.debug(f'SCUR: max_nxlinkbonds {max_nxlinkbonds}')
