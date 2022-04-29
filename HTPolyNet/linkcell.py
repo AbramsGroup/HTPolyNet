@@ -3,9 +3,10 @@ import logging
 from itertools import product
 
 class Linkcell:
+    ''' A class for implementing the link-cell algorithm for pairwise searches '''
     def __init__(self,box=[],cutoff=None):
         self.box=box
-        self.cutoff=None
+        self.cutoff=cutoff
 
     def create(self,cutoff,box,origin=np.array([0.,0.,0.])):
         logging.debug(f'Linkcell.create() begins')
@@ -16,12 +17,13 @@ class Linkcell:
         self.origin=origin
         self.ncells=np.floor(self.box/self.cutoff).astype(int)
         self.celldim=box/self.ncells
-        self.cells=np.zeros((*self.ncells,3))
-        self.cellidx=np.array(list(product(*[np.arange(x) for x in self.ncells])))
-        for t in self.cellidx:
+        self.cells=np.zeros((*self.ncells,3)) # array of 3-float cell corners
+        self.cellndx=np.array(list(product(*[np.arange(x) for x in self.ncells]))) # list of 3-index tuples
+        for t in self.cellndx:
             i,j,k=t
             self.cells[i,j,k]=self.celldim*np.array([i,j,k])+self.origin
-        logging.debug(f'Linkcell.create() ends; structure has {len(self.cellidx)} cells ({self.ncells}) dim {self.celldim}')
+        self.make_neighborlists()
+        logging.debug(f'Linkcell.create() ends; structure has {len(self.cellndx)} cells ({self.ncells}) dim {self.celldim}')
 
     def point_in_box(self,R):
         LL=self.origin
@@ -31,56 +33,95 @@ class Linkcell:
         return lt and gt
     
     def wrap_point(self,R):
+        ''' wraps a point that lies outside the overall box back into the box '''
         if self.point_in_box(R):
             return R
         nR=R.copy()
         for d in range(0,3):
             if nR[d]<self.origin[d]:
                 nR[d]+=self.box[d]
-            elif nR[d]>self.origin[d]+self.box[d]:
+            elif nR[d]>(self.origin[d]+self.box[d]):
                 nR[d]-=self.box[d]
         return nR
 
-    def cell_of_point(self,R):
-        return np.floor(self.wrap_point(R)*np.reciprocal(self.celldim)).astype(int)
+    def cellndx_of_point(self,R):
+        return np.floor(R*np.reciprocal(self.celldim)).astype(int)
 
-    def point_in_cell(self,R,C):
-        LL,UU=self.corners_of_cell(C)
+    def point_in_cellndx(self,R,C):
+        LL,UU=self.corners_of_cellndx(C)
         gt=all(R>=LL)
         lt=all(R<UU)
         return lt and gt
 
-    def corners_of_cell(self,C):
+    def corners_of_cellndx(self,C):
         LL=self.cells[C[0],C[1],C[2]]
         UU=LL+self.celldim
         return np.array([LL,UU])
 
-    def cell_in_structure(self,C):
+    def cellndx_in_structure(self,C):
         return all(np.zeros(3)<=C) and all(C<self.ncells)
 
-    def index_of_cell(self,C):
-        return self.ncells[0]*self.ncells[1]*C[0]+self.ncells[1]*C[1]+C[2]
+    def ldx_of_cellndx(self,C):
+        nc=self.ncells
+        xc=C[0]*nc[1]*nc[2]+C[1]*nc[1]+C[2]
+        return xc
 
     def populate(self,Coordinates):
         ''' Set the linkcell-idx attribute of every atom and create
             each cell's list of members (each element is a globalIdx) '''
         N=Coordinates.A.shape[0]  # Coordinates.N should also work
-        logging.debug('Linkcell.populate() assigning cell indices to {N} atoms in {self.box}')
+        logging.debug(f'Linkcell.populate() assigning cell indices to {N} atoms in {self.box}...')
         Coordinates.set_atomset_attribute('linkcell-idx',-1*np.ones(N).astype(int))
-        # self.memberlists=[[]]*len(self.cellidx)
+        self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
         for i in range(N):
             R=Coordinates.get_R(i+1)
-            C=self.cell_of_point(self.wrap_point(R))
-            idx=self.index_of_cell(C)
+            C=self.cellndx_of_point(self.wrap_point(R))
+            idx=self.ldx_of_cellndx(C)
             Coordinates.set_atom_attribute('linkcell-idx',idx,{'globalIdx':i+1})
-            # self.memberlists[idx].append(i+1)
-        logging.debug('Linkcell.populate() ends.')
+            self.memberlists[idx].append(i+1)
+        amm=np.array([0.,1e9,-1e9])
+        for i in range(len(self.memberlists)):
+            c=len(self.memberlists[i])
+            amm[0]+=c
+            if c<amm[1]:
+                amm[1]=c 
+            elif c>amm[2]:
+                amm[2]=c
+        amm[0]/=len(self.memberlists)
+        logging.debug(f'Linkcell.populate() ends. Max: {amm[2]:.0f} min {amm[1]:.0f} avg {amm[0]:0.3f}')
 
-    def next_j(self,i,Coordinates):
-        pass
+    def make_neighborlists(self):
+        self.neighborlists=[[] for _ in range(self.cellndx.shape[0])]
+        for C in self.cellndx:
+            idx=self.ldx_of_cellndx(C)
+            for D in self.neighbors_of_cellndx(C):
+                self.neighborlists[idx].append(self.ldx_of_cellndx(D))
 
-    def neighbors_of_cell(self,Ci):
-        assert self.cell_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
+    def make_memberlists(self,cdf):
+        self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
+        logging.debug(f'Generated {len(self.memberlists)} empty memberlists {len(self.memberlists[0])}.')
+        for i,r in cdf.iterrows():
+            cidx=r['linkcell-idx']
+            idx=r['globalIdx']
+            self.memberlists[cidx].append(idx)
+            # logging.debug(f'Added {idx} as element {len(self.memberlists[cidx])} to cell {cidx}')
+        amm=np.array([0.,1e9,-1e9])
+        for i in range(len(self.memberlists)):
+            c=len(self.memberlists[i])
+            # logging.debug(f'Cell {i} has {c} members.')
+            # for j in range(len(self.memberlists[i])):
+                # logging.debug(f'->{j}: {self.memberlists[i][j]}')
+            amm[0]+=c
+            if c<amm[1]:
+                amm[1]=c 
+            elif c>amm[2]:
+                amm[2]=c
+        assert amm[0]==cdf.shape[0]
+        amm[0]/=len(self.memberlists)
+        logging.debug(f'Linkcell.make_memberlists() ends. Max: {amm[2]:.0f} min {amm[1]:.0f} avg {amm[0]:0.3f}')
+
+    def neighbors_of_cellndx(self,Ci):
+        assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
         retlist=[]
         for d in range(3):
             p=np.zeros(3).astype(int)
@@ -94,9 +135,9 @@ class Linkcell:
                 retlist.append(nCi)
         return retlist
 
-    def are_cells_neighbors(self,Ci,Cj):
-        assert self.cell_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
-        assert self.cell_in_structure(Cj),f'Error: cell {Cj} outside of cell structure {self.ncells}'
+    def are_cellndx_neighbors(self,Ci,Cj):
+        assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
+        assert self.cellndx_in_structure(Cj),f'Error: cell {Cj} outside of cell structure {self.ncells}'
         oneaway=np.array([False,False,False])
         for d in range(0,3):
             dd=Ci[d]-Cj[d]
@@ -108,24 +149,24 @@ class Linkcell:
             oneaway[d]=add==1
         return oneaway.astype(int).sum()==1
 
-    def are_cellidx_neighbors(self,cix,cjx):
-        Ci=self.cellidx[cix]
-        Cj=self.cellidx[cjx]
-        return self.are_cells_neighbors(Ci,Cj)
-
-    def update(self,adf):
-        pass
+    def are_ldx_neighbors(self,ildx,jldx):
+        return jldx in self.neighborlists[ildx]
 
 if __name__=='__main__':
-    box=np.array([10.,10.,10.])
-    cutoff=2.1
+    box=np.array([4.7,4.7,4.7])
+    cutoff=0.5
     L=Linkcell()
     L.create(cutoff,box)
-    c2=np.array([0,0,0])
-    for C in L.neighbors_of_cell(c2):
-        print(c2,C,L.are_cells_neighbors(C,c2))
-    
-    p=np.array([3.4,5.7,7.9])
-    C=L.cell_of_point(p)
-    i=L.index_of_cell(C)
-    print(p,C,L.point_in_cell(p,C),i,L.cellidx[i])
+    check1=[]
+    for i,C in enumerate(L.cellndx):
+        check1.append(i==L.ldx_of_cellndx(C))
+    print(f'check1 {all(check1)}')
+    check2=[]
+    for i,C in enumerate(L.cellndx):
+        n=0
+        for j,dldx in enumerate(L.neighborlists[i]):
+            D=L.cellndx[dldx]
+            check2.append(L.are_cellndx_neighbors(C,D))
+            n+=1
+        assert n==6
+    print(f'check2 {all(check2)}')

@@ -155,7 +155,7 @@ class RuntimeLibrary:
 
 class ProjectFileSystem:
     def __init__(self,root='.',verbose=False,reProject=False,userlibrary=None,mock=False):
-        self.rootPath=pathlib.Path(root).resolve()
+        self.rootPath=os.path.abspath(root)
         self.cwd=self.rootPath
         self.verbose=verbose
         self.cd(self.rootPath)
@@ -213,13 +213,14 @@ class ProjectFileSystem:
     def _setup_project_root(self,maxstages=100):
         os.chdir(self.projPath)
         self.projSubPaths={}
-        for tops in ['molecules','systems','results']:
+        for tops in ['molecules','systems','results','plots']:
             self.projSubPaths[tops]=os.path.join(self.projPath,tops)
             if not os.path.isdir(self.projSubPaths[tops]):
                 os.mkdir(tops)
         self.moleculesPath=self.projSubPaths['molecules']
         self.systemsPath=self.projSubPaths['systems']
         self.resPath=self.projSubPaths['results']
+        self.plotsPath=self.projSubPaths['plots']
         os.chdir(self.resPath)
         self.resultsSubPaths={}
         possibles=['init',*[f'step{i}' for i in range(maxstages)]]
@@ -263,6 +264,7 @@ def cd(pathstring):
     
 def next_results_dir(restart=False,maxstages=100):
     possibles=['init',*[f'step{i}' for i in range(maxstages)]]
+    lastp=None
     for p in possibles:
         if p in _PFS_.resultsSubPaths:
             lastp=p

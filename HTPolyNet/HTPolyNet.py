@@ -12,7 +12,7 @@ from itertools import product
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
-from HTPolyNet.coordinates import Coordinates
+from HTPolyNet.coordinates import Coordinates, BTRC
 # import HTPolyNet.searchBonds as searchBonds
 # import HTPolyNet.genBonds as genBonds
 # import HTPolyNet.generateChargeDb as generateChargeDb
@@ -27,7 +27,7 @@ from HTPolyNet.topology import Topology
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 #from HTPolyNet.command import Command
-from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun
+from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace
 #from HTPolyNet.molecule import Molecule
 
 class HTPolyNet:
@@ -116,6 +116,7 @@ class HTPolyNet:
                         if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
                             logging.info(f'Doing SEA calculation on {mname}')
                             M.calculate_sea()
+                            M.Coords.write_atomset_attributes(['sea-idx'],f'{M.name}.sea')
                             checkin(f'molecules/parameterized/{mname}.sea',overwrite=force_checkin)
                         else:
                             logging.debug(f'Reading sea data into {M.name}')
@@ -184,7 +185,7 @@ class HTPolyNet:
             V0_m3=mass_kg/self.cfg.parameters['initial_density']
             L0_m=V0_m3**(1./3.)
             L0_nm=L0_m*1.e9
-            logging.info(f'Initial density {self.cfg.parameters["initial_density"]} kg/m^3 and total mass {mass_kg} kg dictate an initial box side length of {L0_nm} nm')
+            logging.info(f'Initial density {self.cfg.parameters["initial_density"]} kg/m^3 and total mass {mass_kg:.3f} kg dictate an initial box side length of {L0_nm:.3f} nm')
             boxsize=[L0_nm,L0_nm,L0_nm]
         # extend system, make gro file
         clist=self.cfg.initial_composition
@@ -208,6 +209,7 @@ class HTPolyNet:
         # for r in self.Coordinates.rings():
         #     logging.debug(f'a ring: {r}')
         self.Coordinates.write_atomset_attributes(['cycle-idx','z'],'init.grx')
+        self.Coordinates.make_ringlist()
         assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
         logging.info('Generated init.top and init.gro.')
 
@@ -219,17 +221,26 @@ class HTPolyNet:
             # TODO: modify this to run in stages until volume is equilibrated
             msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
             logging.info('Generated configuration npt-1.gro\n')
+        density_trace('npt-1')
+        
         sacmol=Coordinates.read_gro('npt-1.gro')
         # ONLY copy posX, posY, and poxZ attributes!
         self.Coordinates.copy_coords(sacmol)
         self.Coordinates.box=sacmol.box.copy()
-        self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'])
+        if os.path.exists('npt-1.glc'):
+            logging.info('npt-1.glc exists; no need to populate linkcell')
+            self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'],populate=False)
+            self.Coordinates.read_atomset_attributes('npt-1.glc',attributes=['linkcell-idx'])
+            self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
+        else:
+            self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'])
+            self.Coordinates.write_atomset_attributes(['linkcell-idx'],'npt-1.glc')
         pfs.cd('root')
 
     def SCUR(self):
         # Search - Connect - Update - Relax
         logging.info('*'*10+' SEARCH - CONNECT - UPDATE - RELAX  BEGINS '+'*'*10)
-        max_nxlinkbonds=self.Coordinates.A['z'].sum()/2 # only for a stoichiometric system
+        max_nxlinkbonds=int(self.Coordinates.A['z'].sum()/2) # only for a stoichiometric system
         logging.debug(f'SCUR: max_nxlinkbonds {max_nxlinkbonds}')
         if max_nxlinkbonds==0:
             logging.warning(f'Apparently there are no crosslink bonds to be made! (sum of z == 0)')
@@ -240,16 +251,19 @@ class HTPolyNet:
         radial_increment=self.cfg.parameters.get('SCUR_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('maxSCURiter',20)
         iter=0
+        curr_nxlinkbonds=0
         while not scur_complete:
             logging.info(f'SCUR iteration {iter} begins')
             scur_complete=True
             # TODO: everything -- identify bonds less than radius
             # make bonds, relax
             num_newbonds=self.scur_make_bonds(scur_search_radius)
-            curr_nxlinkbonds=max_nxlinkbonds-self.Coordinates.A['z'].sum()/2
+            # TODO: step-wise gromacs minimization and relaxation with "turn-on" of
+            # bonded parameters
+            curr_nxlinkbonds+=num_newbonds
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
-            scur_complete=scur_complete or iter>maxiter
+            scur_complete=scur_complete or iter>=maxiter
             if not scur_complete:
                 if num_newbonds==0:
                     logging.info(f'No new bonds in SCUR iteration {iter}')
@@ -258,7 +272,7 @@ class HTPolyNet:
                     # TODO: prevent search radius from getting too large for box
                     logging.info(f'-> updating search radius to {scur_search_radius}')
             iter+=1
-            logging.info(f'SCUR iteration {iter} ends')
+            logging.info(f'SCUR iteration {iter} ends (maxiter {maxiter})')
             logging.info(f'Current conversion: {curr_conversion}')
             logging.info(f'   SCUR complete? {scur_complete}')
         logging.info(f'SCUR iterations complete.')
@@ -272,7 +286,7 @@ class HTPolyNet:
         for R in self.cfg.reactions:
             if R.stage=='post-cure':
                 continue
-            logging.debug(f'Attempting to make bonds based on reaction {R.name}')
+            logging.debug(f'*** BONDS from reaction {R.name}')
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
@@ -289,11 +303,19 @@ class HTPolyNet:
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
                 Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
                 logging.debug(f'*** {len(Pbonds)} potential bonds')
+                passbonds=[]
+                bondtestoutcomes={k:0 for k in BTRC}
+                # TODO: Parallelize
                 for p in Pbonds:
-                    logging.debug(f'-> bond {p}')
-                    if self.Coordinates.bondtest(p,radius):
-                        newbonds.append((p,R.product))
-                logging.debug(f'*** {len(newbonds)} out of {len(Pbonds)} bonds pass initial filter')
+                    RC=self.Coordinates.bondtest(p,radius)
+                    bondtestoutcomes[RC]+=1
+                    if RC==BTRC.passed:
+                        passbonds.append((p,R.product))
+                logging.debug(f'*** {len(passbonds)} out of {len(Pbonds)} bonds pass initial filter')
+                logging.debug(f'Bond test outcomes:')
+                for k,v in bondtestoutcomes.items():
+                    logging.debug(f'   {str(k)}: {v}')
+                newbonds.extend(passbonds)
                 #logging.debug(f'     Aset {Aset.shape[0]}\n{Aset.to_string()}')
                 #logging.debug(f'     Bset {Bset.shape[0]}\n{Bset.to_string()}')
                 # logging.debug('Here are some potential pairs based on name/resname/z')
@@ -344,8 +366,8 @@ class HTPolyNet:
         )
         self.initialize_global_topology()
         self.setup_liquid_simulation()
-#        self.do_liquid_simulation()
-#        self.SCUR()
+        self.do_liquid_simulation()
+        self.SCUR()
 
 def info():
     print('This is some information on your installed version of HTPolyNet')

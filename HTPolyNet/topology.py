@@ -362,7 +362,6 @@ class Topology:
             fac=physical_constants['atomic mass constant'][0]
         if 'atoms' in self.D:
             M_amu=self.D["atoms"]["mass"].sum()
-            logging.info(f'total mass says {M_amu}')
             return M_amu*fac
 
     def atomcount(self):

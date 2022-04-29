@@ -2,7 +2,7 @@
 ;   File FDE.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Wed. April  3 11:28:10 2022
+;   At date: Fri. April  5 16:11:00 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterization --force-sea-calculation
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --force-parameterization --force-sea-calculation --force-checkin
 ;
 
 [ defaults ]

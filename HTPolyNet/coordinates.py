@@ -2,6 +2,7 @@
 coordinates.py -- simple class for handling atom coordinates from gro and mol2 files
 '''
 
+from dis import dis
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -9,9 +10,24 @@ from copy import deepcopy
 #import hashlib
 import logging
 
+from enum import Enum
+class BTRC(Enum):
+    passed = 0
+    fail_linkcell = 1
+    fail_beyond_cutoff = 2
+    fail_pierce_ring = 3
+    fail_short_circuit = 4
+
 from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.linkcell import Linkcell
 from HTPolyNet.ring import Ring,Segment
+
+# def my_check(A,item):
+#     idx=item[0].astype(int)
+#     for a in A:
+#         if all(a[0].astype(int)==idx):
+#             return True
+#     return False
 
 ''' Generic dataframe functions '''
 def _get_row_attribute(df,name,attributes):
@@ -114,6 +130,7 @@ class Coordinates:
         self.linkcell=Linkcell()
         self.empty=True
         self.box=np.zeros((3,3))
+        self.ringlist=[]
         
     @classmethod
     def read_gro(cls,filename=''):
@@ -213,6 +230,13 @@ class Coordinates:
             self.A[c]=otherpos
         self.box=np.copy(other.box)
 
+    def subcoords(self,sub_adf):
+        newC=Coordinates()
+        newC.set_box(self.box)
+        newC.A=sub_adf
+        newC.N=sub_adf.shape[0]
+        return newC
+
     def inherit_attributes_from_molecules(self,attributes=[],molecules={}):
         ''' transfer any resname-atomname specific attributes from molecular templates to all residues in 
             self.  Attributes to transfer are in the list 'attributes' and the dictionary
@@ -229,115 +253,171 @@ class Coordinates:
                 for i,ma in adf.iterrows():
                     atomName=ma['atomName']
                     z=ma[attributes].to_dict()
-                    # logging.debug(f'{resname} {atomName} {z}')
                     _set_rows_attributes_from_dict(a,z,{'atomName':atomName,'resName':resname})
             else:
                 logging.warning(f'Resname {resname} not found in molecular templates')
 
-    def rings(self): # an iterator
+    def make_ringlist(self):
+        self.ringlist=list(self.rings())
+
+    def rings(self): # an iterator over all rings
         a=self.A
         for resid in a['resNum'].unique():
             mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
             if not mr.empty:
                 for ri in mr['cycle-idx'].unique():
-                    R=mr[mr['cycle-idx']==ri][['posX','posY','posZ']].values
+                    R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']].values
+                    # logging.debug(f'visiting a ring ({resid}:{ri}) of length {R.shape[0]}')
                     yield R
 
-    def unwrap(self,R):
-        for c in range(3):
-            hbx=self.box[c][c]/2
-            if R[c]<-hbx:
-                R[c]+=self.box[c][c]
-            elif R[c]>hbx:
-                R[c]-=self.box[c][c]
-        return R
+    def unwrap(self,P,O,pbc):
+        ''' shift all points in P so that all are CPI* to point O
+            *CPI=closest periodic image (unwrapped) '''
+        sP=[]
+        for p in P:
+            ROp=self.mic(O-p,pbc)
+            pp=O-ROp
+            sP.append(pp)
+        return np.array(sP)
 
-    def pierces(self,i,j,C):
+    def pierces(self,Ri,Rj,iC,pbc):
         # this filter is only called for atoms that are within 
         # cutoff distance of each other
-        ri=self.A.iloc[i-1][['posX','posY','posZ']].values
-        rj=self.A.iloc[j-1][['posX','posY','posZ']].values
-        o=0.5*(ri+rj)
-        ris=self.unwrap(ri-o)
-        rjs=self.unwrap(rj-o)
-        CS=[]
-        for c in C:
-            CS.append(self.unwrap(c-o))
-        # we will shift all coords to this origin and then 
-        # unwrap if necessary
-        S=Segment(np.array([ris,rjs]))
-        R=Ring(np.array(CS))
+        C=iC[:,1:]
+        sC=self.unwrap(C,Ri,pbc)
+        S=Segment(np.array([Ri,Rj]))
+        R=Ring(sC)
+        R.analyze()
         pierces,point=R.segint(S)
         return pierces
 
-    def linkcellrings(self,ends=[]):
-        assert len(ends)==2
-        c=[]
-        for i in ends:
-            c.append(self.get_atom_attribute('linkcell-idx',{'globalIdx':i}))
-        pass
+    def linkcellrings(self,Ri,Rj,discretization=0.2):
+        ''' 
+        Ri and Rj are locations such that Rj is a CPI to Ri
+        '''
+        nearby_rings=np.array([])
+        Rij=Ri-Rj
+        rij=np.sqrt(Rij.dot(Rij))
+        nip=int(rij/discretization)
+        if nip==1:
+            nip=2
+        collisions=0
+        total_rings=0
+        for C in self.ringlist:
+            total_rings+=1
+            # logging.debug(f'ring\n{C}')
+            lcids=[]
+            for ci in C:
+                idx=int(ci[0])
+                rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
+                lcids.append(rci)
+            for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
+                cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.linkcell.wrap_point(p)))
+                # logging.debug(f'intermediate point {p} in cell {cpi}...')
+                nears=[]
+                for rci in lcids:
+                    nears.append(self.linkcell.are_ldx_neighbors(cpi,rci))
+                    # logging.debug(f'ringc {rci} acpi {cpi} neighbors {self.linkcell.are_ldx_neighbors(cpi,rci)}')
+                # logging.debug(f'any(nears) {any(nears)}')
+                if any(nears):
+                    # logging.debug(f'adding C(shape={C.shape}) to nearby_rings:\n{C}')
+                    # logging.debug(f'nearby rings {nearby_rings.shape}\n{nearby_rings}')
+                    if nearby_rings.size==0:
+                        nearby_rings=np.array([C])
+                    else:
+                        # logging.debug(f'{np.any(C==nearby_rings,axis=0)} {np.all(np.any(C==nearby_rings,axis=0))}')
+                        #is_in_list=my_check(nearby_rings,C)
+                        is_in_list=np.all(np.any(C==nearby_rings,axis=0))
+                        # logging.debug(f'not C in nearby_rings {not is_in_list}')
+                        if not is_in_list:
+                            nearby_rings=np.append(nearby_rings,np.array([C]),axis=0)
+                        else:
+                            collisions+=1
+                    # logging.debug(f'after: nearby rings {nearby_rings.shape}\n{nearby_rings}')
+        logging.debug(f'linkcellrings(): {nearby_rings.shape[0]}/{total_rings} rings to be tested.')
+        logging.debug(f'Discretization of {discretization} of bond length {rij:.3f}')
+        logging.debug(f'into {nip} points resulted in {collisions} overcounts.')
+        return nearby_rings
 
-    def ringpierce(self,i,j):
-        if hasattr(self,'linkcell'):
-            # only sample rings that lie in cells through
-            # which the i-j vector passes
-            for r in self.linkcellrings([i,j]):
-                if self.pierces(i,j,r):
-                    return True
-        else:
-            for r in self.rings():
-                if self.pierces(i,j,r):
-                    return True
+    def ringpierce(self,Ri,Rj,pbc):
+        for C in self.linkcellrings(Ri,Rj):
+            if self.pierces(Ri,Rj,C,pbc):
+                # logging.debug(f'\n{C}')
+                return C
         return False
 
-    def linkcell_initialize(self,cutoff=0.0):
+    def bondtest(self,b,radius,pbc=[1,1,1]):
+        i,j=b
+        if not self.linkcelltest(i,j):
+            return BTRC.fail_linkcell
+        Ri=self.get_R(i)
+        Rj=self.get_R(j)
+        Rij=self.mic(Ri-Rj,pbc)
+        rij=np.sqrt(Rij.dot(Rij))
+        if rij>radius:
+            return BTRC.fail_beyond_cutoff
+        Rjp=Ri-Rij # generate the nearest periodic image of Rj to Ri
+        C = self.ringpierce(Ri,Rjp,pbc)
+        if type(C)==np.ndarray:
+            cidx=C[:,0].astype(int) # get globalIdx's
+            idx=[i,j]
+            idx.extend(cidx) # list of globalIdx's for this output
+            sub=self.subcoords(self.A[self.A['globalIdx'].isin(idx)].copy())
+            sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
+            logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}')
+            logging.debug('-'.join([f'{x}' for x in cidx]))
+            logging.debug(f'\n+{C[:,1:]}')
+            return BTRC.fail_pierce_ring
+        # TODO: check for short-circuits or loops
+        # if self.shortcircuit(i,j):
+        #    return BTRC.fail_short_circuit
+        logging.debug(f'bondtest {b} {rij:.3f} ({radius})')
+        return BTRC.passed
+
+    def linkcell_initialize(self,cutoff=0.0,populate=True):
         logging.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
-        self.linkcell.populate(self)
+        if populate:
+            self.linkcell.populate(self)
 
     def linkcelltest(self,i,j):
         ''' return True if atoms i and j are within potential interaction
             range based on current link-cell structure '''
         ci=self.get_atom_attribute('linkcell-idx',{'globalIdx':i})
         cj=self.get_atom_attribute('linkcell-idx',{'globalIdx':j})
-        if self.linkcell.are_cellidx_neighbors(ci,cj):
+        if ci==cj:
+            return True
+        if self.linkcell.are_ldx_neighbors(ci,cj):
             return True
         return False
-
-    def bondtest(self,b,radius):
-        i,j=b
-        if not self.linkcelltest(i,j):
-            return False
-        rij=self.rij(i,j)
-        # logging.debug(f'pbond {b} rij {rij:.3f}')
-        if rij>radius:
-            return False
-        # if self.ringpierce(i,j):
-        #     return False
-        return True
-
+    
+    # def linkcelltest_positions(self,Ri,Rj):
+    #     ci=self.linkcell.ldx_of_cellndx(self.linkcell.cell_of_point(Ri))
+    #     cj=self.linkcell.ldx_of_cellndx(self.linkcell.cell_of_point(Rj))
+    #     return self.linkcell.are_ldx_neighbors(ci,cj)
 
     def geometric_center(self):
         a=self.A
         return np.array([a.posX.mean(),a.posY.mean(),a.posZ.mean()])
 
     def rij(self,i,j,pbc=[1,1,1]):
-        ''' compute distance between atoms i and j
-            We assume that the DF row index is the
-            globalIdx-1! '''
+        ''' compute distance between atoms i and j '''
         if np.any(pbc) and not np.any(self.box):
             logging.warning('Interatomic distance calculation using PBC with no boxsize set.')
-        ri=self.A.iloc[i-1][['posX','posY','posZ']].values
-        rj=self.A.iloc[j-1][['posX','posY','posZ']].values
-        rij=ri-rj
+        ri=self.get_R(i)
+        rj=self.get_R(j)
+        Rij=self.mic(ri-rj,pbc)
+        return np.sqrt(Rij.dot(Rij))
+
+    def mic(self,r,pbc):
         for c in range(3):
             if pbc[c]:
                 hbx=self.box[c][c]/2
-                if rij[c]<-hbx:
-                    rij[c]+=self.box[c][c]
-                elif rij[c]>hbx:
-                    rij[c]-=self.box[c][c]
-        return np.sqrt(rij.dot(rij))
+                if r[c]<-hbx:
+                    r[c]+=self.box[c][c]
+                elif r[c]>hbx:
+                    r[c]-=self.box[c][c]
+        return r
 
     def calc_distance_matrix(self):
         M=np.zeros((self.N,self.N))
@@ -393,9 +473,9 @@ class Coordinates:
     def read_atomset_attributes(self,filename='',attributes=[]):
         if filename=='':
             raise Exception('Please provide a file name from which you want to read atom attributes')
-        df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes)
+        df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
         self.A=self.A.merge(df,how='outer',on='globalIdx')
-        logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
+        # logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
     def set_atomset_attribute(self,attribute='',srs=[]):
         if attribute!='':

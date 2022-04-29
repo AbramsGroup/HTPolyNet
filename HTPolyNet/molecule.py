@@ -91,7 +91,6 @@ class Molecule:
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
         self.set_atomset_attribute('sea-idx',analyze_sea(f'{n}-sea'))
-        self.write_atomset_attributes(['sea-idx'],f'{n}.sea')
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
@@ -279,7 +278,7 @@ class Molecule:
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
 
         self.parameterize(outname,**kwargs)
-        self.minimize(outname,**kwargs)  
+        self.minimize(outname,**kwargs)
 
     def label_ring_atoms(self,cycles):
         adf=self.Coords.A

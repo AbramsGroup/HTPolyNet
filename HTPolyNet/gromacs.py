@@ -74,12 +74,12 @@ def density_trace(edr='',**kwargs):
         raise Exception('density_trace requires and edr filename prefix.')
     with open('gmx.in','w') as f:
         f.write('22\n\n')
-    c=Command(f'gmx energy -f {edr}.edr -o {edr}-density.dat -xvg none < gmx.in')
+    c=Command(f'gmx energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
     c.run()
-    density=pd.read_csv(f'{edr}-density.dat',sep='\s+',names=['time(ps)','density(kg/m^3)'])
-    density['ra']=density['density(kg/m^3)'].expanding(1).mean()
-    logging.info(density.to_string())
-
+    density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
+    density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
+    density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
+    logging.info(f'Density at end of npt:\n{density.iloc[-1].to_string()}')
 
 def encluster(i,j,c):
     if c[i]==c[j]:
