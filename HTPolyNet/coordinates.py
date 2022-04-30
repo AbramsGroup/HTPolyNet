@@ -334,9 +334,9 @@ class Coordinates:
                         else:
                             collisions+=1
                     # logging.debug(f'after: nearby rings {nearby_rings.shape}\n{nearby_rings}')
-        logging.debug(f'linkcellrings(): {nearby_rings.shape[0]}/{total_rings} rings to be tested.')
-        logging.debug(f'Discretization of {discretization} of bond length {rij:.3f}')
-        logging.debug(f'into {nip} points resulted in {collisions} overcounts.')
+        # logging.debug(f'linkcellrings(): {nearby_rings.shape[0]}/{total_rings} rings to be tested.')
+        # logging.debug(f'Discretization of {discretization} of bond length {rij:.3f}')
+        # logging.debug(f'into {nip} points resulted in {collisions} overcounts.')
         return nearby_rings
 
     def ringpierce(self,Ri,Rj,pbc):
@@ -346,16 +346,22 @@ class Coordinates:
                 return C
         return False
 
+    def bondtest_par(self,B,radius,pbc=[1,1,1]):
+        L=[]
+        for b in B:
+            L.append(self.bondtest(b,radius,pbc=pbc))
+        return L
+
     def bondtest(self,b,radius,pbc=[1,1,1]):
         i,j=b
         if not self.linkcelltest(i,j):
-            return BTRC.fail_linkcell
+            return BTRC.fail_linkcell,0
         Ri=self.get_R(i)
         Rj=self.get_R(j)
         Rij=self.mic(Ri-Rj,pbc)
         rij=np.sqrt(Rij.dot(Rij))
         if rij>radius:
-            return BTRC.fail_beyond_cutoff
+            return BTRC.fail_beyond_cutoff,0
         Rjp=Ri-Rij # generate the nearest periodic image of Rj to Ri
         C = self.ringpierce(Ri,Rjp,pbc)
         if type(C)==np.ndarray:
@@ -367,12 +373,12 @@ class Coordinates:
             logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}')
             logging.debug('-'.join([f'{x}' for x in cidx]))
             logging.debug(f'\n+{C[:,1:]}')
-            return BTRC.fail_pierce_ring
+            return BTRC.fail_pierce_ring,0
         # TODO: check for short-circuits or loops
         # if self.shortcircuit(i,j):
         #    return BTRC.fail_short_circuit
         logging.debug(f'bondtest {b} {rij:.3f} ({radius})')
-        return BTRC.passed
+        return BTRC.passed,rij
 
     def linkcell_initialize(self,cutoff=0.0,populate=True):
         logging.debug('Initializing link-cell structure')

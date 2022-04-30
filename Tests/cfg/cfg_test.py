@@ -1,11 +1,7 @@
 import HTPolyNet.configuration as c
+import logging
 
-print('JSON FORMAT----------------')
-C=c.Configuration.read('test.json')
-print(C)
-print('YAML FORMAT----------------')
-C=c.Configuration.read('test.yaml')
-print(C)
-print('TXT FORMAT----------------')
-C=c.Configuration.read('test.txt')
-print(C)
+logging.basicConfig(filename='cfg_test.log',encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
+
+C=c.Configuration.read('FDE-DFDA.yaml')
+C.calculate_maximum_conversion()

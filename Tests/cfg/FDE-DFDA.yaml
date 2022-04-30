@@ -1,0 +1,134 @@
+Title: FDE/DFDA thermoset
+initial_density: 300.0  # kg/m3
+SCUR_cutoff: 0.5 # nm
+conversion: 0.95
+late_treshhold: 0.85  # conversion above which bond formation probabilities are ignored
+chargemethod: gas  # bcc
+maxSCURiter: 1
+use_sea: [DFA, FDE]  # use symmetry-equivalency for any atoms in these molecules
+# NOTE-- symmetry expanding manually for testing
+reactions:
+  - {
+      name:     'Primary-to-secondary-amine',
+      stage:     cure,
+      reactants: {1: DFA, 2: FDE},
+      product:   DFAFDE,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N1, z: 2},
+        B: {reactant: 2, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name:     'Primary-to-secondary-amine-1',
+      stage:     cure,
+      reactants: {1: DFA, 2: FDE},
+      product:   DFAFDE,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N1, z: 2},
+        B: {reactant: 2, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name:     'Primary-to-secondary-amine-2',
+      stage:     cure,
+      reactants: {1: DFA, 2: FDE},
+      product:   DFAFDE,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N2, z: 2},
+        B: {reactant: 2, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name:     'Primary-to-secondary-amine-3',
+      stage:     cure,
+      reactants: {1: DFA, 2: FDE},
+      product:   DFAFDE,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N2, z: 2},
+        B: {reactant: 2, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name: 'Secondary-to-tertiary-amine',
+      reactants: {1: DFAFDE, 2: FDE},
+      product: DFAFDE2,
+      stage: cure,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name: 'Secondary-to-tertiary-amine-1',
+      reactants: {1: DFAFDE, 2: FDE},
+      product: DFAFDE2,
+      stage: cure,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N2, z: 1},
+        B: {reactant: 2, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name: 'Secondary-to-tertiary-amine-2',
+      reactants: {1: DFAFDE, 2: FDE},
+      product: DFAFDE2,
+      stage: cure,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - {
+      name: 'Secondary-to-tertiary-amine-3',
+      reactants: {1: DFAFDE, 2: FDE},
+      product: DFAFDE2,
+      stage: cure,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N2, z: 1},
+        B: {reactant: 2, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+  - { 
+      name: 'Oxirane-formation',
+      reactants: {1: FDE},
+      product: FDEC,
+      stage: post-cure,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: O1, z: 1},
+        B: {reactant: 1, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], probability: 1.0}
+      ]
+    }
+initial_composition:
+  - {molecule: FDE, count: 200}
+  - {molecule: DFA, count: 100}
+   #- {reactants: [DFA+FDE,FDE], probability: 0.5}
+#reactions: # reactants [base,other]
+#   - {reactants: [DFA,FDE], probability: 1.0}
+

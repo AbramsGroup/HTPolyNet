@@ -7,6 +7,7 @@ read cfg file
 """
 import json
 import yaml
+import os
 import logging
 import numpy as np
 from copy import deepcopy
@@ -96,9 +97,9 @@ class Configuration:
                 if not r in self.molecules:
                     self.molecules[r]=Molecule(r)
                 else:
-                    logging.info(f'Reactant {r} in reaction {R.name} is already on the global Molecules list')
+                    logging.debug(f'Reactant {r} in reaction {R.name} is already on the global Molecules list')
                     if self.molecules[r].generator:
-                        logging.info(f'({r} is a product of reaction {self.molecules[r].generator.name}')
+                        logging.debug(f'{r} is a product of reaction {self.molecules[r].generator.name}')
         self.initial_composition=self.basedict.get('initial_composition',[])
         ''' any molecules lists in the initial composition
         may not have been declared in reactions '''
@@ -120,6 +121,8 @@ class Configuration:
             del self.basedict[k]
 
         self.parameters=self.basedict
+        if not 'cpu' in self.parameters:
+            self.parameters['cpu']=os.cpu_count()
         return self
 
     def symmetry_expand_reactions(self):
@@ -168,51 +171,43 @@ class Configuration:
         self.reactions.extend(extra_reactions)
 
     def calculate_maximum_conversion(self):
-        # TODO: fix this fuckin thing
-        M=0
-        atomset=[]
+        N={}
+        for item in self.initial_composition:
+            N[item['molecule']]=item['count']
+        Bonds=[]
+        Atoms=[]
+        logging.debug(f'CMC: extracting atoms from {len(self.reactions)} reactions')
         for R in self.reactions:
             for b in R.bonds:
                 A,B=b['atoms']
                 a,b=R.atoms[A],R.atoms[B]
-                a['resName']=R.reactants[a['reactant']]
-                del a['reactant']
-                b['resName']=R.reactants[b['reactant']]
-                del b['reactant']
-                if not a in atomset:
-                    atomset.append(a)
-        logging.debug(f'atomset: {atomset}')
-
-        #         za,zb=R.atoms[A]['z'],R.atoms[B]['z']
-        #         rA,rB=R.reactants[a['reactant']],R.reactants[b['reactant']]
-        #         if rA!=rB: # ignore intramolecular reactions
-        #             nrA=nrB=0
-        #             for m in self.initial_composition:
-        #                 if m['molecule']==rA:
-        #                     nrA=m['count']
-        #                 elif m['molecule']==rB:
-        #                     nrB=m['count']
-        #             nza=nrA*za
-        #             nzb=nrB*zb
-        #             if not a in zBank:
-        #                 zBank[a]=0
-        #             zBank[a]+=nza
-        #             if not b in zBank:
-        #                 zBank[b]=0
-        #             zBank[b]+=nzb
-                    
-        #             nza_avail=min(nza,zBank[a])
-        #             nzb_avail=min(nzb,zBank[b])
-        #             b['maxconv']=np.min([nza_avail,nzb_avail])
-        #             logging.debug(f'bonds possible for {R.name}{b}: {b["maxconv"]}')
-        #             M+=b['maxconv']
-        #             zBank[a]-=nza_avail
-        #             zBank[b]-=nza_avail
-        #             bal=nrA*Az-nrB*Bz
-        #             if bal>0:
-        #                 b['limiting-reactant']=rB
-        #             elif bal<0:
-        #                 b['limiting-reactant']=rA
-        #             else:
-        #                 b['limiting-reactant']=None
-        # return M
+                aan,ban=a['atom'],b['atom']
+                ari,bri=a['resid'],b['resid']
+                arn,brn=R.reactants[a['reactant']],R.reactants[b['reactant']]
+                if arn!=brn:
+                    az,bz=a['z'],b['z']
+                    ia=(aan,ari,arn,az)
+                    ib=(ban,bri,brn,bz)
+                    b=(ia,ib)
+                    if ia not in Atoms and arn in N:
+                        Atoms.append(ia)
+                    if ib not in Atoms and brn in N:
+                        Atoms.append(ib)
+                    if b not in Bonds and arn in N and brn in N:
+                        Bonds.append(b)
+        # logging.debug(f'atomset: {Atoms}')
+        Z=[]
+        for a in Atoms:
+            Z.append(a[3]*N[a[2]])
+        # logging.debug(f'Z: {Z}')
+        # logging.debug(f'bondset: {Bonds}')
+        MaxB=[]
+        for B in Bonds:
+            a,b=B
+            az=Z[Atoms.index(a)]
+            bz=Z[Atoms.index(b)]
+            MaxB.append(min(az,bz))
+            Z[Atoms.index(a)]-=MaxB[-1]
+            Z[Atoms.index(b)]-=MaxB[-1]
+        # logging.debug(f'MaxB: {MaxB} {sum(MaxB)}')
+        return sum(MaxB)

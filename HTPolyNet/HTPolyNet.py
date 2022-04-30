@@ -6,9 +6,11 @@ import logging
 import os
 import shutil
 import argparse as ap
-#import numpy as np
+import numpy as np
 from copy import deepcopy
 from itertools import product
+from multiprocessing import Process, Pool
+from functools import partial
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
@@ -222,7 +224,6 @@ class HTPolyNet:
             logging.info(f'npt-1.gro exists in {os.getcwd()}; skipping initial NPT md.')
         else:
             msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
-            # TODO: modify this to run in stages until volume is equilibrated
             msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
             logging.info('Generated configuration npt-1.gro\n')
         density_trace('npt-1')
@@ -245,7 +246,7 @@ class HTPolyNet:
         # Search - Connect - Update - Relax
         cwd=pfs.next_results_dir(restart=self.cfg.parameters['restart'])
         logging.info('*'*10+' SEARCH - CONNECT - UPDATE - RELAX  BEGINS '+'*'*10)
-        max_nxlinkbonds=int(self.Coordinates.A['z'].sum()/2) # only for a stoichiometric system
+        max_nxlinkbonds=self.cfg.maxconv # only for a stoichiometric system
         logging.debug(f'SCUR: max_nxlinkbonds {max_nxlinkbonds}')
         if max_nxlinkbonds==0:
             logging.warning(f'Apparently there are no crosslink bonds to be made! (sum of z == 0)')
@@ -260,17 +261,16 @@ class HTPolyNet:
         while not scur_complete:
             logging.info(f'SCUR iteration {iter} begins')
             scur_complete=True
-            # TODO: everything -- identify bonds less than radius
-            # make bonds, relax
-            num_newbonds=self.scur_make_bonds(scur_search_radius)
-            # TODO: step-wise gromacs minimization and relaxation with "turn-on" of
-            # bonded parameters
-            curr_nxlinkbonds+=num_newbonds
+            newbonds=self.scur_make_bonds(scur_search_radius)
+            if len(newbonds)>0:
+                self.update_topology_and_coordinates(newbonds,iter)
+                self.gromacs_stepwise_relaxation(newbonds,iter)
+            curr_nxlinkbonds+=len(newbonds)
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
             scur_complete=scur_complete or iter>=maxiter
             if not scur_complete:
-                if num_newbonds==0:
+                if len(newbonds)==0:
                     logging.info(f'No new bonds in SCUR iteration {iter}')
                     logging.info(f'-> updating search radius to {scur_search_radius}')
                     scur_search_radius += radial_increment
@@ -310,52 +310,84 @@ class HTPolyNet:
                 logging.debug(f'*** {len(Pbonds)} potential bonds')
                 passbonds=[]
                 bondtestoutcomes={k:0 for k in BTRC}
-                # TODO: Parallelize
-                for p in Pbonds:
-                    RC=self.Coordinates.bondtest(p,radius)
+                logging.debug(f'Setting up pool of {self.cfg.parameters["cpu"]} processes for bond search')
+                p = Pool(processes=self.cfg.parameters['cpu'])
+                Pbonds_split = np.array_split(Pbonds,self.cfg.parameters['cpu'])
+                results = p.map(partial(self.Coordinates.bondtest_par,radius=radius), Pbonds_split)
+                p.close()
+                p.join()
+                rc=[]
+                for i,l in enumerate(results):
+                    rc.extend(l)
+                for i,R2 in enumerate(rc):
+                    RC,rij=R2 
                     bondtestoutcomes[RC]+=1
                     if RC==BTRC.passed:
-                        passbonds.append((p,R.product))
+                        passbonds.append((Pbonds[i],rij,R.product))
                 logging.debug(f'*** {len(passbonds)} out of {len(Pbonds)} bonds pass initial filter')
                 logging.debug(f'Bond test outcomes:')
                 for k,v in bondtestoutcomes.items():
                     logging.debug(f'   {str(k)}: {v}')
                 newbonds.extend(passbonds)
-                #logging.debug(f'     Aset {Aset.shape[0]}\n{Aset.to_string()}')
-                #logging.debug(f'     Bset {Bset.shape[0]}\n{Bset.to_string()}')
-                # logging.debug('Here are some potential pairs based on name/resname/z')
-                # P=product(Aset.iterrows(),Bset.iterrows())
-                # for p in P:
-                #     logging.debug(p)
-                '''
-                TODO
-                - FOR EACH BOND
-                    - make selections of A-set and B-set reactive atoms for each bond in this reaction
-                    - search for A-B pairs and make a list of potential bonds
-                    - for each potential bond
-                        - determine if it is allowed based on single-bond criteria
-                           - within cutoff
-                           - no ring piercing
-                           - no loops or short circuits
-                        - add it as a 2-tuple of global indices to the newbonds[] list, include template
-                '''
 
-        ''' TODO: let potential bonds compete with each other to see which ones move forward '''
+        ''' Sort new potential bonds by length (ascending) and claim each one
+            in order so long as both its atoms are available '''
+        newbonds.sort(key=lambda x: x[1])
+        logging.debug(f'*** Pruning {len(newbonds)} bonds...')
+        atomset=list(set(list([x[0][0] for x in newbonds])+list([x[0][1] for x in newbonds])))
+        # keep shortest bonds up to point atoms are all used up
+        keepbonds=[]
+        for n in newbonds:
+            b=n[0]
+            if b[0] in atomset and b[1] in atomset:
+                atomset.remove(b[0])
+                atomset.remove(b[1])
+                keepbonds.append((b,n[2]))
+        logging.debug(f'*** accepted the {len(keepbonds)} shortest non-competing bonds')
+        return keepbonds
 
+    def update_topology_and_coordinates(self,keepbonds,iter):    
         ''' make the new bonds '''
-        if len(newbonds)>0:
-            for p in newbonds:
-                logging.debug(f'potential bond {p}')
-            # TODO: all the hard stuff
-            # - make this bond, update indexes of atoms in bonds yet to be made
-            # - determine reaction template for this bond and find the product molecule
-            # - map the system atoms to the product template bond atoms + neighbors to degree-x 
-            #   and transfer charges from template
-            # write gro/top
-            # grompp_and_run minimization + NPT relaxation
-            # update coords
-            pass
+        if len(keepbonds)>0:
+            bondlist=[i[0:2] for i in keepbonds]
+            idx_to_delete=self.make_bonds(bondlist)
+            idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
+            reindexed_bondlist=[(idx_mapper(i[0]),idx_mapper(i[1]),i[2]) for i in keepbonds]
+            self.map_charges_from_templates(reindexed_bondlist)
+            basefilename=f'scur-step-{iter}'
+            self.Topology.write_gro(basefilename+'.top') # this is a good topology
+            self.Coordinates.write_gro(basefilename+'.gro')
+            return (basefilename+'.top',basefilename+'.gro')
+
+    def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords,iter):
+        self.checkout('mdp/em.mdp')
+        self.checkout('mdp/npt-1.mdp')
+        tmpT=Topology.read_gro(fulltop)
+        tmpC=Coordinates.read_gro(initcoords)
+        pref,ext=os.path.splitext(fulltop)
+        for i in range(number_of_post_bonding_stages):
+            tmpT.attenuate(newbonds,i/number_of_post_bonding_stages)
+            stagepref=pref+f'-stage-{i}'
+            tmpT.write_gro(stagepref+'.top')
+            tmpC.write_gro(stagepref+'.gro')
+            stageprefout=stagepref+'-out'
+            # rename files below!!!
+            msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stageprefout,mdp='em')
+            msg=grompp_and_mdrun(gro=stageprefout,top=stagepref,out=stageprefout,mdp='npt-1')
+            sacmol=Coordinates.read_gro(stageprefout+'.gro')
+            tmpC.copy_coords(sacmol)
+        self.Coordinates.copy_coords(tmpC)
         return 0
+
+# TODO TODO TODO!!!
+    def make_bonds(bondlist):
+        return []
+
+    def delete_atoms(atomlist):
+        return {} # returns to old-to-new index mapper dictionary
+
+    def map_charges_from_template(bondlist):
+        pass
 
     def initreport(self):
         print(self.cfg)
