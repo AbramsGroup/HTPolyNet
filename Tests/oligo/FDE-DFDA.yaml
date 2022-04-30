@@ -4,7 +4,8 @@ SCUR_cutoff: 0.5 # nm
 conversion: 0.95
 late_treshhold: 0.85  # conversion above which bond formation probabilities are ignored
 chargemethod: gas  # bcc
-maxSCURiter: 1
+max_SCUR_iterations: 1
+max_bond_relaxation_stages: 4
 use_sea: [DFA, FDE]  # use symmetry-equivalency for any atoms in these molecules
 reactions:
   - {
@@ -12,12 +13,13 @@ reactions:
       stage:     cure,
       reactants: {1: DFA, 2: FDE},
       product:   DFAFDE,
+      probability: 1.0,
       atoms: {
         A: {reactant: 1, resid: 1, atom: N1, z: 2},
         B: {reactant: 2, resid: 1, atom: C1, z: 1}
       },
       bonds: [
-        {atoms: [A, B], probability: 1.0}
+        {atoms: [A, B], order: 1}
       ]
     }
   - {
@@ -25,12 +27,13 @@ reactions:
       reactants: {1: DFAFDE, 2: FDE},
       product: DFAFDE2,
       stage: cure,
+      probability: 0.5,
       atoms: {
         A: {reactant: 1, resid: 1, atom: N1, z: 1},
         B: {reactant: 2, resid: 1, atom: C1, z: 1}
       },
       bonds: [
-        {atoms: [A, B], probability: 1.0}
+        {atoms: [A, B], order: 1}
       ]
     }
   - { 
@@ -38,12 +41,13 @@ reactions:
       reactants: {1: FDE},
       product: FDEC,
       stage: post-cure,
+      probability: 1.0,
       atoms: {
         A: {reactant: 1, resid: 1, atom: O1, z: 1},
         B: {reactant: 1, resid: 1, atom: C1, z: 1}
       },
       bonds: [
-        {atoms: [A, B], probability: 1.0}
+        {atoms: [A, B], order: 1}
       ]
     }
 initial_composition:

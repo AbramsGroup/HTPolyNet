@@ -540,6 +540,7 @@ class Topology:
         logging.info(d[d.nr.isin(idx)].to_string())
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        mapper={}
         if reindex:
             d=self.D['atoms']
             oldGI=d['nr'].copy()
@@ -590,8 +591,10 @@ class Topology:
                 d.aj=d.aj.map(mapper)
                 d.ak=d.ak.map(mapper)
                 d.al=d.al.map(mapper)
-        return new_idx
-
+        if len(return_idx_of)>0:
+            return new_idx
+        return mapper
+        
     def _myconcat(self,other,directive='',idxlabel=[],idxshift=0,drop_duplicates=False):
         if not directive in other.D:
             return
@@ -718,7 +721,20 @@ class Topology:
                 if ri!=rj and not self.residue_network.has_edge(ri,rj):
                     self.residue_network.add_edge(ri,rj)
 
+    def copy_bond_parameters(self,bonds):
+        ij=self.D['bondtypes'].set_index(['i','j'])
+        bmi=self.D['bonds'].set_index(['ai','aj']).index
+        for b in bonds:
+            ai,aj=idxorder(b)
+            it=self.get_atomtype(ai)
+            jt=self.get_atomtype(aj)
+            bt=typeorder(it,jt)
+            btd=ij.loc[bt]
+            # TODO figure out
+    
+    def attenuate_bond_parameters(self,bonds,factor):
+        pass
 
-
-
+    def restore_bond_parameters(self,df):
+        pass
 

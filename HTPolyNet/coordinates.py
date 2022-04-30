@@ -554,6 +554,32 @@ class Coordinates:
         df=self.A
         return all([name in df for name in attributes])
 
+    def find_sacrificial_H(self,pairs,bondlist):
+        idx_to_delete=[]
+        for b in pairs:
+            ai,aj=b
+            idx_to_delete.append(self.sacH(ai,aj,bondlist))
+        return idx_to_delete
+
+    def sacH(self,ai,aj,bondlist):
+        ''' find the two H's closest to each other to delete '''
+        i_partners=bondlist.partners_of(ai)
+        j_partners=bondlist.partners_of(aj)
+        i_Hpartners=[k for k,v in zip(i_partners,[self.A[self.A['globalIdx']==i]['atomName'].values[0] for i in i_partners]) if v.startswith('H')]
+        j_Hpartners=[k for k,v in zip(j_partners,[self.A[self.A['globalIdx']==i]['atomName'].values[0] for i in j_partners]) if v.startswith('H')]
+        assert len(i_Hpartners)>0,f'Error: atom {ai} does not have a deletable H atom!'
+        assert len(j_Hpartners)>0,f'Error: atom {aj} does not have a deletable H atom!'
+        minHH=(1.e9,-1,-1)
+        for ih in i_Hpartners:
+            RiH=self.get_R(ih)
+            for jh in j_Hpartners:
+                RjH=self.get_R(jh)
+                RijH=RiH-RjH
+                rijh=np.sqrt(RijH.dot(RijH))
+                if rijh<minHH[0]:
+                    minHH=(rijh,ih,jh)
+        return [ih,jh]
+
     def delete_atoms(self,idx=[],reindex=True):
         '''
         Deletes atoms whose global indices appear in the list idx.

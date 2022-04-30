@@ -255,7 +255,7 @@ class HTPolyNet:
         scur_search_radius=self.cfg.parameters['SCUR_cutoff']
         desired_conversion=self.cfg.parameters['conversion']
         radial_increment=self.cfg.parameters.get('SCUR_radial_increment',0.5)
-        maxiter=self.cfg.parameters.get('maxSCURiter',20)
+        maxiter=self.cfg.parameters.get('max_SCUR_iterations',20)
         iter=0
         curr_nxlinkbonds=0
         while not scur_complete:
@@ -365,8 +365,10 @@ class HTPolyNet:
         tmpT=Topology.read_gro(fulltop)
         tmpC=Coordinates.read_gro(initcoords)
         pref,ext=os.path.splitext(fulltop)
-        for i in range(number_of_post_bonding_stages):
-            tmpT.attenuate(newbonds,i/number_of_post_bonding_stages)
+        n_stages=self.cfg.parameters['max_bond_relaxation_stages']
+        for i in range(n_stages):
+            saveT=tmpT.copy_bond_parameters(newbonds)
+            tmpT.attenuate_bond_parameters(newbonds,i/n_stages)
             stagepref=pref+f'-stage-{i}'
             tmpT.write_gro(stagepref+'.top')
             tmpC.write_gro(stagepref+'.gro')
@@ -376,17 +378,21 @@ class HTPolyNet:
             msg=grompp_and_mdrun(gro=stageprefout,top=stagepref,out=stageprefout,mdp='npt-1')
             sacmol=Coordinates.read_gro(stageprefout+'.gro')
             tmpC.copy_coords(sacmol)
+            tmpT.restore_bond_parameters(saveT)
         self.Coordinates.copy_coords(tmpC)
         return 0
 
-# TODO TODO TODO!!!
-    def make_bonds(bondlist):
-        return []
+    def make_bonds(self,bondlist):
+        self.Topology.add_bonds(bondlist)
+        idx_to_delete=self.Coordinates.find_sacrificial_H(bondlist)
+        return idx_to_delete
 
-    def delete_atoms(atomlist):
-        return {} # returns to old-to-new index mapper dictionary
+    def delete_atoms(self,atomlist):
+        self.Coordinates.delete_atoms(atomlist)
+        idx_mapper=self.Topology.delete_atoms(atomlist)
+        return idx_mapper # returns to old-to-new index mapper dictionary
 
-    def map_charges_from_template(bondlist):
+    def map_charges_from_template(self,bondlist):
         pass
 
     def initreport(self):
