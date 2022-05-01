@@ -1,17 +1,17 @@
 ;
 ;	File 'mdout.mdp' was generated
-;	By user: cfa (1000)
-;	On host: panacea
-;	At date: Fri Apr 29 16:11:31 2022
+;	By user: unknown (1000)
+;	On host: abrams-Latitude-E5470
+;	At date: Sun May  1 16:52:29 2022
 ;
 ;	Created by:
-;	                     :-) GROMACS - gmx grompp, 2021.2 (-:
+;	             :-) GROMACS - gmx grompp, 2020.1-Ubuntu-2020.1-1 (-:
 ;	
-;	Executable:   /usr/local/gromacs/bin/gmx
-;	Data prefix:  /usr/local/gromacs
+;	Executable:   /usr/bin/gmx
+;	Data prefix:  /usr
 ;	Working dir:  /home/cfa/Git/HTPolyNet/Tests/oligo/proj0/results/init
 ;	Command line:
-;	  gmx grompp -f npt-1.mdp -c min-1.gro -p init.top -o npt-1.tpr -maxwarn 2
+;	  gmx grompp -f nvt-newbonds.mdp -c scur-step-0-iter-0-stage-0.gro -p scur-step-0-iter-0-stage-0.top -o scur-step-0-iter-0-stage-0-out.tpr -maxwarn 2
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -25,19 +25,17 @@ integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.002
-nsteps                   = 150000
+nsteps                   = 10000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
 simulation-part          = 1
-; Multiple time-stepping
-mts                      = no
 ; mode for center of mass motion removal
 comm-mode                = Linear
 ; number of steps for center of mass motion removal
 nstcomm                  = 10
 ; group(s) for center of mass motion removal
-comm-grps                = System
+comm-grps                = 
 
 ; LANGEVIN DYNAMICS OPTIONS
 ; Friction coefficient (amu/ps) and random seed
@@ -61,7 +59,7 @@ rtpi                     = 0.05
 
 ; OUTPUT CONTROL OPTIONS
 ; Output frequency for coords (x), velocities (v) and forces (f)
-nstxout                  = 500
+nstxout                  = 50
 nstvout                  = 0
 nstfout                  = 0
 ; Output frequency for energies to log file and energy file
@@ -90,7 +88,7 @@ periodic-molecules       = no
 ; a value of -1 means: use rlist
 verlet-buffer-tolerance  = 0.005
 ; nblist cut-off        
-rlist                    = 0.9
+rlist                    = 1.0
 ; long-range cut-off for switched potentials
 
 ; OPTIONS FOR ELECTROSTATICS AND VDW
@@ -98,7 +96,7 @@ rlist                    = 0.9
 coulombtype              = PME
 coulomb-modifier         = Potential-shift-Verlet
 rcoulomb-switch          = 0
-rcoulomb                 = 0.9
+rcoulomb                 = 1.0
 ; Relative dielectric constant for the medium and the reaction field
 epsilon-r                = 1
 epsilon-rf               = 0
@@ -107,9 +105,9 @@ vdw_type                 = cut-off
 vdw-modifier             = Potential-shift-Verlet
 ; cut-off lengths       
 rvdw-switch              = 0
-rvdw                     = 0.9
+rvdw                     = 1.0
 ; Apply long range dispersion corrections for Energy and Pressure
-DispCorr                 = EnerPres
+DispCorr                 = No
 ; Extension of the potential lookup tables beyond the cut-off
 table-extension          = 1
 ; Separate tables between energy group pairs
@@ -117,9 +115,9 @@ energygrp-table          =
 ; Spacing for the PME/PPPM FFT grid
 fourierspacing           = 0.12
 ; FFT grid size, when a value is 0 fourierspacing will be used
-fourier_nx               = 0
-fourier_ny               = 0
-fourier_nz               = 0
+fourier-nx               = 0
+fourier-ny               = 0
+fourier-nz               = 0
 ; EWALD/PME/PPPM parameters
 pme_order                = 4
 ewald_rtol               = 1e-5
@@ -141,20 +139,40 @@ tc-grps                  = System
 tau_t                    = 0.1
 ref_t                    = 300
 ; pressure coupling     
-pcoupl                   = Berendsen
-pcoupltype               = isotropic
+pcoupl                   = No
+pcoupltype               = Isotropic
 nstpcouple               = -1
 ; Time constant (ps), compressibility (1/bar) and reference P (bar)
-tau_p                    = 0.5
-compressibility          = 4.5e-5
-ref_p                    = 10.0
+tau-p                    = 1
+compressibility          = 
+ref-p                    = 
 ; Scaling of reference coordinates, No, All or COM
-refcoord_scaling         = com
+refcoord-scaling         = No
 
 ; OPTIONS FOR QMMM calculations
 QMMM                     = no
-; Groups treated with MiMiC
+; Groups treated Quantum Mechanically
 QMMM-grps                = 
+; QM method             
+QMmethod                 = 
+; QMMM scheme           
+QMMMscheme               = normal
+; QM basisset           
+QMbasis                  = 
+; QM charge             
+QMcharge                 = 
+; QM multiplicity       
+QMmult                   = 
+; Surface Hopping       
+SH                       = 
+; CAS space options     
+CASorbitals              = 
+CASelectrons             = 
+SAon                     = 
+SAoff                    = 
+SAsteps                  = 
+; Scale factor for MM charges
+MMChargeScaleFactor      = 1
 
 ; SIMULATED ANNEALING  
 ; Type of annealing for each temperature group (no/single/periodic)
@@ -174,7 +192,7 @@ gen-seed                 = -1
 ; OPTIONS FOR BONDS    
 constraints              = none
 ; Type of constraint algorithm
-constraint_algorithm     = lincs
+constraint-algorithm     = Lincs
 ; Do not constrain the start configuration
 continuation             = no
 ; Use successive overrelaxation to reduce the number of shake iterations

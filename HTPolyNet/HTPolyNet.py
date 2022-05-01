@@ -245,6 +245,8 @@ class HTPolyNet:
     def SCUR(self):
         # Search - Connect - Update - Relax
         cwd=pfs.next_results_dir(restart=self.cfg.parameters['restart'])
+        restart=self.cfg.parameters['restart']
+        force_scur=self.cfg.parameters.get('force_scur',False)
         logging.info('*'*10+' SEARCH - CONNECT - UPDATE - RELAX  BEGINS '+'*'*10)
         max_nxlinkbonds=self.cfg.maxconv # only for a stoichiometric system
         logging.debug(f'SCUR: max_nxlinkbonds {max_nxlinkbonds}')
@@ -261,10 +263,10 @@ class HTPolyNet:
         while not scur_complete:
             logging.info(f'SCUR iteration {iter} begins')
             scur_complete=True
-            newbonds=self.scur_make_bonds(scur_search_radius)
+            newbonds=self.scur_make_bonds(scur_search_radius,iter,force_scur=force_scur)
             if len(newbonds)>0:
-                self.update_topology_and_coordinates(newbonds,iter)
-                self.gromacs_stepwise_relaxation(newbonds,iter)
+                top,gro,newbonds=self.update_topology_and_coordinates(newbonds,iter)
+                self.gromacs_stepwise_relaxation(newbonds,top,gro,iter)
             curr_nxlinkbonds+=len(newbonds)
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
@@ -283,7 +285,17 @@ class HTPolyNet:
         logging.info(f'SCUR iterations complete.')
         # TODO: any post-cure reactions handled here
 
-    def scur_make_bonds(self,radius):
+    def scur_make_bonds(self,radius,iter,force_scur=False):
+        if os.path.exists(f'keepbonds-{iter}.dat') and not force_scur:
+            logging.debug(f'keepbonds-{iter}.dat found.  Reading.')
+            with open (f'keepbonds-{iter}.dat','r') as f:
+                lines=f.read().split('\n')
+                keepbonds=[]
+                for line in lines:
+                    t=line.split()
+                    b=(int(t[0]),int(t[1]))
+                    keepbonds.append((b,t[2]))
+                return keepbonds
         adf=self.Coordinates.A
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         newbonds=[]
@@ -298,11 +310,11 @@ class HTPolyNet:
                 logging.debug(f'  -> bond {bond}: A {A}  B {B}')
                 aname=A['atom']
                 aresname=R.reactants[A['reactant']]
-                aresid=A['resid']
+                # aresid=A['resid']
                 az=A['z']
                 bname=B['atom']
                 bresname=R.reactants[B['reactant']]
-                bresid=B['resid']
+                # bresid=B['resid']
                 bz=B['z']
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
@@ -344,6 +356,8 @@ class HTPolyNet:
                 atomset.remove(b[1])
                 keepbonds.append((b,n[2]))
         logging.debug(f'*** accepted the {len(keepbonds)} shortest non-competing bonds')
+        with open(f'keepbonds-{iter}.dat','w') as f:
+            f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in keepbonds))
         return keepbonds
 
     def update_topology_and_coordinates(self,keepbonds,iter):    
@@ -351,34 +365,38 @@ class HTPolyNet:
         logging.debug(f'update_topology_and_coordinates begins.')
         if len(keepbonds)>0:
             bondlist=[i[0] for i in keepbonds]
-            logging.debug(f'update_topo_coords: bondlist: {bondlist}')
+            # logging.debug(f'update_topo_coords: bondlist: {bondlist}')
             idx_to_delete=self.make_bonds(bondlist)
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
-            reindexed_bondlist=[(idx_mapper[i[0][0]],idx_mapper[i[0][1]],i[1]) for i in keepbonds]
+            reindexed_bondlist=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
             self.map_charges_from_templates(reindexed_bondlist)
             basefilename=f'scur-step-{iter}'
-            self.Topology.write_gro(basefilename+'.top') # this is a good topology
+            self.Topology.to_file(basefilename+'.top') # this is a good topology
             self.Coordinates.write_gro(basefilename+'.gro')
             logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
-            return (basefilename+'.top',basefilename+'.gro')
+            return (basefilename+'.top',basefilename+'.gro',reindexed_bondlist)
 
     def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords,iter):
         self.checkout('mdp/em.mdp')
-        self.checkout('mdp/npt-1.mdp')
+        self.checkout('mdp/nvt-newbonds.mdp')
         tmpT=Topology.read_gro(fulltop)
+        logging.debug(f'tmpT system\n{tmpT.D["system"].to_string()}')
         tmpC=Coordinates.read_gro(initcoords)
         pref,ext=os.path.splitext(fulltop)
-        n_stages=self.cfg.parameters['max_bond_relaxation_stages']
+        n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
+        bonds=[b[0] for b in newbonds] # strip the product template names
+        factors=np.logspace(-5,0,n_stages)
         for i in range(n_stages):
-            saveT=tmpT.copy_bond_parameters(newbonds)
-            tmpT.attenuate_bond_parameters(newbonds,(i+1)/n_stages)
+            saveT=tmpT.copy_bond_parameters(bonds)
+            tmpT.attenuate_bond_parameters(bonds,factors[i])
             stagepref=pref+f'-iter-{iter}-stage-{i}'
-            tmpT.write_gro(stagepref+'.top')
+            tmpT.to_file(stagepref+'.top')
             tmpC.write_gro(stagepref+'.gro')
+            stageprefmin=stagepref+'-min'
             stageprefout=stagepref+'-out'
             # rename files below!!!
-            msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stageprefout,mdp='em')
-            msg=grompp_and_mdrun(gro=stageprefout,top=stagepref,out=stageprefout,mdp='npt-1')
+            msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stageprefmin,mdp='em')
+            msg=grompp_and_mdrun(gro=stageprefmin,top=stagepref,out=stageprefout,mdp='nvt-newbonds')
             sacmol=Coordinates.read_gro(stageprefout+'.gro')
             tmpC.copy_coords(sacmol)
             tmpT.restore_bond_parameters(saveT)
@@ -395,7 +413,7 @@ class HTPolyNet:
         idx_mapper=self.Topology.delete_atoms(atomlist)
         return idx_mapper # returns to old-to-new index mapper dictionary
 
-    def map_charges_from_template(self,bondlist):
+    def map_charges_from_templates(self,bondlist):
         pass
 
     def initreport(self):

@@ -22,6 +22,11 @@ def typeorder(a):
         return a if a[1]<a[2] else a[::-1]
 idxorder=typeorder  # same syntax to order global atom indices in an interaction index
 
+def repeat_check(t,msg=''):
+    for i in range(len(t)):
+        for j in range(i+1,len(t)):
+            assert t[i]!=t[j],f'Error: repeated index in {len(t)}-tuple {t}: t({i})={t[i]}\n{msg}'
+
 def df_typeorder(df,typs):
     for i in df.index:
         df.loc[i,typs]=typeorder(tuple(df.loc[i,typs]))
@@ -69,6 +74,11 @@ _GromacsTopologyDirectiveHeaders_={
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
+_GromacsTopologyDirective_ExtraAttributes_={
+    'bonds':['needs_relaxing'],
+    'angles':['needs_relaxing'],
+    'dihedrals':['needs_relaxing']
+}
 _GromacsTopologyHashables_={
     'atoms':['nr'],
     'pairs':['ai', 'aj'],
@@ -108,7 +118,7 @@ class Topology:
         self.D={}
         for k,v in _GromacsTopologyDirectiveDefaults_.items():
             hdr=_GromacsTopologyDirectiveHeaders_[k]
-            dfdict={k:[a] for k,a in zip(hdr,v)}
+            dfdict={kk:[a] for kk,a in zip(hdr,v)}
             self.D[k]=pd.DataFrame(dfdict)
         self.D['system']=pd.DataFrame({'name':[system]})
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
@@ -331,13 +341,14 @@ class Topology:
         assert 'defaults' in self.D, 'Error: no [ defaults ] in topology?'
         for k in _GromacsTopologyDirectiveOrder_:
             if k in self.D:
+                columns=_GromacsTopologyDirectiveHeaders_[k]
                 with open(filename,'a') as f:
                     f.write(f'[ {k} ]\n; ')
                 if k in _GromacsTopologyHashables_:
                     odf=self.D[k].sort_values(by=_GromacsTopologyHashables_[k])
                     odf.to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
                 else:
-                    self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
+                    self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False,escapechar='*')
                 with open(filename,'a') as f:
                     f.write('\n')
         with open(filename,'a') as f:
@@ -383,12 +394,12 @@ class Topology:
             # if this bond is not in the topology
             if not (ai,aj) in bmi:
                 newbonds.append((ai,aj))
-                logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
+                # logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
                 it=at.iloc[ai-1].type
                 jt=at.iloc[aj-1].type
                 idx=typeorder((it,jt))
                 if idx in ij.index:
-                    bt=ij.loc[idx,'func']
+                    bt=ij.loc[idx,'func']  # why don't i need need values[0]
                 else:
                     raise Exception(f'no bondtype {idx} found.')
                 # add a new bond!
@@ -396,10 +407,10 @@ class Topology:
                 data=[ai,aj,bt,pd.NA,pd.NA]
                 assert len(h)==len(data), 'Error: not enough data for new bond?'
                 bonddict={k:[v] for k,v in zip(h,data)}
-                self.D['bonds']=pd.concat((self.D['bonds'],pd.DataFrame(bonddict)),ignore_index=True)
-                logging.info(f'just added {bonddict}')
-                # update the bondlist
-                self.bondlist.append([ai,aj])
+                bdtoadd=pd.DataFrame(bonddict)
+                self.D['bonds']=pd.concat((self.D['bonds'],bdtoadd),ignore_index=True)
+                # logging.info(f'add_bond:\n{bdtoadd.to_string()}')
+                # logging.info(f'just added {bonddict}')
                 if 'mol2_bonds' in self.D:
                     data=[len(self.D['mol2_bonds']),ai,aj,1] # assume single bond
                     bonddict={k:[v] for k,v in zip(['bondIdx','ai','aj','type'],data)}
@@ -430,8 +441,9 @@ class Topology:
                 kt=at.iloc[ak-1].type
                 idx=typeorder((it,jt,kt))
                 if idx in ijk.index:
-                    angletype=ijk.loc[idx,'func']
+                    angletype=ijk.loc[idx,'func']  # why no .values[0]
                     i,j,k=idxorder((ai,aj,ak))
+                    repeat_check((i,j,k))
                     h=_GromacsTopologyDirectiveHeaders_['angles']
                     data=[i,j,k,angletype,pd.NA,pd.NA]
                     assert len(h)==len(data), 'Error: not enough data for new angle?'
@@ -451,8 +463,9 @@ class Topology:
                 kt=at.iloc[ak-1].type
                 idx=typeorder((it,jt,kt))
                 if idx in ijk.index:
-                    angletype=ijk.loc[idx,'func']
+                    angletype=ijk.loc[idx,'func'] # why no .values[0]
                     i,j,k=idxorder((ai,aj,ak))
+                    repeat_check((i,j,k))
                     h=_GromacsTopologyDirectiveHeaders_['angles']
                     data=[i,j,k,angletype,pd.NA,pd.NA]
                     assert len(h)==len(data), 'Error: not enough data for new angle?'
@@ -479,8 +492,9 @@ class Topology:
                     lt=at.iloc[al-1].type
                     idx=typeorder((it,jt,kt,lt))
                     if idx in ijkl.index:
-                        dihedtype=ijkl.loc[idx,'func']
+                        dihedtype=ijkl.loc[idx,'func'].values[0] # why values[0]
                         i,j,k,l=idxorder((ai,aj,ak,al))
+                        repeat_check((i,j,k,l),msg=f'central {j}-{k}')
                         h=_GromacsTopologyDirectiveHeaders_['dihedrals']
                         data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
                         assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
@@ -494,15 +508,17 @@ class Topology:
             ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
             for ai,aj in zip(b,reversed(b)):
                 for ak in [k for k in self.bondlist.partners_of(aj) if k!=ai]:
-                    for al in [l for l in self.bondlist.partners_of(ak) if l!=ak]:
+                    for al in [l for l in self.bondlist.partners_of(ak) if l!=aj]:
                         it=at.iloc[ai-1].type
                         jt=at.iloc[aj-1].type
                         kt=at.iloc[ak-1].type
                         lt=at.iloc[al-1].type
                         idx=typeorder((it,jt,kt,lt))
                         if idx in ijkl.index:
-                            dihedtype=ijkl.loc[idx,'func']
+                            dihedtype=ijkl.loc[idx,'func'].values[0]
+                            # dihedtype=ijkl.loc[idx,'func']
                             i,j,k,l=idxorder((ai,aj,ak,al))
+                            repeat_check((i,j,k,l),msg=f'i-j neighbor of j-k {j}-{k}')
                             h=_GromacsTopologyDirectiveHeaders_['dihedrals']
                             data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
                             assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
@@ -523,8 +539,9 @@ class Topology:
                         lt=at.iloc[al-1].type
                         idx=typeorder((it,jt,kt,lt))
                         if idx in ijkl.index:
-                            dihedtype=ijkl.loc[idx,'func']
+                            dihedtype=ijkl.loc[idx,'func'].values[0]
                             i,j,k,l=idxorder((ai,aj,ak,al))
+                            repeat_check((i,j,k,l),msg=f'k-l neighbor of j-k {j}-{k}')
                             h=_GromacsTopologyDirectiveHeaders_['dihedrals']
                             data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
                             assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
@@ -534,6 +551,10 @@ class Topology:
                         else:
                             if not quiet:
                                 logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+
+        # update the bondlist
+        for b in newbonds:
+            self.bondlist.append(b)
 
 
     def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
@@ -551,7 +572,7 @@ class Topology:
             oldGI=d['nr'].copy()
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(oldGI,d['nr'])}
-            logging.debug(f'delete_atoms: mapper {mapper}')
+            # logging.debug(f'delete_atoms: mapper {mapper}')
             if len(return_idx_of)>0:
                 logging.info(f'Asking for updated global indexes of {return_idx_of}')
                 new_idx=[mapper[o] for o in return_idx_of]
@@ -732,7 +753,10 @@ class Topology:
         saveme=pd.DataFrame(columns=bdf.columns)
         for b in bonds:
             ai,aj=idxorder(b)
+            # TODO: don't save bonds that don't have explicit override parameters
+            # logging.debug(f'copy parameters for ai {ai} aj {aj}')
             saveme=saveme.append(bdf[(bdf['ai']==ai)&(bdf['aj']==aj)])
+        logging.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
     # 'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
     # 'bondtypes':['i','j','func','b0','kb'],
@@ -742,15 +766,20 @@ class Topology:
         tdf=self.D['bondtypes']
         for b in bonds:
             ai,aj=idxorder(b)
-            b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']
-            kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']
-            if b0==pd.NA or kb==pd.NA:
+            b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0'].values[0]
+            kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1'].values[0]
+            logging.debug(f'atten ai {ai} aj {aj} b0 {b0} kb {kb}')
+            # if b0==pd.NA or kb==pd.NA:
+            if pd.isna(b0) or pd.isna(kb):
                 ''' no overrides for this bond, so take from types '''
-                it=adf.loc[adf['nr']==ai,'type']
-                jt=adf.loc[adf['nr']==aj,'type']
+                it=adf.loc[adf['nr']==ai,'type'].values[0]
+                jt=adf.loc[adf['nr']==aj,'type'].values[0]
                 it,jt=typeorder((it,jt))
-                b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0']
-                kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb']
+                b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0'].values[0]
+                kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb'].values[0]
+                logging.debug(f'->using types it {it} jt {jt} b0 {b0} kb {kb}')
+            # write explicit override parameters for this bond; kb is attenuated
+            logging.debug(f'kb attentuated to {kb*factor}')
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=b0
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
 
