@@ -348,8 +348,10 @@ class HTPolyNet:
 
     def update_topology_and_coordinates(self,keepbonds,iter):    
         ''' make the new bonds '''
+        logging.debug(f'update_topology_and_coordinates begins.')
         if len(keepbonds)>0:
-            bondlist=[i[0:2] for i in keepbonds]
+            bondlist=[i[0] for i in keepbonds]
+            logging.debug(f'update_topo_coords: bondlist: {bondlist}')
             idx_to_delete=self.make_bonds(bondlist)
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             reindexed_bondlist=[(idx_mapper(i[0]),idx_mapper(i[1]),i[2]) for i in keepbonds]
@@ -357,6 +359,7 @@ class HTPolyNet:
             basefilename=f'scur-step-{iter}'
             self.Topology.write_gro(basefilename+'.top') # this is a good topology
             self.Coordinates.write_gro(basefilename+'.gro')
+            logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
             return (basefilename+'.top',basefilename+'.gro')
 
     def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords,iter):
@@ -368,8 +371,8 @@ class HTPolyNet:
         n_stages=self.cfg.parameters['max_bond_relaxation_stages']
         for i in range(n_stages):
             saveT=tmpT.copy_bond_parameters(newbonds)
-            tmpT.attenuate_bond_parameters(newbonds,i/n_stages)
-            stagepref=pref+f'-stage-{i}'
+            tmpT.attenuate_bond_parameters(newbonds,(i+1)/n_stages)
+            stagepref=pref+f'-iter-{iter}-stage-{i}'
             tmpT.write_gro(stagepref+'.top')
             tmpC.write_gro(stagepref+'.gro')
             stageprefout=stagepref+'-out'
@@ -382,9 +385,9 @@ class HTPolyNet:
         self.Coordinates.copy_coords(tmpC)
         return 0
 
-    def make_bonds(self,bondlist):
-        self.Topology.add_bonds(bondlist)
-        idx_to_delete=self.Coordinates.find_sacrificial_H(bondlist)
+    def make_bonds(self,pairs):
+        self.Topology.add_bonds(pairs,quiet=True)
+        idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology.bondlist)
         return idx_to_delete
 
     def delete_atoms(self,atomlist):

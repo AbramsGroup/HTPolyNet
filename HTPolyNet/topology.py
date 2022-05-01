@@ -370,7 +370,7 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
-    def add_bonds(self,pairs=[]):
+    def add_bonds(self,pairs=[],quiet=False):
         ''' add bonds to a topology
             pairs:  list of 2-tuples of atom global indices '''
         at=self.D['atoms']
@@ -440,7 +440,8 @@ class Topology:
                     newangles.append([i,j,k])
                 else:
                     # no longer exception but warning
-                    logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
+                    if not quiet:
+                        logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
             ''' new angles due to other neighbors of b[1] '''
             for ak in [k for k in self.bondlist.partners_of(b[1]) if k!=b[0]]:
                 ai=b[0]
@@ -459,7 +460,8 @@ class Topology:
                     self.D['angles']=pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
                     newangles.append([i,j,k])
                 else:
-                    logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
+                    if not quiet:
+                        logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
 
             ''' DIHEDRALS i-j-k-l
                 j-k is the torsion bond
@@ -486,7 +488,8 @@ class Topology:
                         self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                         newdihedrals.append([i,j,k,l])
                 else:
-                    logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+                    if not quiet:
+                        logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
 
             ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
             for ai,aj in zip(b,reversed(b)):
@@ -507,7 +510,8 @@ class Topology:
                             self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
-                            logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+                            if not quiet:
+                                logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
 
             ''' new proper dihedrals for which the new bond is the k-l or l-k bond '''
             for ak,al in zip(b,reversed(b)):
@@ -528,7 +532,8 @@ class Topology:
                             self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
                         else:
-                            logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+                            if not quiet:
+                                logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
 
 
     def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
@@ -722,19 +727,38 @@ class Topology:
                     self.residue_network.add_edge(ri,rj)
 
     def copy_bond_parameters(self,bonds):
-        ij=self.D['bondtypes'].set_index(['i','j'])
-        bmi=self.D['bonds'].set_index(['ai','aj']).index
+        ''' saves any override parameters for bonds with atom indices in 'bonds' '''
+        bdf=self.D['bonds']
+        saveme=pd.DataFrame(columns=bdf.columns)
         for b in bonds:
             ai,aj=idxorder(b)
-            it=self.get_atomtype(ai)
-            jt=self.get_atomtype(aj)
-            bt=typeorder(it,jt)
-            btd=ij.loc[bt]
-            # TODO figure out
-    
+            saveme=saveme.append(bdf[(bdf['ai']==ai)&(bdf['aj']==aj)])
+        return saveme
+    # 'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
+    # 'bondtypes':['i','j','func','b0','kb'],
     def attenuate_bond_parameters(self,bonds,factor):
-        pass
+        bdf=self.D['bonds']
+        adf=self.D['atoms']
+        tdf=self.D['bondtypes']
+        for b in bonds:
+            ai,aj=idxorder(b)
+            b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']
+            kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']
+            if b0==pd.NA or kb==pd.NA:
+                ''' no overrides for this bond, so take from types '''
+                it=adf.loc[adf['nr']==ai,'type']
+                jt=adf.loc[adf['nr']==aj,'type']
+                it,jt=typeorder((it,jt))
+                b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0']
+                kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb']
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=b0
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
 
     def restore_bond_parameters(self,df):
-        pass
+        bdf=self.D['bonds']
+        for i,r in df.iterrows():
+            ai,aj=r['ai'],r['aj']
+            c0,c1=r['c0'],r['c1']
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=c0
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=c1
 
