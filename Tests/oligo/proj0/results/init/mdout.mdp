@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: unknown (1000)
 ;	On host: abrams-Latitude-E5470
-;	At date: Sun May  1 16:52:29 2022
+;	At date: Sun May  1 18:19:06 2022
 ;
 ;	Created by:
 ;	             :-) GROMACS - gmx grompp, 2020.1-Ubuntu-2020.1-1 (-:
@@ -24,7 +24,7 @@ define                   =
 integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
-dt                       = 0.002
+dt                       = 0.001
 nsteps                   = 10000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
@@ -35,7 +35,7 @@ comm-mode                = Linear
 ; number of steps for center of mass motion removal
 nstcomm                  = 10
 ; group(s) for center of mass motion removal
-comm-grps                = 
+comm-grps                = System
 
 ; LANGEVIN DYNAMICS OPTIONS
 ; Friction coefficient (amu/ps) and random seed
@@ -88,7 +88,7 @@ periodic-molecules       = no
 ; a value of -1 means: use rlist
 verlet-buffer-tolerance  = 0.005
 ; nblist cut-off        
-rlist                    = 1.0
+rlist                    = 0.9
 ; long-range cut-off for switched potentials
 
 ; OPTIONS FOR ELECTROSTATICS AND VDW
@@ -96,7 +96,7 @@ rlist                    = 1.0
 coulombtype              = PME
 coulomb-modifier         = Potential-shift-Verlet
 rcoulomb-switch          = 0
-rcoulomb                 = 1.0
+rcoulomb                 = 0.9
 ; Relative dielectric constant for the medium and the reaction field
 epsilon-r                = 1
 epsilon-rf               = 0
@@ -105,7 +105,7 @@ vdw_type                 = cut-off
 vdw-modifier             = Potential-shift-Verlet
 ; cut-off lengths       
 rvdw-switch              = 0
-rvdw                     = 1.0
+rvdw                     = 0.9
 ; Apply long range dispersion corrections for Energy and Pressure
 DispCorr                 = No
 ; Extension of the potential lookup tables beyond the cut-off

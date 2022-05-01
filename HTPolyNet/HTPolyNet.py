@@ -366,10 +366,13 @@ class HTPolyNet:
         if len(keepbonds)>0:
             bondlist=[i[0] for i in keepbonds]
             # logging.debug(f'update_topo_coords: bondlist: {bondlist}')
+            logging.debug(f'Making {len(bondlist)} bonds.')
             idx_to_delete=self.make_bonds(bondlist)
+            logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             reindexed_bondlist=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
-            self.map_charges_from_templates(reindexed_bondlist)
+#            self.map_charges_from_templates(reindexed_bondlist)
+            self.Topology.adjust_charges()
             basefilename=f'scur-step-{iter}'
             self.Topology.to_file(basefilename+'.top') # this is a good topology
             self.Coordinates.write_gro(basefilename+'.gro')
@@ -388,7 +391,7 @@ class HTPolyNet:
         factors=np.logspace(-5,0,n_stages)
         for i in range(n_stages):
             saveT=tmpT.copy_bond_parameters(bonds)
-            tmpT.attenuate_bond_parameters(bonds,factors[i])
+            #tmpT.attenuate_bond_parameters(bonds,factors[i])
             stagepref=pref+f'-iter-{iter}-stage-{i}'
             tmpT.to_file(stagepref+'.top')
             tmpC.write_gro(stagepref+'.gro')
