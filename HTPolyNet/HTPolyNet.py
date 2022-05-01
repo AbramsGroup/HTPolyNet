@@ -354,7 +354,7 @@ class HTPolyNet:
             logging.debug(f'update_topo_coords: bondlist: {bondlist}')
             idx_to_delete=self.make_bonds(bondlist)
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
-            reindexed_bondlist=[(idx_mapper(i[0]),idx_mapper(i[1]),i[2]) for i in keepbonds]
+            reindexed_bondlist=[(idx_mapper[i[0][0]],idx_mapper[i[0][1]],i[1]) for i in keepbonds]
             self.map_charges_from_templates(reindexed_bondlist)
             basefilename=f'scur-step-{iter}'
             self.Topology.write_gro(basefilename+'.top') # this is a good topology

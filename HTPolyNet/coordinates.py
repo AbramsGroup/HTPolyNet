@@ -558,7 +558,7 @@ class Coordinates:
         idx_to_delete=[]
         for b in pairs:
             ai,aj=b
-            idx_to_delete.append(self.sacH(ai,aj,bondlist))
+            idx_to_delete.extend(self.sacH(ai,aj,bondlist))
         return idx_to_delete
 
     def sacH(self,ai,aj,bondlist):
