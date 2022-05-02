@@ -381,6 +381,8 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
+
+    # parameterization fucked up some atom types!
     def add_bonds(self,pairs=[],ignores=[],quiet=False):
         ''' add bonds to a topology
             pairs:  list of 2-tuples of atom global indices '''
