@@ -153,7 +153,12 @@ class Coordinates:
                     series['atomName'].append(x[10:15].strip())
                     ''' if formatted correctly, globalIdx is row index + 1 always! '''
                     series['globalIdx'].append(int(x[15:20].strip()))
-                    numbers=list(map(float,[y.strip() for y in x[20:].split()]))
+                    # split won't work since sometimes there might be no spaces
+                    # "%5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"
+                    #numbers=list(map(float,[y.strip() for y in x[20:].split()]))
+                    numbers=list(map(float,[x[20+8*i:20+8*(i+1)] for i in range(0,3)]))
+                    if len(x)>44:
+                        numbers.extend(list(map(float,[x[44+8*i:44+8*(i+1)] for i in range(0,3)])))
                     series['posX'].append(numbers[0])
                     series['posY'].append(numbers[1])
                     series['posZ'].append(numbers[2])
@@ -479,7 +484,12 @@ class Coordinates:
     def read_atomset_attributes(self,filename='',attributes=[]):
         if filename=='':
             raise Exception('Please provide a file name from which you want to read atom attributes')
-        df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
+        # if no particular attributes are asked for, read them all in
+        if len(attributes)==0:
+            df=pd.read_csv(filename,sep='\s+',header=0)
+            assert 'globalIdx' in df,f'Error: {filename} does not have a \'globalIdx\' column'
+        else:
+            df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
         self.A=self.A.merge(df,how='outer',on='globalIdx')
         # logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
@@ -489,6 +499,23 @@ class Coordinates:
 
     def atomcount(self):
         return self.N
+
+    def decrement_z(self,pairs):
+        for b in pairs:
+            ai,aj=b
+            iz=self.get_atom_attribute('z',{'globalIdx':ai})-1
+            assert iz>=0,f'Error: decrementing z of atom {ai} gives erroneous z {iz}'
+            jz=self.get_atom_attribute('z',{'globalIdx':aj})-1
+            assert jz>=0,f'Error: decrementing z of atom {aj} gives erroneous z {jz}'
+            self.set_atom_attribute('z',iz,{'globalIdx':ai})
+            self.set_atom_attribute('z',jz,{'globalIdx':aj})
+
+    def return_bond_lengths(self,bonds):
+        lengths=[]
+        for b in bonds:
+            ai,aj=b
+            lengths.append(self.rij(ai,aj))
+        return lengths
 
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         ''' computes the minimum distance between two collections of atoms '''

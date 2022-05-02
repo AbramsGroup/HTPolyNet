@@ -5,6 +5,7 @@
 import logging
 import os
 import shutil
+import yaml
 import argparse as ap
 import numpy as np
 from copy import deepcopy
@@ -232,19 +233,18 @@ class HTPolyNet:
         # ONLY copy posX, posY, and poxZ attributes!
         self.Coordinates.copy_coords(sacmol)
         self.Coordinates.box=sacmol.box.copy()
-        if os.path.exists('npt-1.glc'):
-            logging.info('npt-1.glc exists; no need to populate linkcell')
-            self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'],populate=False)
-            self.Coordinates.read_atomset_attributes('npt-1.glc',attributes=['linkcell-idx'])
-            self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
-        else:
-            self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'])
-            self.Coordinates.write_atomset_attributes(['linkcell-idx'],'npt-1.glc')
+        # if os.path.exists('npt-1.glc'):
+        #     logging.info('npt-1.glc exists; no need to populate linkcell')
+        #     self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'],populate=False)
+        #     self.Coordinates.read_atomset_attributes('npt-1.glc',attributes=['linkcell-idx'])
+        #     self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
+        # else:
+        #     self.Coordinates.linkcell_initialize(self.cfg.parameters['SCUR_cutoff'])
+        #     self.Coordinates.write_atomset_attributes(['linkcell-idx'],'npt-1.glc')
         pfs.cd('root')
 
     def SCUR(self):
         # Search - Connect - Update - Relax
-        cwd=pfs.next_results_dir(restart=self.cfg.parameters['restart'])
         restart=self.cfg.parameters['restart']
         force_scur=self.cfg.parameters.get('force_scur',False)
         logging.info('*'*10+' SEARCH - CONNECT - UPDATE - RELAX  BEGINS '+'*'*10)
@@ -253,21 +253,32 @@ class HTPolyNet:
         if max_nxlinkbonds==0:
             logging.warning(f'Apparently there are no crosslink bonds to be made! (sum of z == 0)')
             return
-        scur_complete=False
+        scur_finished=False
         scur_search_radius=self.cfg.parameters['SCUR_cutoff']
         desired_conversion=self.cfg.parameters['conversion']
         radial_increment=self.cfg.parameters.get('SCUR_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('max_SCUR_iterations',20)
         iter=0
         curr_nxlinkbonds=0
-        while not scur_complete:
-            logging.info(f'SCUR iteration {iter} begins')
-            scur_complete=True
-            newbonds=self.scur_make_bonds(scur_search_radius,iter,force_scur=force_scur)
-            if len(newbonds)>0:
-                top,gro,newbonds=self.update_topology_and_coordinates(newbonds,iter)
-                self.gromacs_stepwise_relaxation(newbonds,top,gro,iter)
-            curr_nxlinkbonds+=len(newbonds)
+        while not scur_finished:
+            cwd=pfs.next_results_dir()
+            num_newbonds=self.scur_iter_complete_check()
+            if num_newbonds>0:
+                logging.info(f'SCUR iteration {iter+1}/{maxiter} already ran.')
+            else:
+                logging.info(f'SCUR iteration {iter+1}/{maxiter} begins in {cwd}')
+                newbonds=self.scur_make_bonds(scur_search_radius,iter,force_scur=force_scur)
+                # logging.debug(f'NOTICE: only taking one bond for now!!')
+                # newbonds=newbonds[0:1]
+    #            logging.debug(f'{newbonds}')
+                if len(newbonds)>0:
+                    top,gro,newbonds=self.update_topology_and_coordinates(newbonds,iter)
+                    top,gro,grx=self.gromacs_stepwise_relaxation(newbonds,top,gro)
+                num_newbonds=len(newbonds)
+                logging.info(f'SCUR iteration {iter+1}/{maxiter} ends.')
+                self.scur_iter_complete_register(iter,top,gro,grx,num_newbonds)
+
+            curr_nxlinkbonds+=num_newbonds
             curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
             scur_complete=curr_conversion>desired_conversion
             scur_complete=scur_complete or iter>=maxiter
@@ -278,12 +289,44 @@ class HTPolyNet:
                     scur_search_radius += radial_increment
                     # TODO: prevent search radius from getting too large for box
                     logging.info(f'-> updating search radius to {scur_search_radius}')
-            iter+=1
-            logging.info(f'SCUR iteration {iter} ends (maxiter {maxiter})')
             logging.info(f'Current conversion: {curr_conversion}')
             logging.info(f'   SCUR complete? {scur_complete}')
+            iter+=1
         logging.info(f'SCUR iterations complete.')
         # TODO: any post-cure reactions handled here
+
+    def scur_iter_complete_register(self,iter,top,gro,grx,num_newbonds):
+        with open('complete.yaml','w') as f:
+            f.write(f'ITERATION: {iter+1}\n')
+            f.write(f'TOPOLOGY: {top}\n')
+            f.write(f'COORDINATES: {gro}\n')
+            f.write(f'EXTRA_ATTRIBUTES: {grx}\n')
+            f.write(f'NUM_NEWBONDS: {num_newbonds}\n')
+            f.close()
+
+    def scur_iter_complete_check(self):
+        num_newbonds=0
+        if os.path.exists('complete.yaml'):
+            with open('complete.yaml','r') as f:
+                basedict=yaml.safe_load(f)
+                top=os.path.basename(basedict['TOPOLOGY'])
+                gro=os.path.basename(basedict['COORDINATES'])
+                grx=os.path.basename(basedict['EXTRA_ATTRIBUTES'])
+                self.set_system(top,gro,grx=grx)
+                num_newbonds=basedict['NUM_NEWBONDS']
+            logging.info(f'SCUR iteration {iter+1} marked complete:')
+            logging.info(f'        topology    {top}')
+            logging.info(f'        coordinates {gro}')
+            logging.info(f'        extra_attr  {grx}')
+            logging.info(f'        #newbonds   {num_newbonds}')
+        return num_newbonds
+
+    def set_system(self,top,gro,grx=None):
+        logging.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
+        self.Topology=Topology.read_gro(top)
+        self.Coordinates=Coordinates.read_gro(gro)
+        if (grx):
+            self.Coordinates.read_atomset_attributes(grx)
 
     def scur_make_bonds(self,radius,iter,force_scur=False):
         if os.path.exists(f'keepbonds-{iter}.dat') and not force_scur:
@@ -297,6 +340,8 @@ class HTPolyNet:
                     keepbonds.append((b,t[2]))
                 return keepbonds
         adf=self.Coordinates.A
+        self.Coordinates.linkcell_initialize(radius)
+        # self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         newbonds=[]
         ''' generate the list of new bonds to make '''
@@ -364,50 +409,64 @@ class HTPolyNet:
         ''' make the new bonds '''
         logging.debug(f'update_topology_and_coordinates begins.')
         if len(keepbonds)>0:
-            bondlist=[i[0] for i in keepbonds]
+            pairs=[i[0] for i in keepbonds]
             # logging.debug(f'update_topo_coords: bondlist: {bondlist}')
-            logging.debug(f'Making {len(bondlist)} bonds.')
-            idx_to_delete=self.make_bonds(bondlist)
+            logging.debug(f'Making {len(pairs)} bonds.')
+            idx_to_delete=self.make_bonds(pairs)
             logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
-            reindexed_bondlist=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
-#            self.map_charges_from_templates(reindexed_bondlist)
+            reindexed_keepbonds=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
+            pairs=[i[0] for i in reindexed_keepbonds]
+            self.Coordinates.decrement_z(pairs)
+#            self.map_charges_from_templates(reindexed_keepbonds)
             self.Topology.adjust_charges()
             basefilename=f'scur-step-{iter}'
             self.Topology.to_file(basefilename+'.top') # this is a good topology
             self.Coordinates.write_gro(basefilename+'.gro')
             logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
-            return (basefilename+'.top',basefilename+'.gro',reindexed_bondlist)
+            return (basefilename+'.top',basefilename+'.gro',reindexed_keepbonds)
 
-    def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords,iter):
-        self.checkout('mdp/em.mdp')
-        self.checkout('mdp/nvt-newbonds.mdp')
+    def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords):
+        self.checkout('mdp/em-inter-scur-relax-stage.mdp')
+        self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
+        self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
+        self.checkout('mdp/npt-inter-scur-iter.mdp')
         tmpT=Topology.read_gro(fulltop)
         logging.debug(f'tmpT system\n{tmpT.D["system"].to_string()}')
         tmpC=Coordinates.read_gro(initcoords)
         pref,ext=os.path.splitext(fulltop)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bonds=[b[0] for b in newbonds] # strip the product template names
-        factors=np.logspace(-5,0,n_stages)
+        lengths=self.Coordinates.return_bond_lengths(bonds)
+        # factors=np.logspace(-5,0,n_stages)
+        # logging.debug(f'Bond k_b factors: {factors}')
         for i in range(n_stages):
             saveT=tmpT.copy_bond_parameters(bonds)
-            #tmpT.attenuate_bond_parameters(bonds,factors[i])
-            stagepref=pref+f'-iter-{iter}-stage-{i}'
+            tmpT.attenuate_bond_parameters(bonds,i,n_stages,lengths)
+            stagepref=pref+f'-stage-{i}'
             tmpT.to_file(stagepref+'.top')
             tmpC.write_gro(stagepref+'.gro')
-            stageprefmin=stagepref+'-min'
-            stageprefout=stagepref+'-out'
+            # stageprefmin=stagepref+'-min'
+            # stageprefout=stagepref+'-out'
             # rename files below!!!
-            msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stageprefmin,mdp='em')
-            msg=grompp_and_mdrun(gro=stageprefmin,top=stagepref,out=stageprefout,mdp='nvt-newbonds')
-            sacmol=Coordinates.read_gro(stageprefout+'.gro')
+            msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage')
+            msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage')
+            msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage')
+            sacmol=Coordinates.read_gro(stagepref+'-npt.gro')
             tmpC.copy_coords(sacmol)
             tmpT.restore_bond_parameters(saveT)
-        self.Coordinates.copy_coords(tmpC)
-        return 0
+        # stagepref=pref+f'-iter-{iter}-postbonds'
+        # self.Coordinates.copy_coords(tmpC)
+        # self.Coordinates.write_gro(stagepref+'.gro')
+        msg=grompp_and_mdrun(gro=stagepref+'-npt',top=pref,out=stagepref+'-post',mdp='npt-inter-scur-iter')
+        sacmol=Coordinates.read_gro(stagepref+'-post.gro')
+        self.Coordinates.copy_coords(sacmol)
+        self.Coordinates.write_atomset_attributes(['z'],stagepref+'-post.grx')
+        return fulltop,stagepref+'-post.gro',stagepref+'-post.grx'
 
     def make_bonds(self,pairs):
-        self.Topology.add_bonds(pairs,quiet=True)
+        idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology.bondlist)
+        self.Topology.add_bonds(pairs,ignores=idx_to_ignore,quiet=False)
         idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology.bondlist)
         return idx_to_delete
 

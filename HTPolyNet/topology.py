@@ -381,13 +381,13 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
-    def add_bonds(self,pairs=[],quiet=False):
+    def add_bonds(self,pairs=[],ignores=[],quiet=False):
         ''' add bonds to a topology
             pairs:  list of 2-tuples of atom global indices '''
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
-        bmi=self.D['bonds'].set_index(['ai','aj']).index
-        pmi=self.D['pairs'].set_index(['ai','aj']).index
+        bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
+        pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
         for b in pairs:
             ai,aj=idxorder(b)
@@ -400,11 +400,13 @@ class Topology:
                 idx=typeorder((it,jt))
                 if idx in ij.index:
                     bt=ij.loc[idx,'func']  # why don't i need need values[0]
+                    kb=ij.loc[idx,'kb']
+                    b0=ij.loc[idx,'b0']
                 else:
                     raise Exception(f'no bondtype {idx} found.')
                 # add a new bond!
                 h=_GromacsTopologyDirectiveHeaders_['bonds']
-                data=[ai,aj,bt,pd.NA,pd.NA]
+                data=[ai,aj,bt,b0,kb]  # this new bond will have override parameters
                 assert len(h)==len(data), 'Error: not enough data for new bond?'
                 bonddict={k:[v] for k,v in zip(h,data)}
                 bdtoadd=pd.DataFrame(bonddict)
@@ -417,8 +419,10 @@ class Topology:
                     self.D['mol2_bonds']=pd.concat((self.D['mol2_bonds'],pd.DataFrame(bonddict)),ignore_index=True)
                 # remove this pair from pairs if it's in there (it won't be)
                 if idx in pmi:
+                    logging.debug(f'Warning: new bond {ai}-{aj} was evidently in the [ pairs ]!')
                     d=self.D['pairs']
                     indexes_to_drop=d[(d.ai.isin(idx))&(d.aj.isin(idx))].index
+                    logging.debug(f'Dropping [ pair ]:\n{d[indexes_to_drop].to_string()}')
                     indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
@@ -433,7 +437,7 @@ class Topology:
         newdihedrals=[]
         for b in newbonds:
             ''' new angles due to other neighbors of b[0] '''
-            for ai in [i for i in self.bondlist.partners_of(b[0]) if i!=b[1]]:
+            for ai in [i for i in self.bondlist.partners_of(b[0]) if (i!=b[1] and not i in ignores)]:
                 aj=b[0]
                 ak=b[1]
                 it=at.iloc[ai-1].type
@@ -453,9 +457,9 @@ class Topology:
                 else:
                     # no longer exception but warning
                     if not quiet:
-                        logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
+                        logging.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
             ''' new angles due to other neighbors of b[1] '''
-            for ak in [k for k in self.bondlist.partners_of(b[1]) if k!=b[0]]:
+            for ak in [k for k in self.bondlist.partners_of(b[1]) if (k!=b[0] and not k in ignores)]:
                 ai=b[0]
                 aj=b[1]
                 it=at.iloc[ai-1].type
@@ -474,7 +478,7 @@ class Topology:
                     newangles.append([i,j,k])
                 else:
                     if not quiet:
-                        logging.warning(f'Angle type {idx} not found.  Hopefully you are about to parameterize!')
+                        logging.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
 
             ''' DIHEDRALS i-j-k-l
                 j-k is the torsion bond
@@ -484,8 +488,8 @@ class Topology:
 
             ''' new proper dihedrals for which the new bond is the central j-k bond '''
             aj,ak=idxorder(b)
-            for ai in [i for i in self.bondlist.partners_of(aj) if i!=ak]:
-                for al in [l for l in self.bondlist.partners_of(ak) if l!=aj]:
+            for ai in [i for i in self.bondlist.partners_of(aj) if (i!=ak and not i in ignores)]:
+                for al in [l for l in self.bondlist.partners_of(ak) if (l!=aj and not l in ignores)]:
                     it=at.iloc[ai-1].type
                     jt=at.iloc[aj-1].type
                     kt=at.iloc[ak-1].type
@@ -501,14 +505,19 @@ class Topology:
                         diheddict={k:[v] for k,v in zip(h,data)}
                         self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                         newdihedrals.append([i,j,k,l])
+                        ''' i-l is a new 1-4 pair '''
+                        h=_GromacsTopologyDirectiveHeaders_['pairs']
+                        data=[i,l,1]
+                        pairdict={k:[v] for k,v in zip(h,data)}
+                        self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
                 else:
                     if not quiet:
-                        logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+                        logging.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
 
             ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
             for ai,aj in zip(b,reversed(b)):
-                for ak in [k for k in self.bondlist.partners_of(aj) if k!=ai]:
-                    for al in [l for l in self.bondlist.partners_of(ak) if l!=aj]:
+                for ak in [k for k in self.bondlist.partners_of(aj) if (k!=ai and not k in ignores)]:
+                    for al in [l for l in self.bondlist.partners_of(ak) if (l!=aj and not l in ignores)]:
                         it=at.iloc[ai-1].type
                         jt=at.iloc[aj-1].type
                         kt=at.iloc[ak-1].type
@@ -525,14 +534,19 @@ class Topology:
                             diheddict={k:[v] for k,v in zip(h,data)}
                             self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
+                            ''' i-l is a new 1-4 pair '''
+                            h=_GromacsTopologyDirectiveHeaders_['pairs']
+                            data=[i,l,1]
+                            pairdict={k:[v] for k,v in zip(h,data)}
+                            self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
                         else:
                             if not quiet:
-                                logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+                                logging.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
 
             ''' new proper dihedrals for which the new bond is the k-l or l-k bond '''
             for ak,al in zip(b,reversed(b)):
-                for aj in [j for j in self.bondlist.partners_of(ak) if j!=al]:
-                    for ai in [i for i in self.bondlist.partners_of(aj) if i!=ak]:
+                for aj in [j for j in self.bondlist.partners_of(ak) if (j!=al and not j in ignores)]:
+                    for ai in [i for i in self.bondlist.partners_of(aj) if (i!=ak and not i in ignores)]:
                         it=at.iloc[ai-1].type
                         jt=at.iloc[aj-1].type
                         kt=at.iloc[ak-1].type
@@ -548,9 +562,14 @@ class Topology:
                             diheddict={k:[v] for k,v in zip(h,data)}
                             self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
                             newdihedrals.append([i,j,k,l])
+                            h=_GromacsTopologyDirectiveHeaders_['pairs']
+                            ''' i-l is a new 1-4 pair '''
+                            data=[i,l,1]
+                            pairdict={k:[v] for k,v in zip(h,data)}
+                            self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
                         else:
                             if not quiet:
-                                logging.warning(f'Dihedral type {idx} not found. Hopefully you are about to parameterize!')
+                                logging.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
 
         # update the bondlist
         for b in newbonds:
@@ -562,8 +581,7 @@ class Topology:
         d=self.D['atoms']
         new_idx=[]
         indexes_to_drop=d[d.nr.isin(idx)].index
-        logging.info(f'Deleting these atoms:')
-        logging.info(d[d.nr.isin(idx)].to_string())
+        logging.info(f'Deleting these [ atoms ]:\n{d.loc[indexes_to_drop].to_string()}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         mapper={}
@@ -584,6 +602,7 @@ class Topology:
                 #logging.debug(f'delete atom: {pt} df prior to deleting')
                 #logging.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+                logging.debug(f'Deleting these [ {pt} ]:\n{d.loc[indexes_to_drop].to_string()}')
                 #logging.debug(f'dropping {pt} {indexes_to_drop}')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
@@ -596,9 +615,11 @@ class Topology:
                     if pt=='bonds':
                         #logging.debug(f'delete atom: bondlist remake from')
                         #logging.debug(d.to_string())
+                        logging.debug(f'Updating bondlist...')
                         self.bondlist=Bondlist.fromDataFrame(d)
         d=self.D['angles']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index
+        logging.debug(f'Deleting these [ angles ]:\n{d.loc[indexes_to_drop].to_string()}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['angles']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:
@@ -609,6 +630,7 @@ class Topology:
         for four_body_type in ['dihedrals']:
             d=self.D[four_body_type]
             indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
+            logging.debug(f'Deleting these [ {four_body_type} ]:\n{d.loc[indexes_to_drop].to_string()}')
             indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
             self.D[four_body_type]=d.take(list(indexes_to_keep)).reset_index(drop=True)
             if reindex:
@@ -755,20 +777,23 @@ class Topology:
             ai,aj=idxorder(b)
             # TODO: don't save bonds that don't have explicit override parameters
             # logging.debug(f'copy parameters for ai {ai} aj {aj}')
-            saveme=saveme.append(bdf[(bdf['ai']==ai)&(bdf['aj']==aj)])
-        logging.info(f'saved bond override params\n{saveme.to_string()}')
+            saveme=pd.concat((saveme,bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()),ignore_index=True)
+        # logging.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
     # 'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
     # 'bondtypes':['i','j','func','b0','kb'],
-    def attenuate_bond_parameters(self,bonds,factor):
+    def attenuate_bond_parameters(self,bonds,stage,max_stages,lengths):
         bdf=self.D['bonds']
         adf=self.D['atoms']
         tdf=self.D['bondtypes']
-        for b in bonds:
+        factor=(stage+1)/max_stages
+        logging.debug(f'Attenuating {len(bonds)} bond in stage {stage+1}/{max_stages}')
+        for b,rij in zip(bonds,lengths):
             ai,aj=idxorder(b)
+            # logging.debug(f'atten ai {ai} aj {aj}')
             b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0'].values[0]
             kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1'].values[0]
-            logging.debug(f'atten ai {ai} aj {aj} b0 {b0} kb {kb}')
+            # logging.debug(f'atten rij {rij} b0 {b0} kb {kb}')
             # if b0==pd.NA or kb==pd.NA:
             if pd.isna(b0) or pd.isna(kb):
                 ''' no overrides for this bond, so take from types '''
@@ -777,10 +802,11 @@ class Topology:
                 it,jt=typeorder((it,jt))
                 b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0'].values[0]
                 kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb'].values[0]
-                logging.debug(f'->using types it {it} jt {jt} b0 {b0} kb {kb}')
+                # logging.debug(f'->using types it {it} jt {jt} b0 {b0} kb {kb}')
             # write explicit override parameters for this bond; kb is attenuated
-            logging.debug(f'kb attentuated to {kb*factor}')
-            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=b0
+            # logging.debug(f'b0 attentuated to {rij-factor*(rij-b0)}')
+            # logging.debug(f'kb attentuated to {kb*factor}')
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=rij-factor*(rij-b0)
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
 
     def restore_bond_parameters(self,df):

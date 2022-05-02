@@ -223,7 +223,7 @@ class ProjectFileSystem:
         self.plotsPath=self.projSubPaths['plots']
         os.chdir(self.resPath)
         self.resultsSubPaths={}
-        possibles=['init',*[f'step{i}' for i in range(maxstages)]]
+        possibles=['init',*[f'iter{i}' for i in range(maxstages)]]
         for p in possibles:
             if os.path.exists(p) and os.path.isdir(p):
                 self.resultsSubPaths[p]=os.path.join(self.resPath,p)
@@ -262,16 +262,22 @@ def cd(pathstring):
             return _PFS_.cwd
     raise Exception(f'Path {pathstring} cannot be located in the project file system')
     
-def next_results_dir(restart=False,maxstages=100):
-    possibles=['init',*[f'step{i}' for i in range(maxstages)]]
+def next_results_dir(restart=False,max_scur_iterations=100):
+    os.chdir(_PFS_.resPath)
+    possibles=['init',*[f'iter{i}' for i in range(max_scur_iterations)]]
     lastp=None
     for p in possibles:
-        if p in _PFS_.resultsSubPaths:
+        if os.path.exists(p):
             lastp=p
         else:
             break
-    logging.debug(f'next_results_dir {lastp} {p} {restart}')
-    if not restart:
+    nextp=p  # first in list that does not exist
+    if lastp and restart:  # there is a set of directories [init, step0, ]
+        if os.path.exists(os.path.join(lastp,'complete.yaml')):
+            logging.debug(f'{lastp} marked complete, no next directory found.')
+        else: # stay in this directory
+            nextp=lastp
+    if nextp==p:
         cpath=os.path.join(_PFS_.resPath,p)
         logging.debug(f'Making {cpath}')
         os.mkdir(cpath)
