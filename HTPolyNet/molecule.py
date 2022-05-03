@@ -90,7 +90,25 @@ class Molecule:
         logging.info(f'Hot md running...output to {n}-sea')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
-        self.set_atomset_attribute('sea-idx',analyze_sea(f'{n}-sea'))
+        sea_srs=analyze_sea(f'{n}-sea')
+        self.set_atomset_attribute('sea-idx',sea_srs)
+        # now, let's look at the topology parameters and see if this symmetry holds in them
+
+    def analyze_sea_topology(self):
+        tadf=self.Topology.D['atoms']
+        cadf=self.Coords.A
+        maxsea=cadf['sea-idx'].max()
+        for i in range(maxsea+1):
+            sea_indexes=cadf[cadf['sea-idx']==i]['globalIdx'].to_list()
+            sea_cls=tadf[tadf['nr'].isin(sea_indexes)]
+            logging.debug(f'{self.name} symmetry class {i}:\n{sea_cls.to_string()}')
+            for attr in ['type', 'residue', 'charge', 'mass']:
+                values=sea_cls[attr].values
+                flg=values[0]
+                chk=all(values==flg)
+                if not chk:
+                    logging.debug(f'Error: atoms in symmetry class {i} have different values of {attr}')
+
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
@@ -279,6 +297,12 @@ class Molecule:
 
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)
+
+    def get_bonds(self,B,intramolecular=False):
+        Ai,Aj=B
+        irn,ian=Ai
+        jrn,jan=Aj
+        
 
     def label_ring_atoms(self,cycles):
         adf=self.Coords.A

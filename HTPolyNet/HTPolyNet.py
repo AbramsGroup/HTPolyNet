@@ -119,12 +119,14 @@ class HTPolyNet:
                         if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
                             logging.info(f'Doing SEA calculation on {mname}')
                             M.calculate_sea()
+                            M.analyze_sea_topology()
                             M.Coords.write_atomset_attributes(['sea-idx'],f'{M.name}.sea')
                             checkin(f'molecules/parameterized/{mname}.sea',overwrite=force_checkin)
                         else:
                             logging.debug(f'Reading sea data into {M.name}')
                             self.checkout(f'molecules/parameterized/{mname}.sea')
                             M.read_atomset_attributes(f'{mname}.sea',attributes=['sea-idx'])
+                            M.analyze_sea_topology()
                     assert M.get_origin()!='unparameterized'
                     self.molecules[mname]=M
                     logging.info(f'Generated {mname}')
@@ -418,7 +420,7 @@ class HTPolyNet:
             reindexed_keepbonds=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
             pairs=[i[0] for i in reindexed_keepbonds]
             self.Coordinates.decrement_z(pairs)
-#            self.map_charges_from_templates(reindexed_keepbonds)
+#            self.map_charges_and_atomtypes_from_templates(reindexed_keepbonds)
             self.Topology.adjust_charges()
             basefilename=f'scur-step-{iter}'
             self.Topology.to_file(basefilename+'.top') # this is a good topology
@@ -475,7 +477,53 @@ class HTPolyNet:
         idx_mapper=self.Topology.delete_atoms(atomlist)
         return idx_mapper # returns to old-to-new index mapper dictionary
 
-    def map_charges_from_templates(self,bondlist):
+    def map_atomtypes_and_charges_from_templates(self,bonds):
+        atdf=self.Topology.D['atoms']
+        for b in bonds:
+            ai,aj,template_name=b
+            bondtree=self.Topology.bondtree_as_list((ai,aj),depth=4)
+            mappables=[]
+            for b in bondtree:
+                for i in range(2):
+                    if not b[i] in mappables:
+                        mappables.append(b[i])
+            madf=atdf[atdf['nr'].isin(mappables)]
+            logging.debug(f'Bond {b} mappable atoms:\n{madf.to_string()}')
+            R,T=self.cfg.get_reaction(template_name)
+            self.map_from_bond((ai,aj),madf,R,T)
+    
+    def map_from_bond(self,bond,adf,R,M):
+        ''' using 'bond' (2-tuple of globalIdx of new bond atoms) and 'adf'
+        (gromacs [ atoms ] dataframe of atoms within N bonds of this bond), and
+        reaction R and template molecule M (asymmetric initial version), assign
+        the symmetry-invariant atom attributes (type,resname,charge,mass) in madf
+        from M '''
+        g_tadf=self.Topology.D['atoms']
+        g_cadf=self.Coordinates.A
+        m_tadf=M.Topology.D['atoms']
+        m_cadf=M.Coords.A
+        ai,aj=bond
+        '''
+        1. from the system bond given, identify the
+           corresponding bond in the template
+        2. build a list of mappables from the template
+           and check that it is the same length
+           as the sent-in adf; maybe make it a df
+        3. Process the system df against the template
+           df to transfer symmetry-invariant attributes
+           to the system
+        
+        '''
+        isea=self.Coordinates.get_atom_attribute('sea-idx',{'globalIdx':ai})
+        jsea=self.Coordinates.get_atom_attribute('sea-idx',{'globalIdx':aj}
+        )
+        irn=self.Coordinates.get_atom_attribute('resName',{'globalIdx':ai})
+        jrn=self.Coordinates.get_atom_attribute('resName',{'globalIdx':aj}
+        )
+        mai=m_cadf[(m_cadf['sea-idx']==ai)&(m_cadf['resName']==irn)]['globalIdx'].to_list()
+        maj=m_cadf[(m_cadf['sea-idx']==aj)&(m_cadf['resName']==jrn)]['globalIdx'].to_list()
+        possible_bonds=list(product(mai,maj))
+
         pass
 
     def initreport(self):
@@ -490,10 +538,10 @@ class HTPolyNet:
         self.generate_molecules(
             force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin
         )
-        self.initialize_global_topology()
-        self.setup_liquid_simulation()
-        self.do_liquid_simulation()
-        self.SCUR()
+        # self.initialize_global_topology()
+        # self.setup_liquid_simulation()
+        # self.do_liquid_simulation()
+        # self.SCUR()
 
 def info():
     print('This is some information on your installed version of HTPolyNet')

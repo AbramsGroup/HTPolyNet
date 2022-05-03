@@ -170,6 +170,16 @@ class Configuration:
             logging.debug(f'symmetry-derived reaction {nR.name} atoms {nR.atoms}')
         self.reactions.extend(extra_reactions)
 
+    def get_reaction(self,product_name):
+        if '-' in product_name:
+            base_product_name,sym=product_name.split('-')
+        else:
+            base_product_name,sym=product_name,'0'
+        for r in self.reactions:
+            if r.product==base_product_name:
+                return r,self.molecules[r.product]
+        return None,None
+
     def calculate_maximum_conversion(self):
         N={}
         for item in self.initial_composition:

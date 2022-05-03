@@ -645,6 +645,23 @@ class Topology:
             return new_idx
         return mapper
         
+    def bondtree_as_list(self,root,depth):
+        if depth==0:
+            return [root]
+        a,b=root
+        abranch=[]
+        for an in self.bondlist.partners_of(a):
+            if an!=b:
+                abranch.extend(self.bondtree_as_list((a,an),depth-1))
+        bbranch=[]
+        for bn in self.bondlist.partners_of(b):
+            if bn!=a:
+                bbranch.extend(self.bondtree_as_list((b,bn),depth-1))
+        result=[root]
+        result.extend(abranch)
+        result.extend(bbranch)
+        return result
+    
     def _myconcat(self,other,directive='',idxlabel=[],idxshift=0,drop_duplicates=False):
         if not directive in other.D:
             return
