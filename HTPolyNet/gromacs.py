@@ -64,7 +64,8 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     c=Command('gmx mdrun',deffnm=out)
     c.run()
     if os.path.exists(f'{out}.gro'):
-        logging.info(f'grompp_and_run completed.  Check {gro}.gro.')
+        pass
+        # logging.info(f'grompp_and_run completed.  Check {gro}.gro.')
     else:
         logging.error(f'gmx mdrun ended prematurely; {gro}.gro not found.')
         raise Exception(f'gmx mdrun ended prematurely; {gro}.gro not found.')

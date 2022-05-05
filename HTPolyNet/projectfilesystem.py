@@ -154,84 +154,67 @@ class RuntimeLibrary:
         return retstr
 
 class ProjectFileSystem:
-    def __init__(self,root='.',verbose=False,reProject=False,userlibrary=None,mock=False):
+    def __init__(self,root='.',topdirs=['molecules','systems','plots'],verbose=False,reProject=False,userlibrary=None,mock=False):
         self.rootPath=os.path.abspath(root)
+        os.chdir(self.rootPath)
         self.cwd=self.rootPath
         self.verbose=verbose
-        self.cd(self.rootPath)
         if not mock:
             self._next_project_dir(reProject=reProject)
-            self._setup_project_root()
-            os.chdir(self.rootPath)
+            self._setup_project_dir(topdirs=topdirs)
         self.library=RuntimeLibrary.system()
         self.userlibrary=None
         if userlibrary:
             self.userlibrary=RuntimeLibrary.user(userlibrary)
 
-    def cd(self,dest=''):
-        os.chdir(dest)
-        self.cwd=os.getcwd()
-        if (self.verbose):
-            logging.info(f'cwd: {self.cwd}')
-        return self.cwd
+    # def cd(self,dest=''):
+    #     os.chdir(dest)
+    #     self.cwd=os.getcwd()
+    #     if (self.verbose):
+    #         logging.info(f'cwd: {self.cwd}')
+    #     return self.cwd
 
     def cdroot(self):
-        return self.cd(self.projPath)
+        os.chdir(self.rootPath)
+        self.cwd=self.rootPath
 
-    def cdrootsub(self,toplevel):
-        if toplevel in self.projSubPaths:
-            return self.cd(self.projSubPaths[toplevel])
-
-    # def exists(self,name):
-    #     ''' look in user library first, if it exists '''
-    #     if self.userlibrary:
-    #         fullname=os.path.join(self.userlibrary.root,name)
-    #         if os.path.exists(fullname):
-    #             return True
-    #     return self.library.exists(name)
+    def cdproj(self):
+        os.chdir(self.projPath)
+        self.cwd=self.projPath
 
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
 
-    def _next_project_dir(self,reProject=False):
+    def _next_project_dir(self,reProject=False,prefix='proj'):
         i=0
         lastprojdir=''
         currentprojdir=''
-        while(os.path.isdir(os.path.join(self.rootPath,f'proj{i}'))):
-            lastprojdir=f'proj{i}'
+        while(os.path.isdir(os.path.join(self.rootPath,f'{prefix}{i}'))):
+            lastprojdir=f'{prefix}{i}'
             i+=1
         if not reProject or lastprojdir=='': # this is a fresh project
             if lastprojdir=='':
-                currentprojdir='proj0'
+                currentprojdir=f'{prefix}0'
             else:
-                currentprojdir=f'proj{i}'
+                currentprojdir=f'{prefix}{i}'
             self.projPath=os.path.join(self.rootPath,currentprojdir)
             os.mkdir(currentprojdir)
         else:
             self.projPath=os.path.join(self.rootPath,lastprojdir)
 
-    def _setup_project_root(self,maxstages=100):
+    def _setup_project_dir(self,topdirs=['molecules','systems','plots']):
         os.chdir(self.projPath)
         self.projSubPaths={}
-        for tops in ['molecules','systems','results','plots']:
+        for tops in topdirs:
             self.projSubPaths[tops]=os.path.join(self.projPath,tops)
             if not os.path.isdir(self.projSubPaths[tops]):
                 os.mkdir(tops)
-        self.moleculesPath=self.projSubPaths['molecules']
-        self.systemsPath=self.projSubPaths['systems']
-        self.resPath=self.projSubPaths['results']
-        self.plotsPath=self.projSubPaths['plots']
-        os.chdir(self.resPath)
-        self.resultsSubPaths={}
-        possibles=['init',*[f'iter{i}' for i in range(maxstages)]]
-        for p in possibles:
-            if os.path.exists(p) and os.path.isdir(p):
-                self.resultsSubPaths[p]=os.path.join(self.resPath,p)
+
 _PFS_=None
 
-def pfs_setup(root='.',verbose=False,reProject=False,userlibrary=None,mock=False):
+def pfs_setup(root='.',topdirs=['molecules','systems','plots'],verbose=False,reProject=False,userlibrary=None,mock=False):
     global _PFS_
-    _PFS_=ProjectFileSystem(root=root,verbose=verbose,reProject=reProject,userlibrary=userlibrary,mock=mock)
+    _PFS_=ProjectFileSystem(root=root,topdirs=topdirs,verbose=verbose,reProject=reProject,userlibrary=userlibrary,mock=mock)
 
 def checkout(filename):
     if _PFS_.userlibrary and _PFS_.userlibrary.checkout(filename):
@@ -252,40 +235,50 @@ def checkin(filename,overwrite=False,priority='user'):
 def subpath(name):
     return _PFS_.projSubPaths[name]
 
-def cd(pathstring):
-    if pathstring=='root':
-        return _PFS_.cdroot()
-    cats=[_PFS_.projSubPaths,_PFS_.resultsSubPaths]
-    for cat in cats:
-        if pathstring in cat:
-            _PFS_.cd(cat[pathstring])
-            return _PFS_.cwd
-    raise Exception(f'Path {pathstring} cannot be located in the project file system')
-    
-def next_results_dir(restart=False,max_scur_iterations=100):
-    os.chdir(_PFS_.resPath)
-    possibles=['init',*[f'iter{i}' for i in range(max_scur_iterations)]]
-    lastp=None
-    for p in possibles:
-        if os.path.exists(p):
-            lastp=p
-        else:
-            break
-    nextp=p  # first in list that does not exist
-    if lastp and restart:  # there is a set of directories [init, step0, ]
-        if os.path.exists(os.path.join(lastp,'complete.yaml')):
-            logging.debug(f'{lastp} marked complete, no next directory found.')
-        else: # stay in this directory
-            nextp=lastp
-    if nextp==p:
-        cpath=os.path.join(_PFS_.resPath,p)
-        logging.debug(f'Making {cpath}')
-        os.mkdir(cpath)
-        _PFS_.resultsSubPaths[p]=cpath
-    else:
-        p=lastp
-    return cd(p)
+# def cd(pathstring):
+#     if pathstring=='root':
+#         return _PFS_.cdroot()
+#     cats=[_PFS_.projSubPaths,_PFS_.systemsSubPaths]
+#     for cat in cats:
+#         if pathstring in cat:
+#             _PFS_.cd(cat[pathstring])
+#             return _PFS_.cwd
+#     raise Exception(f'Path {pathstring} cannot be located in the project file system')
 
+def go_to(pathstr):
+    dirname=os.path.dirname(pathstr)
+    if dirname=='':
+        dirname=pathstr # assume this is a topdir
+    assert dirname in _PFS_.projSubPaths,f'Error: cannot navigate using pathstring {pathstr}'
+    _PFS_.cdproj()
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+    os.chdir(dirname)
+    basename=os.path.basename(pathstr)
+    if basename!=pathstr:  # this is not a topdir
+        if not os.path.exists(basename):
+            logging.debug(f'PFS: making {basename}')
+            os.mkdir(basename)
+        os.chdir(basename)
+    _PFS_.cwd=os.getcwd()
+    return _PFS_.cwd
+
+def root():
+    return _PFS_.rootPath
+
+# def next_system(restart=False,max_scur_iterations=100):
+#     os.chdir(_PFS_.systemsPath)
+#     possibles=['init',*[f'iter{i}' for i in range(max_scur_iterations)]]
+#     for p in possibles:
+#         if os.path.exists(p) and os.path.exists(os.path.join(p,'complete.yaml')) and not restart:
+#             pass
+#         else:
+#             break
+#     if not os.path.exists(p):
+#         os.mkdir(p)
+#     os.chdir(p)
+    # _PFS_.current_systems_path=p
+    
 def local_data_searchpath():
     return [_PFS_.rootPath,_PFS_.projPath]
 

@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from io import StringIO
 from copy import deepcopy
+import os
 #import hashlib
 import logging
 
@@ -46,6 +47,18 @@ def _get_row_attribute(df,name,attributes):
     for i in range(len(c)):
         l = (l) & (c[i]==V[i])
     return df[list(l)][name].values[0]
+
+def _get_row_as_string(df,attributes):
+    ''' returns a scalar value of attribute "name" in row
+        expected to be uniquely defined by attributes dict '''
+    ga={k:v for k,v in attributes.items() if k in df}
+    c=[df[k] for k in ga]
+    V=list(ga.values())
+    l=[True]*df.shape[0]
+    for i in range(len(c)):
+        l = (l) & (c[i]==V[i])
+    return df[list(l)].to_string()
+
 
 def _get_rows_w_attribute(df,name,attributes):
     ''' returns a series of values of attribute "name" from
@@ -314,7 +327,14 @@ class Coordinates:
             lcids=[]
             for ci in C:
                 idx=int(ci[0])
-                rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
+                # logging.debug(f'asking for linkcell-idx of atom {idx}')
+                try:
+                    rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
+                except:
+                    logging.debug(f'asking for linkcell-idx of atom {idx} failed!!')
+                    logging.debug(f'{self.spew_atom({"globalIdx":idx})}')
+                    logging.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
+                    raise Exception('why?')
                 lcids.append(rci)
             for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
                 cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.linkcell.wrap_point(p)))
@@ -368,7 +388,7 @@ class Coordinates:
         if rij>radius:
             return BTRC.fail_beyond_cutoff,0
         Rjp=Ri-Rij # generate the nearest periodic image of Rj to Ri
-        C = self.ringpierce(Ri,Rjp,pbc)
+        C=self.ringpierce(Ri,Rjp,pbc)
         if type(C)==np.ndarray:
             cidx=C[:,0].astype(int) # get globalIdx's
             idx=[i,j]
@@ -385,11 +405,16 @@ class Coordinates:
         logging.debug(f'bondtest {b} {rij:.3f} ({radius})')
         return BTRC.passed,rij
 
-    def linkcell_initialize(self,cutoff=0.0,populate=True):
+    def linkcell_initialize(self,cutoff=0.0,populate=True,force_repopulate=False):
         logging.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
-            self.linkcell.populate(self)
+            if os.path.exists('linkcell.grx') and not force_repopulate:
+                logging.debug(f'Found linkcell.grx; no need to populate.')
+                self.read_atomset_attributes('linkcell.grx')
+            else:
+                self.linkcell.populate(self)
+                self.write_atomset_attributes(['linkcell-idx'],'linkcell.grx')
 
     def linkcelltest(self,i,j):
         ''' return True if atoms i and j are within potential interaction
@@ -503,12 +528,33 @@ class Coordinates:
     def decrement_z(self,pairs):
         for b in pairs:
             ai,aj=b
+            ain=self.get_atom_attribute('atomName',{'globalIdx':ai})
+            ajn=self.get_atom_attribute('atomName',{'globalIdx':aj})
             iz=self.get_atom_attribute('z',{'globalIdx':ai})-1
             assert iz>=0,f'Error: decrementing z of atom {ai} gives erroneous z {iz}'
             jz=self.get_atom_attribute('z',{'globalIdx':aj})-1
             assert jz>=0,f'Error: decrementing z of atom {aj} gives erroneous z {jz}'
+            # logging.debug(f'Setting z of {ain}-{ai} to {iz}')
+            # logging.debug(f'Setting z of {ajn}-{aj} to {jz}')
             self.set_atom_attribute('z',iz,{'globalIdx':ai})
             self.set_atom_attribute('z',jz,{'globalIdx':aj})
+
+    def show_z_report(self):
+        zhists={}
+        for i,r in self.A.iterrows():
+            n=r['atomName']
+            nn=r['resName']
+            k=f'{nn}:{n}'
+            z=r['z']
+            if not k in zhists:
+                zhists[k]=np.zeros(4).astype(int)
+            zhists[k][z]+=1
+
+        for n in zhists:
+            if any([zhists[n][i]>0 for i in range(1,4)]):
+                logging.debug(f'Z-hist for {n} atoms:')
+                for i in range(4):
+                    logging.debug(f'{i:>5d} ({zhists[n][i]:>6d}): '+'*'*(zhists[n][i]//10))
 
     def return_bond_lengths(self,bonds):
         lengths=[]
@@ -568,6 +614,10 @@ class Coordinates:
     def get_atom_attribute(self,name,attributes):
         df=self.A
         return _get_row_attribute(df,name,attributes)
+    
+    def spew_atom(self,attributes):
+        df=self.A
+        return _get_row_as_string(df,attributes)
 
     def get_atoms_w_attribute(self,name,attributes):
         df=self.A
@@ -581,19 +631,20 @@ class Coordinates:
         df=self.A
         return all([name in df for name in attributes])
 
-    def find_sacrificial_H(self,pairs,bondlist):
+    def find_sacrificial_H(self,pairs,T,rename=False):
         idx_to_delete=[]
         for b in pairs:
             ai,aj=b
-            idx_to_delete.extend(self.sacH(ai,aj,bondlist))
+            idx_to_delete.extend(self.sacH(ai,aj,T,rename=rename))
         return idx_to_delete
 
-    def sacH(self,ai,aj,bondlist):
+    def sacH(self,ai,aj,T,rename=False):
         ''' find the two H's closest to each other to delete '''
+        bondlist=T.bondlist
         i_partners=bondlist.partners_of(ai)
         j_partners=bondlist.partners_of(aj)
-        i_Hpartners=[k for k,v in zip(i_partners,[self.A[self.A['globalIdx']==i]['atomName'].values[0] for i in i_partners]) if v.startswith('H')]
-        j_Hpartners=[k for k,v in zip(j_partners,[self.A[self.A['globalIdx']==i]['atomName'].values[0] for i in j_partners]) if v.startswith('H')]
+        i_Hpartners={k:v for k,v in zip(i_partners,[self.A[self.A['globalIdx']==i]['atomName'].values[0] for i in i_partners]) if v.startswith('H')}
+        j_Hpartners={k:v for k,v in zip(j_partners,[self.A[self.A['globalIdx']==i]['atomName'].values[0] for i in j_partners]) if v.startswith('H')}
         assert len(i_Hpartners)>0,f'Error: atom {ai} does not have a deletable H atom!'
         assert len(j_Hpartners)>0,f'Error: atom {aj} does not have a deletable H atom!'
         minHH=(1.e9,-1,-1)
@@ -605,6 +656,23 @@ class Coordinates:
                 rijh=np.sqrt(RijH.dot(RijH))
                 if rijh<minHH[0]:
                     minHH=(rijh,ih,jh)
+        ''' rename remaining H atoms '''
+        if rename:
+            i_avails=list(sorted(i_Hpartners.values()))[:-1]
+            j_avails=list(sorted(j_Hpartners.values()))[:-1]
+            del i_Hpartners[ih]
+            del j_Hpartners[jh]
+            Top=T.D['atoms']
+            Cor=self.A
+            for h in i_Hpartners:
+                i_Hpartners[h]=i_avails.pop(0)
+                Top.iloc[h-1,Top.columns=='atom']=i_Hpartners[h]
+                Cor.iloc[h-1,Cor.columns=='atomName']=i_Hpartners[h]
+            for h in j_Hpartners:
+                j_Hpartners[h]=j_avails.pop(0)
+                Top.iloc[h-1,Top.columns=='atom']=j_Hpartners[h]
+                Cor.iloc[h-1,Cor.columns=='atomName']=j_Hpartners[h]
+        # this makes sure that it always looks like the same atom was deleted
         return [ih,jh]
 
     def delete_atoms(self,idx=[],reindex=True):
