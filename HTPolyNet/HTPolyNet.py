@@ -15,6 +15,7 @@ from functools import partial
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
+from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.coordinates import Coordinates, BTRC
 # import HTPolyNet.searchBonds as searchBonds
 # import HTPolyNet.genBonds as genBonds
@@ -43,8 +44,9 @@ class HTPolyNet:
         logging.info(f'Configuration: {cfgfile}')
         self.cfg=Configuration.read(os.path.join(pfs.root(),cfgfile))
         ''' initialize an empty topology and coordinates '''
-        self.Topology=Topology(system=self.cfg.Title)
-        self.Coordinates=Coordinates()
+        self.TopoCoord=TopoCoord()
+        # self.Topology=Topology(system=self.cfg.Title)
+        # self.Coordinates=Coordinates()
         self.cfg.parameters['restart']=restart
         if self.cfg.parameters['restart']:
             logging.info(f'***** THIS IS A RESTART *****')
@@ -188,13 +190,13 @@ class HTPolyNet:
             t.adjust_charges(0)
             t.rep_ex(N)
             logging.info(f'initialize_topology merging {N} copies of {M.name} into global topology')
-            self.Topology.merge(t)
+            self.TopoCoord.Topology.merge(t)
             already_merged.append(M.name)
         for othermol,M in self.molecules.items():
             if not othermol in already_merged:
-                self.Topology.merge_types(M.Topology)
-        logging.info(f'Extended topology has {self.Topology.atomcount()} atoms.')
-        self.Topology.to_file(filename)
+                self.TopoCoord.Topology.merge_types(M.Topology)
+        logging.info(f'Extended topology has {self.TopoCoord.Topology.atomcount()} atoms.')
+        self.TopoCoord.Topology.to_file(filename)
         logging.info(f'Wrote {filename} to {cwd}')
 
     def setup_liquid_simulation(self):
@@ -211,7 +213,7 @@ class HTPolyNet:
         if 'initial_boxsize' in self.cfg.parameters:
             boxsize=self.cfg.parameters['initial_boxsize']
         elif 'initial_density' in self.cfg.parameters:
-            mass_kg=self.Topology.total_mass(units='SI')
+            mass_kg=self.TopoCoord.Topology.total_mass(units='SI')
             V0_m3=mass_kg/self.cfg.parameters['initial_density']
             L0_m=V0_m3**(1./3.)
             L0_nm=L0_m*1.e9
@@ -235,12 +237,12 @@ class HTPolyNet:
             logging.info('Generated init.top and init.gro.')
         else:
             logging.info(f'Found init.gro.')
-        self.Coordinates=Coordinates.read_gro('init.gro')
-        self.Coordinates.inherit_attributes_from_molecules(['z','cycle-idx'],self.cfg.molecules)
-        self.Coordinates.write_atomset_attributes(['cycle-idx','z'],'init.grx')
-        self.Coordinates.make_ringlist()
-        self.Topology.make_resid_graph()
-        assert self.Topology.atomcount()==self.Coordinates.atomcount(), 'Error: Atom count mismatch'
+        self.TopoCoord.Coordinates=Coordinates.read_gro('init.gro')
+        self.TopoCoord.Coordinates.inherit_attributes_from_molecules(['z','cycle-idx'],self.cfg.molecules)
+        self.TopoCoord.Coordinates.write_atomset_attributes(['cycle-idx','z'],'init.grx')
+        self.TopoCoord.Coordinates.make_ringlist()
+        self.TopoCoord.Topology.make_resid_graph()
+        assert self.TopoCoordTopology.atomcount()==self.TopoCoord.Coordinates.atomcount(), 'Error: Atom count mismatch'
 
     def do_liquid_simulation(self):
         cwd=pfs.go_to('systems/init')
@@ -254,8 +256,8 @@ class HTPolyNet:
 
         sacmol=Coordinates.read_gro('npt-1.gro')
         # ONLY copy posX, posY, and poxZ attributes!
-        self.Coordinates.copy_coords(sacmol)
-        self.Coordinates.box=sacmol.box.copy()
+        self.TopoCoord.Coordinates.copy_coords(sacmol)
+        self.TopoCoord.Coordinates.box=sacmol.box.copy()
         # self.Coordinates.show_z_report()
 
     def SCUR(self):
@@ -277,7 +279,7 @@ class HTPolyNet:
         curr_nxlinkbonds=0
         while not scur_finished:
             cwd=pfs.go_to(f'systems/iter{iter}')
-            self.Coordinates.show_z_report()
+            self.TopoCoord.Coordinates.show_z_report()
             num_newbonds=self.scur_iter_complete_check(iter)
             if num_newbonds>0:
                 logging.info(f'SCUR iteration {iter+1}/{maxiter} already ran.')
@@ -484,16 +486,18 @@ class HTPolyNet:
         self.Coordinates.write_atomset_attributes(['z','cycle-idx'],pref+'-post.grx')
         return fulltop,pref+'-post.gro',pref+'-post.grx'
 
-    def make_bonds(self,pairs):
-        idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology)
-        self.Topology.add_bonds(pairs,ignores=idx_to_ignore)
-        idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,rename=True)
-        return idx_to_delete
+    # TODO: move this out of HTPolyNet class
+    # def make_bonds(self,pairs):
+    #     idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology)
+    #     self.Topology.add_bonds(pairs,ignores=idx_to_ignore)
+    #     idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,rename=True)
+    #     return idx_to_delete
 
-    def delete_atoms(self,atomlist):
-        self.Coordinates.delete_atoms(atomlist)
-        idx_mapper=self.Topology.delete_atoms(atomlist)
-        return idx_mapper # returns to old-to-new index mapper dictionary
+    # TODO: move this out of HTPolyNet class
+    # def delete_atoms(self,atomlist):
+    #     self.Coordinates.delete_atoms(atomlist)
+    #     idx_mapper=self.Topology.delete_atoms(atomlist)
+    #     return idx_mapper # returns to old-to-new index mapper dictionary
 
     def map_atomtypes_and_charges_from_templates(self,bonds):
         atdf=self.Topology.D['atoms']
