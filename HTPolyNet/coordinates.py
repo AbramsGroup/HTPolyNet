@@ -46,6 +46,7 @@ def _get_row_attribute(df,name,attributes):
     l=[True]*df.shape[0]
     for i in range(len(c)):
         l = (l) & (c[i]==V[i])
+    # logging.debug(f'_get_row_attribute {name} {attributes} -> {df[list(l)][name].values}')
     return df[list(l)][name].values[0]
 
 def _get_row_as_string(df,attributes):
@@ -58,7 +59,6 @@ def _get_row_as_string(df,attributes):
     for i in range(len(c)):
         l = (l) & (c[i]==V[i])
     return df[list(l)].to_string()
-
 
 def _get_rows_w_attribute(df,name,attributes):
     ''' returns a series of values of attribute "name" from
@@ -589,8 +589,10 @@ class Coordinates:
 
     def translate(self,L):
         ''' translates all atom positions by L '''
+        # logging.debug(f'Translating by {L}')
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():
+            # logging.debug(f'{srow.values} to {srow.values+L}')
             self.A.loc[i,'posX':'posZ']=srow.values+L
 
     def maxspan(self):
@@ -613,6 +615,7 @@ class Coordinates:
     
     def get_atom_attribute(self,name,attributes):
         df=self.A
+        assert name in self.A.columns
         return _get_row_attribute(df,name,attributes)
     
     def spew_atom(self,attributes):
@@ -743,16 +746,21 @@ class Coordinates:
                 f.write(f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}')
             f.write('\n')
 
-    def write_mol2(self,filename='',bondsDF=pd.DataFrame(),molname=''):
+    def write_mol2(self,filename='',bondsDF=pd.DataFrame(),molname='',other_attributes=pd.DataFrame()):
         ''' write a mol2-format file from coordinates, and optionally, a bonds DataFrame
             provided externally and passed in as "bondsDF" (typically this would be
             from a Topology instance). '''
+        acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
             logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
         for i in self.mol2_atom_attributes:
+            # logging.debug(f'checking {i}')
             if not i in self.A.columns:
-                logging.warning(f'No attribute "{i}" found.')
-                self.A[i]=[pd.NA]*self.A.shape[0]
+                if not i in other_attributes.columns:
+                    logging.debug(f'No attribute "{i}" found.')
+                    acopy[i]=[pd.NA]*self.A.shape[0]
+                else:
+                    acopy[i]=other_attributes[i]
         com=self.geometric_center()
         if filename!='':
             atomformatters = [
@@ -786,7 +794,7 @@ class Coordinates:
                     f.write(f'{molname}\n')
                 N=self.N
                 # Infer the residue names and resids from the atom records
-                rdf=self.A[['resNum','resName']].copy().drop_duplicates()
+                rdf=acopy[['resNum','resName']].copy().drop_duplicates()
                 rdf['rootatom']=[1]*len(rdf)
                 rdf['residue']=['RESIDUE']*len(rdf)
                 nBonds=self.metadat.get('nBonds',0)
@@ -800,15 +808,14 @@ class Coordinates:
                 f.write(f"{self.metadat.get('mol2chargetype','GASTEIGER')}\n")
                 f.write('\n')
                 f.write('@<TRIPOS>ATOM\n')
-                sdf=self.A.copy()
                 # remember to convert to Angstroms
-                pos=(sdf.loc[:,['posX','posY','posZ']]-com)*10.0
-                sdf.loc[:,['posX','posY','posZ']]=pos
-                f.write(sdf.to_string(columns=self.mol2_atom_attributes,header=False,index=False,formatters=atomformatters))
+                pos=(acopy.loc[:,['posX','posY','posZ']]-com)*10.0
+                acopy.loc[:,['posX','posY','posZ']]=pos
+                f.write(acopy.to_string(columns=self.mol2_atom_attributes,header=False,index=False,formatters=atomformatters))
                 f.write('\n')
                 f.write('@<TRIPOS>BOND\n')
                 if not bondsDF.empty:
-                    logging.info(f'Mol2 bonds from outside')
+                    # logging.info(f'Mol2 bonds from outside')
                     bdf=bondsDF[['bondIdx','ai','aj','type']]
                     bdf['bondIdx']=bdf['bondIdx'].astype(int)
                     bdf['ai']=bdf['ai'].astype(int)

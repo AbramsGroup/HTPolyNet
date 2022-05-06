@@ -124,12 +124,14 @@ class Configuration:
                 # logging.debug('\n'+molecule.Coords.A.to_string())
                 logging.debug(f'Symmetry_expand: Reaction {R.name} atomName {atomName} resNum {resNum} molname {molecule.name}')
                 #product=self.molecules[R['product']]
-                Asea=molecule.Coords.get_atom_attribute('sea-idx',{'atomName':atomName,'resNum':resNum})
-                Aclu=molecule.Coords.get_atoms_w_attribute('atomName',{'sea-idx':Asea,'resNum':resNum})
-                Aclu=np.delete(Aclu,np.where(Aclu==atomName))
-                sp=[atomName]
-                for aa in Aclu:
-                    sp.append(aa)
+                # Asea=molecule.Coords.get_atom_attribute('sea-idx',{'atomName':atomName,'resNum':resNum})
+                # Aclu=molecule.Coords.get_atoms_w_attribute('atomName',{'sea-idx':Asea,'resNum':resNum})
+                # Aclu=np.delete(Aclu,np.where(Aclu==atomName))
+                Aclu=molecule.atoms_w_same_attribute_as(find_dict={'atomName':atomName,'resNum':resNum},same_attribute='sea-idx',return_attribute='atomName')
+                # Aclu.remove(atomName)
+                sp=list(Aclu)
+                # for aa in Aclu:
+                #     sp.append(aa)
                 sym_partners[atomName]=sp
             if len(R.reactants)>1: # not intramolecular; make all combinations
                 logging.debug(f'sending to product: {[x for x in sym_partners.values()]}')

@@ -607,18 +607,18 @@ class Topology:
             mapper={k:v for k,v in zip(oldGI,d['nr'])}
             # logging.debug(f'delete_atoms: mapper {mapper}')
             if len(return_idx_of)>0:
-                logging.info(f'Asking for updated global indexes of {return_idx_of}')
+                # logging.info(f'Asking for updated global indexes of {return_idx_of}')
                 new_idx=[mapper[o] for o in return_idx_of]
             #d['nr_shift']=d['nr']-oldGI  # probably not necessary
         ptt=['bonds','mol2_bonds','pairs']
         for pt in ptt:
             if pt in self.D:
                 d=self.D[pt]
-                #logging.debug(f'delete atom: {pt} df prior to deleting')
-                #logging.debug(d.to_string())
+                # logging.debug(f'delete atom: {pt} df prior to deleting')
+                # logging.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
-                logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-                #logging.debug(f'dropping {pt} {indexes_to_drop}')
+                # logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+                # logging.debug(f'dropping {pt} {indexes_to_drop}')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
                 if reindex:
@@ -632,7 +632,7 @@ class Topology:
                     if pt=='bonds':
                         #logging.debug(f'delete atom: bondlist remake from')
                         #logging.debug(d.to_string())
-                        logging.debug(f'Updating bondlist...')
+                        # logging.debug(f'Updating bondlist using\n{d.to_string()}')
                         self.bondlist=Bondlist.fromDataFrame(d)
         d=self.D['angles']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index

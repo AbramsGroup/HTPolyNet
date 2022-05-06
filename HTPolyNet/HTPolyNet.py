@@ -16,14 +16,14 @@ from functools import partial
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.topocoord import TopoCoord
-from HTPolyNet.coordinates import Coordinates, BTRC
+from HTPolyNet.coordinates import BTRC
 # import HTPolyNet.searchBonds as searchBonds
 # import HTPolyNet.genBonds as genBonds
 # import HTPolyNet.generateChargeDb as generateChargeDb
 # import HTPolyNet.generateTypeInfo as generateTypeInfo
 
 #from HTPolyNet.ambertools import GAFFParameterize
-from HTPolyNet.topology import Topology
+#from HTPolyNet.topology import Topology
 
 #from HTPolyNet.software import Software, Command
 #from HTPolyNet.countTime import *
@@ -43,10 +43,7 @@ class HTPolyNet:
             raise RuntimeError('HTPolyNet requires a configuration file.')
         logging.info(f'Configuration: {cfgfile}')
         self.cfg=Configuration.read(os.path.join(pfs.root(),cfgfile))
-        ''' initialize an empty topology and coordinates '''
         self.TopoCoord=TopoCoord()
-        # self.Topology=Topology(system=self.cfg.Title)
-        # self.Coordinates=Coordinates()
         self.cfg.parameters['restart']=restart
         if self.cfg.parameters['restart']:
             logging.info(f'***** THIS IS A RESTART *****')
@@ -131,7 +128,7 @@ class HTPolyNet:
             M.propagate_z(self.cfg.reactions,self.molecules)
         for M in self.molecules.values():
             logging.debug(f'Ring detector for {M.name}')
-            M.label_ring_atoms(M.Topology.ring_detector())
+            M.label_ring_atoms(M.TopoCoord.ring_detector())
 
     def generate_molecule(self,M,**kwargs):
         mname=M.name
@@ -144,7 +141,7 @@ class HTPolyNet:
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
             if generatable:
-                logging.info(f'Generating {mname}')
+                # logging.info(f'Generating {mname}')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
@@ -155,8 +152,7 @@ class HTPolyNet:
             logging.info(f'Fetching parameterized {mname}')
             for ex in ['mol2','top','itp','gro']:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
-            M.read_topology(f'{mname}.top')
-            M.read_coords(f'{mname}.gro')
+            M.load_top_gro(f'{mname}.top',f'{mname}.gro')
             M.set_origin('previously parameterized')
         ''' The cfg allows user to indicate whether or not to determine and use
             symmetry-equivalent atoms in any molecule. '''
@@ -165,28 +161,28 @@ class HTPolyNet:
                 logging.info(f'Doing SEA calculation on {mname}')
                 M.calculate_sea()
                 M.analyze_sea_topology()
-                M.Coords.write_atomset_attributes(['sea-idx'],f'{M.name}.sea')
+                M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
                 checkin(f'molecules/parameterized/{mname}.sea',overwrite=force_checkin)
             else:
                 logging.debug(f'Reading sea data into {M.name}')
                 self.checkout(f'molecules/parameterized/{mname}.sea')
-                M.read_atomset_attributes(f'{mname}.sea',attributes=['sea-idx'])
+                M.read_gro_attributes(f'{mname}.sea',attribute_list=['sea-idx'])
                 M.analyze_sea_topology()
         return True
 
-    def initialize_global_topology(self,filename='init.top'):
+    def initialize_global_topology(self,inpfnm='init'):
         ''' Create a full gromacs topology that includes all directives necessary 
             for an initial liquid simulation.  This will NOT use any #include's;
             all types will be explicitly in-lined. '''
         cwd=pfs.go_to('systems/init')
-        if os.path.isfile('init.top'):
-            logging.info(f'init.top already exists in {cwd} but we will rebuild it anyway!')
+        if os.path.isfile(f'{inpfnm}.top'):
+            logging.info(f'{inpfnm}.top already exists in {cwd} but we will rebuild it anyway!')
         ''' for each monomer named in the cfg, either parameterize it or fetch its parameterization '''
         already_merged=[]
         for item in self.cfg.initial_composition:
             M=self.molecules[item['molecule']]
             N=item['count']
-            t=deepcopy(M.Topology)
+            t=deepcopy(M.TopoCoord.Topology)
             t.adjust_charges(0)
             t.rep_ex(N)
             logging.info(f'initialize_topology merging {N} copies of {M.name} into global topology')
@@ -196,24 +192,23 @@ class HTPolyNet:
             if not othermol in already_merged:
                 self.TopoCoord.Topology.merge_types(M.Topology)
         logging.info(f'Extended topology has {self.TopoCoord.Topology.atomcount()} atoms.')
-        self.TopoCoord.Topology.to_file(filename)
-        logging.info(f'Wrote {filename} to {cwd}')
+        self.TopoCoord.write_top(f'{inpfnm}.top')
+        logging.info(f'Wrote {inpfnm}.top to {cwd}')
 
-    def setup_liquid_simulation(self):
+    def setup_liquid_simulation(self,inpfnm='init'):
         # go to the results path, make the directory 'init', cd into it
         cwd=pfs.go_to('systems/init')
         # fetch unreacted init.top amd all monomer gro's 
         # from parameterization directory
-        self.checkout('init.top',altpath=pfs.subpath('systems'))
+        # self.checkout(f'{inpfnm}.top',altpath=pfs.subpath('systems'))
         for n in self.cfg.molecules.keys():
             self.checkout(f'molecules/parameterized/{n}.gro',altpath=pfs.subpath('molecules'))
-        # fetch mdp files from library, or die if not found
         self.checkout('mdp/em.mdp')
         self.checkout('mdp/npt-1.mdp')
         if 'initial_boxsize' in self.cfg.parameters:
             boxsize=self.cfg.parameters['initial_boxsize']
         elif 'initial_density' in self.cfg.parameters:
-            mass_kg=self.TopoCoord.Topology.total_mass(units='SI')
+            mass_kg=self.TopoCoord.total_mass(units='SI')
             V0_m3=mass_kg/self.cfg.parameters['initial_density']
             L0_m=V0_m3**(1./3.)
             L0_nm=L0_m*1.e9
@@ -232,33 +227,29 @@ class HTPolyNet:
             logging.info(f'Molecule to gromacs: {m} ({M.name})')
         for m,c in c_togromacs.items():
             logging.info(f'Composition to gromacs: {m} {c}')
-        if not os.path.exists('init.gro') or not os.path.exists('init.top'): 
-            msg=insert_molecules(m_togromacs,c_togromacs,boxsize,'init')
-            logging.info('Generated init.top and init.gro.')
+        if not os.path.exists(f'{inpfnm}.gro') or not os.path.exists(f'{inpfnm}.top'): 
+            msg=insert_molecules(m_togromacs,c_togromacs,boxsize,inpfnm)
+            logging.info(f'Generated {inpfnm}.top and {inpfnm}.gro.')
         else:
-            logging.info(f'Found init.gro.')
-        self.TopoCoord.Coordinates=Coordinates.read_gro('init.gro')
-        self.TopoCoord.Coordinates.inherit_attributes_from_molecules(['z','cycle-idx'],self.cfg.molecules)
-        self.TopoCoord.Coordinates.write_atomset_attributes(['cycle-idx','z'],'init.grx')
-        self.TopoCoord.Coordinates.make_ringlist()
-        self.TopoCoord.Topology.make_resid_graph()
-        assert self.TopoCoordTopology.atomcount()==self.TopoCoord.Coordinates.atomcount(), 'Error: Atom count mismatch'
+            logging.info(f'Found {inpfnm}.gro.')
+        self.TopoCoord.read_gro(f'{inpfnm}.gro')
+        self.TopoCoord.atom_count()
+        self.TopoCoord.inherit_attributes_from_molecules(['z','cycle-idx'],self.cfg.molecules)
+        self.TopoCoord.write_atomset_attributes(['z','cycle-idx'],f'{inpfnm}.grx')
+        self.TopoCoord.make_ringlist()
+        self.TopoCoord.make_resid_graph()
 
-    def do_liquid_simulation(self):
+    def do_liquid_simulation(self,inpfnm='init',deffnm='npt-1'):
         cwd=pfs.go_to('systems/init')
-        if os.path.exists('npt-1.gro') and self.cfg.parameters['restart']:
-            logging.info(f'npt-1.gro exists in {os.getcwd()}; skipping initial NPT md.')
+        if os.path.exists(f'{deffnm}.gro') and self.cfg.parameters['restart']:
+            logging.info(f'{deffnm}.gro exists in {os.getcwd()}; skipping initial NPT md.')
         else:
-            msg=grompp_and_mdrun(gro='init',top='init',out='min-1',mdp='em')
-            msg=grompp_and_mdrun(gro='min-1',top='init',out='npt-1',mdp='npt-1')
-            logging.info('Generated configuration npt-1.gro\n')
-        density_trace('npt-1')
-
-        sacmol=Coordinates.read_gro('npt-1.gro')
-        # ONLY copy posX, posY, and poxZ attributes!
-        self.TopoCoord.Coordinates.copy_coords(sacmol)
-        self.TopoCoord.Coordinates.box=sacmol.box.copy()
-        # self.Coordinates.show_z_report()
+            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-min-1',mdp='em')
+            msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm)
+            logging.info(f'Generated configuration {deffnm}.gro\n')
+        density_trace(deffnm)
+        # update coordinates
+        self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
 
     def SCUR(self):
         # Search - Connect - Update - Relax
@@ -279,7 +270,7 @@ class HTPolyNet:
         curr_nxlinkbonds=0
         while not scur_finished:
             cwd=pfs.go_to(f'systems/iter{iter}')
-            self.TopoCoord.Coordinates.show_z_report()
+            self.TopoCoord.show_z_report()
             num_newbonds=self.scur_iter_complete_check(iter)
             if num_newbonds>0:
                 logging.info(f'SCUR iteration {iter+1}/{maxiter} already ran.')
@@ -340,12 +331,10 @@ class HTPolyNet:
 
     def set_system(self,top,gro,grx=None):
         logging.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
-        self.Topology=Topology.read_gro(top)
-        self.Coordinates=Coordinates.read_gro(gro)
+        self.TopoCoord=TopoCoord(top,gro)
         if (grx):
-            self.Coordinates.read_atomset_attributes(grx)
-            # self.Coordinates.show_z_report()
-
+            self.TopoCoord.read_gro_attributes(grx)
+            
     def scur_make_bonds(self,radius,iter,force_scur=False):
         if os.path.exists(f'keepbonds-{iter}.dat') and not force_scur:
             logging.debug(f'keepbonds-{iter}.dat found.  Reading.')
@@ -357,8 +346,8 @@ class HTPolyNet:
                     b=(int(t[0]),int(t[1]))
                     keepbonds.append((b,t[2]))
                 return keepbonds
-        adf=self.Coordinates.A
-        self.Coordinates.linkcell_initialize(radius)
+        adf=self.TopoCoord.gro_DataFrame('atoms')
+        self.TopoCoord.linkcell_initialize(radius)
         # self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         logging.debug(f'make_bonds: there are {raset.shape[0]} reactive atoms')
@@ -378,14 +367,12 @@ class HTPolyNet:
                 aresid_template=A['resid']
                 # get ACTUAL resname from the resid'th residue of reactant...
                 aresname=self.molecules[aresname_template].get_resname(aresid_template)
-
                 az=A['z']
                 bname=B['atom']
                 bresname_template=R.reactants[B['reactant']]
                 bresid_template=B['resid']
                 # get ACTUAL resname from the resid'th residue of reactant...
                 bresname=self.molecules[bresname_template].get_resname(bresid_template)
-                
                 bz=B['z']
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
@@ -399,7 +386,7 @@ class HTPolyNet:
                     logging.debug(f'Bond search will use {self.cfg.parameters["cpu"]} processes')
                     p = Pool(processes=self.cfg.parameters['cpu'])
                     Pbonds_split = np.array_split(Pbonds,self.cfg.parameters['cpu'])
-                    results = p.map(partial(self.Coordinates.bondtest_par,radius=radius), Pbonds_split)
+                    results = p.map(partial(self.TopoCoord.Coordinates.bondtest_par,radius=radius), Pbonds_split)
                     p.close()
                     p.join()
                     rc=[]
@@ -441,18 +428,17 @@ class HTPolyNet:
             pairs=[i[0] for i in keepbonds]
             # logging.debug(f'update_topo_coords: bondlist: {bondlist}')
             logging.debug(f'Making {len(pairs)} bonds.')
-            idx_to_delete=self.make_bonds(pairs)
+            idx_to_delete=self.TopoCoord.make_bonds(pairs)
             logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
-            idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
+            idx_mapper=self.TopoCoord.delete_atoms(idx_to_delete) # will result in full reindexing
             reindexed_keepbonds=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
             pairs=[i[0] for i in reindexed_keepbonds]
-            self.Coordinates.decrement_z(pairs)
-            self.Coordinates.make_ringlist()
-            self.map_atomtypes_and_charges_from_templates(reindexed_keepbonds)
-            self.Topology.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
+            self.TopoCoord.decrement_z(pairs)
+            self.TopoCoord.make_ringlist()
+            self.TopoCoord.map_atomtypes_and_charges_from_templates(reindexed_keepbonds)
+            self.TopoCoord.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
             basefilename=f'scur-step-{iter}'
-            self.Topology.to_file(basefilename+'.top') # this is a good topology
-            self.Coordinates.write_gro(basefilename+'.gro')
+            self.TopoCoord.write_top_gro(basefilename+'.top',basefilename+'.gro')
             logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
             return (basefilename+'.top',basefilename+'.gro',reindexed_keepbonds)
 
@@ -461,84 +447,27 @@ class HTPolyNet:
         self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
         self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
         self.checkout('mdp/npt-inter-scur-iter.mdp')
-        tmpT=Topology.read_gro(fulltop)
-        logging.debug(f'tmpT system\n{tmpT.D["system"].to_string()}')
-        tmpC=Coordinates.read_gro(initcoords)
+        tmpTC=TopoCoord(fulltop,initcoords)
         pref,ext=os.path.splitext(fulltop)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bonds=[b[0] for b in newbonds] # strip the product template names
-        lengths=self.Coordinates.return_bond_lengths(bonds)
+        lengths=self.TopoCoord.return_bond_lengths(bonds)
         for i in range(n_stages):
-            saveT=tmpT.copy_bond_parameters(bonds)
-            tmpT.attenuate_bond_parameters(bonds,i,n_stages,lengths)
+            saveT=tmpTC.copy_bond_parameters(bonds)
+            tmpTC.attenuate_bond_parameters(bonds,i,n_stages,lengths)
             stagepref=pref+f'-stage-{i}'
-            tmpT.to_file(stagepref+'.top')
-            tmpC.write_gro(stagepref+'.gro')
+            tmpTC.write_top_gro(stagepref+'.top',stagepref+'.gro')
             msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage')
             msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage')
             msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage')
-            sacmol=Coordinates.read_gro(stagepref+'-npt.gro')
-            tmpC.copy_coords(sacmol)
-            tmpT.restore_bond_parameters(saveT)
+            sacmol=TopoCoord.read_gro(stagepref+'-npt.gro')
+            tmpTC.copy_coords(sacmol)
+            tmpTC.restore_bond_parameters(saveT)
         msg=grompp_and_mdrun(gro=stagepref+'-npt',top=pref,out=pref+'-post',mdp='npt-inter-scur-iter')
-        sacmol=Coordinates.read_gro(pref+'-post.gro')
-        self.Coordinates.copy_coords(sacmol)
-        self.Coordinates.write_atomset_attributes(['z','cycle-idx'],pref+'-post.grx')
+        sacmol=TopoCoord.read_gro(pref+'-post.gro')
+        self.TopoCoord.copy_coords(sacmol)
+        self.TopoCoord.write_gro_attributes(['z','cycle-idx'],pref+'-post.grx')
         return fulltop,pref+'-post.gro',pref+'-post.grx'
-
-    # TODO: move this out of HTPolyNet class
-    # def make_bonds(self,pairs):
-    #     idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology)
-    #     self.Topology.add_bonds(pairs,ignores=idx_to_ignore)
-    #     idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,rename=True)
-    #     return idx_to_delete
-
-    # TODO: move this out of HTPolyNet class
-    # def delete_atoms(self,atomlist):
-    #     self.Coordinates.delete_atoms(atomlist)
-    #     idx_mapper=self.Topology.delete_atoms(atomlist)
-    #     return idx_mapper # returns to old-to-new index mapper dictionary
-
-    def map_atomtypes_and_charges_from_templates(self,bonds):
-        atdf=self.Topology.D['atoms']
-        # TODO: map angles, dihedrals, and impropers!!
-        for b in bonds:
-            bb,template_name=b
-            ai,aj=bb
-            irn=self.Coordinates.get_atom_attribute('resName',{'globalIdx':ai})
-            jrn=self.Coordinates.get_atom_attribute('resName',{'globalIdx':aj})
-            ian=self.Coordinates.get_atom_attribute('atomName',{'globalIdx':ai})
-            jan=self.Coordinates.get_atom_attribute('atomName',{'globalIdx':aj})
-            bondtree=self.Topology.bondtree_as_list((ai,aj),depth=4)
-            mappables=[]
-            for B in bondtree:
-                for i in range(2):
-                    if not B[i] in mappables:
-                        mappables.append(B[i])
-            madf=atdf[atdf['nr'].isin(mappables)]
-            # logging.debug(f'Bond {b} mappable atoms:\n{madf.to_string()}')
-            T=self.molecules[template_name]
-            Tatdf=T.Topology.D['atoms']
-            Tair=T.Coords.get_atoms_w_attribute('resNum',{'resName':irn,'atomName':ian})
-            Tairx=max(Tair)
-            Tajr=T.Coords.get_atoms_w_attribute('resNum',{'resName':jrn,'atomName':jan})
-            Tajrx=max(Tajr)
-            Tai=T.Coords.get_atom_attribute('globalIdx',{'resNum':Tairx,'resName':irn,'atomName':ian})
-            Taj=T.Coords.get_atom_attribute('globalIdx',{'resNum':Tajrx,'resName':jrn,'atomName':jan})
-            T_bondtree=T.Topology.bondtree_as_list((Tai,Taj),depth=4)
-            frommables=[]
-            for B in T_bondtree:
-                for i in range(2):
-                    if not B[i] in frommables:
-                        frommables.append(B[i])
-            T_madf=Tatdf[Tatdf['nr'].isin(frommables)]
-            # logging.debug(f'Template {T.name} bond {Tai}-{Taj} mappable atoms:\n{T_madf.to_string()}')
-            # logging.debug(f'Same size? {madf.shape[0]==T_madf.shape[0]}')
-            for i,r in T_madf.iterrows():
-                an,rn,ty,ch=r['atom'],r['residue'],r['type'],r['charge']
-                atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'type']=ty
-                atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'charge']=ch
-            # logging.debug(f'Bond {b} mapped atoms:\n{atdf[atdf["nr"].isin(mappables)].to_string()}')
 
     def initreport(self):
         print(self.cfg)
@@ -552,10 +481,10 @@ class HTPolyNet:
         self.generate_molecules(
             force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin
         )
-        self.initialize_global_topology()
-        self.setup_liquid_simulation()
-        self.do_liquid_simulation()
-        self.SCUR()
+        # self.initialize_global_topology()
+        # self.setup_liquid_simulation()
+        # self.do_liquid_simulation()
+        # self.SCUR()
         # self.finalize()
 
 def info():

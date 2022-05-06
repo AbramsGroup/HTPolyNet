@@ -5,7 +5,7 @@
 """
 import logging
 import hashlib
-#import os
+import shutil
 import parmed
 from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
@@ -17,7 +17,8 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
     if mol2in==mol2out:
-        logging.info(f'Antechamber overwrites {mol2in}')
+        logging.info(f'Antechamber overwrites input {mol2in}; backing up to {mol2in}.bak')
+        shutil.copy(f'{mol2in}',f'{mol2in}.bak')
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
