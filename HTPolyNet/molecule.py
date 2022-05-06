@@ -241,14 +241,12 @@ class Molecule:
 
             # local copies of all reactant molecules
             reactants={}
-            internal_resid=1
             for n,r in R.reactants.items():
                 reactants[n]=deepcopy(available_molecules[r])
                 ts=reactants[n].sequence
                 logging.debug(f'{n} sequence: {reactants[n].sequence}')
-                for ri,rn in ts.items():
-                    self.sequence[internal_resid]=rn
-                    internal_resid+=1
+                for rn in ts:
+                    self.sequence.append(rn)
             bases=[]
             for b in R.bonds:
                 # every bond names exactly two atoms, A and B
@@ -279,7 +277,7 @@ class Molecule:
         else:
             logging.info(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
-            self.sequence[1]=self.name
+            self.sequence.append(self.name)
 
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)
@@ -391,7 +389,7 @@ class Molecule:
         self.Coords.copy_coords(c)
 
     def add_bonds(self,pairs=[]):
-        self.Topology.add_bonds(pairs)
+        self.Topology.add_bonds(pairs,enumerate_others=False)
 
     def delete_atoms(self,idx=[],return_idx_of=[]):
         new_idx=self.Topology.delete_atoms(idx,return_idx_of=return_idx_of)

@@ -384,9 +384,7 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
-    def add_bonds(self,pairs=[],ignores=[],quiet=True):
-        ''' add bonds to a topology
-            pairs:  list of 2-tuples of atom global indices '''
+    def add_bonds(self,pairs=[],ignores=[],quiet=True,enumerate_others=True):
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
@@ -430,15 +428,24 @@ class Topology:
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
                 raise Exception(f'attempt to add already existing bond {ai}-{aj}')
-        ''' maintain sort of bonds df if new bonds were added '''
-        # if len(newbonds)>0:
-        #     self.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+        
+        # update the bondlist
+        for b in newbonds:
+            self.bondlist.append(b)
 
+        logging.debug(f'Added {len(newbonds)} new bonds')
+        # if enumerate_others:
+        #     newangles=self.add_enumerated_angles(newbonds,ignores=ignores,quiet=quiet)
+        #     newdihedrals,newpairs=self.add_enumerated_dihedrals(newbonds,ignores=ignores,quiet=quiet)
+        #     # TODO: transfer any missing impropers (type 4 dihedrals) from template!
+        #     logging.debug(f'Added {len(newangles)} new angles')
+        #     logging.debug(f'Added {len(newdihedrals)} new dihedrals')
+        #     logging.debug(f'Added {len(newpairs)} new pairs')
+
+    def add_enumerated_angles(self,newbonds,ignores=[],quiet=True):       
+        at=self.D['atoms']
         ijk=self.D['angletypes'].set_index(['i','j','k']).sort_index()
-        ijkl=self.D['dihedraltypes'].set_index(['i','j','k','l']).sort_index()
         newangles=[]
-        newdihedrals=[]
-        newpairs=[]
         for b in newbonds:
             ''' new angles due to other neighbors of b[0] '''
             for ai in [i for i in self.bondlist.partners_of(b[0]) if (i!=b[1] and not i in ignores)]:
@@ -484,14 +491,16 @@ class Topology:
                 angledict={k:[v] for k,v in zip(h,data)}
                 self.D['angles']=pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
                 newangles.append([i,j,k])
+        return newangles
+        
+    def add_enumerated_dihedrals(self,newbonds,ignores=[],quiet=True):
+        newdihedrals=[]
+        newpairs=[]
+        at=self.D['atoms']
+        ijkl=self.D['dihedraltypes'].set_index(['i','j','k','l']).sort_index()
 
-            ''' DIHEDRALS i-j-k-l
-                j-k is the torsion bond
-                angle is measured between the i-j-k plane and the j-k-l plane
-                a new bond could be one of i-j, j-k, or k-l
-            '''
-
-            ''' new proper dihedrals for which the new bond is the central j-k bond '''
+        ''' new proper dihedrals for which the new bond is the central j-k bond '''
+        for b in newbonds:
             aj,ak=idxorder(b)
             for ai in [i for i in self.bondlist.partners_of(aj) if (i!=ak and not i in ignores)]:
                 for al in [l for l in self.bondlist.partners_of(ak) if (l!=aj and not l in ignores)]:
@@ -580,16 +589,7 @@ class Topology:
                         pairdict={k:[v] for k,v in zip(h,data)}
                         self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
                         newpairs.append((i,l))
-
-        # update the bondlist
-        for b in newbonds:
-            self.bondlist.append(b)
-
-        logging.debug(f'Added {len(newbonds)} new bonds')
-        logging.debug(f'Added {len(newangles)} new angles')
-        logging.debug(f'Added {len(newdihedrals)} new dihedrals')
-        logging.debug(f'Added {len(newpairs)} new pairs')
-
+        return newdihedrals,newpairs
 
     def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
         #logging.debug(f'Delete atoms: {idx}')

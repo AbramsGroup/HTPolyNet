@@ -385,7 +385,6 @@ class HTPolyNet:
                 bresname=self.molecules[bresname_template].get_resname(bresid_template)
                 
                 bz=B['z']
-                # logging.debug(f'Aset before z-filter:\n{raset[(raset["atomName"]==aname)&(raset["resName"]==aresname)].to_string()}')
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
                 logging.debug(f'Aset.shape[0] {Aset.shape[0]}')
@@ -498,6 +497,7 @@ class HTPolyNet:
 
     def map_atomtypes_and_charges_from_templates(self,bonds):
         atdf=self.Topology.D['atoms']
+        # TODO: map angles, dihedrals, and impropers!!
         for b in bonds:
             bb,template_name=b
             ai,aj=bb
@@ -513,7 +513,7 @@ class HTPolyNet:
                         mappables.append(B[i])
             madf=atdf[atdf['nr'].isin(mappables)]
             # logging.debug(f'Bond {b} mappable atoms:\n{madf.to_string()}')
-            T=self.cfg.molecules[template_name]
+            T=self.molecules[template_name]
             Tatdf=T.Topology.D['atoms']
             Tair=T.Coords.get_atoms_w_attribute('resNum',{'resName':irn,'atomName':ian})
             Tairx=max(Tair)
@@ -535,7 +535,6 @@ class HTPolyNet:
                 atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'type']=ty
                 atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'charge']=ch
             # logging.debug(f'Bond {b} mapped atoms:\n{atdf[atdf["nr"].isin(mappables)].to_string()}')
-            # TODO: map mappable quantities from T_madf to madf
 
     def initreport(self):
         print(self.cfg)
