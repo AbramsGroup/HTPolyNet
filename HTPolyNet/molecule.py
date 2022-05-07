@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import logging
 
+from sympy import comp
+
 #from HTPolyNet.topology import Topology
 #from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topocoord import TopoCoord
@@ -37,6 +39,31 @@ class Reaction:
     def __str__(self):
         return f'Reaction "{self.name}"'
 
+    def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
+        A,B=[self.atoms[i] for i in bonddict['atoms']]
+        logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
+        Aidx,Aresid=self.get_atom_globalIndx(A,mol,moldict)
+        Bidx,Bresid=self.get_atom_globalIndx(B,mol,moldict)
+        logging.debug(f'     A: {Aidx}  B: {Bidx}')
+        return (Aidx,Bidx),(Aresid,Bresid),(A['atom'],B['atom'])
+
+    def get_atom_globalIndx(self,A,mol,moldict):
+        aname=A['atom']
+        aN=A['reactant']
+        areactantname=self.reactants[aN]
+        aresid_inreactant=A['resid']
+        # logging.debug(f'determining globalIdx of aname {aname} in reactant {aN}({areactantname}):{aresid_inreactant}')
+        aresid=0
+        for k,v in self.reactants.items():
+            if v==areactantname:
+                aresid+=aresid_inreactant
+                break
+            else:
+                aresid+=len(moldict[v].sequence)
+        # logging.debug(f'reaction {self.name}: asking for globalIdx of resNum {aresid} atomName {aname}')
+        idx=mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'resNum':aresid,'atomName':aname})
+        return idx,aresid
+
 class Molecule:
     def __init__(self,name='',generator=None):
         self.name=name
@@ -44,6 +71,7 @@ class Molecule:
         self.generator=generator
         self.sequence=[]
         self.origin=None
+        self.reaction_bonds=[]
 
     # def __str__(self):
     #     restr=f'{self.name} '
@@ -171,7 +199,7 @@ class Molecule:
         # logging.debug(f'after propagate_z on {self.name}:\n{self.Coords.A.to_string()}')
 
     def generate(self,outname='',available_molecules={},**kwargs):
-        logging.info(f'Generating Molecule {self.name}')
+        logging.info(f'Generating {self.name}.mol2 for parameterization')
         if outname=='':
             outname=f'{self.name}'
         if self.generator:
@@ -184,79 +212,27 @@ class Molecule:
             if not can_react:
                 raise Exception(f'Cannot generate {self.name} because required reactants have not been generated')
 
-            # local copies of all reactant molecules
-            reactants={}
-            for n,r in R.reactants.items():
-                reactants[n]=deepcopy(available_molecules[r])
-
-            # Merge all reactants into a single product mol
-            # product_mol=reactants[0]
-            # shifts=[(0,0,0)]  # atom, bond, resid
-            # for r in reactants[1:]:
-            #     shifts.append(product_mol.merge(r))
-            # product_mol.detect_sequence()
-
-            # TODO: need to fix this so that all bonds of reaction are created at once, rather 
-            # than sequentially
-            bases=[]
-            # bonds=[]
+            composite_mol=Molecule()
+            shifts=[(0,0,0)]  # atom, bond, resid
+            for n,ri in R.reactants.items():
+                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
+                shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
+            self.TopoCoord=deepcopy(composite_mol.TopoCoord)
+            self.set_sequence()
+            # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
+            # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
+            self.reaction_bonds=[]
             for bond in R.bonds:
-                # Aidx,Bidx=R.get_atom_globalIdx(bond,product_mol)
-                A,B=[R.atoms[i] for i in bond['atoms']]
-                logging.debug(f'  -> bond\n    {R.reactants}\n    {bond}:\n    A {A}\n    B {B}')
-                aname=A['atom']
-                aN=A['reactant']
-                aresname_template=R.reactants[A['reactant']]
-                aresid_template=A['resid']
-                # get ACTUAL resname from the resid'th residue of reactant...
-                aresname=available_molecules[aresname_template].get_resname(aresid_template)
-#                aresid_inmolecule=???
-#                Aidx=product_mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':aname,'resNum':aresid_inmolecule})
-                az=A['z']
-                bname=B['atom']
-                bN=B['reactant']
-                bresname_template=R.reactants[B['reactant']]
-                bresid_template=B['resid']
-                # get ACTUAL resname from the resid'th residue of reactant...
-                bresname=available_molecules[bresname_template].get_resname(bresid_template)
-#                bresid_inmolecule=???
-#                Bidx=product_mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':bname,'resNum':bresid_inmolecule})
-                # bonds.append((Aidx,Bidx))
-
-                # resid in the molecule is related to resid requested in R.bond...
-                # aresname and bresname are actual base residues, not oligomers
-                # resid in a bond refers to a resid inside a reactant, which could be an oligomer
-                # let molecule be sequence: reactant_1, reactant_2, ...
-                # let reactant_n be resid_n1, resid_n2, ..., resid_nkn, where kn is number of residues in reactant_n
-                # then sequence is [resid_11,resid_12,...,resid_1k1,resid_21,resid_22,..,resid_2k2,...]
-                # so resid M of reactant N maps to resid (resid_MN+sum_(n<N)kn) of molecule
-
-                # every bond names exactly two atoms, A and B
-                # here we associate the identifiers A and B with
-                # their entry in the atoms dictionary for this reaction
-                # A,B=[R.atoms[i] for i in bond['atoms']]
-                mA,mB=[reactants[a['reactant']] for a in [A,B]]
-                # assert not mA.TopoCoord.Topology.D['mol2_bonds'].empty
-                # assert not mB.TopoCoord.Topology.D['mol2_bonds'].empty
-                aan=A['atom']
-                ban=B['atom']
-                arn=A['resid']
-                brn=B['resid']
-                # how do we get the globalIdx's in the product generated by merging all reactants before bonding?
-                Aidx=mA.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':aan,'resNum':arn})
-                Bidx=mB.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':ban,'resNum':brn})
-                logging.info(f'{mB.name} attaches to {mA.name} at {Aidx}({arn}:{aan}) from {Bidx}({brn}:{ban})')
-                Aidx,Bidx=mA.new_bond(mB,at_idx=Aidx,from_idx=Bidx)
-                aan=mA.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':Aidx})
-                arn=mA.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':Aidx})
-                ban=mA.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':Bidx})
-                brn=mA.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':Bidx})
-                logging.info(f'Due to post-bonding reindexing, the two bonded atoms are now {mA.name}-R{arn}-{aan}({Aidx}) and {mB.name}-R{brn}-{ban}({Bidx})')
-                if len(bases)==0 or mA not in bases:
-                    bases.append(mA)
-            assert len(bases)==1,f'Error: Reaction {R.name} results in more than one molecular fragment product'
-            base=bases[0]
-            self.merge(base)
+                (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,composite_mol,available_molecules)
+                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aname,Bname)))
+            idx_mapper=self.make_bonds()
+            nrb=[]
+            for b in self.reaction_bonds:
+                at,rr,nn=b
+                i,j=at
+                i=idx_mapper[i]
+                j=idx_mapper[j]
+                nrb.append(((i,j),rr,nn))
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
         else:
             logging.info(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
@@ -264,12 +240,9 @@ class Molecule:
             # self.sequence.append(self.name)
 
         self.parameterize(outname,**kwargs)
-        # identify new transferable topological units (angles, dihedrals)
         self.minimize(outname,**kwargs)
-        # assign sequence
-        self.detect_sequence()
 
-    def detect_sequence(self):
+    def set_sequence(self):
         adf=self.TopoCoord.gro_DataFrame('atoms')
         self.sequence=[]
         current_resid=0
@@ -296,59 +269,22 @@ class Molecule:
         # logging.debug(f'{self.name} sequence: {self.sequence}')
         return self.sequence[internal_resid-1]
 
-    def inherit_sea_from_reactants(self,molecules,sea_list):
-        if self.name in sea_list:
-            logging.debug(f'No need to inherit sea for {self.name}')
-            return
-        adf=self.TopoCoord.gro_DataFrame('atoms')
-        # logging.debug(f'Inherit sea for {self.name}; Atoms data frame initially:\n{adf.to_string()}')
-        self.set_gro_attribute('sea-idx',np.arange(adf.shape[0]))
-        donors=get_base_reactants(self.name,molecules)
-        logging.debug(f'Inherit sea: {self.name} base reactants {", ".join([d.name for d in donors])}')
-        seaidx_shift=0
-        for D in donors:
-            if not D.name in sea_list:
-                continue
-            dadf=D.TopoCoord.gro_DataFrame('atoms')
-            logging.debug(f' from Donor {D.name} seaidx_shift {seaidx_shift}:')
-            # logging.debug(f'Here is the whole {D.name}:\n{D.Coords.A.to_string()}')
-            recv=adf[adf['resName']==D.name]
-            resids=list(set(recv['resNum']))
-            logging.debug(f'  resids in {self.name} of {D.name} are {resids}')
-            for rid in resids:
-                logging.debug(f'    resid {rid}')
-                recvr=recv[recv['resNum']==rid]
-                for i,r in recvr.iterrows():
-                    aidx=r['globalIdx']
-                    donor_seaidx=D.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'atomName':r['atomName']})
-                    self.TopoCoord.set_gro_attribute_by_attributes('sea-idx',donor_seaidx+seaidx_shift,{'globalIdx':aidx})
-                logging.debug(f'     adding {max(recvr["sea-idx"])} to seaidx_shift {seaidx_shift}')
-                seaidx_shift+=max(dadf['sea-idx'])
-        # logging.debug(f'Molecule {self.name} after inheriting sea:\n'+self.Coords.A.to_string())
-
-    # def read_topology(self,filename):
-    #     assert os.path.exists(filename),f'Topology file {filename} not found.'
-    #     if not self.TopoCoord.Topology.empty:
-    #         logging.warning(f'Overwriting topology of monomer {self.name} from file {filename}')
-    #     sv=pd.DataFrame
-    #     if 'mol2_bonds' in self.TopoCoord.Topology.D:
-    #         sv=self.TopoCoord.Topology.D['mol2_bonds'].copy()
-    #     self.TopoCoord.read_top(filename)
-    #     if not sv.empty:
-    #         self.TopoCoord.Topology.D['mol2_bonds']=sv
-    #         self.TopoCoord.Topology.bond_source_check()
-
-    # def read_coords(self,filename):
-    #     assert os.path.exists(filename),f'Coordinate file {filename} not found.'
-    #     if not self.Coords.empty:
-    #         logging.warning(f'Overwriting coordinates of monomer {self.name} from file {filename}')
-    #     basename,ext=os.path.splitext(filename)
-    #     if ext=='.mol2':
-    #         self.TopoCoord.read_mol2(filename)
-    #     elif ext=='.gro':
-    #         self.TopoCoord.read_gro(filename)
-    #     else:
-    #         raise Exception(f'Coordinate filename extension {ext} is not recognized.')
+    def inherit_attribute_from_reactants(self,attribute,available_molecules,increment=True):
+        adf=self.TopoCoord.Coordinates.A
+        ordered_attribute_idx=[]
+        curr_max=0
+        logging.debug(f'{self.name}({adf.shape[0]}) inheriting {attribute} from {self.sequence}')
+        for i,r in enumerate(self.sequence):
+            namesinres=list(adf[adf['resNum']==(i+1)]['atomName'])
+            rdf=available_molecules[r].TopoCoord.Coordinates.A
+            x=list(rdf[rdf['atomName'].isin(namesinres)]['sea-idx'])
+            logging.debug(f'{r}->{len(x)}')
+            if increment:
+                x=[y+curr_max for y in x]
+                curr_max=max(x)
+            ordered_attribute_idx.extend(x)
+        assert len(ordered_attribute_idx)==adf.shape[0]
+        adf[attribute]=ordered_attribute_idx
 
     def merge(self,other):
         self.TopoCoord.merge(other.TopoCoord)
@@ -374,22 +310,43 @@ class Molecule:
     # def update_coords(self,c):
     #     self.Coords.copy_coords(c)
 
-    def new_bond(self,other,at_idx=-1,from_idx=-1):
-        if self!=other:
-            hxi,hxj=self.transrot(other,at_idx,from_idx)
-            idx_shift=self.TopoCoord.num_atoms()
-            from_idx+=idx_shift
-            hxj+=idx_shift
-            idx_scratch0=[hxi,hxj]
-            self.merge(other)
-        bond=(at_idx,from_idx)
-        idx_scratch=self.TopoCoord.make_bonds([bond])
-        if self!=other:
-            logging.debug(f'Making {self.name}: transrot wants to delete {idx_scratch0} and make_bonds wants {idx_scratch}')
-            idx_mapper=self.TopoCoord.delete_atoms(idx_scratch0)
-        else:
-            idx_mapper=self.TopoCoord.delete_atoms(idx_scratch)
-        return idx_mapper[at_idx],idx_mapper[from_idx]
+    def make_bonds(self):
+        bonds=[]
+        hs_from_tr=[]
+        skip_H=[]
+        for i,B in enumerate(self.reaction_bonds):
+            (aidx,bidx),(aresid,bresid),(aname,bname)=B
+            bonds.append((aidx,bidx))
+            if aresid!=bresid:
+                # transrot identifies the two sacrificial H's
+                hxi,hxj=self.transrot(aidx,aresid,bidx,bresid)
+                skip_H.append(i)
+                hs_from_tr.append(hxi)
+                hs_from_tr.append(hxj)
+        # make_bonds returns list of sacrificial H idx's derived
+        # from bonds whose indices are not in skip_H
+        idx_scratch=self.TopoCoord.make_bonds(bonds,skip_H=skip_H)
+        # the H's identified in transrot plus those identified by make_bonds
+        # must be deleted
+        idx_scratch.extend(hs_from_tr)
+        return self.TopoCoord.delete_atoms(idx_scratch)
+
+    # def new_bond(self,other,at_idx=-1,from_idx=-1):
+    #     if self!=other:
+    #         hxi,hxj=self.transrot(other,at_idx,from_idx)
+    #         idx_shift=self.TopoCoord.num_atoms()
+    #         from_idx+=idx_shift
+    #         hxj+=idx_shift
+    #         idx_scratch0=[hxi,hxj]
+    #         self.merge(other)
+    #     bond=(at_idx,from_idx)
+    #     idx_scratch=self.TopoCoord.make_bonds([bond])
+    #     if self!=other:
+    #         logging.debug(f'Making {self.name}: transrot wants to delete {idx_scratch0} and make_bonds wants {idx_scratch}')
+    #         idx_mapper=self.TopoCoord.delete_atoms(idx_scratch0)
+    #     else:
+    #         idx_mapper=self.TopoCoord.delete_atoms(idx_scratch)
+    #     return idx_mapper[at_idx],idx_mapper[from_idx]
 
     # def add_bonds(self,pairs=[]):
     #     self.Topology.add_bonds(pairs,enumerate_others=False)
@@ -399,20 +356,22 @@ class Molecule:
     #     self.Coords.delete_atoms(idx)
     #     return new_idx
 
-    def transrot(self,other,at_idx,from_idx):
-        if self==other:
+    def transrot(self,at_idx,at_resid,from_idx,from_resid):
+        # Rotate and translate 
+        if at_resid==from_resid:
             return
-        logging.debug(f'Transrot for attaching {other.name} to {self.name}')
-        myTC=self.TopoCoord
-        myA=myTC.gro_DataFrame('atoms')
-        otTC=other.TopoCoord
-        otA=otTC.gro_DataFrame('atoms')
-        mypartners=myTC.partners_of(at_idx)
-        otpartners=otTC.partners_of(from_idx)
+        TC=self.TopoCoord
+        ATC=TopoCoord()
+        BTC=TopoCoord()
+        C=TC.gro_DataFrame('atoms')
+        ATC.Coordinates.A=C[C['resNum']==at_resid].copy()
+        BTC.Coordinates.A=C[C['resNum']==from_resid].copy()
+        mypartners=TC.partners_of(at_idx)
+        otpartners=TC.partners_of(from_idx)
         # logging.info(f'Partners of {at_idx} {mypartners}')
         # logging.info(f'Partners of {from_idx} {otpartners}')
-        myHpartners={k:v for k,v in zip(mypartners,[myA[myA['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')}
-        otHpartners={k:v for k,v in zip(otpartners,[otA[otA['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')}
+        myHpartners={k:v for k,v in zip(mypartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')}
+        otHpartners={k:v for k,v in zip(otpartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')}
         myHighestH={k:v for k,v in myHpartners.items() if v==max([k for k in myHpartners.values()])}
         otHighestH={k:v for k,v in otHpartners.items() if v==max([k for k in otHpartners.values()])}
         assert len(myHighestH)==1
@@ -422,19 +381,20 @@ class Molecule:
         assert len(myHpartners)>0,f'Error: atom {at_idx} does not have a deletable H atom!'
         assert len(otHpartners)>0,f'Error: atom {from_idx} does not have a deletable H atom!'
 
-        Ri=myTC.get_R(at_idx)
-        Rj=otTC.get_R(from_idx)
+        Ri=TC.get_R(at_idx)
+        Rj=TC.get_R(from_idx)
         overall_maximum=(-1.e9,-1,-1)
-        totc={}
+        coord_trials={}
         for myH,myHnm in myHpartners.items():  # keys are globalIdx's, values are names
-            totc[myH]={}
-            Rh=myTC.get_R(myH)
+            coord_trials[myH]={}
+            Rh=TC.get_R(myH)
             Rih=Ri-Rh
             Rih*=1.0/np.linalg.norm(Rih)
             for otH,otHnm in otHpartners.items():
                 # logging.debug(f'Considering {myH} {otH}')
-                totc[myH][otH]=deepcopy(otTC)
-                Rk=totc[myH][otH].get_R(otH)
+                coord_trials[myH][otH]=deepcopy(BTC)
+                # logging.debug(f'\n{coord_trials[myH][otH].Coordinates.A.to_string()}')
+                Rk=coord_trials[myH][otH].get_R(otH)
                 # logging.debug(f'   otH {otH} Rk {Rk}')
                 Rkj=Rk-Rj
                 Rkj*=1.0/np.linalg.norm(Rkj)
@@ -449,25 +409,21 @@ class Molecule:
                 R=I+v+v2/(1.+c)
                 # logging.debug(f'R:\n{R}')
                 # rotate translate all donor atoms!
-                totc[myH][otH].rotate(R)
-                Rk=totc[myH][otH].get_R(otH)
-                # overlap the other H atom with self's
-                # reactive atom by translation
-                Rik=Ri-Rk
-                totc[myH][otH].translate(Rik)
-                totc[myH][otH].write_mol2(f'{other.name}-{myH}-{otH}.mol2')
-                minD=myTC.minimum_distance(totc[myH][otH],self_excludes=[myH],other_excludes=[otH])
+                coord_trials[myH][otH].rotate(R)
+                Rk=coord_trials[myH][otH].get_R(otH)
+                # overlap the two H atoms by translation
+                Rik=Rh-Rk
+                coord_trials[myH][otH].translate(Rik)
+                # coord_trials[myH][otH].Coordinates.write_mol2(f'{self.name}-{myH}-{otH}.mol2')
+                minD=ATC.minimum_distance(coord_trials[myH][otH],self_excludes=[myH],other_excludes=[otH])
                 # logging.debug(f'minD {minD}')
                 if minD>overall_maximum[0]:
                     overall_maximum=(minD,myH,otH)
         minD,myH,otH=overall_maximum
-        myHnm=myHpartners[myH]
-        otHnm=otHpartners[otH]
-        # logging.debug(f'Taking {myHnm}({myH}) and {otHnm}({otH})')
-        otTC.copy_coords(totc[myH][otH])
-        # change H atom names so that it looks like the highest-name-value one was deleted
-        myTC.swap_atom_names(myH,list(myHighestH.keys())[0])
-        otTC.swap_atom_names(otH,list(otHighestH.keys())[0])
+        BTC=coord_trials[myH][otH]
+        TC.overwrite_coords(BTC)
+        TC.swap_atom_names(myH,list(myHighestH.keys())[0])
+        TC.swap_atom_names(otH,list(otHighestH.keys())[0])
         return myH,otH
 
     def atoms_w_same_attribute_as(self,find_dict={},same_attribute='',return_attribute=''):

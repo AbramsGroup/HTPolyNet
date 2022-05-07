@@ -267,7 +267,7 @@ class Coordinates:
         for resname in a['resName'].unique():
             ''' resname is a unique residue name in the system '''
             if resname in molecules:
-                adf=molecules[resname].Coords.A
+                adf=molecules[resname].TopoCoord.Coordinates.A
                 for i,ma in adf.iterrows():
                     atomName=ma['atomName']
                     z=ma[attributes].to_dict()
@@ -582,10 +582,13 @@ class Coordinates:
     def rotate(self,R):
         ''' premultiplies position of each atom by rotation matrix R '''
         sp=self.A[['posX','posY','posZ']]
+        # logging.debug(f'Rotating {sp.shape[0]} atom positions by\n{R}')
+        # logging.debug(f'before rotation:\n{self.A.to_string()}')
         for i,srow in sp.iterrows():
             ri=srow.values
             newri=np.matmul(R,ri)
             self.A.loc[i,'posX':'posZ']=newri
+        # logging.debug(f'after rotation:\n{self.A.to_string()}')
 
     def translate(self,L):
         ''' translates all atom positions by L '''
@@ -634,11 +637,12 @@ class Coordinates:
         df=self.A
         return all([name in df for name in attributes])
 
-    def find_sacrificial_H(self,pairs,T,rename=False):
+    def find_sacrificial_H(self,pairs,T,rename=False,skip_pairs=[]):
         idx_to_delete=[]
-        for b in pairs:
-            ai,aj=b
-            idx_to_delete.extend(self.sacH(ai,aj,T,rename=rename))
+        for i,b in enumerate(pairs):
+            if not i in skip_pairs:
+                ai,aj=b
+                idx_to_delete.extend(self.sacH(ai,aj,T,rename=rename))
         return idx_to_delete
 
     def sacH(self,ai,aj,T,rename=False):
@@ -792,7 +796,7 @@ class Coordinates:
                     f.write(f'{self.name}\n')
                 else:
                     f.write(f'{molname}\n')
-                N=self.N
+                N=acopy.shape[0] #self.N
                 # Infer the residue names and resids from the atom records
                 rdf=acopy[['resNum','resName']].copy().drop_duplicates()
                 rdf['rootatom']=[1]*len(rdf)

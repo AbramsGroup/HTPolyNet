@@ -17,10 +17,11 @@ class TopoCoord:
         if mol2filename!='':
             self.read_mol2(mol2filename)
 
-    def make_bonds(self,pairs):
-        idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology)
+    def make_bonds(self,pairs,skip_H=[]):
+        idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H)
         self.Topology.add_bonds(pairs,ignores=idx_to_ignore)
-        idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,rename=True)
+        rename=True if len(skip_H)>0 else False
+        idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H,rename=rename)
         assert type(idx_to_delete)==list
         return idx_to_delete
 
@@ -193,6 +194,20 @@ class TopoCoord:
             return self.Coordinates.mol2_bonds
         else:
             return None
+
+    def overwrite_coords(self,other):
+        logging.debug(f'Overwriting {other.Coordinates.A.shape[0]} coordinates')
+        C=self.Coordinates.A
+        C=C.set_index('globalIdx')
+        # logging.debug(f'before update:\n{C.to_string()}')
+        B=other.Coordinates.A
+        B=B.set_index('globalIdx')
+        B=B[['posX','posY','posZ']].copy()
+        # logging.debug(f'new coordinates:\n{B.to_string()}')
+        C.update(B)
+        self.Coordinates.A=C.reset_index()
+        # logging.debug(f'after update:\n{self.Coordinates.A.to_string()}')
+
 
     def analyze_sea_topology(self):
         tadf=self.Topology.D['atoms']
