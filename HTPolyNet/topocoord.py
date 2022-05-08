@@ -31,16 +31,20 @@ class TopoCoord:
         assert type(idx_mapper)==dict
         return idx_mapper
 
-    def map_atomtypes_and_charges_from_templates(self,bonds):
+    def map_from_templates(self,bonds,moldict):
         atdf=self.Topology.D['atoms']
         # TODO: map angles, dihedrals, and impropers!!
         for b in bonds:
             bb,template_name=b
-            ai,aj=bb
-            irn=self.Coordinates.get_atom_attribute('resName',{'globalIdx':ai})
-            jrn=self.Coordinates.get_atom_attribute('resName',{'globalIdx':aj})
-            ian=self.Coordinates.get_atom_attribute('atomName',{'globalIdx':ai})
-            jan=self.Coordinates.get_atom_attribute('atomName',{'globalIdx':aj})
+            T=self.molecules[template_name]
+            i_idx,j_idx=bb
+            i_resName,i_resNum,i_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
+            j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j_idx})
+
+            # TODO: map atom indices of the two linked residues to atom indices in template
+            # inherit and map all bonded interactions (angle, dih) that invovle the two bonded atoms
+            # inherit types and charges
+
             bondtree=self.Topology.bondtree_as_list((ai,aj),depth=4)
             mappables=[]
             for B in bondtree:

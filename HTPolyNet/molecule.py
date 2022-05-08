@@ -1,6 +1,7 @@
 from itertools import combinations_with_replacement, product
 import os
 from copy import deepcopy
+from re import A
 import pandas as pd
 import numpy as np
 import logging
@@ -219,12 +220,9 @@ class Molecule:
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
             self.set_sequence()
+            self.set_reaction_bonds(available_molecules=available_molecules)
             # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
-            self.reaction_bonds=[]
-            for bond in R.bonds:
-                (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,composite_mol,available_molecules)
-                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aname,Bname)))
             idx_mapper=self.make_bonds()
             nrb=[]
             for b in self.reaction_bonds:
@@ -238,9 +236,16 @@ class Molecule:
             logging.info(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
             # self.sequence.append(self.name)
-
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)
+
+    def set_reaction_bonds(self,available_molecules={}):
+        R=self.generator
+        self.reaction_bonds=[]
+        if R:
+            for bond in R.bonds:
+                (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,self,available_molecules)
+                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aname,Bname)))
 
     def set_sequence(self):
         adf=self.TopoCoord.gro_DataFrame('atoms')
@@ -253,6 +258,20 @@ class Molecule:
                 current_resid=ri
                 self.sequence.append(rn)
         logging.debug(f'{self.name} sequence: {self.sequence}')
+
+    def idx_mappers(self,otherAdf):
+        mydf=self.TopoCoord.Topology.D['atoms']
+        mydf=mydf[mydf['residue']==myresid][['globalIdx','atom']].copy()
+        odf=otherAdf[['globalIdx','atom']].copy()
+        mydf.merge(odf,on='atom',how='right',suffixes=('_template','_instance'))
+        inst2temp={}
+        temp2inst={}
+        for i,r in mydf.iterrows():
+            temp=r['globalIdx_template'].values[0]
+            inst=r['globalIdx_instance'].values[0]
+            inst2temp[inst]=temp
+            temp2inst[temp]=inst
+        return (inst2temp,temp2inst)
 
     def label_ring_atoms(self,cycles):
         adf=self.TopoCoord.gro_DataFrame('atoms')

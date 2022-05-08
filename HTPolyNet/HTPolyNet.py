@@ -158,6 +158,7 @@ class HTPolyNet:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
             M.load_top_gro(f'{mname}.top',f'{mname}.gro')
             M.set_sequence()
+            M.set_reaction_bonds(self.molecules)
             M.set_origin('previously parameterized')
         ''' The cfg allows user to indicate whether or not to determine and use
             symmetry-equivalent atoms in any molecule. '''
@@ -444,7 +445,7 @@ class HTPolyNet:
             pairs=[i[0] for i in reindexed_keepbonds]
             self.TopoCoord.decrement_z(pairs)
             self.TopoCoord.make_ringlist()
-            self.TopoCoord.map_atomtypes_and_charges_from_templates(reindexed_keepbonds)
+            self.TopoCoord.map_templates(reindexed_keepbonds,self.molecules)
             self.TopoCoord.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
             basefilename=f'scur-step-{iter}'
             self.TopoCoord.write_top_gro(basefilename+'.top',basefilename+'.gro')

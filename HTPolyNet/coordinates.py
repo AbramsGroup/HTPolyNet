@@ -618,7 +618,11 @@ class Coordinates:
     
     def get_atom_attribute(self,name,attributes):
         df=self.A
-        assert name in self.A.columns
+        # assert name in self.A.columns
+        if type(name)==list:
+            assert all([i in self.A.columns for i in name])
+        else:
+            assert name in self.A.columns
         return _get_row_attribute(df,name,attributes)
     
     def spew_atom(self,attributes):
