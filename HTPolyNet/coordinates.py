@@ -11,13 +11,6 @@ import os
 #import hashlib
 import logging
 
-from enum import Enum
-class BTRC(Enum):
-    passed = 0
-    fail_linkcell = 1
-    fail_beyond_cutoff = 2
-    fail_pierce_ring = 3
-    fail_short_circuit = 4
 
 from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.linkcell import Linkcell
@@ -150,7 +143,7 @@ class Coordinates:
         ''' read atom attributes from a Gromacs gro file '''
         inst=cls(filename)
         assert filename!=''
-        logging.debug(f'coordinates:read_gro {filename}')
+        # logging.debug(f'coordinates:read_gro {filename}')
         if filename!='':
             with open(filename,'r') as f:
                 data=f.read().split('\n')
@@ -370,40 +363,6 @@ class Coordinates:
                 # logging.debug(f'\n{C}')
                 return C
         return False
-
-    def bondtest_par(self,B,radius,pbc=[1,1,1]):
-        L=[]
-        for b in B:
-            L.append(self.bondtest(b,radius,pbc=pbc))
-        return L
-
-    def bondtest(self,b,radius,pbc=[1,1,1]):
-        i,j=b
-        if not self.linkcelltest(i,j):
-            return BTRC.fail_linkcell,0
-        Ri=self.get_R(i)
-        Rj=self.get_R(j)
-        Rij=self.mic(Ri-Rj,pbc)
-        rij=np.sqrt(Rij.dot(Rij))
-        if rij>radius:
-            return BTRC.fail_beyond_cutoff,0
-        Rjp=Ri-Rij # generate the nearest periodic image of Rj to Ri
-        C=self.ringpierce(Ri,Rjp,pbc)
-        if type(C)==np.ndarray:
-            cidx=C[:,0].astype(int) # get globalIdx's
-            idx=[i,j]
-            idx.extend(cidx) # list of globalIdx's for this output
-            sub=self.subcoords(self.A[self.A['globalIdx'].isin(idx)].copy())
-            sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
-            logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}')
-            logging.debug('-'.join([f'{x}' for x in cidx]))
-            logging.debug(f'\n+{C[:,1:]}')
-            return BTRC.fail_pierce_ring,0
-        # TODO: check for short-circuits or loops
-        # if self.shortcircuit(i,j):
-        #    return BTRC.fail_short_circuit
-        logging.debug(f'bondtest {b} {rij:.3f} ({radius})')
-        return BTRC.passed,rij
 
     def linkcell_initialize(self,cutoff=0.0,populate=True,force_repopulate=False):
         logging.debug('Initializing link-cell structure')
@@ -697,7 +656,7 @@ class Coordinates:
           - 'globalIdxShift' is the change from the old to the new
              global index for each atom.
         '''
-        logging.debug(f'Coordinates:delete_atoms {idx}')
+        # logging.debug(f'Coordinates:delete_atoms {idx}')
         adf=self.A
         indexes_to_drop=adf[adf.globalIdx.isin(idx)].index
         indexes_to_keep=set(range(adf.shape[0]))-set(indexes_to_drop)

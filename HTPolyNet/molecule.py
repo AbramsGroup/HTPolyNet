@@ -259,19 +259,136 @@ class Molecule:
                 self.sequence.append(rn)
         logging.debug(f'{self.name} sequence: {self.sequence}')
 
-    def idx_mappers(self,otherAdf):
-        mydf=self.TopoCoord.Topology.D['atoms']
-        mydf=mydf[mydf['residue']==myresid][['globalIdx','atom']].copy()
-        odf=otherAdf[['globalIdx','atom']].copy()
-        mydf.merge(odf,on='atom',how='right',suffixes=('_template','_instance'))
+    def idx_mappers(self,otherTC,other_bond):
+        seq_res_available=[True for _ in len(self.sequence)]
+
+        logging.debug(f'idx_mappers begins: template name {self.name}')
+        i_idx,j_idx=other_bond
+        i_resName,i_resNum,i_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
+        j_resName,j_resNum,j_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j_idx})
+        # is i or j bonded to another atom that is in a *different* residue?  If so,
+        # that residue should be represented in the template
+        neighbors_of_i=otherTC.partners_of(i_idx)
+        resid_neighbors_of_i=[]
+        logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
+        for xx in neighbors_of_i:
+            x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
+            if x_resNum!=i_resNum and x_resNum!=j_resNum:
+                resid_neighbors_of_i.append((x_resNum,x_resName))
+                logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
+        neighbors_of_i.remove(j_idx)
+        neighbors_of_j=otherTC.partners_of(j_idx)
+        logging.debug(f'neighbors of j {j_idx} {j_resName} {j_resNum} {j_atomName}:')
+        resid_neighbors_of_j=[]
+        for xx in neighbors_of_j:
+            x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
+            if x_resNum!=i_resNum and x_resNum!=j_resNum:
+                resid_neighbors_of_j.append((x_resNum,x_resName))
+                logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
+
+        # resid_neighbors_of_i are residues to which i is bound that are not the resid of j or its own
+        # resid_neighbors_of_j are residues to which j is bound that are not the resid of i or its own
+        for xx in resid_neighbors_of_i:
+            rn,rname=xx
+            ix=self.sequence.index(rname)
+            if not seq_res_available[ix]:
+                logging.error(f'secondary neighbor {rn} {rname} no available res in pattern')
+                raise Exception
+            seq_res_available[ix]=False
+        for xx in resid_neighbors_of_j:
+            rn,rname=xx
+            ix=self.sequence.index(rname)
+            if not seq_res_available[ix]:
+                logging.error(f'secondary neighbor {rn} {rname} no available res in pattern')
+                raise Exception
+            seq_res_available[ix]=False
+        # TODO still working on this...
+        temp2inst={}
+        inst2temp={}
+        temp_iresid=-1
+        temp_jresid=-1
+        for b in self.reaction_bonds:
+            (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=b
+            Aresname=self.sequence[aresid-1]
+            Bresname=self.sequence[bresid-1]
+            logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
+            if (i_atomName,i_resName)==(Aname,Aresname):
+                temp_iresid=aresid
+                temp_jresid=bresid
+                break
+            elif (i_atomName,i_resName)==(Bname,Bresname):
+                temp_iresid=bresid
+                temp_jresid=aresid
+                break
+        if temp_iresid==-1:
+            logging.error(f'Mappers using template {self.name} unable to map from instance bond {i_resName}-{i_resNum}-{i_atomName}---{j_resName}-{j_resNum}-{j_atomName}')
+            raise Exception
+
+        # TODO: temp_inresids neighboring residues bound to i that are not j's resid
+        temp_inresids=[]
+        for i_n in i_newresNums:
+            # which atom in residue i_n is bound to j?
+            # is there only one other residue in the sequence that has such an atom?
+            # then that is the template resid
+            pass
+        # TODO: temp_jnresids neighboring residues bound to j that are not i's resid
+        temp_jnresids=[]
+        for j_n in j_newresNums:
+            pass
+
+        instdf=otherTC.Coordinates.A
+        tempdf=self.TopoCoord.Coordinates.A
         inst2temp={}
         temp2inst={}
-        for i,r in mydf.iterrows():
-            temp=r['globalIdx_template'].values[0]
-            inst=r['globalIdx_instance'].values[0]
-            inst2temp[inst]=temp
-            temp2inst[temp]=inst
+        for inst,temp in zip([i_resNum,j_resNum],[temp_iresid,temp_jresid]):
+            idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()
+            logging.debug(f'idf:\n{idf.to_string()}')
+            tdf=tempdf[tempdf['resNum']==temp][['globalIdx','atomName']].copy()
+            logging.debug(f'tdf:\n{tdf.to_string()}')
+            tdf=tdf.merge(idf,on='atomName',how='inner',suffixes=('_template','_instance'))
+            logging.debug(f'merged\n{tdf.to_string()}')
+            for i,r in tdf.iterrows():
+                temp=r['globalIdx_template']
+                inst=r['globalIdx_instance']
+                logging.debug(f't {temp} <-> i {inst}')
+                inst2temp[inst]=temp
+                temp2inst[temp]=inst
         return (inst2temp,temp2inst)
+
+    def get_angles_dihedrals(self,bond):
+        ai,aj=bond
+        d=self.TopoCoord.Topology.D['angles']
+        ad=d[((d.ai==ai)&(d.aj==aj))|
+             ((d.ai==aj)&(d.aj==ai))|
+             ((d.aj==ai)&(d.ak==aj))|
+             ((d.aj==aj)&(d.ak==ai))].copy()
+        d=self.TopoCoord.Topology.D['dihedrals']
+        td=d[((d.ai==ai)&(d.aj==aj))|
+             ((d.ai==aj)&(d.aj==ai))|
+             ((d.aj==ai)&(d.ak==aj))|
+             ((d.aj==aj)&(d.ak==ai))|
+             ((d.ak==ai)&(d.al==aj))|
+             ((d.ak==aj)&(d.al==ai))].copy()
+        check=True
+        for a in ['ai','aj','ak','al']:
+            check=check and td[a].isnull().values.any()
+        if check:
+            logging.error('NAN in molecule/dihedrals')
+            raise Exception
+
+        d=self.TopoCoord.Topology.D['pairs']
+        paird=pd.DataFrame()
+        for ai,al in zip(td.ai,td.al):
+            tpair=d[((d.ai==ai)&(d.aj==al))|
+                    ((d.ai==al)&(d.aj==ai))].copy()
+            paird=pd.concat((paird,tpair),ignore_index=True)
+        check=True
+        for a in ['ai','aj']:
+            check=check and paird[a].isnull().values.any()
+        if check:
+            logging.error('NAN in molecule/pairs')
+            raise Exception
+        return ad,td,paird
 
     def label_ring_atoms(self,cycles):
         adf=self.TopoCoord.gro_DataFrame('atoms')

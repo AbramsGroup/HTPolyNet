@@ -605,6 +605,13 @@ class Topology:
             oldGI=d['nr'].copy()
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(oldGI,d['nr'])}
+
+            k=np.array(list(mapper.keys()))
+            v=np.array(list(mapper.values()))
+            if any(np.isnan(k)):
+                logging.error('null in mapper keys')
+            if any(np.isnan(v)):
+                logging.error('null in mapper values')
             # logging.debug(f'delete_atoms: mapper {mapper}')
             if len(return_idx_of)>0:
                 # logging.info(f'Asking for updated global indexes of {return_idx_of}')
@@ -863,43 +870,43 @@ class Topology:
             # logging.debug(f'kb attentuated to {kb*factor}')
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=rij-factor*(rij-b0)
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
-            ain=self.bondlist.partners_of(ai)
-            ain.remove(aj)
-            ajn=self.bondlist.partners_of(aj)
-            ajn.remove(ai)
-            for aii in ain:
-                # all angles aii-ai-aj
-                i,j,k=idxorder((aii,ai,aj))
-                it=adf.loc[adf['nr']==i,'type'].values[0]
-                jt=adf.loc[adf['nr']==j,'type'].values[0]
-                kt=adf.loc[adf['nr']==k,'type'].values[0]
-                it,jt,kt=typeorder((it,jt,kt))
-                # logging.debug(f'{aii} {ai} {aj} -> {i} {j} {k} : {it} {jt} {kt}')
-                th0=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0'].values[0]
-                cth=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1'].values[0]
-                if pd.isna(th0) or pd.isna(cth):
-                    it=adf.loc[adf['nr']==i,'type'].values[0]
-                    jt=adf.loc[adf['nr']==j,'type'].values[0]
-                    kt=adf.loc[adf['nr']==k,'type'].values[0]
-                    it,jt,kt=typeorder((it,jt,kt))
-                    th0=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'th0'].values[0]
-                    cth=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'cth'].values[0]
-                Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0']=th0
-                Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1']=cth*factor
-            for ajj in ajn:
-                # all angles ai-aj-ajj
-                i,j,k=idxorder((ai,aj,ajj))
-                th0=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0'].values[0]
-                cth=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1'].values[0]
-                if pd.isna(th0) or pd.isna(cth):
-                    it=adf.loc[adf['nr']==i,'type'].values[0]
-                    jt=adf.loc[adf['nr']==j,'type'].values[0]
-                    kt=adf.loc[adf['nr']==k,'type'].values[0]
-                    it,jt,kt=typeorder((it,jt,kt))
-                    th0=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'th0'].values[0]
-                    cth=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'cth'].values[0]
-                Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0']=th0
-                Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1']=cth*factor
+            # ain=self.bondlist.partners_of(ai)
+            # ain.remove(aj)
+            # ajn=self.bondlist.partners_of(aj)
+            # ajn.remove(ai)
+            # for aii in ain:
+            #     # all angles aii-ai-aj
+            #     i,j,k=idxorder((aii,ai,aj))
+            #     it=adf.loc[adf['nr']==i,'type'].values[0]
+            #     jt=adf.loc[adf['nr']==j,'type'].values[0]
+            #     kt=adf.loc[adf['nr']==k,'type'].values[0]
+            #     it,jt,kt=typeorder((it,jt,kt))
+            #     # logging.debug(f'{aii} {ai} {aj} -> {i} {j} {k} : {it} {jt} {kt}')
+            #     th0=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0'].values[0]
+            #     cth=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1'].values[0]
+            #     if pd.isna(th0) or pd.isna(cth):
+            #         it=adf.loc[adf['nr']==i,'type'].values[0]
+            #         jt=adf.loc[adf['nr']==j,'type'].values[0]
+            #         kt=adf.loc[adf['nr']==k,'type'].values[0]
+            #         it,jt,kt=typeorder((it,jt,kt))
+            #         th0=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'th0'].values[0]
+            #         cth=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'cth'].values[0]
+            #     Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0']=th0
+            #     Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1']=cth*factor
+            # for ajj in ajn:
+            #     # all angles ai-aj-ajj
+            #     i,j,k=idxorder((ai,aj,ajj))
+            #     th0=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0'].values[0]
+            #     cth=Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1'].values[0]
+            #     if pd.isna(th0) or pd.isna(cth):
+            #         it=adf.loc[adf['nr']==i,'type'].values[0]
+            #         jt=adf.loc[adf['nr']==j,'type'].values[0]
+            #         kt=adf.loc[adf['nr']==k,'type'].values[0]
+            #         it,jt,kt=typeorder((it,jt,kt))
+            #         th0=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'th0'].values[0]
+            #         cth=ATdf.loc[(ATdf.i==it)&(ATdf.j==jt)&(ATdf.k==kt),'cth'].values[0]
+            #     Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c0']=th0
+            #     Adf.loc[(Adf.ai==i)&(Adf.aj==j)&(Adf.ak==k),'c1']=cth*factor
 
     def restore_bond_parameters(self,df):
         bdf=self.D['bonds']

@@ -1,0 +1,5 @@
+ITERATION: 1
+TOPOLOGY: scur-step-0.top
+COORDINATES: scur-step-0-post.gro
+EXTRA_ATTRIBUTES: scur-step-0-post.grx
+NUM_NEWBONDS: 121

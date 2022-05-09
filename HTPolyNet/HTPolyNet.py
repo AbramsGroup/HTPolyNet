@@ -10,29 +10,15 @@ import argparse as ap
 import numpy as np
 from copy import deepcopy
 from itertools import product
-from multiprocessing import Process, Pool
+from multiprocessing import Pool
 from functools import partial
 
 ''' intrapackage imports '''
 from HTPolyNet.configuration import Configuration
-from HTPolyNet.topocoord import TopoCoord
-from HTPolyNet.coordinates import BTRC
-# import HTPolyNet.searchBonds as searchBonds
-# import HTPolyNet.genBonds as genBonds
-# import HTPolyNet.generateChargeDb as generateChargeDb
-# import HTPolyNet.generateTypeInfo as generateTypeInfo
-
-#from HTPolyNet.ambertools import GAFFParameterize
-#from HTPolyNet.topology import Topology
-
-#from HTPolyNet.software import Software, Command
-#from HTPolyNet.countTime import *
-#from HTPolyNet.projectfilesystem import ProjectFileSystem, Library
+from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-#from HTPolyNet.command import Command
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace
-#from HTPolyNet.molecule import Molecule
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -396,7 +382,7 @@ class HTPolyNet:
                     logging.debug(f'Bond search will use {self.cfg.parameters["cpu"]} processes')
                     p = Pool(processes=self.cfg.parameters['cpu'])
                     Pbonds_split = np.array_split(Pbonds,self.cfg.parameters['cpu'])
-                    results = p.map(partial(self.TopoCoord.Coordinates.bondtest_par,radius=radius), Pbonds_split)
+                    results = p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
                     p.close()
                     p.join()
                     rc=[]
@@ -445,7 +431,7 @@ class HTPolyNet:
             pairs=[i[0] for i in reindexed_keepbonds]
             self.TopoCoord.decrement_z(pairs)
             self.TopoCoord.make_ringlist()
-            self.TopoCoord.map_templates(reindexed_keepbonds,self.molecules)
+            self.TopoCoord.map_from_templates(reindexed_keepbonds,self.molecules)
             self.TopoCoord.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
             basefilename=f'scur-step-{iter}'
             self.TopoCoord.write_top_gro(basefilename+'.top',basefilename+'.gro')
@@ -470,11 +456,11 @@ class HTPolyNet:
             msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage')
             msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage')
             msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage')
-            sacmol=TopoCoord.read_gro(stagepref+'-npt.gro')
+            sacmol=TopoCoord(grofilename=stagepref+'-npt.gro')
             tmpTC.copy_coords(sacmol)
             tmpTC.restore_bond_parameters(saveT)
         msg=grompp_and_mdrun(gro=stagepref+'-npt',top=pref,out=pref+'-post',mdp='npt-inter-scur-iter')
-        sacmol=TopoCoord.read_gro(pref+'-post.gro')
+        sacmol=TopoCoord(grofilename=pref+'-post.gro')
         self.TopoCoord.copy_coords(sacmol)
         self.TopoCoord.write_gro_attributes(['z','cycle-idx'],pref+'-post.grx')
         return fulltop,pref+'-post.gro',pref+'-post.grx'
@@ -494,7 +480,7 @@ class HTPolyNet:
         self.initialize_global_topology()
         self.setup_liquid_simulation()
         self.do_liquid_simulation()
-        # self.SCUR()
+        self.SCUR()
         # self.finalize()
 
 def info():
@@ -512,10 +498,13 @@ def cli():
     parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     parser.add_argument('--force-sea-calculation',default=False,action='store_true',help='force calculation of symmetry-equivalent atoms in any input mol2 structures')
     parser.add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
+    parser.add_argument('--loglevel',type=str,default='info',help='Log level; info, debug')
     args=parser.parse_args()
 
     ''' set up logging '''
-    logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
+    loglevel=args.loglevel
+    loglevel_numeric=getattr(logging, loglevel.upper())
+    logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=loglevel_numeric)
     logging.info('HTPolyNet runtime begins.')
     ''' set up the project file system and access to HTPolyNet libraries '''
     userlib=None

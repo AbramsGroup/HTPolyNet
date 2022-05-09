@@ -3,6 +3,15 @@ import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
 import logging
+import numpy as np
+from enum import Enum
+class BTRC(Enum):
+    passed = 0
+    fail_linkcell = 1
+    fail_beyond_cutoff = 2
+    fail_pierce_ring = 3
+    fail_short_circuit = 4
+
 
 class TopoCoord:
     def __init__(self,topfilename='',grofilename='',mol2filename=''):
@@ -33,19 +42,81 @@ class TopoCoord:
 
     def map_from_templates(self,bonds,moldict):
         atdf=self.Topology.D['atoms']
-        # TODO: map angles, dihedrals, and impropers!!
         for b in bonds:
             bb,template_name=b
-            T=self.molecules[template_name]
+            T=moldict[template_name]
+            inst2temp,temp2inst=T.idx_mappers(self,bb)
+            logging.debug(f'map_from_templates:inst2temp {inst2temp}')
+            logging.debug(f'map_from_templates:temp2inst {temp2inst}')
             i_idx,j_idx=bb
-            i_resName,i_resNum,i_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
-            j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j_idx})
+            temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((inst2temp[i_idx],inst2temp[j_idx]))
+            logging.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
+            temp_angles.ai=temp_angles.ai.map(temp2inst)
+            temp_angles.aj=temp_angles.aj.map(temp2inst)
+            temp_angles.ak=temp_angles.ak.map(temp2inst)
+            d=self.Topology.D['angles']
+            self.Topology.D['angles']=pd.concat((d,temp_angles),ignore_index=True)
+            d=self.Topology.D['angles']
+            check=True
+            for a in ['ai','aj','ak']:
+                check=check and d[a].isnull().values.any()
+            if check:
+                logging.error('NAN in angles')
+                raise Exception
+            temp_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
+            temp_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
+            temp_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
+            temp_dihedrals.al=temp_dihedrals.al.map(temp2inst)
+            d=self.Topology.D['dihedrals']
+            self.Topology.D['dihedrals']=pd.concat((d,temp_dihedrals),ignore_index=True)
+            d=self.Topology.D['dihedrals']
+            check=True
+            for a in ['ai','aj','ak','al']:
+                check=check and d[a].isnull().values.any()
+            if check:
+                logging.error('NAN in dihedrals')
+                raise Exception
+            d=self.Topology.D['pairs']
+            check=True
+            for a in ['ai','aj']:
+                check=check and d[a].isnull().values.any()
+            if check:
+                logging.error('NAN in pairs premapping')
+                raise Exception
 
-            # TODO: map atom indices of the two linked residues to atom indices in template
-            # inherit and map all bonded interactions (angle, dih) that invovle the two bonded atoms
-            # inherit types and charges
+            k=np.array(list(temp2inst.keys()))
+            v=np.array(list(temp2inst.values()))
+            if any(np.isnan(k)):
+                logging.error('null in temp2inst keys')
+            if any(np.isnan(v)):
+                logging.error('null in temp2inst values')
+            logging.debug(f'temp_pairs:\n{temp_pairs.to_string()}')
+            isin=[not x in temp2inst for x in temp_pairs.ai]
+            if any(isin):
+                x=isin.index(True)
+                logging.error(f'atom {temp_pairs.ai.iloc[x]} not in temp2inst.ai')
+            isin=[not x in temp2inst for x in temp_pairs.aj]
+            if any(isin):
+                x=isin.index(True)
+                logging.error(f'atom {temp_pairs.aj.iloc[x]} not in temp2inst.aj')
 
-            bondtree=self.Topology.bondtree_as_list((ai,aj),depth=4)
+            temp_pairs.ai=temp_pairs.ai.map(temp2inst)
+            
+            if temp_pairs.ai.isnull().values.any():
+                logging.error('NAN in pairs ai')
+            temp_pairs.aj=temp_pairs.aj.map(temp2inst)
+            if temp_pairs.aj.isnull().values.any():
+                logging.error('NAN in pairs aj')
+            self.Topology.D['pairs']=pd.concat((d,temp_pairs),ignore_index=True)
+            d=self.Topology.D['pairs']
+            check=True
+            for a in ['ai','aj']:
+                check=check and d[a].isnull().values.any()
+            if check:
+                logging.error('NAN in pairs post mapping')
+                raise Exception
+
+            bondtree=self.Topology.bondtree_as_list((i_idx,j_idx),depth=2)
             mappables=[]
             for B in bondtree:
                 for i in range(2):
@@ -53,15 +124,10 @@ class TopoCoord:
                         mappables.append(B[i])
             madf=atdf[atdf['nr'].isin(mappables)]
             # logging.debug(f'Bond {b} mappable atoms:\n{madf.to_string()}')
-            T=self.molecules[template_name]
-            Tatdf=T.Topology.D['atoms']
-            Tair=T.Coords.get_atoms_w_attribute('resNum',{'resName':irn,'atomName':ian})
-            Tairx=max(Tair)
-            Tajr=T.Coords.get_atoms_w_attribute('resNum',{'resName':jrn,'atomName':jan})
-            Tajrx=max(Tajr)
-            Tai=T.Coords.get_atom_attribute('globalIdx',{'resNum':Tairx,'resName':irn,'atomName':ian})
-            Taj=T.Coords.get_atom_attribute('globalIdx',{'resNum':Tajrx,'resName':jrn,'atomName':jan})
-            T_bondtree=T.Topology.bondtree_as_list((Tai,Taj),depth=4)
+            Tatdf=T.TopoCoord.Topology.D['atoms']
+            Tai=inst2temp[i_idx]
+            Taj=inst2temp[j_idx]
+            T_bondtree=T.TopoCoord.Topology.bondtree_as_list((Tai,Taj),depth=2)
             frommables=[]
             for B in T_bondtree:
                 for i in range(2):
@@ -264,3 +330,60 @@ class TopoCoord:
     def merge(self,other):
         self.Topology.merge(other.Topology)
         return self.Coordinates.merge(other.Coordinates)
+
+    def bondtest_par(self,B,radius,pbc=[1,1,1]):
+        L=[]
+        for b in B:
+            L.append(self.bondtest(b,radius,pbc=pbc))
+        return L
+
+    def bondtest(self,b,radius,pbc=[1,1,1]):
+        i,j=b
+        if not self.Coordinates.linkcelltest(i,j):
+            return BTRC.fail_linkcell,0
+        Ri=self.get_R(i)
+        Rj=self.get_R(j)
+        Rij=self.Coordinates.mic(Ri-Rj,pbc)
+        rij=np.sqrt(Rij.dot(Rij))
+        if rij>radius:
+            return BTRC.fail_beyond_cutoff,0
+        Rjp=Ri-Rij # generate the nearest periodic image of Rj to Ri
+        C=self.Coordinates.ringpierce(Ri,Rjp,pbc)
+        if type(C)==np.ndarray:
+            cidx=C[:,0].astype(int) # get globalIdx's
+            idx=[i,j]
+            idx.extend(cidx) # list of globalIdx's for this output
+            sub=self.Coordinates.subcoords(self.A[self.A['globalIdx'].isin(idx)].copy())
+            sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
+            logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}')
+            logging.debug('-'.join([f'{x}' for x in cidx]))
+            logging.debug(f'\n+{C[:,1:]}')
+            return BTRC.fail_pierce_ring,0
+        # TODO: check for short-circuits or loops
+        if self.shortcircuit(i,j):
+            return BTRC.fail_short_circuit,rij
+        logging.debug(f'bondtest {b} {rij:.3f} ({radius})')
+        return BTRC.passed,rij
+
+    def shortcircuit(self,i,j):
+        i_resName,i_resNum,i_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i})
+        j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j})
+        i_neighbors=self.partners_of(i)
+        j_neighbors=self.partners_of(j)
+        assert not j in i_neighbors # haven't made the bond yet...
+        assert not i in j_neighbors # haven't made the bond yet...
+
+        for ix in i_neighbors:
+            ix_resName,ix_resNum,ix_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':ix})
+            if ix_resNum==j_resNum:
+                # logging.debug(f'resid {i_resNum} is already bound to an atom in {j_resNum}')
+                return True
+        for jx in j_neighbors:
+            jx_resName,jx_resNum,jx_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':jx})
+            if jx_resNum==i_resNum:
+                # logging.debug(f'resid {j_resNum} is already bound to an atom in {i_resNum}')
+                return True
+
+        return False
+
+
