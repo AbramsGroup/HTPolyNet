@@ -1,6 +1,6 @@
 title       = NPT for inter-scur iteration relaxation
 integrator  = md
-nsteps      = 20000
+nsteps      = 50000
 dt          = 0.002
 nstxout     = 50             
 nstvout     = 0

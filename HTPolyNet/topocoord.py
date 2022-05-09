@@ -45,17 +45,42 @@ class TopoCoord:
         for b in bonds:
             bb,template_name=b
             T=moldict[template_name]
+            temp_atdf=T.TopoCoord.Topology.D['atoms']
             inst2temp,temp2inst=T.idx_mappers(self,bb)
+            assert len(inst2temp)==len(temp2inst)
+            check=True
+            for k,v in inst2temp.items():
+                check = check and (k == temp2inst[v])
+            assert check,f'Error: bidirectional dicts are incompatible; bug'
             logging.debug(f'map_from_templates:inst2temp {inst2temp}')
             logging.debug(f'map_from_templates:temp2inst {temp2inst}')
             i_idx,j_idx=bb
+            temp_i_idx=inst2temp[i_idx]
+            temp_j_idx=inst2temp[j_idx]
+            d=T.TopoCoord.Topology.D['bonds']
+            d=d[((d.ai==temp_i_idx)&(d.aj==temp_j_idx))|
+                ((d.ai==temp_j_idx)&(d.aj==temp_i_idx))].copy()
+            assert d.shape[0]==1,f'Error: map_from_templates using {T.name} is sent inst-bond {i_idx}-{j_idx} which is claimed to map to {temp_i_idx}-{temp_j_idx}, but no such bond is found:\n{self.Topology.D["bonds"].to_string()}'
             temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((inst2temp[i_idx],inst2temp[j_idx]))
             logging.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
-            temp_angles.ai=temp_angles.ai.map(temp2inst)
-            temp_angles.aj=temp_angles.aj.map(temp2inst)
-            temp_angles.ak=temp_angles.ak.map(temp2inst)
+            inst_angles=temp_angles.copy()
+            inst_angles.ai=temp_angles.ai.map(temp2inst)
+            inst_angles.aj=temp_angles.aj.map(temp2inst)
+            inst_angles.ak=temp_angles.ak.map(temp2inst)
             d=self.Topology.D['angles']
-            self.Topology.D['angles']=pd.concat((d,temp_angles),ignore_index=True)
+            self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)
+            for a in ['ai','aj','ak']:
+                for inst_atom,temp_atom in zip(inst_angles[a],temp_angles[a]):
+                    inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
+                    temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
+                    logging.debug(f'ang temp {temp_atom} {temp_type} {temp_charge}')
+                    logging.debug(f'ang inst {inst_atom} {inst_type} {inst_charge}')
+                    if inst_type!=temp_type:
+                        logging.debug(f'(angles){a} changing type of inst atom {inst_atom} from {inst_type} to {temp_type}')
+                        atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
+                    if inst_charge!=temp_charge:
+                        logging.debug(f'(angles){a} changing charge of inst atom {inst_atom} from {inst_charge} to {temp_charge}')
+                        atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
             d=self.Topology.D['angles']
             check=True
             for a in ['ai','aj','ak']:
@@ -63,12 +88,25 @@ class TopoCoord:
             if check:
                 logging.error('NAN in angles')
                 raise Exception
-            temp_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
-            temp_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
-            temp_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
-            temp_dihedrals.al=temp_dihedrals.al.map(temp2inst)
+            inst_dihedrals=temp_dihedrals.copy()
+            inst_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
+            inst_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
+            inst_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
+            inst_dihedrals.al=temp_dihedrals.al.map(temp2inst)
             d=self.Topology.D['dihedrals']
-            self.Topology.D['dihedrals']=pd.concat((d,temp_dihedrals),ignore_index=True)
+            self.Topology.D['dihedrals']=pd.concat((d,inst_dihedrals),ignore_index=True)
+            for a in ['ai','aj','ak','al']:
+                for inst_atom,temp_atom in zip(inst_dihedrals[a],temp_dihedrals[a]):
+                    inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
+                    temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
+                    logging.debug(f'dih temp {temp_atom} {temp_type} {temp_charge}')
+                    logging.debug(f'dih inst {inst_atom} {inst_type} {inst_charge}')
+                    if inst_type!=temp_type:
+                        logging.debug(f'(dihedrals){a} changing type of inst atom {inst_atom} from {inst_type} to {temp_type}')
+                        atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
+                    if inst_charge!=temp_charge:
+                        logging.debug(f'(dihedrals){a} changing charge of inst atom {inst_atom} from {inst_charge} to {temp_charge}')
+                        atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
             d=self.Topology.D['dihedrals']
             check=True
             for a in ['ai','aj','ak','al']:
@@ -93,20 +131,24 @@ class TopoCoord:
             logging.debug(f'temp_pairs:\n{temp_pairs.to_string()}')
             isin=[not x in temp2inst for x in temp_pairs.ai]
             if any(isin):
-                x=isin.index(True)
-                logging.error(f'atom {temp_pairs.ai.iloc[x]} not in temp2inst.ai')
+                for ii,jj in enumerate(isin):
+                    if jj:
+                        logging.error(f'atom ai {temp_pairs.ai.iloc[ii]} not in temp2inst')
             isin=[not x in temp2inst for x in temp_pairs.aj]
             if any(isin):
-                x=isin.index(True)
-                logging.error(f'atom {temp_pairs.aj.iloc[x]} not in temp2inst.aj')
+                for ii,jj in enumerate(isin):
+                    if jj:
+                        logging.error(f'atom aj {temp_pairs.aj.iloc[ii]} not in temp2inst')
 
             temp_pairs.ai=temp_pairs.ai.map(temp2inst)
             
             if temp_pairs.ai.isnull().values.any():
                 logging.error('NAN in pairs ai')
+                raise Exception
             temp_pairs.aj=temp_pairs.aj.map(temp2inst)
             if temp_pairs.aj.isnull().values.any():
                 logging.error('NAN in pairs aj')
+                raise Exception
             self.Topology.D['pairs']=pd.concat((d,temp_pairs),ignore_index=True)
             d=self.Topology.D['pairs']
             check=True
@@ -116,30 +158,30 @@ class TopoCoord:
                 logging.error('NAN in pairs post mapping')
                 raise Exception
 
-            bondtree=self.Topology.bondtree_as_list((i_idx,j_idx),depth=2)
-            mappables=[]
-            for B in bondtree:
-                for i in range(2):
-                    if not B[i] in mappables:
-                        mappables.append(B[i])
-            madf=atdf[atdf['nr'].isin(mappables)]
+            # bondtree=self.Topology.bondtree_as_list((i_idx,j_idx),depth=3)
+            # mappables=[]
+            # for B in bondtree:
+            #     for i in range(2):
+            #         if not B[i] in mappables:
+            #             mappables.append(B[i])
+            # madf=atdf[atdf['nr'].isin(mappables)]
             # logging.debug(f'Bond {b} mappable atoms:\n{madf.to_string()}')
-            Tatdf=T.TopoCoord.Topology.D['atoms']
-            Tai=inst2temp[i_idx]
-            Taj=inst2temp[j_idx]
-            T_bondtree=T.TopoCoord.Topology.bondtree_as_list((Tai,Taj),depth=2)
-            frommables=[]
-            for B in T_bondtree:
-                for i in range(2):
-                    if not B[i] in frommables:
-                        frommables.append(B[i])
-            T_madf=Tatdf[Tatdf['nr'].isin(frommables)]
+            # Tatdf=T.TopoCoord.Topology.D['atoms']
+            # Tai=inst2temp[i_idx]
+            # Taj=inst2temp[j_idx]
+            # T_bondtree=T.TopoCoord.Topology.bondtree_as_list((Tai,Taj),depth=3)
+            # frommables=[]
+            # for B in T_bondtree:
+            #     for i in range(2):
+            #         if not B[i] in frommables:
+            #             frommables.append(B[i])
+            # T_madf=Tatdf[Tatdf['nr'].isin(frommables)]
             # logging.debug(f'Template {T.name} bond {Tai}-{Taj} mappable atoms:\n{T_madf.to_string()}')
             # logging.debug(f'Same size? {madf.shape[0]==T_madf.shape[0]}')
-            for i,r in T_madf.iterrows():
-                an,rn,ty,ch=r['atom'],r['residue'],r['type'],r['charge']
-                atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'type']=ty
-                atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'charge']=ch
+            # for i,r in T_madf.iterrows():
+            #     an,rn,ty,ch=r['atom'],r['residue'],r['type'],r['charge']
+            #     atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'type']=ty
+            #     atdf.loc[(atdf['nr'].isin(mappables))&(madf['atom']==an)&(madf['residue']==rn),'charge']=ch
             # logging.debug(f'Bond {b} mapped atoms:\n{atdf[atdf["nr"].isin(mappables)].to_string()}')
 
     def read_top(self,topfilename):
@@ -353,7 +395,7 @@ class TopoCoord:
             cidx=C[:,0].astype(int) # get globalIdx's
             idx=[i,j]
             idx.extend(cidx) # list of globalIdx's for this output
-            sub=self.Coordinates.subcoords(self.A[self.A['globalIdx'].isin(idx)].copy())
+            sub=self.Coordinates.subcoords(self.Coordinates.A[self.Coordinates.A['globalIdx'].isin(idx)].copy())
             sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
             logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}')
             logging.debug('-'.join([f'{x}' for x in cidx]))
@@ -361,7 +403,7 @@ class TopoCoord:
             return BTRC.fail_pierce_ring,0
         # TODO: check for short-circuits or loops
         if self.shortcircuit(i,j):
-            return BTRC.fail_short_circuit,rij
+            return BTRC.fail_short_circuit,0
         logging.debug(f'bondtest {b} {rij:.3f} ({radius})')
         return BTRC.passed,rij
 

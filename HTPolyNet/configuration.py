@@ -111,45 +111,65 @@ class Configuration:
             self.parameters['cpu']=os.cpu_count()
         return self
 
-    def symmetry_expand_reactions(self):
+    def symmetry_expand_reactions(self,unique_molecules):
         extra_reactions=[]
         extra_molecules={}
         for R in self.reactions:
             sym_partners={}
             R.sym=0
+            seas={}
             for atom in R.atoms.values():
                 atomName=atom['atom']
                 resNum=atom['resid']
-                molecule=self.molecules[R.reactants[atom['reactant']]]
+                molecule=unique_molecules[R.reactants[atom['reactant']]]
+                molName=molecule.name
+                seq=molecule.sequence
+                # generate symmetry-equivalent realizations based on sequence
+                seas[molName]=[]
+                for rname in seq:
+                    residue=unique_molecules[rname]
+                    assert len(residue.sequence)==1 # this is a monomer!!
+                    clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
+                                                        same_attribute='sea-idx',
+                                                        return_attribute='atomName')
+                    sp=list(clu)
+                    seas[molName].append(sp)
+                # we can look at products in other reactions to see...
+                # 
                 # logging.debug('\n'+molecule.Coords.A.to_string())
-                logging.debug(f'Symmetry_expand: Reaction {R.name} atomName {atomName} resNum {resNum} molname {molecule.name}')
+                # logging.debug(f'Symmetry_expand: Reaction {R.name} atomName {atomName} resNum {resNum} resName {resName} molname {molName}')
                 #product=self.molecules[R['product']]
                 # Asea=molecule.Coords.get_atom_attribute('sea-idx',{'atomName':atomName,'resNum':resNum})
                 # Aclu=molecule.Coords.get_atoms_w_attribute('atomName',{'sea-idx':Asea,'resNum':resNum})
                 # Aclu=np.delete(Aclu,np.where(Aclu==atomName))
-                Aclu=molecule.atoms_w_same_attribute_as(find_dict={'atomName':atomName,'resNum':resNum},same_attribute='sea-idx',return_attribute='atomName')
-                # Aclu.remove(atomName)
-                sp=list(Aclu)
+                # Aclu=molecule.atoms_w_same_attribute_as(find_dict={'atomName':atomName,'resNum':resNum},same_attribute='sea-idx',return_attribute='atomName')
+                # # Aclu.remove(atomName)
+                # sp=list(Aclu)
                 # for aa in Aclu:
                 #     sp.append(aa)
-                sym_partners[atomName]=sp
+                # sym_partners[atomName]=sp
             if len(R.reactants)>1: # not intramolecular; make all combinations
-                logging.debug(f'sending to product: {[x for x in sym_partners.values()]}')
-                P=product(*[x for x in sym_partners.values()])
+                logging.debug(f'sending to product: {[x for x in seas.values()]}')
+                P=product(*[x for x in seas.values()])
                 O=next(P)
             else: # intramolecular; keep partners together
                 logging.debug(f'sym_partners.values() {sym_partners.values()}')
-                P=[p for p in zip(*[x for x in sym_partners.values()])]
+                P=[p for p in zip(*[x for x in seas.values()])]
                 O=P[0]
                 P=P[1:]
             logging.debug(f'Original atoms for symmetry expansion: {O}')
             idx=1
+            # TODO: properly build up symmetry-related reactions
+            
             for p in P:
                 logging.debug(f'Replicating {R.name} using {p}')
                 newR=deepcopy(R)
                 newR.sym=idx
                 newR.name+=f'-{idx}'
                 newR.product+=f'-{idx}'
+                for rxnum,rxname in newR.reactants.items():
+                    if rxname+f'-{idx}' in extra_molecules:
+                        newR.reactants[rxnum]=rxname+f'-{idx}'
                 idx+=1
                 for a,o in zip(p,O):
                     for atom,oatom in zip(newR.atoms,R.atoms):
@@ -157,6 +177,7 @@ class Configuration:
                             newR.atoms[atom]['atom']=a
                 extra_reactions.append(newR)
                 newP=Molecule(name=newR.product,generator=newR)
+                original_molecule=unique_molecules[R.name]
                 # newP.generate(available_molecules=self.molecules,**self.parameters)
                 extra_molecules[newR.product]=newP
 

@@ -632,6 +632,12 @@ class Topology:
                     d=self.D[pt]
                     #logging.debug(f'delete atom: {pt} df prior to reindexing')
                     #logging.debug(d.to_string())
+                    # pairs deleted here were deleted because either ai or aj was among 
+                    # the atoms to delete.  We assert than any dihedral for which
+                    # the i atom is ai and l atom is aj will necessarily be deleted 
+                    # below.  The only other pairs that should be deleted would
+                    # be ones in which the dihedral j or k atom is among those to be 
+                    # deleted.  
                     if pt!='pairs': # don't remap these yet; need to delete pairs that
                         # might arise from dihedrals that are deleted.
                         d.ai=d.ai.map(mapper)
@@ -651,38 +657,38 @@ class Topology:
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)
             d.ak=d.ak.map(mapper)
-        for four_body_type in ['dihedrals']:
-            d=self.D[four_body_type]
-            indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
-            logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {four_body_type} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-            # TODO: make sure you delete pairs!!
-            dp=self.D['pairs']
-            ddp=d.loc[indexes_to_drop]  # these are dihedrals marked for deletion
-            # determine pairs deriving from these dihedrals and delete them!
-            pai=ddp.ai.to_list()
-            pal=ddp.al.to_list()
-            dd=[]
-            for pi,pl in zip(pai,pal):
-                dwpi=dp[((dp.ai==pi)&(dp.aj==pl))|((dp.ai==pl)&(dp.aj==pi))].index.to_list()
-                dd.extend(dwpi)
-            ptk=set(range(dp.shape[0]))-set(dwpi)
-            logging.debug(f'Deleting {dp.loc[dwpi].shape[0]} pairs due to dihedral deletions')
-            # Note that we expect this to be zero if we are only deleting H's, since
-            # an H can never be a 'j' or 'k' in a dihedral!
-            self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)
-            indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-            self.D[four_body_type]=d.take(list(indexes_to_keep)).reset_index(drop=True)
-            if reindex:
-                d=self.D[four_body_type]
-                d.ai=d.ai.map(mapper)
-                d.aj=d.aj.map(mapper)
-                d.ak=d.ak.map(mapper)
-                d.al=d.al.map(mapper)
-                d=self.D['pairs']
-                d.ai=d.ai.map(mapper)
-                d.aj=d.aj.map(mapper)
+        d=self.D['dihedrals']
+        indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
+        logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        # TODO: make sure you delete pairs!!
+        dp=self.D['pairs']
+        ddp=d.loc[indexes_to_drop]  # these are dihedrals marked for deletion
+        # determine pairs deriving from these dihedrals and delete them!
+        pai=ddp.ai.to_list()
+        pal=ddp.al.to_list()
+        dd=[]
+        for pi,pl in zip(pai,pal):
+            dwpi=dp[((dp.ai==pi)&(dp.aj==pl))|((dp.ai==pl)&(dp.aj==pi))].index.to_list()
+            dd.extend(dwpi)
+        ptk=set(range(dp.shape[0]))-set(dwpi)
+        logging.debug(f'Deleting {dp.loc[dwpi].shape[0]} pairs due to dihedral deletions')
+        # Note that we expect this to be zero if we are only deleting H's, since
+        # an H can never be a 'j' or 'k' in a dihedral!
+        self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)
+        indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+        self.D['dihedrals']=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        if reindex:
+            d=self.D['dihedrals']
+            d.ai=d.ai.map(mapper)
+            d.aj=d.aj.map(mapper)
+            d.ak=d.ak.map(mapper)
+            d.al=d.al.map(mapper)
+            d=self.D['pairs']
+            d.ai=d.ai.map(mapper)
+            d.aj=d.aj.map(mapper)
         if len(return_idx_of)>0:
             return new_idx
+        self.to_file('tmp.top')
         return mapper
         
     def bondtree_as_list(self,root,depth):
