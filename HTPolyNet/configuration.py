@@ -6,6 +6,7 @@ read cfg file
 
 """
 import json
+from threading import currentThread
 import yaml
 import os
 import logging
@@ -15,13 +16,17 @@ from itertools import product
 
 from HTPolyNet.molecule import Molecule, Reaction
 
-def _determine_sequence(m,moldict):
+def _determine_sequence(m,moldict,atoms):
     if not moldict[m].generator:
-        return [m]
+        return [m],[atoms]
     thisseq=[]
+    thisatm=[]
     for rid,mname in moldict[m].generator.reactants.items():
-        thisseq.extend(_determine_sequence(mname,moldict))
-    return thisseq
+        atoms=[a for a in moldict[m].generator.atoms.values() if a['reactant']==rid]
+        newseq,newatm=_determine_sequence(mname,moldict,atoms)
+        thisatm.extend(newatm)
+        thisseq.extend(newseq)
+    return thisseq,thisatm
 
 class Configuration:
     def __init__(self):
@@ -91,8 +96,9 @@ class Configuration:
                 self.molecules[m]=Molecule(m)
 
         for mname,M in self.molecules.items():
-            M.sequence=_determine_sequence(mname,self.molecules)
-            logging.debug(f'Sequence of {mname}: {list(enumerate(M.sequence))}')
+            M.sequence,M.reactive_atoms_seq=_determine_sequence(mname,self.molecules,[])
+            logging.debug(f'Sequence of {mname}: {M.sequence}')
+            logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
 
         self.use_sea=self.basedict.get('use_sea',[])
         for m in self.use_sea:
@@ -112,79 +118,91 @@ class Configuration:
         return self
 
     def symmetry_expand_reactions(self,unique_molecules):
+        logging.debug('symmetry_expand_reactions')
         extra_reactions=[]
+        current_molecules=unique_molecules
         extra_molecules={}
+        trydict={}
+        sclass={}
         for R in self.reactions:
-            sym_partners={}
-            R.sym=0
-            seas={}
-            for atom in R.atoms.values():
-                atomName=atom['atom']
-                resNum=atom['resid']
-                molecule=unique_molecules[R.reactants[atom['reactant']]]
-                molName=molecule.name
-                seq=molecule.sequence
-                # generate symmetry-equivalent realizations based on sequence
-                seas[molName]=[]
-                for rname in seq:
-                    residue=unique_molecules[rname]
-                    assert len(residue.sequence)==1 # this is a monomer!!
+            logging.debug(f'Reaction {R.name}')
+            pro_seq,pro_ra=_determine_sequence(R.product,current_molecules,[])
+            logging.debug(f'{R.product} {pro_seq} {pro_ra}')
+            sseq=[]
+            for mname,matrectlist in zip(pro_seq,pro_ra):
+                # how many se versions of this reactant?
+                # -> product of number of members of symmetry class of each reactive atom in this
+                # reactant
+                residue=current_molecules[mname]
+                sclass[mname]={}
+                sp=[]
+                for atrec in matrectlist:
+                    atomName=atrec['atom']
                     clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
-                                                        same_attribute='sea-idx',
-                                                        return_attribute='atomName')
-                    sp=list(clu)
-                    seas[molName].append(sp)
-                # we can look at products in other reactions to see...
-                # 
-                # logging.debug('\n'+molecule.Coords.A.to_string())
-                # logging.debug(f'Symmetry_expand: Reaction {R.name} atomName {atomName} resNum {resNum} resName {resName} molname {molName}')
-                #product=self.molecules[R['product']]
-                # Asea=molecule.Coords.get_atom_attribute('sea-idx',{'atomName':atomName,'resNum':resNum})
-                # Aclu=molecule.Coords.get_atoms_w_attribute('atomName',{'sea-idx':Asea,'resNum':resNum})
-                # Aclu=np.delete(Aclu,np.where(Aclu==atomName))
-                # Aclu=molecule.atoms_w_same_attribute_as(find_dict={'atomName':atomName,'resNum':resNum},same_attribute='sea-idx',return_attribute='atomName')
-                # # Aclu.remove(atomName)
-                # sp=list(Aclu)
-                # for aa in Aclu:
-                #     sp.append(aa)
-                # sym_partners[atomName]=sp
-            if len(R.reactants)>1: # not intramolecular; make all combinations
-                logging.debug(f'sending to product: {[x for x in seas.values()]}')
-                P=product(*[x for x in seas.values()])
-                O=next(P)
-            else: # intramolecular; keep partners together
-                logging.debug(f'sym_partners.values() {sym_partners.values()}')
-                P=[p for p in zip(*[x for x in seas.values()])]
-                O=P[0]
-                P=P[1:]
-            logging.debug(f'Original atoms for symmetry expansion: {O}')
+                                                same_attribute='sea-idx',
+                                                return_attribute='atomName')
+                    logging.debug(f'atoms symmetry-equivalent to {mname} {atomName}: {clu}')
+                    sclass[mname][atomName]=list(clu)
+                    sp.append(list(clu))
+                logging.debug(f'sp {sp}')
+                if len(R.reactants)>1:
+                    sseq.append(list(product(*sp)))
+                else:
+                    sseq.append(list(zip(*sp)))
+            logging.debug(f'sclass {sclass}')
+            logging.debug(f'Reaction reactant sealist: {sseq}')                      
+            P=list(product(*[v for v in sseq]))
+            logging.debug(f'P {P}')
             idx=1
-            # TODO: properly build up symmetry-related reactions
-            
-            for p in P:
-                logging.debug(f'Replicating {R.name} using {p}')
+            trydict[P[0]]=R.product
+            for p in P[1:]:
+                logging.debug(f'{R.name}-{idx} {p}({len(p)}) -> {R.product}-{idx}')
+                trydict[p]=f'{R.product}-{idx}'
                 newR=deepcopy(R)
-                newR.sym=idx
                 newR.name+=f'-{idx}'
                 newR.product+=f'-{idx}'
-                for rxnum,rxname in newR.reactants.items():
-                    if rxname+f'-{idx}' in extra_molecules:
-                        newR.reactants[rxnum]=rxname+f'-{idx}'
-                idx+=1
-                for a,o in zip(p,O):
-                    for atom,oatom in zip(newR.atoms,R.atoms):
-                        if R.atoms[oatom]['atom']==o:
-                            newR.atoms[atom]['atom']=a
+                ip=0
+                pdiv={}
+                for nri,nR in R.reactants.items():
+                    nres_nR=len(current_molecules[nR].sequence)
+                    subp=p[ip:ip+nres_nR]
+                    ip+=nres_nR
+                    nresname=nR
+                    if subp in trydict:
+                        nresname=trydict[subp]
+                    logging.debug(f'  {nR} {nresname} {subp}')
+                    newR.reactants[nri]=nresname
+                    pdiv[nri]=subp
+                for aL,atomrec in R.atoms.items():
+                    atomName=atomrec['atom']
+                    z=atomrec['z']
+                    resid=atomrec['resid']
+                    reactant_idx=atomrec['reactant']
+                    reactant=R.reactants[reactant_idx]
+                    resname=current_molecules[reactant].sequence[resid-1]
+                    logging.debug(f'need to alter atom: {atomName} resid: {resid} reactant: {reactant_idx} ({reactant})')
+                    logging.debug(f'have {pdiv[reactant_idx]} {len(pdiv[reactant_idx])}')
+                    new_atomName=atomName
+                    for q in pdiv[reactant_idx]:
+                        logging.debug(f'{q}')
+                        for qq in q:
+                            logging.debug(f'is it {qq}?')
+                            isit=qq in sclass[resname][atomName]
+                            logging.debug(f'{isit}')
+                            if isit:
+                                new_atomName=qq
+                    newR.atoms[aL]={'atom':new_atomName,'resid':resid,'reactant':reactant_idx,'z':z}
+                    # pdiv[] here has one element for each reactive atom in reactant, but
                 extra_reactions.append(newR)
                 newP=Molecule(name=newR.product,generator=newR)
-                original_molecule=unique_molecules[R.name]
-                # newP.generate(available_molecules=self.molecules,**self.parameters)
                 extra_molecules[newR.product]=newP
-
-        for nR in extra_reactions:
-            logging.debug(f'symmetry-derived reaction {nR.name} atoms {nR.atoms}')
-        self.reactions.extend(extra_reactions)
-        self.molecules.update(extra_molecules)
+                idx+=1
+        logging.debug(f'trydict {trydict}')
+        for R in self.reactions:
+            logging.debug(R)
+        logging.debug(f'extra reactions:')
+        for R in extra_reactions:
+            logging.debug(R)
         return extra_molecules
 
     def get_reaction(self,product_name):

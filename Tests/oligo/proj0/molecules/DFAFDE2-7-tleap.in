@@ -1,0 +1,6 @@
+source leaprc.gaff
+mymol = loadmol2 ddcbf6a7845c550c.mol2
+check mymol
+loadamberparams ddcbf6a7845c550c.frcmod
+saveamberparm mymol ddcbf6a7845c550c-tleap.top ddcbf6a7845c550c-tleap.crd
+quit

@@ -38,7 +38,16 @@ class Reaction:
         self.probability=1.0
 
     def __str__(self):
-        return f'Reaction "{self.name}"'
+        retstr=f'Reaction "{self.name}"\n'
+        for i,r in self.reactants.items():
+            retstr+=f'reactant {i}: {r}\n'
+        retstr+=f'product {self.product}\n'
+        for i,a in self.atoms.items():
+            retstr+=f'atom {i}: {a}\n'
+        for b in self.bonds:
+            retstr+=f'bond {b}\n'
+        return retstr
+
 
     def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
         A,B=[self.atoms[i] for i in bonddict['atoms']]
