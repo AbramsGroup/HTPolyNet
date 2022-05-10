@@ -372,12 +372,20 @@ class Topology:
         return self
         
     def total_mass(self,units='gromacs'):
+        """Returns total mass of all atoms in the Topology.
+
+        :param units: unit system designation; if 'SI' returns kg, defaults to 'gromacs'
+        :type units: str, optional
+        :return: mass (in amu if units is 'gromacs' or kg if units is 'SI')
+        :rtype: float
+        """
         fac=1.0
         if units=='SI':
             fac=physical_constants['atomic mass constant'][0]
         if 'atoms' in self.D:
-            M_amu=self.D["atoms"]["mass"].sum()
+            M_amu=self.D['atoms']['mass'].sum()
             return M_amu*fac
+        return 0.0
 
     def atomcount(self):
         if 'atoms' in self.D:

@@ -558,6 +558,11 @@ class Coordinates:
             self.A.loc[i,'posX':'posZ']=srow.values+L
 
     def maxspan(self):
+        """Returns dimensions of orthorhombic convex hull enclosing Coordinates
+
+        :return: array of x-span, y-span, z-span
+        :rtype: numpy.ndarray
+        """
         sp=self.A[['posX','posY','posZ']]
         return np.array(
             [
