@@ -45,6 +45,8 @@ class TopoCoord:
         for b in bonds:
             bb,template_name=b
             T=moldict[template_name]
+            self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[0]})
+            self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             inst2temp,temp2inst=T.idx_mappers(self,bb)
             assert len(inst2temp)==len(temp2inst)
@@ -52,8 +54,8 @@ class TopoCoord:
             for k,v in inst2temp.items():
                 check = check and (k == temp2inst[v])
             assert check,f'Error: bidirectional dicts are incompatible; bug'
-            logging.debug(f'map_from_templates:inst2temp {inst2temp}')
-            logging.debug(f'map_from_templates:temp2inst {temp2inst}')
+            # logging.debug(f'map_from_templates:inst2temp {inst2temp}')
+            # logging.debug(f'map_from_templates:temp2inst {temp2inst}')
             i_idx,j_idx=bb
             temp_i_idx=inst2temp[i_idx]
             temp_j_idx=inst2temp[j_idx]
@@ -62,7 +64,7 @@ class TopoCoord:
                 ((d.ai==temp_j_idx)&(d.aj==temp_i_idx))].copy()
             assert d.shape[0]==1,f'Error: map_from_templates using {T.name} is sent inst-bond {i_idx}-{j_idx} which is claimed to map to {temp_i_idx}-{temp_j_idx}, but no such bond is found:\n{self.Topology.D["bonds"].to_string()}'
             temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((inst2temp[i_idx],inst2temp[j_idx]))
-            logging.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
+            # logging.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
             inst_angles=temp_angles.copy()
             inst_angles.ai=temp_angles.ai.map(temp2inst)
             inst_angles.aj=temp_angles.aj.map(temp2inst)
@@ -73,13 +75,13 @@ class TopoCoord:
                 for inst_atom,temp_atom in zip(inst_angles[a],temp_angles[a]):
                     inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
                     temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
-                    logging.debug(f'ang temp {temp_atom} {temp_type} {temp_charge}')
-                    logging.debug(f'ang inst {inst_atom} {inst_type} {inst_charge}')
+                    # logging.debug(f'ang temp {temp_atom} {temp_type} {temp_charge}')
+                    # logging.debug(f'ang inst {inst_atom} {inst_type} {inst_charge}')
                     if inst_type!=temp_type:
-                        logging.debug(f'(angles){a} changing type of inst atom {inst_atom} from {inst_type} to {temp_type}')
+                        # logging.debug(f'(angles){a} changing type of inst atom {inst_atom} from {inst_type} to {temp_type}')
                         atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
                     if inst_charge!=temp_charge:
-                        logging.debug(f'(angles){a} changing charge of inst atom {inst_atom} from {inst_charge} to {temp_charge}')
+                        # logging.debug(f'(angles){a} changing charge of inst atom {inst_atom} from {inst_charge} to {temp_charge}')
                         atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
             d=self.Topology.D['angles']
             check=True
@@ -99,13 +101,13 @@ class TopoCoord:
                 for inst_atom,temp_atom in zip(inst_dihedrals[a],temp_dihedrals[a]):
                     inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
                     temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
-                    logging.debug(f'dih temp {temp_atom} {temp_type} {temp_charge}')
-                    logging.debug(f'dih inst {inst_atom} {inst_type} {inst_charge}')
+                    # logging.debug(f'dih temp {temp_atom} {temp_type} {temp_charge}')
+                    # logging.debug(f'dih inst {inst_atom} {inst_type} {inst_charge}')
                     if inst_type!=temp_type:
-                        logging.debug(f'(dihedrals){a} changing type of inst atom {inst_atom} from {inst_type} to {temp_type}')
+                        # logging.debug(f'(dihedrals){a} changing type of inst atom {inst_atom} from {inst_type} to {temp_type}')
                         atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
                     if inst_charge!=temp_charge:
-                        logging.debug(f'(dihedrals){a} changing charge of inst atom {inst_atom} from {inst_charge} to {temp_charge}')
+                        # logging.debug(f'(dihedrals){a} changing charge of inst atom {inst_atom} from {inst_charge} to {temp_charge}')
                         atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
             d=self.Topology.D['dihedrals']
             check=True
@@ -128,7 +130,7 @@ class TopoCoord:
                 logging.error('null in temp2inst keys')
             if any(np.isnan(v)):
                 logging.error('null in temp2inst values')
-            logging.debug(f'temp_pairs:\n{temp_pairs.to_string()}')
+            # logging.debug(f'temp_pairs:\n{temp_pairs.to_string()}')
             isin=[not x in temp2inst for x in temp_pairs.ai]
             if any(isin):
                 for ii,jj in enumerate(isin):
@@ -275,6 +277,16 @@ class TopoCoord:
     def partners_of(self,i):
         return self.Topology.bondlist.partners_of(i)
 
+    def interresidue_parters_of(self,i):
+        result=[]
+        bl=self.Topology.bondlist.partners_of(i)
+        myresid=self.Coordinates.A.iloc[i-1]['resNum']
+        for j in bl:
+            theirresid=self.Coordinates.A.iloc[j-1]['resNum']
+            if theirresid!=myresid:
+                result.append(j)
+        return result
+
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         return self.Coordinates.minimum_distance(other.Coordinates,self_excludes=self_excludes,other_excludes=other_excludes)
 
@@ -320,6 +332,35 @@ class TopoCoord:
         self.Coordinates.A=C.reset_index()
         # logging.debug(f'after update:\n{self.Coordinates.A.to_string()}')
 
+    def set_z(self,reaction_list,moldict):
+        razdict={}  # [resname][atomname]=[list of z-values detected]
+        for R in reaction_list:
+            logging.debug(f'Set z: scanning reaction {R.name} for raz')
+            raz=R.get_raz(moldict)  # [resname][atomname]=[list of z-values detected in this reaction]
+            logging.debug(f'-> raz {raz}')
+            for rn in raz:
+                if not rn in razdict:
+                    razdict[rn]={}
+                for an in raz[rn]:
+                    if not an in razdict[rn]:
+                        razdict[rn][an]=[]
+                    razdict[rn][an].extend(raz[rn][an])
+        for rn in razdict:
+            for an in razdict[rn]:
+                razdict[rn][an]=max(razdict[rn][an])
+        logging.debug(f'razdict {razdict}')
+        zsrs=[]
+        for i,r in self.Coordinates.A.iterrows():
+            rn=r['resName']
+            an=r['atomName']
+            idx=r['globalIdx']
+            z=0
+            if rn in razdict:
+                if an in razdict[rn]:
+                    irb=self.interresidue_parters_of(idx)
+                    z=razdict[rn][an]-len(irb)
+            zsrs.append(z)
+        self.set_gro_attribute('z',zsrs)
 
     def analyze_sea_topology(self):
         tadf=self.Topology.D['atoms']

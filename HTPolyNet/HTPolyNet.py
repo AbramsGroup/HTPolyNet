@@ -97,7 +97,7 @@ class HTPolyNet:
                 parameterizing an existing mol2 file or reading in a previous parameterization
                 from the library '''
             if mname not in self.molecules:
-                logging.debug('Generating {mname}')
+                logging.debug(f'Generating {mname}')
                 self.generate_molecule(M,force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
                 self.molecules[mname]=M
@@ -105,15 +105,15 @@ class HTPolyNet:
         self.molecules.update(new_molecules)
         self.cfg.maxconv=self.cfg.calculate_maximum_conversion()
         logging.info(f'Maximum conversion is {self.cfg.maxconv} bonds.')
-        precursors=[M for M in self.molecules.values() if not M.generator]
-        for M in precursors:
-            M.propagate_z(self.cfg.reactions,self.molecules)
-        reaction_products=[M for M in self.molecules.values() if M.generator]
-        for M in reaction_products:
-            M.propagate_z(self.cfg.reactions,self.molecules)
+        # precursors=[M for M in self.molecules.values() if not M.generator]
+        # for M in precursors:
+        #     M.propagate_z(self.cfg.reactions,self.molecules)
+        # reaction_products=[M for M in self.molecules.values() if M.generator]
+        # for M in reaction_products:
+        #     M.propagate_z(self.cfg.reactions,self.molecules)
         for M in self.molecules.values():
             logging.debug(f'Ring detector for {M.name}')
-            M.label_ring_atoms(M.TopoCoord.ring_detector())
+            M.label_ring_atoms()
         for M in self.molecules.values():
             if len(M.reaction_bonds)>0:
                 logging.debug(f'Crosslink bond(s) in {M.name}:')
@@ -132,12 +132,16 @@ class HTPolyNet:
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
             if generatable:
-                # logging.info(f'Generating {mname}')
+                logging.info(f'Yes -- calling {mname}.generate()')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
                 M.set_origin('newly parameterized')
             else:
+                logging.debug(f'...no, did not generate {mname}.')
+                logging.debug(f'not ({mname}.generator) {bool(not M.generator)}')
+                if M.generator:
+                    logging.debug(f'reactants {list(M.generator.reactants.values())}')
                 return
         else:
             logging.info(f'Fetching parameterized {mname}')
@@ -146,6 +150,7 @@ class HTPolyNet:
             M.load_top_gro(f'{mname}.top',f'{mname}.gro')
             M.set_sequence()
             M.set_reaction_bonds(self.molecules)
+            M.TopoCoord.set_gro_attribute('reactantName',self.name)
             M.set_origin('previously parameterized')
         ''' The cfg allows user to indicate whether or not to determine and use
             symmetry-equivalent atoms in any molecule. '''
@@ -231,8 +236,9 @@ class HTPolyNet:
             logging.info(f'Found {inpfnm}.gro.')
         self.TopoCoord.read_gro(f'{inpfnm}.gro')
         self.TopoCoord.atom_count()
-        self.TopoCoord.inherit_attributes_from_molecules(['z','cycle-idx'],self.cfg.molecules)
-        self.TopoCoord.write_gro_attributes(['z','cycle-idx'],f'{inpfnm}.grx')
+        self.TopoCoord.inherit_attributes_from_molecules(['cycle-idx','reactantName'],self.cfg.molecules)
+        self.TopoCoord.set_z(self.cfg.reactions,self.molecules)
+        self.TopoCoord.write_gro_attributes(['z','cycle-idx','reactantName'],f'{inpfnm}.grx')
         self.TopoCoord.make_ringlist()
         self.TopoCoord.make_resid_graph()
 
@@ -360,19 +366,23 @@ class HTPolyNet:
                 B=R.atoms[bond['atoms'][1]]
                 logging.debug(f'  -> bond\n    {R.reactants}\n    {bond}:\n    A {A}\n    B {B}')
                 aname=A['atom']
-                aresname_template=R.reactants[A['reactant']]
+                areactantname_template=R.reactants[A['reactant']]
                 aresid_template=A['resid']
                 # get ACTUAL resname from the resid'th residue of reactant...
-                aresname=self.molecules[aresname_template].get_resname(aresid_template)
+                aresname=self.molecules[areactantname_template].get_resname(aresid_template)
                 az=A['z']
                 bname=B['atom']
-                bresname_template=R.reactants[B['reactant']]
+                breactantname_template=R.reactants[B['reactant']]
                 bresid_template=B['resid']
                 # get ACTUAL resname from the resid'th residue of reactant...
-                bresname=self.molecules[bresname_template].get_resname(bresid_template)
+                bresname=self.molecules[breactantname_template].get_resname(bresid_template)
                 bz=B['z']
-                Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)]
-                Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)]
+                # TODO: need to more accurately define Aset and Bset based on reaction product
+                # IDEA: create a 'reactantName' attribute that has to match the reactant name
+                # two atoms that form a successful bond will have their reactatName attributes
+                # set to their respective reactant names in the reaction that generated the bond
+                Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
+                Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
                 logging.debug(f'Aset.shape[0] {Aset.shape[0]}')
                 logging.debug(f'Bset.shape[0] {Bset.shape[0]}')
                 Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
@@ -405,15 +415,35 @@ class HTPolyNet:
         newbonds.sort(key=lambda x: x[1])
         logging.debug(f'*** Pruning {len(newbonds)} bonds...')
         atomset=list(set(list([x[0][0] for x in newbonds])+list([x[0][1] for x in newbonds])))
-        # keep shortest bonds up to point atoms are all used up
+        resid_pairs=[]
+        allowed_bond=[True for x in newbonds]
+        for k,b in enumerate(newbonds):
+            bb,p=b 
+            i,j=bb
+            i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
+            j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
+            assert i_resid!=j_resid,f'Error: {i} and {j} are both in resNum {i_resid}; this is a bug'
+            rp=(i_resid,j_resid)
+            if not rp in resid_pairs:
+                resid_pairs.append(rp)
+                resid_pairs.append(rp[::-1])
+            else:
+                allowed_bond[k]=False
+        # keep shortest bonds up to point atoms are all used up; do not repeat resid pairs
+        # so that only one bond is allowed to connect any two residues
         keepbonds=[]
-        for n in newbonds:
+        disallowed=0
+        for k,n in enumerate(newbonds):
+            if not allowed_bond[k]:
+                disallowed+=1
+                continue
             b=n[0]
             if b[0] in atomset and b[1] in atomset:
                 atomset.remove(b[0])
                 atomset.remove(b[1])
                 keepbonds.append((b,n[2]))
         logging.debug(f'*** accepted the {len(keepbonds)} shortest non-competing bonds')
+        logging.debug(f'    {disallowed} bonds that repeat resid pairs thrown out.')
         with open(f'keepbonds-{iter}.dat','w') as f:
             f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in keepbonds))
         return keepbonds
@@ -433,7 +463,7 @@ class HTPolyNet:
                 f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in reindexed_keepbonds))
             pairs=[i[0] for i in reindexed_keepbonds]
             self.TopoCoord.decrement_z(pairs)
-            self.TopoCoord.make_ringlist()
+            self.TopoCoord.make_ringlist()  # because of reindexing
             self.TopoCoord.map_from_templates(reindexed_keepbonds,self.molecules)
             self.TopoCoord.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
             basefilename=f'scur-step-{iter}'
@@ -480,10 +510,10 @@ class HTPolyNet:
         self.generate_molecules(
             force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin
         )
-        # self.initialize_global_topology()
-        # self.setup_liquid_simulation()
-        # self.do_liquid_simulation()
-        # self.SCUR()
+        self.initialize_global_topology()
+        self.setup_liquid_simulation()
+        self.do_liquid_simulation()
+        self.SCUR()
         # self.finalize()
 
 def info():

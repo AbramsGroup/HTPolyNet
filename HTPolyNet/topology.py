@@ -255,7 +255,7 @@ class Topology:
             self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
 
     def ring_detector(self):
-        adf=self.D['atoms']
+        # adf=self.D['atoms']
         g=self.bondlist.graph()
         cycles={}
         for a in range(3,8):
