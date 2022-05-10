@@ -6,10 +6,6 @@ import pandas as pd
 import numpy as np
 import logging
 
-from sympy import comp
-
-#from HTPolyNet.topology import Topology
-#from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topocoord import TopoCoord
 
 from HTPolyNet.ambertools import GAFFParameterize
@@ -50,11 +46,11 @@ class Reaction:
 
     def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
         A,B=[self.atoms[i] for i in bonddict['atoms']]
-        logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
-        logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
+        # logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
+        # logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
         Aidx,Aresid=self.get_atom_globalIndx(A,mol,moldict)
         Bidx,Bresid=self.get_atom_globalIndx(B,mol,moldict)
-        logging.debug(f'     A: {Aidx}  B: {Bidx}')
+        # logging.debug(f'     A: {Aidx}  B: {Bidx}')
         return (Aidx,Bidx),(Aresid,Bresid),(A['atom'],B['atom'])
 
     def get_atom_globalIndx(self,A,mol,moldict):
@@ -69,7 +65,7 @@ class Reaction:
                 aresid+=aresid_inreactant
                 break
             else:
-                logging.debug(f'preseq {v} {moldict[v].sequence}')
+                # logging.debug(f'preseq {v} {moldict[v].sequence}')
                 aresid+=len(moldict[v].sequence)
         # logging.debug(f'reaction {self.name}: asking for globalIdx of resNum {aresid} atomName {aname}')
         idx=mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'resNum':aresid,'atomName':aname})
@@ -86,7 +82,7 @@ class Reaction:
             if len(moldict)==0:
                 resname=reactant_name
             else:
-                logging.debug(f'grabbing resname of {resid} from position {resid-1} of {reactant_name} {moldict[reactant_name].sequence}')
+                # logging.debug(f'grabbing resname of {resid} from position {resid-1} of {reactant_name} {moldict[reactant_name].sequence}')
                 resname=moldict[reactant_name].sequence[resid-1]
             if not resname in razdict:
                 razdict[resname]={}

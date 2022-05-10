@@ -150,7 +150,7 @@ class HTPolyNet:
             M.load_top_gro(f'{mname}.top',f'{mname}.gro')
             M.set_sequence()
             M.set_reaction_bonds(self.molecules)
-            M.TopoCoord.set_gro_attribute('reactantName',self.name)
+            M.TopoCoord.set_gro_attribute('reactantName',M.name)
             M.set_origin('previously parameterized')
         ''' The cfg allows user to indicate whether or not to determine and use
             symmetry-equivalent atoms in any molecule. '''
@@ -247,6 +247,7 @@ class HTPolyNet:
         if os.path.exists(f'{deffnm}.gro') and self.cfg.parameters['restart']:
             logging.info(f'{deffnm}.gro exists in {os.getcwd()}; skipping initial NPT md.')
         else:
+            logging.info(f'Conducting initial NPT MD simulation of liquid')
             msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-min-1',mdp='em')
             msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm)
             logging.info(f'Generated configuration {deffnm}.gro\n')
@@ -418,11 +419,11 @@ class HTPolyNet:
         resid_pairs=[]
         allowed_bond=[True for x in newbonds]
         for k,b in enumerate(newbonds):
-            bb,p=b 
+            bb,p,t=b 
             i,j=bb
             i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
             j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
-            assert i_resid!=j_resid,f'Error: {i} and {j} are both in resNum {i_resid}; this is a bug'
+            # need to be careful about intramolecular bonds (capping)
             rp=(i_resid,j_resid)
             if not rp in resid_pairs:
                 resid_pairs.append(rp)
