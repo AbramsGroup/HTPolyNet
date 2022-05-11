@@ -1,4 +1,14 @@
-# class for methods that need to work with both Topology and Coordinates
+"""
+
+.. module:: topocoords
+   :synopsis: Class for jointly handling Topology and Coordinate instances that go together
+   
+.. moduleautor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
+
+#
+#  class for methods that need to work with both Topology and Coordinates
 from distutils.ccompiler import show_compilers
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
@@ -320,22 +330,70 @@ class TopoCoord:
         self.read_gro(grofilename)
 
     def write_top(self,topfilename):
+        """Write a Gromacs-format topology file; this will only write an in-line version,    
+            no itp; wrapper for Topology.to_file()
+
+        :param topfilename: name of file to write
+        :type topfilename: str
+        """
         self.Topology.to_file(topfilename)
 
     def write_gro(self,grofilename):
+        """Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()
+
+        :param grofilename: name of file to write
+        :type grofilename: str
+        """
         self.Coordinates.write_gro(grofilename)
 
     def write_top_gro(self,topfilename,grofilename):
+        """Writes both a Gromacs top file and Gromacs coordinate file
+
+        :param topfilename: name of topology file to write
+        :type topfilename: str
+        :param grofilename: name of coordinate file to write
+        :type grofilename: str
+        """
         self.write_top(topfilename)
         self.write_gro(grofilename)
 
     def return_bond_lengths(self,bonds):
+        """Return the length of all bonds in list bonds
+
+        :param bonds: list of bonds, each is a 2-tuple of global atom indices
+        :type bonds: list
+        :return: list of lengths parallel to bonds
+        :rtype: list of floats
+        """
         return self.Coordinates.return_bond_lengths(bonds)
 
     def copy_bond_parameters(self,bonds):
+        """Generate and return a copy of a bonds dataframe that contains all bonds
+           listed in bonds
+
+        :param bonds: list of bonds, each a 2-tuple of global atom indices
+        :type bonds: list
+        :return: bonds dataframe
+        :rtype: pandas.DataFrame
+        """
         return self.Topology.copy_bond_parameters(bonds)
 
     def attenuate_bond_parameters(self,bonds,i,n,lengths):
+        """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
+            relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
+            Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
+            bond is multiplied by x and the distance is 1 xth of the way from its maximum value 
+            to its equilibrium value.
+
+        :param bonds: list of bonds, each a 2-tuple of global atom indices
+        :type bonds: list
+        :param stage: index of stage in the series of post-bond-formation relaxation ("R" of SCUR)
+        :type stage: int
+        :param max_stages: total number of relaxation stages for this iteration
+        :type max_stages: int
+        :param lengths: list of bond lengths, parallel to bonds
+        :type lengths: list of floats
+        """
         self.Topology.attenuate_bond_parameters(bonds,i,n,lengths)
 
     def copy_coords(self,other):

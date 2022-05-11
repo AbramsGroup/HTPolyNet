@@ -45,7 +45,20 @@ class Linkcell:
         return nR
 
     def cellndx_of_point(self,R):
-        return np.floor(R*np.reciprocal(self.celldim)).astype(int)
+        # if any(np.isclose(R,self.box)):
+        #     logging.debug(f'point {R} close to box {self.box}')
+        #     np.printoptions(precision=10)
+        #     d=R-self.box
+        #     for x in d:
+        #         logging.debug(f'{x:.7e}')
+        C=np.floor(R*np.reciprocal(self.celldim)).astype(int)
+        lowdim=(C<0).astype(int) # will never happen if R is wrapped
+        hidim=(C>=self.ncells).astype(int) # could happen if exactly there
+        C+=lowdim
+        C-=hidim
+        # if any(C>=self.ncells):
+        #     logging.debug(f'cellndx of {R} is {C} out of bounds of {self.ncells}')
+        return C
 
     def point_in_cellndx(self,R,C):
         LL,UU=self.corners_of_cellndx(C)
@@ -78,7 +91,12 @@ class Linkcell:
             C=self.cellndx_of_point(self.wrap_point(R))
             idx=self.ldx_of_cellndx(C)
             Coordinates.set_atom_attribute('linkcell-idx',idx,{'globalIdx':i+1})
-            self.memberlists[idx].append(i+1)
+            try:
+                self.memberlists[idx].append(i+1)
+            except:
+                logging.debug(f'{idx} out of range? cellndx.shape[0] is {self.cellndx.shape[0]}')
+                logging.debug(f'C {C} R {R} wrapped(R) {self.wrap_point(R)}')
+                logging.debug(f'pointinbox {self.point_in_box(R)}')
         amm=np.array([0.,1e9,-1e9])
         for i in range(len(self.memberlists)):
             c=len(self.memberlists[i])
