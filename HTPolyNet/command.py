@@ -9,7 +9,7 @@ class Command:
         self.c=f'{self.command} '+' '.join([f'-{k} {v}' for k,v in self.options.items()])
         
     def run(self,override=()):
-        logging.info(f'{self.c}')
+        logging.debug(f'{self.c}')
         process=subprocess.Popen(self.c,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         out,err=process.communicate()
         if process.returncode!=0:

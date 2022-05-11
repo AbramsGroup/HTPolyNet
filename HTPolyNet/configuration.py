@@ -72,7 +72,6 @@ class Configuration:
         return inst
     
     def parse(self):
-        privileged_keys=['reactions','Title','use_sea','initial_composition']
         self.Title=self.basedict.get('Title','No Title Provided')
         ''' reactions must declare molecules '''
         self.reactions=[Reaction(r) for r in self.basedict['reactions']]
@@ -101,16 +100,13 @@ class Configuration:
             logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
 
         self.use_sea=self.basedict.get('use_sea',[])
+        if len(self.use_sea)==0:
+            self.use_sea=self.basedict.get('use_symmetry_equivalent_atoms',[])
         for m in self.use_sea:
             if not m in self.molecules:
                 logging.error(f'Configuration {self.cfgFile} references undeclared molecule {m} in use_sea')
                 logging.error(f'Molecules must be declared in reactions or initial_composition')
                 raise Exception('Configuration error')
-
-        self.privileged_items={}
-        for k in privileged_keys:
-            self.privileged_items[k]=self.basedict[k]
-            del self.basedict[k]
 
         self.parameters=self.basedict
         if not 'cpu' in self.parameters:

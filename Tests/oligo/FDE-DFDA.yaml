@@ -1,12 +1,12 @@
-Title: FDE/DFDA thermoset
+Title: FDE-DFDA thermoset
 initial_density: 300.0  # kg/m3
 SCUR_cutoff: 0.5 # nm
 conversion: 0.95
 late_treshhold: 0.85  # conversion above which bond formation probabilities are ignored
 chargemethod: gas  # bcc
-max_SCUR_iterations: 2
+max_SCUR_iterations: 25
 max_bond_relaxation_stages: 10
-use_sea: [DFA, FDE]  # use symmetry-equivalency for any atoms in these molecules
+use_symmetry_equivalent_atoms: [DFA, FDE]
 reactions:
   - {
       name:     'Primary-to-secondary-amine',
@@ -51,9 +51,5 @@ reactions:
       ]
     }
 initial_composition:
-  - {molecule: FDE, count: 200}
-  - {molecule: DFA, count: 100}
-   #- {reactants: [DFA+FDE,FDE], probability: 0.5}
-#reactions: # reactants [base,other]
-#   - {reactants: [DFA,FDE], probability: 1.0}
-
+  - {molecule: FDE, count: 100}
+  - {molecule: DFA, count: 50}

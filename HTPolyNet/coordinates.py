@@ -187,6 +187,7 @@ class Coordinates:
                 if len(boxdata)==9:
                     inst.box[0][1],inst.box[0][2],inst.box[1][0],inst.box[1][2],inst.box[2][0],inst.box[2][1]=boxdata[3:]
         inst.empty=False
+        inst.wrap_coords()
         return inst
 
     @classmethod
@@ -271,6 +272,9 @@ class Coordinates:
     def make_ringlist(self):
         self.ringlist=list(self.rings())
 
+    def reindex_ringlist(self,idx_mapper):
+        pass
+
     def rings(self): # an iterator over all rings
         a=self.A
         for resid in a['resNum'].unique():
@@ -278,6 +282,7 @@ class Coordinates:
             if not mr.empty:
                 for ri in mr['cycle-idx'].unique():
                     R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']].values
+                    # TODO: cast R as a pandas DataFrame to preserve int type of globalIdx
                     # logging.debug(f'visiting a ring ({resid}:{ri}) of length {R.shape[0]}')
                     yield R
 
@@ -330,7 +335,7 @@ class Coordinates:
                     raise Exception('why?')
                 lcids.append(rci)
             for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
-                cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.linkcell.wrap_point(p)))
+                cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
                 # logging.debug(f'intermediate point {p} in cell {cpi}...')
                 nears=[]
                 for rci in lcids:
@@ -364,7 +369,7 @@ class Coordinates:
                 return C
         return False
 
-    def linkcell_initialize(self,cutoff=0.0,populate=True,force_repopulate=False):
+    def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False):
         logging.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
@@ -372,7 +377,7 @@ class Coordinates:
                 logging.debug(f'Found linkcell.grx; no need to populate.')
                 self.read_atomset_attributes('linkcell.grx')
             else:
-                self.linkcell.populate(self)
+                self.linkcell.populate(self,ncpu=ncpu)
                 self.write_atomset_attributes(['linkcell-idx'],'linkcell.grx')
 
     def linkcelltest(self,i,j):
@@ -385,11 +390,6 @@ class Coordinates:
         if self.linkcell.are_ldx_neighbors(ci,cj):
             return True
         return False
-    
-    # def linkcelltest_positions(self,Ri,Rj):
-    #     ci=self.linkcell.ldx_of_cellndx(self.linkcell.cell_of_point(Ri))
-    #     cj=self.linkcell.ldx_of_cellndx(self.linkcell.cell_of_point(Rj))
-    #     return self.linkcell.are_ldx_neighbors(ci,cj)
 
     def geometric_center(self):
         a=self.A
@@ -413,6 +413,18 @@ class Coordinates:
                 elif r[c]>hbx:
                     r[c]-=self.box[c][c]
         return r
+
+    def wrap_point(self,ri):
+        op=(ri>self.box.diagonal()).astype(int)
+        on=(ri<np.zeros(3)).astype(int)
+        if any(op) or any(on):
+            return ri+np.multiply(self.box.diagonal(),(on-op))
+        return ri
+
+    def wrap_coords(self):
+        sp=self.A[['posX','posY','posZ']]
+        for i,srow in sp.iterrows():
+            self.A.loc[i,'posX':'posZ']=self.wrap_point(srow.values)
 
     def calc_distance_matrix(self):
         M=np.zeros((self.N,self.N))
@@ -487,8 +499,8 @@ class Coordinates:
     def decrement_z(self,pairs):
         for b in pairs:
             ai,aj=b
-            ain=self.get_atom_attribute('atomName',{'globalIdx':ai})
-            ajn=self.get_atom_attribute('atomName',{'globalIdx':aj})
+            # ain=self.get_atom_attribute('atomName',{'globalIdx':ai})
+            # ajn=self.get_atom_attribute('atomName',{'globalIdx':aj})
             iz=self.get_atom_attribute('z',{'globalIdx':ai})-1
             assert iz>=0,f'Error: decrementing z of atom {ai} gives erroneous z {iz}'
             jz=self.get_atom_attribute('z',{'globalIdx':aj})-1

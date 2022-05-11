@@ -105,18 +105,13 @@ class HTPolyNet:
         self.molecules.update(new_molecules)
         self.cfg.maxconv=self.cfg.calculate_maximum_conversion()
         logging.info(f'Maximum conversion is {self.cfg.maxconv} bonds.')
-        # precursors=[M for M in self.molecules.values() if not M.generator]
-        # for M in precursors:
-        #     M.propagate_z(self.cfg.reactions,self.molecules)
-        # reaction_products=[M for M in self.molecules.values() if M.generator]
-        # for M in reaction_products:
-        #     M.propagate_z(self.cfg.reactions,self.molecules)
         for M in self.molecules.values():
             logging.debug(f'Ring detector for {M.name}')
             M.label_ring_atoms()
+        logging.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():
             if len(M.reaction_bonds)>0:
-                logging.debug(f'Crosslink bond(s) in {M.name}:')
+                logging.debug(f'Template {M.name}:')
                 for b in M.reaction_bonds:
                     (i,j),(ri,rj),(A,B)=b
                     logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B})')
@@ -167,7 +162,6 @@ class HTPolyNet:
                 M.read_gro_attributes(f'{mname}.sea',attribute_list=['sea-idx'])
                 M.analyze_sea_topology()
         else:
-            # we have to transfer from the base reactants
             M.inherit_attribute_from_reactants('sea-idx',available_molecules=self.molecules)
             M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
         return True
@@ -187,13 +181,13 @@ class HTPolyNet:
             t=deepcopy(M.TopoCoord.Topology)
             t.adjust_charges(0)
             t.rep_ex(N)
-            logging.info(f'initialize_topology merging {N} copies of {M.name} into global topology')
+            logging.info(f'Merging {N} copies of {M.name}\'s topology into global topology')
             self.TopoCoord.Topology.merge(t)
             already_merged.append(M.name)
         for othermol,M in self.molecules.items():
             if not othermol in already_merged:
                 self.TopoCoord.Topology.merge_types(M.TopoCoord.Topology)
-        logging.info(f'Extended topology has {self.TopoCoord.Topology.atomcount()} atoms.')
+        logging.info(f'Global topology has {self.TopoCoord.Topology.atomcount()} atoms.')
         self.TopoCoord.write_top(f'{inpfnm}.top')
         logging.info(f'Wrote {inpfnm}.top to {cwd}')
 
@@ -225,10 +219,10 @@ class HTPolyNet:
         for mname,M in self.cfg.molecules.items():
             if mname in c_togromacs:
                 m_togromacs[mname]=M
-        for m,M in m_togromacs.items():
-            logging.info(f'Molecule to gromacs: {m} ({M.name})')
-        for m,c in c_togromacs.items():
-            logging.info(f'Composition to gromacs: {m} {c}')
+        # for m,M in m_togromacs.items():
+        #     logging.info(f'Molecule to gromacs: {m} ({M.name})')
+        # for m,c in c_togromacs.items():
+        #     logging.info(f'Composition to gromacs: {m} {c}')
         if not os.path.exists(f'{inpfnm}.gro') or not os.path.exists(f'{inpfnm}.top'): 
             msg=insert_molecules(m_togromacs,c_togromacs,boxsize,inpfnm)
             logging.info(f'Generated {inpfnm}.top and {inpfnm}.gro.')
@@ -243,6 +237,15 @@ class HTPolyNet:
         self.TopoCoord.make_resid_graph()
 
     def do_liquid_simulation(self,inpfnm='init',deffnm='npt-1'):
+        """do_liquid_simulation Manages execution of gmx mdrun to perform minimization
+            and NPT MD simulation of the initial liquid system.  Final coordinates are 
+            loaded into the global TopoCoord.
+
+        :param inpfnm: input file name prefix, defaults to 'init'
+        :type inpfnm: str, optional
+        :param deffnm: deffnm prefix fed to gmx mdrun, defaults to 'npt-1'
+        :type deffnm: str, optional
+        """
         cwd=pfs.go_to('systems/init')
         if os.path.exists(f'{deffnm}.gro') and self.cfg.parameters['restart']:
             logging.info(f'{deffnm}.gro exists in {os.getcwd()}; skipping initial NPT md.')
@@ -255,11 +258,11 @@ class HTPolyNet:
         # update coordinates
         self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
 
-    def SCUR(self):
-        # Search - Connect - Update - Relax
+    def CURE(self):
+        # Connect - Update - Relax - Equilibrate
         restart=self.cfg.parameters['restart']
         force_scur=self.cfg.parameters.get('force_scur',False)
-        logging.info('*'*10+' SEARCH - CONNECT - UPDATE - RELAX  BEGINS '+'*'*10)
+        logging.info('*'*10+' CONNECT - UPDATE - RELAX - EQUILIBRATE (CURE) begins '+'*'*10)
         max_nxlinkbonds=self.cfg.maxconv # only for a stoichiometric system
         logging.debug(f'SCUR: max_nxlinkbonds {max_nxlinkbonds}')
         if max_nxlinkbonds==0:
@@ -273,7 +276,7 @@ class HTPolyNet:
         iter=0
         curr_nxlinkbonds=0
         while not scur_finished:
-            cwd=pfs.go_to(f'systems/iter{iter}')
+            cwd=pfs.go_to(f'systems/iter-{iter}')
             self.TopoCoord.show_z_report()
             num_newbonds=self.scur_iter_complete_check(iter)
             if num_newbonds>0:
@@ -282,9 +285,8 @@ class HTPolyNet:
                 logging.info(f'SCUR iteration {iter+1}/{maxiter} begins in {cwd}')
                 newbonds=self.scur_make_bonds(scur_search_radius,iter,force_scur=force_scur)
                 if len(newbonds)>0:
-                    top,gro,newbonds=self.update_topology_and_coordinates(newbonds,iter)
+                    top,gro,newbonds=self.TopoCoord.update_topology_and_coordinates(newbonds,iter,template_dict=self.molecules)
                     top,gro,grx=self.gromacs_stepwise_relaxation(newbonds,top,gro)
-                    # self.Coordinates.show_z_report()
                 num_newbonds=len(newbonds)
                 logging.info(f'SCUR iteration {iter+1}/{maxiter} ends.')
                 self.scur_iter_complete_register(iter,top,gro,grx,num_newbonds)
@@ -351,7 +353,7 @@ class HTPolyNet:
                     keepbonds.append((b,t[2]))
                 return keepbonds
         adf=self.TopoCoord.gro_DataFrame('atoms')
-        self.TopoCoord.linkcell_initialize(radius)
+        self.TopoCoord.linkcell_initialize(radius,ncpu=self.cfg.parameters['cpu'])
         # self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         logging.debug(f'make_bonds: there are {raset.shape[0]} reactive atoms')
@@ -365,35 +367,30 @@ class HTPolyNet:
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
-                logging.debug(f'  -> bond\n    {R.reactants}\n    {bond}:\n    A {A}\n    B {B}')
+                # logging.debug(f'  -> bond\n    {R.reactants}\n    {bond}:\n    A {A}\n    B {B}')
                 aname=A['atom']
                 areactantname_template=R.reactants[A['reactant']]
                 aresid_template=A['resid']
-                # get ACTUAL resname from the resid'th residue of reactant...
                 aresname=self.molecules[areactantname_template].get_resname(aresid_template)
                 az=A['z']
                 bname=B['atom']
                 breactantname_template=R.reactants[B['reactant']]
                 bresid_template=B['resid']
-                # get ACTUAL resname from the resid'th residue of reactant...
                 bresname=self.molecules[breactantname_template].get_resname(bresid_template)
                 bz=B['z']
-                # TODO: need to more accurately define Aset and Bset based on reaction product
-                # IDEA: create a 'reactantName' attribute that has to match the reactant name
-                # two atoms that form a successful bond will have their reactatName attributes
-                # set to their respective reactant names in the reaction that generated the bond
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
-                logging.debug(f'Aset.shape[0] {Aset.shape[0]}')
-                logging.debug(f'Bset.shape[0] {Bset.shape[0]}')
                 Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
-                logging.debug(f'Examining {len(Pbonds)} {aresname}:{aname}({az})-{bresname}:{bname}({bz}) pairs')
+                logging.debug(f'Examining {Aset.shape[0]}x{Bset.shape[0]}={len(Pbonds)} {aresname}:{aname}({az})-{bresname}:{bname}({bz}) pairs')
                 passbonds=[]
                 if len(Pbonds)>0:
                     bondtestoutcomes={k:0 for k in BTRC}
-                    logging.debug(f'Bond search will use {self.cfg.parameters["cpu"]} processes')
-                    p = Pool(processes=self.cfg.parameters['cpu'])
-                    Pbonds_split = np.array_split(Pbonds,self.cfg.parameters['cpu'])
+                    logging.debug(f'Bond search will use {self.cfg.parameters["cpu"]} processors')
+                    npro=self.cfg.parameters['cpu']
+                    if npro<len(Pbonds):
+                        npro=1
+                    p = Pool(processes=npro)
+                    Pbonds_split = np.array_split(Pbonds,npro)
                     results = p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
                     p.close()
                     p.join()
@@ -449,29 +446,6 @@ class HTPolyNet:
             f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in keepbonds))
         return keepbonds
 
-    def update_topology_and_coordinates(self,keepbonds,iter):    
-        ''' make the new bonds '''
-        logging.debug(f'update_topology_and_coordinates begins.')
-        if len(keepbonds)>0:
-            pairs=[i[0] for i in keepbonds]
-            # logging.debug(f'update_topo_coords: bondlist: {bondlist}')
-            logging.debug(f'Making {len(pairs)} bonds.')
-            idx_to_delete=self.TopoCoord.make_bonds(pairs)
-            logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
-            idx_mapper=self.TopoCoord.delete_atoms(idx_to_delete) # will result in full reindexing
-            reindexed_keepbonds=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
-            with open(f'reindexed-keepbonds-{iter}.dat','w') as f:
-                f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in reindexed_keepbonds))
-            pairs=[i[0] for i in reindexed_keepbonds]
-            self.TopoCoord.decrement_z(pairs)
-            self.TopoCoord.make_ringlist()  # because of reindexing
-            self.TopoCoord.map_from_templates(reindexed_keepbonds,self.molecules)
-            self.TopoCoord.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
-            basefilename=f'scur-step-{iter}'
-            self.TopoCoord.write_top_gro(basefilename+'.top',basefilename+'.gro')
-            logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
-            return (basefilename+'.top',basefilename+'.gro',reindexed_keepbonds)
-
     def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords):
         self.checkout('mdp/em-inter-scur-relax-stage.mdp')
         self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
@@ -493,10 +467,13 @@ class HTPolyNet:
             sacmol=TopoCoord(grofilename=stagepref+'-npt.gro')
             tmpTC.copy_coords(sacmol)
             tmpTC.restore_bond_parameters(saveT)
+            current_lengths=np.array(tmpTC.return_bond_lengths(bonds))
+            logging.debug(f'-> avg new bond length: {current_lengths.mean():.3f}')
+
         msg=grompp_and_mdrun(gro=stagepref+'-npt',top=pref,out=pref+'-post',mdp='npt-inter-scur-iter')
         sacmol=TopoCoord(grofilename=pref+'-post.gro')
         self.TopoCoord.copy_coords(sacmol)
-        self.TopoCoord.write_gro_attributes(['z','cycle-idx'],pref+'-post.grx')
+        self.TopoCoord.write_gro_attributes(['z','cycle-idx','reactantName'],pref+'-post.grx')
         return fulltop,pref+'-post.gro',pref+'-post.grx'
 
     def initreport(self):
@@ -514,7 +491,7 @@ class HTPolyNet:
         self.initialize_global_topology()
         self.setup_liquid_simulation()
         self.do_liquid_simulation()
-        self.SCUR()
+        self.CURE()
         # self.finalize()
 
 def info():

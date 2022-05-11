@@ -249,6 +249,40 @@ class TopoCoord:
                 logging.error('NAN in pairs post mapping')
                 raise Exception
 
+    def update_topology_and_coordinates(self,keepbonds,iter,template_dict={}):    
+        """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
+
+        :param keepbonds: list of 2-tuples; elem 1 is a 2-tuple of atom indices; elem 2 is reactant name
+        :type keepbonds: list of 2-tupes
+        :param iter: scur iteration number
+        :type iter: int
+        :param template_dict: dictionary of molecule templates keyed on molecule name
+        :type dict of molecules
+        :return: 3-tuple: new topology file name, new coordinate file name, list of bonds with atom indices updated to reflect any atom deletions
+        :rtype: 3-tuple
+        """
+        logging.debug(f'update_topology_and_coordinates begins.')
+        if len(keepbonds)>0:
+            # pull out just the atom index pairs (first element of each tuple)
+            pairs=[i[0] for i in keepbonds]
+            logging.debug(f'Making {len(pairs)} bonds.')
+            idx_to_delete=self.make_bonds(pairs)
+            logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
+            idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
+            # reindex all atoms in the list of bonds sent in, and write it out
+            reindexed_keepbonds=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
+            with open(f'reindexed-keepbonds-{iter}.dat','w') as f:
+                f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in reindexed_keepbonds))
+            pairs=[i[0] for i in reindexed_keepbonds]
+            self.decrement_z(pairs)
+            self.make_ringlist()  # required because
+            self.map_from_templates(reindexed_keepbonds,template_dict)
+            self.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
+            basefilename=f'scur-step-{iter}'
+            self.write_top_gro(basefilename+'.top',basefilename+'.gro')
+            logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
+            return (basefilename+'.top',basefilename+'.gro',reindexed_keepbonds)
+
     def read_top(self,topfilename):
         """Creates a new Topology member by reading from a Gromacs-style top file.
             Just a wrapper for the read_gro method of Topology
@@ -258,14 +292,6 @@ class TopoCoord:
         """
         self.Topology=Topology.read_gro(topfilename)
 
-    # def num_atoms(self):
-    #     """Returns the number atoms
-
-    #     :return: result of shape of 0th axis of atoms dataframe of Topology
-    #     :rtype: int
-    #     """
-    #     return self.Topology.D['atoms'].shape[0]
-    
     def read_gro(self,grofilename):
         """Creates a new Coordinates member by reading from a Gromacs-style coordinates
             file.  Just a wrapper for the read_gro method of Coordinates
@@ -547,13 +573,15 @@ class TopoCoord:
                 if not chk:
                     logging.warning(f'Warning: atoms in symmetry class {i} have different values of {attr}')
 
-    def linkcell_initialize(self,cutoff):
+    def linkcell_initialize(self,cutoff,ncpu=1):
         """Initialize the linkcell structure; a wrapper for Coordinates
 
         :param cutoff: minimum value of cell side-length
         :type cutoff: float
+        :param ncpu: number of processors to use in populating linkcell structure in parallel, default 1
+        :type ncpu: int
         """
-        self.Coordinates.linkcell_initialize(cutoff)
+        self.Coordinates.linkcell_initialize(cutoff,ncpu=ncpu)
 
     def atom_count(self):
         """Check to be sure the Coordinate and Topology members contain the same number of 
@@ -574,6 +602,9 @@ class TopoCoord:
         :rtype: float
         """
         return self.Topology.total_mass(units=units)
+
+    def wrap_coords(self):
+        self.Coordinates.wrap_coords()
 
     def inherit_attributes_from_molecules(self,attribute_list,molecule_dict):
         self.Coordinates.inherit_attributes_from_molecules(attribute_list,molecule_dict)

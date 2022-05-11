@@ -3,14 +3,7 @@
 import shutil
 import logging
 import os
-import pathlib
 import importlib.resources
-
-#from HTPolyNet.command import Command
-#from Library import _LIBRARY_EXT_DIR_#, which_ldir
-
-_MolecularDataFileTypes_=['mol2','gro','top','itp','sea']
-_mdf_last_required_=_MolecularDataFileTypes_.index('sea')
 
 class RuntimeLibrary:
     ''' a library object -- default creation references the Library resource package. '''
@@ -33,19 +26,6 @@ class RuntimeLibrary:
             inst.allfiles.extend(inst._frec(n))
             inst.alldirs.extend(inst._drec(n))
         inst.root=os.path.commonpath(inst.alldirs)
-
-        # inst.parameterized_molecule_containiner=None
-        # for d in inst.alldirs:
-        #     if 'parameterized' in d:
-        #         inst.parameterized_molecule_container=d
-#        print(inst.alldirs)
-        #inst.ext_dirs=which_ldir
-        # basenames=[os.path.basename(x) for x in inst.allfiles]
-        # basenameset=set(basenames)
-        # for b in basenameset:
-        #     if basenames.count(b)>1:
-        #         logging.warning(f'Two or more files with basename {b} are detected in the system library.')
-        #         logging.warning(f'checkout/checkin will resolve to {inst.allfiles[basenames.index(b)]}')
         logging.info(inst.info(verbose=verbose))
         return inst
 
@@ -82,33 +62,6 @@ class RuntimeLibrary:
         else:
             return []
 
-    # def checkin(self,basefilename):
-    #     assert os.path.exists(basefilename)
-    #     pref,ext=os.path.splitext(basefilename)
-    #     ext=ext[1:]
-    #     if ext=='mol2':
-    #         destdir=self.parameterized_molecules_container
-    #     else:
-    #         destdir=
-
-
-
-    # def path(self,basefilename,source=None):
-    #     ''' return the absolute path of the provided basename in the Library, or, if the basename is not in the library, return the path to the subdirectory it *should* go in.  Return False if no such path exists in the Library. '''
-    #     assert not os.path.sep in basefilename
-    #     if source:
-    #         basefilename=os.path.join(source,basefilename)
-    #     matches = [x for x in self.allfiles if basefilename in str(x)]
-    #     if len(matches)==1:
-    #         return matches[0]
-    #     elif len(matches)==0:
-    #         prefix,ext=os.path.splitext(basefilename)
-    #         ext=ext[1:]
-    #         return self.ext_dirs(ext)
-    #     elif len(matches)==2:
-    #         logging.warning(f'More than one file {basefilename} found in library.  Only returning {matches[0]}')
-    #         return matches[0]
-
     def checkin(self,filename,overwrite=False):
         ''' filename must be a fully resolved pathname under the 
         system library.  We expect that the basename is in the current working directory'''
@@ -121,7 +74,7 @@ class RuntimeLibrary:
             if overwrite:
                 shutil.copyfile(basefilename,fullfilename)
             else:
-                logging.info(f'{filename} already exists in system library.  No check-in performed.')
+                logging.info(f'{filename} already exists in system library. No check-in performed.')
         else:
             shutil.copyfile(basefilename,fullfilename)
         return True
@@ -133,22 +86,19 @@ class RuntimeLibrary:
             shutil.copyfile(fullfilename,os.path.join(os.getcwd(),basefilename))
             return True
         else:
-            logging.warning(f'Could not find {filename} in system library.  No check-out performed.')
+            logging.warning(f'Could not find {filename} in system library. No check-out performed.')
             return False
     
     def exists(self,filename):
         fullfilename=os.path.join(self.root,filename)
-        if os.path.exists(fullfilename):
-            return True
-        else:
-            return False
+        return os.path.exists(fullfilename)
 
     def info(self,verbose=False):
-        retstr=f'HTPolyNet Library {self.designation} Directories:\n'
+        retstr=f'Library {self.designation} Directories:\n'
         for d in self.alldirs:
             retstr+=f'   {d}\n'
         if verbose:
-            retstr+=f'HTPolyNet Library {self.designation} Files:\n'
+            retstr+=f'Library {self.designation} Files:\n'
             for f in self.allfiles:
                 retstr+=f'    {f}\n'
         return retstr
@@ -167,13 +117,6 @@ class ProjectFileSystem:
         if userlibrary:
             self.userlibrary=RuntimeLibrary.user(userlibrary)
 
-    # def cd(self,dest=''):
-    #     os.chdir(dest)
-    #     self.cwd=os.getcwd()
-    #     if (self.verbose):
-    #         logging.info(f'cwd: {self.cwd}')
-    #     return self.cwd
-
     def cdroot(self):
         os.chdir(self.rootPath)
         self.cwd=self.rootPath
@@ -185,7 +128,7 @@ class ProjectFileSystem:
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
 
-    def _next_project_dir(self,reProject=False,prefix='proj'):
+    def _next_project_dir(self,reProject=False,prefix='proj-'):
         i=0
         lastprojdir=''
         currentprojdir=''
@@ -212,7 +155,8 @@ class ProjectFileSystem:
 
 _PFS_=None
 
-def pfs_setup(root='.',topdirs=['molecules','systems','plots'],verbose=False,reProject=False,userlibrary=None,mock=False):
+def pfs_setup(root='.',topdirs=['molecules','systems','plots'],
+                verbose=False,reProject=False,userlibrary=None,mock=False):
     global _PFS_
     _PFS_=ProjectFileSystem(root=root,topdirs=topdirs,verbose=verbose,reProject=reProject,userlibrary=userlibrary,mock=mock)
 
@@ -235,17 +179,15 @@ def checkin(filename,overwrite=False,priority='user'):
 def subpath(name):
     return _PFS_.projSubPaths[name]
 
-# def cd(pathstring):
-#     if pathstring=='root':
-#         return _PFS_.cdroot()
-#     cats=[_PFS_.projSubPaths,_PFS_.systemsSubPaths]
-#     for cat in cats:
-#         if pathstring in cat:
-#             _PFS_.cd(cat[pathstring])
-#             return _PFS_.cwd
-#     raise Exception(f'Path {pathstring} cannot be located in the project file system')
-
 def go_to(pathstr):
+    """go_to Change the current working directory to "pathstr" which is assumed to be 
+        under the project root.
+
+    :param pathstr: pathname of directory relative to project root
+    :type pathstr: _type_
+    :return: absolute path of current working direcory
+    :rtype: os.path
+    """
     dirname=os.path.dirname(pathstr)
     if dirname=='':
         dirname=pathstr # assume this is a topdir
@@ -266,19 +208,6 @@ def go_to(pathstr):
 def root():
     return _PFS_.rootPath
 
-# def next_system(restart=False,max_scur_iterations=100):
-#     os.chdir(_PFS_.systemsPath)
-#     possibles=['init',*[f'iter{i}' for i in range(max_scur_iterations)]]
-#     for p in possibles:
-#         if os.path.exists(p) and os.path.exists(os.path.join(p,'complete.yaml')) and not restart:
-#             pass
-#         else:
-#             break
-#     if not os.path.exists(p):
-#         os.mkdir(p)
-#     os.chdir(p)
-    # _PFS_.current_systems_path=p
-    
 def local_data_searchpath():
     return [_PFS_.rootPath,_PFS_.projPath]
 
