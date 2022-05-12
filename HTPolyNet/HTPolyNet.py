@@ -19,6 +19,7 @@ from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace
+from HTPolyNet.cure import CURECheckpoint
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -255,85 +256,78 @@ class HTPolyNet:
             msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm)
             logging.info(f'Generated configuration {deffnm}.gro\n')
         density_trace(deffnm)
-        # update coordinates
+        # update coordinates; will wrap upon reading in
         self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
 
     def CURE(self):
         # Connect - Update - Relax - Equilibrate
-        restart=self.cfg.parameters['restart']
-        force_scur=self.cfg.parameters.get('force_scur',False)
+        force_cure=self.cfg.parameters.get('force_cure',False)
         logging.info('*'*10+' CONNECT - UPDATE - RELAX - EQUILIBRATE (CURE) begins '+'*'*10)
-        max_nxlinkbonds=self.cfg.maxconv # only for a stoichiometric system
-        logging.debug(f'SCUR: max_nxlinkbonds {max_nxlinkbonds}')
-        if max_nxlinkbonds==0:
-            logging.warning(f'Apparently there are no crosslink bonds to be made! (sum of z == 0)')
-            return
-        scur_finished=False
-        scur_search_radius=self.cfg.parameters['SCUR_cutoff']
-        desired_conversion=self.cfg.parameters['conversion']
-        radial_increment=self.cfg.parameters.get('SCUR_radial_increment',0.5)
-        maxiter=self.cfg.parameters.get('max_SCUR_iterations',20)
-        iter=0
+        max_nxlinkbonds=self.cfg.maxconv
+        desired_conversion=self.cfg.parameters['desired_conversion']
+        cure_search_radius=self.cfg.parameters['CURE_initial_search_radius']
+        radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.5)
+        maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
+        n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
+        filenameformat=self.cfg.parameters.get('filenameformat','cure-{iter}:{radidx}-{stage}')
+        iter=1
         curr_nxlinkbonds=0
-        while not scur_finished:
+        max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
+        max_radidx=int(max_search_radius/radial_increment)
+        cure_finished=False
+        CP=CURECheckpoint()
+        while not cure_finished:
             cwd=pfs.go_to(f'systems/iter-{iter}')
-            self.TopoCoord.show_z_report()
-            num_newbonds=self.scur_iter_complete_check(iter)
-            if num_newbonds>0:
-                logging.info(f'SCUR iteration {iter+1}/{maxiter} already ran.')
+            CP.read_checkpoint(iter,n_stages,filenameformat)
+            #self.TopoCoord.show_z_report()
+            if CP.finished(): # absolute signal of a complete iteration
+                logging.info(f'CURE iteration {iter}/{maxiter} already ran.')
+                curr_nxlinkbonds+=len(CP.relaxed_bonds)
+                curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
+                cure_finished=True
             else:
-                logging.info(f'SCUR iteration {iter+1}/{maxiter} begins in {cwd}')
-                newbonds=self.scur_make_bonds(scur_search_radius,iter,force_scur=force_scur)
-                if len(newbonds)>0:
+                
+                self.set_system(CP.top,CP.gro,CP.grx)
+                if CP.unrelaxed():
+                    pass
+                
+            elif 0<last_complete_stage<n_stages: # not done relaxing
+                pass
+            elif last_complete_stage==0: # no
+                logging.info(f'CURE iteration {iter}/{maxiter} begins in {cwd}')
+                radidx=0 # radius index
+                newbonds=[]
+                while len(newbonds)==0 and radidx<max_radidx:
+                    radius=cure_search_radius+radidx*radial_increment
+                    newbonds=self.scur_make_bonds(radius,iter,force_cure=force_cure)
+                    radidx+=1
+                
+                if len(newbonds)==0:
+                    logging.debug(f'Maximum search radius yielded no new bonds.')
+                else:
                     top,gro,newbonds=self.TopoCoord.update_topology_and_coordinates(newbonds,iter,template_dict=self.molecules)
-                    top,gro,grx=self.gromacs_stepwise_relaxation(newbonds,top,gro)
+                    top,gro,grx=self.gromacs_stepwise_relaxation(newbonds,top,gro,n_stages)
+                
                 num_newbonds=len(newbonds)
-                logging.info(f'SCUR iteration {iter+1}/{maxiter} ends.')
-                self.scur_iter_complete_register(iter,top,gro,grx,num_newbonds)
-
-            curr_nxlinkbonds+=num_newbonds
-            curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-            scur_finished=curr_conversion>desired_conversion
-            scur_finished=scur_finished or (iter+1)>=maxiter
-            # logging.debug(f'iter {iter} maxiter {maxiter} iter>=maxiter {iter>=maxiter}')
-            if not scur_finished:
-                if num_newbonds==0:
-                    logging.info(f'No new bonds in SCUR iteration {iter}')
-                    logging.info(f'-> updating search radius to {scur_search_radius}')
-                    scur_search_radius += radial_increment
-                    # TODO: prevent search radius from getting too large for box
-                    logging.info(f'-> updating search radius to {scur_search_radius}')
+                curr_nxlinkbonds+=num_newbonds
+                curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
+                scur_finished=curr_conversion>desired_conversion
+                scur_finished=scur_finished or iter>=maxiter
+                # logging.debug(f'iter {iter} maxiter {maxiter} iter>=maxiter {iter>=maxiter}')
+                if not scur_finished:
+                    if num_newbonds==0:
+                        logging.info(f'No new bonds in SCUR iteration {iter}')
+                        radidx+=1
+                        continue
             logging.info(f'Current conversion: {curr_conversion}')
             logging.info(f'   SCUR finished? {scur_finished}')
+            logging.info(f'CURE iteration {iter+1}/{maxiter} ends.')
+            self.scur_iter_complete_register(iter,top,gro,grx,num_newbonds)
             iter+=1
         logging.info(f'SCUR iterations finished.')
         # TODO: any post-cure reactions handled here
 
-    def scur_iter_complete_register(self,iter,top,gro,grx,num_newbonds):
-        with open('complete.yaml','w') as f:
-            f.write(f'ITERATION: {iter+1}\n')
-            f.write(f'TOPOLOGY: {top}\n')
-            f.write(f'COORDINATES: {gro}\n')
-            f.write(f'EXTRA_ATTRIBUTES: {grx}\n')
-            f.write(f'NUM_NEWBONDS: {num_newbonds}\n')
-            f.close()
 
-    def scur_iter_complete_check(self,iter):
-        num_newbonds=0
-        if os.path.exists('complete.yaml'):
-            with open('complete.yaml','r') as f:
-                basedict=yaml.safe_load(f)
-                top=os.path.basename(basedict['TOPOLOGY'])
-                gro=os.path.basename(basedict['COORDINATES'])
-                grx=os.path.basename(basedict['EXTRA_ATTRIBUTES'])
-                self.set_system(top,gro,grx=grx)
-                num_newbonds=basedict['NUM_NEWBONDS']
-            logging.info(f'SCUR iteration {iter+1} marked complete:')
-            logging.info(f'        topology    {top}')
-            logging.info(f'        coordinates {gro}')
-            logging.info(f'        extra_attr  {grx}')
-            logging.info(f'        #newbonds   {num_newbonds}')
-        return num_newbonds
 
     def set_system(self,top,gro,grx=None):
         logging.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
@@ -446,14 +440,13 @@ class HTPolyNet:
             f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in keepbonds))
         return keepbonds
 
-    def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords):
+    def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords,n_stages):
         self.checkout('mdp/em-inter-scur-relax-stage.mdp')
         self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
         self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
         self.checkout('mdp/npt-inter-scur-iter.mdp')
         tmpTC=TopoCoord(fulltop,initcoords)
         pref,ext=os.path.splitext(fulltop)
-        n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bonds=[b[0] for b in newbonds] # strip the product template names
         lengths=self.TopoCoord.return_bond_lengths(bonds)
         for i in range(n_stages):
