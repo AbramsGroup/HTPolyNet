@@ -414,17 +414,29 @@ class Coordinates:
                     r[c]-=self.box[c][c]
         return r
 
+    _nwrap=0
     def wrap_point(self,ri):
-        op=(ri>self.box.diagonal()).astype(int)
-        on=(ri<np.zeros(3)).astype(int)
-        if any(op) or any(on):
-            return ri+np.multiply(self.box.diagonal(),(on-op))
-        return ri
+        R=ri.copy()
+        for i in range(3):
+            if R[i]<0 or R[i]>=self.box[i][i]:
+                self._nwrap+=1
+            while R[i]<0:
+                R[i]+=self.box[i][i]
+            while R[i]>=self.box[i][i]:
+                R[i]-=self.box[i][i]
+        return R
+        # bmults=np.ones(3).astype(int)-np.ceil(np.multiply(ri,np.reciprocal(self.box.diagonal()))).astype(int)
+        # if any(bmults):
+        #     self._nwrap+=1
+        #     return ri+np.multiply(self.box.diagonal(),bmults)
+        # return ri
 
     def wrap_coords(self):
+        self._nwrap=0
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():
             self.A.loc[i,'posX':'posZ']=self.wrap_point(srow.values)
+        logging.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]} coordinates.')
 
     def calc_distance_matrix(self):
         M=np.zeros((self.N,self.N))

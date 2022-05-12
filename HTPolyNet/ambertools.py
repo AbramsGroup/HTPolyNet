@@ -11,7 +11,7 @@ from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
 
 def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
-    chargemethod=kwargs.get('chargemethod','bcc')
+    chargemethod=kwargs.get('charge_method','bcc')
     logging.info(f'Ambertools: parameterizing {inputPrefix}')
     mol2in=f'{inputPrefix}.mol2'
     mol2out=f'{outputPrefix}.mol2'

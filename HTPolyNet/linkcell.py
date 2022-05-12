@@ -80,10 +80,13 @@ class Linkcell:
         :rtype: (int,int,int)
         """
         C=np.floor(R*np.reciprocal(self.celldim)).astype(int)
-        # lowdim=(C<0).astype(int) # will never happen if R is wrapped
-        # hidim=(C>=self.ncells).astype(int) # could happen if exactly there
-        # C+=lowdim
-        # C-=hidim
+        lowdim=(C<np.zeros(3).astype(int)).astype(int) # will never happen if R is wrapped
+        hidim=(C>=self.ncells).astype(int) # could happen if exactly there
+        if (any(lowdim) or any(hidim)):
+            logging.warning(f'Warning: point {R} maps to out-of-bounds-cell {C} ({self.ncells})')
+            logging.warning(f'box: {self.box}')
+        C+=lowdim
+        C-=hidim
         return C
 
     def point_in_cellndx(self,R,C):
