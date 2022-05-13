@@ -8,11 +8,11 @@ class Command:
         self.options=options
         self.c=f'{self.command} '+' '.join([f'-{k} {v}' for k,v in self.options.items()])
         
-    def run(self,override=()):
+    def run(self,override=(),ignore_codes=[]):
         logging.debug(f'{self.c}')
         process=subprocess.Popen(self.c,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         out,err=process.communicate()
-        if process.returncode!=0:
+        if process.returncode!=0 and not process.returncode in ignore_codes:
             logging.error(f'Returncode: {process.returncode}')
             if len(out)>0:
                 logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)

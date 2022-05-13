@@ -109,8 +109,8 @@ class Configuration:
                 raise Exception('Configuration error')
 
         self.parameters=self.basedict
-        if not 'cpu' in self.parameters:
-            self.parameters['cpu']=os.cpu_count()
+        if not 'ncpu' in self.parameters:
+            self.parameters['ncpu']=os.cpu_count()
         return self
 
     def symmetry_expand_reactions(self,unique_molecules):

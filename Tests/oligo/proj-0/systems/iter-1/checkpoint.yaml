@@ -1,9 +1,0 @@
-ITERATION: 0
-STATE: relax_prestage
-CURRENT_STAGE: 0
-CURRENT_RADIDX: 0
-TOPOLOGY: cure-0.top
-COORDINATES: cure-0.gro
-EXTRA_ATTRIBUTES: cure-0.grx
-BONDS_ARE: unrelaxed
-BONDSFILE: bonds.csv

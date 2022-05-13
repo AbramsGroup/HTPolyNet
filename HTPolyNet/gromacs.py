@@ -16,21 +16,22 @@ def insert_molecules(molecules,composition,boxSize,outName,**kwargs):
         outName:  output filename basename.  If {outName}.gro exists,
                   insertions are made into it.
     '''
+    gmx_options=kwargs.get('gmx_options','')
     if type(boxSize)==int:
         boxSize=float(boxSize)
     if type(boxSize)==float:
         boxSize=[boxSize]*3
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
-    for n,num in composition.items():  # composition determines order
-        M=molecules[n]
-        name = n+kwargs.get('basename_modifier','')
+    for name,num in composition.items():  # composition determines order
+        # M=molecules[n]
+        # name = n+kwargs.get('basename_modifier','')
         if os.path.isfile(f'{outName}.gro'):
             logging.info(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
-            c=Command('gmx insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
+            c=Command(f'gmx {gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
         else:
             ''' no final gro file yet; make it '''
-            c=Command('gmx insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
+            c=Command(f'gmx {gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
         out,err=c.run()
         out+=err
         logging.info(f'Output of "gmx insert-molecules"\n'+out)
@@ -52,16 +53,17 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
         out: prefix for desired output files
         boxsize: (optional) desired box size; triggers editconf before grompp
     '''
+    gmx_options=kwargs.get('gmx_options','')
     if gro=='' or top=='' or out=='' or mdp=='':
         raise Exception('grompp_and_run requires gro, top, out, and mdp filename prefixes.')
     if len(boxSize)>0:
-        c=Command('gmx editconf',f=f'{gro}.gro',o=gro,
+        c=Command('gmx -quiet editconf -quiet',f=f'{gro}.gro',o=gro,
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         c.run()
     maxwarn=kwargs.get('maxwarn',2)
-    c=Command('gmx grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
+    c=Command(f'gmx {gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run()
-    c=Command('gmx mdrun',deffnm=out)
+    c=Command(f'gmx {gmx_options} mdrun',deffnm=out)
     c.run()
     if os.path.exists(f'{out}.gro'):
         pass
@@ -70,12 +72,55 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
         logging.error(f'gmx mdrun ended prematurely; {gro}.gro not found.')
         raise Exception(f'gmx mdrun ended prematurely; {gro}.gro not found.')
 
+def get_energy_menu(edr,**kwargs):
+    assert os.path.exists(edr+'.edr'),f'Error: {edr} not found'
+    gmx_options=kwargs.get('gmx_options','')
+    with open('_menugetter_','w') as f:
+        f.write('\n')
+    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < _menugetter_ >& _menu_')
+    c.run(ignore_codes=[1])
+    with open('_menu_','r') as f:
+        lines=f.read().split('\n')
+    topline=lines.index('End your selection with an empty line or a zero.')
+    botline=topline
+    while len(lines[botline])>0:
+        botline+=1
+    menulines=lines[topline+2:botline]
+    m=''.join(menulines)
+    n=' '.join(m.split()).split()
+    num,label=n[::2],n[1::2]
+    menu={l:n for l,n in zip(label,num)}
+    os.remove('_menu_')
+    os.remove('_menugetter_')
+    return menu
+
+def gmx_energy_trace(edr,names=[],**kwargs):
+    assert os.path.exists(edr+'.edr'),f'Error: {edr} not found'
+    assert len(names)>0,f'Nothing to plot'
+    gmx_options=kwargs.get('gmx_options','')
+    xshift=kwargs.get('xshift',0)
+    menu=get_energy_menu(edr)
+    with open('gmx.in','w') as f:
+        for i in names:
+            f.write(f'{menu[i]}\n')
+        f.write('\n')
+    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
+    c.run()
+    data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None)
+    data.iloc[:,0]+=xshift
+    print(data.iloc[0,0])
+    cnames=['time (ps)'].extend(names)
+    if len(names)==len(data.columns):
+        data.columns=cnames
+    return data
+
 def density_trace(edr='',**kwargs):
+    gmx_options=kwargs.get('gmx_options','')
     if edr=='':
-        raise Exception('density_trace requires and edr filename prefix.')
+        raise Exception('density_trace requires an edr filename prefix.')
     with open('gmx.in','w') as f:
         f.write('22\n\n')
-    c=Command(f'gmx energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
+    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
     c.run()
     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()

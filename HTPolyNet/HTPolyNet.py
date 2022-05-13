@@ -225,7 +225,7 @@ class HTPolyNet:
         # for m,c in c_togromacs.items():
         #     logging.info(f'Composition to gromacs: {m} {c}')
         if not os.path.exists(f'{inpfnm}.gro') or not os.path.exists(f'{inpfnm}.top'): 
-            msg=insert_molecules(m_togromacs,c_togromacs,boxsize,inpfnm)
+            msg=insert_molecules(m_togromacs,c_togromacs,boxsize,inpfnm,**self.cfg.parameters)
             logging.info(f'Generated {inpfnm}.top and {inpfnm}.gro.')
         else:
             logging.info(f'Found {inpfnm}.gro.')
@@ -252,10 +252,10 @@ class HTPolyNet:
             logging.info(f'{deffnm}.gro exists in {os.getcwd()}; skipping initial NPT md.')
         else:
             logging.info(f'Conducting initial NPT MD simulation of liquid')
-            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-min-1',mdp='em')
-            msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm)
+            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-min-1',mdp='em',**self.cfg.parameters)
+            msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm,**self.cfg.parameters)
             logging.info(f'Generated configuration {deffnm}.gro\n')
-        density_trace(deffnm)
+        density_trace(deffnm,**self.cfg.parameters)
         # update coordinates; will wrap upon reading in
         self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
 
@@ -278,6 +278,7 @@ class HTPolyNet:
         while not CP.state==CPstate.finished:
             cwd=pfs.go_to(f'systems/iter-{iter}')
             CP.read_checkpoint(self)
+            CP.iter=iter
             if CP.state==CPstate.fresh:
                 logging.info(f'CURE iteration {iter}/{maxiter} begins.')
                 CP.current_radidx=0 # radius index
@@ -290,7 +291,7 @@ class HTPolyNet:
                     nbdf=self.make_bonds(radius,header=['ai','aj','reactantName'])
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
-                        CP.write_checkpoint(self,CPstate.update)
+                        CP.write_checkpoint(self,CPstate.update,prefix='1-connect')
                     CP.current_radidx+=1
                 if CP.state==CPstate.bondsearch: # loop exited on radius violation
                     logging.debug('No bonds found at max search radius -- done.')
@@ -298,46 +299,49 @@ class HTPolyNet:
             if CP.state==CPstate.update:
                 CP.read_checkpoint(self)
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
-                CP.write_checkpoint(self,CPstate.relax_prestage)
+                CP.current_stage=0
+                CP.write_checkpoint(self,CPstate.relax_prestage,prefix='2-update')
             if CP.state==CPstate.relax_prestage:
                 CP.read_checkpoint(self)
                 self.checkout('mdp/em-inter-scur-relax-stage.mdp')
                 self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
                 self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
-#                tmpTC=deepcopy(self.TopoCoord) # necessary?
                 lengths=self.TopoCoord.return_bond_lengths(CP.bonds)
                 begin_stage=CP.current_stage
+                stagepref=CP.filename_format.format(stage=begin_stage)
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,lengths)
-                    CP.write_checkpoint(self,CPstate.relax_prestage)
-                    stagepref=CP.filename_format.format(stage=i)
-                    # tmpTC.write_top_gro(stagepref+'.top',stagepref+'.gro')
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage')
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage')
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage')
-                    sacmol=TopoCoord(grofilename=stagepref+'-npt.gro')
-                    self.TopoCoord.copy_coords(sacmol)
+                    stagepref=f'3-relax-stage-{i}'
+                    CP.write_checkpoint(self,CPstate.relax_prestage,prefix=stagepref)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage',**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage',**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage',**self.cfg.parameters)
+                    self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     logging.debug(f'-> avg new bond length: {current_lengths.mean():.3f}')
-                    CP.write_checkpoint(self,CPstate.relax_poststage)
-#                self.TopoCoord.copy_coords(tmpTC)
+                    CP.current_stage+=1
+                CP.current_stage-=1
                 CP.bonds_are='relaxed'
-                CP.set_state(CPstate.equilibrate)
+                # CP.set_state(CPstate.equilibrate)
+                CP.write_checkpoint(self,CPstate.equilibrate,prefix='4-equilibrate')
             if CP.state==CPstate.equilibrate:
                 self.checkout('mdp/npt-inter-scur-iter.mdp')
                 gro,ext=os.path.splitext(CP.gro)
                 top,ext=os.path.splitext(CP.top)
-                msg=grompp_and_mdrun(gro=gro+'-npt',top=top,out=gro+'-post',mdp='npt-inter-scur-iter')
-                sacmol=TopoCoord(grofilename=gro+'-post.gro')
-                self.TopoCoord.copy_coords(sacmol)
-                CP.write_checkpoint(self,CPstate=CPstate.post_equilibration)
+                msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='npt-inter-scur-iter',**self.cfg.parameters)
+                self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
+                # CP.set_state(CPstate.post_equilibration)
+                CP.write_checkpoint(self,CPstate.post_equilibration,prefix='final')
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
+                logging.debug(f'Current conversion: {curr_conversion}')
                 cure_finished=curr_conversion>desired_conversion
                 cure_finished=cure_finished or iter>=maxiter
+                CP.set_state(CPstate.fresh)
+                iter+=1
             if cure_finished:
                 CP.set_state(CPstate.finished)
 
@@ -353,13 +357,15 @@ class HTPolyNet:
         
     def register_system(self,CP=None,extra_attributes=['z','cycle-idx','reactantName']):
         if CP:
+            logging.debug(f'WRITING SYSTEM TO {CP.top} {CP.gro} {CP.grx}')
             self.TopoCoord.write_top(CP.top)
             self.TopoCoord.write_gro(CP.gro)
             self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
 
     def make_bonds(self,radius,header=['ai','aj','reactantName']):
         adf=self.TopoCoord.gro_DataFrame('atoms')
-        self.TopoCoord.linkcell_initialize(radius,ncpu=self.cfg.parameters['cpu'])
+        ncpu=self.cfg.parameters['ncpu']
+        self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
         # self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         logging.debug(f'make_bonds: there are {raset.shape[0]} reactive atoms')
@@ -391,13 +397,12 @@ class HTPolyNet:
                 passbonds=[]
                 if len(Pbonds)>0:
                     bondtestoutcomes={k:0 for k in BTRC}
-                    logging.debug(f'Bond search will use {self.cfg.parameters["cpu"]} processors')
-                    npro=self.cfg.parameters['cpu']
-                    if npro<len(Pbonds):
-                        npro=1
-                    p = Pool(processes=npro)
-                    Pbonds_split = np.array_split(Pbonds,npro)
-                    results = p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
+                    logging.debug(f'Bond search will use {ncpu} processors')
+                    # if ncpu<len(Pbonds):
+                    #     ncpu=1
+                    p=Pool(processes=ncpu)
+                    Pbonds_split=np.array_split(Pbonds,ncpu)
+                    results=p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
                     p.close()
                     p.join()
                     rc=[]

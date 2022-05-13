@@ -79,10 +79,10 @@ class Checkpoint:
                     self.read_bondsfile()
                 system.set_system(CP=self)
 
-    def write_checkpoint(self,system,state):
+    def write_checkpoint(self,system,state,prefix='checkpoint'):
         self.state=state
-        prefix=self.filename_format.format(stage=self.current_stage)
         self.top,self.gro,self.grx=[prefix+x for x in ['.top','.gro','.grx']]
+        # system.TopoCoord.Topology.null_check(msg='writing checkpoint')
         system.register_system(CP=self)
         with open(self.checkpoint_file,'w') as f:
             f.write(f'ITERATION: {self.iter}\n')
@@ -96,3 +96,4 @@ class Checkpoint:
                 f.write(f'BONDS_ARE: {self.bonds_are}\n')
                 f.write(f'BONDSFILE: {self.bonds_file}\n')
             f.close()
+        self.write_bondsfile()

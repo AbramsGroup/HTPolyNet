@@ -137,7 +137,6 @@ class Topology:
         dataframe represents an individual section found with its directive in the file, with columns corresponding to the fields in the section.  Note that the we allow for input topology/itp files to have two 'dihedrals' and 'dihedraltypes' sections; these
         are merged in the result.
         '''
-        inst.D={}
         inst.includes=[]
         with open(filename,'r') as f:
             data=f.read().split('[')
@@ -189,28 +188,29 @@ class Topology:
             # sections need not be sorted.  For convenience, we will keep them sorted by
             # atom indices or atom type name, where appropriate.
             # TODO: sort each row's hashables before sorting whole dataframes
+            inst.null_check(msg=f'read from {filename}')
             if 'atomtypes' in inst.D:
                 inst.D['atomtypes'].sort_values(by='name',inplace=True)
             if 'bonds' in inst.D:
-                inst.D['bonds'].sort_values(by=['ai','aj'],inplace=True)
+                inst.D['bonds']=inst.D['bonds'].sort_values(by=['ai','aj']).reset_index(drop=True)
                 inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
             if 'bondtypes' in inst.D:
                 df_typeorder(inst.D['bondtypes'],typs=['i','j'])
                 inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
             if 'pairs' in inst.D:
-                inst.D['pairs'].sort_values(by=['ai','aj'],inplace=True)
+                inst.D['pairs']=inst.D['pairs'].sort_values(by=['ai','aj']).reset_index(drop=True)
             if 'pairtypes' in inst.D:
                 df_typeorder(inst.D['pairtypes'],typs=['i','j'])
                 inst.D['pairtypes'].sort_values(by=['i','j'],inplace=True)
             if 'angles' in inst.D:
                 # central atom (aj) is the primary index
-                inst.D['angles'].sort_values(by=['aj','ai','ak'],inplace=True)
+                inst.D['angles']=inst.D['angles'].sort_values(by=['aj','ai','ak']).reset_index(drop=True)
             if 'angletypes' in inst.D:
                 df_typeorder(inst.D['angletypes'],typs=['i','j','k'])
                 inst.D['angletypes'].sort_values(by=['j','i','k'],inplace=True)
             if 'dihedrals' in inst.D:
                 # central atoms (aj,ak) are the primary index
-                inst.D['dihedrals'].sort_values(by=['aj','ak','ai','al'],inplace=True)
+                inst.D['dihedrals']=inst.D['dihedrals'].sort_values(by=['aj','ak','ai','al']).reset_index(drop=True)
             if 'dihedraltypes' in inst.D:
                 df_typeorder(inst.D['dihedraltypes'],typs=['i','j','k','l'])
                 # print(f'    -> pre sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
@@ -337,6 +337,7 @@ class Topology:
     def to_file(self,filename=''):
         if filename=='':
             return
+        self.null_check(msg=f'writing {filename}')
         with open(filename,'w') as f:
             f.write('; Gromacs-format topology written by HTPolyNet\n')
         assert 'defaults' in self.D, 'Error: no [ defaults ] in topology?'
@@ -354,6 +355,17 @@ class Topology:
                     f.write('\n')
         with open(filename,'a') as f:
             f.write('; end\n')
+
+    def null_check(self,msg=''):
+        check = True
+        for k in _GromacsTopologyDirectiveOrder_:
+            if k in self.D:
+                if k in _GromacsTopologyHashables_:
+                    for a in _GromacsTopologyHashables_[k]:
+                        check=any(self.D[k][a].isnull())
+                        if check:
+                            logging.debug(f'{msg} null in {k} {a}\n{self.D[k].to_string()}')
+                            raise Exception('NaN error')
 
     def total_charge(self):
         if 'atoms' in self.D:
@@ -601,6 +613,8 @@ class Topology:
 
     def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
         #logging.debug(f'Delete atoms: {idx}')
+        self.null_check(msg='beginning of delete atoms')
+        # logging.debug(f'idx {idx}')
         d=self.D['atoms']
         new_idx=[]
         indexes_to_drop=d[d.nr.isin(idx)].index
@@ -613,7 +627,8 @@ class Topology:
             oldGI=d['nr'].copy()
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(oldGI,d['nr'])}
-
+            # logging.debug(f'mapper {mapper}')
+            assert not any([x in mapper for x in idx]),f'Error: Some deleted atoms in mapper.'
             k=np.array(list(mapper.keys()))
             v=np.array(list(mapper.values()))
             if any(np.isnan(k)):
@@ -632,12 +647,18 @@ class Topology:
                 # logging.debug(f'delete atom: {pt} df prior to deleting')
                 # logging.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
+                logging.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+
                 # logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
                 # logging.debug(f'dropping {pt} {indexes_to_drop}')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
                 if reindex:
                     d=self.D[pt]
+                    assert not any([x in idx for x in d.ai]),f'Error: deleted atom survived in {pt} ai'
+                    assert not any([x in idx for x in d.aj]),f'Error: deleted atom survived in {pt} aj'
+                    assert all([x in mapper for x in d.ai]),f'Error: surviving {pt} atom ai old idx not in mapper'
+                    assert all([x in mapper for x in d.aj]),f'Error: surviving {pt} atom aj old idx not in mapper'
                     #logging.debug(f'delete atom: {pt} df prior to reindexing')
                     #logging.debug(d.to_string())
                     # pairs deleted here were deleted because either ai or aj was among 
@@ -656,15 +677,39 @@ class Topology:
                         # logging.debug(f'Updating bondlist using\n{d.to_string()}')
                         self.bondlist=Bondlist.fromDataFrame(d)
         d=self.D['angles']
-        indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))].index
-        logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ angles ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        # assert d.ai.dtype==int,f'pre-delete lost angle ai dtype {d.ai.dtype}'
+        # assert d.aj.dtype==int,f'pre-delete lost angle aj dtype {d.aj.dtype}'
+        # assert d.ak.dtype==int,f'pre-delete lost angle ak dtype {d.ak.dtype}'
+        # logging.debug(f'ai {d.ai.isin(idx).to_string()}')
+        # logging.debug(f'aj {d.aj.isin(idx).to_string()}')
+        # logging.debug(f'ak {d.ak.isin(idx).to_string()}')
+        indexes_to_drop=d[(d['ai'].isin(idx))|(d['aj'].isin(idx))|(d['ak'].isin(idx))].index
+        # extras=d[d['ak'].isin(idx)].index
+        logging.debug(f'Deleting {len(indexes_to_drop)} [ angles ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        # logging.debug(f'any? {list(extras)}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
+        # logging.debug(f'drop {list(sorted(list(set(indexes_to_drop))))}')
+        # logging.debug(f'keep {indexes_to_keep}')
         self.D['angles']=d.take(list(indexes_to_keep)).reset_index(drop=True)
+        assert d.ai.dtype==int,f'post-delete lost angle ai dtype {d.ai.dtype}'
+        assert d.aj.dtype==int,f'post-delete lost angle aj dtype {d.aj.dtype}'
+        assert d.ak.dtype==int,f'post-delete lost angle ak dtype {d.ak.dtype}'
+        self.null_check(msg='inside delete atoms before angles reindex')
         if reindex:
             d=self.D['angles']
+            assert not any([x in idx for x in d.ai]),'Error: deleted atom survived in angle ai'
+            assert not any([x in idx for x in d.aj]),'Error: deleted atom survived in angle aj'
+            zombie_tags=[x in idx for x in d.ak]
+            if any(zombie_tags):
+                logging.debug(f'Zombie ak angles:\n{self.D["angles"][zombie_tags].to_string()}')
+            assert not any(zombie_tags),'Error: deleted atom survived in angle ak'
+            assert all([x in mapper for x in d.ai]),'Error: surviving angle atom ai old idx not in mapper'
+            assert all([x in mapper for x in d.aj]),'Error: surviving angle atom aj old idx not in mapper'
+            assert all([x in mapper for x in d.ak]),'Error: surviving angle atom ak old idx not in mapper'
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)
             d.ak=d.ak.map(mapper)
+        self.null_check(msg='inside delete atoms after angles reindex')
         d=self.D['dihedrals']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
         logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')#:\n{d.loc[indexes_to_drop].to_string()}')
@@ -679,7 +724,7 @@ class Topology:
             dwpi=dp[((dp.ai==pi)&(dp.aj==pl))|((dp.ai==pl)&(dp.aj==pi))].index.to_list()
             dd.extend(dwpi)
         ptk=set(range(dp.shape[0]))-set(dwpi)
-        logging.debug(f'Deleting {dp.loc[dwpi].shape[0]} pairs due to dihedral deletions')
+        logging.debug(f'Deleting {dp.loc[dwpi].shape[0]} [ pairs ] due to dihedral deletions')
         # Note that we expect this to be zero if we are only deleting H's, since
         # an H can never be a 'j' or 'k' in a dihedral!
         self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)
@@ -696,7 +741,8 @@ class Topology:
             d.aj=d.aj.map(mapper)
         if len(return_idx_of)>0:
             return new_idx
-        self.to_file('tmp.top')
+        self.null_check(msg='end of delete atoms')
+        # self.to_file('tmp.top')
         return mapper
         
     def bondtree_as_list(self,root,depth):
@@ -846,15 +892,15 @@ class Topology:
         """Generate and return a copy of a bonds dataframe that contains all bonds
            listed in bonds
 
-        :param bonds: list of bonds, each a 2-tuple of global atom indices
-        :type bonds: list
-        :return: bonds dataframe
+        :param bonds: dataframe of bonds managed by runtime, 'ai','aj','reactantName'
+        :type bonds: pandas.DataFrame
+        :return: [ bonds ] dataframe extracted from system with all parameters
         :rtype: pandas.DataFrame
         """
         bdf=self.D['bonds']
         saveme=pd.DataFrame(columns=bdf.columns)
-        for b in bonds:
-            ai,aj=idxorder(b)
+        for i,b in bonds.iterrows():
+            ai,aj=idxorder((b['ai'],b['aj']))
             # TODO: don't save bonds that don't have explicit override parameters
             # logging.debug(f'copy parameters for ai {ai} aj {aj}')
             saveme=pd.concat((saveme,bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()),ignore_index=True)
@@ -869,8 +915,8 @@ class Topology:
             bond is multiplied by x and the distance is 1 xth of the way from its maximum value 
             to its equilibrium value.
 
-        :param bonds: list of bonds, each a 2-tuple of global atom indices
-        :type bonds: list
+        :param bonds: dataframe of bonds managed by runtime, 'ai','aj','reactantName'
+        :type bonds: pandas.DataFrame
         :param stage: index of stage in the series of post-bond-formation relaxation ("R" of SCUR)
         :type stage: int
         :param max_stages: total number of relaxation stages for this iteration
@@ -886,8 +932,8 @@ class Topology:
         factor=(stage+1)/max_stages
         ess='s' if len(bonds)>1 else ''
         logging.debug(f'Attenuating {len(bonds)} bond{ess} in stage {stage+1}/{max_stages}')
-        for b,rij in zip(bonds,lengths):
-            ai,aj=idxorder(b)
+        for (i,b),rij in zip(bonds.iterrows(),lengths):
+            ai,aj=idxorder((b['ai'],b['aj']))
             # logging.debug(f'atten ai {ai} aj {aj}')
             b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0'].values[0]
             kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1'].values[0]
@@ -906,7 +952,6 @@ class Topology:
             # logging.debug(f'kb attentuated to {kb*factor}')
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=rij-factor*(rij-b0)
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
-
 
     def restore_bond_parameters(self,df):
         bdf=self.D['bonds']

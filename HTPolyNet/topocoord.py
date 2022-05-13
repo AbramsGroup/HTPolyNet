@@ -69,6 +69,7 @@ class TopoCoord:
         """
         idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H)
         self.Topology.add_bonds(pairs,ignores=idx_to_ignore)
+        self.Topology.null_check(msg='add_bonds')
         rename=True if len(skip_H)>0 else False
         idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H,rename=rename)
         assert type(idx_to_delete)==list
@@ -258,7 +259,7 @@ class TopoCoord:
         :return: 3-tuple: new topology file name, new coordinate file name, list of bonds with atom indices updated to reflect any atom deletions
         :rtype: 3-tuple
         """
-        logging.debug(f'update_topology_and_coordinates begins.')
+        # logging.debug(f'update_topology_and_coordinates begins.')
         if bdf.shape[0]>0:
             # pull out just the atom index pairs (first element of each tuple)
             pairs=[(x['ai'],x['aj']) for i,x in bdf.iterrows()]
@@ -266,6 +267,7 @@ class TopoCoord:
             idx_to_delete=self.make_bonds(pairs)
             logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
+            self.Topology.null_check(msg='delete_atoms')
             # reindex all atoms in the list of bonds sent in, and write it out
             ri_bdf=bdf.copy()
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
@@ -274,6 +276,7 @@ class TopoCoord:
             self.decrement_z(pairs)
             self.make_ringlist()  # required because
             self.map_from_templates(ri_bdf,template_dict)
+            self.Topology.null_check(msg='map_from_templates')
             self.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
             return ri_bdf
 

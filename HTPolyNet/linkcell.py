@@ -52,25 +52,6 @@ class Linkcell:
         self.make_neighborlists()
         logging.debug(f'Linkcell structure: {len(self.cellndx)} cells ({self.ncells}) dim {self.celldim}')
 
-    # def point_in_box(self,R):
-    #     LL=self.origin
-    #     UU=self.origin+self.box
-    #     gt=all(R>=LL)
-    #     lt=all(R<UU)
-    #     return lt and gt
-    
-    # def wrap_point(self,R):
-    #     ''' wraps a point that lies outside the overall box back into the box '''
-    #     if self.point_in_box(R):
-    #         return R
-    #     nR=R.copy()
-    #     for d in range(0,3):
-    #         if nR[d]<self.origin[d]:
-    #             nR[d]+=self.box[d]
-    #         elif nR[d]>(self.origin[d]+self.box[d]):
-    #             nR[d]-=self.box[d]
-    #     return nR
-
     def cellndx_of_point(self,R):
         """cellndx_of_point returns the (i,j,k) cell index of point R
 
@@ -213,10 +194,8 @@ class Linkcell:
         avg_cell_pop=result.mean()
         min_cell_pop=int(result.min())
         max_cell_pop=int(result.max())
-        logging.debug(f'Avg cell pop:{avg_cell_pop:>8.3f}')
-        logging.debug(f'Min cell pop:{min_cell_pop:>8d}')
-        logging.debug(f'Max cell pop:{max_cell_pop:>8d}')
-        logging.debug(f'Linkcell.populate() ends.')
+        logging.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
+        # logging.debug(f'Linkcell.populate() ends.')
 
     def make_neighborlists(self):
         self.neighborlists=[[] for _ in range(self.cellndx.shape[0])]

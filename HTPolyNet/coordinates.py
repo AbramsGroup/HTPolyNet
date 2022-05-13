@@ -297,8 +297,6 @@ class Coordinates:
         return np.array(sP)
 
     def pierces(self,Ri,Rj,iC,pbc):
-        # this filter is only called for atoms that are within 
-        # cutoff distance of each other
         C=iC[:,1:]
         sC=self.unwrap(C,Ri,pbc)
         S=Segment(np.array([Ri,Rj]))

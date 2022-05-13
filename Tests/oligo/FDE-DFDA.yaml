@@ -1,5 +1,5 @@
 Title: FDE-DFDA thermoset
-#ncpu: 8
+gmx_options: '-quiet -nobackup'
 initial_density: 300.0  # kg/m3
 CURE_initial_search_radius: 0.5 # nm
 desired_conversion: 0.95
