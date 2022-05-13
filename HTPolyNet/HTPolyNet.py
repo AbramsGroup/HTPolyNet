@@ -5,7 +5,7 @@
 import logging
 import os
 import shutil
-import yaml
+import pandas as pd
 import argparse as ap
 import numpy as np
 from copy import deepcopy
@@ -19,7 +19,7 @@ from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace
-from HTPolyNet.cure import CURECheckpoint
+from HTPolyNet.cure import CPstate, CURECheckpoint
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -261,7 +261,6 @@ class HTPolyNet:
 
     def CURE(self):
         # Connect - Update - Relax - Equilibrate
-        force_cure=self.cfg.parameters.get('force_cure',False)
         logging.info('*'*10+' CONNECT - UPDATE - RELAX - EQUILIBRATE (CURE) begins '+'*'*10)
         max_nxlinkbonds=self.cfg.maxconv
         desired_conversion=self.cfg.parameters['desired_conversion']
@@ -269,83 +268,94 @@ class HTPolyNet:
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
-        filenameformat=self.cfg.parameters.get('filenameformat','cure-{iter}:{radidx}-{stage}')
+        filenameformat=self.cfg.parameters.get('filenameformat','cure-{iter}-{stage}')
         iter=1
         curr_nxlinkbonds=0
         max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
         max_radidx=int(max_search_radius/radial_increment)
         cure_finished=False
-        CP=CURECheckpoint()
-        while not cure_finished:
+        CP=CURECheckpoint(filename_format=filenameformat,n_stages=n_stages)
+        while not CP.state==CPstate.finished:
             cwd=pfs.go_to(f'systems/iter-{iter}')
-            CP.read_checkpoint(iter,n_stages,filenameformat)
-            #self.TopoCoord.show_z_report()
-            if CP.finished(): # absolute signal of a complete iteration
-                logging.info(f'CURE iteration {iter}/{maxiter} already ran.')
-                curr_nxlinkbonds+=len(CP.relaxed_bonds)
+            CP.read_checkpoint(self)
+            if CP.state==CPstate.fresh:
+                logging.info(f'CURE iteration {iter}/{maxiter} begins.')
+                CP.current_radidx=0 # radius index
+                CP.current_stage=0
+                CP.set_state(CPstate.bondsearch) # no need to write a checkpoing
+            if CP.state==CPstate.bondsearch:
+                while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
+                    radius=cure_search_radius+CP.current_radidx*radial_increment
+                    nbdf=self.make_bonds(radius,header=['ai','aj','reactantName'])
+                    if nbdf.shape[0]>0:
+                        CP.register_bonds(nbdf,bonds_are='unrelaxed')
+                        CP.write_checkpoint(self,CPstate.update)
+                    CP.current_radidx+=1
+                if CP.state==CPstate.bondsearch: # loop exited on radius violation
+                    logging.debug('No bonds found at max search radius -- done.')
+                    CP.set_state(CPstate.finished) # no need to write checkpoint, nothing changed
+            if CP.state==CPstate.update:
+                CP.read_checkpoint()
+                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
+                CP.write_checkpoint(self,CPstate.relaxing)
+            if CP.state==CPstate.relaxing:
+                CP.read_checkpoint()
+                filenameformat=CP.filename_format.format(iter=iter,stage='postrelax')
+                self.checkout('mdp/em-inter-scur-relax-stage.mdp')
+                self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
+                self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
+                tmpTC=deepcopy(self.TopoCoord)
+                lengths=tmpTC.return_bond_lengths(CP.bonds)
+                for i in range(CP.current_stage,n_stages):
+                    saveT=tmpTC.copy_bond_parameters(CP.bonds)
+                    tmpTC.attenuate_bond_parameters(CP.bonds,i,n_stages,lengths)
+                    stagepref=filenameformat.format(stage=i)
+                    tmpTC.write_top_gro(stagepref+'.top',stagepref+'.gro')
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage')
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage')
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage')
+                    sacmol=TopoCoord(grofilename=stagepref+'-npt.gro')
+                    tmpTC.copy_coords(sacmol)
+                    tmpTC.restore_bond_parameters(saveT)
+                    current_lengths=np.array(tmpTC.return_bond_lengths(CP.bonds))
+                    logging.debug(f'-> avg new bond length: {current_lengths.mean():.3f}')
+                    CP.write_checkpoint(self,CPstate.relaxing)
+                self.TopoCoord.copy_coords(tmpTC)
+                CP.bonds_are='relaxed'
+                CP.write_checkpoint(self,CPstate.equilibrating)
+            if CP.state==CPstate.equilibrating:
+                self.checkout('mdp/npt-inter-scur-iter.mdp')
+                gro,ext=os.path.splitext(CP.gro)
+                top,ext=os.path.splitext(CP.top)
+                msg=grompp_and_mdrun(gro=gro+'-npt',top=top,out=gro+'-post',mdp='npt-inter-scur-iter')
+                sacmol=TopoCoord(grofilename=gro+'-post.gro')
+                self.TopoCoord.copy_coords(sacmol)
+                CP.write_checkpoint(self,CPstate=CPstate.post_equilibration)
+            if CP.state==CPstate.post_equilibration:
+                curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-                cure_finished=True
-            else:
-                
-                self.set_system(CP.top,CP.gro,CP.grx)
-                if CP.unrelaxed():
-                    pass
-                
-            elif 0<last_complete_stage<n_stages: # not done relaxing
-                pass
-            elif last_complete_stage==0: # no
-                logging.info(f'CURE iteration {iter}/{maxiter} begins in {cwd}')
-                radidx=0 # radius index
-                newbonds=[]
-                while len(newbonds)==0 and radidx<max_radidx:
-                    radius=cure_search_radius+radidx*radial_increment
-                    newbonds=self.scur_make_bonds(radius,iter,force_cure=force_cure)
-                    radidx+=1
-                
-                if len(newbonds)==0:
-                    logging.debug(f'Maximum search radius yielded no new bonds.')
-                else:
-                    top,gro,newbonds=self.TopoCoord.update_topology_and_coordinates(newbonds,iter,template_dict=self.molecules)
-                    top,gro,grx=self.gromacs_stepwise_relaxation(newbonds,top,gro,n_stages)
-                
-                num_newbonds=len(newbonds)
-                curr_nxlinkbonds+=num_newbonds
-                curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-                scur_finished=curr_conversion>desired_conversion
-                scur_finished=scur_finished or iter>=maxiter
-                # logging.debug(f'iter {iter} maxiter {maxiter} iter>=maxiter {iter>=maxiter}')
-                if not scur_finished:
-                    if num_newbonds==0:
-                        logging.info(f'No new bonds in SCUR iteration {iter}')
-                        radidx+=1
-                        continue
-            logging.info(f'Current conversion: {curr_conversion}')
-            logging.info(f'   SCUR finished? {scur_finished}')
-            logging.info(f'CURE iteration {iter+1}/{maxiter} ends.')
-            self.scur_iter_complete_register(iter,top,gro,grx,num_newbonds)
-            iter+=1
-        logging.info(f'SCUR iterations finished.')
-        # TODO: any post-cure reactions handled here
+                cure_finished=curr_conversion>desired_conversion
+                cure_finished=cure_finished or iter>=maxiter
+            if cure_finished:
+                CP.set_state(CPstate.finished)
 
+    def set_system(self,CP=None):
+        if CP:
+            top=CP.top
+            gro=CP.gro
+            grx=CP.grx
+            logging.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
+            self.TopoCoord=TopoCoord(top,gro)
+            if (grx):
+                self.TopoCoord.read_gro_attributes(grx)
+        
+    def register_system(self,CP=None,extra_attributes=['z','cycle-idx','reactantName']):
+        if CP:
+            self.TopoCoord.write_top(CP.top)
+            self.TopoCoord.write_gro(CP.gro)
+            self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
 
-
-    def set_system(self,top,gro,grx=None):
-        logging.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
-        self.TopoCoord=TopoCoord(top,gro)
-        if (grx):
-            self.TopoCoord.read_gro_attributes(grx)
-            
-    def scur_make_bonds(self,radius,iter,force_scur=False):
-        if os.path.exists(f'keepbonds-{iter}.dat') and not force_scur:
-            logging.debug(f'keepbonds-{iter}.dat found.  Reading.')
-            with open (f'keepbonds-{iter}.dat','r') as f:
-                lines=f.read().split('\n')
-                keepbonds=[]
-                for line in lines:
-                    t=line.split()
-                    b=(int(t[0]),int(t[1]))
-                    keepbonds.append((b,t[2]))
-                return keepbonds
+    def make_bonds(self,radius,header=['ai','aj','reactantName']):
         adf=self.TopoCoord.gro_DataFrame('atoms')
         self.TopoCoord.linkcell_initialize(radius,ncpu=self.cfg.parameters['cpu'])
         # self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
@@ -436,38 +446,11 @@ class HTPolyNet:
                 keepbonds.append((b,n[2]))
         logging.debug(f'*** accepted the {len(keepbonds)} shortest non-competing bonds')
         logging.debug(f'    {disallowed} bonds that repeat resid pairs thrown out.')
-        with open(f'keepbonds-{iter}.dat','w') as f:
-            f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in keepbonds))
-        return keepbonds
 
-    def gromacs_stepwise_relaxation(self,newbonds,fulltop,initcoords,n_stages):
-        self.checkout('mdp/em-inter-scur-relax-stage.mdp')
-        self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
-        self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
-        self.checkout('mdp/npt-inter-scur-iter.mdp')
-        tmpTC=TopoCoord(fulltop,initcoords)
-        pref,ext=os.path.splitext(fulltop)
-        bonds=[b[0] for b in newbonds] # strip the product template names
-        lengths=self.TopoCoord.return_bond_lengths(bonds)
-        for i in range(n_stages):
-            saveT=tmpTC.copy_bond_parameters(bonds)
-            tmpTC.attenuate_bond_parameters(bonds,i,n_stages,lengths)
-            stagepref=pref+f'-stage-{i}'
-            tmpTC.write_top_gro(stagepref+'.top',stagepref+'.gro')
-            msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage')
-            msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage')
-            msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage')
-            sacmol=TopoCoord(grofilename=stagepref+'-npt.gro')
-            tmpTC.copy_coords(sacmol)
-            tmpTC.restore_bond_parameters(saveT)
-            current_lengths=np.array(tmpTC.return_bond_lengths(bonds))
-            logging.debug(f'-> avg new bond length: {current_lengths.mean():.3f}')
-
-        msg=grompp_and_mdrun(gro=stagepref+'-npt',top=pref,out=pref+'-post',mdp='npt-inter-scur-iter')
-        sacmol=TopoCoord(grofilename=pref+'-post.gro')
-        self.TopoCoord.copy_coords(sacmol)
-        self.TopoCoord.write_gro_attributes(['z','cycle-idx','reactantName'],pref+'-post.grx')
-        return fulltop,pref+'-post.gro',pref+'-post.grx'
+        kdf=pd.DataFrame({header[0]:[x[0][0] for x in keepbonds],
+                          header[1]:[x[0][1] for x in keepbonds],
+                          header[2]:[x[1] for x in keepbonds]})
+        return kdf
 
     def initreport(self):
         print(self.cfg)

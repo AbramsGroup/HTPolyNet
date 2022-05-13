@@ -539,11 +539,10 @@ class Coordinates:
                 for i in range(4):
                     logging.debug(f'{i:>5d} ({zhists[n][i]:>6d}): '+'*'*(zhists[n][i]//10))
 
-    def return_bond_lengths(self,bonds):
+    def return_bond_lengths(self,bdf):
         lengths=[]
-        for b in bonds:
-            ai,aj=b
-            lengths.append(self.rij(ai,aj))
+        for i,b in bdf.iterrows():
+            lengths.append(self.rij(b['ai'],b['aj']))
         return lengths
 
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):

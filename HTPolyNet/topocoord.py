@@ -88,14 +88,12 @@ class TopoCoord:
         assert type(idx_mapper)==dict
         return idx_mapper
 
-    def map_from_templates(self,bonds,moldict):
+    def map_from_templates(self,bdf,moldict):
         """Updates angles, pairs, dihedrals, atom types, and charges, based on product
-            templates associated with each bond in 'bonds'
+            templates associated with each bond in 'bdf'
 
-        :param bonds: list of tuples, each of form (pair,template), where pair is the 
-            2-tuple of global atom indices of the bond and template is the name of the 
-            molecular template that this system bond will be mapped to
-        :type bonds: list of tuples
+        :param bonds: dataframe, columns 'ai', 'aj', 'reactantName'
+        :type bonds: pandas.DataFrame
         :param moldict: dictionary of template Molecules keyed by name
         :type moldict: dict
         :raises Exception: nan found in any attribute of any new system angle
@@ -107,8 +105,9 @@ class TopoCoord:
         :raises Exception: nan found in any system pair
         """
         atdf=self.Topology.D['atoms']
-        for b in bonds:
-            bb,template_name=b
+        for i,b in bdf.iterrows():
+            bb=[b['ai'],b['aj']]
+            template_name=b['reactantName']
             T=moldict[template_name]
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[0]})
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
@@ -249,39 +248,34 @@ class TopoCoord:
                 logging.error('NAN in pairs post mapping')
                 raise Exception
 
-    def update_topology_and_coordinates(self,keepbonds,iter,template_dict={}):    
+    def update_topology_and_coordinates(self,bdf,template_dict={}):    
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
 
-        :param keepbonds: list of 2-tuples; elem 1 is a 2-tuple of atom indices; elem 2 is reactant name
-        :type keepbonds: list of 2-tupes
-        :param iter: scur iteration number
-        :type iter: int
+        :param bdf: bonds dataframe, columns 'ai', 'aj', 'reactantName'
+        :type bdf: pandas.DataFrame
         :param template_dict: dictionary of molecule templates keyed on molecule name
         :type dict of molecules
         :return: 3-tuple: new topology file name, new coordinate file name, list of bonds with atom indices updated to reflect any atom deletions
         :rtype: 3-tuple
         """
         logging.debug(f'update_topology_and_coordinates begins.')
-        if len(keepbonds)>0:
+        if bdf.shape[0]>0:
             # pull out just the atom index pairs (first element of each tuple)
-            pairs=[i[0] for i in keepbonds]
+            pairs=[(x['ai'],x['aj']) for i,x in bdf.iterrows()]
             logging.debug(f'Making {len(pairs)} bonds.')
             idx_to_delete=self.make_bonds(pairs)
             logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             # reindex all atoms in the list of bonds sent in, and write it out
-            reindexed_keepbonds=[((idx_mapper[i[0][0]],idx_mapper[i[0][1]]),i[1]) for i in keepbonds]
-            with open(f'reindexed-keepbonds-{iter}.dat','w') as f:
-                f.write('\n'.join(f'{i[0][0]} {i[0][1]} {i[1]}' for i in reindexed_keepbonds))
-            pairs=[i[0] for i in reindexed_keepbonds]
+            ri_bdf=bdf.copy()
+            ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
+            ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
+            pairs=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
             self.decrement_z(pairs)
             self.make_ringlist()  # required because
-            self.map_from_templates(reindexed_keepbonds,template_dict)
+            self.map_from_templates(ri_bdf,template_dict)
             self.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
-            basefilename=f'scur-step-{iter}'
-            self.write_top_gro(basefilename+'.top',basefilename+'.gro')
-            logging.debug(f'Wrote {basefilename}.top and {basefilename}.gro.')
-            return (basefilename+'.top',basefilename+'.gro',reindexed_keepbonds)
+            return ri_bdf
 
     def read_top(self,topfilename):
         """Creates a new Topology member by reading from a Gromacs-style top file.
@@ -383,15 +377,15 @@ class TopoCoord:
         self.write_top(topfilename)
         self.write_gro(grofilename)
 
-    def return_bond_lengths(self,bonds):
+    def return_bond_lengths(self,bdf):
         """Return the length of all bonds in list bonds
 
-        :param bonds: list of bonds, each is a 2-tuple of global atom indices
-        :type bonds: list
+        :param bdf: bonds dataframe, 'ai','aj','reactantName'
+        :type bonds: pandas.DataFrame
         :return: list of lengths parallel to bonds
         :rtype: list of floats
         """
-        return self.Coordinates.return_bond_lengths(bonds)
+        return self.Coordinates.return_bond_lengths(bdf)
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds
