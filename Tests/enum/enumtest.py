@@ -1,4 +1,4 @@
-from HTPolyNet.cure import CPstate
+from HTPolyNet.checkpoint import CPstate
 
 a=CPstate['booboo']
 

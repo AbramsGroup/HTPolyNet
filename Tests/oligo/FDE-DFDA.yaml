@@ -1,12 +1,12 @@
 Title: FDE-DFDA thermoset
-ncpu: 8
+#ncpu: 8
 initial_density: 300.0  # kg/m3
 CURE_initial_search_radius: 0.5 # nm
 desired_conversion: 0.95
 late_treshhold: 0.85  # conversion above which bond formation probabilities are ignored
 charge_method: gas  # bcc
 max_CURE_iterations: 25
-filename_format: 'cure-{iter}-{stage}'
+filename_format: 'cure-{stage}'
 max_bond_relaxation_stages: 10
 use_symmetry_equivalent_atoms: [DFA, FDE]
 reactions:
@@ -53,5 +53,5 @@ reactions:
       ]
     }
 initial_composition:
-  - {molecule: FDE, count: 100}
-  - {molecule: DFA, count: 50}
+  - {molecule: FDE, count: 80}
+  - {molecule: DFA, count: 40}
