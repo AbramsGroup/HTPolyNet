@@ -22,14 +22,12 @@ class CPstate(Enum):
         return self.name
 
 class Checkpoint:
-    def __init__(self,checkpoint_file='checkpoint.yaml',filename_format='cure-{iter}-{stage}',bonds_file='bonds.csv',n_stages=10):
+    def __init__(self,checkpoint_file='checkpoint.yaml',bonds_file='bonds.csv'):
         self.state=CPstate.fresh
         self.iter=0
         self.current_stage=0
         self.current_radidx=0
         self.checkpoint_file=checkpoint_file
-        self.filename_format=filename_format
-        self.n_stages=n_stages
         self.bonds_file=bonds_file
         self.bonds=pd.DataFrame()
         self.bonds_are='nonexistent!'
@@ -49,15 +47,6 @@ class Checkpoint:
         self.bonds_are=bonds_are
         self.write_bondsfile()
     
-    def finished(self):
-        if self.bonds_are=='relaxed':
-            logging.info(f'CURE iteration {self.iter} marked complete:')
-            logging.info(f'        topology    {self.top}')
-            logging.info(f'        coordinates {self.gro}')
-            logging.info(f'        extra_attr  {self.grx}')
-            logging.info(f'        #newbonds   {len(self.bonds)}')
-        return self.bonds_are=='relaxed'
-
     def read_checkpoint(self,system):
         self.current_stage=0
         self.current_radidx=0
@@ -65,24 +54,23 @@ class Checkpoint:
         if os.path.exists(self.checkpoint_file):
             with open(self.checkpoint_file,'r') as f:
                 basedict=yaml.safe_load(f)
-                self.iter=basedict['ITERATION']
-                self.state=CPstate[basedict['STATE']]
-                self.top=os.path.basename(basedict['TOPOLOGY'])
-                self.gro=os.path.basename(basedict['COORDINATES'])
-                self.grx=os.path.basename(basedict['EXTRA_ATTRIBUTES'])
-                self.current_stage=basedict['CURRENT_STAGE']
-                self.current_radidx=basedict['CURRENT_RADIDX']
-                bf=basedict.get('BONDSFILE',None)
-                self.bonds_are=basedict.get('BONDS_ARE',None)
-                if bf:
-                    self.bonds_file=os.path.basename(bf)
-                    self.read_bondsfile()
-                system.set_system(CP=self)
+            self.iter=basedict['ITERATION']
+            self.state=CPstate[basedict['STATE']]
+            self.top=os.path.basename(basedict['TOPOLOGY'])
+            self.gro=os.path.basename(basedict['COORDINATES'])
+            self.grx=os.path.basename(basedict['EXTRA_ATTRIBUTES'])
+            self.current_stage=basedict['CURRENT_STAGE']
+            self.current_radidx=basedict['CURRENT_RADIDX']
+            bf=basedict.get('BONDSFILE',None)
+            assert bf,f'Error: must specify BONDSFILE in {self.checkpoint_file}'
+            self.bonds_are=basedict.get('BONDS_ARE',None)
+            self.bonds_file=os.path.basename(bf)
+            self.read_bondsfile()
+            system.set_system(CP=self)
 
     def write_checkpoint(self,system,state,prefix='checkpoint'):
         self.state=state
         self.top,self.gro,self.grx=[prefix+x for x in ['.top','.gro','.grx']]
-        # system.TopoCoord.Topology.null_check(msg='writing checkpoint')
         system.register_system(CP=self)
         with open(self.checkpoint_file,'w') as f:
             f.write(f'ITERATION: {self.iter}\n')

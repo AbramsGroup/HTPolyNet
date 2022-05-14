@@ -265,36 +265,39 @@ class HTPolyNet:
         max_nxlinkbonds=self.cfg.maxconv
         desired_conversion=self.cfg.parameters['desired_conversion']
         cure_search_radius=self.cfg.parameters['CURE_initial_search_radius']
+        checkpoint_file=self.cfg.parameters['checkpoint_file','checkpoint.yaml']
+        bonds_file=self.cfg.parameters['bonds_file','bonds.csv']
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
-        filenameformat=self.cfg.parameters.get('filenameformat','cure-{stage}')
-        iter=1
         curr_nxlinkbonds=0
         max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
         max_radidx=int(max_search_radius/radial_increment)
         cure_finished=False
-        CP=Checkpoint(filename_format=filenameformat,n_stages=n_stages)
+        CP=Checkpoint(checkpoint_file=checkpoint_file,bonds_file=bonds_file)
+        CP.iter=1
         while not CP.state==CPstate.finished:
-            cwd=pfs.go_to(f'systems/iter-{iter}')
+            cwd=pfs.go_to(f'systems/iter-{CP.iter}')
             CP.read_checkpoint(self)
             CP.iter=iter
             if CP.state==CPstate.fresh:
-                logging.info(f'CURE iteration {iter}/{maxiter} begins.')
+                logging.info(f'CURE iteration {CP.iter}/{maxiter} begins.')
                 CP.current_radidx=0 # radius index
                 CP.current_stage=0
                 CP.set_state(CPstate.bondsearch) # no need to write a checkpoing
             if CP.state==CPstate.bondsearch:
-                begin_radidx=CP.current_radidx
+                radius=cure_search_radius+CP.current_radidx*radial_increment
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    radius=cure_search_radius+begin_radidx*radial_increment
                     nbdf=self.make_bonds(radius,header=['ai','aj','reactantName'])
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
                         CP.write_checkpoint(self,CPstate.update,prefix='1-connect')
-                    CP.current_radidx+=1
+                    else:
+                        logging.debug(f'CURE iteration {CP.iter}: increasing bondsearch radius to {radius+radial_increment}')
+                        CP.current_radidx+=1
+                        radius+=radial_increment
                 if CP.state==CPstate.bondsearch: # loop exited on radius violation
-                    logging.debug('No bonds found at max search radius -- done.')
+                    logging.debug(f'CURE iteration {CP.iter} failed to find bonds.')
                     CP.set_state(CPstate.finished) # no need to write checkpoint, nothing changed
             if CP.state==CPstate.update:
                 CP.read_checkpoint(self)
