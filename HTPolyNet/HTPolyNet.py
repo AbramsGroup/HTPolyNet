@@ -228,7 +228,7 @@ class HTPolyNet:
         # for m,c in c_togromacs.items():
         #     logging.info(f'Composition to gromacs: {m} {c}')
         if not os.path.exists(f'{inpfnm}.gro') or not os.path.exists(f'{inpfnm}.top'): 
-            msg=insert_molecules(m_togromacs,c_togromacs,boxsize,inpfnm,**self.cfg.parameters)
+            msg=insert_molecules(c_togromacs,boxsize,inpfnm,**self.cfg.parameters)
             logging.info(f'Generated {inpfnm}.top and {inpfnm}.gro.')
         else:
             logging.info(f'Found {inpfnm}.gro.')
@@ -278,7 +278,7 @@ class HTPolyNet:
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         curr_nxlinkbonds=0
         max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
-        max_radidx=int(max_search_radius/radial_increment)
+        max_radidx=int((max_search_radius-cure_search_radius)/radial_increment)
         cure_finished=False
         CP=Checkpoint(checkpoint_file=checkpoint_file,bonds_file=bonds_file)
         CP.iter=1
@@ -291,16 +291,16 @@ class HTPolyNet:
                 CP.current_stage=0
                 CP.set_state(CPstate.bondsearch) # no need to write a checkpoing
             if CP.state==CPstate.bondsearch:
-                radius=cure_search_radius+CP.current_radidx*radial_increment
+                CP.radius=cure_search_radius+CP.current_radidx*radial_increment
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    nbdf=self.make_bonds(radius,header=['ai','aj','reactantName'])
+                    nbdf=self.make_bonds(CP.radius,header=['ai','aj','reactantName'])
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
                         CP.write_checkpoint(self,CPstate.update,prefix='1-connect')
                     else:
-                        logging.debug(f'CURE iteration {CP.iter}: increasing bondsearch radius to {radius+radial_increment}')
+                        logging.debug(f'CURE iteration {CP.iter}: increasing bondsearch radius to {CP.radius+radial_increment}')
                         CP.current_radidx+=1
-                        radius+=radial_increment
+                        CP.radius+=radial_increment
                 if CP.state==CPstate.bondsearch: # loop exited on radius violation
                     logging.debug(f'CURE iteration {CP.iter} failed to find bonds.')
                     cure_finished=True
@@ -321,9 +321,9 @@ class HTPolyNet:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,lengths)
                     stagepref=f'3-relax-stage-{i}'
                     CP.write_checkpoint(self,CPstate.relax_prestage,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage',**self.cfg.parameters)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage',**self.cfg.parameters)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage',**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage',rdd=CP.radius,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))

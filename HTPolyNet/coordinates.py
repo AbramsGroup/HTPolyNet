@@ -2,7 +2,6 @@
 coordinates.py -- simple class for handling atom coordinates from gro and mol2 files
 '''
 
-from dis import dis
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -371,12 +370,12 @@ class Coordinates:
         logging.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
-            if os.path.exists('linkcell.grx') and not force_repopulate:
+            if os.path.exists(f'linkcell-{cutoff:.2f}.grx') and not force_repopulate:
                 logging.debug(f'Found linkcell.grx; no need to populate.')
                 self.read_atomset_attributes('linkcell.grx')
             else:
                 self.linkcell.populate(self,ncpu=ncpu)
-                self.write_atomset_attributes(['linkcell-idx'],'linkcell.grx')
+                self.write_atomset_attributes(['linkcell-idx'],f'linkcell-{cutoff:.2f}.grx')
 
     def linkcelltest(self,i,j):
         ''' return True if atoms i and j are within potential interaction

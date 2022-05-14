@@ -29,6 +29,7 @@ class Checkpoint:
         self.iter=0
         self.current_stage=0
         self.current_radidx=0
+        self.radius=0.0
         self.checkpoint_file=checkpoint_file
         self.bonds_file=bonds_file
         self.bonds=pd.DataFrame()
@@ -63,6 +64,7 @@ class Checkpoint:
             self.grx=os.path.basename(basedict['EXTRA_ATTRIBUTES'])
             self.current_stage=basedict['CURRENT_STAGE']
             self.current_radidx=basedict['CURRENT_RADIDX']
+            self.current_radidx=basedict['RADIUS']
             bf=basedict.get('BONDSFILE',None)
             assert bf,f'Error: must specify BONDSFILE in {self.checkpoint_file}'
             self.bonds_are=basedict.get('BONDS_ARE',None)
@@ -79,6 +81,7 @@ class Checkpoint:
             f.write(f'STATE: {str(self.state)}\n')
             f.write(f'CURRENT_STAGE: {self.current_stage}\n')
             f.write(f'CURRENT_RADIDX: {self.current_radidx}\n')
+            f.write(f'RADIUS: {self.radius}\n')
             f.write(f'TOPOLOGY: {self.top}\n')
             f.write(f'COORDINATES: {self.gro}\n')
             f.write(f'EXTRA_ATTRIBUTES: {self.grx}\n')

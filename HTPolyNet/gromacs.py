@@ -8,7 +8,7 @@ import numpy as np
 from pytrr import GroTrrReader
 from HTPolyNet.command import Command
 
-def insert_molecules(molecules,composition,boxSize,outName,**kwargs):
+def insert_molecules(composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`
         monomers:  dictionary of Molecule instances keyed on molecule name
         composition: dictionary keyed on molecule name with value molecule count
@@ -61,9 +61,10 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         c.run()
     maxwarn=kwargs.get('maxwarn',2)
+    rdd=kwargs.get('rdd',0)
     c=Command(f'gmx {gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run()
-    c=Command(f'gmx {gmx_options} mdrun',deffnm=out)
+    c=Command(f'gmx {gmx_options} mdrun',deffnm=out,rdd=rdd)
     c.run()
     if os.path.exists(f'{out}.gro'):
         pass
