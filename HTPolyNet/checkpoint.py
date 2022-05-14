@@ -1,16 +1,16 @@
-import logging
 import os
 import yaml
 import pandas as pd
 from enum import Enum
 class CPstate(Enum):
+    """Enumerated CURE state
+    """
     fresh=0 # nothing there at all
     generated_templates=1
     generated_initial_topology=2
     generated_initial_coordinates=3
     initial_equilibration=4
     bondsearch=5
-#    bondsearch_complete=6
     update=7
     relax_prestage=8
     relax_poststage=9 
@@ -22,6 +22,8 @@ class CPstate(Enum):
         return self.name
 
 class Checkpoint:
+    """Manages checkpointing in the CURE algorithm
+    """
     def __init__(self,checkpoint_file='checkpoint.yaml',bonds_file='bonds.csv'):
         self.state=CPstate.fresh
         self.iter=0

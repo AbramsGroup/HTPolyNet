@@ -1,6 +1,6 @@
 title       = NVT for bond relaxation
 integrator  = md
-nsteps      = 10000
+nsteps      = 20000
 dt          = 0.001
 nstxout     = 50             
 nstvout     = 0

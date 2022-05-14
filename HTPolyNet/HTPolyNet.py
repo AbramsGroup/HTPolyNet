@@ -20,6 +20,7 @@ import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace
 from HTPolyNet.checkpoint import CPstate, Checkpoint
+from HTPolyNet.plot import trace
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -167,10 +168,14 @@ class HTPolyNet:
             M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
         return True
 
-    def initialize_global_topology(self,inpfnm='init'):
-        ''' Create a full gromacs topology that includes all directives necessary 
+    def initialize_topology(self,inpfnm='init'):
+        """Create a full gromacs topology that includes all directives necessary 
             for an initial liquid simulation.  This will NOT use any #include's;
-            all types will be explicitly in-lined. '''
+            all types will be explicitly in-lined.
+
+        :param inpfnm: input file name prefix, defaults to 'init'
+        :type inpfnm: str, optional
+        """
         cwd=pfs.go_to('systems/init')
         if os.path.isfile(f'{inpfnm}.top'):
             logging.info(f'{inpfnm}.top already exists in {cwd} but we will rebuild it anyway!')
@@ -193,15 +198,12 @@ class HTPolyNet:
         logging.info(f'Wrote {inpfnm}.top to {cwd}')
 
     def setup_liquid_simulation(self,inpfnm='init'):
-        # go to the results path, make the directory 'init', cd into it
+        """Builds initial top and gro files for initial liquid simulation
+
+        :param inpfnm: input file name prefix, defaults to 'init'
+        :type inpfnm: str, optional
+        """
         cwd=pfs.go_to('systems/init')
-        # fetch unreacted init.top amd all monomer gro's 
-        # from parameterization directory
-        # self.checkout(f'{inpfnm}.top',altpath=pfs.subpath('systems'))
-        for n in self.cfg.molecules.keys():
-            self.checkout(f'molecules/parameterized/{n}.gro',altpath=pfs.subpath('molecules'))
-        self.checkout('mdp/em.mdp')
-        self.checkout('mdp/npt-1.mdp')
         if 'initial_boxsize' in self.cfg.parameters:
             boxsize=self.cfg.parameters['initial_boxsize']
         elif 'initial_density' in self.cfg.parameters:
@@ -220,6 +222,7 @@ class HTPolyNet:
         for mname,M in self.cfg.molecules.items():
             if mname in c_togromacs:
                 m_togromacs[mname]=M
+                self.checkout(f'molecules/parameterized/{mname}.gro',altpath=pfs.subpath('molecules'))
         # for m,M in m_togromacs.items():
         #     logging.info(f'Molecule to gromacs: {m} ({M.name})')
         # for m,c in c_togromacs.items():
@@ -251,11 +254,14 @@ class HTPolyNet:
         if os.path.exists(f'{deffnm}.gro') and self.cfg.parameters['restart']:
             logging.info(f'{deffnm}.gro exists in {os.getcwd()}; skipping initial NPT md.')
         else:
+            self.checkout('mdp/em.mdp')
+            self.checkout('mdp/npt-1.mdp')
             logging.info(f'Conducting initial NPT MD simulation of liquid')
             msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-min-1',mdp='em',**self.cfg.parameters)
             msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm,**self.cfg.parameters)
             logging.info(f'Generated configuration {deffnm}.gro\n')
         density_trace(deffnm,**self.cfg.parameters)
+        trace(['Density'],[deffnm],outfile='../../plots/init-density.png')
         # update coordinates; will wrap upon reading in
         self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
 
@@ -265,8 +271,8 @@ class HTPolyNet:
         max_nxlinkbonds=self.cfg.maxconv
         desired_conversion=self.cfg.parameters['desired_conversion']
         cure_search_radius=self.cfg.parameters['CURE_initial_search_radius']
-        checkpoint_file=self.cfg.parameters['checkpoint_file','checkpoint.yaml']
-        bonds_file=self.cfg.parameters['bonds_file','bonds.csv']
+        checkpoint_file=self.cfg.parameters.get('checkpoint_file','checkpoint.yaml')
+        bonds_file=self.cfg.parameters.get('bonds_file','bonds.csv')
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
@@ -279,7 +285,6 @@ class HTPolyNet:
         while not CP.state==CPstate.finished:
             cwd=pfs.go_to(f'systems/iter-{CP.iter}')
             CP.read_checkpoint(self)
-            CP.iter=iter
             if CP.state==CPstate.fresh:
                 logging.info(f'CURE iteration {CP.iter}/{maxiter} begins.')
                 CP.current_radidx=0 # radius index
@@ -298,7 +303,7 @@ class HTPolyNet:
                         radius+=radial_increment
                 if CP.state==CPstate.bondsearch: # loop exited on radius violation
                     logging.debug(f'CURE iteration {CP.iter} failed to find bonds.')
-                    CP.set_state(CPstate.finished) # no need to write checkpoint, nothing changed
+                    cure_finished=True
             if CP.state==CPstate.update:
                 CP.read_checkpoint(self)
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
@@ -311,7 +316,6 @@ class HTPolyNet:
                 self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
                 lengths=self.TopoCoord.return_bond_lengths(CP.bonds)
                 begin_stage=CP.current_stage
-                stagepref=CP.filename_format.format(stage=begin_stage)
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,lengths)
@@ -327,7 +331,6 @@ class HTPolyNet:
                     CP.current_stage+=1
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
-                # CP.set_state(CPstate.equilibrate)
                 CP.write_checkpoint(self,CPstate.equilibrate,prefix='4-equilibrate')
             if CP.state==CPstate.equilibrate:
                 self.checkout('mdp/npt-inter-scur-iter.mdp')
@@ -335,16 +338,15 @@ class HTPolyNet:
                 top,ext=os.path.splitext(CP.top)
                 msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='npt-inter-scur-iter',**self.cfg.parameters)
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
-                # CP.set_state(CPstate.post_equilibration)
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix='final')
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-                logging.debug(f'Current conversion: {curr_conversion}')
+                logging.debug(f'Current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
                 cure_finished=curr_conversion>desired_conversion
-                cure_finished=cure_finished or iter>=maxiter
+                cure_finished=cure_finished or CP.iter>=maxiter
                 CP.set_state(CPstate.fresh)
-                iter+=1
+                CP.iter+=1
             if cure_finished:
                 CP.set_state(CPstate.finished)
 
@@ -371,7 +373,7 @@ class HTPolyNet:
         self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
         # self.Coordinates.linkcell.make_memberlists(self.Coordinates.A)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
-        logging.debug(f'make_bonds: there are {raset.shape[0]} reactive atoms')
+        #logging.debug(f'make_bonds: there are {raset.shape[0]} reactive atoms')
         # self.Coordinates.show_z_report()
         newbonds=[]
         ''' generate the list of new bonds to make '''
@@ -382,7 +384,6 @@ class HTPolyNet:
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
-                # logging.debug(f'  -> bond\n    {R.reactants}\n    {bond}:\n    A {A}\n    B {B}')
                 aname=A['atom']
                 areactantname_template=R.reactants[A['reactant']]
                 aresid_template=A['resid']
@@ -401,8 +402,6 @@ class HTPolyNet:
                 if len(Pbonds)>0:
                     bondtestoutcomes={k:0 for k in BTRC}
                     logging.debug(f'Bond search will use {ncpu} processors')
-                    # if ncpu<len(Pbonds):
-                    #     ncpu=1
                     p=Pool(processes=ncpu)
                     Pbonds_split=np.array_split(Pbonds,ncpu)
                     results=p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
@@ -474,7 +473,7 @@ class HTPolyNet:
         self.generate_molecules(
             force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin
         )
-        self.initialize_global_topology()
+        self.initialize_topology()
         self.setup_liquid_simulation()
         self.do_liquid_simulation()
         self.CURE()

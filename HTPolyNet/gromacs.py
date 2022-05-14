@@ -77,8 +77,8 @@ def get_energy_menu(edr,**kwargs):
     gmx_options=kwargs.get('gmx_options','')
     with open('_menugetter_','w') as f:
         f.write('\n')
-    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < _menugetter_ >& _menu_')
-    c.run(ignore_codes=[1])
+    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < _menugetter_ > _menu_ 2>&1')
+    c.run(ignore_codes=[1,2])
     with open('_menu_','r') as f:
         lines=f.read().split('\n')
     topline=lines.index('End your selection with an empty line or a zero.')
@@ -95,25 +95,29 @@ def get_energy_menu(edr,**kwargs):
     return menu
 
 def gmx_energy_trace(edr,names=[],**kwargs):
-    assert os.path.exists(edr+'.edr'),f'Error: {edr} not found'
+    assert os.path.exists(edr+'.edr'),f'Error: {edr}.edr not found'
     assert len(names)>0,f'Nothing to plot'
     gmx_options=kwargs.get('gmx_options','')
     xshift=kwargs.get('xshift',0)
     menu=get_energy_menu(edr)
     with open('gmx.in','w') as f:
         for i in names:
-            f.write(f'{menu[i]}\n')
-        f.write('\n')
-    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
-    c.run()
-    data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None)
-    data.iloc[:,0]+=xshift
-    print(data.iloc[0,0])
-    cnames=['time (ps)'].extend(names)
-    if len(names)==len(data.columns):
-        data.columns=cnames
-    return data
-
+            if i in menu:
+                f.write(f'{menu[i]}\n')
+            f.write('\n')
+    if any([i in menu for i in names]):
+        c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
+        c.run()
+        data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None)
+        data.iloc[:,0]+=xshift
+    #    print(data.iloc[0,0])
+        cnames=['time (ps)'].extend(names)
+        if len(names)==len(data.columns):
+            data.columns=cnames
+        return data
+    else:
+        return pd.DataFrame()
+        
 def density_trace(edr='',**kwargs):
     gmx_options=kwargs.get('gmx_options','')
     if edr=='':
