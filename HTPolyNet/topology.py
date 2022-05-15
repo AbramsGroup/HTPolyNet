@@ -994,7 +994,7 @@ class Topology:
         ess='s' if pairsdf.shape[0]>1 else ''
         factor=(stage+1)/max_stages
         logging.debug(f'Attenuating {pairsdf.shape[0]} pair{ess} in stage {stage+1}/{max_stages}')
-        for (i,b) in zip(pairsdf.iterrows()):
+        for i,b in pairsdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
             b0=b['initial-distance']
             kb=pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c1'].values[0]
