@@ -324,6 +324,7 @@ class HTPolyNet:
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
                 for i in range(begin_dragstage,n_dragstages):
+                    saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_dragstages,minimum_distance=drag_limit_nm)
                     stagepref=f'1-drag-stage-{i}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref)
@@ -331,6 +332,7 @@ class HTPolyNet:
                     msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='drag-nvt',rdd=CP.radius,**self.cfg.parameters)
                     msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='drag-npt',rdd=CP.radius,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
+                    self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     logging.debug(f'-> avg new pair separation distance: {current_lengths.mean():.3f}')
                     CP.current_dragstage+=1
