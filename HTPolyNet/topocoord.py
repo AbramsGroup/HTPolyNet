@@ -412,6 +412,9 @@ class TopoCoord:
         """
         return self.Topology.copy_bond_parameters(bonds)
 
+    def remove_restraints(self,pairsdf):
+        self.Topology.remove_restraint(pairsdf)
+
     def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
@@ -445,7 +448,7 @@ class TopoCoord:
         :param draglimit_nm: lower limit of interatomic distance requested from drag
         :type draglimit_nm: float
         """
-        self.Topology.attenuate_pair_parameters(pairdf,i,n,draglimit_nm)
+        self.Topology.attenuate_pair_parameters(pairdf,i,n,minimum_distance=draglimit_nm)
 
     def copy_coords(self,other):
         self.Coordinates.copy_coords(other.Coordinates)

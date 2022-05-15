@@ -985,8 +985,8 @@ class Topology:
                 kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb'].values[0]
                 # logging.debug(f'->using types it {it} jt {jt} b0 {b0} kb {kb}')
             # write explicit override parameters for this bond; kb is attenuated
-            # logging.debug(f'b0 attentuated to {rij-factor*(rij-b0)}')
-            # logging.debug(f'kb attentuated to {kb*factor}')
+            logging.debug(f'b0 {b0} attentuated to {rij-factor*(rij-b0)}')
+            logging.debug(f'kb {kb} attentuated to {kb*factor}')
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=rij-factor*(rij-b0)
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
 
