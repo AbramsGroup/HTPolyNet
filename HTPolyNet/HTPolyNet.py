@@ -368,7 +368,7 @@ class HTPolyNet:
                 CP.bonds_are='relaxed'
                 CP.write_checkpoint(self,CPstate.equilibrate,prefix='4-equilibrate')
             if CP.state==CPstate.equilibrate:
-                self.checkout('mdp/npt-equilibrate.mdp')
+                self.checkout('mdp/equilibrate-npt.mdp')
                 gro,ext=os.path.splitext(CP.gro)
                 top,ext=os.path.splitext(CP.top)
                 msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='equilibrate-npt',**self.cfg.parameters)
