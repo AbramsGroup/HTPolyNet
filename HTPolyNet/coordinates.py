@@ -486,9 +486,15 @@ class Coordinates:
             else:
                 f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False))
 
-    def read_atomset_attributes(self,filename='',attributes=[]):
-        if filename=='':
-            raise Exception('Please provide a file name from which you want to read atom attributes')
+    def read_atomset_attributes(self,filename,attributes=[]):
+        """Reads atomic attributes from input file
+
+        :param filename: name of file
+        :type filename: str
+        :param attributes: list of attributes to take, defaults to [] (take all)
+        :type attributes: list, optional
+        """
+        assert os.path.exists(filename),f'Error: {filename} not found'
         # if no particular attributes are asked for, read them all in
         if len(attributes)==0:
             df=pd.read_csv(filename,sep='\s+',header=0)
@@ -498,9 +504,16 @@ class Coordinates:
         self.A=self.A.merge(df,how='outer',on='globalIdx')
         # logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
-    def set_atomset_attribute(self,attribute='',srs=[]):
-        if attribute!='':
-           self.A[attribute]=srs
+    def set_atomset_attribute(self,attribute,srs):
+        """Set attribute of atoms to srs
+
+        :param attribute: name of attribute
+        :type attribute: str
+        :param srs: list-like attribute values in same ordering as self.A
+        :type srs: list-like
+        """
+        assert len(srs)==self.A.shape[0],f'Error: data for {attribute} does not have enough values'
+        self.A[attribute]=srs
 
     def atomcount(self):
         return self.N

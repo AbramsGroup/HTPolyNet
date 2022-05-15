@@ -419,6 +419,8 @@ class Topology:
                 logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
     
     def add_restraints(self,pairdf,typ=6,kb=300000):
+        """Add type-6 (non-topoogical) bonds to help drag atoms destined to be bonded
+        closer together in a series of dragging simulations """
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
         for i,b in pairdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
@@ -431,6 +433,8 @@ class Topology:
                 self.D['bonds']=pd.concat((self.D['bonds'],bdtoadd),ignore_index=True)
 
     def remove_restraints(self,pairdf):
+        """Remove all bonds in pairdf, since these are interpreted as non-topological
+        restraints, deleting these bonds does not influence angles or dihedrals"""
         d=self.D['bonds']
         to_drop=[]
         for i,b in pairdf.iterrows():
@@ -438,7 +442,7 @@ class Topology:
             to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index)
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
-    def add_bonds(self,pairs=[],ignores=[],quiet=True,enumerate_others=True):
+    def add_bonds(self,pairs=[]):
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index

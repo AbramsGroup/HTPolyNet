@@ -68,7 +68,7 @@ class TopoCoord:
         :rtype: list
         """
         idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H)
-        self.Topology.add_bonds(pairs,ignores=idx_to_ignore)
+        self.Topology.add_bonds(pairs)
         self.Topology.null_check(msg='add_bonds')
         rename=True if len(skip_H)>0 else False
         idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H,rename=rename)
@@ -76,13 +76,20 @@ class TopoCoord:
         return idx_to_delete
 
     def add_restraints(self,pairdf,typ=6):
+        """Adds bonds of type typ to the topology from the dataframe pairdf
+
+        :param pairdf: ai, aj, initital-distance
+        :type pairdf: pandas.DataFrame
+        :param typ: bond type to add, defaults to 6 (non-topological restraint)
+        :type typ: int, optional
+        """
         self.Topology.add_restraints(pairdf,typ=typ)
 
     def add_pairs(self,pairdf,kb=300000.0):
         """Adds a pair for each pair in the pairdf (['ai'],['aj'],['initial-distance'])
         
         :param pairdf: dataframe of pairs
-        "type pardf: pandas.DataFrames
+        :type pardf: pandas.DataFrames
         """
         self.Topology.add_pairs(pairdf,kb=kb)
 
@@ -413,7 +420,7 @@ class TopoCoord:
         return self.Topology.copy_bond_parameters(bonds)
 
     def remove_restraints(self,pairsdf):
-        self.Topology.remove_restraint(pairsdf)
+        self.Topology.remove_restraints(pairsdf)
 
     def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
@@ -451,16 +458,40 @@ class TopoCoord:
         self.Topology.attenuate_pair_parameters(pairdf,i,n,minimum_distance=draglimit_nm)
 
     def copy_coords(self,other):
+        """Copy coordinates and box size from other to self
+
+        :param other: a TopoCoord instance
+        :type other: TopoCoord
+        """
         self.Coordinates.copy_coords(other.Coordinates)
         self.Coordinates.box=other.Coordinates.box.copy()
 
     def restore_bond_parameters(self,saved):
+        """Retores saved bond parameters in df saved by overwriting
+
+        :param saved: [ bonds ] dataframe
+        :type saved: pandas.DataFrame
+        """
         self.Topology.restore_bond_parameters(saved)
 
     def write_gro_attributes(self,attributes_list,grxfilename):
+        """Writes atomic attributes to a file
+
+        :param attributes_list: list of attributes to write
+        :type attributes_list: list
+        :param grxfilename: name of output file
+        :type grxfilename: str
+        """
         self.Coordinates.write_atomset_attributes(attributes_list,grxfilename)
 
     def read_gro_attributes(self,grxfilename,attribute_list=[]):
+        """Read attributes from file into self.Coordinates.A
+
+        :param grxfilename: name of input file
+        :type grxfilename: str
+        :param attribute_list: list of attributes to take, defaults to [] (take all)
+        :type attribute_list: list, optional
+        """
         self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
 
     def set_gro_attribute(self,attribute,srs):
