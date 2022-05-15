@@ -321,10 +321,10 @@ class HTPolyNet:
                 self.checkout('mdp/drag-nvt.mdp')
                 self.checkout('mdp/drag-npt.mdp')
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                self.TopoCoord.add_pairs(CP.bonds)
+                self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
                 for i in range(begin_dragstage,n_dragstages):
-                    self.TopoCoord.attenuate_pair_parameters(CP.bonds,i,n_dragstages,drag_limit_nm)
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_dragstages,minimum_distance=drag_limit_nm)
                     stagepref=f'1-drag-stage-{i}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref)
                     msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='drag-em',rdd=CP.radius,**self.cfg.parameters)
@@ -335,6 +335,7 @@ class HTPolyNet:
                     logging.debug(f'-> avg new pair separation distance: {current_lengths.mean():.3f}')
                     CP.current_dragstage+=1
                 CP.current_dragstage-=1
+                self.TopoCoord.remove_restraints(CP.bonds)
                 CP.write_checkpoint(self,CPstate.update,prefix='1-drag')
             if CP.state==CPstate.update:
                 CP.read_checkpoint(self)
@@ -346,11 +347,11 @@ class HTPolyNet:
                 self.checkout('mdp/relax-em.mdp')
                 self.checkout('mdp/relax-nvt.mdp')
                 self.checkout('mdp/relax-npt.mdp')
-                lengths=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,lengths)
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages)
                     stagepref=f'3-relax-stage-{i}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
                     msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='relax-em',rdd=CP.radius,**self.cfg.parameters)

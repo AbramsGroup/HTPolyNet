@@ -75,6 +75,9 @@ class TopoCoord:
         assert type(idx_to_delete)==list
         return idx_to_delete
 
+    def add_restraints(self,pairdf,typ=6):
+        self.Topology.add_restraints(pairdf,typ=typ)
+
     def add_pairs(self,pairdf,kb=300000.0):
         """Adds a pair for each pair in the pairdf (['ai'],['aj'],['initial-distance'])
         

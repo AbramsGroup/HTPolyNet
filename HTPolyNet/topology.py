@@ -418,6 +418,26 @@ class Topology:
             else:
                 logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
     
+    def add_restraints(self,pairdf,typ=6,kb=300000):
+        bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
+        for i,b in pairdf.iterrows():
+            ai,aj=idxorder((b['ai'],b['aj']))
+            b0=b['initial-distance']
+            if not (ai,aj) in bmi:
+                h=_GromacsTopologyDirectiveHeaders_['bonds']
+                data=[ai,aj,typ,b0,kb]  # this new bond will have override parameters
+                bonddict={k:[v] for k,v in zip(h,data)}
+                bdtoadd=pd.DataFrame(bonddict)
+                self.D['bonds']=pd.concat((self.D['bonds'],bdtoadd),ignore_index=True)
+
+    def remove_restraints(self,pairdf):
+        d=self.D['bonds']
+        to_drop=[]
+        for i,b in pairdf.iterrows():
+            ai,aj=idxorder((b['ai'],b['aj']))
+            to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index)
+        self.D['bonds']=self.D['bonds'].drop(to_drop)
+
     def add_bonds(self,pairs=[],ignores=[],quiet=True,enumerate_others=True):
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
@@ -922,7 +942,7 @@ class Topology:
         return saveme
     # 'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
     # 'bondtypes':['i','j','func','b0','kb'],
-    def attenuate_bond_parameters(self,bonds,stage,max_stages,lengths):
+    def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
@@ -944,12 +964,15 @@ class Topology:
         Adf=self.D['angles']
         ATdf=self.D['angletypes']
         factor=(stage+1)/max_stages
-        ess='s' if len(bonds)>1 else ''
-        logging.debug(f'Attenuating {len(bonds)} bond{ess} in stage {stage+1}/{max_stages}')
-        for (i,b),rij in zip(bonds.iterrows(),lengths):
+        ess='s' if bondsdf.shape[0]>1 else ''
+        logging.debug(f'Attenuating {bondsdf.shape[0]} bond{ess} in stage {stage+1}/{max_stages}')
+        for i,b in bondsdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
+            rij=b['initial-distance']
             # logging.debug(f'atten ai {ai} aj {aj}')
             b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0'].values[0]
+            if minimum_distance>0.0:
+                b0=minimum_distance
             kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1'].values[0]
             # logging.debug(f'atten rij {rij} b0 {b0} kb {kb}')
             # if b0==pd.NA or kb==pd.NA:
