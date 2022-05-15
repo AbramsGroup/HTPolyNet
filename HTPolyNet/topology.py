@@ -61,7 +61,7 @@ _NonGromacsExtensiveDirectives_=['mol2_bonds']
 _GromacsTopologyDirectiveOrder_=['defaults','atomtypes','bondtypes','angletypes','dihedraltypes','moleculetype','atoms','pairs','bonds','angles','dihedrals','system','molecules']
 _GromacsTopologyDirectiveHeaders_={
     'atoms':['nr', 'type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
-    'pairs':['ai', 'aj', 'funct'],
+    'pairs':['ai', 'aj', 'funct', 'c0', 'c1'],
     'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
     'angles':['ai', 'aj', 'ak', 'funct', 'c0', 'c1'],
     'dihedrals':['ai', 'aj', 'ak', 'al', 'funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
@@ -92,7 +92,7 @@ _GromacsTopologyHashables_={
     }
 _GromacsTopologyDataFields_={
     'atoms':['type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
-    'pairs':['funct'],
+    'pairs':['funct', 'c0', 'c1'],
     'bonds':['funct', 'c0', 'c1'],
     'angles':['funct', 'c0', 'c1'],
     'dihedrals':['funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
@@ -404,6 +404,19 @@ class Topology:
             return len(self.D['atoms'])
         return 0
 
+    def add_pairs(self,pairsdf,kb=280160.0):
+        pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
+        for i,p in pairsdf.iterrows():
+            ai,aj=idxorder((p['ai'],p['aj']))
+            l0=p['initial-distance']
+            if not (ai,aj) in pmi: #this pair not already here, good!
+                data=[ai,aj,1,l0,kb]
+                pairdict={k:[v] for k,v in zip(h,data)}
+                pairtoadd=pd.DataFrame(pairdict)
+                self.D['pairs']=pd.concat((self.D['pairs'],pairtoadd),ignore_index=True)
+            else:
+                logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
+    
     def add_bonds(self,pairs=[],ignores=[],quiet=True,enumerate_others=True):
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
@@ -961,3 +974,28 @@ class Topology:
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=c0
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=c1
 
+    def attenuate_pair_parameters(self,pairsdf,stage,max_stages,draglimit_nm=0.3):
+        """Alter the kb and b0 parameters for new pre-crosslink pairs according 
+            to the values prior to dragging (stored in pairdf['initial-distances']), 
+            the desired lower limit of interatomic distance 'draglimit_nm', 
+            and the ratio stage/max_stages.
+            
+        :param pairdf: pairs dataframe (['ai'],['aj'],['initial-distance'])
+        :type pairdf: pandas.DataFrame
+        :param stage: index of stage in the series of pre-bond-formation dragging
+        :type stage: int
+        :param max_stages: total number of drag stages for this iteration
+        :type max_stages: int
+        :param draglimit_nm: lower limit of interatomic distance requested from drag
+        :type draglimit_nm: float
+        """
+        pdf=self.D['pairs']
+        ess='s' if pairsdf.shape[0]>1 else ''
+        factor=(stage+1)/max_stages
+        logging.debug(f'Attenuating {pairsdf.shape[0]} pair{ess} in stage {stage+1}/{max_stages}')
+        for (i,b) in zip(pairsdf.iterrows()):
+            ai,aj=idxorder((b['ai'],b['aj']))
+            b0=b['initial-distance']
+            kb=pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c1'].values[0]
+            pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c0']=draglimit_nm-factor*(b0-draglimit_nm)
+            pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c1']=kb*factor

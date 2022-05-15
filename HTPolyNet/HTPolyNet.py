@@ -276,6 +276,13 @@ class HTPolyNet:
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.5)
         maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
+        
+        dragging=False
+        drag_limit_nm=self.cfg.parameters.get('drag_limit',0.3)
+        n_dragstages=self.cfg.parameters.get('max_drag_stages',0)
+        if n_dragstages>0:
+            dragging=True
+
         curr_nxlinkbonds=0
         max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
         max_radidx=int((max_search_radius-cure_search_radius)/radial_increment)
@@ -291,12 +298,16 @@ class HTPolyNet:
                 CP.current_stage=0
                 CP.set_state(CPstate.bondsearch) # no need to write a checkpoing
             if CP.state==CPstate.bondsearch:
+                if dragging:
+                    next_stage=CPstate.drag
+                else:
+                    next_stage=CPstate.update
                 CP.radius=cure_search_radius+CP.current_radidx*radial_increment
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
                     nbdf=self.make_bonds(CP.radius,header=['ai','aj','reactantName'])
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
-                        CP.write_checkpoint(self,CPstate.update,prefix='1-connect')
+                        CP.write_checkpoint(self,next_stage,prefix='0-connect')
                     else:
                         logging.debug(f'CURE iteration {CP.iter}: increasing bondsearch radius to {CP.radius+radial_increment}')
                         CP.current_radidx+=1
@@ -304,26 +315,47 @@ class HTPolyNet:
                 if CP.state==CPstate.bondsearch: # loop exited on radius violation
                     logging.debug(f'CURE iteration {CP.iter} failed to find bonds.')
                     cure_finished=True
+            if CP.state==CPstate.drag:
+                CP.read_checkpoint(self)
+                self.checkout('mdp/drag.mdp')
+                self.checkout('mdp/drag-nvt.mdp')
+                self.checkout('mdp/drag-npt.mdp')
+                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                self.TopoCoord.add_pairs(CP.bonds)
+                begin_dragstage=CP.current_dragstage
+                for i in range(begin_dragstage,n_dragstages):
+                    self.TopoCoord.attenuate_pair_parameters(CP.bonds,i,n_dragstages,drag_limit_nm)
+                    stagepref=f'1-drag-stage-{i}'
+                    CP.write_checkpoint(self,CPstate.drag,prefix=stagepref)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-drag-stage',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-drag-stage',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-drag-stage',rdd=CP.radius,**self.cfg.parameters)
+                    self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
+                    current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    logging.debug(f'-> avg new pair separation distance: {current_lengths.mean():.3f}')
+                    CP.current_dragstage+=1
+                CP.current_dragstage-=1
+                CP.write_checkpoint(self,CPstate.update,prefix='1-drag')
             if CP.state==CPstate.update:
                 CP.read_checkpoint(self)
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
                 CP.current_stage=0
-                CP.write_checkpoint(self,CPstate.relax_prestage,prefix='2-update')
-            if CP.state==CPstate.relax_prestage:
+                CP.write_checkpoint(self,CPstate.relax,prefix='2-update')
+            if CP.state==CPstate.relax:
                 CP.read_checkpoint(self)
-                self.checkout('mdp/em-inter-scur-relax-stage.mdp')
-                self.checkout('mdp/nvt-inter-scur-relax-stage.mdp')
-                self.checkout('mdp/npt-inter-scur-relax-stage.mdp')
+                self.checkout('mdp/relax-em.mdp')
+                self.checkout('mdp/relax-nvt.mdp')
+                self.checkout('mdp/relax-npt.mdp')
                 lengths=self.TopoCoord.return_bond_lengths(CP.bonds)
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,lengths)
                     stagepref=f'3-relax-stage-{i}'
-                    CP.write_checkpoint(self,CPstate.relax_prestage,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-inter-scur-relax-stage',rdd=CP.radius,**self.cfg.parameters)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-inter-scur-relax-stage',rdd=CP.radius,**self.cfg.parameters)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-inter-scur-relax-stage',rdd=CP.radius,**self.cfg.parameters)
+                    CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='relax-em',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='relax-nvt',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='relax-npt',rdd=CP.radius,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
@@ -333,10 +365,10 @@ class HTPolyNet:
                 CP.bonds_are='relaxed'
                 CP.write_checkpoint(self,CPstate.equilibrate,prefix='4-equilibrate')
             if CP.state==CPstate.equilibrate:
-                self.checkout('mdp/npt-inter-scur-iter.mdp')
+                self.checkout('mdp/npt-equilibrate.mdp')
                 gro,ext=os.path.splitext(CP.gro)
                 top,ext=os.path.splitext(CP.top)
-                msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='npt-inter-scur-iter',**self.cfg.parameters)
+                msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='equilibrate-npt',**self.cfg.parameters)
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix='final')
             if CP.state==CPstate.post_equilibration:

@@ -5,15 +5,16 @@ from enum import Enum
 class CPstate(Enum):
     """Enumerated CURE state
     """
-    fresh=0 # nothing there at all
+    fresh=0
     generated_templates=1
     generated_initial_topology=2
     generated_initial_coordinates=3
     initial_equilibration=4
     bondsearch=5
+    drag=6
     update=7
-    relax_prestage=8
-    relax_poststage=9 
+    relax=8
+ #   relax_poststage=9 
     equilibrate=10
     post_equilibration=11
     finished=12
@@ -27,6 +28,7 @@ class Checkpoint:
     def __init__(self,checkpoint_file='checkpoint.yaml',bonds_file='bonds.csv'):
         self.state=CPstate.fresh
         self.iter=0
+        self.current_dragstage=0
         self.current_stage=0
         self.current_radidx=0
         self.radius=0.0
@@ -62,6 +64,7 @@ class Checkpoint:
             self.top=os.path.basename(basedict['TOPOLOGY'])
             self.gro=os.path.basename(basedict['COORDINATES'])
             self.grx=os.path.basename(basedict['EXTRA_ATTRIBUTES'])
+            self.current_dragstage=basedict['CURRENT_DRAGSTAGE']
             self.current_stage=basedict['CURRENT_STAGE']
             self.current_radidx=basedict['CURRENT_RADIDX']
             self.current_radidx=basedict['RADIUS']
@@ -79,6 +82,7 @@ class Checkpoint:
         with open(self.checkpoint_file,'w') as f:
             f.write(f'ITERATION: {self.iter}\n')
             f.write(f'STATE: {str(self.state)}\n')
+            f.write(f'CURRENT_DRAGSTAGE: {self.current_dragstage}\n')
             f.write(f'CURRENT_STAGE: {self.current_stage}\n')
             f.write(f'CURRENT_RADIDX: {self.current_radidx}\n')
             f.write(f'RADIUS: {self.radius}\n')

@@ -75,6 +75,14 @@ class TopoCoord:
         assert type(idx_to_delete)==list
         return idx_to_delete
 
+    def add_pairs(self,pairdf,kb=300000.0):
+        """Adds a pair for each pair in the pairdf (['ai'],['aj'],['initial-distance'])
+        
+        :param pairdf: dataframe of pairs
+        "type pardf: pandas.DataFrames
+        """
+        self.Topology.add_pairs(pairdf,kb=kb)
+
     def delete_atoms(self,atomlist):
         """Deletes atoms from both the Topology and Coordinates instances
 
@@ -418,6 +426,23 @@ class TopoCoord:
         :type lengths: list of floats
         """
         self.Topology.attenuate_bond_parameters(bonds,i,n,lengths)
+
+    def attenuate_pair_parameters(self,pairdf,i,n,draglimit_nm=0.3):
+        """Alter the kb and b0 parameters for new pre-crosslink pairs according 
+            to the values prior to dragging (stored in pairdf['initial-distances']), 
+            the desired lower limit of interatomic distance 'draglimit_nm', 
+            and the ratio stage/max_stages.
+            
+        :param pairdf: pairs dataframe (['ai'],['aj'],['initial-distance'])
+        :type pairdf: pandas.DataFrame
+        :param stage: index of stage in the series of pre-bond-formation dragging
+        :type stage: int
+        :param max_stages: total number of drag stages for this iteration
+        :type max_stages: int
+        :param draglimit_nm: lower limit of interatomic distance requested from drag
+        :type draglimit_nm: float
+        """
+        self.Topology.attenuate_pair_parameters(pairdf,i,n,draglimit_nm)
 
     def copy_coords(self,other):
         self.Coordinates.copy_coords(other.Coordinates)
