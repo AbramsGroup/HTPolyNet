@@ -512,7 +512,6 @@ class Coordinates:
         :param srs: list-like attribute values in same ordering as self.A
         :type srs: list-like
         """
-        assert len(srs)==self.A.shape[0],f'Error: data for {attribute} does not have enough values'
         self.A[attribute]=srs
 
     def atomcount(self):
