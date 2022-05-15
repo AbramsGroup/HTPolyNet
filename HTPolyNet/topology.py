@@ -955,8 +955,8 @@ class Topology:
         :type stage: int
         :param max_stages: total number of relaxation stages for this iteration
         :type max_stages: int
-        :param lengths: list of bond lengths, parallel to bonds
-        :type lengths: list of floats
+        :param minimum_distance: minimum bondlegth allowed, overriding type-specific b0 (if greater than 0)
+        :type lengths: float
         """
         bdf=self.D['bonds']
         adf=self.D['atoms']

@@ -412,23 +412,23 @@ class TopoCoord:
         """
         return self.Topology.copy_bond_parameters(bonds)
 
-    def attenuate_bond_parameters(self,bonds,i,n,lengths):
+    def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
             bond is multiplied by x and the distance is 1 xth of the way from its maximum value 
             to its equilibrium value.
 
-        :param bonds: list of bonds, each a 2-tuple of global atom indices
-        :type bonds: list
+        :param bonds: bonds dataframe, 'ai', 'aj', 'initial-distance'
+        :type bonds: pandas.DataFrame
         :param stage: index of stage in the series of post-bond-formation relaxation ("R" of SCUR)
         :type stage: int
         :param max_stages: total number of relaxation stages for this iteration
         :type max_stages: int
-        :param lengths: list of bond lengths, parallel to bonds
-        :type lengths: list of floats
+        :param minimum_distance: minimum bondlegth allowed, overriding type-specific b0
+        :type lengths: float
         """
-        self.Topology.attenuate_bond_parameters(bonds,i,n,lengths)
+        self.Topology.attenuate_bond_parameters(bonds,i,n,minimum_distance=minimum_distance)
 
     def attenuate_pair_parameters(self,pairdf,i,n,draglimit_nm=0.3):
         """Alter the kb and b0 parameters for new pre-crosslink pairs according 
