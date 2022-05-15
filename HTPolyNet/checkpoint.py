@@ -67,7 +67,7 @@ class Checkpoint:
             self.current_dragstage=basedict['CURRENT_DRAGSTAGE']
             self.current_stage=basedict['CURRENT_STAGE']
             self.current_radidx=basedict['CURRENT_RADIDX']
-            self.current_radidx=basedict['RADIUS']
+            self.radius=basedict['RADIUS']
             bf=basedict.get('BONDSFILE',None)
             assert bf,f'Error: must specify BONDSFILE in {self.checkpoint_file}'
             self.bonds_are=basedict.get('BONDS_ARE',None)
