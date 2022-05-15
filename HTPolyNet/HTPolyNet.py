@@ -327,9 +327,9 @@ class HTPolyNet:
                     self.TopoCoord.attenuate_pair_parameters(CP.bonds,i,n_dragstages,drag_limit_nm)
                     stagepref=f'1-drag-stage-{i}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='em-drag-stage',rdd=CP.radius,**self.cfg.parameters)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='nvt-drag-stage',rdd=CP.radius,**self.cfg.parameters)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='npt-drag-stage',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='drag-em',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='drag-nvt',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='drag-npt',rdd=CP.radius,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     logging.debug(f'-> avg new pair separation distance: {current_lengths.mean():.3f}')
