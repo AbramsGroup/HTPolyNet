@@ -317,7 +317,7 @@ class HTPolyNet:
                     cure_finished=True
             if CP.state==CPstate.drag:
                 CP.read_checkpoint(self)
-                self.checkout('mdp/drag.mdp')
+                self.checkout('mdp/drag-em.mdp')
                 self.checkout('mdp/drag-nvt.mdp')
                 self.checkout('mdp/drag-npt.mdp')
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)

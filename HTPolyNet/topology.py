@@ -411,6 +411,7 @@ class Topology:
             l0=p['initial-distance']
             if not (ai,aj) in pmi: #this pair not already here, good!
                 data=[ai,aj,1,l0,kb]
+                h=_GromacsTopologyDirectiveHeaders_['pairs']
                 pairdict={k:[v] for k,v in zip(h,data)}
                 pairtoadd=pd.DataFrame(pairdict)
                 self.D['pairs']=pd.concat((self.D['pairs'],pairtoadd),ignore_index=True)
