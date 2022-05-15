@@ -439,7 +439,7 @@ class Topology:
         to_drop=[]
         for i,b in pairdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
-            to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index)
+            to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index.values[0])
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
     def add_bonds(self,pairs=[]):
