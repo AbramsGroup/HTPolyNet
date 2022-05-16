@@ -32,7 +32,7 @@ class TopoCoord:
     """Container for Topology and Coordinates, along with methods that 
         use either or both of them
     """
-    def __init__(self,topfilename='',grofilename='',mol2filename=''):
+    def __init__(self,topfilename='',grofilename='',mol2filename='',system_name='htpolynet'):
         """Constructor method for TopoCoord.
 
         :param topfilename: name of Gromacs-format topology file (top), defaults to ''
@@ -49,7 +49,7 @@ class TopoCoord:
         if topfilename!='':
             self.read_top(topfilename)
         else:
-            self.Topology=Topology() # empty
+            self.Topology=Topology(system_name=system_name) # empty
         if mol2filename!='':
             self.read_mol2(mol2filename) 
             # will overwrite coords and add 'mol2_bonds' section to topology

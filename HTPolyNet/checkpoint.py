@@ -14,10 +14,11 @@ class CPstate(Enum):
     drag=6
     update=7
     relax=8
- #   relax_poststage=9 
     equilibrate=10
     post_equilibration=11
-    finished=12
+    post_cure=12
+    postcure_equilibration=13
+    finished=25
     unknown=99
     def __str__(self):
         return self.name
@@ -39,6 +40,18 @@ class Checkpoint:
 
     def set_state(self,state):
         self.state=state
+
+    def reset_for_next_iter(self,checkpoint_file='checkpoint.yaml',bonds_file='bonds.csv'):
+        self.iter+=1
+        self.state=CPstate.fresh
+        self.current_dragstage=0
+        self.current_stage=0
+        self.current_radidx=0
+        self.radius=0.0
+        self.checkpoint_file=checkpoint_file
+        self.bonds_file=bonds_file
+        self.bonds=pd.DataFrame()
+        self.bonds_are='nonexistent!'
 
     def write_bondsfile(self):
         self.bonds.to_csv(self.bonds_file,sep=' ',mode='w',index=False,header=True,doublequote=False)

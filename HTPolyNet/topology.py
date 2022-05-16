@@ -112,7 +112,7 @@ _GromacsTopologyDirectiveDefaults_={
 
 class Topology:
     ''' Gromacs topology handler '''
-    def __init__(self,system=''):
+    def __init__(self,system_name=''):
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
         self.D={}
@@ -120,7 +120,7 @@ class Topology:
             hdr=_GromacsTopologyDirectiveHeaders_[k]
             dfdict={kk:[a] for kk,a in zip(hdr,v)}
             self.D[k]=pd.DataFrame(dfdict)
-        self.D['system']=pd.DataFrame({'name':[system]})
+        self.D['system']=pd.DataFrame({'name':[system_name]})
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
         self.residue_network=nx.DiGraph()
@@ -350,7 +350,7 @@ class Topology:
                     odf=self.D[k].sort_values(by=_GromacsTopologyHashables_[k])
                     odf.to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
                 else:
-                    self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False,escapechar='*')
+                    self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
                 with open(filename,'a') as f:
                     f.write('\n')
         with open(filename,'a') as f:

@@ -370,12 +370,13 @@ class Coordinates:
         logging.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
-            if os.path.exists(f'linkcell-{cutoff:.2f}.grx') and not force_repopulate:
-                logging.debug(f'Found linkcell.grx; no need to populate.')
-                self.read_atomset_attributes('linkcell.grx')
+            lc_file=f'linkcell-{cutoff:.2f}.grx'
+            if os.path.exists(lc_file) and not force_repopulate:
+                logging.debug(f'Found {lc_file}; no need to populate.')
+                self.read_atomset_attributes(lc_file)
             else:
                 self.linkcell.populate(self,ncpu=ncpu)
-                self.write_atomset_attributes(['linkcell-idx'],f'linkcell-{cutoff:.2f}.grx')
+                self.write_atomset_attributes(['linkcell-idx'],lc_file)
 
     def linkcelltest(self,i,j):
         ''' return True if atoms i and j are within potential interaction

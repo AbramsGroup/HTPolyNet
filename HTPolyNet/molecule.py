@@ -31,7 +31,7 @@ class Reaction:
         self.product=jsondict.get('product','')
         self.restrictions=jsondict.get('restrictions',{})
         self.stage=jsondict.get('stage','')
-        self.probability=1.0
+        self.probability=jsondict.get('probability',1.0)
 
     def __str__(self):
         retstr=f'Reaction "{self.name}"\n'

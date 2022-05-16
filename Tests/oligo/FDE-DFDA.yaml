@@ -6,7 +6,6 @@ desired_conversion: 0.95
 late_treshhold: 0.85  # conversion above which bond formation probabilities are ignored
 charge_method: gas  # bcc
 max_CURE_iterations: 25
-filename_format: 'cure-{stage}'
 max_bond_relaxation_stages: 10
 use_symmetry_equivalent_atoms: [DFA, FDE]
 reactions:
