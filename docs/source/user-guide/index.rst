@@ -4,19 +4,28 @@ User Guide
 Overview
 ~~~~~~~~
 
-HTPolyNet generally follows this procedure:
+The Basic Algorithm
+^^^^^^^^^^^^^^^^^^^
+
+HTPolyNet produces Gromacs topology and coordinate files for amorphous, crosslinked polymer systems following the basic steps below.
 
 1. If necessary, GAFF-parameterize any input monomers, and build any intermediate molecules dictated by the polymerization chemistry and GAFF-parameterize those.  Outputs of parameterizations are typically saved in a Library so that repeated parameterizations are not done.
 2. Based on a specified composition, generate an initial simulation box, and equilibrate it to a liquid-like density.
 3. Perform CURE (Connect-Update-Relax-Equilibrate) iterations to introduce intermonomer bonds according to the input chemistry until a desired conversion is met or an execution threshhold is reached.
 4. Finalize by performing any requested post-cure chemistry.
 
-An HTPolyNet run therefore requires two types of inputs: molecular structures of monomers, and a configuration file.  These are described below.
+Important Things to Know
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+1.  HTPolyNet uses the concept of "reactions" to describe crosslinking chemistry and any post-cure chemistry.  Reactions are specified in the input configuration file.
+2.  HTPolyNet's "molecules" are the smallest chemical units required to represent (i) individual monomers, and (ii) crosslink bonds involving two or more monomers.  They are used for deriving atom types and parameters.  Molecules act as reactants or products in reactions, and initial composition is specified using molecule names.  Input molecular structures of monomers are required.
+3. HTPolyNet uses the idea of "sacrificial hydrogens".  This means that it expects a monomer structure to represent a state in which it must lose an H to make an intermonomer bond.
+4. HTPolyNet's reactions require specification of "reactive atoms" as those that participate in intermonomer bonds.  These atoms must have unique atom names in any input file.
 
 Inputs
 ~~~~~~
 
-HTPolyNet requires minimally two types of Inputs
+HTPolyNet requires minimally two types of inputs:
 
 1. Molecular structures of any monomers as Tripos mol2 files; these are used directly as inputs to ``antechamber``.
 2. An input configuration file in ``YAML`` format for controlling the ``htpolynet`` run.
@@ -74,8 +83,9 @@ The mol2 format HTPolyNet requires for a monomer is minimal and requires only th
         12     4    13    1
         13     4    14    1
 
+No matter how you generate a mol2 file, if it corresponds to a molecule that can react, you must edit the mol2 file to give its reactive atoms **unique names**.  These atoms are referred to in the configuration file by name.
 
 Configuration files
 ^^^^^^^^^^^^^^^^^^^
 
-That
+
