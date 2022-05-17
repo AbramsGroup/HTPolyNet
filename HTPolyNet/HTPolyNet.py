@@ -651,7 +651,7 @@ def cli():
     """cli Command-line interface for executable (listed as entry point in setup.cfg)
     """
     parser=ap.ArgumentParser()
-    parser.add_argument('command',type=str,default=None,help='command (init, info, run)')
+    parser.add_argument('command',type=str,default=None,help='command (info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
     parser.add_argument('-lib',type=str,default='',help='local library, assumed flat')
     parser.add_argument('-log',type=str,default='htpolynet_runtime.log',help='log file')

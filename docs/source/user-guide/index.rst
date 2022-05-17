@@ -4,6 +4,33 @@ User Guide
 Overview
 ~~~~~~~~
 
+Basic Usage
+^^^^^^^^^^^
+
+Installation of the HTPolyNet package gives access to the ``htpolynet`` command:
+
+.. code-block:: console
+
+    $ htpolynet -h 
+    usage: htpolynet [-h] [-cfg CFG] [-lib LIB] [-log LOG] [-restart] [--force-parameterization] [--force-sea-calculation] [--force-checkin] [--loglevel LOGLEVEL] command
+
+    positional arguments:
+      command               command (info, run)
+
+    optional arguments:
+     -h, --help            show this help message and exit
+     -cfg CFG              input config file (required)
+     -lib LIB              local library, assumed flat (optional)
+     -log LOG              log file (htpolynet_runtime.log)
+     -restart              restart in latest proj dir
+     --force-parameterization
+                           force GAFF parameterization of any input mol2 structures (False)
+     --force-sea-calculation
+                           force calculation of symmetry-equivalent atoms in any input mol2 structures (False)
+     --force-checkin       force check-in of any generated parameter files to the system library (False)
+     --loglevel LOGLEVEL   Log level; info, debug (info)
+
+
 The Basic Algorithm
 ^^^^^^^^^^^^^^^^^^^
 
@@ -185,4 +212,10 @@ Keyword             Type  Description
 
 Bond dicts:
 
+============= ======= ===========
 Keyword       Type    Description
+============= ======= ===========
+``atoms``     list    list with the two atom keys the comprise the bond
+``order``     float   bond order (currently not used; we let antechamber decide)
+============= ======= ===========
+
