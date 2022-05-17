@@ -1,21 +1,33 @@
-Title: FDE/DFDA thermoset
+Title: FDE-DFDA thermoset
+gmx_options: '-quiet -nobackup'
 initial_density: 300.0  # kg/m3
-SCUR_cutoff: 0.5 # nm
-conversion: 0.95
-chargemethod: gas  # bcc
-use_sea: [DFA, FDE]  # use symmetry-equivalency for any atoms in these molecules
+CURE_initial_search_radius: 0.5 # nm
+CURE_radial_increment: 0.25
+desired_conversion: 0.98
+late_treshhold: 0.85
+charge_method: gas  # only needed if parameterizing
+max_drag_stages: 0 
+drag_limit: 0.0 # nm
+drag_nvt_steps: 5000
+drag_npt_steps: 10000
+max_bond_relaxation_stages: 10
+relax_nvt_steps: 5000
+relax_npt_steps: 10000
+max_CURE_iterations: 50
+use_symmetry_equivalent_atoms: [DFA, FDE]
 reactions:
   - {
       name:     'Primary-to-secondary-amine',
       stage:     cure,
       reactants: {1: DFA, 2: FDE},
       product:   DFAFDE,
+      probability: 1.0,
       atoms: {
         A: {reactant: 1, resid: 1, atom: N1, z: 2},
         B: {reactant: 2, resid: 1, atom: C1, z: 1}
       },
       bonds: [
-        {atoms: [A, B], probability: 1.0}
+        {atoms: [A, B], order: 1}
       ]
     }
   - {
@@ -23,12 +35,13 @@ reactions:
       reactants: {1: DFAFDE, 2: FDE},
       product: DFAFDE2,
       stage: cure,
+      probability: 0.5,
       atoms: {
         A: {reactant: 1, resid: 1, atom: N1, z: 1},
         B: {reactant: 2, resid: 1, atom: C1, z: 1}
       },
       bonds: [
-        {atoms: [A, B], probability: 1.0}
+        {atoms: [A, B], order: 1}
       ]
     }
   - { 
@@ -36,18 +49,15 @@ reactions:
       reactants: {1: FDE},
       product: FDEC,
       stage: post-cure,
+      probability: 1.0,
       atoms: {
         A: {reactant: 1, resid: 1, atom: O1, z: 1},
         B: {reactant: 1, resid: 1, atom: C1, z: 1}
       },
       bonds: [
-        {atoms: [A, B], probability: 1.0}
-      ] # bonds of this type are searched for after SCUR iterations
+        {atoms: [A, B], order: 1}
+      ]
     }
 initial_composition:
-  - {molecule: FDE, count: 200}
-  - {molecule: DFA, count: 100}
-   #- {reactants: [DFA+FDE,FDE], probability: 0.5}
-#reactions: # reactants [base,other]
-#   - {reactants: [DFA,FDE], probability: 1.0}
-
+  - {molecule: FDE, count: 100}
+  - {molecule: DFA, count: 50}
