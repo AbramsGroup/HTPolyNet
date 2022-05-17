@@ -461,7 +461,7 @@ class HTPolyNet:
         raset=adf[adf['z']>0]
         bdf=pd.DataFrame({'ai':[],'aj':[]})
         for R in PCR:
-            assert len(R['reactants'])==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
+            assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
             logging.debug(f'*** BONDS from reaction {R.name}')
             for bond in R['bonds']:
                 A=R.atoms[bond['atoms'][0]]
