@@ -31,6 +31,27 @@ Installation of the HTPolyNet package gives access to the ``htpolynet`` command:
      --loglevel LOGLEVEL   Log level; info, debug (info)
 
 
+The ``info`` command gives some basic information of your HTPolyNet installation:
+
+.. code-block:: console
+
+    $ htpolynet info
+    This is some information on your installed version of HTPolyNet
+    Library System Directories:
+    /home/cfa/Git/HTPolyNet/Library/cfg
+    /home/cfa/Git/HTPolyNet/Library/mdp
+    /home/cfa/Git/HTPolyNet/Library/molecules
+    /home/cfa/Git/HTPolyNet/Library/molecules/inputs
+    /home/cfa/Git/HTPolyNet/Library/molecules/parameterized
+
+    Commands available for HTPolyNet to use:
+    antechamber (ver.   21.0) at /home/cfa/anaconda3/envs/py39/bin/antechamber     
+        tleap (ver.   21.0) at /home/cfa/anaconda3/envs/py39/bin/tleap           
+        parmchk2 (ver.   21.0) at /home/cfa/anaconda3/envs/py39/bin/parmchk2        
+            gmx (ver. 2021.2) at /usr/local/gromacs/bin/gmx                        
+
+The "Library" is a subpackage that provides some necessary and example inputs.  In particular, template ``mdp`` files for Gromacs are in the ``mdp`` directory.  In the ``molecules`` directory, the ``inputs`` subdirectory has a selection of ``mol2`` files for various monomers, while the ``parameterized`` subdirectory has ``top``, ``itp``, and ``sea`` files for molecules that have been previously parameterized during HTPolyNet development.
+
 The Basic Algorithm
 ^^^^^^^^^^^^^^^^^^^
 
