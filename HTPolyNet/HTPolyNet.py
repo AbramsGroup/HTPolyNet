@@ -463,7 +463,7 @@ class HTPolyNet:
         for R in PCR:
             assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
             logging.debug(f'*** BONDS from reaction {R.name}')
-            for bond in R['bonds']:
+            for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
                 aname=A['atom']
@@ -482,9 +482,9 @@ class HTPolyNet:
                 Aset=Aset.sort_values(by='resNum')
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)&(raset['resNum'].isin(Aset['resNum']))]
                 Bset=Bset.sort_values(by='resNum')
-                Aset=Aset[Aset['resNum'].isin(Bset['resNum'])]
+                Aset=Aset[Aset['resNum'].isin(Bset['resNum'].to_list())]
                 assert Aset.shape[0]==Bset.shape[0],f'Error: no good tally of intramolecular reactive atoms'
-                assert all(Aset['resNum']==Bset['resNum']),f'Error: residue number mismatch in intramolecular reactions'
+                assert Aset['resNum'].equals(Bset['resNum']),f'Error: residue number mismatch in intramolecular reactions'
                 bonds={}
                 bonds['ai']=Aset['globalIdx']
                 bonds['aj']=Bset['globalIdx']
