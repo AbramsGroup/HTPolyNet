@@ -31,6 +31,7 @@ class HTPolyNet:
             raise RuntimeError('HTPolyNet requires a configuration file.')
         logging.info(f'Configuration: {cfgfile}')
         self.cfg=Configuration.read(os.path.join(pfs.root(),cfgfile))
+        software.set_gmx_preferences(self.cfg.parameters)
         self.TopoCoord=TopoCoord(system_name='htpolynet')
         self.cfg.parameters['restart']=restart
         if self.cfg.parameters['restart']:

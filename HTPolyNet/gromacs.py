@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from pytrr import GroTrrReader
 from HTPolyNet.command import Command
+import HTPolyNet.software as sw
 
 def insert_molecules(composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`
@@ -16,7 +17,6 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
         outName:  output filename basename.  If {outName}.gro exists,
                   insertions are made into it.
     '''
-    gmx_options=kwargs.get('gmx_options','')
     if type(boxSize)==int:
         boxSize=float(boxSize)
     if type(boxSize)==float:
@@ -28,13 +28,13 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
         if os.path.isfile(f'{outName}.gro'):
             logging.info(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
-            c=Command(f'gmx {gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
+            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
         else:
             ''' no final gro file yet; make it '''
-            c=Command(f'gmx {gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
+            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
         out,err=c.run()
         out+=err
-        logging.info(f'Output of "gmx insert-molecules"\n'+out)
+        logging.info(f'Output of "{sw.gmx} insert-molecules"\n'+out)
         if 'Added' in out:
             outlines=out.split('\n')
             for ol in outlines:
@@ -43,7 +43,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
                     numadded=int(tokens[1])
                     break
             if numadded!=num:
-                logging.error(f'gmx insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your boxsize.')
+                logging.error(f'{sw.gmx} insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your boxsize.')
                 raise Exception('need bigger box')
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
@@ -53,33 +53,31 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
         out: prefix for desired output files
         boxsize: (optional) desired box size; triggers editconf before grompp
     '''
-    gmx_options=kwargs.get('gmx_options','')
     if gro=='' or top=='' or out=='' or mdp=='':
         raise Exception('grompp_and_run requires gro, top, out, and mdp filename prefixes.')
     if len(boxSize)>0:
-        c=Command('gmx -quiet editconf -quiet',f=f'{gro}.gro',o=gro,
+        c=Command(f'{sw.gmx} {sw.gmx_options} editconf',f=f'{gro}.gro',o=gro,
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         c.run()
     maxwarn=kwargs.get('maxwarn',2)
     nsteps=kwargs.get('nsteps',-2)
     rdd=kwargs.get('rdd',0)
-    c=Command(f'gmx {gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
+    c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run()
-    c=Command(f'gmx {gmx_options} mdrun',deffnm=out,rdd=rdd,nsteps=nsteps)
+    c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd,nsteps=nsteps)
     c.run()
     if os.path.exists(f'{out}.gro'):
         pass
         # logging.info(f'grompp_and_run completed.  Check {gro}.gro.')
     else:
-        logging.error(f'gmx mdrun ended prematurely; {gro}.gro not found.')
-        raise Exception(f'gmx mdrun ended prematurely; {gro}.gro not found.')
+        logging.error(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
+        raise Exception(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
 
 def get_energy_menu(edr,**kwargs):
     assert os.path.exists(edr+'.edr'),f'Error: {edr} not found'
-    gmx_options=kwargs.get('gmx_options','')
     with open('_menugetter_','w') as f:
         f.write('\n')
-    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < _menugetter_ > _menu_ 2>&1')
+    c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < _menugetter_ > _menu_ 2>&1')
     c.run(ignore_codes=[1,2])
     with open('_menu_','r') as f:
         lines=f.read().split('\n')
@@ -99,7 +97,6 @@ def get_energy_menu(edr,**kwargs):
 def gmx_energy_trace(edr,names=[],**kwargs):
     assert os.path.exists(edr+'.edr'),f'Error: {edr}.edr not found'
     assert len(names)>0,f'Nothing to plot'
-    gmx_options=kwargs.get('gmx_options','')
     xshift=kwargs.get('xshift',0)
     menu=get_energy_menu(edr)
     with open('gmx.in','w') as f:
@@ -108,7 +105,7 @@ def gmx_energy_trace(edr,names=[],**kwargs):
                 f.write(f'{menu[i]}\n')
             f.write('\n')
     if any([i in menu for i in names]):
-        c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
+        c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
         c.run()
         data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None)
         data.iloc[:,0]+=xshift
@@ -121,12 +118,11 @@ def gmx_energy_trace(edr,names=[],**kwargs):
         return pd.DataFrame()
         
 def density_trace(edr='',**kwargs):
-    gmx_options=kwargs.get('gmx_options','')
     if edr=='':
         raise Exception('density_trace requires an edr filename prefix.')
     with open('gmx.in','w') as f:
         f.write('22\n\n')
-    c=Command(f'gmx {gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
+    c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
     c.run()
     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
