@@ -395,7 +395,7 @@ class HTPolyNet:
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-                logging.debug(f'Current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
+                logging.info(f'Current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
                 conversion_reached=curr_conversion>desired_conversion
                 iterations_exceeded=CP.iter>=maxiter
                 cure_finished = conversion_reached or iterations_exceeded
