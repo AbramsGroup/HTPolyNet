@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>User Guide &#8212; HTPolyNet 0.0.1 documentation</title>
+    <title>The Algorithm &#8212; HTPolyNet 0.0.1 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
@@ -15,8 +15,8 @@
     <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Usage" href="usage.html" />
-    <link rel="prev" title="Installation and Prerequisites" href="../install.html" />
+    <link rel="next" title="Important Things to Know" href="things-to-know.html" />
+    <link rel="prev" title="Usage" href="usage.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -33,22 +33,15 @@
 
           <div class="body" role="main">
             
-  <section id="user-guide">
-<h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">The Algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration-files.html">Configuration Files</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration-files.html#htpolynet-parameters">HTPolyNet parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration-files.html#chemistry-parameters">Chemistry parameters</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="molecular-structure-inputs.html">Molecular Structure Inputs</a></li>
-</ul>
-</div>
+  <section id="the-algorithm">
+<h1>The Algorithm<a class="headerlink" href="#the-algorithm" title="Permalink to this headline">¶</a></h1>
+<p>HTPolyNet produces Gromacs topology and coordinate files for amorphous, crosslinked polymer systems following the basic steps below.</p>
+<ol class="arabic simple">
+<li><p>If necessary, GAFF-parameterize any input monomers, and build any intermediate molecules dictated by the polymerization chemistry and GAFF-parameterize those.  Outputs of parameterizations are typically saved in a Library so that repeated parameterizations are not done.</p></li>
+<li><p>Based on a specified composition, generate an initial simulation box, and equilibrate it to a liquid-like density.</p></li>
+<li><p>Perform CURE (Connect-Update-Relax-Equilibrate) iterations to introduce intermonomer bonds according to the input chemistry until a desired conversion is met or an execution threshhold is reached.</p></li>
+<li><p>Finalize by performing any requested post-cure chemistry.</p></li>
+</ol>
 </section>
 
 
@@ -71,9 +64,9 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">User Guide</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="usage.html">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithm.html">The Algorithm</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">The Algorithm</a></li>
 <li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="molecular-structure-inputs.html">Molecular Structure Inputs</a></li>
@@ -86,8 +79,10 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="../install.html" title="previous chapter">Installation and Prerequisites</a></li>
-      <li>Next: <a href="usage.html" title="next chapter">Usage</a></li>
+  <li><a href="index.html">User Guide</a><ul>
+      <li>Previous: <a href="usage.html" title="previous chapter">Usage</a></li>
+      <li>Next: <a href="things-to-know.html" title="next chapter">Important Things to Know</a></li>
+  </ul></li>
   </ul></li>
 </ul>
 </div>
@@ -121,7 +116,7 @@
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
-      <a href="../_sources/user-guide/index.rst.txt"
+      <a href="../_sources/user-guide/algorithm.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
