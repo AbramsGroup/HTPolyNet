@@ -1,0 +1,6 @@
+source leaprc.gaff 
+SUS = loadmol2 STY-STY2-type.mol2 
+check SUS
+loadamberparams STY-STY2-type.frcmod 
+saveamberparm SUS STY-STY2-type.top STY-STY2-type.crd 
+quit

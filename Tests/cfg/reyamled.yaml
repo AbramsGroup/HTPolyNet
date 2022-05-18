@@ -1,0 +1,85 @@
+SCUR_cutoff: 0.5
+Title: FDE/DFDA thermoset
+chargemethod: gas
+conversion: 0.95
+initial_composition:
+- count: 400
+  molecule: FDE
+- count: 200
+  molecule: DFA
+initial_density: 300.0
+late_treshhold: 0.85
+max_SCUR_iterations: 25
+max_bond_relaxation_stages: 10
+reactions:
+- atoms:
+    A:
+      atom: N1
+      reactant: 1
+      resid: 1
+      z: 2
+    B:
+      atom: C1
+      reactant: 2
+      resid: 1
+      z: 1
+  bonds:
+  - atoms:
+    - A
+    - B
+    order: 1
+  name: Primary-to-secondary-amine
+  probability: 1.0
+  product: DFAFDE
+  reactants:
+    1: DFA
+    2: FDE
+  stage: cure
+- atoms:
+    A:
+      atom: N1
+      reactant: 1
+      resid: 1
+      z: 1
+    B:
+      atom: C1
+      reactant: 2
+      resid: 1
+      z: 1
+  bonds:
+  - atoms:
+    - A
+    - B
+    order: 1
+  name: Secondary-to-tertiary-amine
+  probability: 0.5
+  product: DFAFDE2
+  reactants:
+    1: DFAFDE
+    2: FDE
+  stage: cure
+- atoms:
+    A:
+      atom: O1
+      reactant: 1
+      resid: 1
+      z: 1
+    B:
+      atom: C1
+      reactant: 1
+      resid: 1
+      z: 1
+  bonds:
+  - atoms:
+    - A
+    - B
+    order: 1
+  name: Oxirane-formation
+  probability: 1.0
+  product: FDEC
+  reactants:
+    1: FDE
+  stage: post-cure
+use_sea:
+- DFA
+- FDE

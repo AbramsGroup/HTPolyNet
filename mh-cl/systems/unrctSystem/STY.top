@@ -1,8 +1,0 @@
-[ defaults ]
-1               2               yes             0.5          0.83333333  
-; Include
-#include "STY.itp"
-[ system ]
-Generic title
-[ molecules ]
-STY                  1
