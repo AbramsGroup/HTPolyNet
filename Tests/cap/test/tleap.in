@@ -1,6 +1,0 @@
-source leaprc.gaff
-SUS = loadmol2 FDE-capped-minimized-parameterized.mol2
-check SUS
-loadamberparams FDE-capped-minimized-parameterized.frcmod
-saveamberparm SUS FDE-capped-minimized-parameterized-tleap.top FDE-capped-minimized-parameterized-tleap.crd
-quit

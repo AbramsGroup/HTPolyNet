@@ -1,1 +1,0 @@
-## Example configurations for HTPolyNet

@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Installation and Prerequisites &#8212; HTPolyNet 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="User Guide" href="user-guide/index.html" />
+    <link rel="prev" title="HTPolyNet" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="installation-and-prerequisites">
+<h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this headline">¶</a></h1>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Because HTPolyNet is under active development, it is best to clone the repository from Github and then
+pip install as in:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone git@github.com:AbramsGroup/HTPolyNet.git
+<span class="gp">$ </span><span class="nb">cd</span> HTPolyNet
+<span class="gp">$ </span>pip install -e .
+</pre></div>
+</div>
+</section>
+<section id="software-prequisites">
+<h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
+<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed.</p>
+<ul>
+<li><p><a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>. You have at least two options:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>conda:  <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-force</span> <span class="pre">ambertools</span></code> installs precompiled executables into your conda environment</p></li>
+<li><p>compile from source (requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>):</p></li>
+</ul>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar jxf AmberTools21.tar.bz2
+<span class="gp">$ </span><span class="nb">cd</span> amber_src
+<span class="gp">$ </span>./configure --no-X11 --skip-python gnu
+<span class="gp">$ </span><span class="nb">source</span> amber.sh
+<span class="gp">$ </span>make install
+</pre></div>
+</div>
+<p>Either of these approaches should provide access to <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code>.</p>
+</div></blockquote>
+</li>
+<li><p><a class="reference external" href="https://manual.gromacs.org/documentation/current/index.html">Gromacs</a>.  You likely have at least two options:</p>
+<blockquote>
+<div><ul>
+<li><p>your linux package manager</p></li>
+<li><p>compile from source:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar xfz gromacs-2022.1.tar.gz
+<span class="gp">$ </span><span class="nb">cd</span> gromacs-2022.1
+<span class="gp">$ </span>mkdir build
+<span class="gp">$ </span><span class="nb">cd</span> build
+<span class="gp">$ </span>cmake ..  -DGMX_BUILD_OWN_FFTW<span class="o">=</span>ON -DREGRESSIONTEST_DOWNLOAD<span class="o">=</span>ON -DGMX_MPI<span class="o">=</span>on -DGMX_GPU<span class="o">=</span>on -DCMAKE_INSTALL_PREFIX<span class="o">=</span>/usr/local/gromacs-2022.1
+<span class="gp">$ </span>make
+<span class="gp">$ </span>make check
+<span class="gp">$ </span>sudo make install
+</pre></div>
+</div>
+<p>And add to <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /usr/local/gromacs-2022.1/bin/GMXRC</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and Prerequisites</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#software-prequisites">Software Prequisites</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference-guide/index.html">Reference Guide</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">HTPolyNet</a></li>
+      <li>Next: <a href="user-guide/index.html" title="next chapter">User Guide</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/install.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
