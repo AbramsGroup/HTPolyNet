@@ -413,12 +413,13 @@ class HTPolyNet:
             CP.write_checkpoint(self,CPstate.finished,'7-final')
 
     def post_CURE(self,CP):
+        cwd=pfs.go_to(f'systems/post-cure')
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         if CP.state==CPstate.post_cure:
             CP.read_checkpoint(self)
             ''' perform any post-cure reactions '''
             bdf=self.post_cure_searchbonds()
-            logging.debug(f'post_CURE bdf\n{bdf.to_string()}')
+            # logging.debug(f'post_CURE bdf\n{bdf.to_string()}')
             if bdf.shape[0]>0:
                 CP.register_bonds(bdf,bonds_are='unrelaxed')
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
