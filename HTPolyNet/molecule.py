@@ -379,7 +379,8 @@ class Molecule:
                 inst_idx=r['globalIdx_instance']
                 # logging.debug(f't {temp_idx} <-> i {inst_idx}')
                 inst2temp[inst_idx]=temp_idx
-                assert not temp_idx in temp2inst,f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug'
+                if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
+                    raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')
                 temp2inst[temp_idx]=inst_idx
         assert len(inst2temp)==len(temp2inst),f'Error: could not establish two-way dict of atom globalIdx'
         return (inst2temp,temp2inst)

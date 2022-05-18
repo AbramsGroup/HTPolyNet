@@ -408,7 +408,7 @@ class HTPolyNet:
                 CP.set_state(CPstate.post_cure)
         
         self.post_CURE(CP)
-        if CP.state==CP.finished:
+        if CP.state==CPstate.finished:
             CP.read_checkpoint(self)
             CP.write_checkpoint(self,CPstate.finished,'7-final')
 
@@ -418,6 +418,7 @@ class HTPolyNet:
             CP.read_checkpoint(self)
             ''' perform any post-cure reactions '''
             bdf=self.post_cure_searchbonds()
+            logging.debug(f'post_CURE bdf\n{bdf.to_string()}')
             if bdf.shape[0]>0:
                 CP.register_bonds(bdf,bonds_are='unrelaxed')
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
@@ -460,7 +461,7 @@ class HTPolyNet:
         logging.debug(f'Executing {len(PCR)} post-cure reactions')
         adf=self.TopoCoord.gro_DataFrame('atoms')
         raset=adf[adf['z']>0]
-        bdf=pd.DataFrame({'ai':[],'aj':[]})
+        bdf=pd.DataFrame()
         for R in PCR:
             assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
             logging.debug(f'*** BONDS from reaction {R.name}')
@@ -485,11 +486,14 @@ class HTPolyNet:
                 Bset=Bset.sort_values(by='resNum')
                 Aset=Aset[Aset['resNum'].isin(Bset['resNum'].to_list())]
                 assert Aset.shape[0]==Bset.shape[0],f'Error: no good tally of intramolecular reactive atoms'
-                assert Aset['resNum'].equals(Bset['resNum']),f'Error: residue number mismatch in intramolecular reactions'
-                bonds={}
-                bonds['ai']=Aset['globalIdx']
-                bonds['aj']=Bset['globalIdx']
-                bdf=pd.concat((bdf,bonds),ignore_index=True)
+                # logging.info(f'Aset\n{Aset["resNum"].to_string()}')
+                # logging.info(f'Bset\n{Aset["resNum"].to_string()}')
+                Aresids=Aset['resNum'].to_list()
+                Bresids=Bset['resNum'].to_list()
+                assert all([x==y for x,y in zip(Aresids,Bresids)]),f'Error: residue number mismatch in intramolecular reactions'
+                tbdf=pd.DataFrame({'ai':Aset['globalIdx'].to_list(),'aj':Bset['globalIdx'].to_list(),'reactantName':[R.product for _ in range(Aset.shape[0])]})
+                bdf=pd.concat((bdf,tbdf),ignore_index=True)
+                # logging.debug(f'bdf\n{bdf.to_string()}')
         return bdf
 
     def set_system(self,CP):
