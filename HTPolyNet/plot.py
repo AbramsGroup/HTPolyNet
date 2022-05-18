@@ -2,8 +2,12 @@ from HTPolyNet.gromacs import *
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
+import logging
 
 def trace(qtys,edrs,outfile='plot.png',**kwargs):
+
+    # disable debug-level logging and above since matplotlib has a lot of debug statements
+    logging.disable(logging.DEBUG)
     df=pd.DataFrame()
     cmapname=kwargs.get('colormap','plasma')
     cmap=cm.get_cmap(cmapname)
@@ -29,3 +33,7 @@ def trace(qtys,edrs,outfile='plot.png',**kwargs):
             beg=chkpt[seg]
     plt.legend()
     plt.savefig(outfile)
+
+    # re-establish previous logging level
+    logging.disable(logging.NOTSET)
+
