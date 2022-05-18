@@ -1,8 +1,9 @@
-#import importlib.resources
-import HTPolyNet.projectfilesystem as pfs
-import logging
+import importlib.resources
+import os
+package='Library'
+x=importlib.resources.contents(package)
+for g in x:
+    print(g)
+with importlib.resources.path(package,'__init__.py') as f:
+    print(os.path.abspath(f))
 
-logging.basicConfig(filename='test.log',encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=logging.DEBUG)
-
-pfs.pfs_setup(mock=True)
-pfs.checkout('molecules/parameterized/KENLAUSUCKS.mol2')

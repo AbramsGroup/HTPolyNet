@@ -8,25 +8,24 @@ import importlib.resources
 class RuntimeLibrary:
     ''' a library object -- default creation references the Library resource package. '''
     def __init__(self):
-        self.alldirs=[]
-        self.allfiles=[]
-        self.designation='Empty'
-    
+        self.root=''
+        self.subdirs=[]
+
     @classmethod
-    def system(cls,libpackage='Library',verbose=False):
+    def system(cls,libpackage='Library'):
         inst=cls()
         inst.designation='System'
         inst.package=libpackage
         try:
-            tt=importlib.resources.files(inst.package)
+            with importlib.resources.path(libpackage,'__init__.py') as f:
+                inst.root=os.path.split(os.path.abspath(f))[0]
+            subdirs=os.listdir(inst.root)
+            for xxx in ['__init__.py','__pycache__','README.md']:
+                subdirs.remove(xxx)
+            inst.subdirs=[os.path.join(inst.root,xxx) for xxx in subdirs]
         except:
             raise ImportError(f'Could not find package {libpackage}.  Your HTPolyNet installation is corrupt.')
-        # make flat lists of absolute paths for all files
-        for n in tt.iterdir():
-            inst.allfiles.extend(inst._frec(n))
-            inst.alldirs.extend(inst._drec(n))
-        inst.root=os.path.commonpath(inst.alldirs)
-        logging.info(inst.info(verbose=verbose))
+        logging.info(inst.info())
         return inst
 
     @classmethod
@@ -35,32 +34,12 @@ class RuntimeLibrary:
         tt=os.path.abspath(pathname)
         assert tt.is_dir(),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
-        inst.designation='User'
         inst.root=tt
+        for x in ['__init__.py', 'README.md', '__pycache__']:
+            if x in tt:
+                tt.remove(x)
+        inst.subdirs=[x for x in tt if os.path.isdir(x)]
         return inst
-
-    def _frec(self,n):
-        if n.is_file():
-            return [n]
-        elif n.is_dir():
-            ret=[]
-            for m in n.iterdir():
-                ret.extend(self._frec(m))
-            return ret
-        else:
-            return []
-
-    def _drec(self,n):
-        if n.is_dir():
-            if '__pycache__' not in str(n):
-                ret=[n]
-                for m in n.iterdir():
-                    ret.extend(self._drec(m))
-                return ret
-            else:
-                return []
-        else:
-            return []
 
     def checkin(self,filename,overwrite=False):
         ''' filename must be a fully resolved pathname under the 
@@ -93,15 +72,16 @@ class RuntimeLibrary:
         fullfilename=os.path.join(self.root,filename)
         return os.path.exists(fullfilename)
 
-    def info(self,verbose=False):
-        retstr=f'Library {self.designation} Directories:\n'
-        for d in self.alldirs:
-            retstr+=f'   {d}\n'
-        if verbose:
-            retstr+=f'Library {self.designation} Files:\n'
-            for f in self.allfiles:
-                retstr+=f'    {f}\n'
+    def info(self):
+        retstr=f'System libraries are under {self.root}\n'
         return retstr
+
+_SYSTEM_LIBRARY_=None
+def lib_setup():
+    global _SYSTEM_LIBRARY_
+    if _SYSTEM_LIBRARY_==None:
+        _SYSTEM_LIBRARY_=RuntimeLibrary.system()
+    return _SYSTEM_LIBRARY_
 
 class ProjectFileSystem:
     def __init__(self,root='.',topdirs=['molecules','systems','plots'],verbose=False,reProject=False,userlibrary=None,mock=False):
@@ -112,7 +92,8 @@ class ProjectFileSystem:
         if not mock:
             self._next_project_dir(reProject=reProject)
             self._setup_project_dir(topdirs=topdirs)
-        self.library=RuntimeLibrary.system()
+        
+        self.library=lib_setup()
         self.userlibrary=None
         if userlibrary:
             self.userlibrary=RuntimeLibrary.user(userlibrary)
@@ -152,6 +133,8 @@ class ProjectFileSystem:
             self.projSubPaths[tops]=os.path.join(self.projPath,tops)
             if not os.path.isdir(self.projSubPaths[tops]):
                 os.mkdir(tops)
+
+
 
 _PFS_=None
 

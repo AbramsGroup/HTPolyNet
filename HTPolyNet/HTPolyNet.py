@@ -644,7 +644,8 @@ class HTPolyNet:
 
 def info():
     print('This is some information on your installed version of HTPolyNet')
-    pfs.info()
+    l=pfs.lib_setup()
+    print(l.info())
     software.info()
 
 def cli():
@@ -667,18 +668,19 @@ def cli():
     loglevel_numeric=getattr(logging, loglevel.upper())
     if os.path.exists(args.log):
         shutil.copyfile(args.log,args.log+'.bak')
-    logging.basicConfig(filename=args.log,encoding='utf-8',filemode='w',format='%(asctime)s %(message)s',level=loglevel_numeric)
+    logging.basicConfig(filename=args.log,filemode='w',format='%(asctime)s %(message)s',level=loglevel_numeric)
     logging.info('HTPolyNet runtime begins.')
     ''' set up the project file system and access to HTPolyNet libraries '''
     userlib=None
     if args.lib!='':
         userlib=args.lib
-    pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
+    
     software.sw_setup()
 
     if args.command=='info':
         info()
     elif args.command=='run':
+        pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
         a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
         a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization,force_sea_calculation=args.force_sea_calculation)
     else:
