@@ -42,8 +42,6 @@ class Segment:
         self.P=P.copy()
         # will need to recompute this when molecules are shifted
         self.V=self.P[1]-self.P[0] # p1=p0+t*(p1-p0)
-    def length(self):
-        return np.sqrt(np.sum(self.P[0]-self.P[1]))
 
 class Ring:
     def __init__(self,P):
@@ -79,6 +77,8 @@ class Ring:
         # n[0]*(x-O[0])+n[1]*(y-O[1])+n[2]*(z-O[2])=0
         # n[0]*x + n[1]*y + n[2]*z - (n[0]*O[0]+n[1]*O[1]+n[2]*O[2]) = 0
         self.d=-np.dot(self.n,self.O)
+    def __str__(self):
+        return str(self.V)
     def self_planarize(self):
         # projects points in P into plane -> vP
         self.vP=[]

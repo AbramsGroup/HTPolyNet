@@ -614,6 +614,19 @@ class TopoCoord:
             zsrs.append(z)
         self.set_gro_attribute('z',zsrs)
 
+    def label_ring_atoms(self):
+        cycles=self.ring_detector()
+        adf=self.gro_DataFrame('atoms')
+        self.set_gro_attribute('cycle-idx',np.zeros(adf.shape[0]).astype(int))
+        cidx=1
+        for l,cl in cycles.items():
+            for c in cl:
+                for idx in c:
+                    self.set_gro_attribute_by_attributes('cycle-idx',cidx,{'globalIdx':idx})
+                cidx+=1
+        # logging.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
+
+
     def analyze_sea_topology(self):
         """Checks for consistency of atom type, charge, and mass for all atoms in each      
             symmetry class.  If consistency is lacking, logs a warning.

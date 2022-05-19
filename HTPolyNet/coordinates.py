@@ -288,21 +288,19 @@ class Coordinates:
     def unwrap(self,P,O,pbc):
         ''' shift all points in P so that all are CPI* to point O
             *CPI=closest periodic image (unwrapped) '''
-        sP=[]
-        for p in P:
-            ROp=self.mic(O-p,pbc)
-            pp=O-ROp
-            sP.append(pp)
-        return np.array(sP)
+        ROp=self.mic(O-P,pbc)
+        pp=O-ROp
+        return pp
 
     def pierces(self,Ri,Rj,iC,pbc):
         C=iC[:,1:]
-        sC=self.unwrap(C,Ri,pbc)
-        S=Segment(np.array([Ri,Rj]))
+        Rjp=self.unwrap(Rj,Ri,pbc)
+        sC=np.array([self.unwrap(c,Ri,pbc) for c in C])
+        S=Segment(np.array([Ri,Rjp]))
         R=Ring(sC)
         R.analyze()
-        pierces,point=R.segint(S)
-        return pierces
+        do_it,point=R.segint(S)
+        return do_it
 
     def linkcellrings(self,Ri,Rj,discretization=0.2):
         ''' 
@@ -329,7 +327,7 @@ class Coordinates:
                     logging.debug(f'asking for linkcell-idx of atom {idx} failed!!')
                     logging.debug(f'{self.spew_atom({"globalIdx":idx})}')
                     logging.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
-                    raise Exception('why?')
+                    raise Exception(f'asking for linkcell-idx of atom {idx} failed!!')
                 lcids.append(rci)
             for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
                 cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
@@ -403,13 +401,12 @@ class Coordinates:
         return np.sqrt(Rij.dot(Rij))
 
     def mic(self,r,pbc):
-        for c in range(3):
-            if pbc[c]:
-                hbx=self.box[c][c]/2
-                if r[c]<-hbx:
-                    r[c]+=self.box[c][c]
-                elif r[c]>hbx:
-                    r[c]-=self.box[c][c]
+        for c in [i for i in pbc if pbc[i]]:
+            hbx=self.box[c][c]/2
+            if r[c]<-hbx:
+                r[c]+=self.box[c][c]
+            elif r[c]>hbx:
+                r[c]-=self.box[c][c]
         return r
 
     _nwrap=0

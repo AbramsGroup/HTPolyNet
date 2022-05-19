@@ -421,16 +421,7 @@ class Molecule:
         return ad,td,paird
 
     def label_ring_atoms(self):
-        cycles=self.TopoCoord.ring_detector()
-        adf=self.TopoCoord.gro_DataFrame('atoms')
-        self.TopoCoord.set_gro_attribute('cycle-idx',np.zeros(adf.shape[0]).astype(int))
-        cidx=1
-        for l,cl in cycles.items():
-            for c in cl:
-                for idx in c:
-                    self.TopoCoord.set_gro_attribute_by_attributes('cycle-idx',cidx,{'globalIdx':idx})
-                cidx+=1
-        # logging.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
+        self.TopoCoord.label_ring_atoms()
 
     def get_resname(self,internal_resid):
         # logging.debug(f'{self.name} sequence: {self.sequence}')

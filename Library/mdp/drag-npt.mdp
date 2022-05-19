@@ -1,5 +1,7 @@
 title       = NPT for dragging
 integrator  = md
+gen-vel     = yes
+gen-temp    = 300
 nsteps      = 20000
 dt          = 0.001
 nstxout     = 50             
