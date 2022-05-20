@@ -271,8 +271,20 @@ class Coordinates:
     def make_ringlist(self):
         self.ringlist=list(self.rings())
 
+    def make_ringdflist(self):
+        self.ringlist=list(self.ringdfs())
+
     def reindex_ringlist(self,idx_mapper):
         pass
+
+    def ringdfs(self):
+        a=self.A
+        for resid in a['resNum'].unique():
+            mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
+            if not mr.empty:
+                for ri in mr['cycle-idx'].unique():
+                    R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']]
+                    yield R
 
     def rings(self): # an iterator over all rings
         a=self.A
@@ -401,12 +413,13 @@ class Coordinates:
         return np.sqrt(Rij.dot(Rij))
 
     def mic(self,r,pbc):
-        for c in [i for i in pbc if pbc[i]]:
-            hbx=self.box[c][c]/2
-            if r[c]<-hbx:
-                r[c]+=self.box[c][c]
-            elif r[c]>hbx:
-                r[c]-=self.box[c][c]
+        for c in range(0,3):
+            if pbc[c]:
+                hbx=self.box[c][c]/2
+                if r[c]<-hbx:
+                    r[c]+=self.box[c][c]
+                elif r[c]>hbx:
+                    r[c]-=self.box[c][c]
         return r
 
     _nwrap=0

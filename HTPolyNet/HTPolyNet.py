@@ -313,6 +313,7 @@ class HTPolyNet:
                     nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=(current_conversion<late_threshold))
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
+                        CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                         CP.write_checkpoint(self,next_stage,prefix='0-connect')
                     else:
                         logging.debug(f'CURE iteration {CP.iter}: increasing bondsearch radius to {CP.radius+radial_increment}')
@@ -329,7 +330,7 @@ class HTPolyNet:
                 self.checkout('mdp/drag-em.mdp')
                 self.checkout('mdp/drag-nvt.mdp')
                 self.checkout('mdp/drag-npt.mdp')
-                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                # CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
                 for i in range(begin_dragstage,n_dragstages):
@@ -356,6 +357,7 @@ class HTPolyNet:
                 CP.read_checkpoint(self)
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
                 CP.current_stage=0
+                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 CP.write_checkpoint(self,CPstate.relax,prefix='2-update')
             if CP.state==CPstate.relax:
                 ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''
@@ -363,7 +365,7 @@ class HTPolyNet:
                 self.checkout('mdp/relax-em.mdp')
                 self.checkout('mdp/relax-nvt.mdp')
                 self.checkout('mdp/relax-npt.mdp')
-                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                # CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)

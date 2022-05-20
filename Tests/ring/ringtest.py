@@ -31,6 +31,10 @@ L=np.zeros(3,dtype=int)
 L[0]=-0.75*B[0]
 c.translate(L)
 c.wrap_coords()
+c.make_ringlist()
+R=Ring(c.Coordinates.ringlist[1][:,1:])
+R.analyze()
+print(R)
 # c.write_gro('pierced-wrapped.gro')
 
 i=c.Coordinates.A.shape[0]-1

@@ -91,6 +91,7 @@ class Checkpoint:
     def write_checkpoint(self,system,state,prefix='checkpoint'):
         self.state=state
         self.top,self.gro,self.grx=[prefix+x for x in ['.top','.gro','.grx']]
+        self.bonds_file=prefix+'-bonds.csv'
         system.register_system(CP=self)
         with open(self.checkpoint_file,'w') as f:
             f.write(f'ITERATION: {self.iter}\n')
