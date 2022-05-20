@@ -120,6 +120,9 @@ class Linkcell:
         xc=C[0]*nc[1]*nc[2]+C[1]*nc[1]+C[2]
         return xc
 
+    def cellndx_of_ldx(self,i):
+        return self.cellndx[i]
+
     def populate_par(self,adf):
         """populate_par populate the linkcell structure by setting the "linkcell-idx" attribute of each atom in the coordinates dataframe adf
 
@@ -234,6 +237,13 @@ class Linkcell:
                 elif nCi[d]==-1:
                     nCi[d]=self.ncells[d]-1
                 retlist.append(nCi)
+        return retlist
+
+    def searchlist_of_ldx(self,i):
+        retlist=[i]
+        C=self.cellndx(i)
+        for c in self.neighbors_of_cellndx(C):
+            retlist.append(self.ldx_of_cellndx(c))
         return retlist
 
     def are_cellndx_neighbors(self,Ci,Cj):

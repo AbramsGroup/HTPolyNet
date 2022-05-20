@@ -645,7 +645,7 @@ class TopoCoord:
                 if not chk:
                     logging.warning(f'Warning: atoms in symmetry class {i} have different values of {attr}')
 
-    def linkcell_initialize(self,cutoff,ncpu=1):
+    def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=False):
         """Initialize the linkcell structure; a wrapper for Coordinates
 
         :param cutoff: minimum value of cell side-length
@@ -653,7 +653,7 @@ class TopoCoord:
         :param ncpu: number of processors to use in populating linkcell structure in parallel, default 1
         :type ncpu: int
         """
-        self.Coordinates.linkcell_initialize(cutoff,ncpu=ncpu)
+        self.Coordinates.linkcell_initialize(cutoff,ncpu=ncpu,populate=True,force_repopulate=force_repopulate)
 
     def atom_count(self):
         """Check to be sure the Coordinate and Topology members contain the same number of 

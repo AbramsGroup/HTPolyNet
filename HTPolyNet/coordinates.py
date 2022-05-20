@@ -9,7 +9,7 @@ from copy import deepcopy
 import os
 #import hashlib
 import logging
-
+from itertools import product
 
 from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.linkcell import Linkcell
@@ -376,7 +376,91 @@ class Coordinates:
                 return C
         return False
 
-    def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False):
+    def ringpierce_testing(self,Ri,Rj,pbc):
+        for C in self.linkcellrings_testing(Ri,Rj):
+            if self.pierces(Ri,Rj,C,pbc):
+                # logging.debug(f'\n{C}')
+                return C
+        return False
+
+    def linkcellrings_testing(self,Ri,Rj,discretization=0.2):
+        Rij=Ri-Rj
+        low=any(Rij<-0.5*self.box.diagonal())
+        high=any(Rij>0.5*self.box.diagonal())
+        if low or high:
+            logging.debug(f'linkcellrings: Ri {Ri} and Rj {Rj} are not nearest images')
+            Rij=self.mic(Rij)
+        rij=np.sqrt(Rij.dot(Rij))
+        nip=int(rij/discretization)
+        if nip==1:
+            nip=2
+        # logging.debug(f'rij {rij} discretization {discretization} => nip {nip}')
+
+        # lay points along the bond vector from Ri to Rj, inclusive and save linear
+        # cell index of each to bcids
+        bcids=[]
+        for p in np.linspace(Ri,Rj,nip):
+            cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
+            if not cpi in bcids:
+                bcids.append(cpi)
+        # logging.debug(f'bcids {bcids}')
+        nearby_rings=np.array([])
+        adf=self.A
+        R=pd.DataFrame()
+        for bc in bcids:
+            for lc in self.linkcell.searchlist_of_ldx(bc):
+                r=adf[(adf['globalIdx'].isin(self.linkcell.memberlists[lc]))&(adf['cycle-idx']>0)]['resNum','cycle-idx'].copy()
+                R=pd.concat((R,r),ignore_index=True)
+        ### UNDER CONSTRUCTION
+        # find all atoms with cycle-idx > 0 within these cells or any neighboring cells
+        # for each, resolve its ring -> add to list of nearby rings
+        # loop over nearby rings and check for piercing
+        
+        collisions=0
+        total_rings=0
+
+        for C in self.ringlist:
+            total_rings+=1
+            #logging.debug(f'ring\n{C}')
+            lcids=[]
+            for ci in C:
+                idx=int(ci[0])
+                # logging.debug(f'asking for linkcell-idx of atom {idx}')
+                try:
+                    rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
+                except:
+                    logging.debug(f'asking for linkcell-idx of atom {idx} failed!!')
+                    logging.debug(f'{self.spew_atom({"globalIdx":idx})}')
+                    logging.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
+                    raise Exception(f'asking for linkcell-idx of atom {idx} failed!!')
+                lcids.append(rci)
+            # logging.debug(f'lcids {lcids}')
+            is_near=False
+            for cc in product(lcids,bcids):
+                lc,bc=cc
+                if self.linkcell.are_ldx_neighbors(lc,bc):
+                    is_near=True
+                    break
+            if is_near:
+                if nearby_rings.size==0:
+                    nearby_rings=np.array([C])
+                else:
+                    is_in_list=np.all(np.any(C==nearby_rings,axis=0))
+                    if not is_in_list:
+                        nearby_rings=np.append(nearby_rings,np.array([C]),axis=0)
+                    else:
+                        collisions+=1
+        # logging.debug(f'nearby_rings {nearby_rings}')
+        return nearby_rings
+
+    def ringpierce_exhaustive(self,Ri,Rj,pbc):
+        for C in self.rings():
+            if self.pierces(Ri,Rj,C,pbc):
+            # logging.debug(f'\n{C}')
+                return C
+        return False
+
+    def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False,save=True):
         logging.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
@@ -386,7 +470,8 @@ class Coordinates:
                 self.read_atomset_attributes(lc_file)
             else:
                 self.linkcell.populate(self,ncpu=ncpu)
-                self.write_atomset_attributes(['linkcell-idx'],lc_file)
+                if save:
+                    self.write_atomset_attributes(['linkcell-idx'],lc_file)
 
     def linkcelltest(self,i,j):
         ''' return True if atoms i and j are within potential interaction

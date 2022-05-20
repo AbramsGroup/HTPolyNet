@@ -12,9 +12,9 @@ c.label_ring_atoms()
 c.make_ringlist()
 R=Ring(c.Coordinates.ringlist[1][:,1:])
 R.analyze()
-print(R)
-print(f'origin {R.O}')
-print(f'normal {R.n}')
+#print(R)
+#print(f'origin {R.O}')
+#print(f'normal {R.n}')
 S=Segment([R.O+0.25*R.n,R.O-0.25*R.n])
 print(f'segint {R.segint(S)}')
 d.Coordinates.A.loc[0,['posX','posY','posZ']]=S.P[0]
@@ -22,19 +22,18 @@ d.Coordinates.A.loc[1,['posX','posY','posZ']]=S.P[1]
 d.Coordinates.A.loc[0,'cycle-idx']=0
 d.Coordinates.A.loc[1,'cycle-idx']=0
 c.merge(d)
-c.linkcell_initialize(0.5)
+#c.linkcell_initialize(0.5)
 
 c.write_gro('pierced.gro')
 
 B=c.Coordinates.box.diagonal().copy()
 L=np.zeros(3,dtype=int)
-L[0]=-0.75*B[0]
+L[0]=-0.85*B[0]
 c.translate(L)
 c.wrap_coords()
+c.linkcell_initialize(0.5,force_repopulate=True)
 c.make_ringlist()
-R=Ring(c.Coordinates.ringlist[1][:,1:])
-R.analyze()
-print(R)
+
 # c.write_gro('pierced-wrapped.gro')
 
 i=c.Coordinates.A.shape[0]-1
@@ -44,16 +43,17 @@ print(i,j)
 Ri=c.get_R(i)
 #Rj=c.get_R(j)
 Rjp=c.get_R(j)
-print(Rjp)
+print(f'Ri {Ri} Rjp {Rjp}')
 print(c.Coordinates.unwrap(Rjp,Ri,pbc))
 # Rij=c.Coordinates.mic(Ri-Rj,pbc)
 # rij=np.sqrt(Rij.dot(Rij))
 # generate the nearest periodic image of Rj to Ri
 # Rjp=Ri-Rij
 # return array of atom coordinates of ring pierced by this bond, if any
-C=c.Coordinates.ringpierce(Ri,Rjp,pbc)
+C=c.Coordinates.ringpierce_testing(Ri,Rjp,pbc)
 print(C)
 if type(C)==np.ndarray:  # this is a ring
+    print('PIERCE')
     # all this generate a special output file for inspection
     cidx=C[:,0].astype(int) # get globalIdx's
     idx=[i,j]
