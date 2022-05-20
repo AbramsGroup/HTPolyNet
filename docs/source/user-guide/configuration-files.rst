@@ -22,7 +22,7 @@ Parameter                          Type            Description (default)
 ``Title``                          str             Descriptive title
 ``gmx``                            str             ``gmx`` command (``gmx``(default) or ``gmx_mpi``)
 ``gmx_options``                    quoted string   options to pass to all ``gmx`` calls ('-quiet -nobackup')
-``mdrun``                          quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
+``gmx_mdrun``                      quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
 ``initial_density``                float           initial system density in kg/m3 (300.0)
 ``CURE_initial_search_radius``     float           initial capture radius in nm (0.5)
 ``CURE_radial_increment``          float           capture radius increment (0.25)

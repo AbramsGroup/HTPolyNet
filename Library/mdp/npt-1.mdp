@@ -38,7 +38,7 @@ pcoupl              = Berendsen     ; Pressure coupling on in NPT, also weak cou
 pcoupltype          = isotropic     ; uniform scaling of x-y-z box vectors
 tau_p               = 0.5           ; time constant, in ps
 ref_p               = 10.0
-compressibility     = 4.5e-5
+compressibility     = 1e-7
 refcoord_scaling    = com
 ; Periodic boundary conditions
 pbc     = xyz                   ; 3-D PBC
