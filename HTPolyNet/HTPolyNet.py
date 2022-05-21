@@ -281,9 +281,9 @@ class HTPolyNet:
         late_threshold=self.cfg.parameters.get('late_threshold',1.0)
         
         dragging=False
-        drag_limit_nm=self.cfg.parameters.get('drag_limit',0.3)
+        drag_limit_nm=self.cfg.parameters.get('drag_limit',0.0)
         n_dragstages=self.cfg.parameters.get('max_drag_stages',0)
-        if n_dragstages>0:
+        if n_dragstages>0 and drag_limit_nm>0.0:
             dragging=True
 
         curr_nxlinkbonds=0
