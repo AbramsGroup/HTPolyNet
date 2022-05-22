@@ -278,6 +278,7 @@ class HTPolyNet:
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.1)
         maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
+        bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0)
         late_threshold=self.cfg.parameters.get('late_threshold',1.0)
         
         dragging=False
@@ -346,7 +347,7 @@ class HTPolyNet:
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'-> avg new pair separation distance: {current_lengths.mean():.3f}')
+                    logging.debug(f'New restraints avg/min/max: {current_lengths.mean():.3f}/{current_lengths.min():.3f}/{current_lengths.max():.3f}')
                     CP.current_dragstage+=1
                 CP.current_dragstage-=1
                 self.TopoCoord.remove_restraints(CP.bonds)
@@ -365,7 +366,11 @@ class HTPolyNet:
                 self.checkout('mdp/relax-em.mdp')
                 self.checkout('mdp/relax-nvt.mdp')
                 self.checkout('mdp/relax-npt.mdp')
-                # CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                if bond_relaxation_increment>0.0:
+                    n_stages=int(CP.bonds['initial-distance-relax'].max()/bond_relaxation_increment)
+                    logging.debug(f'post-cure using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
+
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
@@ -380,7 +385,7 @@ class HTPolyNet:
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'-> avg new bond length: {current_lengths.mean():.3f}')
+                    logging.debug(f'New bonds avg/min/max: {current_lengths.mean():.3f}/{current_lengths.min():.3f}/{current_lengths.max():.3f}')
                     CP.current_stage+=1
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
@@ -417,6 +422,7 @@ class HTPolyNet:
     def post_CURE(self,CP):
         cwd=pfs.go_to(f'systems/post-cure')
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
+        bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0.0)
         if CP.state==CPstate.post_cure:
             CP.read_checkpoint(self)
             ''' perform any post-cure reactions '''
@@ -429,6 +435,9 @@ class HTPolyNet:
                 self.checkout('mdp/relax-nvt.mdp')
                 self.checkout('mdp/relax-npt.mdp')
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                if bond_relaxation_increment>0.0:
+                    n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
+                    logging.debug(f'post-cure using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)

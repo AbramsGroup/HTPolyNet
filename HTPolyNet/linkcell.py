@@ -205,7 +205,8 @@ class Linkcell:
         for C in self.cellndx:
             idx=self.ldx_of_cellndx(C)
             for D in self.neighbors_of_cellndx(C):
-                self.neighborlists[idx].append(self.ldx_of_cellndx(D))
+                if self.ldx_of_cellndx(D)!=idx:
+                    self.neighborlists[idx].append(self.ldx_of_cellndx(D))
 
     def make_memberlists(self,cdf):
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
@@ -227,23 +228,24 @@ class Linkcell:
     def neighbors_of_cellndx(self,Ci):
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
         retlist=[]
-        for d in range(3):
+        dd=np.array([-1,0,1])
+        for s in product(dd,dd,dd):
+            nCi=Ci+np.array(s)
             p=np.zeros(3).astype(int)
-            p[d]=1
-            for s in [-1,1]:
-                nCi=Ci+s*p
+            for d in range(3):
                 if nCi[d]==self.ncells[d]:
                     nCi[d]=0
                 elif nCi[d]==-1:
                     nCi[d]=self.ncells[d]-1
-                retlist.append(nCi)
+            retlist.append(nCi)
         return retlist
 
     def searchlist_of_ldx(self,i):
-        retlist=[i]
-        C=self.cellndx(i)
+        retlist=[]
+        C=self.cellndx[i]
         for c in self.neighbors_of_cellndx(C):
             retlist.append(self.ldx_of_cellndx(c))
+        assert len(retlist)==27,f'Error: not counting enough neighbor cells'
         return retlist
 
     def are_cellndx_neighbors(self,Ci,Cj):

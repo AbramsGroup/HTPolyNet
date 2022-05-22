@@ -53,13 +53,14 @@ Parameter                          Type            Description (default)
 Bond relaxation parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-===============================    ==============  =====================
-Parameter                          Type            Description (default)
-===============================    ==============  =====================
-``max_bond_relaxation_stages``     int             number of bond relaxation stages to perform
-``relax_nvt_steps``                int             number of MD steps for NVT relaxation 
-``relax_npt_steps``                int             number of MD steps for NPT relaxation 
-===============================    ==============  =====================
+=================================    ==============  =====================
+Parameter                            Type            Description (default)
+=================================    ==============  =====================
+``max_bond_relaxation_stages``       int             number of bond relaxation stages to perform
+``max_bond_relaxation_increment``    float           maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides ``max_bond_relaxation_stages``)
+``relax_nvt_steps``                  int             number of MD steps for NVT relaxation 
+``relax_npt_steps``                  int             number of MD steps for NPT relaxation 
+===============================++    ==============  =====================
 
 Chemistry parameters
 ''''''''''''''''''''

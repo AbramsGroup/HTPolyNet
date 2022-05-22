@@ -2,6 +2,7 @@ from http.cookiejar import CookiePolicy
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.ring import Ring, Segment
 import numpy as np
+import pandas as pd
 
 pbc=[1,1,1]
 
@@ -27,36 +28,37 @@ c.merge(d)
 c.write_gro('pierced.gro')
 
 B=c.Coordinates.box.diagonal().copy()
-L=np.zeros(3,dtype=int)
-L[0]=-0.85*B[0]
-c.translate(L)
-c.wrap_coords()
-c.linkcell_initialize(0.5,force_repopulate=True)
-c.make_ringlist()
+ntests=15
+for i in range(ntests):
+    L=np.random.random(3)*B
+    c.translate(L)
+    c.wrap_coords()
+    c.linkcell_initialize(0.5,force_repopulate=True)
+    c.make_ringdflist()
 
-# c.write_gro('pierced-wrapped.gro')
+    # c.write_gro('pierced-wrapped.gro')
 
-i=c.Coordinates.A.shape[0]-1
-j=c.Coordinates.A.shape[0]
+    i=c.Coordinates.A.shape[0]-1
+    j=c.Coordinates.A.shape[0]
 
-print(i,j)
-Ri=c.get_R(i)
-#Rj=c.get_R(j)
-Rjp=c.get_R(j)
-print(f'Ri {Ri} Rjp {Rjp}')
-print(c.Coordinates.unwrap(Rjp,Ri,pbc))
-# Rij=c.Coordinates.mic(Ri-Rj,pbc)
-# rij=np.sqrt(Rij.dot(Rij))
-# generate the nearest periodic image of Rj to Ri
-# Rjp=Ri-Rij
-# return array of atom coordinates of ring pierced by this bond, if any
-C=c.Coordinates.ringpierce_testing(Ri,Rjp,pbc)
-print(C)
-if type(C)==np.ndarray:  # this is a ring
-    print('PIERCE')
-    # all this generate a special output file for inspection
-    cidx=C[:,0].astype(int) # get globalIdx's
-    idx=[i,j]
-    idx.extend(cidx) # list of globalIdx's for this output
-    sub=c.Coordinates.subcoords(c.Coordinates.A[c.Coordinates.A['globalIdx'].isin(idx)].copy())
-    sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
+    Ri=c.get_R(i)
+    #Rj=c.get_R(j)
+    Rjp=c.get_R(j)
+    print(f'R{i} {Ri}\nR{j}p {Rjp}\nBox {B}')
+#    print(c.Coordinates.unwrap(Rjp,Ri,pbc))
+    # Rij=c.Coordinates.mic(Ri-Rj,pbc)
+    # rij=np.sqrt(Rij.dot(Rij))
+    # generate the nearest periodic image of Rj to Ri
+    # Rjp=Ri-Rij
+    # return array of atom coordinates of ring pierced by this bond, if any
+    C=c.Coordinates.ringpierce_testing(Ri,Rjp,pbc)
+    if type(C)==pd.DataFrame:  # this is a ring
+        print(C.to_string())
+        print('PIERCE')
+        # all this generate a special output file for inspection
+        cidx=C['globalIdx'].to_list()#C[:,0].astype(int) # get globalIdx's
+        idx=[i,j]
+        idx.extend(cidx) # list of globalIdx's for this output
+        sub=c.Coordinates.subcoords(c.Coordinates.A[c.Coordinates.A['globalIdx'].isin(idx)].copy())
+        sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
+    c.translate(-1*L)

@@ -292,7 +292,7 @@ class TopoCoord:
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
             pairs=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
             self.decrement_z(pairs)
-            self.make_ringlist()  # required because
+            self.make_ringlist()
             self.map_from_templates(ri_bdf,template_dict)
             self.Topology.null_check(msg='map_from_templates')
             self.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
@@ -549,6 +549,9 @@ class TopoCoord:
 
     def make_ringlist(self):
         self.Coordinates.make_ringlist()
+
+    # def make_ringdflist(self):
+    #     self.Coordinates.make_ringdflist()
 
     def adjust_charges(self,netcharge=0.0,msg=''):
         self.Topology.adjust_charges(desired_charge=netcharge,msg=msg)
