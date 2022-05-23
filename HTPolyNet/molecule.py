@@ -1,4 +1,4 @@
-from itertools import combinations_with_replacement, product
+from itertools import chain
 import os
 from copy import deepcopy
 from re import A
@@ -7,7 +7,7 @@ import numpy as np
 import logging
 
 from HTPolyNet.topocoord import TopoCoord
-
+from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import grompp_and_mdrun, analyze_sea
@@ -100,7 +100,7 @@ class Molecule:
         self.origin=None
         self.reaction_bonds=[]
         self.symmetry_relateds=[]
-
+        self.stereoisomers=[]
     # def __str__(self):
     #     restr=f'{self.name} '
     #     if not self.Topology:
@@ -590,3 +590,61 @@ class Molecule:
     def atoms_w_same_attribute_as(self,find_dict={},same_attribute='',return_attribute=''):
         att_val=self.TopoCoord.get_gro_attribute_by_attributes(same_attribute,find_dict)
         return self.TopoCoord.get_gro_attributelist_by_attributes(return_attribute,{same_attribute:att_val})
+
+    def flip_stereocenter(self,idx):
+        """flip_stereocenter Flips stereochemistry of atom at idx
+
+        :param idx: global index of atom
+        :type idx: int
+        """
+        TC=self.TopoCoord
+        A=TC.Coordinates.A
+        ligand_idx=self.TopoCoord.Topology.bondlist.partners_of(idx)
+        if len(ligand_idx)!=4:
+            logging.debug(f'Atom {idx} cannot be a stereocenter; it only has {len(ligand_idx)} ligands.')
+            return
+        # determine the two lightest ligands
+        branches={}
+        for n in ligand_idx:
+            bl=deepcopy(self.TopoCoord.Topology.bondlist)
+            branches[n]=bl.half_as_list([idx,n],3)
+        ligand_idx.sort(key=lambda x: len(branches[x]))
+        a=ligand_idx[0]
+        aset=list(set(list(chain.from_iterable(branches[a]))))
+        b=ligand_idx[1]
+        bset=list(set(list(chain.from_iterable(branches[b]))))
+        # translate origin to location of stereocenter
+        O=TC.get_R(idx)
+        TC.translate(-1*O)
+        rO=TC.get_R(idx)
+        ra=TC.get_R(a)
+        rb=TC.get_R(b)
+        adf=A[A['globalIdx'].isin(aset)]
+        bdf=A[A['globalIdx'].isin(bset)]
+        # rotate the two branches to swap them
+        rOa=rO-ra
+        rOa*=1.0/np.linalg.norm(rOa)
+        rOb=rO-rb
+        rOb*=1.0/np.linalg.norm(rOb)
+        cp=np.cross(rOa,rOb)
+        c=np.dot(rOa,rOb)
+        v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
+        v2=np.dot(v,v)
+        I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
+        R=I+v+v2/(1.+c)
+        _dfrotate(adf,R)
+        A.loc[A['globalIdx'].isin(aset),['posX','posY','posZ']]=adf[['posX','posY','posZ']]
+        cp=np.cross(rOb,rOa)
+        v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
+        v2=np.dot(v,v)
+        R=I+v+v2/(1.+c)
+        _dfrotate(bdf,R)
+        A.loc[A['globalIdx'].isin(bset),['posX','posY','posZ']]=bdf[['posX','posY','posZ']]
+        # translate back to original coordinate frame
+        TC.translate(O)
+
+    def sea_of(self,idx):
+        clu=self.atoms_w_same_attribute_as(find_dict={'globalIdx':idx},
+                                                same_attribute='sea-idx',
+                                                return_attribute='globalIdx')
+        return list(clu)

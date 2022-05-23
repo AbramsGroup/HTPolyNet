@@ -70,6 +70,44 @@ class Bondlist:
                 A[j-1,i-1]=1
         return A
 
+    def as_list(self,root,depth):
+        if depth==0:
+            return [root]
+        a,b=root
+        abranch=[]
+        for an in self.partners_of(a):
+            if an!=b:
+                abranch.extend(self.as_list([a,an],depth-1))
+        bbranch=[]
+        for bn in self.partners_of(b):
+            if bn!=a:
+                bbranch.extend(self.as_list([b,bn],depth-1))
+        result=[root]
+        result.extend(abranch)
+        result.extend(bbranch)
+        # sort entries, remove duplicates
+        for i in range(len(result)):
+            if result[i][0]>result[i][1]:
+                result[i]=result[i][::-1]
+        return result
+
+    def half_as_list(self,root,depth):
+        a,b=root
+        self.delete_atoms([a])
+        bbranch=[root]
+        for bn in self.partners_of(b):
+            if bn!=a:
+                bbranch.extend(self.as_list([b,bn],depth-1))
+        for i in range(len(bbranch)):
+            if bbranch[i][0]>bbranch[i][1]:
+                bbranch[i]=bbranch[i][::-1]
+        bbranch.sort()
+        red=[]
+        for b in bbranch:
+            if not b in red:
+                red.append(b)
+        return red    
+
     def graph(self):
         g=nx.DiGraph()
         N=len(self.B)

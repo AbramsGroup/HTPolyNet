@@ -1,20 +1,23 @@
 Title: FDE-DFDA thermoset
+gmx: 'gmx'
 gmx_options: '-quiet -nobackup'
 initial_density: 300.0  # kg/m3
 CURE_initial_search_radius: 0.5 # nm
 CURE_radial_increment: 0.25
-desired_conversion: 0.98
+desired_conversion: 0.95
 late_treshhold: 0.85
 charge_method: gas  # only needed if parameterizing
-max_drag_stages: 0 
+max_drag_stages: 5
 drag_limit: 0.0 # nm
-drag_nvt_steps: 5000
-drag_npt_steps: 10000
-max_bond_relaxation_stages: 10
-relax_nvt_steps: 5000
-relax_npt_steps: 10000
-max_CURE_iterations: 50
+#drag_nvt_steps: 5000
+#drag_npt_steps: 10000
+#max_bond_relaxation_stages: 5
+max_bond_relaxation_increment: 0.05
+relax_nvt_steps: 2500
+relax_npt_steps: 5000
+max_CURE_iterations: 150
 use_symmetry_equivalent_atoms: [DFA, FDE]
+stereocenters: { FDE: [C3] }
 reactions:
   - {
       name:     'Primary-to-secondary-amine',
@@ -59,5 +62,5 @@ reactions:
       ]
     }
 initial_composition:
-  - {molecule: FDE, count: 100}
-  - {molecule: DFA, count: 50}
+  - {molecule: FDE, count: 500}
+  - {molecule: DFA, count: 250}

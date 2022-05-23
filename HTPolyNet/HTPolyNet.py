@@ -5,6 +5,7 @@
 import logging
 import os
 import shutil
+from turtle import left
 import pandas as pd
 import argparse as ap
 import numpy as np
@@ -45,12 +46,14 @@ class HTPolyNet:
                 searchpath.append(altpath)
                 logging.info(f'and alternative path {altpath}')
             for p in searchpath:
+                logging.debug(f'Searching {p}...')
                 fullfilename=os.path.join(p,filename)
                 if os.path.exists(fullfilename):
                     basefilename=os.path.basename(filename)
                     shutil.copyfile(fullfilename,basefilename)
                     logging.info(f'Found at {fullfilename}')
                     return True
+            logging.debug(f'Could not find {filename} anywhere!')
             return False
         return True
 
@@ -59,7 +62,7 @@ class HTPolyNet:
         self.molecules={}
         for mname,M in self.cfg.molecules.items():
             M.set_origin('unparameterized')
-        cwd=pfs.go_to('molecules')
+        cwd=pfs.go_to('molecules/parameterized')
         # checkin=pfs.checkin
         # exists=pfs.exists
         ''' Each molecule implied by the cfg is 'generated' here, either by
@@ -167,6 +170,36 @@ class HTPolyNet:
         else:
             M.inherit_attribute_from_reactants('sea-idx',available_molecules=self.molecules)
             M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
+
+        if mname in self.cfg.parameters['stereocenters']:
+            M.stereoisomers=[]
+            my_sc=self.cfg.parameters['stereocenters'][mname]
+            logging.debug(f'Stereocenters in {mname}: {my_sc}')
+            my_sc_idx=[]
+            for n in my_sc:
+                my_sc_idx.append(M.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}))
+            adds=[]
+            if mname in self.cfg.use_sea:
+                for idx in my_sc_idx:
+                    adds.extend(M.sea_of(idx))
+            my_sc_idx=adds
+
+            logging.debug(f'After applying symmetry, stereocenter atom indices: {my_sc_idx}')
+            flip=[[0,1] for _ in range(len(my_sc_idx))]
+            P=product(*flip)
+            next(P) # one with no flips is the original molecule, so skip it
+            for p in P:
+                logging.debug(f'stereocenter pattern {p}')
+                MM=deepcopy(M)
+                MM.name+='-SC-'+'-'.join([str(_) for _ in p])
+                logging.debug(f'generates {MM.name}')
+                fsc=[]
+                # for i in range(my_sc_idx)
+                fsc=[my_sc_idx[i] for i in range(len(my_sc_idx)) if p[i]]
+                for f in fsc:
+                    MM.flip_stereocenter(f)
+                MM.TopoCoord.Coordinates.write_gro(f'{MM.name}.gro')
+                M.stereoisomers.append(MM.name)
         return True
 
     def initialize_topology(self,inpfnm='init'):
@@ -218,12 +251,29 @@ class HTPolyNet:
         clist=self.cfg.initial_composition
         c_togromacs={}
         for cc in clist:
-            c_togromacs[cc['molecule']]=cc['count']
-        m_togromacs={}
-        for mname,M in self.cfg.molecules.items():
-            if mname in c_togromacs:
-                m_togromacs[mname]=M
-                self.checkout(f'molecules/parameterized/{mname}.gro',altpath=pfs.subpath('molecules'))
+            M=self.cfg.molecules[cc['molecule']]
+            tc=cc['count']
+            total_isomers=len(M.stereoisomers)+1
+            count_per_isomer=tc//total_isomers
+            leftovers=tc%total_isomers
+            c_togromacs[M.name]=count_per_isomer
+            if leftovers>0:
+                c_togromacs[M.name]+=1
+                leftovers-=1
+            self.checkout(f'molecules/parameterized/{M.name}.gro',altpath=pfs.subpath('molecules'))
+            for isomer in M.stereoisomers:
+                c_togromacs[isomer]=count_per_isomer
+                if leftovers>0:
+                    c_togromacs[isomer]+=1
+                    leftovers-=1
+                self.checkout(f'molecules/parameterized/{isomer}.gro',altpath=pfs.subpath('molecules'))
+            # pass
+            # c_togromacs[cc['molecule']]=cc['count']
+        # m_togromacs={}
+        # for mname,M in self.cfg.molecules.items():
+        #     if mname in c_togromacs:
+        #         m_togromacs[mname]=M
+        #         self.checkout(f'molecules/parameterized/{mname}.gro',altpath=pfs.subpath('molecules'))
         # for m,M in m_togromacs.items():
         #     logging.info(f'Molecule to gromacs: {m} ({M.name})')
         # for m,c in c_togromacs.items():

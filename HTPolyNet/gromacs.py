@@ -21,6 +21,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
         boxSize=float(boxSize)
     if type(boxSize)==float:
         boxSize=[boxSize]*3
+    box=' '.join([f'{x:.8f}' for x in boxSize])
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     for name,num in composition.items():  # composition determines order
         # M=molecules[n]
@@ -28,10 +29,10 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
         if os.path.isfile(f'{outName}.gro'):
             logging.info(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
-            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
+            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
         else:
             ''' no final gro file yet; make it '''
-            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=' '.join([f'{x:.8f}' for x in boxSize]),scale=scale)
+            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
         out,err=c.run()
         out+=err
         logging.info(f'Output of "{sw.gmx} insert-molecules"\n'+out)

@@ -23,6 +23,13 @@ from HTPolyNet.ring import Ring,Segment
 #     return False
 
 ''' Generic dataframe functions '''
+
+def _dfrotate(df,R):
+    for i,srow in df.iterrows():
+        ri=srow[['posX','posY','posZ']].values
+        newri=np.matmul(R,ri)
+        df.loc[i,'posX':'posZ']=newri
+
 def _get_row_attribute(df,name,attributes):
     ''' returns a scalar value of attribute "name" in row
         expected to be uniquely defined by attributes dict '''
@@ -672,13 +679,14 @@ class Coordinates:
     def rotate(self,R):
         ''' premultiplies position of each atom by rotation matrix R '''
         sp=self.A[['posX','posY','posZ']]
+        #_dfrotate(sp,R)
         # logging.debug(f'Rotating {sp.shape[0]} atom positions by\n{R}')
         # logging.debug(f'before rotation:\n{self.A.to_string()}')
         for i,srow in sp.iterrows():
             ri=srow.values
             newri=np.matmul(R,ri)
             self.A.loc[i,'posX':'posZ']=newri
-        # logging.debug(f'after rotation:\n{self.A.to_string()}')
+        #logging.debug(f'after rotation:\n{self.A.to_string()}')
 
     def translate(self,L):
         ''' translates all atom positions by L '''
@@ -717,7 +725,7 @@ class Coordinates:
         if type(name)==list:
             assert all([i in self.A.columns for i in name])
         else:
-            assert name in self.A.columns
+            assert name in self.A.columns,f'{name} not found in attributes\n{df.columns}'
         return _get_row_attribute(df,name,attributes)
     
     def spew_atom(self,attributes):
