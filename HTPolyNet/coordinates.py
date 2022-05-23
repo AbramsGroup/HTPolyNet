@@ -539,7 +539,7 @@ class Coordinates:
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():
             self.A.loc[i,'posX':'posZ']=self.wrap_point(srow.values)
-        logging.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]} coordinates.')
+        logging.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
 
     def calc_distance_matrix(self):
         M=np.zeros((self.N,self.N))

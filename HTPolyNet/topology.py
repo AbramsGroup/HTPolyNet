@@ -7,6 +7,9 @@ from copy import deepcopy
 from scipy.constants import physical_constants
 import numpy as np
 import networkx as nx
+from networkx.readwrite import json_graph
+import matplotlib.pyplot as plt
+import json
 
 def typeorder(a):
     ''' correctly order the tuple of atom types for particular
@@ -124,6 +127,7 @@ class Topology:
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
         self.residue_network=nx.DiGraph()
+#        self.poly_ethylenes=nx.DiGraph()
         self.empty=True
 
     @classmethod
@@ -899,16 +903,55 @@ class Topology:
 #        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')
         return self.D['atoms'].iloc[idx-1].type
 
-    def make_resid_graph(self):
-        N=self.D['atoms'].shape[0]
+    def make_resid_graph(self,json=None,draw=None):
+        adf=self.D['atoms']
+        N=adf.shape[0]
         self.residue_network=nx.DiGraph()
-        self.residue_network.add_nodes_from(list(range(1,N+1)))
-        for i in range(1,N+1):
-            ri=self.get_atom_attribute(i,'resnr')
-            for j in self.bondlist.partners_of(i):
-                rj=self.get_atom_attribute(j,'resnr')
-                if ri!=rj and not self.residue_network.has_edge(ri,rj):
-                    self.residue_network.add_edge(ri,rj)
+        residues=adf['residues'].unique()
+        for rn in residues:
+            rs=adf[adf['residue'==rn]]['resnr'].unique()
+            self.residue_network.add_nodes_from(rs,resName=rn)
+        
+        resnrs=adf['resnr'].unique()
+        for i in resnrs:
+            # identify any inter-residue bonds emanating from
+            # this residue, and classify
+            #  - cross
+            #  - polyethylene -- a bond from a carbon that is attached to another carbon that itself pariticpates in
+            # an inter-residue crosslink
+
+            # atom global indexes in this resnr
+            ats=adf[adf['resnr']==i]['globalIdx'].to_list()
+            connectors=[]
+            for a in ats:
+                an=self.bondlist.partners_of(a)
+                natsrn=adf[adf['globalIdx'].isin(an)]['resnr'].unique().to_list()
+                if len(natsrn)>1:
+                    for n in natsrn:
+                        if n!=i:  # this is an inter-residue connection
+                            connectors.append((a,n))
+            for c in connectors:
+                a,n=c
+                bondtype='cross'
+                # examine all other connectors in this resnr; if any of them is bound internally to this 
+                # connector and bound to a different outside residue, then this is a "polyethylene"-type
+                # connection
+                for d in connectors:
+                    if c!=d:
+                        b,m=d
+                        if n!=m and b in self.bondlist.partners_of(a):
+                            bondtype='polyethylene'
+                            break
+                if not self.residue_network.has_edge(i,n):
+                    self.residue_network.add_edge(i,n,bondtype=bondtype)
+        if json:
+            the_data=json_graph.node_link_data(self.residue_network)
+            with open (the_data,'w') as f:
+                json.dump(the_data,f)
+        if draw:
+            fig,ax=plt.subplots(1,1,figsize=(8,8))
+            nx.draw_networkx(self.residue_network,ax=ax)
+            plt.savefig(draw)
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds

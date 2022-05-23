@@ -409,6 +409,7 @@ class HTPolyNet:
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                self.TopoCoord.make_resid_graph(json='2-update-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
                 CP.write_checkpoint(self,CPstate.relax,prefix='2-update')
             if CP.state==CPstate.relax:
                 ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''

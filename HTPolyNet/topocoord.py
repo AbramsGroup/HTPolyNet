@@ -23,10 +23,11 @@ class BTRC(Enum):
     :type Enum: class
     """
     passed = 0
-    fail_linkcell = 1
-    fail_beyond_cutoff = 2
-    fail_pierce_ring = 3
-    fail_short_circuit = 4
+    failed_linkcell = 1
+    failed_beyond_cutoff = 2
+    failed_pierce_ring = 3
+    failed_short_circuit = 4
+    failed_polyethylene_cycle = 5
 
 class TopoCoord:
     """Container for Topology and Coordinates, along with methods that 
@@ -768,7 +769,7 @@ class TopoCoord:
         i,j=b
         # use linkcells to make first distance check
         if not self.Coordinates.linkcelltest(i,j):
-            return BTRC.fail_linkcell,0
+            return BTRC.failed_linkcell,0
         # measure minimum-image-condition distance between two atoms.  
         # Reject if distance is beyond cutoff.
         Ri=self.get_R(i)
@@ -776,7 +777,7 @@ class TopoCoord:
         Rij=self.Coordinates.mic(Ri-Rj,pbc)
         rij=np.sqrt(Rij.dot(Rij))
         if rij>radius:
-            return BTRC.fail_beyond_cutoff,0
+            return BTRC.failed_beyond_cutoff,0
         # generate the nearest periodic image of Rj to Ri
         Rjp=Ri-Rij
         # return array of atom coordinates of ring pierced by this bond, if any
@@ -784,19 +785,18 @@ class TopoCoord:
         if type(C)==np.ndarray:  # this is a ring
             # all this generate a special output file for inspection
             if show_piercings:
-                cidx=C[:,0].astype(int) # get globalIdx's
                 idx=[i,j]
-                idx.extend(cidx) # list of globalIdx's for this output
+                idx.extend(C['globalIdx'].to_list()) # list of globalIdx's for this output
                 sub=self.Coordinates.subcoords(self.Coordinates.A[self.Coordinates.A['globalIdx'].isin(idx)].copy())
-                sub.write_gro(f'ring-{i}-{j}='+'-'.join([f'{x}' for x in cidx])+'.gro')
-                logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}')
-                logging.debug('-'.join([f'{x}' for x in cidx]))
-                logging.debug(f'\n+{C[:,1:]}')
-            return BTRC.fail_pierce_ring,0
+                sub.write_gro(f'ring-{i}-{j}'+'.gro')
+                logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}\n{C.to_string()}')
+            return BTRC.failed_pierce_ring,0
         # check for short-circuits, defined as a residue attempting to bond to another
         # residue to which it was already previously bonded
         if self.shortcircuit(i,j):
-            return BTRC.fail_short_circuit,0
+            return BTRC.failed_short_circuit,0
+        if self.polyethylene_cycle(i,j):
+            return BTRC.failed_polyethylene_cycle,0
         logging.debug(f'passes bondtest: {b} {rij:.3f} ({radius})')
         return BTRC.passed,rij
 
@@ -830,6 +830,19 @@ class TopoCoord:
                 # logging.debug(f'resid {j_resNum} is already bound to an atom in {i_resNum}')
                 return True
 
+        return False
+
+    def polyethylene_cycle(self,a,b):
+        # 1. determine if a,b can be a polyethylene type bond
+        #    is a bound to any atom a' in its own residue that is bound to a different residue AND
+        #    is b bound to any atom b' in its own residue that is bound to yet a different residue?
+        #    if yes, this would be a polyethylene-type bond
+        #    if no, return False
+        # 2. make a polyethylene bond subgraph (a copy); if empty, just return False
+        # 3. add the nodes implied by atoms i and j
+        #    - get resids of i and j
+        #    - for each of i and j, if it is bonded to another atom in its residue that is bound
+        #      
         return False
 
 

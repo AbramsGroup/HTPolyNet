@@ -1,17 +1,17 @@
 ;
 ;   File FDEC.top  was generated
 ;   By user: cfa (1000)
-;   On host: abrams-Latitude-E5470
-;   At date: Tue. May  2 17:02:42 2022
+;   On host: panacea
+;   At date: Mon. May  1 13:44:31 2022
 ;
 ;   This is a standalone topology file
 ;
 ;   Created by:
 ;   ParmEd:       htpolynet, VERSION 3.4.3
 ;   Executable:   htpolynet
-;   Library dir:  /usr/share/gromacs/top
+;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --loglevel debug --force-parameterization --force-checkin
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --loglevel debug -log nodrag.log --force-parameterization --force-sea-calculation --force-checkin
 ;
 
 [ defaults ]
@@ -30,16 +30,16 @@ FDE          3
 ; residue    1 FDE rtp FDE q 0.0
     1         os      1    FDE      O      1 -0.32120000  16.000000   ; qtot -0.321200
     2         cc      1    FDE      C      2 0.04550000  12.010000   ; qtot -0.275700
-    3         cd      1    FDE     C3      3 -0.03640000  12.010000   ; qtot -0.312100
-    4         cc      1    FDE     C4      4 0.07250000  12.010000   ; qtot -0.239600
-    5         cd      1    FDE     C5      5 -0.03220000  12.010000   ; qtot -0.271800
-    6         c3      1    FDE     C6      6 0.04570000  12.010000   ; qtot -0.226100
+    3         cd      1    FDE     C5      3 -0.03640000  12.010000   ; qtot -0.312100
+    4         cc      1    FDE     C6      4 0.07250000  12.010000   ; qtot -0.239600
+    5         cd      1    FDE     C7      5 -0.03220000  12.010000   ; qtot -0.271800
+    6         c3      1    FDE     C8      6 0.04570000  12.010000   ; qtot -0.226100
     7         n3      1    FDE      N      7 -0.29180000  14.010000   ; qtot -0.517900
     8         h1      1    FDE      H      8 0.05030000   1.008000   ; qtot -0.467600
     9         h1      1    FDE     H1      9 0.05030000   1.008000   ; qtot -0.417300
-   10         c3      1    FDE     C7     10 0.02450000  12.010000   ; qtot -0.392800
-   11         c3      1    FDE     C8     11 0.02740000  12.010000   ; qtot -0.365400
-   12         cx      1    FDE     C9     12 0.09360000  12.010000   ; qtot -0.271800
+   10         c3      1    FDE     C9     10 0.02450000  12.010000   ; qtot -0.392800
+   11         c3      1    FDE    C10     11 0.02740000  12.010000   ; qtot -0.365400
+   12         cx      1    FDE     C3     12 0.09360000  12.010000   ; qtot -0.271800
    13         h1      1    FDE     H2     13 0.04590000   1.008000   ; qtot -0.225900
    14         h1      1    FDE     H3     14 0.04590000   1.008000   ; qtot -0.180000
    15         cx      1    FDE     C1     15 0.07470000  12.010000   ; qtot -0.105300
@@ -47,7 +47,7 @@ FDE          3
    17         h1      1    FDE     H5     17 0.05950000   1.008000   ; qtot 0.013700
    18         op      1    FDE     O1     18 -0.37170000  16.000000   ; qtot -0.358000
    19         h1      1    FDE     H7     19 0.06420000   1.008000   ; qtot -0.293800
-   20         c3      1    FDE    C10     20 0.06390000  12.010000   ; qtot -0.229900
+   20         c3      1    FDE     C4     20 0.06390000  12.010000   ; qtot -0.229900
    21         h1      1    FDE     H8     21 0.04580000   1.008000   ; qtot -0.184100
    22         h1      1    FDE     H9     22 0.04580000   1.008000   ; qtot -0.138300
    23         oh      1    FDE     O2     23 -0.39210000  16.000000   ; qtot -0.530400

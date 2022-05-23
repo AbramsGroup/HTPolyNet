@@ -1,17 +1,17 @@
 ;
 ;   File DFAFDE2-3.top  was generated
 ;   By user: cfa (1000)
-;   On host: abrams-Latitude-E5470
-;   At date: Tue. May  2 17:02:56 2022
+;   On host: panacea
+;   At date: Mon. May  1 13:44:47 2022
 ;
 ;   This is a standalone topology file
 ;
 ;   Created by:
 ;   ParmEd:       htpolynet, VERSION 3.4.3
 ;   Executable:   htpolynet
-;   Library dir:  /usr/share/gromacs/top
+;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/bin/htpolynet run -cfg FDE-DFDA.yaml --loglevel debug --force-parameterization --force-checkin
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --loglevel debug -log nodrag.log --force-parameterization --force-sea-calculation --force-checkin
 ;
 
 [ defaults ]
@@ -58,16 +58,16 @@ system1          3
 ; residue    2 FDE rtp FDE q 0.1
    28         os      2    FDE      O     28 -0.32120000  16.000000   ; qtot -0.518900
    29         cc      2    FDE      C     29 0.04550000  12.010000   ; qtot -0.473400
-   30         cd      2    FDE     C3     30 -0.03640000  12.010000   ; qtot -0.509800
-   31         cc      2    FDE     C4     31 0.07250000  12.010000   ; qtot -0.437300
-   32         cd      2    FDE     C5     32 -0.03220000  12.010000   ; qtot -0.469500
-   33         c3      2    FDE     C6     33 0.04570000  12.010000   ; qtot -0.423800
+   30         cd      2    FDE     C5     30 -0.03640000  12.010000   ; qtot -0.509800
+   31         cc      2    FDE     C6     31 0.07250000  12.010000   ; qtot -0.437300
+   32         cd      2    FDE     C7     32 -0.03220000  12.010000   ; qtot -0.469500
+   33         c3      2    FDE     C8     33 0.04570000  12.010000   ; qtot -0.423800
    34         n3      2    FDE      N     34 -0.29190000  14.010000   ; qtot -0.715700
    35         h1      2    FDE      H     35 0.05030000   1.008000   ; qtot -0.665400
    36         h1      2    FDE     H1     36 0.05030000   1.008000   ; qtot -0.615100
-   37         c3      2    FDE     C7     37 0.02610000  12.010000   ; qtot -0.589000
-   38         c3      2    FDE     C8     38 0.02450000  12.010000   ; qtot -0.564500
-   39         c3      2    FDE     C9     39 0.06390000  12.010000   ; qtot -0.500600
+   37         c3      2    FDE     C9     37 0.02610000  12.010000   ; qtot -0.589000
+   38         c3      2    FDE    C10     38 0.02450000  12.010000   ; qtot -0.564500
+   39         c3      2    FDE     C3     39 0.06390000  12.010000   ; qtot -0.500600
    40         h1      2    FDE     H2     40 0.04580000   1.008000   ; qtot -0.454800
    41         h1      2    FDE     H3     41 0.04580000   1.008000   ; qtot -0.409000
    42         c3      2    FDE     C1     42 -0.03770000  12.010000   ; qtot -0.446700
@@ -76,7 +76,7 @@ system1          3
    45         hc      2    FDE     H6     45 0.02570000   1.008000   ; qtot -0.369600
    46         oh      2    FDE     O1     46 -0.39210000  16.000000   ; qtot -0.761700
    47         h1      2    FDE     H7     47 0.06110000   1.008000   ; qtot -0.700600
-   48         c3      2    FDE    C10     48 0.07940000  12.010000   ; qtot -0.621200
+   48         c3      2    FDE     C4     48 0.07940000  12.010000   ; qtot -0.621200
    49         h1      2    FDE     H8     49 0.04580000   1.008000   ; qtot -0.575400
    50         h1      2    FDE     H9     50 0.04580000   1.008000   ; qtot -0.529600
    51         oh      2    FDE     O2     51 -0.39050000  16.000000   ; qtot -0.920100
@@ -92,16 +92,16 @@ system1          3
 ; residue    3 FDE rtp FDE q 0.1
    61         os      3    FDE      O     61 -0.32120000  16.000000   ; qtot -0.420200
    62         cc      3    FDE      C     62 0.04550000  12.010000   ; qtot -0.374700
-   63         cd      3    FDE     C3     63 -0.03640000  12.010000   ; qtot -0.411100
-   64         cc      3    FDE     C4     64 0.07250000  12.010000   ; qtot -0.338600
-   65         cd      3    FDE     C5     65 -0.03220000  12.010000   ; qtot -0.370800
-   66         c3      3    FDE     C6     66 0.04570000  12.010000   ; qtot -0.325100
+   63         cd      3    FDE     C5     63 -0.03640000  12.010000   ; qtot -0.411100
+   64         cc      3    FDE     C6     64 0.07250000  12.010000   ; qtot -0.338600
+   65         cd      3    FDE     C7     65 -0.03220000  12.010000   ; qtot -0.370800
+   66         c3      3    FDE     C8     66 0.04570000  12.010000   ; qtot -0.325100
    67         n3      3    FDE      N     67 -0.29190000  14.010000   ; qtot -0.617000
    68         h1      3    FDE      H     68 0.05030000   1.008000   ; qtot -0.566700
    69         h1      3    FDE     H1     69 0.05030000   1.008000   ; qtot -0.516400
-   70         c3      3    FDE     C7     70 0.02610000  12.010000   ; qtot -0.490300
-   71         c3      3    FDE     C8     71 0.02450000  12.010000   ; qtot -0.465800
-   72         c3      3    FDE     C9     72 0.06390000  12.010000   ; qtot -0.401900
+   70         c3      3    FDE     C9     70 0.02610000  12.010000   ; qtot -0.490300
+   71         c3      3    FDE    C10     71 0.02450000  12.010000   ; qtot -0.465800
+   72         c3      3    FDE     C3     72 0.06390000  12.010000   ; qtot -0.401900
    73         h1      3    FDE     H2     73 0.04580000   1.008000   ; qtot -0.356100
    74         h1      3    FDE     H3     74 0.04580000   1.008000   ; qtot -0.310300
    75         c3      3    FDE     C1     75 -0.03770000  12.010000   ; qtot -0.348000
@@ -110,7 +110,7 @@ system1          3
    78         hc      3    FDE     H6     78 0.02570000   1.008000   ; qtot -0.270900
    79         oh      3    FDE     O1     79 -0.39210000  16.000000   ; qtot -0.663000
    80         h1      3    FDE     H7     80 0.06110000   1.008000   ; qtot -0.601900
-   81         c3      3    FDE    C10     81 0.07940000  12.010000   ; qtot -0.522500
+   81         c3      3    FDE     C4     81 0.07940000  12.010000   ; qtot -0.522500
    82         h1      3    FDE     H8     82 0.04580000   1.008000   ; qtot -0.476700
    83         h1      3    FDE     H9     83 0.04580000   1.008000   ; qtot -0.430900
    84         oh      3    FDE     O2     84 -0.39050000  16.000000   ; qtot -0.821400
