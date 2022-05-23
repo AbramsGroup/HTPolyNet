@@ -288,7 +288,7 @@ class HTPolyNet:
             dragging=True
 
         curr_nxlinkbonds=0
-        current_conversion=0.0
+        curr_conversion=0.0
         max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
         max_radidx=int((max_search_radius-cure_search_radius)/radial_increment)
         cure_finished=False
@@ -311,7 +311,7 @@ class HTPolyNet:
                     next_stage=CPstate.update
                 CP.radius=cure_search_radius+CP.current_radidx*radial_increment
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=(current_conversion<late_threshold))
+                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=(curr_conversion<late_threshold))
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
                         CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
