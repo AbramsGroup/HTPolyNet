@@ -106,10 +106,10 @@
 </tbody>
 </table>
 <p>Other control parameters govern detailed aspects of the CURE algorithm.  These involve MD simulations performed immediately prior to and immediately after new bond addition to the topology, in order to relax those bonds.</p>
-<p>Prior to introducing new bonds, one has the option of <em>“dragging”</em> atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional.</p>
 </section>
 <section id="dragging-parameters">
 <h3>Dragging parameters<a class="headerlink" href="#dragging-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Prior to introducing new bonds, one has the option of <em>“dragging”</em> atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional.</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 19%" />
@@ -141,19 +141,90 @@
 </tr>
 </tbody>
 </table>
-<p><em>After</em> new bonds are formed and all other bonded interactions, atom types, and charges are mapped from each bond’s appropriate template, a series of <em>bond relaxation</em> MD simulations are performed.  These are in all ways similar to the optional <em>dragging</em> simulations except for the fact that here, the actual chemical bond parameters are progressively brought to their correct values as specified in the GAFF.  Bond relaxation is <em>required</em> because most new bonds are much longer than they should be at equilibrium.</p>
 </section>
 <section id="bond-relaxation-parameters">
 <h3>Bond relaxation parameters<a class="headerlink" href="#bond-relaxation-parameters" title="Permalink to this headline">¶</a></h3>
-<p>Parameter                         Type          Description
-================================= ====          ===========
-<code class="docutils literal notranslate"><span class="pre">initial_composition</span></code>           dict          keys: monomer names, values: numbers of molecules in system
-<code class="docutils literal notranslate"><span class="pre">reactions</span></code>                     list          reaction dicts, one per reaction
-<code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code> list          monomers for which symmetry-equivalent atoms are used
-================================= ====          ===========</p>
+<p><em>After</em> new bonds are formed and all other bonded interactions, atom types, and charges are mapped from each bond’s appropriate template, a series of <em>bond relaxation</em> MD simulations are performed.  These are in all ways similar to the optional <em>dragging</em> simulations except for the fact that here, the actual chemical bond parameters are progressively brought to their correct values as specified in the GAFF.  Bond relaxation is <em>required</em> because most new bonds are much longer than they should be at equilibrium.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 8%" />
+<col style="width: 73%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_bond_relaxation_stages</span></code></p></td>
+<td><p>int</p></td>
+<td><p>number of bond relaxation stages to perform</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_bond_relaxation_increment</span></code></p></td>
+<td><p>float</p></td>
+<td><p>maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides <code class="docutils literal notranslate"><span class="pre">max_bond_relaxation_stages</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">relax_nvt_steps</span></code></p></td>
+<td><p>int</p></td>
+<td><p>number of MD steps for NVT relaxation</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">relax_npt_steps</span></code></p></td>
+<td><p>int</p></td>
+<td><p>number of MD steps for NPT relaxation</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="chemistry-parameters">
+<h2>Chemistry parameters<a class="headerlink" href="#chemistry-parameters" title="Permalink to this headline">¶</a></h2>
+<p>The system chemistries and initial composition are specified by a set of inter-referential YAML entries.</p>
+<section id="top-level-chemistry-parameters">
+<h3>Top-level chemistry parameters<a class="headerlink" href="#top-level-chemistry-parameters" title="Permalink to this headline">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 4%" />
+<col style="width: 61%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_composition</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>keys: monomer names, values: numbers of molecules in system</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code></p></td>
+<td><p>list</p></td>
+<td><p>monomers for which symmetry-equivalent atoms are used</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stereocenters</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>keys: monomer names; values: list of names of chiral atoms</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">reactions</span></code></p></td>
+<td><p>list</p></td>
+<td><p>reaction dicts, one per reaction</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">initial_composition</span></code> dictionary is how the initial extensive composition of the system is specified.  For example,</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">initial_composition</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> MONA</span><span class="p">:</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="nt"> MONB</span><span class="p">:</span><span class="w"> </span><span class="nv">200</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>specifies that the initial liquid should be composed of 100 <code class="docutils literal notranslate"><span class="pre">MONA</span></code> monomers and 200 <code class="docutils literal notranslate"><span class="pre">MONB</span></code> monomers.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code> list allows you to specify which molecules have internal symmetry that should be considered when enumerating all reactions.  Any molecule listed here is subjected to a short, 1000-K NVT MD simulation in vacuum from which an average interatomic distance matrix is calculated.  Using this distance matrix, symmetry-equivalent atoms are identified.  Each atom acquires the <code class="docutils literal notranslate"><span class="pre">sea-idx</span></code> attribute that contains its “symmetry index”; any two atoms with the same symmetry index are considered symmetry-equivalent.  For any atom name explicityly specified in a reaction or identified as a stereocenter in the input configuration, HTPolyNet will idenfity all symmetry-equivalent atoms and build out the full set of unique reactions and stereocenters from this information.  If you do not explicitly list a molecule in the <code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code> list, HTPolyNet assumes no such molecular symmetry exists, and only those reactions explicitly listed in the configuration file are considered.  So, if you have a diepoxy monomer but only reference one of the two reactive carbons in a reaction, no reactions involving the second carbon will take place UNLESS that second carbon is symmetry-equivalent to the one named AND the monomer appears in the <code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code> list.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">stereocenters</span></code> dictionary is keyed by molecule name, and each entry is a list of one or more atom names which are declared as chiral centers.  By default, HTPolyNet will use this declaration to generate a racemic mixture of stereoisomers of any monomer in this list for the initial liquid simulation.</p>
 </section>
 <section id="reaction-dicts">
 <h3>Reaction dicts<a class="headerlink" href="#reaction-dicts" title="Permalink to this headline">¶</a></h3>
+<p>HTPolyNet expects one or more reaction templates to be defined in the configuration file.  A reaction is defined by the precise pairs of atoms that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 21%" />
@@ -197,6 +268,7 @@
 </tr>
 </tbody>
 </table>
+<p>Atom dicts and bond dicts are explained below.</p>
 </section>
 <section id="atom-dicts">
 <h3>Atom dicts<a class="headerlink" href="#atom-dicts" title="Permalink to this headline">¶</a></h3>
@@ -272,6 +344,7 @@
 </div>
 <p>This reaction-dict defines the reaction between an amine-containing molecule (DFA) and an epoxy-containing molecule (FDE) to produce an oligomer (DFAFDE).   It is instructive to read this YAML from bottom up.  There is one bond in the list of bond between atoms “A” and “B”.  These are keys in the atoms dict right above.  “A” is the N1 atom of resid 1 of reactant 1, and “B” is the C1 atom of resid 1 of reactant 2.  The reactant keys are associated with molecule names in the reactants dict.  We see here that reactant 1 is DFA and reactant 2 is FDE.</p>
 <p>The values of the <code class="docutils literal notranslate"><span class="pre">atom:</span></code> keys in the atoms dict entries are atom names <strong>as they appear in the mol2 file of the associated resid</strong>.  In <strong>this</strong> case, both DFA and FDE are <strong>monomers</strong>: they are molecules with a single resid in their sequence. (Reactant and product molecules need not be monomers, but HTPolyNet must be able to trace any molecule back to its monomeric constituents by recursively traversing all reactions.) That is, this implies there is a unique atom named <code class="docutils literal notranslate"><span class="pre">N1</span></code> in the file <code class="docutils literal notranslate"><span class="pre">DFA.mol2</span></code>, and a unique atom <code class="docutils literal notranslate"><span class="pre">C1</span></code> in the file <code class="docutils literal notranslate"><span class="pre">FDE.mol2</span></code>.</p>
+<p>If either reactant in any reaction is tagged as having more than one other atom symmetry-equivalent to any reactive atom, the original reaction is “symmetry-expanded” into as many new reactions as necessary to fully enumerate all possible reactions.  For instance, if N1 is symmetry equivalent to N2 in FDA, and C1 is symmetry equivalent to C2 in FDE (this is actually the case), then the “N1-C1” reaction above is automatically expanded into four symmetry-equivalent reactions: “N1-C1”, “N2-C1”, “N1-C2”, and “N2-C2”.  Each will generate a unique product: “DFAFDE”, “DFAFDE-1”, “DFAFDE-2”, and “DFAFDE-3”.  All products are necessary symmetry-equivalent, meaning all have the same set of atom-to-atomtype, bond-to-bondtype, etc., mappings, even though the particular atom indices are unique in each.</p>
 </section>
 </section>
 </section>
