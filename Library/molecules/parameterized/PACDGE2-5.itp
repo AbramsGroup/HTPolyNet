@@ -98,8 +98,8 @@ ha     ca     ca     ha      9   180.00   15.167000   2
 
 [ dihedraltypes ]
 ;i  j   k  l  func      phase      kd      pn
-ca     ca     ca     os      4   180.00   0.262906   2
 ca     os     ca     ca      4   180.00   0.262906   2
+ca     ca     ca     os      4   180.00   0.262906   2
 ca     c3     ca     ca      4   180.00   0.262906   2
 ca     ca     ca     c3      4   180.00   0.262906   2
 ca     ha     ca     ca      4   180.00   0.262906   2
