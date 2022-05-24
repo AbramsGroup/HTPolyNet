@@ -236,14 +236,17 @@ class Topology:
     def bond_source_check(self):
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
             logging.info(f'Bond data source check requested.')
-            bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
-            mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+            grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
+            bmi=grobonds.set_index(['ai','aj']).index
+            mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
+            mbmi=mol2bonds.set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
             logging.info(f'Result: {check}')
-            # logging.info(f'GROMACS:')
-            # logging.info(self.D['bonds'].to_string())
-            # logging.info(f'MOL2:')
-            # logging.info(self.D['mol2_bonds'].to_string())
+            if not check:
+                logging.info(f'GROMACS:')
+                logging.info(self.D['bonds'][['ai','aj']].to_string())
+                logging.info(f'MOL2:')
+                logging.info(self.D['mol2_bonds'][['ai','aj']].to_string())
 
     def has_bond(self,pair):
         bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
@@ -907,9 +910,9 @@ class Topology:
         adf=self.D['atoms']
         N=adf.shape[0]
         self.residue_network=nx.DiGraph()
-        residues=adf['residues'].unique()
+        residues=adf['residue'].unique()
         for rn in residues:
-            rs=adf[adf['residue'==rn]]['resnr'].unique()
+            rs=adf[adf['residue']==rn]['resnr'].unique()
             self.residue_network.add_nodes_from(rs,resName=rn)
         
         resnrs=adf['resnr'].unique()
@@ -921,11 +924,11 @@ class Topology:
             # an inter-residue crosslink
 
             # atom global indexes in this resnr
-            ats=adf[adf['resnr']==i]['globalIdx'].to_list()
+            ats=adf[adf['resnr']==i]['nr'].to_list()
             connectors=[]
             for a in ats:
                 an=self.bondlist.partners_of(a)
-                natsrn=adf[adf['globalIdx'].isin(an)]['resnr'].unique().to_list()
+                natsrn=adf[adf['nr'].isin(an)]['resnr'].unique().to_list()
                 if len(natsrn)>1:
                     for n in natsrn:
                         if n!=i:  # this is an inter-residue connection

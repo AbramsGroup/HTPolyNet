@@ -826,10 +826,12 @@ class Coordinates:
                 self.metadat['nBonds']=len(self.mol2_bonds)
             self.bondlist=Bondlist.fromDataFrame(self.mol2_bonds)
 
-    def write_gro(self,filename=''):
-        ''' write coordinates in Gromacs format '''
-        if filename=='':
-            raise Exception('write_gro needs a filename')
+    def write_gro(self,filename):
+        """write_gro Write coordinates and if present, velocities, to a Gromacs-format coordinate file
+
+        :param filename: name of file to write
+        :type filename: str
+        """
         has_vel='velX' in self.A.columns
         with open(filename,'w') as f:
             f.write(self.name+'\n')
@@ -940,47 +942,3 @@ class Coordinates:
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
     
-"""
-MOL2 Format
-
-SUBSTRUCTURE
-
-@<TRIPOS>SUBSTRUCTURE
-Each data record associated with this RTI consists of a single data line. The data
-line contains the substructure ID, name, root atom of the substructure,
-substructure type, dictionary type, chain type, subtype, number of inter
-substructure bonds, SYBYL status bits, and user defined comment.
-Format:
-subst_id subst_name root_atom [subst_type [dict_type
-[chain [sub_type [inter_bonds [status
-[comment]]]]]]]
-• subst_id (integer) = the ID number of the substructure. This is provided
-for reference only and is not used by the MOL2 command when reading
-the file.
-• subst_name (string) = the name of the substructure.
-• root_atom (integer) = the ID number of the substructures root atom.
-• subst_type - string) = the substructure type: temp, perm, residue, group
-or domain.
-• dict_type (integer) = the type of dictionary associated with the
-substructure.
-• chain (string) = the chain to which the substructure belongs (ð 4 chars).
-• sub_type (string) = the subtype of the chain.
-• inter_bonds (integer) = the number of inter substructure bonds.
-• status (string) = the internal SYBYL status bits. These should never be
-set by the user. Valid status bit values are LEAF, ROOT, TYPECOL, DICT,
-BACKWARD and BLOCK.
-• comment (remaining strings on data line) = the comment for the
-substructure.
-Example:
-1 ALA1 1 RESIDUE 1 A ALA 1 ROOT|DICT Comment here
-The substructure has 1 as ID, ALA1 as name and atom 1 as root atom. It is
-of type RESIDUE and the associated dictionary type is 1 (protein). It is part
-of the A chain in the molecule and it is an ALAnine. There is only one inter
-substructure bonds. The SYBYL status bits indicate it is the ROOT
-substructure of the chain and it came from a dictionary. The comment reads
-“Comment here”.
-1 ALA1 1
-Minimal representation of a substructure.
-
-
-"""

@@ -129,6 +129,7 @@ class HTPolyNet:
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
+        sea_thresh=self.cfg.parameters.get('sea_thresh',0.10)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
@@ -158,7 +159,7 @@ class HTPolyNet:
         if mname in self.cfg.use_sea:
             if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
                 logging.info(f'Doing SEA calculation on {mname}')
-                M.calculate_sea()
+                M.calculate_sea(sea_thresh=sea_thresh)
                 M.analyze_sea_topology()
                 M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
                 checkin(f'molecules/parameterized/{mname}.sea',overwrite=force_checkin)
@@ -406,7 +407,7 @@ class HTPolyNet:
                 ''' Update the topology: make bonds, delete sacrificial atoms; only reactions
                     designated as "cure" are used here '''
                 CP.read_checkpoint(self)
-                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
+                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to='idx_mapper.dat')
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.make_resid_graph(json='2-update-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
@@ -421,7 +422,6 @@ class HTPolyNet:
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance-relax'].max()/bond_relaxation_increment)
                     logging.debug(f'post-cure using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
-
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
@@ -454,7 +454,7 @@ class HTPolyNet:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
                 logging.info(f'Current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
-                conversion_reached=curr_conversion>desired_conversion
+                conversion_reached=curr_conversion>=desired_conversion
                 iterations_exceeded=CP.iter>=maxiter
                 cure_finished = conversion_reached or iterations_exceeded
                 if conversion_reached:

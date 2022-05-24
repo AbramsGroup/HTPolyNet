@@ -268,7 +268,7 @@ class TopoCoord:
                 logging.error('NAN in pairs post mapping')
                 raise Exception
 
-    def update_topology_and_coordinates(self,bdf,template_dict={}):    
+    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None):    
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
 
         :param bdf: bonds dataframe, columns 'ai', 'aj', 'reactantName'
@@ -297,6 +297,10 @@ class TopoCoord:
             self.map_from_templates(ri_bdf,template_dict)
             self.Topology.null_check(msg='map_from_templates')
             self.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
+            if write_mapper_to:
+                with open(write_mapper_to,'w') as f:
+                    for k,v in idx_mapper.items():
+                        f.write(f'{k} {v}\n')
             return ri_bdf
 
     def read_top(self,topfilename):

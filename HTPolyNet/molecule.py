@@ -135,17 +135,23 @@ class Molecule:
         self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2')
         #assert self.cstale=='',f'Error: {self.cstale} coords are stale'
 
-    def calculate_sea(self):
+    def calculate_sea(self,sea_thresh=0.1):
         ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
         n=self.name
         boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
         pfs.checkout('mdp/nvt-sea.mdp')
         for ex in ['top','itp','gro']:
             pfs.checkout(f'molecules/parameterized/{n}.{ex}')
+        TC=TopoCoord(topfilename=f'{n}.top',grofilename=f'{n}.gro')
+        dihdf=TC.Topology.D['dihedrals']
+        dihdf.loc[:,'c0']=0.0
+        dihdf.loc[:,'c1']=0.0
+        dihdf.loc[:,'c2']=dihdf.loc[:,'c2'].fillna(1)
+        TC.write_top(f'{n}-noodly.top')
         logging.info(f'Hot md running...output to {n}-sea')
-        grompp_and_mdrun(gro=f'{n}',top=f'{n}',
+        grompp_and_mdrun(gro=f'{n}',top=f'{n}-noodly',
                         mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
-        sea_srs=analyze_sea(f'{n}-sea')
+        sea_srs=analyze_sea(f'{n}-sea',thresh=sea_thresh)
         self.set_gro_attribute('sea-idx',sea_srs)
 
     def minimize(self,outname='',**kwargs):
