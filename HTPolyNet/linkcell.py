@@ -210,7 +210,7 @@ class Linkcell:
 
     def make_memberlists(self,cdf):
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
-        logging.debug(f'Generated {len(self.memberlists)} empty memberlists {len(self.memberlists[0])}.')
+        # logging.debug(f'Generated {len(self.memberlists)} empty memberlists.')
         for i,r in cdf.iterrows():
             cidx=r['linkcell-idx']
             idx=r['globalIdx']

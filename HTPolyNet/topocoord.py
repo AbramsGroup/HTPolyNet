@@ -801,8 +801,7 @@ class TopoCoord:
             return BTRC.failed_short_circuit,0
         if self.polyethylene_cycle(i,j):
             return BTRC.failed_polyethylene_cycle,0
-        b0,kb=self.Topology.get_bond_parameters(*b)
-        logging.debug(f'passed bondtest: {b} {rij:.3f} b0={b0:.3f} kb={kb:.1f}')
+        logging.debug(f'passed bondtest: {b} {rij:.3f}')
         return BTRC.passed,rij
 
     def shortcircuit(self,i,j):

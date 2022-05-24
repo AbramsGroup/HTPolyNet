@@ -237,10 +237,12 @@ class Topology:
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
             logging.info(f'Bond data source check requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
-            bmi=grobonds.set_index(['ai','aj']).index
+            # bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
-            mbmi=mol2bonds.set_index(['ai','aj']).index
-            check=all([x==y for x,y in zip(bmi,mbmi)])
+            # mbmi=mol2bonds.set_index(['ai','aj']).index
+            checki=all([x==y for x,y in zip(mol2bonds['ai'],grobonds['ai'])])
+            checkj=all([x==y for x,y in zip(mol2bonds['aj'],grobonds['aj'])])
+            check=checki and checkj
             logging.info(f'Result: {check}')
             if not check:
                 logging.info(f'GROMACS:')
@@ -1007,6 +1009,7 @@ class Topology:
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=new_kb
 
     def get_bond_parameters(self,ai,aj):
+        ai,aj=idxorder((ai,aj))
         adf=self.D['atoms']
         bdf=self.D['bonds']
         tdf=self.D['bondtypes']
