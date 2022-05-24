@@ -928,7 +928,7 @@ class Topology:
             connectors=[]
             for a in ats:
                 an=self.bondlist.partners_of(a)
-                natsrn=adf[adf['nr'].isin(an)]['resnr'].unique().to_list()
+                natsrn=adf[adf['nr'].isin(an)]['resnr'].unique()
                 if len(natsrn)>1:
                     for n in natsrn:
                         if n!=i:  # this is an inter-residue connection
