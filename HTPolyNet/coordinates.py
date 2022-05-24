@@ -478,6 +478,7 @@ class Coordinates:
             if os.path.exists(lc_file) and not force_repopulate:
                 logging.debug(f'Found {lc_file}; no need to populate.')
                 self.read_atomset_attributes(lc_file)
+                self.linkcell.make_memberlists()
             else:
                 self.linkcell.populate(self,ncpu=ncpu)
                 if save:

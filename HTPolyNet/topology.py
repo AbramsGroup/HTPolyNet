@@ -993,36 +993,32 @@ class Topology:
         :type lengths: float
         """
         bdf=self.D['bonds']
-        adf=self.D['atoms']
-        tdf=self.D['bondtypes']
-        Adf=self.D['angles']
-        ATdf=self.D['angletypes']
         factor=(stage+1)/max_stages
-        ess='s' if bondsdf.shape[0]>1 else ''
-        logging.debug(f'Attenuating {bondsdf.shape[0]} bond{ess} in stage {stage+1}/{max_stages}')
+        logging.debug(f'Attenuating {bondsdf.shape[0]} bond{"s" if bondsdf.shape[0]>1 else ""} in stage {stage+1}/{max_stages}')
         for i,b in bondsdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
-            rij=b['initial-distance']
-            # logging.debug(f'atten ai {ai} aj {aj}')
-            b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0'].values[0]
+            rij=b['initial-distance-relax']
+            b0,kb=self.get_bond_parameters(ai,aj)
             if minimum_distance>0.0:
                 b0=minimum_distance
-            kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1'].values[0]
-            # logging.debug(f'atten rij {rij} b0 {b0} kb {kb}')
-            # if b0==pd.NA or kb==pd.NA:
-            if pd.isna(b0) or pd.isna(kb):
-                ''' no overrides for this bond, so take from types '''
-                it=adf.loc[adf['nr']==ai,'type'].values[0]
-                jt=adf.loc[adf['nr']==aj,'type'].values[0]
-                it,jt=typeorder((it,jt))
-                b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0'].values[0]
-                kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb'].values[0]
-                # logging.debug(f'->using types it {it} jt {jt} b0 {b0} kb {kb}')
-            # write explicit override parameters for this bond; kb is attenuated
-            # logging.debug(f'b0 {b0} attentuated to {rij-factor*(rij-b0)}')
-            # logging.debug(f'kb {kb} attentuated to {kb*factor}')
-            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=rij-factor*(rij-b0)
-            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=kb*factor
+            new_b0=rij-factor*(rij-b0)
+            new_kb=kb*factor
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=new_b0
+            bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=new_kb
+
+    def get_bond_parameters(self,ai,aj):
+        adf=self.D['atoms']
+        bdf=self.D['bonds']
+        tdf=self.D['bondtypes']
+        b0=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0'].values[0]
+        kb=bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1'].values[0]
+        if pd.isna(b0) or pd.isna(kb):
+            ''' no overrides for this bond, so take from types '''
+            it=adf.loc[adf['nr']==ai,'type'].values[0]
+            jt=adf.loc[adf['nr']==aj,'type'].values[0]
+            it,jt=typeorder((it,jt))
+            b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0'].values[0]
+            kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb'].values[0]
 
     def restore_bond_parameters(self,df):
         bdf=self.D['bonds']

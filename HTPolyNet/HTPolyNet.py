@@ -421,7 +421,7 @@ class HTPolyNet:
                 CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance-relax'].max()/bond_relaxation_increment)
-                    logging.debug(f'post-cure using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
+                    logging.debug(f'Using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)

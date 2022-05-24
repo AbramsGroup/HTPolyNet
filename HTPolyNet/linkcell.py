@@ -220,10 +220,7 @@ class Linkcell:
         avg_cell_pop=rl.mean()
         min_cell_pop=int(rl.min())
         max_cell_pop=int(rl.max())
-        logging.debug(f'Mean cell pop: {avg_cell_pop:.3f}')
-        logging.debug(f'Min cell pop: {min_cell_pop:.3f}')
-        logging.debug(f'Max cell pop: {max_cell_pop:.3f}')
-        logging.debug(f'Linkcell.make_memberlists() ends.')
+        logging.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
 
     def neighbors_of_cellndx(self,Ci):
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
