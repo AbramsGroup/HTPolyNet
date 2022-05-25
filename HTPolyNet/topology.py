@@ -228,27 +228,31 @@ class Topology:
             # print(f'{filename}',inst.D.keys())
             #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
 #            logging.debug(f'Checking for duplicates in just-read-in gro topology {filename}')
-            inst.dup_check(die=False)
+            # inst.dup_check(die=False)
  #           logging.debug(f'read_gro ends')
             inst.empty=False
             return inst
 
     def bond_source_check(self):
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
-            logging.info(f'Bond data source check requested.')
+            logging.info(f'Comparison of gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
-            # bmi=grobonds.set_index(['ai','aj']).index
+            bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
-            # mbmi=mol2bonds.set_index(['ai','aj']).index
-            checki=all([x==y for x,y in zip(mol2bonds['ai'],grobonds['ai'])])
-            checkj=all([x==y for x,y in zip(mol2bonds['aj'],grobonds['aj'])])
-            check=checki and checkj
+            mbmi=mol2bonds.set_index(['ai','aj']).index
+            check=all([x==y for x,y in zip(bmi,mbmi)])
+
+            # checki=all([x==y for x,y in zip(mol2bonds['ai'],grobonds['ai'])])
+            # checkj=all([x==y for x,y in zip(mol2bonds['aj'],grobonds['aj'])])
+            # check=checki and checkj
             logging.info(f'Result: {check}')
             if not check:
                 logging.info(f'GROMACS:')
-                logging.info(self.D['bonds'][['ai','aj']].to_string())
+                logging.info(grobonds[['ai','aj']].head().to_string())
                 logging.info(f'MOL2:')
-                logging.info(self.D['mol2_bonds'][['ai','aj']].to_string())
+                logging.info(mol2bonds[['ai','aj']].head().to_string())
+                for x,y in zip(bmi,mbmi):
+                    logging.info(f'{x} {y} {x==y}')
 
     def has_bond(self,pair):
         bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index

@@ -2,7 +2,7 @@
 ;   File DFA.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Mon. May  1 13:43:58 2022
+;   At date: Tue. May  2 20:11:05 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg FDE-DFDA.yaml --loglevel debug -log nodrag.log --force-parameterization --force-sea-calculation --force-checkin
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet parameterize -cfg FDE-DFDA.yaml --loglevel debug --force-checkin
 ;
 
 [ defaults ]

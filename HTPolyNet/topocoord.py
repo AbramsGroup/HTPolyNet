@@ -129,6 +129,7 @@ class TopoCoord:
             bb=[b['ai'],b['aj']]
             template_name=b['reactantName']
             T=moldict[template_name]
+            logging.debug(f'Bond {bb} using template {T.name}')
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[0]})
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
             temp_atdf=T.TopoCoord.Topology.D['atoms']
@@ -139,7 +140,9 @@ class TopoCoord:
             check=True
             for k,v in inst2temp.items():
                 check = check and (k == temp2inst[v])
-            assert check,f'Error: bidirectional dicts are incompatible; bug'
+            for k,v in temp2inst.items():
+                check = check and (k == inst2temp[v])
+            assert check,f'Error: bidirectional dicts are incompatible; bug\n{inst2temp}\b{temp2inst}'
             # logging.debug(f'map_from_templates:inst2temp {inst2temp}')
             # logging.debug(f'map_from_templates:temp2inst {temp2inst}')
             i_idx,j_idx=bb # the actual atoms that just bonded
@@ -159,9 +162,11 @@ class TopoCoord:
             # logging.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
             # map from template atom indicies to system atom indicies in angles
             inst_angles=temp_angles.copy()
+            logging.debug(f'temp_angles:\n{temp_angles.to_string()}')
             inst_angles.ai=temp_angles.ai.map(temp2inst)
             inst_angles.aj=temp_angles.aj.map(temp2inst)
             inst_angles.ak=temp_angles.ak.map(temp2inst)
+            logging.debug(f'Mapped inst_angles:\n{inst_angles.to_string()}')
             # add new angles to the system topology
             d=self.Topology.D['angles']
             self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)
@@ -169,6 +174,7 @@ class TopoCoord:
             # required
             for a in ['ai','aj','ak']:
                 for inst_atom,temp_atom in zip(inst_angles[a],temp_angles[a]):
+                    assert inst_atom in atdf['nr'],f'Error: mapped atom {inst_atom} not found in [ atoms ]'
                     inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
                     temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
                     # logging.debug(f'ang temp {temp_atom} {temp_type} {temp_charge}')
@@ -651,7 +657,7 @@ class TopoCoord:
                 flg=values[0]
                 chk=all(values==flg)
                 if not chk:
-                    logging.warning(f'Warning: atoms in symmetry class {i} have different values of {attr}')
+                    logging.warning(f'Warning: atoms in symmetry class {i} have different values of {attr}\n{sea_cls.to_string()}')
 
     def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=False):
         """Initialize the linkcell structure; a wrapper for Coordinates

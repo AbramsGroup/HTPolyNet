@@ -143,7 +143,7 @@ def encluster(i,j,c):
                 c[k]=c[j]
     return False        
 
-def symm(d,thresh=0.10):
+def symm(d,thresh=0.1,outfile=None):
     ''' Builds and returns an atom-idx-ordered list of sea-cluster indexes.
         Any two atoms with the same sea-cluster-index are considered
         symmetry equivalent.
@@ -173,7 +173,11 @@ def symm(d,thresh=0.10):
 
     # sort the list by distances (not strictly necessary)
     L=sorted(l,key=lambda x: x[2])
-        
+    if outfile:
+        with open(outfile,'w') as f:
+            for i,j,r in L:
+                f.write(f'{i} {j} {r:0.8f}\n')
+
     # clusterize the i,j entries of each element of L
     all_done=False
     cpass=0
@@ -218,7 +222,7 @@ def analyze_sea(deffnm,thresh=0.1):
     if not os.path.exists(f'{deffnm}.trr'):
         logging.error(f'{deffnm}.trr not found.')
         return []
-    
+    logging.debug(f'SEA analysis from {deffnm}.trr')
     with GroTrrReader(f'{deffnm}.trr') as trrfile:
         d=np.array((0,))
         nframes=0
@@ -236,6 +240,7 @@ def analyze_sea(deffnm,thresh=0.1):
             nframes+=1
         # averages over frames
         d/=nframes
+        logging.debug(f'{deffnm}.trr: {nframes} frames')
         # send the distance matrix to be processed, return
         # the atom-ordered list of sea-cluster-idx's
-        return symm(d,thresh=thresh)
+        return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')

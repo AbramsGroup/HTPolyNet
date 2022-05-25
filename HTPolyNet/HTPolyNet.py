@@ -129,7 +129,7 @@ class HTPolyNet:
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
-        sea_thresh=self.cfg.parameters.get('sea_thresh',0.10)
+        sea_thresh=self.cfg.parameters.get('sea_thresh',0.1)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
@@ -184,8 +184,10 @@ class HTPolyNet:
                 for idx in my_sc_idx:
                     adds.extend(M.sea_of(idx))
             my_sc_idx=adds
-
-            logging.debug(f'After applying symmetry, stereocenter atom indices: {my_sc_idx}')
+            sc_names=[]
+            for idx in my_sc_idx:
+                sc_names.append(M.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':idx}))
+            logging.debug(f'With symmetry, stereocenters are {sc_names}')
             flip=[[0,1] for _ in range(len(my_sc_idx))]
             P=product(*flip)
             next(P) # one with no flips is the original molecule, so skip it
@@ -747,6 +749,10 @@ def cli():
 
     if args.command=='info':
         info()
+    elif args.command=='parameterize':
+        pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
+        a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
+        a.generate_molecules(force_parameterization=True,force_sea_calculation=True,force_checkin=args.force_checkin)
     elif args.command=='run':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
         a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)

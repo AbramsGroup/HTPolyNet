@@ -2,7 +2,7 @@
 ;   File PACDGE2-7.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Tue. May  2 10:52:30 2022
+;   At date: Wed. May  3 09:11:59 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg DGE-PAC.yaml --loglevel debug --force-parameterization --force-sea-calculation --force-checkin
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet parameterize -cfg DGE-PAC.yaml --loglevel debug --force-checkin
 ;
 
 [ defaults ]
@@ -30,7 +30,7 @@ system1          3
 ; residue    1 PAC rtp PAC q -0.2
     1         c3      1    PAC      C      1 -0.04890000  12.010000   ; qtot -0.048900
     2         c3      1    PAC     C3      2 -0.03730000  12.010000   ; qtot -0.086200
-    3         c3      1    PAC     C1      3 0.00980000  12.010000   ; qtot -0.076400
+    3         c3      1    PAC     C2      3 0.00980000  12.010000   ; qtot -0.076400
     4         c3      1    PAC     C4      4 -0.03730000  12.010000   ; qtot -0.113700
     5         c3      1    PAC     C5      5 -0.04890000  12.010000   ; qtot -0.162600
     6         c3      1    PAC     C6      6 -0.04110000  12.010000   ; qtot -0.203700
@@ -38,11 +38,11 @@ system1          3
     8         c3      1    PAC     C8      8 -0.04110000  12.010000   ; qtot -0.292400
     9         c3      1    PAC     C9      9 -0.04900000  12.010000   ; qtot -0.341400
    10         c3      1    PAC    C10     10 -0.03770000  12.010000   ; qtot -0.379100
-   11         c3      1    PAC     C2     11 0.00390000  12.010000   ; qtot -0.375200
+   11         c3      1    PAC     C1     11 0.00390000  12.010000   ; qtot -0.375200
    12         c3      1    PAC    C11     12 -0.03770000  12.010000   ; qtot -0.412900
    13         c3      1    PAC    C12     13 -0.04900000  12.010000   ; qtot -0.461900
-   14         n3      1    PAC     N2     14 -0.32770000  14.010000   ; qtot -0.789600
-   15         n3      1    PAC     N1     15 -0.29510000  14.010000   ; qtot -1.084700
+   14         n3      1    PAC     N1     14 -0.32770000  14.010000   ; qtot -0.789600
+   15         n3      1    PAC     N2     15 -0.29510000  14.010000   ; qtot -1.084700
    16         hc      1    PAC      H     16 0.02700000   1.008000   ; qtot -1.057700
    17         hc      1    PAC     H1     17 0.02700000   1.008000   ; qtot -1.030700
    18         hc      1    PAC     H2     18 0.02830000   1.008000   ; qtot -1.002400

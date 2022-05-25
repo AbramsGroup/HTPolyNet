@@ -229,6 +229,14 @@ class Coordinates:
             inst.A[['posX','posY','posZ']]*=[0.1,0.1,0.1]
             inst.N=inst.A.shape[0]
             inst.mol2_bonds=pd.read_csv(sections['bond'],sep='\s+',names=Coordinates.mol2_bond_attributes,dtype=Coordinates.mol2_bond_types)
+            # sort so atom indices are increasing in each bond
+            for i,r in inst.mol2_bonds.iterrows():
+                ai=r['ai']
+                aj=r['aj']
+                if aj<ai:
+                    logging.debug(f'mol2 bonds swapping {ai} and {aj}')
+                    inst.mol2_bonds.iloc[i,inst.mol2_bonds.columns=='ai']=aj
+                    inst.mol2_bonds.iloc[i,inst.mol2_bonds.columns=='aj']=ai
             inst.mol2_bondlist=Bondlist.fromDataFrame(inst.mol2_bonds)
         inst.empty=False
         return inst
@@ -589,9 +597,9 @@ class Coordinates:
             raise Exception('Please provide a file name to write atom attribute data')
         with open(filename,'w') as f:
             if len(formatters)>0:
-                f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False,formatters=formatters))
+                f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False,formatters=formatters)+'\n')
             else:
-                f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False))
+                f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False)+'\n')
 
     def read_atomset_attributes(self,filename,attributes=[]):
         """Reads atomic attributes from input file
@@ -773,12 +781,15 @@ class Coordinates:
                     minHH=(rijh,ih,jh)
         ''' rename remaining H atoms '''
         if rename:
-            i_avails=list(sorted(i_Hpartners.values()))[:-1]
-            j_avails=list(sorted(j_Hpartners.values()))[:-1]
+            # sort names of hydrogen ligands by their number; e.g., H7, H8, H9, H10, H11, H12...
+            i_avails=list(sorted(i_Hpartners.values(),key=lambda x: int(x.split('H')[1])))[:-1]
+            j_avails=list(sorted(j_Hpartners.values(),key=lambda x: int(x.split('H')[1])))[:-1]
+            # remove the globalIdx of the sacrificial H's from their atom's dictionaries of H-atoms
             del i_Hpartners[ih]
             del j_Hpartners[jh]
             Top=T.D['atoms']
             Cor=self.A
+            # for all remaining H neighbor globalIdx of each atom, rename starting from lowest number
             for h in i_Hpartners:
                 i_Hpartners[h]=i_avails.pop(0)
                 Top.iloc[h-1,Top.columns=='atom']=i_Hpartners[h]
@@ -788,7 +799,7 @@ class Coordinates:
                 Top.iloc[h-1,Top.columns=='atom']=j_Hpartners[h]
                 Cor.iloc[h-1,Cor.columns=='atomName']=j_Hpartners[h]
         # this makes sure that it always looks like the same atom was deleted
-        return [ih,jh]
+        return [ih,jh] # return the globalIdx's of the two sacrificial H's
 
     def delete_atoms(self,idx=[],reindex=True):
         '''
@@ -942,4 +953,5 @@ class Coordinates:
                 ''' write substructure section '''
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
+                f.write('\n')
     

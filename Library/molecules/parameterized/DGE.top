@@ -2,7 +2,7 @@
 ;   File DGE.top  was generated
 ;   By user: cfa (1000)
 ;   On host: panacea
-;   At date: Tue. May  2 10:50:37 2022
+;   At date: Wed. May  3 09:08:32 2022
 ;
 ;   This is a standalone topology file
 ;
@@ -11,7 +11,7 @@
 ;   Executable:   htpolynet
 ;   Library dir:  /usr/local/gromacs/share/gromacs/top
 ;   Command line:
-;     /home/cfa/anaconda3/envs/py39/bin/htpolynet run -cfg DGE-PAC.yaml --loglevel debug --force-parameterization --force-sea-calculation --force-checkin
+;     /home/cfa/anaconda3/envs/py39/bin/htpolynet parameterize -cfg DGE-PAC.yaml --loglevel debug --force-checkin
 ;
 
 [ defaults ]

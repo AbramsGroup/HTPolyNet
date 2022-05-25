@@ -137,9 +137,15 @@ class Configuration:
                     clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
                                                 same_attribute='sea-idx',
                                                 return_attribute='atomName')
-                    # logging.debug(f'atoms symmetry-equivalent to {mname} {atomName}: {clu}')
-                    sclass[mname][atomName]=list(clu)
-                    sp.append(list(clu))
+                    # make sure atomName is the first element in clu
+                    clu=list(clu)
+                    assert atomName in clu
+                    clu.remove(atomName)
+                    clu.insert(0,atomName)
+                    logging.debug(f'Atoms symmetry-equivalent to {mname} {atomName}: {clu}')
+                    sclass[mname][atomName]=clu
+                    sp.append(clu)
+
                 # logging.debug(f'sp {sp}')
                 if len(R.reactants)>1:
                     sseq.append(list(product(*sp)))
@@ -151,7 +157,7 @@ class Configuration:
             logging.debug(f'P {P}')
             idx=1
             trydict[P[0]]=R.product
-            for p in P[1:]:
+            for p in P[1:]: # skip the first permutation -- assume this is the explicit one!
                 logging.debug(f'{R.name}-{idx} {p}({len(p)}) -> {R.product}-{idx}')
                 trydict[p]=f'{R.product}-{idx}'
                 newR=deepcopy(R)
