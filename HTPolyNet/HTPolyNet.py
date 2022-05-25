@@ -129,7 +129,7 @@ class HTPolyNet:
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
-        sea_thresh=self.cfg.parameters.get('sea_thresh',0.1)
+        sea_thresh=self.cfg.parameters.get('sea_thresh',0.12)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))

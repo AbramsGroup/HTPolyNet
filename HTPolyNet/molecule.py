@@ -540,8 +540,9 @@ class Molecule:
         # logging.debug(f'Partners of {from_idx} {otpartners}')
         myHpartners={k:v for k,v in zip(mypartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')}
         otHpartners={k:v for k,v in zip(otpartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')}
-        myHighestH={k:v for k,v in myHpartners.items() if v==max([k for k in myHpartners.values()])}
-        otHighestH={k:v for k,v in otHpartners.items() if v==max([k for k in otHpartners.values()])}
+        ### HERE IS THE PROBLEM
+        myHighestH={k:v for k,v in myHpartners.items() if v==max([k for k in myHpartners.values()],key=lambda x: int(x.split('H')[1]))}
+        otHighestH={k:v for k,v in otHpartners.items() if v==max([k for k in otHpartners.values()],key=lambda x: int(x.split('H')[1]))}
         assert len(myHighestH)==1
         assert len(otHighestH)==1
         # logging.debug(f'Highest-named H partner of {at_idx} is {myHighestH}')

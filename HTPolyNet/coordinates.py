@@ -781,9 +781,11 @@ class Coordinates:
                     minHH=(rijh,ih,jh)
         ''' rename remaining H atoms '''
         if rename:
-            # sort names of hydrogen ligands by their number; e.g., H7, H8, H9, H10, H11, H12...
+            # reverse sort names of hydrogen ligands by their number
             i_avails=list(sorted(i_Hpartners.values(),key=lambda x: int(x.split('H')[1])))[:-1]
             j_avails=list(sorted(j_Hpartners.values(),key=lambda x: int(x.split('H')[1])))[:-1]
+            logging.debug(f'i_avails {i_avails}')
+            logging.debug(f'j_avails {j_avails}')
             # remove the globalIdx of the sacrificial H's from their atom's dictionaries of H-atoms
             del i_Hpartners[ih]
             del j_Hpartners[jh]
@@ -794,10 +796,12 @@ class Coordinates:
                 i_Hpartners[h]=i_avails.pop(0)
                 Top.iloc[h-1,Top.columns=='atom']=i_Hpartners[h]
                 Cor.iloc[h-1,Cor.columns=='atomName']=i_Hpartners[h]
+                logging.debug(f'i: changed name of {h} to {i_Hpartners[h]}')
             for h in j_Hpartners:
                 j_Hpartners[h]=j_avails.pop(0)
                 Top.iloc[h-1,Top.columns=='atom']=j_Hpartners[h]
                 Cor.iloc[h-1,Cor.columns=='atomName']=j_Hpartners[h]
+                logging.debug(f'j: changed name of {h} to {j_Hpartners[h]}')
         # this makes sure that it always looks like the same atom was deleted
         return [ih,jh] # return the globalIdx's of the two sacrificial H's
 

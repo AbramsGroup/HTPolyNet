@@ -29,8 +29,19 @@ Parameter                          Type            Description (default)
 ``desired_conversion``             float           desired fraction of possible crosslink bonds to form
 ``max_CURE_iterations``            int             maximum number of CURE iterations to run prior to reaching desired conversion
 ``late_treshhold``                 float           conversion above which reactions are all treated with probability 1.0
-``charge_method``                  string          "gas" for Gasteiger; "bcc" for bcc; passed directly to antechamber
 ===============================    ==============  =====================
+
+Parameters associated with parameterization of molecules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+=================================    ==============  =====================
+Parameter                            Type            Description (default)
+=================================    ==============  =====================
+``charge_method``                    string          "gas" for Gasteiger; "bcc" for bcc; passed directly to antechamber
+``use_symmetry_equivalent_atoms``    list            monomers for which symmetry-equivalent atoms are used
+``stereocenters``                    dict            keys: monomer names; values: list of names of chiral atoms
+``sea_thresh``                       float           Threshhold "distance" below which two distance-matrix elements are considered "equal" (used during calculation of symmetry-equivalence only) (0.13)
+=================================    ==============  =====================
 
 Other control parameters govern detailed aspects of the CURE algorithm.  These involve MD simulations performed immediately prior to and immediately after new bond addition to the topology, in order to relax those bonds.
 
@@ -71,14 +82,12 @@ The system chemistries and initial composition are specified by a set of inter-r
 Top-level chemistry parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-================================= ====          ===========
+================================= =====         ===========
 Parameter                         Type          Description
-================================= ====          ===========
+================================= =====         ===========
 ``initial_composition``           dict          keys: monomer names, values: numbers of molecules in system
-``use_symmetry_equivalent_atoms`` list          monomers for which symmetry-equivalent atoms are used
-``stereocenters``                 dict          keys: monomer names; values: list of names of chiral atoms
 ``reactions``                     list          reaction dicts, one per reaction
-================================= ====          ===========
+================================= =====         ===========
 
 The ``initial_composition`` dictionary is how the initial extensive composition of the system is specified.  For example,
 
