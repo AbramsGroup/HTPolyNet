@@ -99,9 +99,39 @@
 <td><p>float</p></td>
 <td><p>conversion above which reactions are all treated with probability 1.0</p></td>
 </tr>
+</tbody>
+</table>
+</section>
+<section id="parameters-associated-with-parameterization-of-molecules">
+<h3>Parameters associated with parameterization of molecules<a class="headerlink" href="#parameters-associated-with-parameterization-of-molecules" title="Permalink to this headline">¶</a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 7%" />
+<col style="width: 76%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">charge_method</span></code></p></td>
 <td><p>string</p></td>
 <td><p>“gas” for Gasteiger; “bcc” for bcc; passed directly to antechamber</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code></p></td>
+<td><p>list</p></td>
+<td><p>monomers for which symmetry-equivalent atoms are used</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stereocenters</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>keys: monomer names; values: list of names of chiral atoms</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sea_thresh</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Threshhold “distance” below which two distance-matrix elements are considered “equal” (used during calculation of symmetry-equivalence only) (0.13)</p></td>
 </tr>
 </tbody>
 </table>
@@ -186,7 +216,7 @@
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 34%" />
-<col style="width: 4%" />
+<col style="width: 5%" />
 <col style="width: 61%" />
 </colgroup>
 <thead>
@@ -199,14 +229,6 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_composition</span></code></p></td>
 <td><p>dict</p></td>
 <td><p>keys: monomer names, values: numbers of molecules in system</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use_symmetry_equivalent_atoms</span></code></p></td>
-<td><p>list</p></td>
-<td><p>monomers for which symmetry-equivalent atoms are used</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stereocenters</span></code></p></td>
-<td><p>dict</p></td>
-<td><p>keys: monomer names; values: list of names of chiral atoms</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">reactions</span></code></p></td>
 <td><p>list</p></td>
