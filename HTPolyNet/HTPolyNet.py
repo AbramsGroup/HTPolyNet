@@ -437,8 +437,8 @@ class HTPolyNet:
                     msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='relax-npt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
-                    current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'New bonds avg/min/max: {current_lengths.mean():.3f}/{current_lengths.min():.3f}/{current_lengths.max():.3f}')
+                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    logging.debug(f'New bonds avg/min/max: {CP.bonds["current_lengths"].mean():.3f}/{CP.bonds["current_lengths"].min():.3f}/{CP.bonds["current_lengths"].max():.3f}')
                     CP.current_stage+=1
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
