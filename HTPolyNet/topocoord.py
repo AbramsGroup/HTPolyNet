@@ -174,7 +174,7 @@ class TopoCoord:
             # required
             for a in ['ai','aj','ak']:
                 for inst_atom,temp_atom in zip(inst_angles[a],temp_angles[a]):
-                    assert inst_atom in atdf['nr'],f'Error: mapped atom {inst_atom} not found in [ atoms ]'
+                    assert inst_atom in atdf['nr'].values,f'Error: mapped atom {inst_atom} not found in [ atoms ]'
                     inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
                     temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
                     # logging.debug(f'ang temp {temp_atom} {temp_type} {temp_charge}')
