@@ -47,7 +47,14 @@ pip install as in:</p>
 </section>
 <section id="software-prequisites">
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed.</p>
+<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed, and the following executables should be in your path:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parmchk2</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tleap</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code></p></li>
+</ol>
+<p>Suggested approaches for obtaining these are below.</p>
 <ul>
 <li><p><a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>. You have at least two options:</p>
 <blockquote>
@@ -84,6 +91,7 @@ pip install as in:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /usr/local/gromacs-2022.1/bin/GMXRC</span>
 </pre></div>
 </div>
+<p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you compiled an MPI version, you will instead generated <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.</p>
 </li>
 </ul>
 </div></blockquote>
