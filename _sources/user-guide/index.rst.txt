@@ -6,7 +6,7 @@ User Guide
    :caption: Contents:
 
    usage
-   algorithm
+   program-flow
    things-to-know
    configuration-files
    molecular-structure-inputs

@@ -15,7 +15,7 @@
     <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="The Algorithm" href="algorithm.html" />
+    <link rel="next" title="Program Flow" href="program-flow.html" />
     <link rel="prev" title="User Guide" href="index.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -40,6 +40,19 @@
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">&lt;my_config.yaml&gt;</span></code> is replaced by the name of your input configuration file.  A full listing of command-line parameters can be seen using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">-h</span></code>.</p>
+<section id="what-this-does">
+<h2>What this does<a class="headerlink" href="#what-this-does" title="Permalink to this headline">¶</a></h2>
+<p>Invoking <cite>htpolynet</cite> always generates a <cite>proj-n</cite> subdirectory, where <cite>n</cite> is replaced by <cite>0</cite> (if the current working directory is empty) or the next integer implied by existing <cite>proj-0</cite>, <cite>proj-1</cite>, etc.  This is referred to as a “project” directory.  (If the <cite>-restart</cite> flag is appending the the command, it drops into the latest project directory to pick up the most recent checkpoint.)  It then immediately creats <cite>systems</cite>, <cite>molecules</cite>, and <cite>plots</cite> subdirectories:</p>
+<ul class="simple">
+<li><p><cite>molecules/</cite>
+All molecular parameterization files are written to <cite>molecules/parameterized</cite> if any are done; otherwise, this directory is populated with any molecule parameterizations (<cite>*.gro</cite>, <cite>*.top</cite> / <cite>*.itp</cite>, and <cite>*.sea</cite> files).  (See <a class="reference internal" href="../reference-guide/symmetry-equivalence.html#symmetry-equivalence"><span class="std std-ref">Symmetry equivalent atoms</span></a> for a description of <cite>*.sea</cite> files.)</p></li>
+<li><p><cite>systems/</cite>
+* <cite>init/</cite>: The initial liquid system is built and simulated here.
+* <cite>iter-n</cite>: The <cite>n</cite>-th CURE iteration system is simulated here.</p></li>
+<li><p><cite>plots/</cite>
+A variety of plots are put here.  Currently, only a plot of the density as a function of time from the densification of the initial liquid is put here.  More to come.</p></li>
+</ul>
+</section>
 </section>
 
 
@@ -64,7 +77,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithm.html">The Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="molecular-structure-inputs.html">Molecular Structure Inputs</a></li>
@@ -79,7 +92,7 @@
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="index.html">User Guide</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">User Guide</a></li>
-      <li>Next: <a href="algorithm.html" title="next chapter">The Algorithm</a></li>
+      <li>Next: <a href="program-flow.html" title="next chapter">Program Flow</a></li>
   </ul></li>
   </ul></li>
 </ul>

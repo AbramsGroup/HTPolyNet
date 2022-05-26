@@ -34,7 +34,7 @@
           <div class="body" role="main">
             
   <section id="symmetry-equivalent-atoms">
-<h1>Symmetry equivalent atoms<a class="headerlink" href="#symmetry-equivalent-atoms" title="Permalink to this headline">¶</a></h1>
+<span id="symmetry-equivalence"></span><h1>Symmetry equivalent atoms<a class="headerlink" href="#symmetry-equivalent-atoms" title="Permalink to this headline">¶</a></h1>
 <p>HTPolyNet allows for the use of symmetry-equivalent atoms in monomer structures.  Individual atoms are referenced in the configuration file as either reactive or a stereocenter, with reference to a particular molecule/residue.  If symmetry-equivalence is enabled for a molecule via the <cite>use_symmetry_equivalent_atoms</cite> option, then all atoms that are symmetry-equivalent to a specified atom are also considered.  Symmetry-equivalence is encoded in an atom coordinate attribute <cite>sea-idx</cite>, which contains an integer designation of the cluster of symmetry-equivalent atoms to which the attribute owner belongs.  All atoms with the same <cite>sea-idx</cite> (within one residue!) are considered symmetry-equivalent.  <cite>sea-idx</cite> attributes are stored in <cite>*.sea</cite> files for parameterized molecules.</p>
 <section id="what-symmetry-equivalence-does">
 <h2>What symmetry-equivalence does<a class="headerlink" href="#what-symmetry-equivalence-does" title="Permalink to this headline">¶</a></h2>

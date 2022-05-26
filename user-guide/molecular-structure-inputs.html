@@ -37,50 +37,13 @@
 <h1>Molecular Structure Inputs<a class="headerlink" href="#molecular-structure-inputs" title="Permalink to this headline">¶</a></h1>
 <p>HTPolyNet uses the distinct terms “monomer” and “molecule”.  A monomer is akin to a “residue” for biomolecules; it has a unique name, and a “molecule” is made of a sequence of one or more monomers.  (Here, “sequence” only refers to the order in which monomers appear in the list of all atoms; not their topological sequence.)  HTPolyNet will build a system out of molecules you specify as input; typically, these would be monomers (i.e., molecules with a single monomer).</p>
 <p>Regardless, any molecule you wish to use as a <strong>monomer</strong> must have a mol2 file <code class="docutils literal notranslate"><span class="pre">&lt;NAME&gt;.mol2</span></code>, where <code class="docutils literal notranslate"><span class="pre">&lt;NAME&gt;</span></code> is replaced with the name of the monomer. This name is important; it is how the monomer is called forever inside HTPolyNet.</p>
-<p>Sample mol2 files for a few monomers are provide in the Library subpackage: <code class="docutils literal notranslate"><span class="pre">Library/molecules/inputs</span></code>.  You will likely want to create your own.  Most chemical structure drawing programs will output mol2 files.  OpenBabel can also generate them from SMILES strings; e.g., for butane:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$  </span><span class="nb">echo</span> <span class="s2">&quot;CCCC&quot;</span> <span class="p">|</span> obabel -ismi -omol2 --gen3d --title BUTANE <span class="p">|</span> sed s/<span class="s2">&quot;UNL1  &quot;</span>/<span class="s2">&quot;BUTANE&quot;</span>/ &gt; BUTANE.mol2
+<p>Sample mol2 files for a few monomers are provide in the Library subpackage: <code class="docutils literal notranslate"><span class="pre">Library/molecules/inputs</span></code>.  You will likely want to create your own.  Most chemical structure drawing programs will output mol2 files.  OpenBabel can also generate them from SMILES strings.  As an example, consider 4,4-diaminodicyclohexylmethane, referred to colloquially as PACM (“pack-em”).  The SMILES string for PACM is <a class="reference external" href="https://en.wikipedia.org/wiki/4,4-Diaminodicyclohexylmethane">C1CC(CCC1CC2CCC(CC2)N)N</a>, and using obabel, we can generate a structure for the “PAC” monomer (three-letter monomer names are customary, though not required; they need only be unique identifiers):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span> <span class="p">|</span> obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;PAC&quot;</span> <span class="p">|</span> sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;PAC    &quot;</span>/ &gt; PAC.mol2
 </pre></div>
 </div>
-<p>So to generate mol2 files for your monomers, you have a few options.</p>
-<p>The mol2 format HTPolyNet requires for a monomer is minimal and requires only three sections: <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;MOLECULE</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;ATOM</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;BOND</span></code>.  For a molecule with more than one monomer, a <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;SUBSTRUCTURE</span></code> section is also required.  Below is the mol2 file for butane we just created above:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">MOLECULE</span>
-<span class="n">BUTANE</span>
-<span class="mi">14</span> <span class="mi">13</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
-<span class="n">SMALL</span>
-<span class="n">GASTEIGER</span>
-
-<span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">ATOM</span>
-     <span class="mi">1</span> <span class="n">C</span>           <span class="mf">0.9926</span>    <span class="mf">0.1046</span>    <span class="mf">0.0014</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">BUTANE</span>     <span class="o">-</span><span class="mf">0.0653</span>
-     <span class="mi">2</span> <span class="n">C</span>           <span class="mf">2.5129</span>    <span class="mf">0.0970</span>   <span class="o">-</span><span class="mf">0.0099</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">BUTANE</span>     <span class="o">-</span><span class="mf">0.0562</span>
-     <span class="mi">3</span> <span class="n">C</span>           <span class="mf">3.0598</span>   <span class="o">-</span><span class="mf">0.7349</span>   <span class="o">-</span><span class="mf">1.1682</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">BUTANE</span>     <span class="o">-</span><span class="mf">0.0562</span>
-     <span class="mi">4</span> <span class="n">C</span>           <span class="mf">4.5801</span>   <span class="o">-</span><span class="mf">0.7416</span>   <span class="o">-</span><span class="mf">1.1802</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">BUTANE</span>     <span class="o">-</span><span class="mf">0.0653</span>
-     <span class="mi">5</span> <span class="n">H</span>           <span class="mf">0.6228</span>    <span class="mf">0.7054</span>    <span class="mf">0.8382</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0230</span>
-     <span class="mi">6</span> <span class="n">H</span>           <span class="mf">0.5960</span>   <span class="o">-</span><span class="mf">0.9100</span>    <span class="mf">0.1102</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0230</span>
-     <span class="mi">7</span> <span class="n">H</span>           <span class="mf">0.5955</span>    <span class="mf">0.5315</span>   <span class="o">-</span><span class="mf">0.9250</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0230</span>
-     <span class="mi">8</span> <span class="n">H</span>           <span class="mf">2.8777</span>   <span class="o">-</span><span class="mf">0.3052</span>    <span class="mf">0.9424</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0263</span>
-     <span class="mi">9</span> <span class="n">H</span>           <span class="mf">2.8771</span>    <span class="mf">1.1281</span>   <span class="o">-</span><span class="mf">0.0871</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0263</span>
-    <span class="mi">10</span> <span class="n">H</span>           <span class="mf">2.6944</span>   <span class="o">-</span><span class="mf">0.3331</span>   <span class="o">-</span><span class="mf">2.1205</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0263</span>
-    <span class="mi">11</span> <span class="n">H</span>           <span class="mf">2.6961</span>   <span class="o">-</span><span class="mf">1.7661</span>   <span class="o">-</span><span class="mf">1.0906</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0263</span>
-    <span class="mi">12</span> <span class="n">H</span>           <span class="mf">4.9760</span>    <span class="mf">0.2731</span>   <span class="o">-</span><span class="mf">1.2896</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0230</span>
-    <span class="mi">13</span> <span class="n">H</span>           <span class="mf">4.9499</span>   <span class="o">-</span><span class="mf">1.3426</span>   <span class="o">-</span><span class="mf">2.0168</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0230</span>
-    <span class="mi">14</span> <span class="n">H</span>           <span class="mf">4.9778</span>   <span class="o">-</span><span class="mf">1.1679</span>   <span class="o">-</span><span class="mf">0.2537</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">BUTANE</span>      <span class="mf">0.0230</span>
-<span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">BOND</span>
-     <span class="mi">1</span>     <span class="mi">1</span>     <span class="mi">2</span>    <span class="mi">1</span>
-     <span class="mi">2</span>     <span class="mi">2</span>     <span class="mi">3</span>    <span class="mi">1</span>
-     <span class="mi">3</span>     <span class="mi">3</span>     <span class="mi">4</span>    <span class="mi">1</span>
-     <span class="mi">4</span>     <span class="mi">1</span>     <span class="mi">5</span>    <span class="mi">1</span>
-     <span class="mi">5</span>     <span class="mi">1</span>     <span class="mi">6</span>    <span class="mi">1</span>
-     <span class="mi">6</span>     <span class="mi">1</span>     <span class="mi">7</span>    <span class="mi">1</span>
-     <span class="mi">7</span>     <span class="mi">2</span>     <span class="mi">8</span>    <span class="mi">1</span>
-     <span class="mi">8</span>     <span class="mi">2</span>     <span class="mi">9</span>    <span class="mi">1</span>
-     <span class="mi">9</span>     <span class="mi">3</span>    <span class="mi">10</span>    <span class="mi">1</span>
-    <span class="mi">10</span>     <span class="mi">3</span>    <span class="mi">11</span>    <span class="mi">1</span>
-    <span class="mi">11</span>     <span class="mi">4</span>    <span class="mi">12</span>    <span class="mi">1</span>
-    <span class="mi">12</span>     <span class="mi">4</span>    <span class="mi">13</span>    <span class="mi">1</span>
-    <span class="mi">13</span>     <span class="mi">4</span>    <span class="mi">14</span>    <span class="mi">1</span>
-</pre></div>
-</div>
-<p>No matter how you generate a mol2 file, if it corresponds to a molecule that can react, you must edit the mol2 file to give its reactive atoms <strong>unique names</strong> as we explained in the discussion of reaction dicts in the configuration file.  These atoms are referred to in the configuration file by name.</p>
+<p>The mol2 format HTPolyNet requires for a monomer is minimal and requires only three sections: <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;MOLECULE</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;ATOM</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;BOND</span></code>.  No matter how you generate a mol2 file, if it corresponds to a molecule that can react, you must edit the mol2 file to give <strong>unique atom names</strong> to any reactive atoms or chiral carbons.  You will then use those unique names to refer specifically to those atoms.</p>
+<p>Here is the 3d structure of PACM the above command generated:</p>
+<img alt="../_images/PACM.png" src="../_images/PACM.png" />
 </section>
 
 
@@ -105,7 +68,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="usage.html">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="algorithm.html">The Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Molecular Structure Inputs</a></li>
