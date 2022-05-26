@@ -912,7 +912,7 @@ class Topology:
 #        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')
         return self.D['atoms'].iloc[idx-1].type
 
-    def make_resid_graph(self,json=None,draw=None):
+    def make_resid_graph(self,json_file=None,draw=None):
         adf=self.D['atoms']
         N=adf.shape[0]
         self.residue_network=nx.DiGraph()
@@ -953,10 +953,10 @@ class Topology:
                             break
                 if not self.residue_network.has_edge(i,n):
                     self.residue_network.add_edge(i,n,bondtype=bondtype)
-        if json:
+        if json_file:
             the_data=json_graph.node_link_data(self.residue_network)
-            with open (the_data,'w') as f:
-                json.dump(the_data,f)
+            # with open (json_file,'w') as f:
+            logging.debug(f'writing resid graph to JSON not currently supported\n{the_data}')
         if draw:
             fig,ax=plt.subplots(1,1,figsize=(8,8))
             nx.draw_networkx(self.residue_network,ax=ax)
@@ -1026,6 +1026,7 @@ class Topology:
             it,jt=typeorder((it,jt))
             b0=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'b0'].values[0]
             kb=tdf.loc[(tdf['i']==it)&(tdf['j']==jt),'kb'].values[0]
+        return b0,kb
 
     def restore_bond_parameters(self,df):
         bdf=self.D['bonds']

@@ -1,3 +1,5 @@
+.. _symmetry_equivalence:
+
 Symmetry equivalent atoms
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

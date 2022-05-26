@@ -302,7 +302,7 @@ class Molecule:
 
     def idx_mappers(self,otherTC,other_bond):
         seq_res_is_bystander=[False for _ in self.sequence]
-        logging.debug(f'idx_mappers begins: template name {self.name}')
+        # logging.debug(f'idx_mappers begins: template name {self.name}')
         # get system resName, resNum, and atomNames for each of the two bonded atoms
         i_idx,j_idx=other_bond
         i_resName,i_resNum,i_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
@@ -314,7 +314,7 @@ class Molecule:
         # can be mapped.
         neighbors_of_i=otherTC.partners_of(i_idx)
         resid_bystanders_of_ij=[]  # bystanders bonded to atom i that are not in resid of atom j
-        logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
+        # logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
         for xx in neighbors_of_i:
             x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
             if x_resNum!=i_resNum and x_resNum!=j_resNum:
@@ -330,7 +330,7 @@ class Molecule:
                 # logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
 
         resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_ji]
-        logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
+        # logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
         temp_bystanders=[]
         inst_bystanders=[]
         for xx in resid_bystanders:
@@ -357,7 +357,7 @@ class Molecule:
             (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=b
             Aresname=self.sequence[aresid-1]
             Bresname=self.sequence[bresid-1]
-            logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
+            # logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
             if (i_atomName,i_resName)==(Aname,Aresname):
                 temp_iresid=aresid
                 temp_jresid=bresid
@@ -385,7 +385,7 @@ class Molecule:
             for i,r in tdf.iterrows():
                 temp_idx=r['globalIdx_template']
                 inst_idx=r['globalIdx_instance']
-                logging.debug(f't {temp_idx} <-> i {inst_idx}')
+                # logging.debug(f't {temp_idx} <-> i {inst_idx}')
                 inst2temp[inst_idx]=temp_idx
                 if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
                     raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')

@@ -129,7 +129,7 @@ class HTPolyNet:
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
-        sea_thresh=self.cfg.parameters.get('sea_thresh',0.12)
+        sea_thresh=self.cfg.parameters.get('sea_thresh',0.13)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
@@ -412,7 +412,7 @@ class HTPolyNet:
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to='idx_mapper.dat')
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                self.TopoCoord.make_resid_graph(json='2-update-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
+                self.TopoCoord.make_resid_graph(json_file='2-update-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
                 CP.write_checkpoint(self,CPstate.relax,prefix='2-update')
             if CP.state==CPstate.relax:
                 ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''

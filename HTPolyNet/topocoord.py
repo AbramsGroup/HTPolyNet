@@ -129,7 +129,7 @@ class TopoCoord:
             bb=[b['ai'],b['aj']]
             template_name=b['reactantName']
             T=moldict[template_name]
-            logging.debug(f'Bond {bb} using template {T.name}')
+            # logging.debug(f'Bond {bb} using template {T.name}')
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[0]})
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
             temp_atdf=T.TopoCoord.Topology.D['atoms']
@@ -162,11 +162,11 @@ class TopoCoord:
             # logging.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
             # map from template atom indicies to system atom indicies in angles
             inst_angles=temp_angles.copy()
-            logging.debug(f'temp_angles:\n{temp_angles.to_string()}')
+            # logging.debug(f'temp_angles:\n{temp_angles.to_string()}')
             inst_angles.ai=temp_angles.ai.map(temp2inst)
             inst_angles.aj=temp_angles.aj.map(temp2inst)
             inst_angles.ak=temp_angles.ak.map(temp2inst)
-            logging.debug(f'Mapped inst_angles:\n{inst_angles.to_string()}')
+            # logging.debug(f'Mapped inst_angles:\n{inst_angles.to_string()}')
             # add new angles to the system topology
             d=self.Topology.D['angles']
             self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)
@@ -698,8 +698,8 @@ class TopoCoord:
     def make_ringlist(self):
         self.Coordinates.make_ringlist()
 
-    def make_resid_graph(self):
-        self.Topology.make_resid_graph()
+    def make_resid_graph(self,json_file=None,draw=None):
+        self.Topology.make_resid_graph(json_file=json_file,draw=draw)
 
     def maxspan(self):
         """Returns the maxspan of the Coordinates (dimensions of orthorhombic 
