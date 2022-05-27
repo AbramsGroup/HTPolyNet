@@ -791,8 +791,8 @@ class Coordinates:
         ''' rename remaining H atoms '''
         if rename:
             # reverse sort names of hydrogen ligands by their number
-            i_avails=list(sorted(i_Hpartners.values(),key=lambda x: int(x.split('H')[1])))[:-1]
-            j_avails=list(sorted(j_Hpartners.values(),key=lambda x: int(x.split('H')[1])))[:-1]
+            i_avails=list(sorted(i_Hpartners.values(),key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0')))[:-1]
+            j_avails=list(sorted(j_Hpartners.values(),key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0')))[:-1]
             logging.debug(f'i_avails {i_avails}')
             logging.debug(f'j_avails {j_avails}')
             # remove the globalIdx of the sacrificial H's from their atom's dictionaries of H-atoms
