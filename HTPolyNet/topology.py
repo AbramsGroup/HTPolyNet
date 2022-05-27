@@ -956,12 +956,13 @@ class Topology:
         if json_file:
             the_data=json_graph.node_link_data(self.residue_network)
             assert type(the_data)==dict,f'Error: node_link_data returns a {type(the_data)} but should return a dict'
-            try:
-                logging.debug(f'writing graph node_link_data to {json_file}')
-                with open (json_file,'w') as f:
+            logging.debug(f'writing graph node_link_data to {json_file}')
+            with open (json_file,'w') as f:
+                try:
                     json.dump(the_data,f)
-            except:
-                logging.debug(f'writing resid graph to JSON not currently supported')
+                except:
+                    logging.debug(f'writing resid graph to JSON not currently supported')
+                    f.write(the_data+'\n')
         if draw:
             fig,ax=plt.subplots(1,1,figsize=(8,8))
             nx.draw_networkx(self.residue_network,ax=ax)

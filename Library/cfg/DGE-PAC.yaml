@@ -5,13 +5,14 @@ initial_density: 300.0  # kg/m3
 CURE_initial_search_radius: 0.5 # nm
 CURE_radial_increment: 0.25
 desired_conversion: 0.95
-late_treshhold: 0.85
+late_threshold: 0.85
 charge_method: gas  # only needed if parameterizing
 max_drag_stages: 5
 drag_limit: 0.0 # nm
 max_bond_relaxation_increment: 0.05
 relax_nvt_steps: 2500
 relax_npt_steps: 5000
+relax_temperature: 600
 max_CURE_iterations: 150
 use_symmetry_equivalent_atoms: [PAC, DGE]
 stereocenters: { PAC: [C1], DGE: [C3] }
