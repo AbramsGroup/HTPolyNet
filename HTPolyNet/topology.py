@@ -475,7 +475,10 @@ class Topology:
                     kb=ij.loc[idx,'kb']
                     b0=ij.loc[idx,'b0']
                 else:
-                    logging.debug(f'no bondtype {idx} found; are  you parameterizing?')
+                    logging.debug(f'no bondtype {idx} found; are you parameterizing?')
+                    bt=1
+                    b0=1.5
+                    kb=999999
                     # raise Exception(f'no bondtype {idx} found.')
                 # add a new bond!
                 h=_GromacsTopologyDirectiveHeaders_['bonds']
