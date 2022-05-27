@@ -4,8 +4,7 @@ Installation and Prerequisites
 Installation
 ------------
 
-Because HTPolyNet is under active development, it is best to clone the repository from Github and then 
-pip install as in:
+Because HTPolyNet is under active development, it is best to clone the repository from Github and then pip install as in:
 
 .. code-block:: console
 
@@ -16,7 +15,7 @@ pip install as in:
 Software Prequisites
 --------------------
 
-Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed, and the following executables should be in your path:
+Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, the following executables should be in your path:
 
 1. ``antechamber``
 2. ``parmchk2``
@@ -62,7 +61,7 @@ Suggested approaches for obtaining these are below.
 
          source /usr/local/gromacs/bin/GMXRC
      
-     This should provide access to the ``gmx`` command.  If you compiled an MPI version, you will instead generated ``gmx_mpi``; either of these commands can be used by HTPolyNet.
+     This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.
 
 
 
