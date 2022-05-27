@@ -258,7 +258,7 @@ def mdp_modify(mdp_filename,opt_dict):
                 all_dict[k]=v
             else:
                 logging.debug(f'mdp_modify: line {l} in {mdp_filename} skipped')
-    logging.debug(f'mdp_modify: all_dict: {all_dict}')
+    # logging.debug(f'mdp_modify: all_dict: {all_dict}')
     for k,v in opt_dict.items():
         if not k in all_dict:
             logging.debug(f'mdp_modify: {k} not found in {mdp_filename}')
