@@ -43,7 +43,7 @@ Suggested approaches for obtaining these are below.
 * `Gromacs <https://manual.gromacs.org/documentation/current/index.html>`_.  You likely have at least two options:
 
    * your linux package manager
-   * compile from source:
+   * compile from source.  This is a good option if you want to use GPUs and/or MPI.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):
 
      .. code-block:: console
 
@@ -51,7 +51,7 @@ Suggested approaches for obtaining these are below.
          $ cd gromacs-2022.1
          $ mkdir build
          $ cd build
-         $ cmake ..  -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON -DGMX_MPI=on -DGMX_GPU=on -DCMAKE_INSTALL_PREFIX=/usr/local/gromacs-2022.1
+         $ cmake ..  -DGMX_BUILD_OWN_FFTW=ON -DREGRESSIONTEST_DOWNLOAD=ON -DGMX_GPU=CUDA -DCMAKE_INSTALL_PREFIX=/usr/local/gromacs
          $ make
          $ make check
          $ sudo make install
@@ -60,7 +60,7 @@ Suggested approaches for obtaining these are below.
 
      .. code-block:: console
 
-         source /usr/local/gromacs-2022.1/bin/GMXRC
+         source /usr/local/gromacs/bin/GMXRC
      
      This should provide access to the ``gmx`` command.  If you compiled an MPI version, you will instead generated ``gmx_mpi``; either of these commands can be used by HTPolyNet.
 

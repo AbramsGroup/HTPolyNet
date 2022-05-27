@@ -76,19 +76,19 @@ pip install as in:</p>
 <blockquote>
 <div><ul>
 <li><p>your linux package manager</p></li>
-<li><p>compile from source:</p>
+<li><p>compile from source.  This is a good option if you want to use GPUs and/or MPI.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar xfz gromacs-2022.1.tar.gz
 <span class="gp">$ </span><span class="nb">cd</span> gromacs-2022.1
 <span class="gp">$ </span>mkdir build
 <span class="gp">$ </span><span class="nb">cd</span> build
-<span class="gp">$ </span>cmake ..  -DGMX_BUILD_OWN_FFTW<span class="o">=</span>ON -DREGRESSIONTEST_DOWNLOAD<span class="o">=</span>ON -DGMX_MPI<span class="o">=</span>on -DGMX_GPU<span class="o">=</span>on -DCMAKE_INSTALL_PREFIX<span class="o">=</span>/usr/local/gromacs-2022.1
+<span class="gp">$ </span>cmake ..  -DGMX_BUILD_OWN_FFTW<span class="o">=</span>ON -DREGRESSIONTEST_DOWNLOAD<span class="o">=</span>ON -DGMX_GPU<span class="o">=</span>CUDA -DCMAKE_INSTALL_PREFIX<span class="o">=</span>/usr/local/gromacs
 <span class="gp">$ </span>make
 <span class="gp">$ </span>make check
 <span class="gp">$ </span>sudo make install
 </pre></div>
 </div>
 <p>And add to <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /usr/local/gromacs-2022.1/bin/GMXRC</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /usr/local/gromacs/bin/GMXRC</span>
 </pre></div>
 </div>
 <p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you compiled an MPI version, you will instead generated <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.</p>
