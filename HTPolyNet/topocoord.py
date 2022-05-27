@@ -69,6 +69,7 @@ class TopoCoord:
         :rtype: list
         """
         idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H)
+        logging.debug(f'idx_to_ignore {idx_to_ignore}')
         self.Topology.add_bonds(pairs)
         self.Topology.null_check(msg='add_bonds')
         rename=True if len(skip_H)>0 else False

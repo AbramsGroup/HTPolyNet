@@ -475,7 +475,8 @@ class Topology:
                     kb=ij.loc[idx,'kb']
                     b0=ij.loc[idx,'b0']
                 else:
-                    raise Exception(f'no bondtype {idx} found.')
+                    logging.debug(f'no bondtype {idx} found; are  you parameterizing?')
+                    # raise Exception(f'no bondtype {idx} found.')
                 # add a new bond!
                 h=_GromacsTopologyDirectiveHeaders_['bonds']
                 data=[ai,aj,bt,b0,kb]  # this new bond will have override parameters
