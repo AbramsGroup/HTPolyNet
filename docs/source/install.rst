@@ -16,7 +16,14 @@ pip install as in:
 Software Prequisites
 --------------------
 
-Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed.
+Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed, and the following executables should be in your path:
+
+1. ``antechamber``
+2. ``parmchk2``
+3. ``tleap``
+4. ``gmx`` or ``gmx_mpi``
+
+Suggested approaches for obtaining these are below.
 
 * `AmberTools <https://ambermd.org/GetAmber.php#ambertools>`_. You have at least two options:
 
@@ -54,6 +61,8 @@ Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, the
      .. code-block:: console
 
          source /usr/local/gromacs-2022.1/bin/GMXRC
+     
+     This should provide access to the ``gmx`` command.  If you compiled an MPI version, you will instead generated ``gmx_mpi``; either of these commands can be used by HTPolyNet.
 
 
 
