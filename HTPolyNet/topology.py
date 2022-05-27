@@ -955,12 +955,18 @@ class Topology:
                     self.residue_network.add_edge(i,n,bondtype=bondtype)
         if json_file:
             the_data=json_graph.node_link_data(self.residue_network)
-            # with open (json_file,'w') as f:
-            logging.debug(f'writing resid graph to JSON not currently supported\n{the_data}')
+            assert type(the_data)==dict,f'Error: node_link_data returns a {type(the_data)} but should return a dict'
+            try:
+                logging.debug(f'writing graph node_link_data to {json_file}')
+                with open (json_file,'w') as f:
+                    json.dump(the_data,f)
+            except:
+                logging.debug(f'writing resid graph to JSON not currently supported')
         if draw:
             fig,ax=plt.subplots(1,1,figsize=(8,8))
             nx.draw_networkx(self.residue_network,ax=ax)
             plt.savefig(draw)
+            plt.close(fig)
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds
