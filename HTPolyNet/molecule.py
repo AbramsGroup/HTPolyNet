@@ -440,6 +440,7 @@ class Molecule:
         ordered_attribute_idx=[]
         curr_max=0
         logging.debug(f'{self.name}({adf.shape[0]}) inheriting {attribute} from {self.sequence}')
+        logging.debug(f'available molecules {list(available_molecules.keys())}')
         for i,r in enumerate(self.sequence):
             namesinres=list(adf[adf['resNum']==(i+1)]['atomName'])
             rdf=available_molecules[r].TopoCoord.Coordinates.A
