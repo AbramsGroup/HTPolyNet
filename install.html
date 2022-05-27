@@ -37,8 +37,7 @@
 <h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this headline">¶</a></h1>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet is under active development, it is best to clone the repository from Github and then
-pip install as in:</p>
+<p>Because HTPolyNet is under active development, it is best to clone the repository from Github and then pip install as in:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone git@github.com:AbramsGroup/HTPolyNet.git
 <span class="gp">$ </span><span class="nb">cd</span> HTPolyNet
 <span class="gp">$ </span>pip install -e .
@@ -47,7 +46,7 @@ pip install as in:</p>
 </section>
 <section id="software-prequisites">
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, these should both be installed, and the following executables should be in your path:</p>
+<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, the following executables should be in your path:</p>
 <ol class="arabic simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">parmchk2</span></code></p></li>
@@ -91,7 +90,7 @@ pip install as in:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /usr/local/gromacs/bin/GMXRC</span>
 </pre></div>
 </div>
-<p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you compiled an MPI version, you will instead generated <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.</p>
+<p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.</p>
 </li>
 </ul>
 </div></blockquote>
