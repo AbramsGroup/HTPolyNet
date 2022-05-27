@@ -32,7 +32,7 @@ class RuntimeLibrary:
     def user(cls,pathname='.'):
         assert os.path.exists(pathname),f'Cannot find {pathname} in {os.getcwd()}'
         tt=os.path.abspath(pathname)
-        assert tt.is_dir(),f'Please ensure that {str(tt)} is a directory'
+        assert os.path.isdir(tt),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
         inst.root=tt
         for x in ['__init__.py', 'README.md', '__pycache__']:
