@@ -28,7 +28,7 @@ Parameter                          Type            Description (default)
 ``CURE_radial_increment``          float           capture radius increment (0.25)
 ``desired_conversion``             float           desired fraction of possible crosslink bonds to form
 ``max_CURE_iterations``            int             maximum number of CURE iterations to run prior to reaching desired conversion
-``late_treshhold``                 float           conversion above which reactions are all treated with probability 1.0
+``late_threshold``                 float           conversion above which reactions are all treated with probability 1.0
 ===============================    ==============  =====================
 
 Parameters associated with parameterization of molecules
