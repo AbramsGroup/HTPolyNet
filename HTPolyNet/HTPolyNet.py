@@ -171,7 +171,7 @@ class HTPolyNet:
                 M.analyze_sea_topology()
         else:
             if len(M.sequence)==1: # this is a monomer, but not symmetric
-                M.TopoCoord.set_gro_attribute('sea-idx',0)
+                M.TopoCoord.set_gro_attribute('sea-idx',-1)
             else: # this is an oligomer
                 M.inherit_attribute_from_reactants('sea-idx',available_molecules=self.molecules)
             M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
