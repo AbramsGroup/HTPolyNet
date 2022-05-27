@@ -134,6 +134,10 @@ class Configuration:
                 sp=[]
                 for atrec in matrectlist:
                     atomName=atrec['atom']
+                    seaidx=residue.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'atomName':atomName})
+                    if seaidx==-1:
+                        logging.debug(f'No atoms symmetric with {atomName}')
+                        continue
                     clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
                                                 same_attribute='sea-idx',
                                                 return_attribute='atomName')
