@@ -129,6 +129,7 @@ class HTPolyNet:
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         force_sea_calculation=kwargs.get('force_sea_calculation',False)
+        userlib=kwargs.get('userlib',None)
         sea_thresh=self.cfg.parameters.get('sea_thresh',0.13)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
@@ -743,7 +744,7 @@ def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,default=None,help='command (info, run)')
     parser.add_argument('-cfg',type=str,default='',help='input config file')
-    parser.add_argument('-lib',type=str,default='',help='local library, assumed flat')
+    parser.add_argument('-lib',type=str,default=None,help='local library')
     parser.add_argument('-log',type=str,default='htpolynet_runtime.log',help='log file')
     parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
@@ -771,11 +772,11 @@ def cli():
     elif args.command=='parameterize':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
         a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
-        a.generate_molecules(force_parameterization=True,force_sea_calculation=True,force_checkin=args.force_checkin)
+        a.generate_molecules(force_parameterization=True,force_sea_calculation=True,force_checkin=args.force_checkin,userlib=args.lib)
     elif args.command=='run':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
         a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
-        a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization,force_sea_calculation=args.force_sea_calculation)
+        a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization,force_sea_calculation=args.force_sea_calculation,userlib=args.lib)
     else:
         print(f'HTPolyNet command {args.command} not recognized')
     

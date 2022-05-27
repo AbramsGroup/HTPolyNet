@@ -85,6 +85,10 @@ def lib_setup():
 
 class ProjectFileSystem:
     def __init__(self,root='.',topdirs=['molecules','systems','plots'],verbose=False,reProject=False,userlibrary=None,mock=False):
+        self.library=lib_setup()
+        self.userlibrary=None
+        if userlibrary:
+            self.userlibrary=RuntimeLibrary.user(userlibrary)
         self.rootPath=os.path.abspath(root)
         os.chdir(self.rootPath)
         self.cwd=self.rootPath
@@ -93,10 +97,6 @@ class ProjectFileSystem:
             self._next_project_dir(reProject=reProject)
             self._setup_project_dir(topdirs=topdirs)
         
-        self.library=lib_setup()
-        self.userlibrary=None
-        if userlibrary:
-            self.userlibrary=RuntimeLibrary.user(userlibrary)
 
     def cdroot(self):
         os.chdir(self.rootPath)
