@@ -244,3 +244,26 @@ def analyze_sea(deffnm,thresh=0.1):
         # send the distance matrix to be processed, return
         # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
+
+def mdp_modify(mdp_filename,opt_dict):
+    with open(mdp_filename,'r') as f:
+        lines=f.read().split('\n')
+    all_dict={}
+    for l in lines:
+        if len(l)>0:
+            if '=' in l:
+                k,v=l.split('=')
+                k=k.strip()
+                v=v.strip()
+                all_dict[k]=v
+            else:
+                logging.debug(f'mdp_modify: line {l} in {mdp_filename} skipped')
+    logging.debug(f'mdp_modify: all_dict: {all_dict}')
+    for k,v in opt_dict.items():
+        if not k in all_dict:
+            logging.debug(f'mdp_modify: {k} not found in {mdp_filename}')
+        all_dict[k]=v
+    with open(mdp_filename,'w') as f:
+        for k,v in all_dict.items():
+            f.write(f'{k} = {v}\n')
+    logging.debug(f'mdp_modify wrote {mdp_filename}.')

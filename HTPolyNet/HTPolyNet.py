@@ -19,7 +19,7 @@ from HTPolyNet.configuration import Configuration
 from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace
+from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace, mdp_modify
 from HTPolyNet.checkpoint import CPstate, Checkpoint
 from HTPolyNet.plot import trace
 
@@ -364,7 +364,9 @@ class HTPolyNet:
                     next_stage=CPstate.update
                 CP.radius=cure_search_radius+CP.current_radidx*radial_increment
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=(curr_conversion<late_threshold))
+                    apply_probabilities=curr_conversion<late_threshold
+                    logging.debug(f'Bond search: curr_conversion {curr_conversion} late_threshold {late_threshold} apply_probabilities {apply_probabilities}')
+                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=apply_probabilities)
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
                         CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
@@ -418,8 +420,16 @@ class HTPolyNet:
                 ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''
                 CP.read_checkpoint(self)
                 self.checkout('mdp/relax-em.mdp')
+                relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
                 self.checkout('mdp/relax-nvt.mdp')
                 self.checkout('mdp/relax-npt.mdp')
+                maxD=CP.bonds['initial-distance'].max()
+                maxD=int(maxD*100)/100
+                if maxD<0.9:
+                    maxD=0.9
+                mdp_modify('relax-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify('relax-nvt.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify('relax-npt.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                 CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance-relax'].max()/bond_relaxation_increment)
@@ -437,8 +447,15 @@ class HTPolyNet:
                     msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='relax-npt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'New bonds avg/min/max: {CP.bonds["current_lengths"].mean():.3f}/{CP.bonds["current_lengths"].min():.3f}/{CP.bonds["current_lengths"].max():.3f}')
+                    CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    logging.debug(f'New bonds avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
+                    maxD=CP.bonds['current-lengths'].max()
+                    maxD=int(maxD*100)/100
+                    if maxD<0.9:
+                        maxD=0.9
+                    mdp_modify('relax-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    mdp_modify('relax-nvt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    mdp_modify('relax-npt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                     CP.current_stage+=1
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
@@ -447,6 +464,8 @@ class HTPolyNet:
                 CP.read_checkpoint(self)
                 ''' Final NPT MD equilibration with full parameters '''
                 self.checkout('mdp/equilibrate-npt.mdp')
+                equilibrate_temperature=self.cfg.parameters.get('equilibrate_temperature',300.0)
+                mdp_modify('equilibrate-npt.mdp',{'gen-temp':equilibrate_temperature,'ref_t':equilibrate_temperature})
                 gro,ext=os.path.splitext(CP.gro)
                 top,ext=os.path.splitext(CP.top)
                 msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='equilibrate-npt',**self.cfg.parameters)
@@ -455,7 +474,7 @@ class HTPolyNet:
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-                logging.info(f'Current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
+                logging.info(f'Iter {CP.iter} current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
                 conversion_reached=curr_conversion>=desired_conversion
                 iterations_exceeded=CP.iter>=maxiter
                 cure_finished = conversion_reached or iterations_exceeded

@@ -175,7 +175,7 @@ class Linkcell:
         for a in result:
             Coordinates.A=pd.concat((Coordinates.A,a))
 
-        idx_list=list(range(1,N+1)) # atom indices start at 1!
+        idx_list=Coordinates.A['globalIdx'].to_list()
         for i in idx_list:
             lc_idx=Coordinates.get_atom_attribute('linkcell-idx',{'globalIdx':i})
             try:
@@ -210,13 +210,14 @@ class Linkcell:
 
     def make_memberlists(self,cdf):
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
+        rdf=cdf[cdf['linkcell-idx']!=-1]
         # logging.debug(f'Generated {len(self.memberlists)} empty memberlists.')
-        for i,r in cdf.iterrows():
+        for i,r in rdf.iterrows():
             cidx=r['linkcell-idx']
             idx=r['globalIdx']
             self.memberlists[cidx].append(idx)
         rl=np.array([len(self.memberlists[i]) for i in range(self.cellndx.shape[0])])
-        assert int(rl.sum())==cdf.shape[0] # check to make sure all atoms are counted
+        assert int(rl.sum())==rdf.shape[0] # check to make sure all atoms are counted
         avg_cell_pop=rl.mean()
         min_cell_pop=int(rl.min())
         max_cell_pop=int(rl.max())
@@ -238,6 +239,7 @@ class Linkcell:
         return retlist
 
     def searchlist_of_ldx(self,i):
+        assert i!=-1
         retlist=[]
         C=self.cellndx[i]
         for c in self.neighbors_of_cellndx(C):
@@ -260,6 +262,9 @@ class Linkcell:
         return oneaway.astype(int).sum()==1
 
     def are_ldx_neighbors(self,ildx,jldx):
+        # should never call this for atoms with unset lc indices
+        assert ildx!=-1
+        assert jldx!=-1
         return jldx in self.neighborlists[ildx]
 
 if __name__=='__main__':

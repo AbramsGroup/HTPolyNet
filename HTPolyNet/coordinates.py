@@ -262,6 +262,12 @@ class Coordinates:
         newC.A=sub_adf
         newC.N=sub_adf.shape[0]
         return newC
+    
+    def reconcile_subcoords(self,subc,attr):
+        for i,r in subc.A.iterrows():
+            idx=r['globalIdx']
+            lc_idx=r['linkcell-idx']
+            self.A.loc[idx-1,'linkcell-idx']=lc_idx
 
     def inherit_attributes_from_molecules(self,attributes=[],molecules={}):
         ''' transfer any resname-atomname specific attributes from molecular templates to all residues in 
@@ -488,7 +494,10 @@ class Coordinates:
                 self.read_atomset_attributes(lc_file)
                 self.linkcell.make_memberlists(self.A)
             else:
-                self.linkcell.populate(self,ncpu=ncpu)
+                self.set_atomset_attribute('linkcell-idx',-1*np.ones(self.A.shape[0]).astype(int))
+                sc=self.subcoords(self.A[(self.A['cycle-idx']>0)|(self.A['z']>0)].copy())
+                self.linkcell.populate(sc,ncpu=ncpu)
+                self.reconcile_subcoords(sc,'linkcell-idx')
                 if save:
                     self.write_atomset_attributes(['linkcell-idx'],lc_file)
 
@@ -624,8 +633,8 @@ class Coordinates:
 
         :param attribute: name of attribute
         :type attribute: str
-        :param srs: list-like attribute values in same ordering as self.A
-        :type srs: list-like
+        :param srs: scalar or list-like attribute values in same ordering as self.A
+        :type srs: scalar or list-like
         """
         self.A[attribute]=srs
 
