@@ -18,8 +18,10 @@ Invoking ``htpolynet`` always generates a ``proj-n`` subdirectory, where ``n`` i
 
   All molecular parameterization files are written to ``molecules/parameterized`` if any are done; otherwise, this directory is populated with any molecule parameterizations (``*.gro``, ``*.top`` / ``*.itp``, and ``*.sea`` files).  (See :ref:`symmetry_equivalence` for a description of ``*.sea`` files.)
 * ``systems/``
+
   * ``init/``: The initial liquid system is built and simulated here.
   * ``iter-n``: The ``n``-th CURE iteration system is simulated here.
+
 * ``plots/``
 
   A variety of plots are put here.  Currently, only a plot of the density as a function of time from the densification of the initial liquid is put here.  More to come.

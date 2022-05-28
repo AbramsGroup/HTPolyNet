@@ -47,9 +47,12 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">molecules/</span></code></p>
 <p>All molecular parameterization files are written to <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> if any are done; otherwise, this directory is populated with any molecule parameterizations (<code class="docutils literal notranslate"><span class="pre">*.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">*.top</span></code> / <code class="docutils literal notranslate"><span class="pre">*.itp</span></code>, and <code class="docutils literal notranslate"><span class="pre">*.sea</span></code> files).  (See <a class="reference internal" href="../reference-guide/symmetry-equivalence.html#symmetry-equivalence"><span class="std std-ref">Symmetry equivalent atoms</span></a> for a description of <code class="docutils literal notranslate"><span class="pre">*.sea</span></code> files.)</p>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code>
-* <code class="docutils literal notranslate"><span class="pre">init/</span></code>: The initial liquid system is built and simulated here.
-* <code class="docutils literal notranslate"><span class="pre">iter-n</span></code>: The <code class="docutils literal notranslate"><span class="pre">n</span></code>-th CURE iteration system is simulated here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">init/</span></code>: The initial liquid system is built and simulated here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iter-n</span></code>: The <code class="docutils literal notranslate"><span class="pre">n</span></code>-th CURE iteration system is simulated here.</p></li>
+</ul>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code></p>
 <p>A variety of plots are put here.  Currently, only a plot of the density as a function of time from the densification of the initial liquid is put here.  More to come.</p>
 </li>
