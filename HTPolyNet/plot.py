@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
 import logging
+import networkx as nx
 
 def trace(qtys,edrs,outfile='plot.png',**kwargs):
 
@@ -36,4 +37,13 @@ def trace(qtys,edrs,outfile='plot.png',**kwargs):
 
     # re-establish previous logging level
     logging.disable(logging.NOTSET)
+
+def network_graph(G,filename,**kwargs):
+    logging.disable(logging.DEBUG)
+    fig,ax=plt.subplots(1,1,figsize=(8,8))
+    nx.draw_networkx(G,ax=ax)
+    plt.savefig(filename)
+    plt.close(fig)
+    logging.disable(logging.NOTSET)
+    
 

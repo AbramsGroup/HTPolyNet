@@ -12,6 +12,27 @@ from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import grompp_and_mdrun, analyze_sea
 
+def _rotmat(axis,radians):
+    R=np.identity(3)
+    sr=np.sin(radians)
+    cr=np.cos(radians)
+    if axis==2:
+        R[0][0]=cr
+        R[0][1]=-sr
+        R[1][0]=sr
+        R[1][1]=cr
+    elif axis==1:
+        R[0][0]=cr
+        R[0][2]=sr
+        R[2][0]=-sr
+        R[2][2]=cr
+    elif axis==0:
+        R[1][1]=cr
+        R[1][2]=-sr
+        R[2][1]=sr
+        R[2][2]=cr
+    return R
+
 def get_base_reactants(mname,mdict):
     mol=mdict[mname]
     if not mol.generator:
@@ -651,6 +672,50 @@ class Molecule:
         _dfrotate(bdf,R)
         A.loc[A['globalIdx'].isin(bset),['posX','posY','posZ']]=bdf[['posX','posY','posZ']]
         # translate back to original coordinate frame
+        TC.translate(O)
+
+    def rotate_bond(self,a,b,deg):
+        """Rotates all atoms in molecule on b-side of a-b bond by deg degrees
+
+        :param a: index of a
+        :type a: int
+        :param b: index of b
+        :type b: int
+        :param deg: angle of rotation (degrees)
+        :type deg: float
+        """
+        TC=self.TopoCoord
+        A=TC.Coordinates.A
+        branch=TopoCoord()
+        bl=deepcopy(self.TopoCoord.Topology.bondlist)
+        branchidx=bl.half_as_list((a,b),99)
+        ra=TC.get_R(a)
+        rb=TC.get_R(b)
+        Rab=ra-rb
+        rab=Rab/np.linalg.norm(Rab)
+        O=rb
+        TC.translate(-1*O)
+        branch.Coordinates.A=A[A['globalIdx'].isin(branchidx)].copy()
+        # do stuff
+        rx,ry,rz=rab
+        caz=rx/(rx**2+ry**2)**(1/2)
+        saz=ry/(rx**2+ry**2)**(1/2)
+        az=np.acos(caz)
+        if saz<0:
+            az=2*np.pi-az
+        R1=_rotmat(2,az)
+        ay=np.acos(rab/rz) # (must live on 0<ay<pi bc polar angle)
+        R2=_rotmat(1,ay)
+        R3=_rotmat(2,deg/180.*np.pi)
+        R4=_rotmat(1,-ay)
+        R5=_rotmat(2,-az)
+        R=np.matmult(R2,R1)
+        R=np.matmult(R3,R)
+        R=np.matmult(R4,R)
+        R=np.matmult(R5,R)
+        branch.rotate(R)
+        bdf=branch.Coordinates.A
+        A.loc[A['globalIdx'].isin(branchidx),['posX','posY','posZ']]=bdf[['posX','posY','posZ']]
         TC.translate(O)
 
     def sea_of(self,idx):

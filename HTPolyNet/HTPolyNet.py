@@ -329,6 +329,7 @@ class HTPolyNet:
         logging.info('*'*10+' CONNECT - UPDATE - RELAX - EQUILIBRATE (CURE) begins '+'*'*10)
         max_nxlinkbonds=self.cfg.maxconv
         desired_conversion=self.cfg.parameters['desired_conversion']
+        max_conversion_per_iteration=self.cfg.parameters.get('max_conversion_per_iteration',1.0)
         cure_search_radius=self.cfg.parameters['CURE_initial_search_radius']
         checkpoint_file=self.cfg.parameters.get('checkpoint_file','checkpoint.yaml')
         bonds_file=self.cfg.parameters.get('bonds_file','bonds.csv')
@@ -368,10 +369,15 @@ class HTPolyNet:
                 """ Capture radius method for identifying potential crosslink bonds """
                 logging.info(f'CURE iteration {CP.iter}/{maxiter}: BONDSEARCH')
                 CP.radius=cure_search_radius+CP.current_radidx*radial_increment
+                apply_probabilities=curr_conversion<late_threshold
+                logging.debug(f'Bond search: curr_conversion {curr_conversion} late_threshold {late_threshold} apply_probabilities {apply_probabilities}')
+                bond_limit=int(max_conversion_per_iteration*max_nxlinkbonds)
+                bond_target=int((desired_conversion-curr_conversion)*max_nxlinkbonds)
+                if bond_target<bond_limit:
+                    bond_limit=bond_target
+                logging.debug(f'Iteration limited to at most {bond_limit} new bonds')
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    apply_probabilities=curr_conversion<late_threshold
-                    logging.debug(f'Bond search: curr_conversion {curr_conversion} late_threshold {late_threshold} apply_probabilities {apply_probabilities}')
-                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=apply_probabilities)
+                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=apply_probabilities,abs_max=bond_limit)
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
                         CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
@@ -628,9 +634,9 @@ class HTPolyNet:
     def register_system(self,CP,extra_attributes=['z','cycle-idx','reactantName']):
         """register_system Create
 
-        :param CP: _description_
-        :type CP: _type_
-        :param extra_attributes: _description_, defaults to ['z','cycle-idx','reactantName']
+        :param CP: checkpoint
+        :type CP: Checkpoint
+        :param extra_attributes: list of extra atom attributes, defaults to ['z','cycle-idx','reactantName']
         :type extra_attributes: list, optional
         """
         logging.debug(f'WRITING SYSTEM TO {CP.top} {CP.gro} {CP.grx}')
@@ -638,7 +644,7 @@ class HTPolyNet:
         self.TopoCoord.write_gro(CP.gro)
         self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
 
-    def cure_searchbonds(self,radius,header=['ai','aj','reactantName'],apply_probabilities=True):
+    def cure_searchbonds(self,radius,header=['ai','aj','reactantName'],apply_probabilities=True,abs_max=-1):
         adf=self.TopoCoord.gro_DataFrame('atoms')
         ncpu=self.cfg.parameters['ncpu']
         self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
@@ -735,6 +741,12 @@ class HTPolyNet:
             logging.debug(f'{len(keepbonds)-len(luckybonds)} bonds rejected on probability.')
         else:
             luckybonds=keepbonds
+
+        ''' apply the stated limit '''
+        if abs_max>-1:
+            if abs_max<len(luckybonds):
+                luckybonds=luckybonds[:abs_max]
+                logging.debug(f'Limiting to {abs_max} allowed bonds')
 
         kdf=pd.DataFrame({header[0]:[x[0][0] for x in luckybonds],
                           header[1]:[x[0][1] for x in luckybonds],

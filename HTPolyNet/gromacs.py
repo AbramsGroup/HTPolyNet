@@ -245,7 +245,7 @@ def analyze_sea(deffnm,thresh=0.1):
         # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
 
-def mdp_modify(mdp_filename,opt_dict):
+def mdp_modify(mdp_filename,opt_dict,new_filename=None):
     with open(mdp_filename,'r') as f:
         lines=f.read().split('\n')
     all_dict={}
@@ -263,7 +263,13 @@ def mdp_modify(mdp_filename,opt_dict):
         if not k in all_dict:
             logging.debug(f'mdp_modify: {k} not found in {mdp_filename}')
         all_dict[k]=v
-    with open(mdp_filename,'w') as f:
-        for k,v in all_dict.items():
-            f.write(f'{k} = {v}\n')
-    logging.debug(f'mdp_modify wrote {mdp_filename}.')
+    if new_filename:
+        with open(new_filename,'w') as f:
+            for k,v in all_dict.items():
+                f.write(f'{k} = {v}\n')
+        logging.debug(f'mdp_modify wrote {new_filename}.')
+    else:
+        with open(mdp_filename,'w') as f:
+            for k,v in all_dict.items():
+                f.write(f'{k} = {v}\n')
+        logging.debug(f'mdp_modify wrote {mdp_filename}.')

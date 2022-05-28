@@ -10,6 +10,7 @@ import networkx as nx
 from networkx.readwrite import json_graph
 import matplotlib.pyplot as plt
 import json
+from HTPolyNet.plot import network_graph
 
 def typeorder(a):
     ''' correctly order the tuple of atom types for particular
@@ -945,7 +946,7 @@ class Topology:
                             connectors.append((a,n))
             for c in connectors:
                 a,n=c
-                bondtype='cross'
+                bondtype="cross"
                 # examine all other connectors in this resnr; if any of them is bound internally to this 
                 # connector and bound to a different outside residue, then this is a "polyethylene"-type
                 # connection
@@ -953,7 +954,7 @@ class Topology:
                     if c!=d:
                         b,m=d
                         if n!=m and b in self.bondlist.partners_of(a):
-                            bondtype='polyethylene'
+                            bondtype="polyethylene"
                             break
                 if not self.residue_network.has_edge(i,n):
                     self.residue_network.add_edge(i,n,bondtype=bondtype)
@@ -961,17 +962,20 @@ class Topology:
             the_data=json_graph.node_link_data(self.residue_network)
             assert type(the_data)==dict,f'Error: node_link_data returns a {type(the_data)} but should return a dict'
             logging.debug(f'writing graph node_link_data to {json_file}')
+            the_data_str=str(the_data)
+            if "'" in the_data_str:
+                logging.debug(f'json_graph.node_link_data produces single-quoted dict keys -- this is not JSON standard')
+                json_compatible_string=the_data_str.replace("'","\"")
+                the_data=json.loads(json_compatible_string)
             with open (json_file,'w') as f:
                 try:
                     json.dump(the_data,f)
-                except:
+                except Exception as msg:
+                    logging.debug(str(msg))
                     logging.debug(f'writing resid graph to JSON not currently supported')
-                    f.write(the_data+'\n')
+                    f.write(str(the_data)+'\n')
         if draw:
-            fig,ax=plt.subplots(1,1,figsize=(8,8))
-            nx.draw_networkx(self.residue_network,ax=ax)
-            plt.savefig(draw)
-            plt.close(fig)
+            network_graph(self.residue_network,draw)
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds
