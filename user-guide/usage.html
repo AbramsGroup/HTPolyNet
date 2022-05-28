@@ -42,15 +42,17 @@
 <p>where <code class="docutils literal notranslate"><span class="pre">&lt;my_config.yaml&gt;</span></code> is replaced by the name of your input configuration file.  A full listing of command-line parameters can be seen using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">-h</span></code>.</p>
 <section id="what-this-does">
 <h2>What this does<a class="headerlink" href="#what-this-does" title="Permalink to this headline">¶</a></h2>
-<p>Invoking <cite>htpolynet</cite> always generates a <cite>proj-n</cite> subdirectory, where <cite>n</cite> is replaced by <cite>0</cite> (if the current working directory is empty) or the next integer implied by existing <cite>proj-0</cite>, <cite>proj-1</cite>, etc.  This is referred to as a “project” directory.  (If the <cite>-restart</cite> flag is appending the the command, it drops into the latest project directory to pick up the most recent checkpoint.)  It then immediately creats <cite>systems</cite>, <cite>molecules</cite>, and <cite>plots</cite> subdirectories:</p>
-<ul class="simple">
-<li><p><cite>molecules/</cite>
-All molecular parameterization files are written to <cite>molecules/parameterized</cite> if any are done; otherwise, this directory is populated with any molecule parameterizations (<cite>*.gro</cite>, <cite>*.top</cite> / <cite>*.itp</cite>, and <cite>*.sea</cite> files).  (See <a class="reference internal" href="../reference-guide/symmetry-equivalence.html#symmetry-equivalence"><span class="std std-ref">Symmetry equivalent atoms</span></a> for a description of <cite>*.sea</cite> files.)</p></li>
-<li><p><cite>systems/</cite>
-* <cite>init/</cite>: The initial liquid system is built and simulated here.
-* <cite>iter-n</cite>: The <cite>n</cite>-th CURE iteration system is simulated here.</p></li>
-<li><p><cite>plots/</cite>
-A variety of plots are put here.  Currently, only a plot of the density as a function of time from the densification of the initial liquid is put here.  More to come.</p></li>
+<p>Invoking <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> always generates a <code class="docutils literal notranslate"><span class="pre">proj-n</span></code> subdirectory, where <code class="docutils literal notranslate"><span class="pre">n</span></code> is replaced by <code class="docutils literal notranslate"><span class="pre">0</span></code> (if the current working directory is empty) or the next integer implied by existing <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, <code class="docutils literal notranslate"><span class="pre">proj-1</span></code>, etc.  This is referred to as a “project” directory.  (If the <code class="docutils literal notranslate"><span class="pre">-restart</span></code> flag is appending the the command, it drops into the latest project directory to pick up the most recent checkpoint.)  It then immediately creats <code class="docutils literal notranslate"><span class="pre">systems</span></code>, <code class="docutils literal notranslate"><span class="pre">molecules</span></code>, and <code class="docutils literal notranslate"><span class="pre">plots</span></code> subdirectories:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">molecules/</span></code></p>
+<p>All molecular parameterization files are written to <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> if any are done; otherwise, this directory is populated with any molecule parameterizations (<code class="docutils literal notranslate"><span class="pre">*.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">*.top</span></code> / <code class="docutils literal notranslate"><span class="pre">*.itp</span></code>, and <code class="docutils literal notranslate"><span class="pre">*.sea</span></code> files).  (See <a class="reference internal" href="../reference-guide/symmetry-equivalence.html#symmetry-equivalence"><span class="std std-ref">Symmetry equivalent atoms</span></a> for a description of <code class="docutils literal notranslate"><span class="pre">*.sea</span></code> files.)</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code>
+* <code class="docutils literal notranslate"><span class="pre">init/</span></code>: The initial liquid system is built and simulated here.
+* <code class="docutils literal notranslate"><span class="pre">iter-n</span></code>: The <code class="docutils literal notranslate"><span class="pre">n</span></code>-th CURE iteration system is simulated here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code></p>
+<p>A variety of plots are put here.  Currently, only a plot of the density as a function of time from the densification of the initial liquid is put here.  More to come.</p>
+</li>
 </ul>
 </section>
 </section>

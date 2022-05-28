@@ -16,6 +16,8 @@ The mol2 format HTPolyNet requires for a monomer is minimal and requires only th
 The best way to identify these atoms is by inspecting the 3d structure of the molecule.  Here is the 3d structure of PACM the above command generated:
 
 .. image:: PAC-SC-0-0.png
+    :scale: 50 %
+    :alt: PACM
 
 Since the two nitrogens are reactive, we will name one "N1" and the other "N2".  It does not matter what they are called so long as the names are unique.  The carbon atoms at the 4 positions of each cyclohexane ring are chiral, so we will name the one connected to N1 "C1" and the other "C2".  These names are changed by directly editing the mol2 file::
 
