@@ -29,6 +29,7 @@ Parameter                          Type            Description (default)
 ``desired_conversion``             float           desired fraction of possible crosslink bonds to form
 ``max_CURE_iterations``            int             maximum number of CURE iterations to run prior to reaching desired conversion
 ``late_threshold``                 float           conversion above which reactions are all treated with probability 1.0
+``equilibration_temperature``      float           Temperature in K of post-cure equilibration simulation (300)
 ===============================    ==============  =====================
 
 Parameters associated with parameterization of molecules
@@ -54,17 +55,19 @@ Other control parameters govern detailed aspects of the CURE algorithm.  These i
 Dragging parameters
 ^^^^^^^^^^^^^^^^^^^
 
-Prior to introducing new bonds, one has the option of *"dragging"* atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three ``gmx mdrun`` calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional.
+Prior to introducing new bonds, one has the option of *"dragging"* atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three ``gmx mdrun`` calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional, but it is recommended when initial bond lengths are large relative to the force-field cutoff.
 
 ===============================    ==============  =====================
 Parameter                          Type            Description (default)
 ===============================    ==============  =====================
 ``max_drag_stages``                int             number of drag stages to perform
+``drag_trigger_distance``          float           bond length beyond which dragging is triggered
 ``drag_limit``                     float           minimum distance each separation should achieve (nm); 0.0 turns off dragging (0.0)
 ``drag_nvt_steps``                 int             number of MD steps for NVT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
 ``drag_npt_steps``                 int             number of MD steps for NPT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
 ===============================    ==============  =====================
 
+The recommended usage of dragging is to enable it using the ``drag_trigger_distance`` parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (``rvdw`` or ``rcoulomb`` in the ``*.mdp`` file), ``grompp`` will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together **before** introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the ``*.mdp`` file to increase the cutoffs in the staged dragging simulations so that it is always longer than the longest bond.  
 
 Bond relaxation parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -102,8 +105,6 @@ The ``initial_composition`` dictionary is how the initial extensive composition 
     initial_composition: { MONA: 100, MONB: 200 }
 
 specifies that the initial liquid should be composed of 100 ``MONA`` monomers and 200 ``MONB`` monomers.
-
-
 
 
 Reaction dicts

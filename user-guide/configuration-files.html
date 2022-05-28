@@ -99,6 +99,10 @@
 <td><p>float</p></td>
 <td><p>conversion above which reactions are all treated with probability 1.0</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">equilibration_temperature</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Temperature in K of post-cure equilibration simulation (300)</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -142,7 +146,7 @@
 </section>
 <section id="dragging-parameters">
 <h3>Dragging parameters<a class="headerlink" href="#dragging-parameters" title="Permalink to this headline">¶</a></h3>
-<p>Prior to introducing new bonds, one has the option of <em>“dragging”</em> atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional.</p>
+<p>Prior to introducing new bonds, one has the option of <em>“dragging”</em> atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional, but it is recommended when initial bond lengths are large relative to the force-field cutoff.</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 19%" />
@@ -160,20 +164,25 @@
 <td><p>int</p></td>
 <td><p>number of drag stages to perform</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_limit</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_trigger_distance</span></code></p></td>
+<td><p>float</p></td>
+<td><p>bond length beyond which dragging is triggered</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">drag_limit</span></code></p></td>
 <td><p>float</p></td>
 <td><p>minimum distance each separation should achieve (nm); 0.0 turns off dragging (0.0)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">drag_nvt_steps</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_nvt_steps</span></code></p></td>
 <td><p>int</p></td>
 <td><p>number of MD steps for NVT relaxation during dragging (-2, signals <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> to use the value in the mdp file)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_npt_steps</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">drag_npt_steps</span></code></p></td>
 <td><p>int</p></td>
 <td><p>number of MD steps for NPT relaxation during dragging (-2, signals <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> to use the value in the mdp file)</p></td>
 </tr>
 </tbody>
 </table>
+<p>The recommended usage of dragging is to enable it using the <code class="docutils literal notranslate"><span class="pre">drag_trigger_distance</span></code> parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (<code class="docutils literal notranslate"><span class="pre">rvdw</span></code> or <code class="docutils literal notranslate"><span class="pre">rcoulomb</span></code> in the <code class="docutils literal notranslate"><span class="pre">*.mdp</span></code> file), <code class="docutils literal notranslate"><span class="pre">grompp</span></code> will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together <strong>before</strong> introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the <code class="docutils literal notranslate"><span class="pre">*.mdp</span></code> file to increase the cutoffs in the staged dragging simulations so that it is always longer than the longest bond.</p>
 </section>
 <section id="bond-relaxation-parameters">
 <h3>Bond relaxation parameters<a class="headerlink" href="#bond-relaxation-parameters" title="Permalink to this headline">¶</a></h3>
