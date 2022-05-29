@@ -963,10 +963,16 @@ class Topology:
             assert type(the_data)==dict,f'Error: node_link_data returns a {type(the_data)} but should return a dict'
             logging.debug(f'writing graph node_link_data to {json_file}')
             the_data_str=str(the_data)
+            the_data_str=the_data_str.replace('True','"True"')
+            the_data_str=the_data_str.replace('False','"False"')
             if "'" in the_data_str:
                 logging.debug(f'json_graph.node_link_data produces single-quoted dict keys -- this is not JSON standard')
-                json_compatible_string=the_data_str.replace("'","\"")
-                the_data=json.loads(json_compatible_string)
+                json_compatible_string=the_data_str.replace("'",'"')
+                try:
+                    the_data=json.loads(json_compatible_string)
+                except Exception as msg:
+                    logging.debug(str(msg))
+                    logging.debug(f'json.loads fails to encode string:\n{json_compatible_string}')
             with open (json_file,'w') as f:
                 try:
                     json.dump(the_data,f)
@@ -1024,6 +1030,7 @@ class Topology:
                 b0=minimum_distance
             new_b0=rij-factor*(rij-b0)
             new_kb=kb*factor
+            # logging.debug(f'bond attenuation target for {ai}-{aj}:\nb0 {b0:.5f} kb {kb:.2f}; using b0 {new_b0:.5f} kb {new_kb:.2f}')
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=new_b0
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=new_kb
 

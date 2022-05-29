@@ -543,6 +543,7 @@ class HTPolyNet:
                 self.checkout('mdp/relax-nvt.mdp')
                 self.checkout('mdp/relax-npt.mdp')
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
                     logging.debug(f'post-cure using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
