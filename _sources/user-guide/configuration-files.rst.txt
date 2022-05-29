@@ -16,21 +16,22 @@ Below is a table of parameter keywords and descriptions for parameters that gove
 General parameters
 ^^^^^^^^^^^^^^^^^^
 
-===============================    ==============  =====================
-Parameter                          Type            Description (default)
-===============================    ==============  =====================
-``Title``                          str             Descriptive title
-``gmx``                            str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
-``gmx_options``                    quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
-``gmx_mdrun``                      quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
-``initial_density``                float           initial system density in kg/m3 (300.0)
-``CURE_initial_search_radius``     float           initial capture radius in nm (0.5)
-``CURE_radial_increment``          float           capture radius increment (0.25)
-``desired_conversion``             float           desired fraction of possible crosslink bonds to form
-``max_CURE_iterations``            int             maximum number of CURE iterations to run prior to reaching desired conversion
-``late_threshold``                 float           conversion above which reactions are all treated with probability 1.0
-``equilibration_temperature``      float           Temperature in K of post-cure equilibration simulation (300)
-===============================    ==============  =====================
+================================    ==============  =====================
+Parameter                           Type            Description (default)
+================================    ==============  =====================
+``Title``                           str             Descriptive title
+``gmx``                             str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
+``gmx_options``                     quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
+``gmx_mdrun``                       quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
+``initial_density``                 float           initial system density in kg/m3 (300.0)
+``CURE_initial_search_radius``      float           initial capture radius in nm (0.5)
+``CURE_radial_increment``           float           capture radius increment (0.25)
+``desired_conversion``              float           desired fraction of possible crosslink bonds to form
+``max_conversion_per_iteration``    float           maximum conversion per iteration (1.0; no limit)
+``max_CURE_iterations``             int             maximum number of CURE iterations to run prior to reaching desired conversion
+``late_threshold``                  float           conversion above which reactions are all treated with probability 1.0
+``equilibration_temperature``       float           Temperature in K of post-cure equilibration simulation (300)
+================================    ==============  =====================
 
 Parameters associated with parameterization of molecules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
