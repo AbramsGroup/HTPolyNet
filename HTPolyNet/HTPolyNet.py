@@ -412,7 +412,7 @@ class HTPolyNet:
                 mdp_modify('drag-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                 mdp_modify('drag-nvt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                 mdp_modify('drag-npt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-
+                CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 # CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
