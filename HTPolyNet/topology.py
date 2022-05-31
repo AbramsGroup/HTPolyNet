@@ -371,6 +371,12 @@ class Topology:
             f.write('; end\n')
 
     def null_check(self,msg=''):
+        """Paranoid checking for NaNs in dataframe locations that SHOULD NEVER HAVE NANS
+
+        :param msg: a nice message, defaults to ''
+        :type msg: str, optional
+        :raises Exception: exits if a NaN is found
+        """
         check = True
         for k in _GromacsTopologyDirectiveOrder_:
             if k in self.D:
@@ -382,11 +388,25 @@ class Topology:
                             raise Exception('NaN error')
 
     def total_charge(self):
+        """Compute and return total system charge
+
+        :return: charge
+        :rtype: float
+        """
         if 'atoms' in self.D:
             return self.D['atoms']['charge'].sum()
         return 0.0
 
     def adjust_charges(self,desired_charge=0.0,msg=''):
+        """Adjust atom partial charges a tiny bit so that total system charge is zero
+
+        :param desired_charge: target system charge, defaults to 0.0
+        :type desired_charge: float, optional
+        :param msg: A message to write if pre-adjusted system charge is too high, defaults to ''
+        :type msg: str, optional
+        :return: self topology
+        :rtype: Topology
+        """
         apparent_charge=self.total_charge()
         overcharge=apparent_charge-desired_charge
         logging.info(f'Adjusting charges due to overcharge of {overcharge}')
@@ -432,9 +452,17 @@ class Topology:
             else:
                 logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
     
-    def add_restraints(self,pairdf,typ=6,kb=300000):
+    def add_restraints(self,pairdf,typ=6,kb=300000.):
         """Add type-6 (non-topoogical) bonds to help drag atoms destined to be bonded
-        closer together in a series of dragging simulations """
+        closer together in a series of dragging simulations
+
+        :param pairdf: dataframe of pairs ['ai','aj']
+        :type pairdf: pandas DataFrame
+        :param typ: bond type, defaults to 6
+        :type typ: int, optional
+        :param kb: bond spring constant (kJ/mol/nm^2), defaults to 300000
+        :type kb: float, optional
+        """
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
         for i,b in pairdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
@@ -447,8 +475,14 @@ class Topology:
                 self.D['bonds']=pd.concat((self.D['bonds'],bdtoadd),ignore_index=True)
 
     def remove_restraints(self,pairdf):
-        """Remove all bonds in pairdf, since these are interpreted as non-topological
-        restraints, deleting these bonds does not influence angles or dihedrals"""
+        """Remove all bonds represented in in pairdf.
+        These are interpreted as non-topological
+        restraints, so deleting these 'bonds' does 
+        not influence angles or dihedrals
+
+        :param pairdf: dataframe of pairs ['ai','aj']
+        :type pairdf: pandas DataFrame
+        """
         d=self.D['bonds']
         to_drop=[]
         for i,b in pairdf.iterrows():
@@ -466,6 +500,7 @@ class Topology:
             ai,aj=idxorder(b)
             # if this bond is not in the topology
             if not (ai,aj) in bmi:
+                # TODO: allow for creation of double bonds from single bonds
                 newbonds.append((ai,aj))
                 # logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
                 it=at.iloc[ai-1].type
@@ -504,19 +539,10 @@ class Topology:
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
                 raise Exception(f'attempt to add already existing bond {ai}-{aj}')
-        
         # update the bondlist
         for b in newbonds:
             self.bondlist.append(b)
-
         logging.debug(f'Added {len(newbonds)} new bonds')
-        # if enumerate_others:
-        #     newangles=self.add_enumerated_angles(newbonds,ignores=ignores,quiet=quiet)
-        #     newdihedrals,newpairs=self.add_enumerated_dihedrals(newbonds,ignores=ignores,quiet=quiet)
-        #     # TODO: transfer any missing impropers (type 4 dihedrals) from template!
-        #     logging.debug(f'Added {len(newangles)} new angles')
-        #     logging.debug(f'Added {len(newdihedrals)} new dihedrals')
-        #     logging.debug(f'Added {len(newpairs)} new pairs')
 
     def add_enumerated_angles(self,newbonds,ignores=[],quiet=True):       
         at=self.D['atoms']
@@ -668,6 +694,17 @@ class Topology:
         return newdihedrals,newpairs
 
     def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
+        """Delete atoms from topology
+
+        :param idx: list of atom indexes to delete, defaults to []
+        :type idx: list, optional
+        :param reindex: reindex atoms after deleting, defaults to True
+        :type reindex: bool, optional
+        :param return_idx_of: list of old indices to report new indices of, defaults to []
+        :type return_idx_of: list, optional
+        :return: old-index-to-new-index mapper
+        :rtype: dict
+        """
         #logging.debug(f'Delete atoms: {idx}')
         self.null_check(msg='beginning of delete atoms')
         # logging.debug(f'idx {idx}')
@@ -801,7 +838,6 @@ class Topology:
         # self.to_file('tmp.top')
         return mapper
         
-    
     def _myconcat(self,other,directive='',idxlabel=[],idxshift=0,drop_duplicates=False):
         if not directive in other.D:
             return
@@ -817,56 +853,23 @@ class Topology:
             self.D[directive]=other.D[directive]
 
     def merge(self,other):
-        logging.debug('Topology.merge begins')
+        """Merge topologies
+
+        :param other: a topology
+        :type other: Topology
+        """
+        # logging.debug('Topology.merge begins')
         self.merge_ex(other)
         self.merge_types(other)
-        logging.debug('Topology.merge ends')
-
-    def force_overrides(self,other,types):
-        # If there are any dihedraltypes in other with same atomtypes as any dihedraltypes
-        # in self but with DIFFERENT parameters, IMMEDIATELY copy other's parameters to
-        # the override fields of the actual dihedrals in other and then DROP the
-        # dihedral types from other.
-        logging.debug(f'force_overrides begins')
-        for typ,ext in types:
-            if typ not in self.D or typ not in other.D:
-                continue
-            typfields=_GromacsTopologyHashables_[typ]
-            datafields=_GromacsTopologyDataFields_[typ]
-            idxfields=_GromacsTopologyHashables_[ext]
-            stdf=self.D[typ]
-            otdf=other.D[typ]
-            oedf=other.D[ext]
-            mdf=pd.concat((stdf,otdf),ignore_index=True).drop_duplicates()
-            dups=mdf.duplicated(subset=typfields,keep='first')
-            if any(dups):
-                logging.debug(f'Duplicate {typ}(s) with differing parameters:')
-                logging.debug('\n'+mdf[dups].to_string())
-                for i,p in mdf[dups].iterrows():
-                    # get the atom types
-                    if typ=='dihedraltypes' and p.func==9:
-                        continue
-                    typvalues=p[typfields]
-                    logging.debug(f'Searching {ext} for type(s) {list(typvalues)}')
-                    for j,q in oedf.iterrows():
-#                        logging.debug(f'\ni {i}\nq {q}\nq[idxfields] {q[idxfields]}')
-                        # find any extensive entry in other whose atom indices refer to atoms of the stipulated types
-                        typs=all([self.get_atomtype(x)==y for x,y in zip(list(q[idxfields]),typvalues)])
-                        if typs:
-                            logging.debug(f'Found {list(q[idxfields])}')
-                            # overwrite datafields in the extensive dataframe entry for other
-                            logging.debug(f'Existing extensive entry:\n{oedf.iloc[j].to_string()}')
-                            #oedf.iloc[j][datafields]=p[datafields]
-                            # logging.debug(f'After overwrite:\n{oedf.iloc[j]}')
-                            # # drop the type entry in the other dataframe
-                            # otdf.set_index(typfields)
-                            # idx=otdf[typ].index
-                            # otdf.drop(idx,inplace=True)
-                            # otdf.reset_index().reindex()
-            logging.debug('\n'+otdf.to_string())
-        logging.debug('force_overrides ends')
+        # logging.debug('Topology.merge ends')
 
     def dup_check(self,die=True):
+        """Check for duplicate type-like topology records
+
+        :param die: flag telling HTPolyNet to exit if duplicate found, defaults to True
+        :type die: bool, optional
+        :raises Exception: Exception raised if duplicate found and die is True
+        """
         L=['atomtypes','bondtypes','angletypes']
         Not=' not' if not die else ''
         logging.debug(f'Checking for duplicate {L}; will{Not} die if found.')
@@ -876,18 +879,18 @@ class Topology:
             dups=self.D[t].duplicated(subset=i,keep=False)
             if any(dups):
                 logging.error(f'Duplicate {t} with different parameters detected\n'+self.D[t][dups].to_string())
-                # TODO: for duplicates, find the actual dihedrals which contributed them and override parameters
-                # how the hell am i going to go that??
                 if die:
                     raise Exception('duplicate topology types with different parameters detected')
 
     def merge_types(self,other):
-        ''' merge types but drop duplicates '''
+        """Merge type-like topology dataframes from other to self
+
+        :param other: topology containing attribute D, a dictionary of dataframes
+        :type other: Topology
+        """
         L=['atomtypes','bondtypes','angletypes','dihedraltypes']
-#        self.force_overrides(other,[('dihedraltypes','dihedrals')])
         for t in L:
             self._myconcat(other,directive=t,drop_duplicates=True)
-
 
     def merge_ex(self,other):
         # print('   extensive merging...')
@@ -907,13 +910,26 @@ class Topology:
         self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)
         self._myconcat(other,directive='dihedrals',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
 
-    def get_atom(self,idx):
-        return self.D['atoms'].iloc[idx-1]
-
     def get_atom_attribute(self,idx,attribute):
+        """Return value of attribute of atom idx
+
+        :param idx: global atom index
+        :type idx: int
+        :param attribute: atom attribute name
+        :type attribute: str
+        :return: atom attribute value
+        :rtype: varies
+        """
         return self.D['atoms'].iloc[idx-1][attribute]
 
     def get_atomtype(self,idx):
+        """Get atom type of atom with global index idx
+
+        :param idx: atom global index
+        :type idx: int
+        :return: atom typ
+        :rtype: str
+        """
 #        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')
         return self.D['atoms'].iloc[idx-1].type
 
@@ -996,13 +1012,11 @@ class Topology:
         saveme=pd.DataFrame(columns=bdf.columns)
         for i,b in bonds.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
-            # TODO: don't save bonds that don't have explicit override parameters
             # logging.debug(f'copy parameters for ai {ai} aj {aj}')
             saveme=pd.concat((saveme,bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()),ignore_index=True)
         # logging.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
-    # 'bonds':['ai', 'aj', 'funct', 'c0', 'c1'],
-    # 'bondtypes':['i','j','func','b0','kb'],
+
     def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
@@ -1035,6 +1049,15 @@ class Topology:
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=new_kb
 
     def get_bond_parameters(self,ai,aj):
+        """Gets b0 and kb for bond between atoms with global indexes ai and aj
+
+        :param ai: global atom index
+        :type ai: int
+        :param aj: global atom index
+        :type aj: int
+        :return: b0, kb -- equilibrium bond length and spring constant
+        :rtype: 2-tuple
+        """
         ai,aj=idxorder((ai,aj))
         adf=self.D['atoms']
         bdf=self.D['bonds']
@@ -1051,6 +1074,11 @@ class Topology:
         return b0,kb
 
     def restore_bond_parameters(self,df):
+        """Copy data from all bonds in dataframe df to global dataframe
+
+        :param df: dataframe of bonds ['ai','aj','c0','c1']
+        :type df: pandas DataFrame
+        """
         bdf=self.D['bonds']
         for i,r in df.iterrows():
             ai,aj=r['ai'],r['aj']

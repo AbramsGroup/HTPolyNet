@@ -19,7 +19,7 @@ The best way to identify these atoms is by inspecting the 3d structure of the mo
     :scale: 50 %
     :alt: PACM
 
-Since the two nitrogens are reactive, we will name one "N1" and the other "N2".  It does not matter what they are called so long as the names are unique.  The carbon atoms at the 4 positions of each cyclohexane ring are chiral, so we will name the one connected to N1 "C1" and the other "C2".  These names are changed by directly editing the mol2 file::
+Since the two nitrogens are reactive, we will name one "N1" and the other "N2".  It does not matter what they are called so long as the names are unique.  The carbon atoms at the 4 positions of each cyclohexane ring are chiral, so we will name the one connected to N1 "C1" and the other "C2".  These names are changed by directly editing the mol2 file (notice atoms with indexes 2, 11, 14, and 15)::
 
     @<TRIPOS>MOLECULE
     PAC
@@ -112,3 +112,5 @@ Since the two nitrogens are reactive, we will name one "N1" and the other "N2". 
         40    14    39    1
         41    15    40    1
         42    15    41    1
+
+This file's only purpose is to serve as input to the ``antechamber-parmchk2-tleap`` sequence that generates Amber-format coordinate and topology/parameter files.  These are then converted to Gromacs format ``*.gro/*.itp/*.top`` input files by ``parmed``.  Through all of this processing, atoms given explicit names in the original input ``*.mol2`` file (that is, they include integer designations along with atom symbols) keep those names.  **Other** atoms in the ``*.mol2`` that have **generic** names (like single letters) are automatically assigned unique names.

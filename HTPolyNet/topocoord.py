@@ -291,7 +291,7 @@ class TopoCoord:
             pairs=[(x['ai'],x['aj']) for i,x in bdf.iterrows()]
             logging.debug(f'Making {len(pairs)} bonds.')
             idx_to_delete=self.make_bonds(pairs)
-            logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
+            # logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             self.Topology.null_check(msg='delete_atoms')
             # reindex all atoms in the list of bonds sent in, and write it out
@@ -303,7 +303,7 @@ class TopoCoord:
             self.make_ringlist()
             self.map_from_templates(ri_bdf,template_dict)
             self.Topology.null_check(msg='map_from_templates')
-            self.adjust_charges(msg='You might want to increase the scope of template mapping for each new bond.')
+            self.adjust_charges(msg='')
             if write_mapper_to:
                 with open(write_mapper_to,'w') as f:
                     for k,v in idx_mapper.items():
