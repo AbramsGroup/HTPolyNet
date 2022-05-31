@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monomers &#8212; HTPolyNet 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="DGEBA-PACM Thermoset" href="index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="monomers">
+<h1>Monomers<a class="headerlink" href="#monomers" title="Permalink to this headline">¶</a></h1>
+<p>In this section, we describe how the inputs <a class="reference external" href="DGE.mol2">DGE.mol2</a> and <a class="reference external" href="PAC.mol2">PAC.mol2</a> are generated for the DGEBA and PACM monomers, respectively.</p>
+<section id="dgeba">
+<h2>DGEBA<a class="headerlink" href="#dgeba" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/DGE-epoxy.png" src="../../_images/DGE-epoxy.png" />
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether">Bisphenol A diglycidyl ether</a>, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we’ll consider how to build the input <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file for DGEBA.  The canonical SMILES string for DGEBA is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CC</span><span class="p">(</span><span class="n">C</span><span class="p">)(</span><span class="n">C1</span><span class="o">=</span><span class="n">CC</span><span class="o">=</span><span class="n">C</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="n">C1</span><span class="p">)</span><span class="n">OCC2CO2</span><span class="p">)</span><span class="n">C3</span><span class="o">=</span><span class="n">CC</span><span class="o">=</span><span class="n">C</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="n">C3</span><span class="p">)</span><span class="n">OCC4CO4</span>
+</pre></div>
+</div>
+<p>However, as described in the user guide, HTPolyNet uses the concept of “sacrificial hydrogens”: any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  Epoxy groups react with amines via hydrogen atom transfer from the amine to the oxirane oxygen, generating a C-N bond and a pendant OH group one carbon atom removed from the C-N bond.  So the N sacrificed but the C did not; it “sacrificed” its bond to the O atom of the oxirane.  To use DGEBA as a reactive monomer, we therefore must convert it to a form in which the two oxiranes are hydrogenated, yielding a terminal methyl group and a pendant OH one atom removed from the methyl.  This is easily done by altering the <code class="docutils literal notranslate"><span class="pre">C2CO2</span></code> and <code class="docutils literal notranslate"><span class="pre">C4CO4</span></code> epoxirane cycles in the original SMILES string to <code class="docutils literal notranslate"><span class="pre">C(O)C</span></code> methyl hydroxymethyl groups, yielding:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CC</span><span class="p">(</span><span class="n">C</span><span class="p">)(</span><span class="n">C1</span><span class="o">=</span><span class="n">CC</span><span class="o">=</span><span class="n">C</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="n">C1</span><span class="p">)</span><span class="n">OCC</span><span class="p">(</span><span class="n">O</span><span class="p">)</span><span class="n">C</span><span class="p">)</span><span class="n">C3</span><span class="o">=</span><span class="n">CC</span><span class="o">=</span><span class="n">C</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="n">C3</span><span class="p">)</span><span class="n">OCC</span><span class="p">(</span><span class="n">O</span><span class="p">)</span><span class="n">C</span>
+</pre></div>
+</div>
+<p>Using <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> (or any of a variety of molecular builders), we can generate a baseline 3D structure of DGEBA in <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> format at the command-line, referring to it as “DGE”  (three-letter monomer names are customary, though not required; they need only be unique identifiers):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span> <span class="p">|</span> <span class="se">\</span>
+       obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;DGE&quot;</span> <span class="p">|</span> <span class="se">\</span>
+       sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;DGE    &quot;</span>/ &gt; DGE-raw.mol2<span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>Note that we have used <code class="docutils literal notranslate"><span class="pre">sed</span></code> to change the generic residue name <code class="docutils literal notranslate"><span class="pre">UNL1</span></code> provided by <code class="docutils literal notranslate"><span class="pre">obabel</span></code> to our desired name <code class="docutils literal notranslate"><span class="pre">DGE</span></code>.  At this point, although this is a valid <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file, it is not yet ready for use by HTPolyNet.  It needs two fixes:</p>
+<ol class="arabic simple">
+<li><p>Reactive atoms must be uniquely named; and</p></li>
+<li><p>Any chiral carbons must also be uniquely named.</p></li>
+</ol>
+<p>To understand how to make these fixes, we should visualize the molecule:</p>
+<img alt="../../_images/DGE-labelled.png" src="../../_images/DGE-labelled.png" />
+<p>This image was made with <a class="reference external" href="http://www.ks.uiuc.edu/Research/vmd/">VMD</a>, and you can see that four carbons are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>; these are the two “reactive” carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in <em>S</em>.  These of course are atoms with the indicies 12 and 23 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>.</p>
+<p>Let’s edit <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code> to make atom 14 <code class="docutils literal notranslate"><span class="pre">C1</span></code>, 25 <code class="docutils literal notranslate"><span class="pre">C2</span></code>, 12 <code class="docutils literal notranslate"><span class="pre">C3</span></code>, and 23 <code class="docutils literal notranslate"><span class="pre">C4</span></code>, as is shown in the labels.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat DGE-raw.mol2 <span class="p">|</span> sed s/<span class="s2">&quot;14 C &quot;</span>/<span class="s2">&quot;14 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                     sed s/<span class="s2">&quot;25 C &quot;</span>/<span class="s2">&quot;25 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                     sed s/<span class="s2">&quot;12 C &quot;</span>/<span class="s2">&quot;12 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                     sed s/<span class="s2">&quot;23 C &quot;</span>/<span class="s2">&quot;23 C4&quot;</span>/ &gt; DGE.mol2
+</pre></div>
+</div>
+<p>Note that in the <code class="docutils literal notranslate"><span class="pre">sed</span></code> substitution directives, we have preserved the number of characters substituted to keep the column spacing in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file from changing.</p>
+<p>Now, let’s take a look at <a class="reference external" href="DGE.mol2">DGE.mol2</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">MOLECULE</span>
+<span class="n">DGE</span>
+<span class="mi">53</span> <span class="mi">54</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">SMALL</span>
+<span class="n">GASTEIGER</span>
+
+<span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">ATOM</span>
+      <span class="mi">1</span> <span class="n">C</span>           <span class="mf">0.9601</span>    <span class="mf">0.0682</span>    <span class="mf">0.1490</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0517</span>
+      <span class="mi">2</span> <span class="n">C</span>           <span class="mf">2.5158</span>    <span class="mf">0.0610</span>    <span class="mf">0.0695</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0151</span>
+      <span class="mi">3</span> <span class="n">C</span>           <span class="mf">2.9888</span>    <span class="mf">0.3744</span>    <span class="mf">1.5227</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0517</span>
+      <span class="mi">4</span> <span class="n">C</span>           <span class="mf">3.0435</span>   <span class="o">-</span><span class="mf">1.3437</span>   <span class="o">-</span><span class="mf">0.3149</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0372</span>
+      <span class="mi">5</span> <span class="n">C</span>           <span class="mf">2.2654</span>   <span class="o">-</span><span class="mf">2.2043</span>   <span class="o">-</span><span class="mf">1.1002</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0543</span>
+      <span class="mi">6</span> <span class="n">C</span>           <span class="mf">2.6154</span>   <span class="o">-</span><span class="mf">3.5414</span>   <span class="o">-</span><span class="mf">1.2810</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0197</span>
+      <span class="mi">7</span> <span class="n">C</span>           <span class="mf">3.7559</span>   <span class="o">-</span><span class="mf">4.0699</span>   <span class="o">-</span><span class="mf">0.6824</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.1206</span>
+      <span class="mi">8</span> <span class="n">C</span>           <span class="mf">4.6062</span>   <span class="o">-</span><span class="mf">3.2065</span>    <span class="mf">0.0069</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0197</span>
+      <span class="mi">9</span> <span class="n">C</span>           <span class="mf">4.2621</span>   <span class="o">-</span><span class="mf">1.8570</span>    <span class="mf">0.1708</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0543</span>
+     <span class="mi">10</span> <span class="n">O</span>           <span class="mf">4.1011</span>   <span class="o">-</span><span class="mf">5.3998</span>   <span class="o">-</span><span class="mf">0.7036</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.4894</span>
+     <span class="mi">11</span> <span class="n">C</span>           <span class="mf">3.1002</span>   <span class="o">-</span><span class="mf">6.2627</span>   <span class="o">-</span><span class="mf">1.2708</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.1151</span>
+     <span class="mi">12</span> <span class="n">C3</span>          <span class="mf">3.4888</span>   <span class="o">-</span><span class="mf">7.7350</span>   <span class="o">-</span><span class="mf">1.1214</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0864</span>
+     <span class="mi">13</span> <span class="n">O</span>           <span class="mf">4.7488</span>   <span class="o">-</span><span class="mf">7.9743</span>   <span class="o">-</span><span class="mf">1.7458</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.3887</span>
+     <span class="mi">14</span> <span class="n">C1</span>          <span class="mf">3.5559</span>   <span class="o">-</span><span class="mf">8.1826</span>    <span class="mf">0.3300</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0357</span>
+     <span class="mi">15</span> <span class="n">C</span>           <span class="mf">2.8918</span>    <span class="mf">1.1840</span>   <span class="o">-</span><span class="mf">0.9221</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0372</span>
+     <span class="mi">16</span> <span class="n">C</span>           <span class="mf">3.0523</span>    <span class="mf">2.4988</span>   <span class="o">-</span><span class="mf">0.4592</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0543</span>
+     <span class="mi">17</span> <span class="n">C</span>           <span class="mf">3.2536</span>    <span class="mf">3.5679</span>   <span class="o">-</span><span class="mf">1.3257</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0197</span>
+     <span class="mi">18</span> <span class="n">C</span>           <span class="mf">3.2961</span>    <span class="mf">3.3733</span>   <span class="o">-</span><span class="mf">2.7046</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.1206</span>
+     <span class="mi">19</span> <span class="n">C</span>           <span class="mf">3.1537</span>    <span class="mf">2.0763</span>   <span class="o">-</span><span class="mf">3.1940</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0197</span>
+     <span class="mi">20</span> <span class="n">C</span>           <span class="mf">2.9490</span>    <span class="mf">0.9932</span>   <span class="o">-</span><span class="mf">2.3162</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0543</span>
+     <span class="mi">21</span> <span class="n">O</span>           <span class="mf">3.4565</span>    <span class="mf">4.3802</span>   <span class="o">-</span><span class="mf">3.6269</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.4894</span>
+     <span class="mi">22</span> <span class="n">C</span>           <span class="mf">3.5239</span>    <span class="mf">5.7006</span>   <span class="o">-</span><span class="mf">3.0598</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.1151</span>
+     <span class="mi">23</span> <span class="n">C4</span>          <span class="mf">3.6692</span>    <span class="mf">6.7696</span>   <span class="o">-</span><span class="mf">4.1450</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0864</span>
+     <span class="mi">24</span> <span class="n">O</span>           <span class="mf">4.8809</span>    <span class="mf">6.5708</span>   <span class="o">-</span><span class="mf">4.8717</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.3887</span>
+     <span class="mi">25</span> <span class="n">C2</span>          <span class="mf">2.4996</span>    <span class="mf">6.7855</span>   <span class="o">-</span><span class="mf">5.1148</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0357</span>
+     <span class="mi">26</span> <span class="n">H</span>           <span class="mf">0.5945</span>   <span class="o">-</span><span class="mf">0.7080</span>    <span class="mf">0.8319</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
+     <span class="mi">27</span> <span class="n">H</span>           <span class="mf">0.4870</span>   <span class="o">-</span><span class="mf">0.0914</span>   <span class="o">-</span><span class="mf">0.8267</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
+     <span class="mi">28</span> <span class="n">H</span>           <span class="mf">0.5820</span>    <span class="mf">1.0321</span>    <span class="mf">0.5106</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
+     <span class="mi">29</span> <span class="n">H</span>           <span class="mf">2.7964</span>   <span class="o">-</span><span class="mf">0.4694</span>    <span class="mf">2.1962</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
+     <span class="mi">30</span> <span class="n">H</span>           <span class="mf">2.4602</span>    <span class="mf">1.2314</span>    <span class="mf">1.9559</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
+     <span class="mi">31</span> <span class="n">H</span>           <span class="mf">4.0596</span>    <span class="mf">0.6067</span>    <span class="mf">1.5647</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
+     <span class="mi">32</span> <span class="n">H</span>           <span class="mf">1.3436</span>   <span class="o">-</span><span class="mf">1.8695</span>   <span class="o">-</span><span class="mf">1.5669</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0622</span>
+     <span class="mi">33</span> <span class="n">H</span>           <span class="mf">1.9409</span>   <span class="o">-</span><span class="mf">4.1449</span>   <span class="o">-</span><span class="mf">1.8761</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0654</span>
+     <span class="mi">34</span> <span class="n">H</span>           <span class="mf">5.5227</span>   <span class="o">-</span><span class="mf">3.5875</span>    <span class="mf">0.4515</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0654</span>
+     <span class="mi">35</span> <span class="n">H</span>           <span class="mf">4.9462</span>   <span class="o">-</span><span class="mf">1.2317</span>    <span class="mf">0.7348</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0622</span>
+     <span class="mi">36</span> <span class="n">H</span>           <span class="mf">3.0235</span>   <span class="o">-</span><span class="mf">6.0384</span>   <span class="o">-</span><span class="mf">2.3413</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0722</span>
+     <span class="mi">37</span> <span class="n">H</span>           <span class="mf">2.1344</span>   <span class="o">-</span><span class="mf">6.1066</span>   <span class="o">-</span><span class="mf">0.7734</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0722</span>
+     <span class="mi">38</span> <span class="n">H</span>           <span class="mf">2.7427</span>   <span class="o">-</span><span class="mf">8.3440</span>   <span class="o">-</span><span class="mf">1.6445</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0624</span>
+     <span class="mi">39</span> <span class="n">H</span>           <span class="mf">5.3392</span>   <span class="o">-</span><span class="mf">7.2529</span>   <span class="o">-</span><span class="mf">1.4565</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.2099</span>
+     <span class="mi">40</span> <span class="n">H</span>           <span class="mf">4.3393</span>   <span class="o">-</span><span class="mf">7.6508</span>    <span class="mf">0.8786</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0256</span>
+     <span class="mi">41</span> <span class="n">H</span>           <span class="mf">3.7994</span>   <span class="o">-</span><span class="mf">9.2493</span>    <span class="mf">0.3821</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0256</span>
+     <span class="mi">42</span> <span class="n">H</span>           <span class="mf">2.5983</span>   <span class="o">-</span><span class="mf">8.0235</span>    <span class="mf">0.8364</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0256</span>
+     <span class="mi">43</span> <span class="n">H</span>           <span class="mf">2.9907</span>    <span class="mf">2.7425</span>    <span class="mf">0.5967</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0622</span>
+     <span class="mi">44</span> <span class="n">H</span>           <span class="mf">3.3496</span>    <span class="mf">4.5491</span>   <span class="o">-</span><span class="mf">0.8758</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0654</span>
+     <span class="mi">45</span> <span class="n">H</span>           <span class="mf">3.1775</span>    <span class="mf">1.8944</span>   <span class="o">-</span><span class="mf">4.2680</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0654</span>
+     <span class="mi">46</span> <span class="n">H</span>           <span class="mf">2.8110</span>    <span class="mf">0.0055</span>   <span class="o">-</span><span class="mf">2.7501</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0622</span>
+     <span class="mi">47</span> <span class="n">H</span>           <span class="mf">4.4071</span>    <span class="mf">5.7580</span>   <span class="o">-</span><span class="mf">2.4113</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0722</span>
+     <span class="mi">48</span> <span class="n">H</span>           <span class="mf">2.6102</span>    <span class="mf">5.9083</span>   <span class="o">-</span><span class="mf">2.4888</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0722</span>
+     <span class="mi">49</span> <span class="n">H</span>           <span class="mf">3.7417</span>    <span class="mf">7.7485</span>   <span class="o">-</span><span class="mf">3.6575</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0624</span>
+     <span class="mi">50</span> <span class="n">H</span>           <span class="mf">4.9306</span>    <span class="mf">5.6173</span>   <span class="o">-</span><span class="mf">5.0723</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.2099</span>
+     <span class="mi">51</span> <span class="n">H</span>           <span class="mf">2.4413</span>    <span class="mf">5.8552</span>   <span class="o">-</span><span class="mf">5.6885</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0256</span>
+     <span class="mi">52</span> <span class="n">H</span>           <span class="mf">2.6246</span>    <span class="mf">7.5977</span>   <span class="o">-</span><span class="mf">5.8389</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0256</span>
+     <span class="mi">53</span> <span class="n">H</span>           <span class="mf">1.5529</span>    <span class="mf">6.9377</span>   <span class="o">-</span><span class="mf">4.5866</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0256</span>
+<span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">BOND</span>
+      <span class="mi">1</span>     <span class="mi">1</span>     <span class="mi">2</span>    <span class="mi">1</span>
+      <span class="mi">2</span>     <span class="mi">2</span>     <span class="mi">3</span>    <span class="mi">1</span>
+      <span class="mi">3</span>     <span class="mi">2</span>     <span class="mi">4</span>    <span class="mi">1</span>
+      <span class="mi">4</span>     <span class="mi">4</span>     <span class="mi">5</span>   <span class="n">ar</span>
+      <span class="mi">5</span>     <span class="mi">5</span>     <span class="mi">6</span>   <span class="n">ar</span>
+      <span class="mi">6</span>     <span class="mi">6</span>     <span class="mi">7</span>   <span class="n">ar</span>
+      <span class="mi">7</span>     <span class="mi">7</span>     <span class="mi">8</span>   <span class="n">ar</span>
+      <span class="mi">8</span>     <span class="mi">8</span>     <span class="mi">9</span>   <span class="n">ar</span>
+      <span class="mi">9</span>     <span class="mi">4</span>     <span class="mi">9</span>   <span class="n">ar</span>
+     <span class="mi">10</span>     <span class="mi">7</span>    <span class="mi">10</span>    <span class="mi">1</span>
+     <span class="mi">11</span>    <span class="mi">10</span>    <span class="mi">11</span>    <span class="mi">1</span>
+     <span class="mi">12</span>    <span class="mi">11</span>    <span class="mi">12</span>    <span class="mi">1</span>
+     <span class="mi">13</span>    <span class="mi">12</span>    <span class="mi">13</span>    <span class="mi">1</span>
+     <span class="mi">14</span>    <span class="mi">12</span>    <span class="mi">14</span>    <span class="mi">1</span>
+     <span class="mi">15</span>     <span class="mi">2</span>    <span class="mi">15</span>    <span class="mi">1</span>
+     <span class="mi">16</span>    <span class="mi">15</span>    <span class="mi">16</span>   <span class="n">ar</span>
+     <span class="mi">17</span>    <span class="mi">16</span>    <span class="mi">17</span>   <span class="n">ar</span>
+     <span class="mi">18</span>    <span class="mi">17</span>    <span class="mi">18</span>   <span class="n">ar</span>
+     <span class="mi">19</span>    <span class="mi">18</span>    <span class="mi">19</span>   <span class="n">ar</span>
+     <span class="mi">20</span>    <span class="mi">19</span>    <span class="mi">20</span>   <span class="n">ar</span>
+     <span class="mi">21</span>    <span class="mi">15</span>    <span class="mi">20</span>   <span class="n">ar</span>
+     <span class="mi">22</span>    <span class="mi">18</span>    <span class="mi">21</span>    <span class="mi">1</span>
+     <span class="mi">23</span>    <span class="mi">21</span>    <span class="mi">22</span>    <span class="mi">1</span>
+     <span class="mi">24</span>    <span class="mi">22</span>    <span class="mi">23</span>    <span class="mi">1</span>
+     <span class="mi">25</span>    <span class="mi">23</span>    <span class="mi">24</span>    <span class="mi">1</span>
+     <span class="mi">26</span>    <span class="mi">23</span>    <span class="mi">25</span>    <span class="mi">1</span>
+     <span class="mi">27</span>     <span class="mi">1</span>    <span class="mi">26</span>    <span class="mi">1</span>
+     <span class="mi">28</span>     <span class="mi">1</span>    <span class="mi">27</span>    <span class="mi">1</span>
+     <span class="mi">29</span>     <span class="mi">1</span>    <span class="mi">28</span>    <span class="mi">1</span>
+     <span class="mi">30</span>     <span class="mi">3</span>    <span class="mi">29</span>    <span class="mi">1</span>
+     <span class="mi">31</span>     <span class="mi">3</span>    <span class="mi">30</span>    <span class="mi">1</span>
+     <span class="mi">32</span>     <span class="mi">3</span>    <span class="mi">31</span>    <span class="mi">1</span>
+     <span class="mi">33</span>     <span class="mi">5</span>    <span class="mi">32</span>    <span class="mi">1</span>
+     <span class="mi">34</span>     <span class="mi">6</span>    <span class="mi">33</span>    <span class="mi">1</span>
+     <span class="mi">35</span>     <span class="mi">8</span>    <span class="mi">34</span>    <span class="mi">1</span>
+     <span class="mi">36</span>     <span class="mi">9</span>    <span class="mi">35</span>    <span class="mi">1</span>
+     <span class="mi">37</span>    <span class="mi">11</span>    <span class="mi">36</span>    <span class="mi">1</span>
+     <span class="mi">38</span>    <span class="mi">11</span>    <span class="mi">37</span>    <span class="mi">1</span>
+     <span class="mi">39</span>    <span class="mi">12</span>    <span class="mi">38</span>    <span class="mi">1</span>
+     <span class="mi">40</span>    <span class="mi">13</span>    <span class="mi">39</span>    <span class="mi">1</span>
+     <span class="mi">41</span>    <span class="mi">14</span>    <span class="mi">40</span>    <span class="mi">1</span>
+     <span class="mi">42</span>    <span class="mi">14</span>    <span class="mi">41</span>    <span class="mi">1</span>
+     <span class="mi">43</span>    <span class="mi">14</span>    <span class="mi">42</span>    <span class="mi">1</span>
+     <span class="mi">44</span>    <span class="mi">16</span>    <span class="mi">43</span>    <span class="mi">1</span>
+     <span class="mi">45</span>    <span class="mi">17</span>    <span class="mi">44</span>    <span class="mi">1</span>
+     <span class="mi">46</span>    <span class="mi">19</span>    <span class="mi">45</span>    <span class="mi">1</span>
+     <span class="mi">47</span>    <span class="mi">20</span>    <span class="mi">46</span>    <span class="mi">1</span>
+     <span class="mi">48</span>    <span class="mi">22</span>    <span class="mi">47</span>    <span class="mi">1</span>
+     <span class="mi">49</span>    <span class="mi">22</span>    <span class="mi">48</span>    <span class="mi">1</span>
+     <span class="mi">50</span>    <span class="mi">23</span>    <span class="mi">49</span>    <span class="mi">1</span>
+     <span class="mi">51</span>    <span class="mi">24</span>    <span class="mi">50</span>    <span class="mi">1</span>
+     <span class="mi">52</span>    <span class="mi">25</span>    <span class="mi">51</span>    <span class="mi">1</span>
+     <span class="mi">53</span>    <span class="mi">25</span>    <span class="mi">52</span>    <span class="mi">1</span>
+     <span class="mi">54</span>    <span class="mi">25</span>    <span class="mi">53</span>    <span class="mi">1</span>
+</pre></div>
+</div>
+<p>You can see that only C1-C4 are uniquely named.  Those unique names will persist forever in HTPolyNet in any system derived from this DGE input file.  Other atoms will acquire unique names through processing with AmberTools, but that won’t concern us here.</p>
+</section>
+<section id="pacm">
+<h2>PACM<a class="headerlink" href="#pacm" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/PAC-2d.png" src="../../_images/PAC-2d.png" />
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/4,4-Diaminodicyclohexylmethane">4,4-diaminodicyclohexylmethane</a>, referred to colloquially as PACM (“pack-em”), is a common hardener in epoxy formulations.  Since it has two primary amine groups, it can bond to at most four distinct epoxide groups.  The SMILES string for PACM is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C1CC</span><span class="p">(</span><span class="n">CCC1CC2CCC</span><span class="p">(</span><span class="n">CC2</span><span class="p">)</span><span class="n">N</span><span class="p">)</span><span class="n">N</span>
+</pre></div>
+</div>
+<p>Just as we did with DGEBA, we can generate a structure for the “PAC” monomer:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span> <span class="p">|</span> <span class="se">\</span>
+       obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;PAC&quot;</span> <span class="p">|</span> <span class="se">\</span>
+       sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;PAC    &quot;</span>/ &gt; PAC-raw.mol2
+</pre></div>
+</div>
+<p>Since we know PACM has two primary amines, we don’t need to convert it to a form with sacrificial H’s – it already has them.  We do, however, need to edit <code class="docutils literal notranslate"><span class="pre">PAC-raw.mol2</span></code> to give unique atom names to the two amine nitrogens and the two chiral carbons to which they are attached:</p>
+<img alt="../../_images/PAC-labelled.png" src="../../_images/PAC-labelled.png" />
+<p>We see that the two amine nitrogens are atoms 13 and 14 in VMD numbering, which correspond respectively to atoms 14 and 15 in <code class="docutils literal notranslate"><span class="pre">mol2</span></code> numbering, so let’s call them “N1” and “N2”, respectively.  The carbon atom 11 (10 in VMD numbering) to which our “N1” is bound can now be called “C1”, and the carbon atom 3 (2 in VMD) to which our “N2” is bound “C2”.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> PAC-raw.mol2 <span class="p">|</span> sed s/<span class="s2">&quot;14 N &quot;</span>/<span class="s2">&quot;14 N1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                      sed s/<span class="s2">&quot;15 N &quot;</span>/<span class="s2">&quot;15 N1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                      sed s/<span class="s2">&quot;3 C &quot;</span>/<span class="s2">&quot;3 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                      sed s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/ &gt; DGE.mol2
+</pre></div>
+</div>
+<p>Let’s look at the file <code class="docutils literal notranslate"><span class="pre">PAC.mol2</span></code> that results from the command above:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">MOLECULE</span>
+<span class="n">PAC</span>
+<span class="mi">41</span> <span class="mi">42</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">SMALL</span>
+<span class="n">GASTEIGER</span>
+
+<span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">ATOM</span>
+     <span class="mi">1</span> <span class="n">C</span>           <span class="mf">1.0203</span>    <span class="mf">1.1686</span>   <span class="o">-</span><span class="mf">0.4045</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0488</span>
+     <span class="mi">2</span> <span class="n">C</span>          <span class="o">-</span><span class="mf">0.3868</span>    <span class="mf">1.4530</span>    <span class="mf">0.1332</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0375</span>
+     <span class="mi">3</span> <span class="n">C2</span>         <span class="o">-</span><span class="mf">0.4239</span>    <span class="mf">1.5867</span>    <span class="mf">1.6509</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0049</span>
+     <span class="mi">4</span> <span class="n">C</span>           <span class="mf">0.2189</span>    <span class="mf">0.3673</span>    <span class="mf">2.3129</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0375</span>
+     <span class="mi">5</span> <span class="n">C</span>           <span class="mf">1.6627</span>    <span class="mf">0.1840</span>    <span class="mf">1.8377</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0488</span>
+     <span class="mi">6</span> <span class="n">C</span>           <span class="mf">1.7559</span>    <span class="mf">0.0170</span>    <span class="mf">0.3181</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0407</span>
+     <span class="mi">7</span> <span class="n">C</span>           <span class="mf">3.2445</span>   <span class="o">-</span><span class="mf">0.0611</span>   <span class="o">-</span><span class="mf">0.1651</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0474</span>
+     <span class="mi">8</span> <span class="n">C</span>           <span class="mf">4.0849</span>   <span class="o">-</span><span class="mf">1.2509</span>    <span class="mf">0.3999</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0407</span>
+     <span class="mi">9</span> <span class="n">C</span>           <span class="mf">5.5341</span>   <span class="o">-</span><span class="mf">1.2664</span>   <span class="o">-</span><span class="mf">0.1535</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0488</span>
+    <span class="mi">10</span> <span class="n">C</span>           <span class="mf">6.3098</span>   <span class="o">-</span><span class="mf">2.5522</span>    <span class="mf">0.1636</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0375</span>
+    <span class="mi">11</span> <span class="n">C1</span>          <span class="mf">5.4974</span>   <span class="o">-</span><span class="mf">3.8029</span>   <span class="o">-</span><span class="mf">0.1700</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0049</span>
+    <span class="mi">12</span> <span class="n">C</span>           <span class="mf">4.1937</span>   <span class="o">-</span><span class="mf">3.8000</span>    <span class="mf">0.6212</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0375</span>
+    <span class="mi">13</span> <span class="n">C</span>           <span class="mf">3.3524</span>   <span class="o">-</span><span class="mf">2.5924</span>    <span class="mf">0.2247</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.0488</span>
+    <span class="mi">14</span> <span class="n">N1</span>          <span class="mf">6.2599</span>   <span class="o">-</span><span class="mf">5.0172</span>    <span class="mf">0.1162</span> <span class="n">N</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.3272</span>
+    <span class="mi">15</span> <span class="n">N2</span>         <span class="o">-</span><span class="mf">1.8168</span>    <span class="mf">1.7369</span>    <span class="mf">2.0786</span> <span class="n">N</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">PAC</span>        <span class="o">-</span><span class="mf">0.3272</span>
+    <span class="mi">16</span> <span class="n">H</span>           <span class="mf">1.6047</span>    <span class="mf">2.0898</span>   <span class="o">-</span><span class="mf">0.3424</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">17</span> <span class="n">H</span>           <span class="mf">0.9019</span>    <span class="mf">0.9202</span>   <span class="o">-</span><span class="mf">1.4627</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">18</span> <span class="n">H</span>          <span class="o">-</span><span class="mf">1.0564</span>    <span class="mf">0.6483</span>   <span class="o">-</span><span class="mf">0.1927</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">19</span> <span class="n">H</span>          <span class="o">-</span><span class="mf">0.7633</span>    <span class="mf">2.3773</span>   <span class="o">-</span><span class="mf">0.3343</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">20</span> <span class="n">H</span>           <span class="mf">0.1247</span>    <span class="mf">2.4885</span>    <span class="mf">1.9532</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0458</span>
+    <span class="mi">21</span> <span class="n">H</span>          <span class="o">-</span><span class="mf">0.3534</span>   <span class="o">-</span><span class="mf">0.5388</span>    <span class="mf">2.0744</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">22</span> <span class="n">H</span>           <span class="mf">0.2067</span>    <span class="mf">0.4761</span>    <span class="mf">3.4022</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">23</span> <span class="n">H</span>           <span class="mf">2.0776</span>   <span class="o">-</span><span class="mf">0.7078</span>    <span class="mf">2.3325</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">24</span> <span class="n">H</span>           <span class="mf">2.2691</span>    <span class="mf">1.0366</span>    <span class="mf">2.1678</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">25</span> <span class="n">H</span>           <span class="mf">1.2371</span>   <span class="o">-</span><span class="mf">0.9012</span>    <span class="mf">0.0434</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0301</span>
+    <span class="mi">26</span> <span class="n">H</span>           <span class="mf">3.7432</span>    <span class="mf">0.8605</span>    <span class="mf">0.1294</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0271</span>
+    <span class="mi">27</span> <span class="n">H</span>           <span class="mf">3.2593</span>   <span class="o">-</span><span class="mf">0.0975</span>   <span class="o">-</span><span class="mf">1.2596</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0271</span>
+    <span class="mi">28</span> <span class="n">H</span>           <span class="mf">4.1835</span>   <span class="o">-</span><span class="mf">1.0879</span>    <span class="mf">1.4730</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0301</span>
+    <span class="mi">29</span> <span class="n">H</span>           <span class="mf">6.0813</span>   <span class="o">-</span><span class="mf">0.4176</span>    <span class="mf">0.2686</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">30</span> <span class="n">H</span>           <span class="mf">5.5482</span>   <span class="o">-</span><span class="mf">1.1352</span>   <span class="o">-</span><span class="mf">1.2427</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">31</span> <span class="n">H</span>           <span class="mf">6.5982</span>   <span class="o">-</span><span class="mf">2.5580</span>    <span class="mf">1.2292</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">32</span> <span class="n">H</span>           <span class="mf">7.2463</span>   <span class="o">-</span><span class="mf">2.5515</span>   <span class="o">-</span><span class="mf">0.4099</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">33</span> <span class="n">H</span>           <span class="mf">5.2588</span>   <span class="o">-</span><span class="mf">3.8065</span>   <span class="o">-</span><span class="mf">1.2451</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0458</span>
+    <span class="mi">34</span> <span class="n">H</span>           <span class="mf">4.3975</span>   <span class="o">-</span><span class="mf">3.7699</span>    <span class="mf">1.7048</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">35</span> <span class="n">H</span>           <span class="mf">3.6232</span>   <span class="o">-</span><span class="mf">4.7131</span>    <span class="mf">0.4347</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0280</span>
+    <span class="mi">36</span> <span class="n">H</span>           <span class="mf">2.4417</span>   <span class="o">-</span><span class="mf">2.5989</span>    <span class="mf">0.8401</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">37</span> <span class="n">H</span>           <span class="mf">3.0264</span>   <span class="o">-</span><span class="mf">2.7222</span>   <span class="o">-</span><span class="mf">0.8175</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.0268</span>
+    <span class="mi">38</span> <span class="n">H</span>           <span class="mf">6.5386</span>   <span class="o">-</span><span class="mf">5.0249</span>    <span class="mf">1.0976</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.1185</span>
+    <span class="mi">39</span> <span class="n">H</span>           <span class="mf">7.1205</span>   <span class="o">-</span><span class="mf">5.0120</span>   <span class="o">-</span><span class="mf">0.4231</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.1185</span>
+    <span class="mi">40</span> <span class="n">H</span>          <span class="o">-</span><span class="mf">2.3522</span>    <span class="mf">0.9246</span>    <span class="mf">1.7729</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.1185</span>
+    <span class="mi">41</span> <span class="n">H</span>          <span class="o">-</span><span class="mf">2.2309</span>    <span class="mf">2.5311</span>    <span class="mf">1.5900</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">PAC</span>         <span class="mf">0.1185</span>
+<span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">BOND</span>
+     <span class="mi">1</span>     <span class="mi">1</span>     <span class="mi">2</span>    <span class="mi">1</span>
+     <span class="mi">2</span>     <span class="mi">2</span>     <span class="mi">3</span>    <span class="mi">1</span>
+     <span class="mi">3</span>     <span class="mi">3</span>     <span class="mi">4</span>    <span class="mi">1</span>
+     <span class="mi">4</span>     <span class="mi">4</span>     <span class="mi">5</span>    <span class="mi">1</span>
+     <span class="mi">5</span>     <span class="mi">5</span>     <span class="mi">6</span>    <span class="mi">1</span>
+     <span class="mi">6</span>     <span class="mi">1</span>     <span class="mi">6</span>    <span class="mi">1</span>
+     <span class="mi">7</span>     <span class="mi">6</span>     <span class="mi">7</span>    <span class="mi">1</span>
+     <span class="mi">8</span>     <span class="mi">7</span>     <span class="mi">8</span>    <span class="mi">1</span>
+     <span class="mi">9</span>     <span class="mi">8</span>     <span class="mi">9</span>    <span class="mi">1</span>
+    <span class="mi">10</span>     <span class="mi">9</span>    <span class="mi">10</span>    <span class="mi">1</span>
+    <span class="mi">11</span>    <span class="mi">10</span>    <span class="mi">11</span>    <span class="mi">1</span>
+    <span class="mi">12</span>    <span class="mi">11</span>    <span class="mi">12</span>    <span class="mi">1</span>
+    <span class="mi">13</span>    <span class="mi">12</span>    <span class="mi">13</span>    <span class="mi">1</span>
+    <span class="mi">14</span>     <span class="mi">8</span>    <span class="mi">13</span>    <span class="mi">1</span>
+    <span class="mi">15</span>    <span class="mi">11</span>    <span class="mi">14</span>    <span class="mi">1</span>
+    <span class="mi">16</span>     <span class="mi">3</span>    <span class="mi">15</span>    <span class="mi">1</span>
+    <span class="mi">17</span>     <span class="mi">1</span>    <span class="mi">16</span>    <span class="mi">1</span>
+    <span class="mi">18</span>     <span class="mi">1</span>    <span class="mi">17</span>    <span class="mi">1</span>
+    <span class="mi">19</span>     <span class="mi">2</span>    <span class="mi">18</span>    <span class="mi">1</span>
+    <span class="mi">20</span>     <span class="mi">2</span>    <span class="mi">19</span>    <span class="mi">1</span>
+    <span class="mi">21</span>     <span class="mi">3</span>    <span class="mi">20</span>    <span class="mi">1</span>
+    <span class="mi">22</span>     <span class="mi">4</span>    <span class="mi">21</span>    <span class="mi">1</span>
+    <span class="mi">23</span>     <span class="mi">4</span>    <span class="mi">22</span>    <span class="mi">1</span>
+    <span class="mi">24</span>     <span class="mi">5</span>    <span class="mi">23</span>    <span class="mi">1</span>
+    <span class="mi">25</span>     <span class="mi">5</span>    <span class="mi">24</span>    <span class="mi">1</span>
+    <span class="mi">26</span>     <span class="mi">6</span>    <span class="mi">25</span>    <span class="mi">1</span>
+    <span class="mi">27</span>     <span class="mi">7</span>    <span class="mi">26</span>    <span class="mi">1</span>
+    <span class="mi">28</span>     <span class="mi">7</span>    <span class="mi">27</span>    <span class="mi">1</span>
+    <span class="mi">29</span>     <span class="mi">8</span>    <span class="mi">28</span>    <span class="mi">1</span>
+    <span class="mi">30</span>     <span class="mi">9</span>    <span class="mi">29</span>    <span class="mi">1</span>
+    <span class="mi">31</span>     <span class="mi">9</span>    <span class="mi">30</span>    <span class="mi">1</span>
+    <span class="mi">32</span>    <span class="mi">10</span>    <span class="mi">31</span>    <span class="mi">1</span>
+    <span class="mi">33</span>    <span class="mi">10</span>    <span class="mi">32</span>    <span class="mi">1</span>
+    <span class="mi">34</span>    <span class="mi">11</span>    <span class="mi">33</span>    <span class="mi">1</span>
+    <span class="mi">35</span>    <span class="mi">12</span>    <span class="mi">34</span>    <span class="mi">1</span>
+    <span class="mi">36</span>    <span class="mi">12</span>    <span class="mi">35</span>    <span class="mi">1</span>
+    <span class="mi">37</span>    <span class="mi">13</span>    <span class="mi">36</span>    <span class="mi">1</span>
+    <span class="mi">38</span>    <span class="mi">13</span>    <span class="mi">37</span>    <span class="mi">1</span>
+    <span class="mi">39</span>    <span class="mi">14</span>    <span class="mi">38</span>    <span class="mi">1</span>
+    <span class="mi">40</span>    <span class="mi">14</span>    <span class="mi">39</span>    <span class="mi">1</span>
+    <span class="mi">41</span>    <span class="mi">15</span>    <span class="mi">40</span>    <span class="mi">1</span>
+    <span class="mi">42</span>    <span class="mi">15</span>    <span class="mi">41</span>    <span class="mi">1</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Example Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">DGEBA-PACM Thermoset</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Example Tutorials</a><ul>
+  <li><a href="index.html">DGEBA-PACM Thermoset</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">DGEBA-PACM Thermoset</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/example-tutorials/3-DGEBA-PACM/monomers.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

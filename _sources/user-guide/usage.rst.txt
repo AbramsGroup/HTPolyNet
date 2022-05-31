@@ -5,9 +5,29 @@ Installation of the HTPolyNet package gives access to the ``htpolynet`` command.
 
 .. code-block:: console
 
-    $ htpolynet run -cfg <my_config.yaml>
+    $ htpolynet run <my_config.yaml>
 
-where ``<my_config.yaml>`` is replaced by the name of your input configuration file.  A full listing of command-line parameters can be seen using ``htpolynet -h``.
+where ``<my_config.yaml>`` is replaced by the name of your input configuration file.  A full listing of command-line parameters can be seen using ``htpolynet -h``::
+
+  usage: htpolynet [-h] [-lib LIB] [-log LOG] [-restart] [--force-parameterization] [--force-sea-calculation]
+                   [--force-checkin] [--loglevel LOGLEVEL]
+                   command config
+
+  positional arguments:
+    command               command (parameterize, run)
+    config                input configuration file in YAML format
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -lib LIB              local user library
+    -log LOG              log file
+    -restart              restart in latest proj dir
+    --force-parameterization
+                          force GAFF parameterization of any input mol2 structures
+    --force-sea-calculation
+                          force calculation of symmetry-equivalent atoms in any input mol2 structures
+    --force-checkin       force check-in of any generated parameter files to the system library
+    --loglevel LOGLEVEL   Log level; info, debug
 
 What this does
 ^^^^^^^^^^^^^^
