@@ -44,7 +44,7 @@
 <p>The mol2 format HTPolyNet requires for a monomer is minimal and requires only three sections: <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;MOLECULE</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;ATOM</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;BOND</span></code>.  No matter how you generate a mol2 file, if it corresponds to a molecule that can react, you must edit the mol2 file to give <strong>unique atom names</strong> to any reactive atoms or chiral carbons.  You will then use those unique names to refer specifically to those atoms.</p>
 <p>The best way to identify these atoms is by inspecting the 3d structure of the molecule.  Here is the 3d structure of PACM the above command generated:</p>
 <a class="reference internal image-reference" href="../_images/PAC-SC-0-0.png"><img alt="PACM" src="../_images/PAC-SC-0-0.png" style="width: 295.0px; height: 146.0px;" /></a>
-<p>Since the two nitrogens are reactive, we will name one “N1” and the other “N2”.  It does not matter what they are called so long as the names are unique.  The carbon atoms at the 4 positions of each cyclohexane ring are chiral, so we will name the one connected to N1 “C1” and the other “C2”.  These names are changed by directly editing the mol2 file:</p>
+<p>Since the two nitrogens are reactive, we will name one “N1” and the other “N2”.  It does not matter what they are called so long as the names are unique.  The carbon atoms at the 4 positions of each cyclohexane ring are chiral, so we will name the one connected to N1 “C1” and the other “C2”.  These names are changed by directly editing the mol2 file (notice atoms with indexes 2, 11, 14, and 15):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">MOLECULE</span>
 <span class="n">PAC</span>
 <span class="mi">41</span> <span class="mi">42</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
@@ -138,6 +138,7 @@
     <span class="mi">42</span>    <span class="mi">15</span>    <span class="mi">41</span>    <span class="mi">1</span>
 </pre></div>
 </div>
+<p>This file’s only purpose is to serve as input to the <code class="docutils literal notranslate"><span class="pre">antechamber-parmchk2-tleap</span></code> sequence that generates Amber-format coordinate and topology/parameter files.  These are then converted to Gromacs format <code class="docutils literal notranslate"><span class="pre">*.gro/*.itp/*.top</span></code> input files by <code class="docutils literal notranslate"><span class="pre">parmed</span></code>.  Through all of this processing, atoms given explicit names in the original input <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file (that is, they include integer designations along with atom symbols) keep those names.  <strong>Other</strong> atoms in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> that have <strong>generic</strong> names (like single letters) are automatically assigned unique names.</p>
 </section>
 
 
