@@ -192,7 +192,6 @@ class Topology:
             # we must assume the 'atoms' are sorted by global index; however, all other
             # sections need not be sorted.  For convenience, we will keep them sorted by
             # atom indices or atom type name, where appropriate.
-            # TODO: sort each row's hashables before sorting whole dataframes
             inst.null_check(msg=f'read from {filename}')
             if 'atomtypes' in inst.D:
                 inst.D['atomtypes'].sort_values(by='name',inplace=True)
@@ -224,28 +223,17 @@ class Topology:
             for f in inst.includes:
                 # print(f'reading included topology {f}')
                 inst.merge(Topology.read_gro(f))
-            # if replicate>0:
-            #     inst.rep_ex(replicate)
-            # print(f'{filename}',inst.D.keys())
-            #assert 'defaults' in inst.D, f'Error: no [ defaults ] in {filename}'
-#            logging.debug(f'Checking for duplicates in just-read-in gro topology {filename}')
-            # inst.dup_check(die=False)
- #           logging.debug(f'read_gro ends')
             inst.empty=False
             return inst
 
     def bond_source_check(self):
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
-            logging.info(f'Comparison of gromacs-top bonds and mol2-bonds requested.')
+            logging.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
             bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
             mbmi=mol2bonds.set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
-
-            # checki=all([x==y for x,y in zip(mol2bonds['ai'],grobonds['ai'])])
-            # checkj=all([x==y for x,y in zip(mol2bonds['aj'],grobonds['aj'])])
-            # check=checki and checkj
             logging.info(f'Result: {check}')
             if not check:
                 logging.info(f'GROMACS:')

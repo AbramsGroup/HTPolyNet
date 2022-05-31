@@ -7,5 +7,5 @@ Example Tutorials
 
    1-polymethylstyrene
    2-DA3-vinyl-ester
-   3-DGEBA-PACM
+   3-DGEBA-PACM/index
    4-Layered-DA3

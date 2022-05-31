@@ -784,9 +784,9 @@ def cli():
     """cli Command-line interface for executable (listed as entry point in setup.cfg)
     """
     parser=ap.ArgumentParser()
-    parser.add_argument('command',type=str,default=None,help='command (info, run)')
-    parser.add_argument('-cfg',type=str,default='',help='input config file')
-    parser.add_argument('-lib',type=str,default=None,help='local library')
+    parser.add_argument('command',type=str,default=None,help='command (info, parameterize, run)')
+    parser.add_argument('config',type=str,default=None,help='input configuration file in YAML format')
+    parser.add_argument('-lib',type=str,default=None,help='local user library')
     parser.add_argument('-log',type=str,default='htpolynet_runtime.log',help='log file')
     parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
