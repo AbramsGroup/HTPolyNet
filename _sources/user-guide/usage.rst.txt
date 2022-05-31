@@ -21,6 +21,7 @@ Invoking ``htpolynet`` always generates a ``proj-n`` subdirectory, where ``n`` i
 
   * ``init/``: The initial liquid system is built and simulated here.
   * ``iter-n``: The ``n``-th CURE iteration system is simulated here.
+  * ``final``: The final output coordinate and topology files are here.
 
 * ``plots/``
 
