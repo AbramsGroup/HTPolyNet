@@ -1,0 +1,70 @@
+Title: DGEBA-PACM thermoset
+gmx: 'gmx'
+gmx_options: '-quiet -nobackup'
+initial_density: 300.0  # kg/m3
+CURE_initial_search_radius: 0.5 # nm
+CURE_radial_increment: 0.25
+desired_conversion: 0.95
+late_threshold: 0.85
+max_conversion_per_iteration: 0.25
+charge_method: gas  # only needed if parameterizing
+max_drag_stages: 5
+drag_limit: 0.3 # nm
+drag_nvt_steps: 2500
+drag_npt_steps: 5000
+drag_trigger_distance: 0.5 # nm
+drag_temperature: 600
+max_bond_relaxation_increment: 0.05
+relax_nvt_steps: 2500
+relax_npt_steps: 5000
+relax_temperature: 600
+max_CURE_iterations: 150
+equilibration_temperature: 300
+use_symmetry_equivalent_atoms: [PAC, DGE]
+stereocenters: { PAC: [C1], DGE: [C3] }
+reactions:
+  - {
+      name:     'Primary-to-secondary-amine',
+      stage:     cure,
+      reactants: {1: PAC, 2: DGE},
+      product:   PACDGE,
+      probability: 1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N1, z: 2},
+        B: {reactant: 2, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+  - {
+      name: 'Secondary-to-tertiary-amine',
+      reactants: {1: PACDGE, 2: DGE},
+      product: PACDGE2,
+      stage: cure,
+      probability: 0.5,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: N1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+  - { 
+      name: 'Oxirane-formation',
+      reactants: {1: DGE},
+      product: DGEC,
+      stage: post-cure,
+      probability: 1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: O1, z: 1},
+        B: {reactant: 1, resid: 1, atom: C1, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+initial_composition:
+  - {molecule: DGE, count: 500}
+  - {molecule: PAC, count: 250}
