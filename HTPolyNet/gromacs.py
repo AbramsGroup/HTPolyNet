@@ -9,6 +9,18 @@ from pytrr import GroTrrReader
 from HTPolyNet.command import Command
 import HTPolyNet.software as sw
 
+mdp_library = {'liquid-densify':'liquid-densify-npt',
+               'sea':'sea-nvt',
+               'minimize-single-molecule':'minimize-single-molecule',
+               'minimize':'minimize',
+               'equilibrate':'equilibrate-npt',
+               'drag-minimize':'drag-minimize',
+               'drag-nvt':'drag-nvt',
+               'drag-npt':'drag-npt',
+               'relax-minimize':'relax-minimize',
+               'relax-nvt':'relax-nvt',
+               'relax-npt':'relax-npt'}
+
 def insert_molecules(composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`
         monomers:  dictionary of Molecule instances keyed on molecule name

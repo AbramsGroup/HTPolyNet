@@ -36,8 +36,6 @@ class Configuration:
         self.initial_composition = []
         ''' Dictionary of name:Molecule '''
         self.molecules = {}
-        ''' List of molecules for which symmetry-equivalence is requested '''
-        self.use_sea=[]
         ''' List of Reaction instances '''
         self.reactions = []
         ''' all other parameters in cfg file '''
@@ -98,15 +96,6 @@ class Configuration:
             M.sequence,M.reactive_atoms_seq=_determine_sequence(mname,self.molecules,[])
             logging.debug(f'Sequence of {mname}: {M.sequence}')
             logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
-
-        self.use_sea=self.basedict.get('use_sea',[])
-        if len(self.use_sea)==0:
-            self.use_sea=self.basedict.get('use_symmetry_equivalent_atoms',[])
-        for m in self.use_sea:
-            if not m in self.molecules:
-                logging.error(f'Configuration {self.cfgFile} references undeclared molecule {m} in use_sea')
-                logging.error(f'Molecules must be declared in reactions or initial_composition')
-                raise Exception('Configuration error')
 
         self.parameters=self.basedict
         if not 'ncpu' in self.parameters:

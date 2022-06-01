@@ -26,7 +26,7 @@ class CPstate(Enum):
 class Checkpoint:
     """Manages checkpointing in the CURE algorithm
     """
-    def __init__(self,checkpoint_file='checkpoint.yaml',bonds_file='bonds.csv'):
+    def __init__(self,checkpoint_file='checkpoint.yaml'):
         self.state=CPstate.fresh
         self.iter=0
         self.current_dragstage=0
@@ -34,14 +34,14 @@ class Checkpoint:
         self.current_radidx=0
         self.radius=0.0
         self.checkpoint_file=checkpoint_file
-        self.bonds_file=bonds_file
+        self.bonds_file=None
         self.bonds=pd.DataFrame()
         self.bonds_are='nonexistent!'
 
     def set_state(self,state):
         self.state=state
 
-    def reset_for_next_iter(self,checkpoint_file='checkpoint.yaml',bonds_file='bonds.csv'):
+    def reset_for_next_iter(self,checkpoint_file='checkpoint.yaml'):
         self.iter+=1
         self.state=CPstate.fresh
         self.current_dragstage=0
@@ -49,21 +49,20 @@ class Checkpoint:
         self.current_radidx=0
         self.radius=0.0
         self.checkpoint_file=checkpoint_file
-        self.bonds_file=bonds_file
+        self.bonds_file=None
         self.bonds=pd.DataFrame()
         self.bonds_are='nonexistent!'
 
-    def write_bondsfile(self):
+    def _write_bondsfile(self):
         self.bonds.to_csv(self.bonds_file,sep=' ',mode='w',index=False,header=True,doublequote=False)
 
-    def read_bondsfile(self):
+    def _read_bondsfile(self):
         assert os.path.exists(self.bonds_file),f'Error: {self.bonds_file} not found.'
         self.bonds=pd.read_csv(self.bonds_file,sep='\s+',header=0)
 
     def register_bonds(self,bonds,bonds_are='unrelaxed'):
         self.bonds=bonds
         self.bonds_are=bonds_are
-        self.write_bondsfile()
     
     def read_checkpoint(self,system):
         self.current_stage=0
@@ -82,10 +81,10 @@ class Checkpoint:
             self.current_radidx=basedict['CURRENT_RADIDX']
             self.radius=basedict['RADIUS']
             bf=basedict.get('BONDSFILE',None)
-            assert bf,f'Error: must specify BONDSFILE in {self.checkpoint_file}'
+            assert bf,f'Error: BONDSFILE not found in {self.checkpoint_file}.'
             self.bonds_are=basedict.get('BONDS_ARE',None)
             self.bonds_file=os.path.basename(bf)
-            self.read_bondsfile()
+            self._read_bondsfile()
             system.set_system(CP=self)
 
     def write_checkpoint(self,system,state,prefix='checkpoint'):
@@ -107,4 +106,4 @@ class Checkpoint:
                 f.write(f'BONDS_ARE: {self.bonds_are}\n')
                 f.write(f'BONDSFILE: {self.bonds_file}\n')
             f.close()
-        self.write_bondsfile()
+        self._write_bondsfile()

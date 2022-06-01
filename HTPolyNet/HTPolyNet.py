@@ -19,7 +19,7 @@ from HTPolyNet.configuration import Configuration
 from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace, mdp_modify
+from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace, mdp_modify, mdp_library
 from HTPolyNet.checkpoint import CPstate, Checkpoint
 from HTPolyNet.plot import trace
 
@@ -57,7 +57,7 @@ class HTPolyNet:
             return False
         return True
 
-    def generate_molecules(self,force_parameterization=False,force_sea_calculation=False,force_checkin=False):
+    def generate_molecules(self,force_parameterization=False,force_checkin=False):
         logging.info('*'*10+' GENERATING MOLECULE TEMPLATES '+'*'*10)
         self.molecules={}
         for mname,M in self.cfg.molecules.items():
@@ -83,7 +83,7 @@ class HTPolyNet:
                     parameterizing an existing mol2 file or reading in a previous parameterization
                     from the library '''
                 if mname not in self.molecules:
-                    self.generate_molecule(M,force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin)
+                    self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                     if M.get_origin()=='unparameterized':
                         # could not make since waiting on precursors
                         continue
@@ -104,7 +104,7 @@ class HTPolyNet:
                 from the library '''
             if mname not in self.molecules:
                 logging.debug(f'Generating {mname}')
-                self.generate_molecule(M,force_parameterization=force_parameterization,force_sea_calculation=force_sea_calculation,force_checkin=force_checkin)
+                self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
                 self.molecules[mname]=M
                 logging.info(f'Generated {mname}')
@@ -128,9 +128,7 @@ class HTPolyNet:
         exists=pfs.exists
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
-        force_sea_calculation=kwargs.get('force_sea_calculation',False)
-        userlib=kwargs.get('userlib',None)
-        sea_thresh=self.cfg.parameters.get('sea_thresh',0.13)
+        # userlib=kwargs.get('userlib',None)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
@@ -155,21 +153,19 @@ class HTPolyNet:
             M.set_reaction_bonds(self.molecules)
             M.TopoCoord.set_gro_attribute('reactantName',M.name)
             M.set_origin('previously parameterized')
-        ''' The cfg allows user to indicate whether or not to determine and use
+        ''' The cfg allows user to indicate and use
             symmetry-equivalent atoms in any molecule. '''
-        if mname in self.cfg.use_sea:
-            if force_sea_calculation or not exists(f'molecules/parameterized/{mname}.sea'):
-                logging.info(f'Doing SEA calculation on {mname}')
-                M.calculate_sea(sea_thresh=sea_thresh)
-                M.analyze_sea_topology()
-                M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
-                checkin(f'molecules/parameterized/{mname}.sea',overwrite=force_checkin)
-            else:
-                logging.debug(f'Reading sea data into {M.name}')
-                self.checkout(f'molecules/parameterized/{mname}.sea')
-                M.read_gro_attributes(f'{mname}.sea',attribute_list=['sea-idx'])
-                M.analyze_sea_topology()
-        else:
+        if 'symmetry_equivalent_atoms' in self.cfg.parameters and mname in self.cfg.parameters['symmetry_equivalent_atoms']:
+            M.TopoCoord.set_gro_attribute('sea-idx',-1)
+            list_of_symmetry_sets=self.cfg.parameters['symmetry_equivalent_atoms'][mname]
+            sea_idx=1
+            for s in list_of_symmetry_sets:
+                for at in s:
+                    logging.debug(f'Sym: res {mname} at {at} sea-idx {sea_idx}')
+                    M.TopoCoord.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'atomName':at})
+                sea_idx+=1
+            M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
+        else: # assume no symmetry specified for this molecule
             if len(M.sequence)==1: # this is a monomer, but not symmetric
                 M.TopoCoord.set_gro_attribute('sea-idx',-1)
             else: # this is an oligomer
@@ -184,7 +180,7 @@ class HTPolyNet:
             for n in my_sc:
                 my_sc_idx.append(M.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}))
             adds=[]
-            if mname in self.cfg.use_sea:
+            if 'symmetry_equivalent_atoms' in self.cfg.parameters and mname in self.cfg.parameters['symmetry_equivalent_atoms']:
                 for idx in my_sc_idx:
                     adds.extend(M.sea_of(idx))
             my_sc_idx=adds
@@ -309,15 +305,20 @@ class HTPolyNet:
         :type deffnm: str, optional
         """
         cwd=pfs.go_to('systems/init')
-        nsteps=self.cfg.parameters.get('liquid_npt_steps',-2)
+        nsteps=self.cfg.parameters.get('densification_steps',-2)
+        T=self.cfg.parameters.get('densification_temperature',300)
+        P=self.cfg.parameters.get('densification_pressure',10)
         if os.path.exists(f'{deffnm}.gro') and self.cfg.parameters['restart']:
             logging.info(f'{deffnm}.gro exists in {os.getcwd()}; skipping initial NPT md.')
         else:
-            self.checkout('mdp/em.mdp')
-            self.checkout('mdp/npt-1.mdp')
             logging.info(f'Conducting initial NPT MD simulation of liquid')
-            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-min-1',mdp='em',**self.cfg.parameters)
-            msg=grompp_and_mdrun(gro=f'{inpfnm}-min-1',top=inpfnm,out=deffnm,mdp=deffnm,nsteps=nsteps,**self.cfg.parameters)
+            mdp_pfx=mdp_library['minimize']
+            self.checkout(f'mdp/{mdp_pfx}.mdp')
+            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-minimized',mdp=mdp_pfx,**self.cfg.parameters)
+            mdp_pfx=mdp_library['liquid-densify']
+            self.checkout(f'mdp/{mdp_pfx}.mdp')
+            mdp_modify(f'{mdp_pfx}.mdp',{'ref_t':T,'gen-temp':T,'ref_p':P})
+            msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,nsteps=nsteps,**self.cfg.parameters)
             logging.info(f'Generated configuration {deffnm}.gro\n')
         density_trace(deffnm,**self.cfg.parameters)
         trace(['Density'],[deffnm],outfile='../../plots/init-density.png')
@@ -328,19 +329,35 @@ class HTPolyNet:
         # Connect - Update - Relax - Equilibrate
         logging.info('*'*10+' CONNECT - UPDATE - RELAX - EQUILIBRATE (CURE) begins '+'*'*10)
         max_nxlinkbonds=self.cfg.maxconv
-        desired_conversion=self.cfg.parameters['desired_conversion']
-        max_conversion_per_iteration=self.cfg.parameters.get('max_conversion_per_iteration',1.0)
-        cure_search_radius=self.cfg.parameters['CURE_initial_search_radius']
+        '''
+        CURE_initial_search_radius: 0.5 # nm
+        CURE_radial_increment: 0.25
+        CURE_max_iterations: 150
+        CURE_max_conversion_per_iteration: 0.25
+        CURE_desired_conversion: 0.95
+        CURE_late_threshold: 0.85
+        '''
+        try:
+            desired_conversion=self.cfg.parameters['CURE_desired_conversion']
+        except KeyError as error:
+            logging.error(f'CURE_desired_conversion not found in configuration.')
+            logging.error(f'You must specify a desired conversion explicitly in the configuration file.')
+            logging.error(f'For now, this is being defaulted to 0.5')
+            desired_conversion=0.5
+        max_conversion_per_iteration=self.cfg.parameters.get('CURE_max_conversion_per_iteration',1.0)
+        cure_search_radius=self.cfg.parameters.get('CURE_initial_search_radius',0.5)
         checkpoint_file=self.cfg.parameters.get('checkpoint_file','checkpoint.yaml')
-        bonds_file=self.cfg.parameters.get('bonds_file','bonds.csv')
-        radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.1)
-        maxiter=self.cfg.parameters.get('max_CURE_iterations',20)
+        radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.25)
+        maxiter=self.cfg.parameters.get('CURE_max_iterations',100)
+
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0)
         relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
         late_threshold=self.cfg.parameters.get('late_threshold',1.0)
 
         equilibration_temperature=self.cfg.parameters.get('equilibration_temperature',300.0)
+        equilibration_pressure=self.cfg.parameters.get('equilibration_pressure',1.0)
+        equilibration_steps=self.cfg.parameters.get('equilibration_steps',50000)
 
         dragging_enabled=False
         drag_limit_nm=self.cfg.parameters.get('drag_limit',0.0)
@@ -355,7 +372,7 @@ class HTPolyNet:
         max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
         max_radidx=int((max_search_radius-cure_search_radius)/radial_increment)
         cure_finished=False
-        CP=Checkpoint(checkpoint_file=checkpoint_file,bonds_file=bonds_file)
+        CP=Checkpoint(checkpoint_file=checkpoint_file)
         CP.iter=1
         while not CP.state==CPstate.post_cure:
             # Checkpointing in this loop uses the CP.state variable; at the end of
@@ -370,14 +387,15 @@ class HTPolyNet:
                 logging.info(f'CURE iteration {CP.iter}/{maxiter}: BONDSEARCH')
                 CP.radius=cure_search_radius+CP.current_radidx*radial_increment
                 apply_probabilities=curr_conversion<late_threshold
-                logging.debug(f'Bond search: curr_conversion {curr_conversion} late_threshold {late_threshold} apply_probabilities {apply_probabilities}')
+                # logging.debug(f'Bond search: curr_conversion {curr_conversion} late_threshold {late_threshold} apply_probabilities {apply_probabilities}')
                 bond_limit=int(max_conversion_per_iteration*max_nxlinkbonds)
                 bond_target=int((desired_conversion-curr_conversion)*max_nxlinkbonds)
-                if bond_target<bond_limit:
-                    bond_limit=bond_target
+                bond_limit=min([bond_limit,bond_target])
                 logging.debug(f'Iteration limited to at most {bond_limit} new bonds')
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],apply_probabilities=apply_probabilities,abs_max=bond_limit)
+                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],
+                                                apply_probabilities=apply_probabilities,
+                                                abs_max=bond_limit)
                     if nbdf.shape[0]>0:
                         CP.register_bonds(nbdf,bonds_are='unrelaxed')
                         CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
@@ -399,19 +417,22 @@ class HTPolyNet:
                     reactive atoms towards each other in preparation for making bonds '''
                 logging.info(f'CURE iteration {CP.iter}/{maxiter}: PREBOND DRAGGING')
                 CP.read_checkpoint(self)
-                self.checkout('mdp/drag-em.mdp')
-                self.checkout('mdp/drag-nvt.mdp')
-                self.checkout('mdp/drag-npt.mdp')
-                mdp_modify('drag-nvt.mdp',{'gen-temp':drag_temperature,'ref_t':drag_temperature})
-                mdp_modify('drag-npt.mdp',{'gen-temp':drag_temperature,'ref_t':drag_temperature})
+                min_pfx=mdp_library['drag-minimize']
+                nvt_pfx=mdp_library['drag-nvt']
+                npt_pfx=mdp_library['drag-npt']
+                self.checkout(f'mdp/{min_pfx}.mdp')
+                self.checkout(f'mdp/{nvt_pfx}.mdp')
+                self.checkout(f'mdp/{npt_pfx}.mdp')
+                mdp_modify(f'{nvt_pfx}.mdp',{'gen-temp':drag_temperature,'ref_t':drag_temperature})
+                mdp_modify(f'{npt_pfx}.mdp',{'gen-temp':drag_temperature,'ref_t':drag_temperature})
                 CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                 logging.debug(f'New pairs avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
                 maxD=CP.bonds['current-lengths'].max()
                 if maxD<0.9:
                     maxD=0.9
-                mdp_modify('drag-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify('drag-nvt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify('drag-npt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify(f'{nvt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify(f'{npt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                 CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 # CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
@@ -421,21 +442,19 @@ class HTPolyNet:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_dragstages,minimum_distance=drag_limit_nm)
                     stagepref=f'1-drag-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='drag-em',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp=min_pfx,rdd=CP.radius,**self.cfg.parameters)
                     nsteps=self.cfg.parameters.get('drag_nvt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='drag-nvt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp=nvt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     nsteps=self.cfg.parameters.get('drag_npt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='drag-npt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp=npt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     logging.debug(f'New pairs avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
-                    maxD=CP.bonds['current-lengths'].max()
-                    if maxD<0.9:
-                        maxD=0.9
-                    mdp_modify('drag-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify('drag-nvt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify('drag-npt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    maxD=min([CP.bonds['current-lengths'].max(),0.9])
+                    mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    mdp_modify(f'{nvt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    mdp_modify(f'{npt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     logging.debug(f'New restraints avg/min/max: {current_lengths.mean():.3f}/{current_lengths.min():.3f}/{current_lengths.max():.3f}')
                     CP.current_dragstage+=1
@@ -456,15 +475,16 @@ class HTPolyNet:
                 ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''
                 logging.info(f'CURE iteration {CP.iter}/{maxiter}: BOND RELAXATION')
                 CP.read_checkpoint(self)
-                self.checkout('mdp/relax-em.mdp')
-                self.checkout('mdp/relax-nvt.mdp')
-                self.checkout('mdp/relax-npt.mdp')
-                maxD=CP.bonds['initial-distance'].max()
-                if maxD<0.9:
-                    maxD=0.9
-                mdp_modify('relax-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify('relax-nvt.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify('relax-npt.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                min_pfx=mdp_library['relax-minimize']
+                nvt_pfx=mdp_library['relax-nvt']
+                npt_pfx=mdp_library['relax-npt']
+                self.checkout(f'mdp/{min_pfx}.mdp')
+                self.checkout(f'mdp/{nvt_pfx}.mdp')
+                self.checkout(f'mdp/{npt_pfx}.mdp')
+                maxD=min([CP.bonds['initial-distance'].max(),0.9])
+                mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify(f'{nvt_pfx}.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                mdp_modify(f'{npt_pfx}.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                 CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance-relax'].max()/bond_relaxation_increment)
@@ -475,22 +495,19 @@ class HTPolyNet:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages)
                     stagepref=f'3-relax-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='relax-em',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp=min_pfx,rdd=CP.radius,**self.cfg.parameters)
                     nsteps=self.cfg.parameters.get('relax_nvt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='relax-nvt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp=nvt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     nsteps=self.cfg.parameters.get('relax_npt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='relax-npt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp=npt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     logging.debug(f'New bonds avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
-                    maxD=CP.bonds['current-lengths'].max()
-                    maxD=int(maxD*100)/100
-                    if maxD<0.9:
-                        maxD=0.9
-                    mdp_modify('relax-em.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify('relax-nvt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify('relax-npt.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    maxD=min([CP.bonds['current-lengths'].max(),0.9])
+                    mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    mdp_modify(f'{nvt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    mdp_modify(f'{npt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
                     CP.current_stage+=1
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
@@ -499,11 +516,12 @@ class HTPolyNet:
                 logging.info(f'CURE iteration {CP.iter}/{maxiter}: EQUILIBRATION')
                 CP.read_checkpoint(self)
                 ''' Final NPT MD equilibration with full parameters '''
-                self.checkout('mdp/equilibrate-npt.mdp')
-                mdp_modify('equilibrate-npt.mdp',{'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature})
+                pfx=mdp_library['equilibrate-npt']
+                self.checkout(f'mdp/{pfx}.mdp')
+                mdp_modify(f'{pfx}.mdp',{'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature})
                 gro,ext=os.path.splitext(CP.gro)
                 top,ext=os.path.splitext(CP.top)
-                msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='equilibrate-npt',**self.cfg.parameters)
+                msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp=pfx,nsteps=equilibration_steps,**self.cfg.parameters)
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix='5-postcure')
             if CP.state==CPstate.post_equilibration:
@@ -530,7 +548,12 @@ class HTPolyNet:
     def post_CURE(self,CP):
         cwd=pfs.go_to(f'systems/post-cure')
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
-        bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0.0)
+        bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0.05)
+        relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
+
+        equilibration_temperature=self.cfg.parameters.get('equilibration_temperature',300)
+        equilibration_pressure=self.cfg.parameters.get('equilibration_pressure',1)
+        equilibration_steps=self.cfg.parameters.get('equilibration_steps',5000)
         if CP.state==CPstate.post_cure:
             CP.read_checkpoint(self)
             ''' perform any post-cure reactions '''
@@ -539,9 +562,14 @@ class HTPolyNet:
             if bdf.shape[0]>0:
                 CP.register_bonds(bdf,bonds_are='unrelaxed')
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
-                self.checkout('mdp/relax-em.mdp')
-                self.checkout('mdp/relax-nvt.mdp')
-                self.checkout('mdp/relax-npt.mdp')
+                min_pfx=mdp_library['relax-minimize']
+                nvt_pfx=mdp_library['relax-nvt']
+                npt_pfx=mdp_library['relax-npt']
+                self.checkout(f'mdp/{min_pfx}.mdp')
+                self.checkout(f'mdp/{nvt_pfx}.mdp')
+                self.checkout(f'mdp/{npt_pfx}.mdp')
+                mdp_modify(f'{nvt_pfx}.mdp',{'ref_t':relax_temperature,'gen-temp':relax_temperature})
+                mdp_modify(f'{npt_pfx}.mdp',{'ref_t':relax_temperature,'gen-temp':relax_temperature})
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 if bond_relaxation_increment>0.0:
@@ -553,11 +581,11 @@ class HTPolyNet:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages)
                     stagepref=f'6-postcure-relax-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp='relax-em',rdd=CP.radius,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp=min_pfx,rdd=CP.radius,**self.cfg.parameters)
                     nsteps=self.cfg.parameters.get('relax_nvt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp='relax-nvt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp=nvt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     nsteps=self.cfg.parameters.get('relax_npt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp='relax-npt',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp=npt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
@@ -565,15 +593,16 @@ class HTPolyNet:
                     CP.current_stage+=1
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
-                self.bonds_file='6-postcure.csv'
                 CP.write_checkpoint(self,CPstate.postcure_equilibration,prefix='6-postcure-equilibrate')
         if CP.state==CPstate.postcure_equilibration:
             CP.read_checkpoint(self)
             ''' Final NPT MD equilibration with full parameters '''
-            self.checkout('mdp/equilibrate-npt.mdp')
+            pfx=mdp_library['equilibrate-npt']
+            self.checkout(f'mdp/{pfx}.mdp')
+            mdp_modify(f'{pfx}.mdp',{'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'ref_p':equilibration_pressure})
             gro,ext=os.path.splitext(CP.gro)
             top,ext=os.path.splitext(CP.top)
-            msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp='equilibrate-npt',**self.cfg.parameters)
+            msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp=pfx,steps=equilibration_steps,**self.cfg.parameters)
             self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
             CP.write_checkpoint(self,CPstate.finished,prefix='7-final')
 
@@ -761,11 +790,9 @@ class HTPolyNet:
 
     def main(self,**kwargs):
         force_parameterization=kwargs.get('force_parameterization',False)
-        force_sea_calculation=kwargs.get('force_sea_calculation',False)
         force_checkin=kwargs.get('force_checkin',False)
         self.generate_molecules(
             force_parameterization=force_parameterization,  # force antechamber/GAFF parameterization
-            force_sea_calculation=force_sea_calculation,    # force symmetry calculations
             force_checkin=force_checkin                     # force check-in to system libraries
         )
         self.initialize_topology()
@@ -790,7 +817,6 @@ def cli():
     parser.add_argument('-log',type=str,default='htpolynet_runtime.log',help='log file')
     parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
-    parser.add_argument('--force-sea-calculation',default=False,action='store_true',help='force calculation of symmetry-equivalent atoms in any input mol2 structures')
     parser.add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
     parser.add_argument('--loglevel',type=str,default='info',help='Log level; info, debug')
     args=parser.parse_args()
@@ -814,11 +840,11 @@ def cli():
     elif args.command=='parameterize':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
         a=HTPolyNet(cfgfile=args.config,restart=args.restart)
-        a.generate_molecules(force_parameterization=True,force_sea_calculation=True,force_checkin=args.force_checkin)
+        a.generate_molecules(force_parameterization=True,force_checkin=args.force_checkin)
     elif args.command=='run':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
         a=HTPolyNet(cfgfile=args.config,restart=args.restart)
-        a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization,force_sea_calculation=args.force_sea_calculation)
+        a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
     else:
         print(f'HTPolyNet command {args.command} not recognized')
 

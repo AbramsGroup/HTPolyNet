@@ -10,7 +10,7 @@ from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
-from HTPolyNet.gromacs import grompp_and_mdrun, analyze_sea
+from HTPolyNet.gromacs import grompp_and_mdrun, analyze_sea, mdp_library, mdp_modify
 
 def _rotmat(axis,radians):
     R=np.identity(3)
@@ -156,11 +156,13 @@ class Molecule:
         self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2')
         #assert self.cstale=='',f'Error: {self.cstale} coords are stale'
 
-    def calculate_sea(self,sea_thresh=0.1):
+    def calculate_sea(self,sea_thresh=0.1,sea_temperature=1000,sea_nsteps=50000):
         ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
         n=self.name
         boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
-        pfs.checkout('mdp/nvt-sea.mdp')
+        mdp_prefix=mdp_library['sea']
+        pfs.checkout(f'mdp/{mdp_prefix}.mdp')
+        mdp_modify(f'{mdp_prefix}.mdp',{'ref_t':sea_temperature,'gen-temp':sea_temperature})
         for ex in ['top','itp','gro']:
             pfs.checkout(f'molecules/parameterized/{n}.{ex}')
         TC=TopoCoord(topfilename=f'{n}.top',grofilename=f'{n}.gro')
@@ -173,7 +175,7 @@ class Molecule:
         TC.write_top(f'{n}-noodly.top')
         logging.info(f'Hot md running...output to {n}-sea')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}-noodly',
-                        mdp='nvt-sea',out=f'{n}-sea',boxSize=boxsize)
+                        mdp=mdp_prefix,out=f'{n}-sea',nsteps=sea_nsteps,boxSize=boxsize)
         sea_srs=analyze_sea(f'{n}-sea',thresh=sea_thresh)
         self.set_gro_attribute('sea-idx',sea_srs)
 
@@ -182,12 +184,13 @@ class Molecule:
             outname=f'{self.name}'
         n=self.name
         boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
-        pfs.checkout('mdp/em-single-molecule.mdp')
+        mdp_prefix=mdp_library['minimize-single-molecule']
+        pfs.checkout(f'mdp/{mdp_prefix}.mdp')
         if 'checkout_required' in kwargs:
             for ex in ['top','itp','gro']:
                 pfs.checkout(f'molecules/parameterized/{n}.{ex}')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
-                        mdp='em-single-molecule',out=f'{outname}',boxSize=boxsize)
+                        mdp=mdp_prefix,out=f'{outname}',boxSize=boxsize)
         self.TopoCoord.read_gro(f'{n}.gro')
 
 #     def propagate_z(self,reactions,mdict):
