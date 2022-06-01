@@ -15,6 +15,7 @@
     <script src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Reactions" href="reactions.html" />
     <link rel="prev" title="DGEBA-PACM Thermoset" href="index.html" />
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -34,11 +35,21 @@
             
   <section id="monomers">
 <h1>Monomers<a class="headerlink" href="#monomers" title="Permalink to this headline">¶</a></h1>
-<p>In this section, we describe how the inputs <a class="reference external" href="DGE.mol2">DGE.mol2</a> and <a class="reference external" href="PAC.mol2">PAC.mol2</a> are generated for the DGEBA and PACM monomers, respectively.</p>
+<p>In this section, we describe how the inputs <a class="reference external" href="DGE.mol2">DGE.mol2</a> and <a class="reference external" href="PAC.mol2">PAC.mol2</a> are generated for the DGEBA and PACM monomers, respectively.  Since this represents an instance where a new system is being generated, let’s begin by creating an empty directory and then populating with a “molecule library”:abbr:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span>
+<span class="gp">$ </span>mkdir my_dgeba_pacm_build
+<span class="gp">$ </span><span class="nb">cd</span> my_dgeba_pacm_build
+<span class="gp">$ </span>mkdir lib
+<span class="gp">$ </span>mkdir lib/inputs
+<span class="gp">$ </span>mkdir lib/parameterized
+<span class="gp">$ </span><span class="nb">cd</span> lib/inputs
+</pre></div>
+</div>
+<p>Now we can generate the two required <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> files.</p>
 <section id="dgeba">
 <h2>DGEBA<a class="headerlink" href="#dgeba" title="Permalink to this headline">¶</a></h2>
 <img alt="../../_images/DGE-epoxy.png" src="../../_images/DGE-epoxy.png" />
-<p><a class="reference external" href="https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether">Bisphenol A diglycidyl ether</a>, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we’ll consider how to build the input <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file for DGEBA.  The canonical SMILES string for DGEBA is:</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether">Bisphenol A diglycidyl ether</a>, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we’ll consider how to build the input <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file for DGEBA.  It is quite easy to generate a 3D structure from a SMILES representation.  The canonical SMILES string for DGEBA is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CC</span><span class="p">(</span><span class="n">C</span><span class="p">)(</span><span class="n">C1</span><span class="o">=</span><span class="n">CC</span><span class="o">=</span><span class="n">C</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="n">C1</span><span class="p">)</span><span class="n">OCC2CO2</span><span class="p">)</span><span class="n">C3</span><span class="o">=</span><span class="n">CC</span><span class="o">=</span><span class="n">C</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="n">C3</span><span class="p">)</span><span class="n">OCC4CO4</span>
 </pre></div>
 </div>
@@ -59,12 +70,14 @@
 </ol>
 <p>To understand how to make these fixes, we should visualize the molecule:</p>
 <img alt="../../_images/DGE-labelled.png" src="../../_images/DGE-labelled.png" />
-<p>This image was made with <a class="reference external" href="http://www.ks.uiuc.edu/Research/vmd/">VMD</a>, and you can see that four carbons are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>; these are the two “reactive” carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in <em>S</em>.  These of course are atoms with the indicies 12 and 23 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>.</p>
-<p>Let’s edit <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code> to make atom 14 <code class="docutils literal notranslate"><span class="pre">C1</span></code>, 25 <code class="docutils literal notranslate"><span class="pre">C2</span></code>, 12 <code class="docutils literal notranslate"><span class="pre">C3</span></code>, and 23 <code class="docutils literal notranslate"><span class="pre">C4</span></code>, as is shown in the labels.</p>
+<p>This image was made with <a class="reference external" href="http://www.ks.uiuc.edu/Research/vmd/">VMD</a>, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>; these are the two “reactive” carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in <em>S</em>; these of course are atoms with the indicies 12 and 23 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code> file.</p>
+<p>Let’s edit <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code> to name the two reactive atoms <code class="docutils literal notranslate"><span class="pre">C1''</span> <span class="pre">and</span> <span class="pre">``C2'',</span> <span class="pre">the</span> <span class="pre">two</span> <span class="pre">chiral</span> <span class="pre">atoms</span> <span class="pre">at</span> <span class="pre">``C3</span></code> and <code class="docutils literal notranslate"><span class="pre">C4</span></code>, and the two oxirane oxygens as <code class="docutils literal notranslate"><span class="pre">O1</span></code> and <code class="docutils literal notranslate"><span class="pre">O2</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat DGE-raw.mol2 <span class="p">|</span> sed s/<span class="s2">&quot;14 C &quot;</span>/<span class="s2">&quot;14 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
                      sed s/<span class="s2">&quot;25 C &quot;</span>/<span class="s2">&quot;25 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
                      sed s/<span class="s2">&quot;12 C &quot;</span>/<span class="s2">&quot;12 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-                     sed s/<span class="s2">&quot;23 C &quot;</span>/<span class="s2">&quot;23 C4&quot;</span>/ &gt; DGE.mol2
+                     sed s/<span class="s2">&quot;23 C &quot;</span>/<span class="s2">&quot;23 C4&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                     sed s/<span class="s2">&quot;13 O &quot;</span>/<span class="s2">&quot;13 O1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+                     sed s/<span class="s2">&quot;24 O &quot;</span>/<span class="s2">&quot;24 O2&quot;</span>/ &gt; DGE.mol2
 </pre></div>
 </div>
 <p>Note that in the <code class="docutils literal notranslate"><span class="pre">sed</span></code> substitution directives, we have preserved the number of characters substituted to keep the column spacing in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file from changing.</p>
@@ -88,7 +101,7 @@
      <span class="mi">10</span> <span class="n">O</span>           <span class="mf">4.1011</span>   <span class="o">-</span><span class="mf">5.3998</span>   <span class="o">-</span><span class="mf">0.7036</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.4894</span>
      <span class="mi">11</span> <span class="n">C</span>           <span class="mf">3.1002</span>   <span class="o">-</span><span class="mf">6.2627</span>   <span class="o">-</span><span class="mf">1.2708</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.1151</span>
      <span class="mi">12</span> <span class="n">C3</span>          <span class="mf">3.4888</span>   <span class="o">-</span><span class="mf">7.7350</span>   <span class="o">-</span><span class="mf">1.1214</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0864</span>
-     <span class="mi">13</span> <span class="n">O</span>           <span class="mf">4.7488</span>   <span class="o">-</span><span class="mf">7.9743</span>   <span class="o">-</span><span class="mf">1.7458</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.3887</span>
+     <span class="mi">13</span> <span class="n">O1</span>          <span class="mf">4.7488</span>   <span class="o">-</span><span class="mf">7.9743</span>   <span class="o">-</span><span class="mf">1.7458</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.3887</span>
      <span class="mi">14</span> <span class="n">C1</span>          <span class="mf">3.5559</span>   <span class="o">-</span><span class="mf">8.1826</span>    <span class="mf">0.3300</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0357</span>
      <span class="mi">15</span> <span class="n">C</span>           <span class="mf">2.8918</span>    <span class="mf">1.1840</span>   <span class="o">-</span><span class="mf">0.9221</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0372</span>
      <span class="mi">16</span> <span class="n">C</span>           <span class="mf">3.0523</span>    <span class="mf">2.4988</span>   <span class="o">-</span><span class="mf">0.4592</span> <span class="n">C</span><span class="o">.</span><span class="n">ar</span>    <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0543</span>
@@ -99,7 +112,7 @@
      <span class="mi">21</span> <span class="n">O</span>           <span class="mf">3.4565</span>    <span class="mf">4.3802</span>   <span class="o">-</span><span class="mf">3.6269</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.4894</span>
      <span class="mi">22</span> <span class="n">C</span>           <span class="mf">3.5239</span>    <span class="mf">5.7006</span>   <span class="o">-</span><span class="mf">3.0598</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.1151</span>
      <span class="mi">23</span> <span class="n">C4</span>          <span class="mf">3.6692</span>    <span class="mf">6.7696</span>   <span class="o">-</span><span class="mf">4.1450</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0864</span>
-     <span class="mi">24</span> <span class="n">O</span>           <span class="mf">4.8809</span>    <span class="mf">6.5708</span>   <span class="o">-</span><span class="mf">4.8717</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.3887</span>
+     <span class="mi">24</span> <span class="n">O2</span>          <span class="mf">4.8809</span>    <span class="mf">6.5708</span>   <span class="o">-</span><span class="mf">4.8717</span> <span class="n">O</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.3887</span>
      <span class="mi">25</span> <span class="n">C2</span>          <span class="mf">2.4996</span>    <span class="mf">6.7855</span>   <span class="o">-</span><span class="mf">5.1148</span> <span class="n">C</span><span class="mf">.3</span>     <span class="mi">1</span>  <span class="n">DGE</span>        <span class="o">-</span><span class="mf">0.0357</span>
      <span class="mi">26</span> <span class="n">H</span>           <span class="mf">0.5945</span>   <span class="o">-</span><span class="mf">0.7080</span>    <span class="mf">0.8319</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
      <span class="mi">27</span> <span class="n">H</span>           <span class="mf">0.4870</span>   <span class="o">-</span><span class="mf">0.0914</span>   <span class="o">-</span><span class="mf">0.8267</span> <span class="n">H</span>       <span class="mi">1</span>  <span class="n">DGE</span>         <span class="mf">0.0241</span>
@@ -304,6 +317,7 @@
     <span class="mi">42</span>    <span class="mi">15</span>    <span class="mi">41</span>    <span class="mi">1</span>
 </pre></div>
 </div>
+<p>The next thing we consider is how to create the reaction dictionaries necessary to describe the crosslinking chemistry.</p>
 </section>
 </section>
 
@@ -342,6 +356,7 @@
   <li><a href="../index.html">Example Tutorials</a><ul>
   <li><a href="index.html">DGEBA-PACM Thermoset</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">DGEBA-PACM Thermoset</a></li>
+      <li>Next: <a href="reactions.html" title="next chapter">Reactions</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

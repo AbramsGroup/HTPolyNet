@@ -44,6 +44,33 @@
 <li><p><strong>Bond relaxation.</strong></p></li>
 <li><p><strong>Equilibration.</strong></p></li>
 </ol>
+<section id="single-pair-filters-applied-in-the-bond-search">
+<h2>Single-pair filters applied in the bond search<a class="headerlink" href="#single-pair-filters-applied-in-the-bond-search" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Cutoff</strong>: The atoms in the pair must be closer than the current CURE cutoff distance</p></li>
+<li><p>The bond must not create a second bond from one particular residue to another</p></li>
+<li><p>The bond must not pierce a ring</p></li>
+<li><p>(not yet implemented) The bond must not result in a polyethylene cycle</p></li>
+</ol>
+</section>
+<section id="filters-applied-to-the-set-of-pairs">
+<h2>Filters applied to the set of pairs<a class="headerlink" href="#filters-applied-to-the-set-of-pairs" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p>No atom may participate in more than one new bond in any one CURE iteration; if any atom appears more than once in the list of pairs, only the pair with the shortest separation distance is kept.</p></li>
+</ol>
+</section>
+<section id="dragging">
+<h2>Dragging<a class="headerlink" href="#dragging" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="topology-update">
+<h2>Topology update<a class="headerlink" href="#topology-update" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="bond-relaxation">
+<h2>Bond relaxation<a class="headerlink" href="#bond-relaxation" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="equilibration">
+<h2>Equilibration<a class="headerlink" href="#equilibration" title="Permalink to this headline">¶</a></h2>
+</section>
 </section>
 
 

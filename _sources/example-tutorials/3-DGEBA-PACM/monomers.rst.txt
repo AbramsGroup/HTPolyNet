@@ -1,14 +1,26 @@
 Monomers
 ========
 
-In this section, we describe how the inputs `DGE.mol2 <DGE.mol2>`_ and `PAC.mol2 <PAC.mol2>`_ are generated for the DGEBA and PACM monomers, respectively.
+In this section, we describe how the inputs `DGE.mol2 <DGE.mol2>`_ and `PAC.mol2 <PAC.mol2>`_ are generated for the DGEBA and PACM monomers, respectively.  Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
+
+.. code-block:: console
+
+    $ cd 
+    $ mkdir my_dgeba_pacm_build
+    $ cd my_dgeba_pacm_build
+    $ mkdir lib
+    $ mkdir lib/inputs
+    $ mkdir lib/parameterized
+    $ cd lib/inputs
+
+Now we can generate the two required ``*.mol2`` files.
 
 DGEBA
 ^^^^^
 
 .. image:: DGE-epoxy.png
 
-`Bisphenol A diglycidyl ether <https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether>`_, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we'll consider how to build the input ``*.mol2`` file for DGEBA.  The canonical SMILES string for DGEBA is::
+`Bisphenol A diglycidyl ether <https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether>`_, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we'll consider how to build the input ``*.mol2`` file for DGEBA.  It is quite easy to generate a 3D structure from a SMILES representation.  The canonical SMILES string for DGEBA is::
     
     CC(C)(C1=CC=C(C=C1)OCC2CO2)C3=CC=C(C=C3)OCC4CO4
 
@@ -33,16 +45,18 @@ To understand how to make these fixes, we should visualize the molecule:
 
 .. image:: DGE-labelled.png
 
-This image was made with `VMD <http://www.ks.uiuc.edu/Research/vmd/>`_, and you can see that four carbons are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the ``*.mol2`` file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in ``DGE-raw.mol2``; these are the two "reactive" carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in *S*.  These of course are atoms with the indicies 12 and 23 in ``DGE-raw.mol2``. 
+This image was made with `VMD <http://www.ks.uiuc.edu/Research/vmd/>`_, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the ``*.mol2`` file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in ``DGE-raw.mol2``; these are the two "reactive" carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in *S*; these of course are atoms with the indicies 12 and 23 in ``DGE-raw.mol2``.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in ``DGE-raw.mol2`` file.  
 
-Let's edit ``DGE-raw.mol2`` to make atom 14 ``C1``, 25 ``C2``, 12 ``C3``, and 23 ``C4``, as is shown in the labels.
+Let's edit ``DGE-raw.mol2`` to name the two reactive atoms ``C1'' and ``C2'', the two chiral atoms at ``C3`` and ``C4``, and the two oxirane oxygens as ``O1`` and ``O2``:
 
 .. code-block:: console
 
     $ cat DGE-raw.mol2 | sed s/"14 C "/"14 C1"/ | \ 
                          sed s/"25 C "/"25 C2"/ | \
                          sed s/"12 C "/"12 C3"/ | \
-                         sed s/"23 C "/"23 C4"/ > DGE.mol2
+                         sed s/"23 C "/"23 C4"/ | \
+                         sed s/"13 O "/"13 O1"/ | \
+                         sed s/"24 O "/"24 O2"/ > DGE.mol2
 
 Note that in the ``sed`` substitution directives, we have preserved the number of characters substituted to keep the column spacing in the ``*.mol2`` file from changing.
 
@@ -67,7 +81,7 @@ Now, let's take a look at `DGE.mol2 <DGE.mol2>`_::
          10 O           4.1011   -5.3998   -0.7036 O.3     1  DGE        -0.4894
          11 C           3.1002   -6.2627   -1.2708 C.3     1  DGE         0.1151
          12 C3          3.4888   -7.7350   -1.1214 C.3     1  DGE         0.0864
-         13 O           4.7488   -7.9743   -1.7458 O.3     1  DGE        -0.3887
+         13 O1          4.7488   -7.9743   -1.7458 O.3     1  DGE        -0.3887
          14 C1          3.5559   -8.1826    0.3300 C.3     1  DGE        -0.0357
          15 C           2.8918    1.1840   -0.9221 C.ar    1  DGE        -0.0372
          16 C           3.0523    2.4988   -0.4592 C.ar    1  DGE        -0.0543
@@ -78,7 +92,7 @@ Now, let's take a look at `DGE.mol2 <DGE.mol2>`_::
          21 O           3.4565    4.3802   -3.6269 O.3     1  DGE        -0.4894
          22 C           3.5239    5.7006   -3.0598 C.3     1  DGE         0.1151
          23 C4          3.6692    6.7696   -4.1450 C.3     1  DGE         0.0864
-         24 O           4.8809    6.5708   -4.8717 O.3     1  DGE        -0.3887
+         24 O2          4.8809    6.5708   -4.8717 O.3     1  DGE        -0.3887
          25 C2          2.4996    6.7855   -5.1148 C.3     1  DGE        -0.0357
          26 H           0.5945   -0.7080    0.8319 H       1  DGE         0.0241
          27 H           0.4870   -0.0914   -0.8267 H       1  DGE         0.0241
@@ -289,3 +303,5 @@ Let's look at the file ``PAC.mol2`` that results from the command above::
         40    14    39    1
         41    15    40    1
         42    15    41    1
+
+The next thing we consider is how to create the reaction dictionaries necessary to describe the crosslinking chemistry.
