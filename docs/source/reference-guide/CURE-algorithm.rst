@@ -1,7 +1,6 @@
 The Connect-Update-Relax-Equilibrate (CURE) Algorithm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 **This page is under construction.**
 
 Formation of crosslink bonds is a iterative process in HTPolyNet.  We refer to the iteration by the acronym CURE, for "Connect", "Update", "Relax", and "Equilibrate". In detail, the following are the steps of one CURE iteration:
@@ -13,3 +12,27 @@ Formation of crosslink bonds is a iterative process in HTPolyNet.  We refer to t
 5. **Equilibration.**
 
 
+Single-pair filters applied in the bond search
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. **Cutoff**: The atoms in the pair must be closer than the current CURE cutoff distance
+2. The bond must not create a second bond from one particular residue to another
+3. The bond must not pierce a ring
+4. (not yet implemented) The bond must not result in a polyethylene cycle
+
+Filters applied to the set of pairs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. No atom may participate in more than one new bond in any one CURE iteration; if any atom appears more than once in the list of pairs, only the pair with the shortest separation distance is kept.
+
+Dragging
+^^^^^^^^
+
+Topology update
+^^^^^^^^^^^^^^^
+
+Bond relaxation
+^^^^^^^^^^^^^^^
+
+Equilibration
+^^^^^^^^^^^^^

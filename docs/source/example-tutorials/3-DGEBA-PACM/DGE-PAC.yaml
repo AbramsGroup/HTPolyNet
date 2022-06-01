@@ -24,7 +24,6 @@ relax_temperature: 600
 equilibration_temperature: 300
 equilibration_steps: 50000
 charge_method: gas  # only needed if parameterizing
-#use_symmetry_equivalent_atoms: [PAC, DGE]
 symmetry_equivalent_atoms: { PAC: [[N1,N2],[C1,C2]], DGE: [[C1,C2],[C3,C4],[O1,O2]] }
 stereocenters: { PAC: [C1], DGE: [C3] }
 reactions:

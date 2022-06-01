@@ -8,4 +8,5 @@ DGEBA-PACM Thermoset
    :caption: Contents:
 
    monomers
-   
+   reactions
+   configuration
