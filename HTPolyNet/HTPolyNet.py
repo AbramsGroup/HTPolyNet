@@ -813,11 +813,11 @@ def cli():
         info()
     elif args.command=='parameterize':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
-        a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
+        a=HTPolyNet(cfgfile=args.config,restart=args.restart)
         a.generate_molecules(force_parameterization=True,force_sea_calculation=True,force_checkin=args.force_checkin)
     elif args.command=='run':
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
-        a=HTPolyNet(cfgfile=args.cfg,restart=args.restart)
+        a=HTPolyNet(cfgfile=args.config,restart=args.restart)
         a.main(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization,force_sea_calculation=args.force_sea_calculation)
     else:
         print(f'HTPolyNet command {args.command} not recognized')

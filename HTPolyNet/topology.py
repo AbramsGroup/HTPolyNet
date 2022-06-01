@@ -291,7 +291,12 @@ class Topology:
         return cycles
 
     def rep_ex(self,count=0):
-        ''' replicate extensive components (atoms, pairs, bonds, angles, dihedrals) '''
+        """Replicate extensive topology components (atoms, pairs, bonds, angles, dihedrals)
+
+        :param count: number of replicas to generate, defaults to 0
+        :type count: int, optional
+        :raises Exception: Dies if self is missing an atoms dataframe
+        """
         if count>0:
             counts={k:0 for k in _GromacsExtensiveDirectives_}
             counts.update({k:0 for k in _NonGromacsExtensiveDirectives_})
