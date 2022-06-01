@@ -1,7 +1,7 @@
 Monomers
 ========
 
-In this section, we describe how the inputs `DGE.mol2 <DGE.mol2>`_ and `PAC.mol2 <PAC.mol2>`_ are generated for the DGEBA and PACM monomers, respectively.  Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
+In this section, we describe how the inputs :download:`DGE.mol2 <DGE.mol2>` and :download:`PAC.mol2 <PAC.mol2>` are generated for the DGEBA and PACM monomers, respectively.  Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
 
 .. code-block:: console
 
