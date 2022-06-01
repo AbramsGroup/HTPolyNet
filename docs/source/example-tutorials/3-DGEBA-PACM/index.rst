@@ -3,6 +3,8 @@
 DGEBA-PACM Thermoset
 ====================
 
+This tutorial illustrates how to build an all-atom model of a DGEBA-PACM thermoset using HTPolyNet.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -10,3 +12,4 @@ DGEBA-PACM Thermoset
    monomers
    reactions
    configuration
+   run

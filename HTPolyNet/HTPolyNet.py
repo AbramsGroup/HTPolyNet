@@ -344,16 +344,17 @@ class HTPolyNet:
             logging.error(f'You must specify a desired conversion explicitly in the configuration file.')
             logging.error(f'For now, this is being defaulted to 0.5')
             desired_conversion=0.5
+
         max_conversion_per_iteration=self.cfg.parameters.get('CURE_max_conversion_per_iteration',1.0)
         cure_search_radius=self.cfg.parameters.get('CURE_initial_search_radius',0.5)
         checkpoint_file=self.cfg.parameters.get('checkpoint_file','checkpoint.yaml')
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.25)
+        late_threshold=self.cfg.parameters.get('CURE_late_threshold',1.0)
         maxiter=self.cfg.parameters.get('CURE_max_iterations',100)
 
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0)
         relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
-        late_threshold=self.cfg.parameters.get('late_threshold',1.0)
 
         equilibration_temperature=self.cfg.parameters.get('equilibration_temperature',300.0)
         equilibration_pressure=self.cfg.parameters.get('equilibration_pressure',1.0)
@@ -516,9 +517,9 @@ class HTPolyNet:
                 logging.info(f'CURE iteration {CP.iter}/{maxiter}: EQUILIBRATION')
                 CP.read_checkpoint(self)
                 ''' Final NPT MD equilibration with full parameters '''
-                pfx=mdp_library['equilibrate-npt']
+                pfx=mdp_library['equilibrate']
                 self.checkout(f'mdp/{pfx}.mdp')
-                mdp_modify(f'{pfx}.mdp',{'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature})
+                mdp_modify(f'{pfx}.mdp',{'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature,'ref_p':equilibration_pressure})
                 gro,ext=os.path.splitext(CP.gro)
                 top,ext=os.path.splitext(CP.top)
                 msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp=pfx,nsteps=equilibration_steps,**self.cfg.parameters)
