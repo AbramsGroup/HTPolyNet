@@ -39,15 +39,16 @@ Parameters associated with parameterization of molecules
 =================================    ==============  =====================
 Parameter                            Type            Description (default)
 =================================    ==============  =====================
-``charge_method``                    string          "gas" for Gasteiger; "bcc" for bcc; passed directly to antechamber
-``symmetry_equivalent_atoms``        dict            lists of symmetry-sets for each monomer key
-``stereocenters``                    dict            keys: monomer names; values: list of names of chiral atoms
-``sea_thresh``                       float           Threshhold "distance" below which two distance-matrix elements are considered "equal" (used during calculation of symmetry-equivalence only) (0.13)
+``charge_method``                    string          "gas" for Gasteiger; "bcc" for bcc; (optional, "gas" by default)
+``symmetry_equivalent_atoms``        dict            lists of symmetry-sets for each monomer key (optional)
+``stereocenters``                    dict            keys: monomer names; values: list of names of chiral carbons (optional)
 =================================    ==============  =====================
 
 The ``charge_method`` parameters is passed straight to antechamber as the value of its `-c` flag.
 
-The ``symmetry_equivalent_atoms`` dict allows you to specify sets of atoms that are symmetry-equivalent in each molecule.  These sets should be considered when enumerating all reactions and stereocenters (See :ref:`symmetry_equivalence`).  For any atom name explicitly specified in a reaction or identified as a stereocenter in the input configuration, HTPolyNet will idenfity all symmetry-equivalent atoms and build out the full set of unique reactions and stereocenters from this information.  If any molecule does not have an entry in the ``symmetry_equivalent_atoms`` dict (or if the dict does not exist in the configuration file), HTPolyNet assumes no such molecular symmetry exists, and only those reactions explicitly listed in the configuration file are considered.  So, if you have a diepoxy monomer but only reference one of the two reactive carbons in a reaction, no reactions involving the second carbon will take place UNLESS that second carbon is symmetry-equivalent to the one named AND the monomer appears in the ``symmetry_equivalent_atoms`` dict; e.g.,::
+The ``symmetry_equivalent_atoms`` dict allows you to specify sets of atoms that are symmetry-equivalent in each molecule.  These sets should be considered when enumerating all reactions and stereocenters (See :ref:`symmetry_equivalence`).  For any atom name explicitly specified in a reaction or identified as a stereocenter in the input configuration, HTPolyNet will idenfity all symmetry-equivalent atoms and build out the full set of unique reactions and stereocenters from this information.  If any molecule does not have an entry in the ``symmetry_equivalent_atoms`` dict (or if the dict does not exist in the configuration file), HTPolyNet assumes no such molecular symmetry exists, and only those reactions explicitly listed in the configuration file are considered.  So, if you have a diepoxy monomer but only reference one of the two reactive carbons in a reaction, no reactions involving the second carbon will take place UNLESS that second carbon is symmetry-equivalent to the one named AND the monomer appears in the ``symmetry_equivalent_atoms`` dict; e.g.,
+
+.. code-block:: yaml
 
     symmetry_equivalent_atoms: { EPOX: [C1,C2] }
 

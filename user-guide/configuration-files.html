@@ -114,9 +114,9 @@
 <h3>Parameters associated with parameterization of molecules<a class="headerlink" href="#parameters-associated-with-parameterization-of-molecules" title="Permalink to this headline">¶</a></h3>
 <table class="docutils align-default">
 <colgroup>
-<col style="width: 17%" />
-<col style="width: 7%" />
-<col style="width: 76%" />
+<col style="width: 28%" />
+<col style="width: 12%" />
+<col style="width: 60%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Parameter</p></th>
@@ -127,25 +127,21 @@
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">charge_method</span></code></p></td>
 <td><p>string</p></td>
-<td><p>“gas” for Gasteiger; “bcc” for bcc; passed directly to antechamber</p></td>
+<td><p>“gas” for Gasteiger; “bcc” for bcc; (optional, “gas” by default)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code></p></td>
 <td><p>dict</p></td>
-<td><p>lists of symmetry-sets for each monomer key</p></td>
+<td><p>lists of symmetry-sets for each monomer key (optional)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stereocenters</span></code></p></td>
 <td><p>dict</p></td>
-<td><p>keys: monomer names; values: list of names of chiral atoms</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sea_thresh</span></code></p></td>
-<td><p>float</p></td>
-<td><p>Threshhold “distance” below which two distance-matrix elements are considered “equal” (used during calculation of symmetry-equivalence only) (0.13)</p></td>
+<td><p>keys: monomer names; values: list of names of chiral carbons (optional)</p></td>
 </tr>
 </tbody>
 </table>
 <p>The <code class="docutils literal notranslate"><span class="pre">charge_method</span></code> parameters is passed straight to antechamber as the value of its <cite>-c</cite> flag.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> dict allows you to specify sets of atoms that are symmetry-equivalent in each molecule.  These sets should be considered when enumerating all reactions and stereocenters (See <a class="reference internal" href="../reference-guide/symmetry-equivalence.html#symmetry-equivalence"><span class="std std-ref">Symmetry equivalent atoms</span></a>).  For any atom name explicitly specified in a reaction or identified as a stereocenter in the input configuration, HTPolyNet will idenfity all symmetry-equivalent atoms and build out the full set of unique reactions and stereocenters from this information.  If any molecule does not have an entry in the <code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> dict (or if the dict does not exist in the configuration file), HTPolyNet assumes no such molecular symmetry exists, and only those reactions explicitly listed in the configuration file are considered.  So, if you have a diepoxy monomer but only reference one of the two reactive carbons in a reaction, no reactions involving the second carbon will take place UNLESS that second carbon is symmetry-equivalent to the one named AND the monomer appears in the <code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> dict; e.g.,:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">symmetry_equivalent_atoms</span><span class="p">:</span> <span class="p">{</span> <span class="n">EPOX</span><span class="p">:</span> <span class="p">[</span><span class="n">C1</span><span class="p">,</span><span class="n">C2</span><span class="p">]</span> <span class="p">}</span>
+<p>The <code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> dict allows you to specify sets of atoms that are symmetry-equivalent in each molecule.  These sets should be considered when enumerating all reactions and stereocenters (See <a class="reference internal" href="../reference-guide/symmetry-equivalence.html#symmetry-equivalence"><span class="std std-ref">Symmetry equivalent atoms</span></a>).  For any atom name explicitly specified in a reaction or identified as a stereocenter in the input configuration, HTPolyNet will idenfity all symmetry-equivalent atoms and build out the full set of unique reactions and stereocenters from this information.  If any molecule does not have an entry in the <code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> dict (or if the dict does not exist in the configuration file), HTPolyNet assumes no such molecular symmetry exists, and only those reactions explicitly listed in the configuration file are considered.  So, if you have a diepoxy monomer but only reference one of the two reactive carbons in a reaction, no reactions involving the second carbon will take place UNLESS that second carbon is symmetry-equivalent to the one named AND the monomer appears in the <code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> dict; e.g.,</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">symmetry_equivalent_atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> EPOX</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">stereocenters</span></code> dictionary is keyed by molecule name, and each entry is a list of one or more atom names which are declared as chiral centers. (See <a class="reference internal" href="../reference-guide/stereoisomers.html#stereocenters"><span class="std std-ref">Stereoisomers</span></a>)  By default, HTPolyNet will use this declaration to generate a racemic mixture of stereoisomers of any monomer in this list for the initial liquid simulation.  In an input mol2 file generated by, say, obabel, the atoms typically are not uniquely named.  <strong>This means that you the user must edit any input mol2 file to give a unique name to any atom you will declare a stereocenter.</strong></p>
