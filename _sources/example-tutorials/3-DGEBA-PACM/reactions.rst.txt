@@ -1,3 +1,5 @@
+.. _dgeba_reaction_dictionaries:
+
 Reactions
 =========
 
@@ -73,4 +75,4 @@ This reaction removes the two sacrificial H's used to "open" the oxirane and ref
     bonds:
         - {atoms: [A, B], order: 1}
 
-With these reaction dictionaries defined, we are ready to create the input YAML file.
+With these reaction dictionaries defined, we are ready to create the :ref:`configuration file <dgeba_configuration_file>`.

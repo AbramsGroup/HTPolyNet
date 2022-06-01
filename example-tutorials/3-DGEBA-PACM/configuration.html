@@ -15,6 +15,7 @@
     <script src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Running the Build" href="run.html" />
     <link rel="prev" title="Reactions" href="reactions.html" />
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -33,8 +34,152 @@
           <div class="body" role="main">
             
   <section id="the-configuration-file">
-<h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this headline">¶</a></h1>
-<p>The reaction dicts from the previous section appear in a list together with many other parameters in the YAML-format configuration file <a class="reference download internal" download="" href="../../_downloads/34862c74e016139d78efc3ad29701899/DGE-PAC.yaml"><code class="xref download docutils literal notranslate"><span class="pre">DGE-PAC.yaml</span></code></a>.</p>
+<span id="dgeba-configuration-file"></span><h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this headline">¶</a></h1>
+<p>The reaction dicts from the previous section appear in a list together with many other parameters in the YAML-format configuration file <a class="reference download internal" download="" href="../../_downloads/34862c74e016139d78efc3ad29701899/DGE-PAC.yaml"><code class="xref download docutils literal notranslate"><span class="pre">DGE-PAC.yaml</span></code></a>.  Below is a full listing of this file, followed by a detailed explanation:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="nt">Title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DGEBA-PACM thermoset</span><span class="w"></span>
+<span class="linenos"> 2</span><span class="nt">gmx</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;gmx&#39;</span><span class="w"></span>
+<span class="linenos"> 3</span><span class="nt">gmx_options</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;-quiet</span><span class="nv"> </span><span class="s">-nobackup&#39;</span><span class="w"></span>
+<span class="linenos"> 4</span><span class="nt">initial_density</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300.0</span><span class="w">  </span><span class="c1"># kg/m3</span><span class="w"></span>
+<span class="linenos"> 5</span><span class="nt">densification_temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span><span class="w"></span>
+<span class="linenos"> 6</span><span class="nt">densification_pressure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w"></span>
+<span class="linenos"> 7</span><span class="nt">densification_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">150000</span><span class="w"></span>
+<span class="linenos"> 8</span><span class="nt">CURE_initial_search_radius</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"> </span><span class="c1"># nm</span><span class="w"></span>
+<span class="linenos"> 9</span><span class="nt">CURE_radial_increment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span><span class="w"></span>
+<span class="linenos">10</span><span class="nt">CURE_max_iterations</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">150</span><span class="w"></span>
+<span class="linenos">11</span><span class="nt">CURE_max_conversion_per_iteration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span><span class="w"></span>
+<span class="linenos">12</span><span class="nt">CURE_desired_conversion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.95</span><span class="w"></span>
+<span class="linenos">13</span><span class="nt">CURE_late_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.85</span><span class="w"></span>
+<span class="linenos">14</span><span class="nt">drag_trigger_distance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span><span class="w"> </span><span class="c1"># nm</span><span class="w"></span>
+<span class="linenos">15</span><span class="nt">max_drag_stages</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w"></span>
+<span class="linenos">16</span><span class="nt">drag_limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span><span class="w"> </span><span class="c1"># nm</span><span class="w"></span>
+<span class="linenos">17</span><span class="nt">drag_nvt_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span><span class="w"></span>
+<span class="linenos">18</span><span class="nt">drag_npt_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w"></span>
+<span class="linenos">19</span><span class="nt">drag_temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span><span class="w"></span>
+<span class="linenos">20</span><span class="nt">max_bond_relaxation_increment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span><span class="w"></span>
+<span class="linenos">21</span><span class="nt">relax_nvt_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span><span class="w"></span>
+<span class="linenos">22</span><span class="nt">relax_npt_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w"></span>
+<span class="linenos">23</span><span class="nt">relax_temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span><span class="w"></span>
+<span class="linenos">24</span><span class="nt">equilibration_temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span><span class="w"></span>
+<span class="linenos">25</span><span class="nt">equilibration_pressure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w"></span>
+<span class="linenos">26</span><span class="nt">equilibration_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50000</span><span class="w"></span>
+<span class="linenos">27</span><span class="nt">charge_method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gas</span><span class="w">  </span><span class="c1"># only needed if parameterizing</span><span class="w"></span>
+<span class="linenos">28</span><span class="nt">symmetry_equivalent_atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">29</span><span class="nt">    PAC</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[[</span><span class="nv">N1</span><span class="p p-Indicator">,</span><span class="nv">N2</span><span class="p p-Indicator">],[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">]],</span><span class="w"></span>
+<span class="linenos">30</span><span class="nt">    DGE</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">],[</span><span class="nv">C3</span><span class="p p-Indicator">,</span><span class="nv">C4</span><span class="p p-Indicator">],[</span><span class="nv">O1</span><span class="p p-Indicator">,</span><span class="nv">O2</span><span class="p p-Indicator">]]</span><span class="w"></span>
+<span class="linenos">31</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">32</span><span class="nt">stereocenters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> PAC</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">],</span><span class="nt"> DGE</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C3</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">33</span><span class="nt">reactions</span><span class="p">:</span><span class="w"></span>
+<span class="linenos">34</span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">35</span><span class="nt">    name</span><span class="p">:</span><span class="w">     </span><span class="s">&#39;Primary-to-secondary-amine&#39;</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">36</span><span class="nt">    stage</span><span class="p">:</span><span class="w">     </span><span class="nv">cure</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">37</span><span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">PAC</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">DGE</span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">38</span><span class="nt">    product</span><span class="p">:</span><span class="w">   </span><span class="nv">PACDGE</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">39</span><span class="nt">    probability</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">40</span><span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">41</span><span class="nt">        A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">N1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">42</span><span class="nt">        B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">43</span><span class="w">    </span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">44</span><span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"></span>
+<span class="linenos">45</span><span class="w">        </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">46</span><span class="w">    </span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="linenos">47</span><span class="w">    </span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">48</span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">49</span><span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;Secondary-to-tertiary-amine&#39;</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">50</span><span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">PACDGE</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">DGE</span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">51</span><span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">PACDGE2</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">52</span><span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">cure</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">53</span><span class="nt">    probability</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">54</span><span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">55</span><span class="nt">        A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">N1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">56</span><span class="nt">        B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">57</span><span class="w">    </span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">58</span><span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"></span>
+<span class="linenos">59</span><span class="w">        </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">60</span><span class="w">    </span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="linenos">61</span><span class="w">    </span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">62</span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">63</span><span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;Oxirane-formation&#39;</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">64</span><span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">DGE</span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">65</span><span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">DGEC</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">66</span><span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">post-cure</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">67</span><span class="nt">    probability</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="linenos">68</span><span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="linenos">69</span><span class="nt">        A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">O1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">70</span><span class="nt">        B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">71</span><span class="w">    </span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="linenos">72</span><span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"></span>
+<span class="linenos">73</span><span class="w">        </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">74</span><span class="w">    </span><span class="p p-Indicator">]</span><span class="w"></span>
+<span class="linenos">75</span><span class="w">    </span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">76</span><span class="nt">initial_composition</span><span class="p">:</span><span class="w"></span>
+<span class="linenos">77</span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">molecule</span><span class="p">:</span><span class="w"> </span><span class="nv">DGE</span><span class="p p-Indicator">,</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">500</span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="linenos">78</span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">molecule</span><span class="p">:</span><span class="w"> </span><span class="nv">PAC</span><span class="p p-Indicator">,</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">250</span><span class="p p-Indicator">}</span><span class="w"></span>
+</pre></div>
+</div>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Title</span></code> (line 1): A descriptive title.  Not really used anywhere but in logging output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> and <code class="docutils literal notranslate"><span class="pre">gmx_options</span></code> (lines 2 and 3):  The specific <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command; by default we expect <code class="docutils literal notranslate"><span class="pre">gmx</span></code>, but <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> is also possible (or something else if you have a weird custom Gromacs installation).  By default we use <code class="docutils literal notranslate"><span class="pre">-quiet</span> <span class="pre">-nobackup</span></code> options to <code class="docutils literal notranslate"><span class="pre">gmx</span></code>.</p></li>
+<li><p><strong>Densification parameters:</strong> These parameters refer to the MD simulation used to create the initial liquid system.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">initial_density</span></code> (line 4):  The density in kg/m<sup>3</sup> of the initial system generated by randomly inserting copies of all initial molecules into the initial box.  300 is the default, which usually guarantees successful insertion of the requested number of molecules.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">densification_temperature</span></code> (line 5):  The temperature in K for the MD simulation that aims to bring the initially low-density system to a liquid-like state.  300 is the default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">densification_pressure</span></code> (line 6):  The pressure in bar the MD simulation that aims to bring the initially low-density system to a liquid-like state.  10 is the default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">densification_steps</span></code> (line 7):  The number of time-steps for the MD simulation that aims to bring the initially low-density system to a liquid-like state.  150000 is the default.</p></li>
+</ul>
+</li>
+<li><p><strong>CURE parameters:</strong> These parameters refer to the CURE iterations.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE_initial_search_radius</span></code> (line 8):  The initial cutoff radius, in nm, for bond searching.  0.5 nm by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE_radial_increment</span></code> (line 9): The increment in nm by which the cutoff radius is increased in bond searching.  The radius is increased incrementally until at least on possible bond is identified or it reaches half the shortest box dimension.  0.25 nm by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE_max_iterations</span></code> (line 10):  The upper limit of CURE iterations to allow.  150 by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE_max_conversion_per_iteration</span></code> (line 11):  The fraction of total possible crosslink bonds that are allowed to form in a single iteration.  1.0 by default (no limitation).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE_desired_conversion</span></code> (line 12):  The target conversion.  MUST BE SPECIFIED; there is no default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE_late_threshold</span></code> (line 13):  The conversion beyond which bond relative probabilities are ignored.  1.0 by default (no limitation).  This can be helpful in speeding up very late stages of the cure process.</p></li>
+</ul>
+</li>
+<li><p><strong>Dragging parameters:</strong>  The parameters govern the series of iterative MD simulations that aim to pull atoms together before activating their bonds.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">drag_trigger_distance</span></code> (line 14):  If the longest initial distance between bond-designated atoms is longer than this distance, then dragging is enabled.  0.5 nm by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_drag_stages</span></code> (line 15):  The number of drag stages to perform; each stage refers to a particular set of distance restraints for the bond-designates, from weak to strong as the stages progress.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drag_limit</span></code> (line 16):  The bond-designate distance in nm that dragging targets.  0.3 by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drag_nvt_steps</span></code> (line 17):  Number of time-steps in the NVT drag stages; -2 by default (uses value in mdp file).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drag_npt_steps</span></code> (line 18):  Number of time-steps in the NPT drag stages; -2 by default (uses value in mdp file).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drag_temperature</span></code> (line 19):  Temperature of the drag stages; 300 by default.</p></li>
+</ul>
+</li>
+<li><p><strong>Bond relaxation parameters:</strong> These parameters govern the series of iterative MD simulations that aim to relax bonds once they are created.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">max_bond_relaxation_increment</span></code> (line 20):  The largest increment in nm by which the restrained bond distances are decreased each stage.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relax_nvt_steps</span></code> (line 21):  Number of time-steps in the NVT bond relaxation stages; -2 by default (uses value in mdp file).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relax_npt_steps</span></code> (line 22): Number of time-steps in the NPT bond relaxation stages; -2 by default (uses value in mdp file).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relax_temperature</span></code> (line 23): Temperature of the drag stages; 300 by default.</p></li>
+</ul>
+</li>
+<li><p><strong>Equilibration parameters:</strong> These parameters govern the single MD simulation performed once all cure and post-cure reactions are complete.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">equilibration_temperature</span></code> (line 24): Temperature in K; 300 by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">equilibration_pressure</span></code> (line 25):  Pressure in bar; 1 by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">equilibration_steps</span></code> (line 26):  Number of time-steps; 50000 by default.</p></li>
+</ul>
+</li>
+<li><p><strong>Chemistry parameters:</strong>  These parameters govern the parameterization of monomers and other molecules.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">charge_method</span></code> (line 27):  Charge method designation understandable by <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>’s <code class="docutils literal notranslate"><span class="pre">-c</span></code> option.  “gas” (Gasteiger) by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">symmetry_equivalent_atoms</span></code> (lines 28-31):  Dictionary of symmetry-equivalent atoms in each molecule.  Here, we are declaring that N1 and N2 are symmetry-equivalent in PACM, as are C1 and C2, while in DGEBA, C1 and C2, C3 and C4, and O1 and O2 all constitute symmetry-equivalent atom pairs.  Since we only refer to on atom in each symmetry set in reactions, this information is used to enumerate all reactions based on symmetry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stereocenters</span></code> (line 32): Dictionary of chiral carbons in each molecule.  Here we are declaring that C1 is chiral in PACM and C3 is chiral in DGEBA.  Symmetry-equivalence is also applied to these atoms.</p></li>
+</ul>
+</li>
+<li><p>Reaction dictionaries:</p>
+<p>These are explained in detail in <a class="reference internal" href="reactions.html#dgeba-reaction-dictionaries"><span class="std std-ref">the previous section</span></a>.</p>
+<ul class="simple">
+<li><p>Primary-to-secondary-amine (lines 34-47):  Defines the generation of one secondary amine group through reaction of DGEBA to PACM.</p></li>
+<li><p>Secondary-to-tertiary-amine (lines 49-61):  Defines the generation of one tertiary amine group through reaction of DGEBA to PACM that has already reacted with another DGEBA.</p></li>
+<li><p>Oxirane-formation (lines 63-75): Defines the formation of the oxirane cycle from its open, hydrogenated form.  This is a post-cure reaction so bond-designates are identified and relaxed after the CURE iterations have completed.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">initial_composition</span></code> (lines 76-78):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 500 DGEBA’s and 250 PACM’s, which is a stoichiometric mixture in terms of epoxy groups (1000) and primary amines (500).  This dictates that at most 1000 crosslink bonds can form.</p></li>
+</ul>
+<p>Now we are ready to <a class="reference internal" href="run.html#dgeba-run"><span class="std std-ref">run the calculation</span></a>.</p>
 </section>
 
 
@@ -72,6 +217,7 @@
   <li><a href="../index.html">Example Tutorials</a><ul>
   <li><a href="index.html">DGEBA-PACM Thermoset</a><ul>
       <li>Previous: <a href="reactions.html" title="previous chapter">Reactions</a></li>
+      <li>Next: <a href="run.html" title="next chapter">Running the Build</a></li>
   </ul></li>
   </ul></li>
   </ul></li>

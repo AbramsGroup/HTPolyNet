@@ -34,7 +34,7 @@
           <div class="body" role="main">
             
   <section id="monomers">
-<h1>Monomers<a class="headerlink" href="#monomers" title="Permalink to this headline">¶</a></h1>
+<span id="dgeba-pacm-monomers"></span><h1>Monomers<a class="headerlink" href="#monomers" title="Permalink to this headline">¶</a></h1>
 <p>In this section, we describe how the inputs <a class="reference download internal" download="" href="../../_downloads/eb60d7bd19782ab6a8a3cf776d35ef4d/DGE.mol2"><code class="xref download docutils literal notranslate"><span class="pre">DGE.mol2</span></code></a> and <a class="reference download internal" download="" href="../../_downloads/a1242d683d51a9f1429706ef60e6cc58/PAC.mol2"><code class="xref download docutils literal notranslate"><span class="pre">PAC.mol2</span></code></a> are generated for the DGEBA and PACM monomers, respectively.  Since this represents an instance where a new system is being generated, let’s begin by creating an empty directory and then populating with a “molecule library”:abbr:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span>
 <span class="gp">$ </span>mkdir my_dgeba_pacm_build
@@ -70,8 +70,8 @@
 </ol>
 <p>To understand how to make these fixes, we should visualize the molecule:</p>
 <img alt="../../_images/DGE-labelled.png" src="../../_images/DGE-labelled.png" />
-<p>This image was made with <a class="reference external" href="http://www.ks.uiuc.edu/Research/vmd/">VMD</a>, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>; these are the two “reactive” carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in <em>S</em>; these of course are atoms with the indicies 12 and 23 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code>.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code> file.</p>
-<p>Let’s edit <code class="docutils literal notranslate"><span class="pre">DGE-raw.mol2</span></code> to name the two reactive atoms <code class="docutils literal notranslate"><span class="pre">C1''</span> <span class="pre">and</span> <span class="pre">``C2'',</span> <span class="pre">the</span> <span class="pre">two</span> <span class="pre">chiral</span> <span class="pre">atoms</span> <span class="pre">at</span> <span class="pre">``C3</span></code> and <code class="docutils literal notranslate"><span class="pre">C4</span></code>, and the two oxirane oxygens as <code class="docutils literal notranslate"><span class="pre">O1</span></code> and <code class="docutils literal notranslate"><span class="pre">O2</span></code>:</p>
+<p>This image was made with <a class="reference external" href="http://www.ks.uiuc.edu/Research/vmd/">VMD</a>, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in <a class="reference download internal" download="" href="../../_downloads/eb60d7bd19782ab6a8a3cf776d35ef4d/DGE.mol2"><code class="xref download docutils literal notranslate"><span class="pre">DGE.mol2</span></code></a>; these are the two “reactive” carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in <em>S</em>; these of course are atoms with the indicies 12 and 23 in <a class="reference download internal" download="" href="../../_downloads/eb60d7bd19782ab6a8a3cf776d35ef4d/DGE.mol2"><code class="xref download docutils literal notranslate"><span class="pre">DGE.mol2</span></code></a>.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in <a class="reference download internal" download="" href="../../_downloads/eb60d7bd19782ab6a8a3cf776d35ef4d/DGE.mol2"><code class="xref download docutils literal notranslate"><span class="pre">DGE.mol2</span></code></a> file.</p>
+<p>Let’s edit <a class="reference download internal" download="" href="../../_downloads/eb60d7bd19782ab6a8a3cf776d35ef4d/DGE.mol2"><code class="xref download docutils literal notranslate"><span class="pre">DGE.mol2</span></code></a> to name the two reactive atoms <code class="docutils literal notranslate"><span class="pre">C1''</span> <span class="pre">and</span> <span class="pre">``C2'',</span> <span class="pre">the</span> <span class="pre">two</span> <span class="pre">chiral</span> <span class="pre">atoms</span> <span class="pre">at</span> <span class="pre">``C3</span></code> and <code class="docutils literal notranslate"><span class="pre">C4</span></code>, and the two oxirane oxygens as <code class="docutils literal notranslate"><span class="pre">O1</span></code> and <code class="docutils literal notranslate"><span class="pre">O2</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat DGE-raw.mol2 <span class="p">|</span> sed s/<span class="s2">&quot;14 C &quot;</span>/<span class="s2">&quot;14 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
                      sed s/<span class="s2">&quot;25 C &quot;</span>/<span class="s2">&quot;25 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
                      sed s/<span class="s2">&quot;12 C &quot;</span>/<span class="s2">&quot;12 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
@@ -81,7 +81,7 @@
 </pre></div>
 </div>
 <p>Note that in the <code class="docutils literal notranslate"><span class="pre">sed</span></code> substitution directives, we have preserved the number of characters substituted to keep the column spacing in the <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file from changing.</p>
-<p>Now, let’s take a look at <a class="reference external" href="DGE.mol2">DGE.mol2</a>:</p>
+<p>Now, let’s take a look at <a class="reference download internal" download="" href="../../_downloads/eb60d7bd19782ab6a8a3cf776d35ef4d/DGE.mol2"><code class="xref download docutils literal notranslate"><span class="pre">DGE.mol2</span></code></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">MOLECULE</span>
 <span class="n">DGE</span>
 <span class="mi">53</span> <span class="mi">54</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
@@ -220,10 +220,10 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> PAC-raw.mol2 <span class="p">|</span> sed s/<span class="s2">&quot;14 N &quot;</span>/<span class="s2">&quot;14 N1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
                       sed s/<span class="s2">&quot;15 N &quot;</span>/<span class="s2">&quot;15 N1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
                       sed s/<span class="s2">&quot;3 C &quot;</span>/<span class="s2">&quot;3 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-                      sed s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/ &gt; DGE.mol2
+                      sed s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/ &gt; PAC.mol2
 </pre></div>
 </div>
-<p>Let’s look at the file <code class="docutils literal notranslate"><span class="pre">PAC.mol2</span></code> that results from the command above:</p>
+<p>Let’s look at the file <a class="reference download internal" download="" href="../../_downloads/a1242d683d51a9f1429706ef60e6cc58/PAC.mol2"><code class="xref download docutils literal notranslate"><span class="pre">PAC.mol2</span></code></a> that results from the command above:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">@&lt;</span><span class="n">TRIPOS</span><span class="o">&gt;</span><span class="n">MOLECULE</span>
 <span class="n">PAC</span>
 <span class="mi">41</span> <span class="mi">42</span> <span class="mi">0</span> <span class="mi">0</span> <span class="mi">0</span>
@@ -317,7 +317,7 @@
     <span class="mi">42</span>    <span class="mi">15</span>    <span class="mi">41</span>    <span class="mi">1</span>
 </pre></div>
 </div>
-<p>The next thing we consider is how to create the reaction dictionaries necessary to describe the crosslinking chemistry.</p>
+<p>The next thing we consider is how to create the <a class="reference internal" href="reactions.html#dgeba-reaction-dictionaries"><span class="std std-ref">reaction dictionaries</span></a> necessary to describe the crosslinking chemistry.</p>
 </section>
 </section>
 

@@ -1,3 +1,5 @@
+.. _dgeba_pacm_monomers:
+
 Monomers
 ========
 
@@ -45,9 +47,9 @@ To understand how to make these fixes, we should visualize the molecule:
 
 .. image:: DGE-labelled.png
 
-This image was made with `VMD <http://www.ks.uiuc.edu/Research/vmd/>`_, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the ``*.mol2`` file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in ``DGE-raw.mol2``; these are the two "reactive" carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in *S*; these of course are atoms with the indicies 12 and 23 in ``DGE-raw.mol2``.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in ``DGE-raw.mol2`` file.  
+This image was made with `VMD <http://www.ks.uiuc.edu/Research/vmd/>`_, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the ``*.mol2`` file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in :download:`DGE.mol2 <DGE.mol2>`; these are the two "reactive" carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in *S*; these of course are atoms with the indicies 12 and 23 in :download:`DGE.mol2 <DGE.mol2>`.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in :download:`DGE.mol2 <DGE.mol2>` file.  
 
-Let's edit ``DGE-raw.mol2`` to name the two reactive atoms ``C1'' and ``C2'', the two chiral atoms at ``C3`` and ``C4``, and the two oxirane oxygens as ``O1`` and ``O2``:
+Let's edit :download:`DGE.mol2 <DGE.mol2>` to name the two reactive atoms ``C1'' and ``C2'', the two chiral atoms at ``C3`` and ``C4``, and the two oxirane oxygens as ``O1`` and ``O2``:
 
 .. code-block:: console
 
@@ -60,7 +62,7 @@ Let's edit ``DGE-raw.mol2`` to name the two reactive atoms ``C1'' and ``C2'', th
 
 Note that in the ``sed`` substitution directives, we have preserved the number of characters substituted to keep the column spacing in the ``*.mol2`` file from changing.
 
-Now, let's take a look at `DGE.mol2 <DGE.mol2>`_::
+Now, let's take a look at :download:`DGE.mol2 <DGE.mol2>`::
 
     @<TRIPOS>MOLECULE
     DGE
@@ -208,9 +210,9 @@ We see that the two amine nitrogens are atoms 13 and 14 in VMD numbering, which 
     $ echo PAC-raw.mol2 | sed s/"14 N "/"14 N1"/ | \
                           sed s/"15 N "/"15 N1"/ | \
                           sed s/"3 C "/"3 C1"/ | \
-                          sed s/"11 C "/"11 C1"/ > DGE.mol2
+                          sed s/"11 C "/"11 C1"/ > PAC.mol2
 
-Let's look at the file ``PAC.mol2`` that results from the command above::
+Let's look at the file :download:`PAC.mol2 <PAC.mol2>` that results from the command above::
 
     @<TRIPOS>MOLECULE
     PAC
@@ -304,4 +306,4 @@ Let's look at the file ``PAC.mol2`` that results from the command above::
         41    15    40    1
         42    15    41    1
 
-The next thing we consider is how to create the reaction dictionaries necessary to describe the crosslinking chemistry.
+The next thing we consider is how to create the :ref:`reaction dictionaries <dgeba_reaction_dictionaries>` necessary to describe the crosslinking chemistry.
