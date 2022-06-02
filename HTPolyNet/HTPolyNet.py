@@ -598,7 +598,7 @@ class HTPolyNet:
         if CP.state==CPstate.postcure_equilibration:
             CP.read_checkpoint(self)
             ''' Final NPT MD equilibration with full parameters '''
-            pfx=mdp_library['equilibrate-npt']
+            pfx=mdp_library['equilibrate']
             self.checkout(f'mdp/{pfx}.mdp')
             mdp_modify(f'{pfx}.mdp',{'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'ref_p':equilibration_pressure})
             gro,ext=os.path.splitext(CP.gro)
