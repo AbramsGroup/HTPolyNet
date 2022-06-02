@@ -125,7 +125,139 @@
 <span class="go">linkcell-0.50.grx</span>
 </pre></div>
 </div>
-<p>That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and we’ve entered the relaxation stages, we’ll see:</p>
+<p>That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we’ll see a large number of files.  They can be divided into seven “states”:</p>
+<ol class="arabic simple" start="0">
+<li><p>Bondsearch system state</p></li>
+<li><p>Dragging states</p></li>
+<li><p>Topolgy update state</p></li>
+<li><p>Relaxation states</p></li>
+<li><p>Equilibration state</p></li>
+<li><p>Final state</p></li>
+<li><p>Auxiliary files</p></li>
+</ol>
+<p>Names of files corresponding to states 0-5 all begin with their respective digits.  Names of files that do not begin with a digit are “auxiliary”.  Let’s consider the files in the seven states.</p>
+<section id="bondsearch-state-files">
+<h3>Bondsearch state files<a class="headerlink" href="#bondsearch-state-files" title="Permalink to this headline">¶</a></h3>
+<p>Files associated with the bondsearch begin with <code class="docutils literal notranslate"><span class="pre">0</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls <span class="m">0</span>-*
+<span class="go">0-connect-bonds.csv  0-connect.gro  0-connect.grx  0-connect.top</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> files are sufficient Gromacs input.  The <code class="docutils literal notranslate"><span class="pre">grx</span></code> file contains values of four extra attributes for each atom:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">globalIdx</span>  <span class="n">z</span>  <span class="n">cycle</span><span class="o">-</span><span class="n">idx</span> <span class="n">reactantName</span>
+        <span class="mi">1</span>  <span class="mi">0</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+        <span class="mi">2</span>  <span class="mi">0</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+        <span class="mi">3</span>  <span class="mi">0</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+        <span class="mi">4</span>  <span class="mi">0</span>          <span class="mi">2</span>          <span class="n">DGE</span>
+        <span class="mi">5</span>  <span class="mi">0</span>          <span class="mi">2</span>          <span class="n">DGE</span>
+        <span class="mi">6</span>  <span class="mi">0</span>          <span class="mi">2</span>          <span class="n">DGE</span>
+        <span class="mi">7</span>  <span class="mi">0</span>          <span class="mi">2</span>          <span class="n">DGE</span>
+        <span class="mi">8</span>  <span class="mi">0</span>          <span class="mi">2</span>          <span class="n">DGE</span>
+        <span class="mi">9</span>  <span class="mi">0</span>          <span class="mi">2</span>          <span class="n">DGE</span>
+       <span class="mi">10</span>  <span class="mi">0</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+       <span class="mi">11</span>  <span class="mi">0</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+       <span class="mi">12</span>  <span class="mi">0</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+       <span class="mi">13</span>  <span class="mi">1</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+       <span class="mi">14</span>  <span class="mi">1</span>          <span class="mi">0</span>          <span class="n">DGE</span>
+       <span class="p">(</span><span class="n">file</span> <span class="n">continues</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">globalIdx</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">nr</span></code> in the <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">atoms</span> <span class="pre">]</span></code> directive of a <code class="docutils literal notranslate"><span class="pre">top</span></code> file, or the <code class="docutils literal notranslate"><span class="pre">atomNum</span></code> attribute of a <code class="docutils literal notranslate"><span class="pre">gro</span></code> file; it is just the global atom index.  <code class="docutils literal notranslate"><span class="pre">z</span></code> is the current value of the number of availale crosslink bonds for that atom.  <code class="docutils literal notranslate"><span class="pre">cycle-idx</span></code> are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  Finally, <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">csv</span></code> file is a dump of the bonds data frame:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">26515</span> <span class="mi">8070</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">2</span> <span class="mf">0.42452443981471805</span>
+<span class="mi">29836</span> <span class="mi">20684</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">2</span> <span class="mf">0.42568650436676986</span>
+<span class="mi">31311</span> <span class="mi">21384</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">1</span> <span class="mf">0.4260152579427174</span>
+<span class="mi">30574</span> <span class="mi">7858</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">2</span> <span class="mf">0.4264387412044077</span>
+<span class="mi">36395</span> <span class="mi">21479</span> <span class="n">PACDGE</span> <span class="mf">0.42664739539812047</span>
+<span class="mi">29753</span> <span class="mi">21437</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">1</span> <span class="mf">0.4269297366077936</span>
+<span class="mi">26925</span> <span class="mi">21914</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">3</span> <span class="mf">0.4275839098937192</span>
+<span class="mi">32131</span> <span class="mi">5420</span> <span class="n">PACDGE</span> <span class="mf">0.42771135126391024</span>
+<span class="mi">34673</span> <span class="mi">21013</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">1</span> <span class="mf">0.42801051388955424</span>
+<span class="mi">35371</span> <span class="mi">13211</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">2</span> <span class="mf">0.42913165823555866</span>
+<span class="mi">29508</span> <span class="mi">14971</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">3</span> <span class="mf">0.4292621576612602</span>
+<span class="mi">30655</span> <span class="mi">21002</span> <span class="n">PACDGE</span> <span class="mf">0.4300581356049432</span>
+<span class="mi">28647</span> <span class="mi">11102</span> <span class="n">PACDGE</span><span class="o">-</span><span class="mi">3</span> <span class="mf">0.4304242093563047</span>
+</pre></div>
+</div>
+<p>The file does not have a heading, but the first two columns are pre-bond global atom indices for each bond-designate; the third column is the product template of the reaction type that forms this bond, and the fourth column is the instantaneous interatomic distance in nm.  This is the first real output of the bond search.</p>
+</section>
+<section id="dragging-states-files">
+<h3>Dragging states files<a class="headerlink" href="#dragging-states-files" title="Permalink to this headline">¶</a></h3>
+<p>Files associated with prebond dragging begin with <code class="docutils literal notranslate"><span class="pre">1</span></code>.  However, because no bond-designate length exceeded 0.5 nm, no dragging is triggered.  So the build proceeds to topology update.</p>
+</section>
+<section id="topology-update-state-files">
+<h3>Topology update state files<a class="headerlink" href="#topology-update-state-files" title="Permalink to this headline">¶</a></h3>
+<p>Files associated with the topology update process begin with a <code class="docutils literal notranslate"><span class="pre">2</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls <span class="m">2</span>-*
+<span class="go">2-update-bonds.csv  2-update.gro  2-update.grx  2-update-resid-graph.json  2-update.top</span>
+</pre></div>
+</div>
+<p>Again, the <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> are proper Gromacs inputs, and the <code class="docutils literal notranslate"><span class="pre">grx</span></code> file tabulates all <code class="docutils literal notranslate"><span class="pre">z</span></code>, <code class="docutils literal notranslate"><span class="pre">cycle-idx</span></code>, and <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> attributes.  The <code class="docutils literal notranslate"><span class="pre">csv</span></code> file reports the bond dataframe, and the <code class="docutils literal notranslate"><span class="pre">json</span></code> file represents the graph structure of the network on a resid basis.  Importantly, these states must be written here because the topology update deletes two hydrogen atoms for each bond created, and therefore all atoms are reindexed, necessitating reindexing all atom indices in the topology.  Therefore, all Gromacs state files in the 0 and 1 states are <strong>not in the same registry as</strong> those in the states 2 and up.</p>
+</section>
+<section id="relaxation-states-files">
+<h3>Relaxation states files<a class="headerlink" href="#relaxation-states-files" title="Permalink to this headline">¶</a></h3>
+<p>Files that begin with a <code class="docutils literal notranslate"><span class="pre">3</span></code> correspond to bond relaxation stages.  In this example, eigth stages are run.  Each stage produces 22 output files: the bonds <code class="docutils literal notranslate"><span class="pre">csv</span></code>, the <code class="docutils literal notranslate"><span class="pre">gro</span></code> / <code class="docutils literal notranslate"><span class="pre">grx</span></code> / <code class="docutils literal notranslate"><span class="pre">top</span></code> that initializes the first stage, and then the 17 <strong>outputs</strong> from the minimization (5), nvt (6), and npt (6) sub-stages:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls <span class="m">3</span>-*
+<span class="go">3-relax-stage-1-bonds.csv</span>
+<span class="go">3-relax-stage-1.gro</span>
+<span class="go">3-relax-stage-1.grx</span>
+<span class="go">3-relax-stage-1-min.edr</span>
+<span class="go">3-relax-stage-1-min.gro</span>
+<span class="go">3-relax-stage-1-min.log</span>
+<span class="go">3-relax-stage-1-min.tpr</span>
+<span class="go">3-relax-stage-1-min.trr</span>
+<span class="go">3-relax-stage-1-npt.cpt</span>
+<span class="go">3-relax-stage-1-npt.edr</span>
+<span class="go">3-relax-stage-1-npt.gro</span>
+<span class="go">3-relax-stage-1-npt.log</span>
+<span class="go">3-relax-stage-1-npt.tpr</span>
+<span class="go">3-relax-stage-1-npt.trr</span>
+<span class="go">3-relax-stage-1-nvt.cpt</span>
+<span class="go">3-relax-stage-1-nvt.edr</span>
+<span class="go">3-relax-stage-1-nvt.gro</span>
+<span class="go">3-relax-stage-1-nvt.log</span>
+<span class="go">3-relax-stage-1-nvt.tpr</span>
+<span class="go">3-relax-stage-1-nvt.trr</span>
+<span class="go">3-relax-stage-1.top</span>
+<span class="go">...</span>
+<span class="go">3-relax-stage-8-bonds.csv</span>
+<span class="go">3-relax-stage-8.gro</span>
+<span class="go">3-relax-stage-8.grx</span>
+<span class="go">3-relax-stage-8-min.edr</span>
+<span class="go">3-relax-stage-8-min.gro</span>
+<span class="go">3-relax-stage-8-min.log</span>
+<span class="go">3-relax-stage-8-min.tpr</span>
+<span class="go">3-relax-stage-8-min.trr</span>
+<span class="go">3-relax-stage-8-npt.cpt</span>
+<span class="go">3-relax-stage-8-npt.edr</span>
+<span class="go">3-relax-stage-8-npt.gro</span>
+<span class="go">3-relax-stage-8-npt.log</span>
+<span class="go">3-relax-stage-8-npt.tpr</span>
+<span class="go">3-relax-stage-8-npt.trr</span>
+<span class="go">3-relax-stage-8-nvt.cpt</span>
+<span class="go">3-relax-stage-8-nvt.edr</span>
+<span class="go">3-relax-stage-8-nvt.gro</span>
+<span class="go">3-relax-stage-8-nvt.log</span>
+<span class="go">3-relax-stage-8-nvt.tpr</span>
+<span class="go">3-relax-stage-8-nvt.trr</span>
+<span class="go">3-relax-stage-8.top</span>
+</pre></div>
+</div>
+<p>The attenuation is managed by the sequential <code class="docutils literal notranslate"><span class="pre">top</span></code> files.  Let’s look at the entry for a particular bond in each <code class="docutils literal notranslate"><span class="pre">top</span></code> file’s <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> directive:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>grep <span class="s2">&quot;^23795 29736&quot;</span> <span class="m">3</span>*top
+<span class="go">3-relax-stage-1.top:23795 29736 1 0.3204220617308803 34089.14</span>
+<span class="go">3-relax-stage-2.top:23795 29736 1 0.29557176719789735 68178.28</span>
+<span class="go">3-relax-stage-3.top:23795 29736 1 0.2707214726649145 102267.42</span>
+<span class="go">3-relax-stage-4.top:23795 29736 1 0.24587117813193157 136356.56</span>
+<span class="go">3-relax-stage-5.top:23795 29736 1 0.22102088359894867 170445.7</span>
+<span class="go">3-relax-stage-6.top:23795 29736 1 0.1961705890659658 204534.84</span>
+<span class="go">3-relax-stage-7.top:23795 29736 1 0.1713202945329829 238623.97999999998</span>
+<span class="go">3-relax-stage-8.top:23795 29736 1 0.14647 272713.12</span>
+<span class="gp">$</span>
+</pre></div>
+</div>
+<p>In a <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> topology directive, the 4th and 5th columns are <code class="docutils literal notranslate"><span class="pre">b0</span></code> and <code class="docutils literal notranslate"><span class="pre">kt</span></code> harmonic bond parameters.  In the stage-8 <code class="docutils literal notranslate"><span class="pre">top</span></code>, we see these parameters at their proper force-field values for a C-N single bond.  Notice how the value of the distance parameter <code class="docutils literal notranslate"><span class="pre">b0</span></code> begins at a large initial value and systematically decreases toward the target (but never by more than an increment of 0.05 nm), while the spring constant <code class="docutils literal notranslate"><span class="pre">kt</span></code> starts low and increases systematically toward its target.</p>
+</section>
 </section>
 <section id="subsequent-cure-iterations">
 <h2>Subsequent CURE iterations<a class="headerlink" href="#subsequent-cure-iterations" title="Permalink to this headline">¶</a></h2>
