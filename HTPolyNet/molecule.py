@@ -67,11 +67,11 @@ class Reaction:
 
     def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
         A,B=[self.atoms[i] for i in bonddict['atoms']]
-        # logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
-        # logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
+        logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
+        logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
         Aidx,Aresid=self.get_atom_globalIndx(A,mol,moldict)
         Bidx,Bresid=self.get_atom_globalIndx(B,mol,moldict)
-        # logging.debug(f'     A: {Aidx}  B: {Bidx}')
+        logging.debug(f'     A: {Aidx},{Aresid}  B: {Bidx},{Bresid}')
         return (Aidx,Bidx),(Aresid,Bresid),(A['atom'],B['atom'])
 
     def get_atom_globalIndx(self,A,mol,moldict):
@@ -429,7 +429,7 @@ class Molecule:
         skip_H=[]
         for i,B in enumerate(self.reaction_bonds):
             (aidx,bidx),(aresid,bresid),(aname,bname)=B
-            # logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}-{bresid}:{bname}')
+            logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}-{bresid}:{bname}')
             bonds.append((aidx,bidx))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
