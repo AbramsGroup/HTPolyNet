@@ -678,6 +678,12 @@ class Coordinates:
             lengths.append(self.rij(b['ai'],b['aj']))
         return lengths
 
+    def return_pair_lengths(self,pdf):
+        lengths=[]
+        for i,b in pdf.iterrows():
+            lengths.append(self.rij(b['ai'],b['aj']))
+        return lengths
+
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         ''' computes the minimum distance between two collections of atoms '''
         sp=self.A[~self.A['globalIdx'].isin(self_excludes)][['posX','posY','posZ']]

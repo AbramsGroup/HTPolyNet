@@ -16,7 +16,7 @@ class CPstate(Enum):
     relax=8
     equilibrate=10
     post_equilibration=11
-    post_cure=12
+    postcure=12
     postcure_equilibration=13
     finished=25
     unknown=99

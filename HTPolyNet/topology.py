@@ -1010,7 +1010,7 @@ class Topology:
         # logging.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
 
-    def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0):
+    def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0,init_colname='initial-distance'):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
@@ -1031,7 +1031,7 @@ class Topology:
         logging.debug(f'Attenuating {bondsdf.shape[0]} bond{"s" if bondsdf.shape[0]>1 else ""} in stage {stage+1}/{max_stages}')
         for i,b in bondsdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
-            rij=b['initial-distance-relax']
+            rij=b[init_colname]
             b0,kb=self.get_bond_parameters(ai,aj)
             if minimum_distance>0.0:
                 b0=minimum_distance

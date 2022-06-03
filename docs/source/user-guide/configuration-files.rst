@@ -16,22 +16,28 @@ Below is a table of parameter keywords and descriptions for parameters that gove
 General parameters
 ^^^^^^^^^^^^^^^^^^
 
-================================    ==============  =====================
-Parameter                           Type            Description (default)
-================================    ==============  =====================
-``Title``                           str             Descriptive title
-``gmx``                             str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
-``gmx_options``                     quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
-``gmx_mdrun``                       quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
-``initial_density``                 float           initial system density in kg/m3 (300.0)
-``CURE_initial_search_radius``      float           initial capture radius in nm (0.5)
-``CURE_radial_increment``           float           capture radius increment (0.25)
-``desired_conversion``              float           desired fraction of possible crosslink bonds to form
-``max_conversion_per_iteration``    float           maximum conversion per iteration (1.0; no limit)
-``max_CURE_iterations``             int             maximum number of CURE iterations to run prior to reaching desired conversion
-``late_threshold``                  float           conversion above which reactions are all treated with probability 1.0
-``equilibration_temperature``       float           Temperature in K of post-cure equilibration simulation (300)
-================================    ==============  =====================
+=====================================    ==============  =====================
+Parameter                                Type            Description (default)
+=====================================    ==============  =====================
+``Title``                                str             Descriptive title
+``gmx``                                  str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
+``gmx_options``                          quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
+``gmx_mdrun``                            quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
+``CURE_initial_search_radius``           float           initial capture radius in nm (0.5)
+``CURE_radial_increment``                float           capture radius increment (0.25)
+``CURE_desired_conversion``              float           desired fraction of possible crosslink bonds to form
+``CURE_max_conversion_per_iteration``    float           maximum conversion per iteration (1.0; no limit)
+``CURE_max_iterations``                  int             maximum number of CURE iterations to run prior to reaching desired conversion
+``CURE_late_threshold``                  float           conversion above which reactions are all treated with probability 1.0
+``initial_density``                      float           initial system density in kg/m3 for box packing (300.0)
+``densification_temperature``            float           Temperature in K of initial densification simulation (300)
+``densification_pressure``               float           Pressure in bar of initial densification simulation (10)
+``densification_steps``                  int             Number of time-steps initial densification simulation (-2)
+``equilibration_temperature``            float           Temperature in K of postcure equilibration simulation (300)
+``equilibration_pressure``               float           Pressure in bar of postcure equilibration simulation (1)
+``equilibration_steps``                  int             Number of time-steps postcure equilibration simulation (-2)
+``gromacs_rdefault``                     float           Default cutoff radius (``rvdw``, ``rcoulomb``, ``rlist``) for Gromacs
+=====================================    ==============  =====================
 
 Parameters associated with parameterization of molecules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -67,6 +73,7 @@ Parameter                          Type            Description (default)
 ``max_drag_stages``                int             number of drag stages to perform
 ``drag_trigger_distance``          float           bond length beyond which dragging is triggered
 ``drag_limit``                     float           minimum distance each separation should achieve (nm); 0.0 turns off dragging (0.0)
+``drag_temperature``               float           Temperature in K for dragging MD simulations (300)
 ``drag_nvt_steps``                 int             number of MD steps for NVT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
 ``drag_npt_steps``                 int             number of MD steps for NPT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
 ===============================    ==============  =====================
@@ -83,6 +90,7 @@ Parameter                            Type            Description (default)
 =================================    ==============  =====================
 ``max_bond_relaxation_stages``       int             number of bond relaxation stages to perform
 ``max_bond_relaxation_increment``    float           maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides ``max_bond_relaxation_stages``)
+``relax_temperature``                float           Temperature in K for relaxation MD simulations (300)
 ``relax_nvt_steps``                  int             number of MD steps for NVT relaxation 
 ``relax_npt_steps``                  int             number of MD steps for NPT relaxation 
 =================================    ==============  =====================

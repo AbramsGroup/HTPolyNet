@@ -172,7 +172,7 @@ class HTPolyNet:
                 M.inherit_attribute_from_reactants('sea-idx',available_molecules=self.molecules)
             M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
 
-        if mname in self.cfg.parameters['stereocenters']:
+        if 'stereocenters' in self.cfg.parameters and mname in self.cfg.parameters['stereocenters']:
             M.stereoisomers=[]
             my_sc=self.cfg.parameters['stereocenters'][mname]
             logging.debug(f'Stereocenters in {mname}: {my_sc}')
@@ -314,11 +314,11 @@ class HTPolyNet:
             logging.info(f'Conducting initial NPT MD simulation of liquid')
             mdp_pfx=mdp_library['minimize']
             self.checkout(f'mdp/{mdp_pfx}.mdp')
-            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-minimized',mdp=mdp_pfx,**self.cfg.parameters)
+            msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-minimized',mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
             mdp_pfx=mdp_library['liquid-densify']
             self.checkout(f'mdp/{mdp_pfx}.mdp')
             mdp_modify(f'{mdp_pfx}.mdp',{'ref_t':T,'gen-temp':T,'ref_p':P})
-            msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,nsteps=nsteps,**self.cfg.parameters)
+            msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,quiet=False,nsteps=nsteps,**self.cfg.parameters)
             logging.info(f'Generated configuration {deffnm}.gro\n')
         density_trace(deffnm,**self.cfg.parameters)
         trace(['Density'],[deffnm],outfile='../../plots/init-density.png')
@@ -329,14 +329,6 @@ class HTPolyNet:
         # Connect - Update - Relax - Equilibrate
         logging.info('*'*10+' CONNECT - UPDATE - RELAX - EQUILIBRATE (CURE) begins '+'*'*10)
         max_nxlinkbonds=self.cfg.maxconv
-        '''
-        CURE_initial_search_radius: 0.5 # nm
-        CURE_radial_increment: 0.25
-        CURE_max_iterations: 150
-        CURE_max_conversion_per_iteration: 0.25
-        CURE_desired_conversion: 0.95
-        CURE_late_threshold: 0.85
-        '''
         try:
             desired_conversion=self.cfg.parameters['CURE_desired_conversion']
         except KeyError as error:
@@ -351,6 +343,8 @@ class HTPolyNet:
         radial_increment=self.cfg.parameters.get('CURE_radial_increment',0.25)
         late_threshold=self.cfg.parameters.get('CURE_late_threshold',1.0)
         maxiter=self.cfg.parameters.get('CURE_max_iterations',100)
+
+        gromacs_rdefault=self.cfg.parameters.get('gromacs_rdefault',0.9)
 
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0)
@@ -375,24 +369,25 @@ class HTPolyNet:
         cure_finished=False
         CP=Checkpoint(checkpoint_file=checkpoint_file)
         CP.iter=1
-        while not CP.state==CPstate.post_cure:
+        while not CP.state==CPstate.postcure:
             # Checkpointing in this loop uses the CP.state variable; at the end of
             # each section, CP.state is set to indicate the next section
             cwd=pfs.go_to(f'systems/iter-{CP.iter}')
             CP.read_checkpoint(self)
             if CP.state==CPstate.fresh:
-                logging.info(f'CURE iteration {CP.iter}/{maxiter} begins.')
+                logging.info(f'CURE iteration {CP.iter}/{maxiter} begins in {cwd}.')
                 CP.set_state(CPstate.bondsearch) # no need to write a checkpoint
             if CP.state==CPstate.bondsearch:
-                """ Capture radius method for identifying potential crosslink bonds """
-                logging.info(f'CURE iteration {CP.iter}/{maxiter}: BONDSEARCH')
+                stepno=0
+                stepnm='bondsearch'
+                opfx=f'{stepno}-{stepnm}'
+                logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: BONDSEARCH')
                 CP.radius=cure_search_radius+CP.current_radidx*radial_increment
                 apply_probabilities=curr_conversion<late_threshold
-                # logging.debug(f'Bond search: curr_conversion {curr_conversion} late_threshold {late_threshold} apply_probabilities {apply_probabilities}')
                 bond_limit=int(max_conversion_per_iteration*max_nxlinkbonds)
                 bond_target=int((desired_conversion-curr_conversion)*max_nxlinkbonds)
                 bond_limit=min([bond_limit,bond_target])
-                logging.debug(f'Iteration limited to at most {bond_limit} new bonds')
+                logging.debug(f'{opfx}: Iteration limited to at most {bond_limit} new bonds')
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
                     nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],
                                                 apply_probabilities=apply_probabilities,
@@ -404,127 +399,145 @@ class HTPolyNet:
                             next_stage=CPstate.drag
                         else:
                             next_stage=CPstate.update
-                        CP.write_checkpoint(self,next_stage,prefix='0-connect')
+                        CP.write_checkpoint(self,next_stage,prefix=opfx)
                     else:
-                        logging.debug(f'CURE iteration {CP.iter}: increasing bondsearch radius to {CP.radius+radial_increment}')
+                        logging.debug(f'{opfx}: CURE iteration {CP.iter}: increasing cutoff radius to {CP.radius+radial_increment}')
                         CP.current_radidx+=1
                         CP.radius+=radial_increment
                 if CP.state==CPstate.bondsearch: # loop exited on radius violation
-                    logging.debug(f'CURE iteration {CP.iter} failed to find bonds.')
+                    logging.debug(f'{opfx}: CURE iteration {CP.iter} failed to find bonds.')
                     cure_finished=True
             if CP.state==CPstate.drag:
                 ''' dragging: series of simulations that use type-6 (non-chemical) bonds
                     that progressively shrink and become stiffer in order to drag the
                     reactive atoms towards each other in preparation for making bonds '''
-                logging.info(f'CURE iteration {CP.iter}/{maxiter}: PREBOND DRAGGING')
+                stepno=1
+                stepnm='drag'
+                opfx=f'{stepno}-{stepnm}'
+                logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: PREBOND DRAGGING')
                 CP.read_checkpoint(self)
-                min_pfx=mdp_library['drag-minimize']
-                nvt_pfx=mdp_library['drag-nvt']
-                npt_pfx=mdp_library['drag-npt']
-                self.checkout(f'mdp/{min_pfx}.mdp')
-                self.checkout(f'mdp/{nvt_pfx}.mdp')
-                self.checkout(f'mdp/{npt_pfx}.mdp')
-                mdp_modify(f'{nvt_pfx}.mdp',{'gen-temp':drag_temperature,'ref_t':drag_temperature})
-                mdp_modify(f'{npt_pfx}.mdp',{'gen-temp':drag_temperature,'ref_t':drag_temperature})
-                CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                logging.debug(f'New pairs avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
-                maxD=CP.bonds['current-lengths'].max()
-                if maxD<0.9:
-                    maxD=0.9
-                mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify(f'{nvt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify(f'{npt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                # CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
+                maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
+                pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                for stg in ['minimize','nvt','npt']:
+                    impfx=mdp_library[f'{stepnm}-{stg}']
+                    self.checkout(f'mdp/{impfx}.mdp')
+                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':drag_temperature,'ref_t':drag_temperature}
+                    mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_dragstage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
                 for i in range(begin_dragstage,n_dragstages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_dragstages,minimum_distance=drag_limit_nm)
-                    stagepref=f'1-drag-stage-{i+1}'
-                    CP.write_checkpoint(self,CPstate.drag,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp=min_pfx,rdd=CP.radius,**self.cfg.parameters)
-                    nsteps=self.cfg.parameters.get('drag_nvt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp=nvt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
-                    nsteps=self.cfg.parameters.get('drag_npt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp=npt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_dragstages,minimum_distance=drag_limit_nm,init_colname='initial-distance')
+                    stagepref=f'{opfx}-stage-{i+1}'
+                    CP.write_checkpoint(self,CPstate.drag,prefix=stagepref) # writes the gro and top files
+                    for stg in ['minimize','nvt','npt']:
+                        nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
+                        msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'New pairs avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
-                    maxD=max([CP.bonds['current-lengths'].max(),0.9])
-                    mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify(f'{nvt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify(f'{npt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'New restraints avg/min/max: {current_lengths.mean():.3f}/{current_lengths.min():.3f}/{current_lengths.max():.3f}')
+                    maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                    logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                    pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
+                    pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                    rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                    logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                    nextpref=f'{opfx}-stage-{i+2}'
+                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
+                    for stg in ['minimize','nvt','npt']:
+                        mdp_modify(f'{stagepref}-{stg}.mdp',mod_dict,new_filename=f'{nextpref}-{stg}.mdp')
                     CP.current_dragstage+=1
+                remstage=CP.current_dragstage
+                rempref=f'{opfx}-stage-{remstage}'
+                for stg in ['minimize','nvt','npt']:
+                    os.remove(f'{rempref}-{stg}.mdp')
                 CP.current_dragstage-=1
                 self.TopoCoord.remove_restraints(CP.bonds)
-                CP.write_checkpoint(self,CPstate.update,prefix='1-drag')
+                CP.write_checkpoint(self,CPstate.update,prefix=f'{opfx}-complete')
             if CP.state==CPstate.update:
-                ''' Update the topology: make bonds, delete sacrificial atoms; only reactions
-                    designated as "cure" are used here '''
-                logging.info(f'CURE iteration {CP.iter}/{maxiter}: UPDATE TOPOLOGY')
+                stepno=2
+                stepnm='update'
+                opfx=f'{stepno}-{stepnm}'
+                logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: UPDATE TOPOLOGY')
                 CP.read_checkpoint(self)
-                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to='idx_mapper.dat')
+                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                self.TopoCoord.make_resid_graph(json_file='2-update-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
-                CP.write_checkpoint(self,CPstate.relax,prefix='2-update')
+                self.TopoCoord.make_resid_graph(json_file=f'{opfx}-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
+                CP.write_checkpoint(self,CPstate.relax,prefix=f'{opfx}-complete')
             if CP.state==CPstate.relax:
                 ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''
-                logging.info(f'CURE iteration {CP.iter}/{maxiter}: BOND RELAXATION')
+                stepno=3
+                stepnm='relax'
+                opfx=f'{stepno}-{stepnm}'
+                logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: BOND RELAXATION')
                 CP.read_checkpoint(self)
-                min_pfx=mdp_library['relax-minimize']
-                nvt_pfx=mdp_library['relax-nvt']
-                npt_pfx=mdp_library['relax-npt']
-                self.checkout(f'mdp/{min_pfx}.mdp')
-                self.checkout(f'mdp/{nvt_pfx}.mdp')
-                self.checkout(f'mdp/{npt_pfx}.mdp')
-                maxD=max([CP.bonds['initial-distance'].max(),0.9])
-                mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify(f'{nvt_pfx}.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                mdp_modify(f'{npt_pfx}.mdp',{'gen-temp':relax_temperature,'ref_t':relax_temperature,'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
+                pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
+                maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                logging.debug(f'{opfx}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                for stg in ['minimize','nvt','npt']:
+                    impfx=mdp_library[f'{stepnm}-{stg}']
+                    self.checkout(f'mdp/{impfx}.mdp')
+                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':relax_temperature,'ref_t':relax_temperature}
+                    mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if bond_relaxation_increment>0.0:
-                    n_stages=int(CP.bonds['initial-distance-relax'].max()/bond_relaxation_increment)
-                    logging.debug(f'Using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
+                    n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
+                    logging.debug(f'{opfx}: Using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages)
-                    stagepref=f'3-relax-stage-{i+1}'
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,init_colname='initial-distance')
+                    stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp=min_pfx,rdd=CP.radius,**self.cfg.parameters)
-                    nsteps=self.cfg.parameters.get('relax_nvt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp=nvt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
-                    nsteps=self.cfg.parameters.get('relax_npt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp=npt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    for stg in ['minimize','nvt','npt']:
+                        nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
+                        msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,quiet=False,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'New bonds avg/min/max: {CP.bonds["current-lengths"].mean():.3f}/{CP.bonds["current-lengths"].min():.3f}/{CP.bonds["current-lengths"].max():.3f}')
-                    maxD=max([CP.bonds['current-lengths'].max(),0.9])
-                    mdp_modify(f'{min_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify(f'{nvt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
-                    mdp_modify(f'{npt_pfx}.mdp',{'rvdw':maxD,'rcoulomb':maxD,'rlist':maxD})
+                    maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                    pair_lengths=np.array(self.TopoCoord.return_pair_lengths(CP.bonds))
+                    pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                    logging.debug(f'{stagepref}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                    logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                    rcommon=max([maxL,gromacs_rdefault,pmaxL])
+                    nextpref=f'{opfx}-stage-{i+2}'
+                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
+                    for stg in ['minimize','nvt','npt']:
+                        mdp_modify(f'{stagepref}-{stg}.mdp',mod_dict,new_filename=f'{nextpref}-{stg}.mdp')
                     CP.current_stage+=1
+                remstage=CP.current_stage
+                rempref=f'{opfx}-stage-{remstage}'
+                for stg in ['minimize','nvt','npt']:
+                    os.remove(f'{rempref}-{stg}.mdp')
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
-                CP.write_checkpoint(self,CPstate.equilibrate,prefix='4-equilibrate')
+                CP.write_checkpoint(self,CPstate.equilibrate,prefix=f'{opfx}-complete')
             if CP.state==CPstate.equilibrate:
-                logging.info(f'CURE iteration {CP.iter}/{maxiter}: EQUILIBRATION')
+                stepno=4
+                stepnm='equilibrate'
+                opfx=f'{stepno}-{stepnm}'
+                logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: EQUILIBRATION')
                 CP.read_checkpoint(self)
-                ''' Final NPT MD equilibration with full parameters '''
-                pfx=mdp_library['equilibrate']
+                pfx=mdp_library[stepnm]
                 self.checkout(f'mdp/{pfx}.mdp')
-                mdp_modify(f'{pfx}.mdp',{'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature,'ref_p':equilibration_pressure})
-                gro,ext=os.path.splitext(CP.gro)
-                top,ext=os.path.splitext(CP.top)
-                msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp=pfx,nsteps=equilibration_steps,**self.cfg.parameters)
-                self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
-                CP.write_checkpoint(self,CPstate.post_equilibration,prefix='5-postcure')
+                mod_dict={'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature,'ref_p':equilibration_pressure}
+                mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
+                CP.write_checkpoint(self,CP.state,prefix=opfx)
+                msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,nsteps=equilibration_steps,**self.cfg.parameters)
+                self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{opfx}-post.gro'))
+                CP.write_checkpoint(self,CPstate.post_equilibration,prefix=f'{opfx}-complete')
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
@@ -538,16 +551,19 @@ class HTPolyNet:
                     logging.info(f'Current cure iteration {CP.iter} is at the maximum {maxiter}')
                 CP.reset_for_next_iter()
             if cure_finished:
-                CP.set_state(CPstate.post_cure)
+                CP.set_state(CPstate.postcure)
 
         self.post_CURE(CP)
         if CP.state==CPstate.finished:
-            logging.info(f'CURE FINISHED')
+            stepno=7
+            stepnm='final'
+            opfx=f'{stepno}-{stepnm}'
+            logging.info(f'{opfx}: CURE FINISHED')
             CP.read_checkpoint(self)
-            CP.write_checkpoint(self,CPstate.finished,'7-final')
+            CP.write_checkpoint(self,CPstate.finished,prefix=opfx)
 
     def post_CURE(self,CP):
-        cwd=pfs.go_to(f'systems/post-cure')
+        cwd=pfs.go_to(f'systems/postcure')
         n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
         bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0.05)
         relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
@@ -555,57 +571,68 @@ class HTPolyNet:
         equilibration_temperature=self.cfg.parameters.get('equilibration_temperature',300)
         equilibration_pressure=self.cfg.parameters.get('equilibration_pressure',1)
         equilibration_steps=self.cfg.parameters.get('equilibration_steps',5000)
-        if CP.state==CPstate.post_cure:
+        if CP.state==CPstate.postcure:
+            stepno=5
+            stepnm='relax'
+            opfx=f'{stepno}-{stepnm}'
             CP.read_checkpoint(self)
-            ''' perform any post-cure reactions '''
+            ''' perform any postcure reactions '''
             bdf=self.post_cure_searchbonds()
-            # logging.debug(f'post_CURE bdf\n{bdf.to_string()}')
             if bdf.shape[0]>0:
                 CP.register_bonds(bdf,bonds_are='unrelaxed')
                 CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
-                min_pfx=mdp_library['relax-minimize']
-                nvt_pfx=mdp_library['relax-nvt']
-                npt_pfx=mdp_library['relax-npt']
-                self.checkout(f'mdp/{min_pfx}.mdp')
-                self.checkout(f'mdp/{nvt_pfx}.mdp')
-                self.checkout(f'mdp/{npt_pfx}.mdp')
-                mdp_modify(f'{nvt_pfx}.mdp',{'ref_t':relax_temperature,'gen-temp':relax_temperature})
-                mdp_modify(f'{npt_pfx}.mdp',{'ref_t':relax_temperature,'gen-temp':relax_temperature})
-                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                CP.bonds['initial-distance-relax']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
+                maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                for stg in ['minimize','nvt','npt']:
+                    impfx=mdp_library[f'{stepnm}-{stg}']
+                    self.checkout(f'mdp/{impfx}.mdp')
+                    mod_dict={'gen-temp':relax_temperature,'ref_t':relax_temperature}
+                    mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
-                    logging.debug(f'post-cure using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
+                    logging.debug(f'{opfx}: Using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages)
-                    stagepref=f'6-postcure-relax-stage-{i+1}'
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,init_colname='initial-distance')
+                    stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
-                    msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=stagepref+'-min',mdp=min_pfx,rdd=CP.radius,**self.cfg.parameters)
-                    nsteps=self.cfg.parameters.get('relax_nvt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-min',top=stagepref,out=stagepref+'-nvt',mdp=nvt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
-                    nsteps=self.cfg.parameters.get('relax_npt_steps',-2)
-                    msg=grompp_and_mdrun(gro=stagepref+'-nvt',top=stagepref,out=stagepref+'-npt',mdp=npt_pfx,rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                    for stg in ['minimize','nvt','npt']:
+                        nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
+                        msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
-                    current_lengths=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    logging.debug(f'-> avg new bond length: {current_lengths.mean():.3f}')
+                    CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                    logging.debug(f'{stagepref}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                    nextpref=f'{opfx}-stage-{i+2}'
+                    mod_dict={}
+                    for stg in ['minimize','nvt','npt']:
+                        mdp_modify(f'{stagepref}-{stg}.mdp',mod_dict,new_filename=f'{nextpref}-{stg}.mdp')
                     CP.current_stage+=1
+                remstage=CP.current_stage
+                rempref=f'{opfx}-stage-{remstage}'
+                for stg in ['minimize','nvt','npt']:
+                    os.remove(f'{rempref}-{stg}.mdp')
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
-                CP.write_checkpoint(self,CPstate.postcure_equilibration,prefix='6-postcure-equilibrate')
+                CP.write_checkpoint(self,CPstate.postcure_equilibration,prefix=f'{opfx}-complete')
         if CP.state==CPstate.postcure_equilibration:
+            stepno=6
+            stepnm='equilibrate'
+            opfx=f'{stepno}-{stepnm}'
             CP.read_checkpoint(self)
             ''' Final NPT MD equilibration with full parameters '''
-            pfx=mdp_library['equilibrate']
+            pfx=mdp_library[stepnm]
             self.checkout(f'mdp/{pfx}.mdp')
-            mdp_modify(f'{pfx}.mdp',{'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'ref_p':equilibration_pressure})
-            gro,ext=os.path.splitext(CP.gro)
-            top,ext=os.path.splitext(CP.top)
-            msg=grompp_and_mdrun(gro=gro,top=top,out=gro+'-post',mdp=pfx,steps=equilibration_steps,**self.cfg.parameters)
-            self.TopoCoord.copy_coords(TopoCoord(grofilename=gro+'-post.gro'))
-            CP.write_checkpoint(self,CPstate.finished,prefix='7-final')
+            mod_dict={'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'ref_p':equilibration_pressure}
+            mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
+            CP.write_checkpoint(self,CPstate.relax,prefix=opfx)
+            msg=grompp_and_mdrun(gro=opfx,top=opfx,out=opfx+'-post',mdp=opfx,steps=equilibration_steps,**self.cfg.parameters)
+            self.TopoCoord.copy_coords(TopoCoord(grofilename=opfx+'-post.gro'))
+            CP.write_checkpoint(self,CPstate.finished,prefix=f'{opfx}-complete')
 
     def post_cure_searchbonds(self):
         PCR=[x for x in self.cfg.reactions if x.stage=='post-cure']

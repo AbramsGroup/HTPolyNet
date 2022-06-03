@@ -66,19 +66,20 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
         out: prefix for desired output files
         boxsize: (optional) desired box size; triggers editconf before grompp
     '''
+    quiet=kwargs.get('quiet',True)
     if gro=='' or top=='' or out=='' or mdp=='':
         raise Exception('grompp_and_run requires gro, top, out, and mdp filename prefixes.')
     if len(boxSize)>0:
         c=Command(f'{sw.gmx} {sw.gmx_options} editconf',f=f'{gro}.gro',o=gro,
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
-        c.run()
+        c.run(quiet=quiet)
     maxwarn=kwargs.get('maxwarn',4)
     nsteps=kwargs.get('nsteps',-2)
     rdd=kwargs.get('rdd',0)
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
-    c.run()
+    c.run(quiet=quiet)
     c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd,nsteps=nsteps)
-    c.run()
+    c.run(quiet=quiet)
     if os.path.exists(f'{out}.gro'):
         pass
         # logging.info(f'grompp_and_run completed.  Check {gro}.gro.')
@@ -257,7 +258,7 @@ def analyze_sea(deffnm,thresh=0.1):
         # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
 
-def mdp_modify(mdp_filename,opt_dict,new_filename=None):
+def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
     with open(mdp_filename,'r') as f:
         lines=f.read().split('\n')
     all_dict={}
@@ -273,8 +274,11 @@ def mdp_modify(mdp_filename,opt_dict,new_filename=None):
     # logging.debug(f'mdp_modify: all_dict: {all_dict}')
     for k,v in opt_dict.items():
         if not k in all_dict:
-            logging.debug(f'mdp_modify: {k} not found in {mdp_filename}')
-        all_dict[k]=v
+            if add_if_missing:
+                logging.debug(f'mdp_modify: adding {k} = {v} to {mdp_filename}')
+                all_dict[k]=v
+        else:
+            all_dict[k]=v
     if new_filename:
         with open(new_filename,'w') as f:
             for k,v in all_dict.items():

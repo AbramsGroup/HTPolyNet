@@ -5,6 +5,7 @@ nsteps		= 10000
 nstxout		= 5000
 nstlist		= 1
 cutoff-scheme	= Verlet
+ns_type = grid
 coulombtype	= PME
 rcoulomb	= 1.0
 rvdw		= 1.0

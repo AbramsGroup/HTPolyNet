@@ -420,6 +420,16 @@ class TopoCoord:
         """
         return self.Coordinates.return_bond_lengths(bdf)
 
+    def return_pair_lengths(self):
+        """Return the length of all 1-4 pairs in topology
+
+        :param bdf: bonds dataframe, 'ai','aj','reactantName'
+        :type bonds: pandas.DataFrame
+        :return: list of lengths parallel to bonds
+        :rtype: list of floats
+        """
+        return self.Coordinates.return_pair_lengths(self.Topology.D['pairs'])
+
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds
            listed in bonds
@@ -434,7 +444,7 @@ class TopoCoord:
     def remove_restraints(self,pairsdf):
         self.Topology.remove_restraints(pairsdf)
 
-    def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0):
+    def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0,init_colname='initial-distance'):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
@@ -450,7 +460,7 @@ class TopoCoord:
         :param minimum_distance: minimum bondlegth allowed, overriding type-specific b0
         :type lengths: float
         """
-        self.Topology.attenuate_bond_parameters(bonds,i,n,minimum_distance=minimum_distance)
+        self.Topology.attenuate_bond_parameters(bonds,i,n,minimum_distance=minimum_distance,init_colname=init_colname)
 
     def attenuate_pair_parameters(self,pairdf,i,n,draglimit_nm=0.3):
         """Alter the kb and b0 parameters for new pre-crosslink pairs according 
