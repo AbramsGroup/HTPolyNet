@@ -48,9 +48,9 @@
 <h3>General parameters<a class="headerlink" href="#general-parameters" title="Permalink to this headline">¶</a></h3>
 <table class="docutils align-default">
 <colgroup>
-<col style="width: 26%" />
+<col style="width: 29%" />
 <col style="width: 11%" />
-<col style="width: 63%" />
+<col style="width: 60%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Parameter</p></th>
@@ -75,37 +75,61 @@
 <td><p>quoted string</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mdrun</span></code> command; defaults to <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">(options)</span> <span class="pre">mdrun</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_density</span></code></p></td>
-<td><p>float</p></td>
-<td><p>initial system density in kg/m3 (300.0)</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_initial_search_radius</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_initial_search_radius</span></code></p></td>
 <td><p>float</p></td>
 <td><p>initial capture radius in nm (0.5)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_radial_increment</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_radial_increment</span></code></p></td>
 <td><p>float</p></td>
 <td><p>capture radius increment (0.25)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">desired_conversion</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_desired_conversion</span></code></p></td>
 <td><p>float</p></td>
 <td><p>desired fraction of possible crosslink bonds to form</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_conversion_per_iteration</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_max_conversion_per_iteration</span></code></p></td>
 <td><p>float</p></td>
 <td><p>maximum conversion per iteration (1.0; no limit)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_CURE_iterations</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_max_iterations</span></code></p></td>
 <td><p>int</p></td>
 <td><p>maximum number of CURE iterations to run prior to reaching desired conversion</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">late_threshold</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CURE_late_threshold</span></code></p></td>
 <td><p>float</p></td>
 <td><p>conversion above which reactions are all treated with probability 1.0</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">equilibration_temperature</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">initial_density</span></code></p></td>
 <td><p>float</p></td>
-<td><p>Temperature in K of post-cure equilibration simulation (300)</p></td>
+<td><p>initial system density in kg/m3 for box packing (300.0)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">densification_temperature</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Temperature in K of initial densification simulation (300)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">densification_pressure</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Pressure in bar of initial densification simulation (10)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">densification_steps</span></code></p></td>
+<td><p>int</p></td>
+<td><p>Number of time-steps initial densification simulation (-2)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">equilibration_temperature</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Temperature in K of postcure equilibration simulation (300)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">equilibration_pressure</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Pressure in bar of postcure equilibration simulation (1)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">equilibration_steps</span></code></p></td>
+<td><p>int</p></td>
+<td><p>Number of time-steps postcure equilibration simulation (-2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs_rdefault</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Default cutoff radius (<code class="docutils literal notranslate"><span class="pre">rvdw</span></code>, <code class="docutils literal notranslate"><span class="pre">rcoulomb</span></code>, <code class="docutils literal notranslate"><span class="pre">rlist</span></code>) for Gromacs</p></td>
 </tr>
 </tbody>
 </table>
@@ -175,11 +199,15 @@
 <td><p>float</p></td>
 <td><p>minimum distance each separation should achieve (nm); 0.0 turns off dragging (0.0)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_nvt_steps</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_temperature</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Temperature in K for dragging MD simulations (300)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">drag_nvt_steps</span></code></p></td>
 <td><p>int</p></td>
 <td><p>number of MD steps for NVT relaxation during dragging (-2, signals <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> to use the value in the mdp file)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">drag_npt_steps</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_npt_steps</span></code></p></td>
 <td><p>int</p></td>
 <td><p>number of MD steps for NPT relaxation during dragging (-2, signals <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> to use the value in the mdp file)</p></td>
 </tr>
@@ -211,11 +239,15 @@
 <td><p>float</p></td>
 <td><p>maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides <code class="docutils literal notranslate"><span class="pre">max_bond_relaxation_stages</span></code>)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">relax_nvt_steps</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">relax_temperature</span></code></p></td>
+<td><p>float</p></td>
+<td><p>Temperature in K for relaxation MD simulations (300)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">relax_nvt_steps</span></code></p></td>
 <td><p>int</p></td>
 <td><p>number of MD steps for NVT relaxation</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">relax_npt_steps</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">relax_npt_steps</span></code></p></td>
 <td><p>int</p></td>
 <td><p>number of MD steps for NPT relaxation</p></td>
 </tr>

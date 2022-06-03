@@ -25,6 +25,11 @@ Filters applied to the set of pairs
 
 1. No atom may participate in more than one new bond in any one CURE iteration; if any atom appears more than once in the list of pairs, only the pair with the shortest separation distance is kept.
 
+Single-pair filters applied after the set filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Bond probabilities are applied.
+
 Dragging
 ^^^^^^^^
 
