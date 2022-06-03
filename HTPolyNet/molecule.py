@@ -67,11 +67,11 @@ class Reaction:
 
     def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
         A,B=[self.atoms[i] for i in bonddict['atoms']]
-        logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
-        logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
+        # logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
+        # logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
         Aidx,Aresid=self.get_atom_globalIndx(A,mol,moldict)
         Bidx,Bresid=self.get_atom_globalIndx(B,mol,moldict)
-        logging.debug(f'     A: {Aidx},{Aresid}  B: {Bidx},{Bresid}')
+        # logging.debug(f'     A: {Aidx},{Aresid}  B: {Bidx},{Bresid}')
         return (Aidx,Bidx),(Aresid,Bresid),(A['atom'],B['atom'])
 
     def get_atom_globalIndx(self,A,mol,moldict):
@@ -82,7 +82,7 @@ class Reaction:
         # logging.debug(f'determining globalIdx of aname {aname} in reactant {aN}({areactantname}):{aresid_inreactant}')
         aresid=0
         for k,v in self.reactants.items():
-            if v==areactantname:
+            if k==aN:  # HERE IS THE PROBLEM RIGHT HERE!!
                 aresid+=aresid_inreactant
                 break
             else:
@@ -197,14 +197,14 @@ class Molecule:
             composite_mol=Molecule()
             shifts=[(0,0,0)]  # atom, bond, resid
             for n,ri in R.reactants.items():
-                logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
+                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
             self.set_sequence()
-            self.set_reaction_bonds(available_molecules=available_molecules)
+            self.set_reaction_bonds(shifts,available_molecules=available_molecules)
             reactantName=R.product
-            logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
-            logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
+            # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
+            # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds()
             # nrb=[]
             # for b in self.reaction_bonds:
@@ -225,7 +225,8 @@ class Molecule:
         self.set_sequence()
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
 
-    def set_reaction_bonds(self,available_molecules={}):
+    def set_reaction_bonds(self,shifts,available_molecules={}):
+        '''IN PROGRESS -- APPLY SHIFTS SO RESIDS ARE CORRECT'''
         R=self.generator
         self.reaction_bonds=[]
         if R:
@@ -235,6 +236,8 @@ class Molecule:
             # logging.debug(f'{R.name} reaction_bonds\n{self.reaction_bonds}')
 
     def set_sequence(self):
+        """set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list
+        """
         adf=self.TopoCoord.gro_DataFrame('atoms')
         self.sequence=[]
         current_resid=0
@@ -244,7 +247,7 @@ class Molecule:
             if ri!=current_resid:
                 current_resid=ri
                 self.sequence.append(rn)
-        logging.debug(f'{self.name} sequence: {self.sequence}')
+        # logging.debug(f'{self.name} sequence: {self.sequence}')
 
     def idx_mappers(self,otherTC,other_bond):
         seq_res_is_bystander=[False for _ in self.sequence]
@@ -429,7 +432,7 @@ class Molecule:
         skip_H=[]
         for i,B in enumerate(self.reaction_bonds):
             (aidx,bidx),(aresid,bresid),(aname,bname)=B
-            logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}-{bresid}:{bname}')
+            # logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx}')
             bonds.append((aidx,bidx))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's

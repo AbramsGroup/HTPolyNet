@@ -233,11 +233,12 @@ class Configuration:
                 a,b=R.atoms[A],R.atoms[B]
                 aan,ban=a['atom'],b['atom']
                 ari,bri=a['resid'],b['resid']
-                arn,brn=R.reactants[a['reactant']],R.reactants[b['reactant']]
-                if arn!=brn:
+                arnum,brnum=a['reactant'],b['reactant']
+                arn,brn=R.reactants[arnum],R.reactants[brnum]
+                if arnum!=brnum:
                     az,bz=a['z'],b['z']
-                    ia=(aan,ari,arn,az)
-                    ib=(ban,bri,brn,bz)
+                    ia=(aan,ari,arnum,arn,az)
+                    ib=(ban,bri,brnum,brn,bz)
                     b=(ia,ib)
                     if ia not in Atoms and arn in N:
                         Atoms.append(ia)
@@ -245,12 +246,12 @@ class Configuration:
                         Atoms.append(ib)
                     if b not in Bonds and arn in N and brn in N:
                         Bonds.append(b)
-        # logging.debug(f'atomset: {Atoms}')
+        logging.debug(f'atomset: {Atoms}')
         Z=[]
         for a in Atoms:
-            Z.append(a[3]*N[a[2]])
-        # logging.debug(f'Z: {Z}')
-        # logging.debug(f'bondset: {Bonds}')
+            Z.append(a[4]*N[a[3]])
+        logging.debug(f'Z: {Z}')
+        logging.debug(f'bondset: {Bonds}')
         MaxB=[]
         for B in Bonds:
             a,b=B
@@ -259,5 +260,5 @@ class Configuration:
             MaxB.append(min(az,bz))
             Z[Atoms.index(a)]-=MaxB[-1]
             Z[Atoms.index(b)]-=MaxB[-1]
-        # logging.debug(f'MaxB: {MaxB} {sum(MaxB)}')
+        logging.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         return sum(MaxB)
