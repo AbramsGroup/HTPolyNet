@@ -483,8 +483,8 @@ class HTPolyNet:
                 pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                logging.debug(f'{opfx}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                logging.debug(f'{opfx}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 rcommon=max([gromacs_rdefault,maxL,pmaxL])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
