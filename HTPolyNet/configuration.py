@@ -246,12 +246,12 @@ class Configuration:
                         Atoms.append(ib)
                     if b not in Bonds and arn in N and brn in N:
                         Bonds.append(b)
-        logging.debug(f'atomset: {Atoms}')
+        # logging.debug(f'atomset: {Atoms}')
         Z=[]
         for a in Atoms:
             Z.append(a[4]*N[a[3]])
-        logging.debug(f'Z: {Z}')
-        logging.debug(f'bondset: {Bonds}')
+        # logging.debug(f'Z: {Z}')
+        # logging.debug(f'bondset: {Bonds}')
         MaxB=[]
         for B in Bonds:
             a,b=B
@@ -260,5 +260,5 @@ class Configuration:
             MaxB.append(min(az,bz))
             Z[Atoms.index(a)]-=MaxB[-1]
             Z[Atoms.index(b)]-=MaxB[-1]
-        logging.debug(f'MaxB: {MaxB} {sum(MaxB)}')
+        # logging.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         return sum(MaxB)
