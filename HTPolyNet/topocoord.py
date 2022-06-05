@@ -9,7 +9,7 @@
 
 #
 #  class for methods that need to work with both Topology and Coordinates
-from distutils.ccompiler import show_compilers
+from itertools import product
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
@@ -44,14 +44,17 @@ class TopoCoord:
         :type mol2filename: str, optional
         """
         if grofilename!='':
+            self.grofilename=grofilename
             self.read_gro(grofilename)
         else:
             self.Coordinates=Coordinates()  # empty
         if topfilename!='':
+            self.topfilename=topfilename
             self.read_top(topfilename)
         else:
             self.Topology=Topology(system_name=system_name) # empty
         if mol2filename!='':
+            self.mol2filename=mol2filename
             self.read_mol2(mol2filename) 
             # will overwrite coords and add 'mol2_bonds' section to topology
 
@@ -288,9 +291,9 @@ class TopoCoord:
         # logging.debug(f'update_topology_and_coordinates begins.')
         if bdf.shape[0]>0:
             # pull out just the atom index pairs (first element of each tuple)
-            pairs=[(x['ai'],x['aj']) for i,x in bdf.iterrows()]
-            logging.debug(f'Making {len(pairs)} bonds.')
-            idx_to_delete=self.make_bonds(pairs)
+            at_idx=[(x['ai'],x['aj']) for i,x in bdf.iterrows()]
+            logging.debug(f'Making {len(at_idx)} bonds.')
+            idx_to_delete=self.make_bonds(at_idx)
             # logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             self.Topology.null_check(msg='delete_atoms')
@@ -298,8 +301,22 @@ class TopoCoord:
             ri_bdf=bdf.copy()
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
-            pairs=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
-            self.decrement_z(pairs)
+            # each of these bonds results in 1-4 pair interactions 
+            at_idx=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
+            bl=self.Topology.bondlist
+            pai=[]
+            paj=[]
+            for p in at_idx:
+                i,j=p
+                ni=bl.partners_of(i)
+                nj=bl.partners_of(j)
+                ni.remove(j)
+                nj.remove(i)
+                this_pairs=list(product(ni,nj))
+                pai.extend([x[0] for x in this_pairs])
+                paj.extend([x[1] for x in this_pairs])
+            pi_df=pd.DataFrame({'ai':pai,'aj':paj})
+            self.decrement_z(at_idx)
             self.make_ringlist()
             self.map_from_templates(ri_bdf,template_dict)
             self.Topology.null_check(msg='map_from_templates')
@@ -308,7 +325,7 @@ class TopoCoord:
                 with open(write_mapper_to,'w') as f:
                     for k,v in idx_mapper.items():
                         f.write(f'{k} {v}\n')
-            return ri_bdf
+            return ri_bdf,pi_df
 
     def read_top(self,topfilename):
         """Creates a new Topology member by reading from a Gromacs-style top file.
@@ -787,18 +804,21 @@ class TopoCoord:
         :return: BTRC instance
         :rtype: BTRC enum
         """
-        i,j=b
+        i,j,rij=b
+        i=int(i)
+        j=int(j)
         # use linkcells to make first distance check
-        if not self.Coordinates.linkcelltest(i,j):
-            return BTRC.failed_linkcell,0
+        # if not self.Coordinates.linkcelltest(i,j):
+        #     return BTRC.failed_linkcell,0
         # measure minimum-image-condition distance between two atoms.  
         # Reject if distance is beyond cutoff.
         Ri=self.get_R(i)
         Rj=self.get_R(j)
         Rij=self.Coordinates.mic(Ri-Rj,pbc)
-        rij=np.sqrt(Rij.dot(Rij))
-        if rij>radius:
-            return BTRC.failed_beyond_cutoff,0
+        # chk_rij=np.sqrt(Rij.dot(Rij))
+        # assert np.isclose(rij,chk_rij,atol=1.e-3),f'{i} {j} {rij} {chk_rij}'
+        # if rij>radius:
+        #     return BTRC.failed_beyond_cutoff,0
         # generate the nearest periodic image of Rj to Ri
         Rjp=Ri-Rij
         # return array of atom coordinates of ring pierced by this bond, if any
@@ -818,7 +838,7 @@ class TopoCoord:
             return BTRC.failed_short_circuit,0
         if self.polyethylene_cycle(i,j):
             return BTRC.failed_polyethylene_cycle,0
-        logging.debug(f'passed bondtest: {b} {rij:.3f}')
+        logging.debug(f'passed bondtest: {i} {j} {rij:.3f}')
         return BTRC.passed,rij
 
     def shortcircuit(self,i,j):

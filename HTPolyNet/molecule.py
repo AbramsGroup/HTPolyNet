@@ -75,6 +75,7 @@ class Reaction:
         return (Aidx,Bidx),(Aresid,Bresid),(A['atom'],B['atom'])
 
     def get_atom_globalIndx(self,A,mol,moldict):
+        # logging.debug(f'get_atom_globalIndx moldict {list(moldict.keys())}')
         aname=A['atom']
         aN=A['reactant']
         areactantname=self.reactants[aN]
@@ -82,7 +83,7 @@ class Reaction:
         # logging.debug(f'determining globalIdx of aname {aname} in reactant {aN}({areactantname}):{aresid_inreactant}')
         aresid=0
         for k,v in self.reactants.items():
-            if k==aN:  # HERE IS THE PROBLEM RIGHT HERE!!
+            if k==aN:
                 aresid+=aresid_inreactant
                 break
             else:
@@ -201,7 +202,7 @@ class Molecule:
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
             self.set_sequence()
-            self.set_reaction_bonds(shifts,available_molecules=available_molecules)
+            self.set_reaction_bonds(available_molecules=available_molecules)
             reactantName=R.product
             # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
@@ -225,8 +226,8 @@ class Molecule:
         self.set_sequence()
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
 
-    def set_reaction_bonds(self,shifts,available_molecules={}):
-        '''IN PROGRESS -- APPLY SHIFTS SO RESIDS ARE CORRECT'''
+    def set_reaction_bonds(self,available_molecules={}):
+        # logging.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
         R=self.generator
         self.reaction_bonds=[]
         if R:
@@ -465,7 +466,6 @@ class Molecule:
         # logging.debug(f'Partners of {from_idx} {otpartners}')
         myHpartners={k:v for k,v in zip(mypartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')}
         otHpartners={k:v for k,v in zip(otpartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')}
-        ### HERE IS THE PROBLEM
         myHighestH={k:v for k,v in myHpartners.items() if v==max([k for k in myHpartners.values()],key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0'))}
         otHighestH={k:v for k,v in otHpartners.items() if v==max([k for k in otHpartners.values()],key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0'))}
         assert len(myHighestH)==1

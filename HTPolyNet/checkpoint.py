@@ -60,8 +60,9 @@ class Checkpoint:
         assert os.path.exists(self.bonds_file),f'Error: {self.bonds_file} not found.'
         self.bonds=pd.read_csv(self.bonds_file,sep='\s+',header=0)
 
-    def register_bonds(self,bonds,bonds_are='unrelaxed'):
+    def register_bonds(self,bonds,pairs,bonds_are='unrelaxed'):
         self.bonds=bonds
+        self.pairs=pairs
         self.bonds_are=bonds_are
     
     def read_checkpoint(self,system):
@@ -107,3 +108,16 @@ class Checkpoint:
                 f.write(f'BONDSFILE: {self.bonds_file}\n')
             f.close()
         self._write_bondsfile()
+
+_CP_=Checkpoint()
+def checkpoint_setup(checkpoint_file='checkpoint.yaml'):
+    global _CP_
+    _CP_.checkpoint_file=checkpoint_file
+
+def checkpoint_write(system,state,prefix='checkpoint'):
+    global _CP_
+    _CP_.write_checkpoint(system,state,prefix=prefix)
+
+def checkpoint_read(system):
+    global _CP_
+    _CP_.read_checkpoint(system)

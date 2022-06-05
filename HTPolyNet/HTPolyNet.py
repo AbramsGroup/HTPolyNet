@@ -19,7 +19,7 @@ from HTPolyNet.configuration import Configuration
 from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace, mdp_modify, mdp_library
+from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace, mdp_modify, mdp_library, gromacs_distance
 from HTPolyNet.checkpoint import CPstate, Checkpoint
 from HTPolyNet.plot import trace
 
@@ -88,7 +88,7 @@ class HTPolyNet:
                         # could not make since waiting on precursors
                         continue
                     self.molecules[mname]=M
-                    logging.info(f'Generated {mname}')
+                    logging.info(f'Generated {mname}; molecules: {list(self.molecules.keys())}')
             all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
             logging.info(f'Done making molecules: {all_made}')
             for m in self.cfg.molecules:
@@ -107,7 +107,7 @@ class HTPolyNet:
                 self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
                 self.molecules[mname]=M
-                logging.info(f'Generated {mname}')
+                logging.info(f'Generated {mname}; molecules {list(self.molecules.keys())}')
         self.molecules.update(new_molecules)
         self.cfg.maxconv=self.cfg.calculate_maximum_conversion()
         logging.info(f'Maximum conversion is {self.cfg.maxconv} bonds.')
@@ -133,7 +133,7 @@ class HTPolyNet:
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
             if generatable:
-                logging.info(f'Yes -- calling {mname}.generate()')
+                logging.info(f'Yes -- calling {mname}.generate(); molecules {list(self.molecules.keys())}')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
@@ -145,7 +145,7 @@ class HTPolyNet:
                     logging.debug(f'reactants {list(M.generator.reactants.values())}')
                 return
         else:
-            logging.info(f'Fetching parameterized {mname}')
+            logging.info(f'Fetching parameterized {mname}; molecules {list(self.molecules.keys())}')
             for ex in ['mol2','top','itp','gro']:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
             M.load_top_gro(f'{mname}.top',f'{mname}.gro')
@@ -324,6 +324,7 @@ class HTPolyNet:
         trace(['Density'],[deffnm],outfile='../../plots/init-density.png')
         # update coordinates; will wrap upon reading in
         self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
+        self.TopoCoord.grofilename=os.path.abspath(f'{deffnm}.gro')
 
     def CURE(self):
         # Connect - Update - Relax - Equilibrate
@@ -388,12 +389,15 @@ class HTPolyNet:
                 bond_target=int((desired_conversion-curr_conversion)*max_nxlinkbonds)
                 bond_limit=min([bond_limit,bond_target])
                 logging.debug(f'{opfx}: Iteration limited to at most {bond_limit} new bonds')
+                self.TopoCoord.write_gro(f'{opfx}-input.gro')
+                self.TopoCoord.grofilename=f'{opfx}-input.gro'
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
                     nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],
                                                 apply_probabilities=apply_probabilities,
                                                 abs_max=bond_limit)
                     if nbdf.shape[0]>0:
-                        CP.register_bonds(nbdf,bonds_are='unrelaxed')
+                        pairs=pd.DataFrame()
+                        CP.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
                         CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                         if dragging_enabled and CP.bonds['initial-distance'].max()>drag_trigger_distance:
                             next_stage=CPstate.drag
@@ -420,9 +424,10 @@ class HTPolyNet:
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
-                pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
-                rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                # pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
+                # pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                # rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                rcommon=max([gromacs_rdefault,maxL])
                 logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
@@ -444,10 +449,11 @@ class HTPolyNet:
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                     logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
-                    pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
-                    rcommon=max([gromacs_rdefault,maxL,pmaxL])
-                    logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                    # pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
+                    # pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                    # logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                    # rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                    rcommon=max([gromacs_rdefault,maxL])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
                     for stg in ['minimize','nvt','npt']:
@@ -466,7 +472,7 @@ class HTPolyNet:
                 opfx=f'{stepno}-{stepnm}'
                 logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: UPDATE TOPOLOGY')
                 CP.read_checkpoint(self)
-                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
+                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.make_resid_graph(json_file=f'{opfx}-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
@@ -480,16 +486,16 @@ class HTPolyNet:
                 CP.read_checkpoint(self)
                 CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
-                pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                CP.pairs['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
+                pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
                 logging.debug(f'{opfx}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 rcommon=max([gromacs_rdefault,maxL,pmaxL])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
-                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':relax_temperature,'ref_t':relax_temperature}
+                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-vel':'yes','gen-temp':relax_temperature,'ref_t':relax_temperature}
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
@@ -507,8 +513,8 @@ class HTPolyNet:
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                    pair_lengths=np.array(self.TopoCoord.return_pair_lengths(CP.bonds))
-                    pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
+                    CP.pairs['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
+                    pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
                     logging.debug(f'{stagepref}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                     rcommon=max([maxL,gromacs_rdefault,pmaxL])
@@ -579,10 +585,12 @@ class HTPolyNet:
             ''' perform any postcure reactions '''
             bdf=self.post_cure_searchbonds()
             if bdf.shape[0]>0:
-                CP.register_bonds(bdf,bonds_are='unrelaxed')
-                CP.bonds=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules)
+                pairs=pd.DataFrame()
+                CP.register_bonds(bdf,pairs,bonds_are='unrelaxed')
+                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
                 CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
+                CP.pairs['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 for stg in ['minimize','nvt','npt']:
@@ -704,6 +712,7 @@ class HTPolyNet:
 
     def cure_searchbonds(self,radius,header=['ai','aj','reactantName'],apply_probabilities=True,abs_max=-1):
         adf=self.TopoCoord.gro_DataFrame('atoms')
+        gro=self.TopoCoord.grofilename
         ncpu=self.cfg.parameters['ncpu']
         self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
@@ -730,10 +739,22 @@ class HTPolyNet:
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
                 Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
-                logging.debug(f'Examining {Aset.shape[0]}x{Bset.shape[0]}={len(Pbonds)} {aresname}:{aname}({az})-{bresname}:{bname}({bz}) pairs')
+                logging.debug(f'Examining {Aset.shape[0]}x{Bset.shape[0]}={len(Pbonds)} bond-candidates')
                 passbonds=[]
                 if len(Pbonds)>0:
                     bondtestoutcomes={k:0 for k in BTRC}
+                    idf=pd.DataFrame({'ai':[x[0] for x in Pbonds],'aj':[x[1] for x in Pbonds]})
+                    # logging.debug(f'build df with {idf.shape[0]} entries')
+                    gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all distances
+                    logging.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} distances -- mean {idf["r"].mean():.3f} nm')
+                    jdf=idf[idf['r']<radius]
+                    # logging.debug(f'idf:\n{idf.head().to_string()}')
+                    logging.debug(f'{jdf.shape[0]} bond-candidates with distances below {radius}')
+                    Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
+                    # logging.debug(f'{Pbonds}')
+
+                    #results=self.TopoCoord.bondtest_par(Pbonds,radius,pbc=[1,1,1],show_piercings=True)
+
                     logging.debug(f'Bond search will use {ncpu} processors')
                     p=Pool(processes=ncpu)
                     Pbonds_split=np.array_split(Pbonds,ncpu)
@@ -747,7 +768,7 @@ class HTPolyNet:
                         RC,rij=R2
                         bondtestoutcomes[RC]+=1
                         if RC==BTRC.passed:
-                            passbonds.append((Pbonds[i],rij,R.product,prob))
+                            passbonds.append((Pbonds[i],R.product,prob))
                     logging.debug(f'*** {len(passbonds)} out of {len(Pbonds)} bonds pass initial filter')
                     logging.debug(f'Bond test outcomes:')
                     for k,v in bondtestoutcomes.items():
@@ -756,14 +777,14 @@ class HTPolyNet:
 
         ''' Sort new potential bonds by length (ascending) and claim each one
             in order so long as both its atoms are available '''
-        newbonds.sort(key=lambda x: x[1])
+        newbonds.sort(key=lambda x: x[0][2])
         logging.debug(f'*** Pruning {len(newbonds)} bonds...')
         atomset=list(set(list([x[0][0] for x in newbonds])+list([x[0][1] for x in newbonds])))
         resid_pairs=[]
         allowed_bond=[True for x in newbonds]
         for k,b in enumerate(newbonds):
-            bb,p,t,prob=b
-            i,j=bb
+            bb,t,prob=b
+            i,j,p=bb
             i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
             j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
             # need to be careful about intramolecular bonds (capping)
@@ -785,7 +806,7 @@ class HTPolyNet:
             if b[0] in atomset and b[1] in atomset:
                 atomset.remove(b[0])
                 atomset.remove(b[1])
-                keepbonds.append((b,n[2],n[3]))
+                keepbonds.append((b,n[1],n[2]))
         logging.debug(f'*** accepted the {len(keepbonds)} shortest non-competing bonds')
         logging.debug(f'    {disallowed} bonds that repeat resid pairs thrown out.')
 

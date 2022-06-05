@@ -143,6 +143,28 @@ def density_trace(edr='',**kwargs):
     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
     logging.info(f'Density at end of npt:\n{density.iloc[-1].to_string()}')
 
+
+def gromacs_distance(idf,gro):
+    npair=idf.shape[0]
+    # logging.debug(f'idf dtype {idf["ai"].dtype}')
+    with open('tmp.ndx','w') as f:
+        f.write('[ bonds-1 ]\n')
+        idf.to_csv(f,sep=' ',header=False,index=False)
+        # logging.debug('wrote tmp.ndx')
+    with open ('gmx.in','w') as f:
+        f.write('0\n\n')
+    c=Command(f'{sw.gmx} {sw.gmx_options} distance -f {gro} -n tmp.ndx -oall tmp.xvg -xvg none < gmx.in')
+    c.run()
+    with open ('tmp.xvg','r') as f:
+        datastr=f.read().split()
+    datastr=datastr[1:]
+    # logging.debug(f'0 {datastr[0]} - {len(datastr)-1} {datastr[-1]}')
+    data=np.array([float(x) for x in datastr])
+    nd=len(data)
+    idf['r']=data
+    assert npair==nd
+    return data
+
 def encluster(i,j,c):
     if c[i]==c[j]:
         return True
