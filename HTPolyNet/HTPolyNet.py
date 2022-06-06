@@ -537,7 +537,7 @@ class HTPolyNet:
                 mod_dict={'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_t':equilibration_temperature,'ref_p':equilibration_pressure}
                 mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
                 CP.write_checkpoint(self,CP.state,prefix=opfx)
-                msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,nsteps=equilibration_steps,**self.cfg.parameters)
+                msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,nsteps=equilibration_steps,quiet=False,**self.cfg.parameters)
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{opfx}-post.gro'))
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix=f'{opfx}-complete')
             if CP.state==CPstate.post_equilibration:
@@ -646,7 +646,7 @@ class HTPolyNet:
         bdf=pd.DataFrame()
         for R in PCR:
             assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
-            logging.debug(f'*** BONDS from reaction {R.name}')
+            logging.debug(f'Reaction {R.name}')
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
@@ -717,7 +717,7 @@ class HTPolyNet:
         for R in self.cfg.reactions:
             if R.stage=='post-cure': # ignore post-cure reactions
                 continue
-            logging.debug(f'*** BONDS from reaction {R.name}')
+            logging.debug(f'Reaction {R.name}')
             prob=R.probability
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]

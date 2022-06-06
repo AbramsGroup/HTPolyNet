@@ -1,3 +1,12 @@
+"""
+
+.. module:: topology
+   :synopsis: Class for managing gromacs .top file data
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
+
 from hashlib import new
 import pandas as pd
 import logging
@@ -13,8 +22,14 @@ import json
 from HTPolyNet.plot import network_graph
 
 def typeorder(a):
-    ''' correctly order the tuple of atom types for particular
-        interaction types to maintain sorted type dataframes '''
+    """typeorder correctly order the tuple of atom types for particular
+        interaction types to maintain sorted type dataframes
+
+    :param a: tuple of atom indicies/types from a [ bond ], [ pair ], [ angle ], or [ dihedral ] record
+    :type a: tuple
+    :return: same atom indices/types correctly ordered to allow for easy searching/sorting
+    :rtype: tuple
+    """
     assert type(a)==tuple, 'error: typeorder() requires a tuple argument'
     if len(a)==2: # bond
         return a if a[0]<a[1] else a[::-1]
@@ -27,20 +42,48 @@ def typeorder(a):
 idxorder=typeorder  # same syntax to order global atom indices in an interaction index
 
 def repeat_check(t,msg=''):
+    """repeat_check Check for repeated index tuples
+
+    :param t: list of index tuples
+    :type t: list
+    :param msg: optional message, defaults to ''
+    :type msg: str, optional
+    """
     for i in range(len(t)):
         for j in range(i+1,len(t)):
             assert t[i]!=t[j],f'Error: repeated index in {len(t)}-tuple {t}: t({i})={t[i]}\n{msg}'
 
 def df_typeorder(df,typs):
+    """df_typeorder type-orders the atom type attributes in each row of dataframe df
+
+    :param df: a Topology type-directive dataframe; [ atomtypes ], [ bondtypes ], etc.
+    :type df: pandas.DataFrame
+    :param typs: list of type-attribute names; typically ['i','j',...]
+    :type typs: list
+    """
     for i in df.index:
         df.loc[i,typs]=typeorder(tuple(df.loc[i,typs]))
 
 def treadmill(L):
+    """treadmill Move first element of list L to end and return new list
+
+    :param L: a list
+    :type L: list
+    :return: a new list
+    :rtype: list
+    """
     nL=L[1:]
     nL.append(L[0])
     return nL
 
 def treadmills(L):
+    """treadmills perform one complete cycle of treadmilling increments and store each increment as its own list and return list of such lists
+
+    :param L: a list
+    :type L: list
+    :return: list of new lists, each a treadmill increment of passed-in list
+    :rtype: list of lists
+    """
     N=len(L)
     nL=L
     r=[]
@@ -78,11 +121,11 @@ _GromacsTopologyDirectiveHeaders_={
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
-_GromacsTopologyDirective_ExtraAttributes_={
-    'bonds':['needs_relaxing'],
-    'angles':['needs_relaxing'],
-    'dihedrals':['needs_relaxing']
-}
+# _GromacsTopologyDirective_ExtraAttributes_={
+#     'bonds':['needs_relaxing'],
+#     'angles':['needs_relaxing'],
+#     'dihedrals':['needs_relaxing']
+# }
 _GromacsTopologyHashables_={
     'atoms':['nr'],
     'pairs':['ai', 'aj'],
@@ -94,17 +137,17 @@ _GromacsTopologyHashables_={
     'angletypes':['i','j','k'],
     'dihedraltypes':['i','j','k','l']
     }
-_GromacsTopologyDataFields_={
-    'atoms':['type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
-    'pairs':['funct', 'c0', 'c1'],
-    'bonds':['funct', 'c0', 'c1'],
-    'angles':['funct', 'c0', 'c1'],
-    'dihedrals':['funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
-    'atomtypes':['atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
-    'bondtypes':['func','b0','kb'],
-    'angletypes':['func','th0','cth','rub','kub'],
-    'dihedraltypes':['func','phase','kd','pn']
-    }
+# _GromacsTopologyDataFields_={
+#     'atoms':['type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
+#     'pairs':['funct', 'c0', 'c1'],
+#     'bonds':['funct', 'c0', 'c1'],
+#     'angles':['funct', 'c0', 'c1'],
+#     'dihedrals':['funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
+#     'atomtypes':['atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
+#     'bondtypes':['func','b0','kb'],
+#     'angletypes':['func','th0','cth','rub','kub'],
+#     'dihedraltypes':['func','phase','kd','pn']
+#     }
 _GromacsTopologyDirectiveDefaults_={
     'system':['A_generic_system'],
     'molecules':['None',1],
@@ -112,11 +155,16 @@ _GromacsTopologyDirectiveDefaults_={
 #    'defaults':[1,2,'no',0.5,0.83333333]
     'defaults':[1,2,'yes',0.5,0.83333333]
 }
-# dihedral funct==(2,4) means improper
 
 class Topology:
-    ''' Gromacs topology handler '''
+    """ Class for handling gromacs top data
+    """
     def __init__(self,system_name=''):
+        """__init__ Constructor for Topology class
+
+        :param system_name: optional name of system, defaults to ''
+        :type system_name: str, optional
+        """
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
         self.D={}
@@ -133,15 +181,20 @@ class Topology:
 
     @classmethod
     def read_gro(cls,filename):
-        assert os.path.exists(filename), f'Error: {filename} not found.'
-        inst=cls()
-        inst.filename=filename
-        '''
-        Reads a Gromacs-style topology file 'filename' and returns a dictionary keyed on directive names.
+        """read_gro Reads a Gromacs-style topology file 'filename' and returns a dictionary keyed on directive names.
         Each value in the dictionary is a pandas dataframe.  Each
         dataframe represents an individual section found with its directive in the file, with columns corresponding to the fields in the section.  Note that the we allow for input topology/itp files to have two 'dihedrals' and 'dihedraltypes' sections; these
         are merged in the result.
-        '''
+
+        :param filename: name of gromacs top file to read
+        :type filename: str
+        :raises KeyError: If an unrecognized topology directive is encountered, program exits on error
+        :return: a Topology instance
+        :rtype: Topology
+        """
+        assert os.path.exists(filename), f'Error: {filename} not found.'
+        inst=cls()
+        inst.filename=filename
         inst.includes=[]
         with open(filename,'r') as f:
             data=f.read().split('[')
@@ -227,6 +280,8 @@ class Topology:
             return inst
 
     def bond_source_check(self):
+        """bond_source_check Checks to ensure the 'bonds' dataframe and 'mol2_bonds' dataframe contain the same bonds.  A mol2 dataframe is only created when a mol2 file is read by the Coordinates module.
+        """
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
             logging.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
@@ -243,21 +298,42 @@ class Topology:
                 for x,y in zip(bmi,mbmi):
                     logging.info(f'{x} {y} {x==y}')
 
-    def has_bond(self,pair):
-        bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
-        mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
-        print(bmi,mbmi)
-        return pair in bmi and pair in mbmi
+    # def has_bond(self,pair):
+    #     """has_bond Determines whether or not the bond represented by the two atom indices in 
+    #     pair exists in the Topology
+
+    #     :param pair: two atom indexes
+    #     :type pair: tuple
+    #     :return: True if bond exists in both the 'bonds' and 'mol2_bonds' dataframes
+    #     :rtype: boolean
+    #     """
+    #     bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+    #     mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
+    #     return pair in bmi and pair in mbmi
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
-        ''' shift all global atom indices (referenced by labels in idxlables[]) '''
+        """shiftatomsidx shifts all atoms indexes in topology directive dataframe
+
+        :param idxshift: integer index shift
+        :type idxshift: int
+        :param directive: name of gromacs topology directive ('atoms','bonds','pairs','angles','dihedrals')
+        :type directive: string
+        :param rows: row boundaries, defaults to []
+        :type rows: list, optional
+        :param idxlabels: names of columns that contain atom indexes, defaults to []
+        :type idxlabels: list, optional
+        """
         if directive in self.D:
             cols=self.D[directive].columns.get_indexer(idxlabels)
-            # print(f'directive {directive} idxlabels {idxlabels} idxshift {idxshift} rows {rows} cols {cols}')
             self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
 
     def ring_detector(self):
-        # adf=self.D['atoms']
+        """ring_detector Detects all 3 to 7-members rings in a topology for one residue using the bondlist and networkx
+        sets the Cycles attribute of self to ring-lists of atom names
+
+        :return: A dictionary of ring-lists keyed on ring size; each ring-list is a list of atom indexes
+        :rtype: dict
+        """
         g=self.bondlist.graph()
         cycles={}
         for a in range(3,8):
@@ -333,24 +409,35 @@ class Topology:
 
     @classmethod
     def from_ex(cls,other):
-        ''' make a new Topology instance by copying only the extensive dataframes
-            from an existing topology '''
+        """from_ex make a new Topology instance by copying only the extensive dataframes
+            from an existing topology 
+
+        :param other: the other topology
+        :type other: Topology
+        :return: a new Topology generated by the extensive dataframes of other
+        :rtype: Topology
+        """
+        ''' '''
         inst=cls()
         for t in _GromacsExtensiveDirectives_:
             if t in other.D:
                 inst.D[t]=other.D[t].copy()
         return inst
 
-    def to_file(self,filename=''):
-        if filename=='':
-            return
+    def to_file(self,filename):
+        """to_file Write topology to a gromacs-format file
+
+        :param filename: name of top file to write
+        :type filename: str
+        """
+        # prevent buggy writing of NaNs
         self.null_check(msg=f'writing {filename}')
         with open(filename,'w') as f:
             f.write('; Gromacs-format topology written by HTPolyNet\n')
         assert 'defaults' in self.D, 'Error: no [ defaults ] in topology?'
         for k in _GromacsTopologyDirectiveOrder_:
             if k in self.D:
-                columns=_GromacsTopologyDirectiveHeaders_[k]
+                # columns=_GromacsTopologyDirectiveHeaders_[k]
                 with open(filename,'a') as f:
                     f.write(f'[ {k} ]\n; ')
                 if k in _GromacsTopologyHashables_:
@@ -427,23 +514,28 @@ class Topology:
         return 0.0
 
     def atomcount(self):
+        """atomcount Returns the total number of atoms
+
+        :return: number of atoms
+        :rtype: int
+        """
         if 'atoms' in self.D:
             return len(self.D['atoms'])
         return 0
 
-    def add_pairs(self,pairsdf,kb=280160.0):
-        pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
-        for i,p in pairsdf.iterrows():
-            ai,aj=idxorder((p['ai'],p['aj']))
-            l0=p['initial-distance']
-            if not (ai,aj) in pmi: #this pair not already here, good!
-                data=[ai,aj,1,l0,kb]
-                h=_GromacsTopologyDirectiveHeaders_['pairs']
-                pairdict={k:[v] for k,v in zip(h,data)}
-                pairtoadd=pd.DataFrame(pairdict)
-                self.D['pairs']=pd.concat((self.D['pairs'],pairtoadd),ignore_index=True)
-            else:
-                logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
+    # def add_pairs(self,pairsdf,kb=280160.0):
+    #     pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
+    #     for i,p in pairsdf.iterrows():
+    #         ai,aj=idxorder((p['ai'],p['aj']))
+    #         l0=p['initial-distance']
+    #         if not (ai,aj) in pmi: #this pair not already here, good!
+    #             data=[ai,aj,1,l0,kb]
+    #             h=_GromacsTopologyDirectiveHeaders_['pairs']
+    #             pairdict={k:[v] for k,v in zip(h,data)}
+    #             pairtoadd=pd.DataFrame(pairdict)
+    #             self.D['pairs']=pd.concat((self.D['pairs'],pairtoadd),ignore_index=True)
+    #         else:
+    #             logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
     
     def add_restraints(self,pairdf,typ=6,kb=300000.):
         """Add type-6 (non-topoogical) bonds to help drag atoms destined to be bonded
@@ -484,6 +576,12 @@ class Topology:
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
     def add_bonds(self,pairs=[]):
+        """add_bonds Adds bonds indicated in list pairs to the topology
+
+        :param pairs: list of pairs of atom indexes, defaults to []
+        :type pairs: list, optional
+        :raises Exception: dies if an existing bond is in the list of pairs
+        """
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
@@ -504,7 +602,7 @@ class Topology:
                     kb=ij.loc[idx,'kb']
                     b0=ij.loc[idx,'b0']
                 else:
-                    logging.debug(f'no bondtype {idx} found; are you parameterizing?')
+                    logging.debug(f'no bondtype {idx} found\nI assume you are just making a mol2 file for template parameterization.')
                     bt=1
                     b0=1.5
                     kb=999999
@@ -531,11 +629,12 @@ class Topology:
                     indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
+                # TODO: need to allow for possibility of converting an existing single bond to a double bond
                 raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         # update the bondlist
         for b in newbonds:
             self.bondlist.append(b)
-        logging.debug(f'Added {len(newbonds)} new bonds')
+        # logging.debug(f'Added {len(newbonds)} new bonds')
 
     def add_enumerated_angles(self,newbonds,ignores=[],quiet=True):       
         at=self.D['atoms']

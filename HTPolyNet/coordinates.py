@@ -553,11 +553,13 @@ class Coordinates:
         # return ri
 
     def wrap_coords(self):
+        """wrap_coords Wraps all atomic coordinates into box
+        """
         self._nwrap=0
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():
             self.A.loc[i,'posX':'posZ']=self.wrap_point(srow.values)
-        logging.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
+        # logging.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
 
     def calc_distance_matrix(self):
         M=np.zeros((self.N,self.N))
@@ -568,7 +570,13 @@ class Coordinates:
         self.distance_matrix=M
 
     def merge(self,other):
-        ''' get atom index, bond index, and resnum index shifts '''
+        """merge Merge two Coordinates instances
+
+        :param other: the other Coordinates instance
+        :type other: Coordinates
+        :return: integer shifts in atom index, bond index, and residue index as a 3-tuple
+        :rtype: tuple
+        """
         idxshift=self.A.shape[0]
         bdxshift=self.mol2_bonds.shape[0]
         rdxshift=0 if self.A.empty else self.A.iloc[-1]['resNum']
@@ -598,12 +606,20 @@ class Coordinates:
         
         return (idxshift,bdxshift,rdxshift)
             
-    def write_atomset_attributes(self,attributes=[],filename='',formatters=[]):
+    def write_atomset_attributes(self,attributes,filename,formatters=[]):
+        """write_atomset_attributes Writes atom attributes to a file
+
+        :param attributes: List of attribute names to write
+        :type attributes: list, optional
+        :param filename: Name of file to write
+        :type filename: str
+        :param formatters: formatting methods per attribute, defaults to []
+        :type formatters: list
+        :raises Exception: All items in attributes must exist in the coordinates dataframe
+        """
         for a in attributes:
             if not a in self.A.columns:
                 raise Exception(f'There is no column "{a}" in this atoms dataframe')
-        if filename=='':
-            raise Exception('Please provide a file name to write atom attribute data')
         with open(filename,'w') as f:
             if len(formatters)>0:
                 f.write(self.A[['globalIdx']+attributes].to_string(header=True,index=False,formatters=formatters)+'\n')
@@ -642,6 +658,11 @@ class Coordinates:
         return self.N
 
     def decrement_z(self,pairs):
+        """decrement_z Decrements value of z attributes of all atoms found in pairs
+
+        :param pairs: list of atom index pairs, interpreted as new bonds that just formed
+        :type pairs: list of 2-tuples
+        """
         for b in pairs:
             ai,aj=b
             # ain=self.get_atom_attribute('atomName',{'globalIdx':ai})
@@ -678,14 +699,24 @@ class Coordinates:
             lengths.append(self.rij(b['ai'],b['aj']))
         return lengths
 
-    def return_pair_lengths(self,pdf):
-        lengths=[]
-        for i,b in pdf.iterrows():
-            lengths.append(self.rij(b['ai'],b['aj']))
-        return lengths
+    # def return_pair_lengths(self,pdf):
+    #     lengths=[]
+    #     for i,b in pdf.iterrows():
+    #         lengths.append(self.rij(b['ai'],b['aj']))
+    #     return lengths
 
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
-        ''' computes the minimum distance between two collections of atoms '''
+        """minimum_distance Computes and returns distance of closest approach between two sets of atoms
+
+        :param other: other Coordinates instance
+        :type other: Coordinates
+        :param self_excludes: list of atom indexes in self to NOT consider, defaults to []
+        :type self_excludes: list, optional
+        :param other_excludes: list of atom indexes in other to NOT consider, defaults to []
+        :type other_excludes: list, optional
+        :return: distance of closest approach: i.e., the distance between the two atoms, one from self and one from other, that are closest together
+        :rtype: float
+        """
         sp=self.A[~self.A['globalIdx'].isin(self_excludes)][['posX','posY','posZ']]
         op=other.A[~other.A['globalIdx'].isin(other_excludes)][['posX','posY','posZ']]
         minD=1.e9
@@ -694,30 +725,31 @@ class Coordinates:
             for j,orow in op.iterrows():
                 rj=orow.values
                 rij=ri-rj
-                # print(i,j,rij)
                 D=np.sqrt(np.dot(rij,rij))
                 if D<minD:
                     minD=D
         return minD
 
     def rotate(self,R):
-        ''' premultiplies position of each atom by rotation matrix R '''
+        """rotate Rotates all coordinate vectors by rotation matrix R
+
+        :param R: rotation matrix (3x3)
+        :type R: numpy.ndarray
+        """
         sp=self.A[['posX','posY','posZ']]
-        #_dfrotate(sp,R)
-        # logging.debug(f'Rotating {sp.shape[0]} atom positions by\n{R}')
-        # logging.debug(f'before rotation:\n{self.A.to_string()}')
         for i,srow in sp.iterrows():
             ri=srow.values
             newri=np.matmul(R,ri)
             self.A.loc[i,'posX':'posZ']=newri
-        #logging.debug(f'after rotation:\n{self.A.to_string()}')
 
     def translate(self,L):
-        ''' translates all atom positions by L '''
-        # logging.debug(f'Translating by {L}')
+        """translate Translates all coordinate vectors by displacement vector L
+
+        :param L: displacement vector (nm)
+        :type L: numpy.ndarray
+        """
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():
-            # logging.debug(f'{srow.values} to {srow.values+L}')
             self.A.loc[i,'posX':'posZ']=srow.values+L
 
     def maxspan(self):
@@ -777,7 +809,19 @@ class Coordinates:
         return idx_to_delete
 
     def sacH(self,ai,aj,T,rename=False):
-        ''' find the two H's closest to each other to delete '''
+        """sacH Find the two H's, one bound to ai, the other to aj, that are closest to each other
+
+        :param ai: index of one atom in bond
+        :type ai: int
+        :param aj: index of other atom in bond
+        :type aj: int
+        :param T: global topology
+        :type T: Topology
+        :param rename: whether to rename remaining H atoms bound to ai and aj so that it appears highest-sorted by name atoms are found, defaults to False
+        :type rename: bool, optional
+        :return: global indexes of two H atoms
+        :rtype: list
+        """
         bondlist=T.bondlist
         i_partners=bondlist.partners_of(ai)
         j_partners=bondlist.partners_of(aj)
@@ -821,8 +865,7 @@ class Coordinates:
         return [ih,jh] # return the globalIdx's of the two sacrificial H's
 
     def delete_atoms(self,idx=[],reindex=True):
-        '''
-        Deletes atoms whose global indices appear in the list idx.
+        """delete_atoms Deletes atoms whose global indices appear in the list idx.
         If parameter 'reindex' is true, then the global indices 
         are recalculated so that they are sequential starting at 1 with no
         gaps, and two new columns are added to self.DF:
@@ -830,7 +873,12 @@ class Coordinates:
              the deletion.
           - 'globalIdxShift' is the change from the old to the new
              global index for each atom.
-        '''
+
+        :param idx: list of atom indexes to delete, defaults to []
+        :type idx: list, optional
+        :param reindex: reindex remaining atoms, defaults to True
+        :type reindex: bool, optional
+        """
         # logging.debug(f'Coordinates:delete_atoms {idx}')
         adf=self.A
         indexes_to_drop=adf[adf.globalIdx.isin(idx)].index
@@ -890,10 +938,20 @@ class Coordinates:
                 f.write(f'{self.box[2][0]:10.5f}{self.box[2][1]:10.5f}')
             f.write('\n')
 
-    def write_mol2(self,filename='',bondsDF=pd.DataFrame(),molname='',other_attributes=pd.DataFrame()):
-        ''' write a mol2-format file from coordinates, and optionally, a bonds DataFrame
+    def write_mol2(self,filename,bondsDF=pd.DataFrame(),molname='',other_attributes=pd.DataFrame()):
+        """write_mol2 Write a mol2-format file from coordinates, and optionally, a bonds DataFrame
             provided externally and passed in as "bondsDF" (typically this would be
-            from a Topology instance). '''
+            from a Topology instance).
+
+        :param filename: name of file name to write
+        :type filename: str, optional
+        :param bondsDF: dataframe of bonds ['ai','aj'], defaults to pd.DataFrame()
+        :type bondsDF: pandas.DataFrame, optional
+        :param molname: name of molecule, defaults to ''
+        :type molname: str, optional
+        :param other_attributes: auxiliary dataframe of attributes, defaults to pd.DataFrame()
+        :type other_attributes: pandas.DataFrame, optional
+        """
         acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
             logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
