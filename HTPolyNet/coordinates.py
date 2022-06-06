@@ -1,13 +1,16 @@
-'''
-coordinates.py -- simple class for handling atom coordinates from gro and mol2 files
-'''
+"""
+
+.. module:: coordinates
+   :synopsis: Class for managing gromacs .gro file data
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 
 import pandas as pd
 import numpy as np
 from io import StringIO
-from copy import deepcopy
 import os
-#import hashlib
 import logging
 from itertools import product
 
@@ -22,17 +25,25 @@ from HTPolyNet.ring import Ring,Segment
 #             return True
 #     return False
 
-''' Generic dataframe functions '''
-
-def _dfrotate(df,R):
-    for i,srow in df.iterrows():
-        ri=srow[['posX','posY','posZ']].values
-        newri=np.matmul(R,ri)
-        df.loc[i,'posX':'posZ']=newri
+# def _dfrotate(df,R):
+#     for i,srow in df.iterrows():
+#         ri=srow[['posX','posY','posZ']].values
+#         newri=np.matmul(R,ri)
+#         df.loc[i,'posX':'posZ']=newri
 
 def _get_row_attribute(df,name,attributes):
-    ''' returns a scalar value of attribute "name" in row
-        expected to be uniquely defined by attributes dict '''
+    """_get_row_attribute returns a scalar value of attribute "name" in row
+        expected to be uniquely defined by attributes dict
+
+    :param df: dataframe to search
+    :type df: pandas.DataFrame
+    :param name: name of attribute whose value you want
+    :type name: str
+    :param attributes: dictionary of attribute:value pairs that defines target set or row
+    :type attributes: dict
+    :return: value of attribute name
+    :rtype: scalar
+    """
     ga={k:v for k,v in attributes.items() if k in df}
     assert len(ga)>0,f'Cannot find row with attributes {attributes}'
     if type(name)==list:
@@ -125,12 +136,9 @@ class Coordinates:
         - box: 3x3 numpy array containing the box side vectors (for a rectilinear box, only diagonals have values)
         '''
     gro_attributes = ['resNum', 'resName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
-    #gro_colunits = ['*','*','*','*','nm','nm','nm','nm/ps','nm/ps','nm/ps']
     mol2_atom_attributes = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
-    #mol2_atom_colunits = ['*','*',_ANGSTROM_,_ANGSTROM_,_ANGSTROM_,'*','*']
     mol2_bond_attributes = ['bondIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_attributes, [int, int, int, str])}
-    #coord_aux_attributes = ['sea-idx','z','cycle-idx','linkcell-idx]
 
     def __init__(self,name=''):
         self.name=name
@@ -145,11 +153,15 @@ class Coordinates:
         self.ringlist=[]
         
     @classmethod
-    def read_gro(cls,filename=''):
-        ''' read atom attributes from a Gromacs gro file '''
+    def read_gro(cls,filename):
+        """read_gro Read a Gromacs gro file
+
+        :param filename: name of gro file
+        :type filename: str
+        :return: a new Coordinates instance
+        :rtype: Coordinates
+        """
         inst=cls(filename)
-        assert filename!=''
-        # logging.debug(f'coordinates:read_gro {filename}')
         if filename!='':
             with open(filename,'r') as f:
                 data=f.read().split('\n')
@@ -197,15 +209,19 @@ class Coordinates:
         return inst
 
     @classmethod
-    def read_mol2(cls,filename=''):
-        ''' Reads in a Sybyl MOL2 file into a Coordinates instance. 
+    def read_mol2(cls,filename):
+        """read_mol2 Reads in a Sybyl MOL2 file into a Coordinates instance. 
             Note that this method only reads in
-            MOLECULE, ATOM, and BOND sections.  
-            ***ALL LENGTHS CONVERTED FROM ANGSTROMS TO NM'''
+            MOLECULE, ATOM, and BOND sections. 
+
+        :param filename: name of input mol2 file
+        :type filename: str
+        :return: a new Coordinates instance
+        :rtype: Coordinates
+        """
+        '''***ALL LENGTHS CONVERTED FROM ANGSTROMS TO NM***'''
         inst=cls(name=filename)
         ''' Length units in MOL2 are always Ångström '''
-        if filename=='':
-            return inst
         with open(filename,'r') as f:
             rawsections=f.read().split('@<TRIPOS>')[1:]
             sections={}
@@ -242,6 +258,11 @@ class Coordinates:
         return inst
 
     def set_box(self,box):
+        """set_box Set the box size from box
+
+        :param box: 3x1 or 3x3 box size matrix
+        :type box: numpy.ndarray
+        """
         if box.shape==(3,1):
             for i in range(3):
                 self.box[i,i]=box[i]
@@ -249,7 +270,12 @@ class Coordinates:
             self.box=np.copy(box)
 
     def copy_coords(self,other):
-        ''' copy the posX, posY, and posZ atom attributes, and the box size, from self.A to other.A '''
+        """copy_coords copy_coords copy the posX, posY, and posZ atom attributes, and the box size, 
+        from other.A to self.A
+
+        :param other: the other Coordinates instance
+        :type other: Coordinates
+        """
         assert self.A.shape[0]==other.A.shape[0],f'Cannot copy -- atom count mismatch {self.A.shape[0]} vs {other.A.shape[0]}'
         for c in ['posX','posY','posZ']:
             otherpos=other.A[c].copy()

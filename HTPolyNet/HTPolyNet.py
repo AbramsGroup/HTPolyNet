@@ -424,7 +424,7 @@ class HTPolyNet:
                 CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 rcommon=max([gromacs_rdefault,maxL])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
@@ -448,7 +448,7 @@ class HTPolyNet:
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                    logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                    logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     rcommon=max([gromacs_rdefault,maxL])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
@@ -485,8 +485,8 @@ class HTPolyNet:
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                 CP.pairs['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
                 pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
-                logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                logging.debug(f'{opfx}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                logging.debug(f'{opfx}: Bond-designate-1-4 pairs lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 rcommon=max([gromacs_rdefault,maxL,pmaxL])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
@@ -511,8 +511,8 @@ class HTPolyNet:
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                     CP.pairs['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
                     pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
-                    logging.debug(f'{stagepref}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
+                    logging.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                    logging.debug(f'{stagepref}: Bond-designate-1-4 pair lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                     rcommon=max([maxL,gromacs_rdefault,pmaxL])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
@@ -588,7 +588,7 @@ class HTPolyNet:
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
                 CP.pairs['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
@@ -610,7 +610,7 @@ class HTPolyNet:
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                    logging.debug(f'{stagepref}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
+                    logging.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={}
                     for stg in ['minimize','nvt','npt']:
@@ -741,13 +741,13 @@ class HTPolyNet:
                     bondtestoutcomes={k:0 for k in BTRC}
                     idf=pd.DataFrame({'ai':[x[0] for x in Pbonds],'aj':[x[1] for x in Pbonds]})
                     # logging.debug(f'build df with {idf.shape[0]} entries')
-                    gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all distances
-                    # logging.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} distances -- mean {idf["r"].mean():.3f} nm')
+                    gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
+                    # logging.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} lengths -- mean {idf["r"].mean():.3f} nm')
                     bcmin,bcmax,bcmean=idf['r'].min(),idf['r'].max(),idf['r'].mean()
-                    logging.debug(f'{idf["r"].shape[0]} bond-candidate distances mean/min/max: {bcmean:0.3f}/{bcmin:0.3f}/{bcmax:0.3f}')
+                    logging.debug(f'{idf["r"].shape[0]} bond-candidate lengths avg/min/max: {bcmean:0.3f}/{bcmin:0.3f}/{bcmax:0.3f}')
                     jdf=idf[idf['r']<radius]
                     # logging.debug(f'idf:\n{idf.head().to_string()}')
-                    logging.debug(f'{jdf.shape[0]} bond-candidates with distances below {radius}')
+                    logging.debug(f'{jdf.shape[0]} bond-candidates with lengths below {radius}')
                     if jdf.shape[0]>0:
                         Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
                         logging.debug(f'Bond search will use {ncpu} processors')
@@ -773,7 +773,7 @@ class HTPolyNet:
         ''' Sort new potential bonds by length (ascending) and claim each one
             in order so long as both its atoms are available '''
         newbonds.sort(key=lambda x: x[0][2])
-        logging.debug(f'*** Pruning {len(newbonds)} bonds...')
+        # logging.debug(f'*** Pruning {len(newbonds)} bonds...')
         atomset=list(set(list([x[0][0] for x in newbonds])+list([x[0][1] for x in newbonds])))
         resid_pairs=[]
         allowed_bond=[True for x in newbonds]
@@ -801,8 +801,8 @@ class HTPolyNet:
                 atomset.remove(b[0])
                 atomset.remove(b[1])
                 keepbonds.append((b,n[1],n[2]))
-        logging.debug(f'*** accepted the {len(keepbonds)} shortest non-competing bonds')
-        logging.debug(f'    {disallowed} bonds that repeat resid pairs thrown out.')
+        logging.debug(f'Accepted the {len(keepbonds)} shortest non-competing bond-candidates.')
+        # logging.debug(f'    {disallowed} bond-candidates that repeat resid pairs thrown out.')
 
         ''' roll the dice '''
         if apply_probabilities:
