@@ -70,7 +70,8 @@ Prior to introducing new bonds, one has the option of *"dragging"* atoms destine
 ===============================    ==============  =====================
 Parameter                          Type            Description (default)
 ===============================    ==============  =====================
-``max_drag_stages``                int             number of drag stages to perform
+``drag_nstages``                   int             number of drag stages to perform
+``drag_increment``                 float           maximum change in drag target parameters during dragging (0.0; if set above 0.0, overrides ``drag_nstages``
 ``drag_trigger_distance``          float           bond length beyond which dragging is triggered
 ``drag_limit``                     float           minimum distance each separation should achieve (nm); 0.0 turns off dragging (0.0)
 ``drag_temperature``               float           Temperature in K for dragging MD simulations (300)
@@ -88,8 +89,8 @@ Bond relaxation parameters
 =================================    ==============  =====================
 Parameter                            Type            Description (default)
 =================================    ==============  =====================
-``max_bond_relaxation_stages``       int             number of bond relaxation stages to perform
-``max_bond_relaxation_increment``    float           maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides ``max_bond_relaxation_stages``)
+``relax_nstages``                    int             number of bond relaxation stages to perform
+``relax_increment``                  float           maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides ``relax_nstages``)
 ``relax_temperature``                float           Temperature in K for relaxation MD simulations (300)
 ``relax_nvt_steps``                  int             number of MD steps for NVT relaxation 
 ``relax_npt_steps``                  int             number of MD steps for NPT relaxation 
