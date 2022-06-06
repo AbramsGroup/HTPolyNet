@@ -16,6 +16,7 @@ from HTPolyNet.topology import Topology
 import logging
 import numpy as np
 from enum import Enum
+
 class BTRC(Enum):
     """Bond test return codes
 
@@ -23,8 +24,8 @@ class BTRC(Enum):
     :type Enum: class
     """
     passed = 0
-    failed_linkcell = 1
-    failed_beyond_cutoff = 2
+#    failed_linkcell = 1
+#    failed_beyond_cutoff = 2
     failed_pierce_ring = 3
     failed_short_circuit = 4
     failed_polyethylene_cycle = 5
@@ -470,7 +471,7 @@ class TopoCoord:
 
         :param bonds: bonds dataframe, 'ai', 'aj', 'initial-distance'
         :type bonds: pandas.DataFrame
-        :param stage: index of stage in the series of post-bond-formation relaxation ("R" of SCUR)
+        :param stage: index of stage in the series of post-bond-formation relaxation
         :type stage: int
         :param max_stages: total number of relaxation stages for this iteration
         :type max_stages: int
@@ -552,7 +553,6 @@ class TopoCoord:
         self.Coordinates.rotate(R)
 
     def translate(self,L):
-        # logging.debug(f'Calling Coordinates.translate with arg {L}')
         self.Coordinates.translate(L)
 
     def partners_of(self,i):
@@ -588,9 +588,6 @@ class TopoCoord:
 
     def make_ringlist(self):
         self.Coordinates.make_ringlist()
-
-    # def make_ringdflist(self):
-    #     self.Coordinates.make_ringdflist()
 
     def adjust_charges(self,netcharge=0.0,msg=''):
         self.Topology.adjust_charges(desired_charge=netcharge,msg=msg)

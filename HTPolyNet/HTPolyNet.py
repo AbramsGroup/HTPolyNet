@@ -317,7 +317,7 @@ class HTPolyNet:
             msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-minimized',mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
             mdp_pfx=mdp_library['liquid-densify']
             self.checkout(f'mdp/{mdp_pfx}.mdp')
-            mdp_modify(f'{mdp_pfx}.mdp',{'ref_t':T,'gen-temp':T,'ref_p':P})
+            mdp_modify(f'{mdp_pfx}.mdp',{'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P})
             msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,quiet=False,nsteps=nsteps,**self.cfg.parameters)
             logging.info(f'Generated configuration {deffnm}.gro\n')
         density_trace(deffnm,**self.cfg.parameters)
@@ -347,8 +347,8 @@ class HTPolyNet:
 
         gromacs_rdefault=self.cfg.parameters.get('gromacs_rdefault',0.9)
 
-        n_stages=self.cfg.parameters.get('max_bond_relaxation_stages',6)
-        bond_relaxation_increment=self.cfg.parameters.get('max_bond_relaxation_increment',0)
+        relax_nstages=self.cfg.parameters.get('relax_nstages',6)
+        relax_increment=self.cfg.parameters.get('relax_increment',0)
         relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
 
         equilibration_temperature=self.cfg.parameters.get('equilibration_temperature',300.0)
@@ -358,9 +358,10 @@ class HTPolyNet:
         dragging_enabled=False
         drag_limit_nm=self.cfg.parameters.get('drag_limit',0.0)
         drag_trigger_distance=self.cfg.parameters.get('drag_trigger_distance',0.0)
-        n_dragstages=self.cfg.parameters.get('max_drag_stages',0)
+        drag_nstages=self.cfg.parameters.get('drag_nstages',0)
+        drag_increment=self.cfg.parameters.get('drag_increment',0.0)
         drag_temperature=self.cfg.parameters.get('drag_temperature',300.0)
-        if n_dragstages>0 and drag_limit_nm>0.0:
+        if (drag_nstages>0 or drag_increment>0.0) and drag_limit_nm>0.0:
              dragging_enabled=True
 
         curr_nxlinkbonds=0
@@ -424,21 +425,20 @@ class HTPolyNet:
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                # pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
-                # pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
-                # rcommon=max([gromacs_rdefault,maxL,pmaxL])
                 rcommon=max([gromacs_rdefault,maxL])
-                logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
-                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':drag_temperature,'ref_t':drag_temperature}
+                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':drag_temperature,'ref_t':drag_temperature,'gen-vel':'yes'}
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_dragstage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
-                for i in range(begin_dragstage,n_dragstages):
+                if drag_increment>0.0:
+                    drag_nstages=int(maxL/drag_increment)
+                    logging.debug(f'{opfx}: Using {drag_nstages} drag stages with increment {drag_increment}')
+                for i in range(begin_dragstage,drag_nstages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_dragstages,minimum_distance=drag_limit_nm,init_colname='initial-distance')
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,drag_nstages,minimum_distance=drag_limit_nm,init_colname='initial-distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref) # writes the gro and top files
                     for stg in ['minimize','nvt','npt']:
@@ -449,10 +449,6 @@ class HTPolyNet:
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                     logging.debug(f'{opfx}: Bond-designate distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    # pair_lengths=np.array(self.TopoCoord.return_pair_lengths())
-                    # pmaxL,pminL,pmeanL=pair_lengths.max(),pair_lengths.min(),pair_lengths.mean()
-                    # logging.debug(f'{stagepref}: 1-4 pair distances avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                    # rcommon=max([gromacs_rdefault,maxL,pmaxL])
                     rcommon=max([gromacs_rdefault,maxL])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
@@ -497,13 +493,13 @@ class HTPolyNet:
                     self.checkout(f'mdp/{impfx}.mdp')
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-vel':'yes','gen-temp':relax_temperature,'ref_t':relax_temperature}
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
-                if bond_relaxation_increment>0.0:
-                    n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
-                    logging.debug(f'{opfx}: Using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
+                if relax_increment>0.0:
+                    relax_nstages=int(CP.bonds['initial-distance'].max()/relax_increment)
+                    logging.debug(f'{opfx}: Using {relax_nstages} relaxation stages with increment {relax_increment}')
                 begin_stage=CP.current_stage
-                for i in range(begin_stage,n_stages):
+                for i in range(begin_stage,relax_nstages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,init_colname='initial-distance')
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,relax_nstages,init_colname='initial-distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
                     for stg in ['minimize','nvt','npt']:
@@ -538,7 +534,7 @@ class HTPolyNet:
                 CP.read_checkpoint(self)
                 pfx=mdp_library[stepnm]
                 self.checkout(f'mdp/{pfx}.mdp')
-                mod_dict={'gen-temp':equilibration_temperature,'ref_t':equilibration_temperature,'ref_p':equilibration_pressure}
+                mod_dict={'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_t':equilibration_temperature,'ref_p':equilibration_pressure}
                 mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
                 CP.write_checkpoint(self,CP.state,prefix=opfx)
                 msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,nsteps=equilibration_steps,**self.cfg.parameters)
@@ -596,7 +592,7 @@ class HTPolyNet:
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
-                    mod_dict={'gen-temp':relax_temperature,'ref_t':relax_temperature}
+                    mod_dict={'gen-temp':relax_temperature,'gen-vel':'yes','ref_t':relax_temperature}
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
@@ -635,7 +631,7 @@ class HTPolyNet:
             ''' Final NPT MD equilibration with full parameters '''
             pfx=mdp_library[stepnm]
             self.checkout(f'mdp/{pfx}.mdp')
-            mod_dict={'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'ref_p':equilibration_pressure}
+            mod_dict={'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_p':equilibration_pressure}
             mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
             CP.write_checkpoint(self,CPstate.relax,prefix=opfx)
             msg=grompp_and_mdrun(gro=opfx,top=opfx,out=opfx+'-post',mdp=opfx,steps=equilibration_steps,**self.cfg.parameters)
@@ -746,34 +742,33 @@ class HTPolyNet:
                     idf=pd.DataFrame({'ai':[x[0] for x in Pbonds],'aj':[x[1] for x in Pbonds]})
                     # logging.debug(f'build df with {idf.shape[0]} entries')
                     gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all distances
-                    logging.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} distances -- mean {idf["r"].mean():.3f} nm')
+                    # logging.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} distances -- mean {idf["r"].mean():.3f} nm')
+                    bcmin,bcmax,bcmean=idf['r'].min(),idf['r'].max(),idf['r'].mean()
+                    logging.debug(f'{idf["r"].shape[0]} bond-candidate distances mean/min/max: {bcmean:0.3f}/{bcmin:0.3f}/{bcmax:0.3f}')
                     jdf=idf[idf['r']<radius]
                     # logging.debug(f'idf:\n{idf.head().to_string()}')
                     logging.debug(f'{jdf.shape[0]} bond-candidates with distances below {radius}')
-                    Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
-                    # logging.debug(f'{Pbonds}')
-
-                    #results=self.TopoCoord.bondtest_par(Pbonds,radius,pbc=[1,1,1],show_piercings=True)
-
-                    logging.debug(f'Bond search will use {ncpu} processors')
-                    p=Pool(processes=ncpu)
-                    Pbonds_split=np.array_split(Pbonds,ncpu)
-                    results=p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
-                    p.close()
-                    p.join()
-                    rc=[]
-                    for i,l in enumerate(results):
-                        rc.extend(l)
-                    for i,R2 in enumerate(rc):
-                        RC,rij=R2
-                        bondtestoutcomes[RC]+=1
-                        if RC==BTRC.passed:
-                            passbonds.append((Pbonds[i],R.product,prob))
-                    logging.debug(f'*** {len(passbonds)} out of {len(Pbonds)} bonds pass initial filter')
-                    logging.debug(f'Bond test outcomes:')
-                    for k,v in bondtestoutcomes.items():
-                        logging.debug(f'   {str(k)}: {v}')
-                    newbonds.extend(passbonds)
+                    if jdf.shape[0]>0:
+                        Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
+                        logging.debug(f'Bond search will use {ncpu} processors')
+                        p=Pool(processes=ncpu)
+                        Pbonds_split=np.array_split(Pbonds,ncpu)
+                        results=p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
+                        p.close()
+                        p.join()
+                        rc=[]
+                        for i,l in enumerate(results):
+                            rc.extend(l)
+                        for i,R2 in enumerate(rc):
+                            RC,rij=R2
+                            bondtestoutcomes[RC]+=1
+                            if RC==BTRC.passed:
+                                passbonds.append((Pbonds[i],R.product,prob))
+                        logging.debug(f'*** {len(passbonds)} out of {len(Pbonds)} bonds pass initial filter')
+                        logging.debug(f'Bond test outcomes:')
+                        for k,v in bondtestoutcomes.items():
+                            logging.debug(f'   {str(k)}: {v}')
+                        newbonds.extend(passbonds)
 
         ''' Sort new potential bonds by length (ascending) and claim each one
             in order so long as both its atoms are available '''
@@ -787,7 +782,6 @@ class HTPolyNet:
             i,j,p=bb
             i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
             j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
-            # need to be careful about intramolecular bonds (capping)
             rp=(i_resid,j_resid)
             if not rp in resid_pairs:
                 resid_pairs.append(rp)

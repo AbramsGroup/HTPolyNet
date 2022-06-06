@@ -1,6 +1,3 @@
-'''
-gromacs.py -- simple class for handling gromacs commands
-'''
 import logging
 import os
 import pandas as pd
@@ -36,8 +33,6 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
     box=' '.join([f'{x:.8f}' for x in boxSize])
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     for name,num in composition.items():  # composition determines order
-        # M=molecules[n]
-        # name = n+kwargs.get('basename_modifier','')
         if os.path.isfile(f'{outName}.gro'):
             logging.info(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
@@ -88,6 +83,13 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
         raise Exception(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
 
 def get_energy_menu(edr,**kwargs):
+    """Get then menu provided by 'gmx energy' when applied to a particular edr file
+
+    :param edr: name of edr file
+    :type edr: str
+    :return: menu dictionary
+    :rtype: dict
+    """
     assert os.path.exists(edr+'.edr'),f'Error: {edr} not found'
     with open('_menugetter_','w') as f:
         f.write('\n')
@@ -109,6 +111,15 @@ def get_energy_menu(edr,**kwargs):
     return menu
 
 def gmx_energy_trace(edr,names=[],**kwargs):
+    """Generate traces of data in edr file
+
+    :param edr: name of edr file
+    :type edr: str
+    :param names: list of data names, defaults to []
+    :type names: list, optional
+    :return: dataframe of traces
+    :rtype: pandas DataFrame
+    """
     assert os.path.exists(edr+'.edr'),f'Error: {edr}.edr not found'
     assert len(names)>0,f'Nothing to plot'
     xshift=kwargs.get('xshift',0)
@@ -131,41 +142,63 @@ def gmx_energy_trace(edr,names=[],**kwargs):
     else:
         return pd.DataFrame()
         
-def density_trace(edr='',**kwargs):
-    if edr=='':
-        raise Exception('density_trace requires an edr filename prefix.')
+def density_trace(edr,**kwargs):
+    """Report density trace from edr file
+
+    :param edr: edr file name
+    :type edr: str
+    """
+    msg=kwargs.get('msg','Density:')
     with open('gmx.in','w') as f:
         f.write('22\n\n')
     c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
     c.run()
+    os.remove('gmx.in')
     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
-    logging.info(f'Density at end of npt:\n{density.iloc[-1].to_string()}')
+    logging.info(f'{msg}\n{density.iloc[-1].to_string()}')
 
+def gromacs_distance(idf,gro,new_column_name='r'):
+    """Use 'gmx distance' to measure interatomic distances
 
-def gromacs_distance(idf,gro):
+    :param idf: dataframe of atom indexes in pairs ['ai','aj']
+    :type idf: pandas DataFrame
+    :param gro: name of gromacs input file for 'gmx distance' to use
+    :type gro: str
+    :return: list of distances parallel to idf columns
+    :rtype: numpy.ndarray
+    """
     npair=idf.shape[0]
     # logging.debug(f'idf dtype {idf["ai"].dtype}')
+    ''' create the index file '''
     with open('tmp.ndx','w') as f:
         f.write('[ bonds-1 ]\n')
         idf.to_csv(f,sep=' ',header=False,index=False)
         # logging.debug('wrote tmp.ndx')
+    ''' create the user-input file '''
     with open ('gmx.in','w') as f:
         f.write('0\n\n')
     c=Command(f'{sw.gmx} {sw.gmx_options} distance -f {gro} -n tmp.ndx -oall tmp.xvg -xvg none < gmx.in')
     c.run()
+    ''' read the xvg file that 'gmx distance' creates '''
     with open ('tmp.xvg','r') as f:
         datastr=f.read().split()
     datastr=datastr[1:]
     # logging.debug(f'0 {datastr[0]} - {len(datastr)-1} {datastr[-1]}')
     data=np.array([float(x) for x in datastr])
     nd=len(data)
-    idf['r']=data
+    ''' clean up '''
+    os.remove('tmp.ndx')
+    os.remove('gmx.in')
+    os.remove('tmp.xvg')
+    ''' add the lengths back to the input dataframe '''
+    idf[new_column_name]=data
     assert npair==nd
     return data
 
 def encluster(i,j,c):
+    # NOT USED
     if c[i]==c[j]:
         return True
     if c[j]>c[i]:
@@ -183,6 +216,8 @@ def symm(d,thresh=0.1,outfile=None):
         Any two atoms with the same sea-cluster-index are considered
         symmetry equivalent.
         
+        NOT USED
+
         Parameters:
            - d: interatomic distance matrix
            - thresh:  threshhold below which two sorted columns of d are considered
@@ -240,6 +275,8 @@ def analyze_sea(deffnm,thresh=0.1):
         Any two atoms with the same sea-cluster-index are considered
         symmetry equivalent.
         
+        NOT USED
+
         Parameters:
            - deffnm: ouput filename prefix for the Gromacs mdrun that generated the 
                      trajectory file we are analyzing here
@@ -281,6 +318,17 @@ def analyze_sea(deffnm,thresh=0.1):
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
 
 def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
+    """Modify a gromacs mdp file
+
+    :param mdp_filename: name of mdp file to modify; overwritten if new_filename==None
+    :type mdp_filename: str
+    :param opt_dict: keyword:value dictionary of mdp options
+    :type opt_dict: dict
+    :param new_filename: name of outputile, defaults to None
+    :type new_filename: str, optional
+    :param add_if_missing: Flag indicating whether to insert key:value into mdp file if not already there, defaults to True
+    :type add_if_missing: bool, optional
+    """
     with open(mdp_filename,'r') as f:
         lines=f.read().split('\n')
     all_dict={}
@@ -305,9 +353,9 @@ def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
         with open(new_filename,'w') as f:
             for k,v in all_dict.items():
                 f.write(f'{k} = {v}\n')
-        logging.debug(f'mdp_modify wrote {new_filename}.')
+        # logging.debug(f'mdp_modify wrote {new_filename}.')
     else:
         with open(mdp_filename,'w') as f:
             for k,v in all_dict.items():
                 f.write(f'{k} = {v}\n')
-        logging.debug(f'mdp_modify wrote {mdp_filename}.')
+        # logging.debug(f'mdp_modify wrote {mdp_filename}.')
