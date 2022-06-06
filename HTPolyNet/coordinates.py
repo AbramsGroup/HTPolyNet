@@ -25,11 +25,11 @@ from HTPolyNet.ring import Ring,Segment
 #             return True
 #     return False
 
-# def _dfrotate(df,R):
-#     for i,srow in df.iterrows():
-#         ri=srow[['posX','posY','posZ']].values
-#         newri=np.matmul(R,ri)
-#         df.loc[i,'posX':'posZ']=newri
+def _dfrotate(df,R):
+    for i,srow in df.iterrows():
+        ri=srow[['posX','posY','posZ']].values
+        newri=np.matmul(R,ri)
+        df.loc[i,'posX':'posZ']=newri
 
 def _get_row_attribute(df,name,attributes):
     """_get_row_attribute returns a scalar value of attribute "name" in row

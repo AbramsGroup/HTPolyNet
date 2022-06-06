@@ -1,3 +1,11 @@
+"""
+
+.. module:: gromacs
+   :synopsis: methods for handling the gmx suite of executables
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 import os
 import pandas as pd
@@ -159,18 +167,24 @@ def density_trace(edr,**kwargs):
     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
     logging.info(f'{msg}\n{density.iloc[-1].to_string()}')
 
-def gromacs_distance(idf,gro,new_column_name='r'):
+def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     """Use 'gmx distance' to measure interatomic distances
 
     :param idf: dataframe of atom indexes in pairs ['ai','aj']
     :type idf: pandas DataFrame
     :param gro: name of gromacs input file for 'gmx distance' to use
     :type gro: str
+    :param new_column_name: name of column in idf where distances are stored, default 'r'
+    :type new_column_name: str, optional
+    :param force_recalculate: flag to force calculation of distances even if a distance column exists in idf, default False
+    :type force_recalculate: boolean, optional
     :return: list of distances parallel to idf columns
     :rtype: numpy.ndarray
     """
     npair=idf.shape[0]
     # logging.debug(f'idf dtype {idf["ai"].dtype}')
+    if 'r' in idf and not force_recalculate:
+        return None
     ''' create the index file '''
     with open('tmp.ndx','w') as f:
         f.write('[ bonds-1 ]\n')

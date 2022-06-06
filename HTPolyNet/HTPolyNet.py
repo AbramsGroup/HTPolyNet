@@ -586,7 +586,7 @@ class HTPolyNet:
                 CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
                 CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
-                CP.pairs['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
+                # CP.pairs['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
                 maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 for stg in ['minimize','nvt','npt']:
@@ -750,10 +750,10 @@ class HTPolyNet:
                     logging.debug(f'{jdf.shape[0]} bond-candidates with lengths below {radius}')
                     if jdf.shape[0]>0:
                         Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
-                        logging.debug(f'Bond search will use {ncpu} processors')
+                        logging.debug(f'Bond-candidate testing will use {ncpu} processors')
                         p=Pool(processes=ncpu)
                         Pbonds_split=np.array_split(Pbonds,ncpu)
-                        results=p.map(partial(self.TopoCoord.bondtest_par,radius=radius), Pbonds_split)
+                        results=p.map(partial(self.TopoCoord.bondtest_par), Pbonds_split)
                         p.close()
                         p.join()
                         rc=[]
@@ -764,8 +764,8 @@ class HTPolyNet:
                             bondtestoutcomes[RC]+=1
                             if RC==BTRC.passed:
                                 passbonds.append((Pbonds[i],R.product,prob))
-                        logging.debug(f'*** {len(passbonds)} out of {len(Pbonds)} bonds pass initial filter')
-                        logging.debug(f'Bond test outcomes:')
+                        logging.debug(f'{len(passbonds)} out of {len(Pbonds)} bond-candidates pass initial filter')
+                        logging.debug(f'Bond-candidate test outcomes:')
                         for k,v in bondtestoutcomes.items():
                             logging.debug(f'   {str(k)}: {v}')
                         newbonds.extend(passbonds)
