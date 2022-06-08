@@ -101,46 +101,45 @@ The reaction dicts from the previous section appear in a list together with many
   * ``CURE_initial_search_radius`` (line 8):  The initial cutoff radius, in nm, for bond searching.  0.5 nm by default.
   * ``CURE_radial_increment`` (line 9): The increment in nm by which the cutoff radius is increased in bond searching.  The radius is increased incrementally until at least on possible bond is identified or it reaches half the shortest box dimension.  0.25 nm by default.
   * ``CURE_max_iterations`` (line 10):  The upper limit of CURE iterations to allow.  150 by default.
-  * ``CURE_max_conversion_per_iteration`` (line 11):  The fraction of total possible crosslink bonds that are allowed to form in a single iteration.  1.0 by default (no limitation).
-  * ``CURE_desired_conversion`` (line 12):  The target conversion.  MUST BE SPECIFIED; there is no default.
-  * ``CURE_late_threshold`` (line 13):  The conversion beyond which bond relative probabilities are ignored.  1.0 by default (no limitation).  This can be helpful in speeding up very late stages of the cure process.
+  * ``CURE_desired_conversion`` (line 11):  The target conversion.  MUST BE SPECIFIED; there is no default.
+  * ``CURE_late_threshold`` (line 12):  The conversion beyond which bond relative probabilities are ignored.  1.0 by default (no limitation).  This can be helpful in speeding up very late stages of the cure process.
 
 * **Dragging parameters:**  The parameters govern the series of iterative MD simulations that aim to pull atoms together before activating their bonds.
 
+  * ``drag_increment`` (line 13):  The largest increment in nm by which the restrained bond-designate distances are decreased each stage.
   * ``drag_trigger_distance`` (line 14):  If the longest initial distance between bond-designated atoms is longer than this distance, then dragging is enabled.  0.5 nm by default.
-  * ``max_drag_stages`` (line 15):  The number of drag stages to perform; each stage refers to a particular set of distance restraints for the bond-designates, from weak to strong as the stages progress.
-  * ``drag_limit`` (line 16):  The bond-designate distance in nm that dragging targets.  0.3 by default.
-  * ``drag_nvt_steps`` (line 17):  Number of time-steps in the NVT drag stages; -2 by default (uses value in mdp file).
-  * ``drag_npt_steps`` (line 18):  Number of time-steps in the NPT drag stages; -2 by default (uses value in mdp file).
-  * ``drag_temperature`` (line 19):  Temperature of the drag stages; 300 by default.
+  * ``drag_limit`` (line 15):  The bond-designate distance in nm that dragging targets.  0.3 by default.
+  * ``drag_nvt_steps`` (line 16):  Number of time-steps in the NVT drag stages; -2 by default (uses value in mdp file).
+  * ``drag_npt_steps`` (line 17):  Number of time-steps in the NPT drag stages; -2 by default (uses value in mdp file).
+  * ``drag_temperature`` (line 18):  Temperature of the drag stages; 300 by default.
 
 * **Bond relaxation parameters:** These parameters govern the series of iterative MD simulations that aim to relax bonds once they are created.
 
-  * ``max_bond_relaxation_increment`` (line 20):  The largest increment in nm by which the restrained bond distances are decreased each stage.
-  * ``relax_nvt_steps`` (line 21):  Number of time-steps in the NVT bond relaxation stages; -2 by default (uses value in mdp file).
-  * ``relax_npt_steps`` (line 22): Number of time-steps in the NPT bond relaxation stages; -2 by default (uses value in mdp file).
-  * ``relax_temperature`` (line 23): Temperature of the drag stages; 300 by default.
+  * ``relax_increment`` (line 19):  The largest increment in nm by which the restrained bond distances are decreased each stage.
+  * ``relax_nvt_steps`` (line 20):  Number of time-steps in the NVT bond relaxation stages; -2 by default (uses value in mdp file).
+  * ``relax_npt_steps`` (line 21): Number of time-steps in the NPT bond relaxation stages; -2 by default (uses value in mdp file).
+  * ``relax_temperature`` (line 22): Temperature of the drag stages; 300 by default.
 
 * **Equilibration parameters:** These parameters govern the single MD simulation performed once all cure and post-cure reactions are complete.
 
-  * ``equilibration_temperature`` (line 24): Temperature in K; 300 by default.
-  * ``equilibration_pressure`` (line 25):  Pressure in bar; 1 by default.
-  * ``equilibration_steps`` (line 26):  Number of time-steps; 50000 by default.
+  * ``equilibration_temperature`` (line 23): Temperature in K; 300 by default.
+  * ``equilibration_pressure`` (line 24):  Pressure in bar; 1 by default.
+  * ``equilibration_steps`` (line 25):  Number of time-steps; 50000 by default.
 
 * **Chemistry parameters:**  These parameters govern the parameterization of monomers and other molecules.
 
-  * ``charge_method`` (line 27):  Charge method designation understandable by ``antechamber``'s ``-c`` option.  "gas" (Gasteiger) by default.
-  * ``symmetry_equivalent_atoms`` (lines 28-31):  Dictionary of symmetry-equivalent atoms in each molecule.  Here, we are declaring that N1 and N2 are symmetry-equivalent in PACM, as are C1 and C2, while in DGEBA, C1 and C2, C3 and C4, and O1 and O2 all constitute symmetry-equivalent atom pairs.  Since we only refer to on atom in each symmetry set in reactions, this information is used to enumerate all reactions based on symmetry.
-  * ``stereocenters`` (line 32): Dictionary of chiral carbons in each molecule.  Here we are declaring that C1 is chiral in PACM and C3 is chiral in DGEBA.  Symmetry-equivalence is also applied to these atoms.
+  * ``charge_method`` (line 26):  Charge method designation understandable by ``antechamber``'s ``-c`` option.  "gas" (Gasteiger) by default.
+  * ``symmetry_equivalent_atoms`` (lines 27-30):  Dictionary of symmetry-equivalent atoms in each molecule.  Here, we are declaring that N1 and N2 are symmetry-equivalent in PACM, as are C1 and C2, while in DGEBA, C1 and C2, C3 and C4, and O1 and O2 all constitute symmetry-equivalent atom pairs.  Since we only refer to on atom in each symmetry set in reactions, this information is used to enumerate all reactions based on symmetry.
+  * ``stereocenters`` (line 31): Dictionary of chiral carbons in each molecule.  Here we are declaring that C1 is chiral in PACM and C3 is chiral in DGEBA.  Symmetry-equivalence is also applied to these atoms.
 
 * Reaction dictionaries:
 
   These are explained in detail in :ref:`the previous section <dgeba_reaction_dictionaries>`.
 
-  * Primary-to-secondary-amine (lines 34-47):  Defines the generation of one secondary amine group through reaction of DGEBA to PACM.
-  * Secondary-to-tertiary-amine (lines 49-61):  Defines the generation of one tertiary amine group through reaction of DGEBA to PACM that has already reacted with another DGEBA.
-  * Oxirane-formation (lines 63-75): Defines the formation of the oxirane cycle from its open, hydrogenated form.  This is a post-cure reaction so bond-designates are identified and relaxed after the CURE iterations have completed.
+  * Primary-to-secondary-amine (lines 33-46):  Defines the generation of one secondary amine group through reaction of DGEBA to PACM.
+  * Secondary-to-tertiary-amine (lines 48-60):  Defines the generation of one tertiary amine group through reaction of DGEBA to PACM that has already reacted with another DGEBA.
+  * Oxirane-formation (lines 62-74): Defines the formation of the oxirane cycle from its open, hydrogenated form.  This is a post-cure reaction so bond-designates are identified and relaxed after the CURE iterations have completed.
 
-* ``initial_composition`` (lines 76-78):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 500 DGEBA's and 250 PACM's, which is a stoichiometric mixture in terms of epoxy groups (1000) and primary amines (500).  This dictates that at most 1000 crosslink bonds can form.
+* ``initial_composition`` (lines 75-77):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 500 DGEBA's and 250 PACM's, which is a stoichiometric mixture in terms of epoxy groups (1000) and primary amines (500).  This dictates that at most 1000 crosslink bonds can form.
 
 Now we are ready to :ref:`run the calculation <dgeba_run>`.
