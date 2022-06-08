@@ -158,7 +158,7 @@ The ``gro`` and ``top`` files are sufficient Gromacs input.  The ``grx`` file co
 
 ``globalIdx`` corresponds to the ``nr`` attribute in the ``[ atoms ]`` directive of a ``top`` file, or the ``atomNum`` attribute of a ``gro`` file; it is just the global atom index.  ``z`` is the current value of the number of available crosslink bonds for that atom.  ``cycle-idx`` are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  Finally, ``reactantName`` is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.
 
-The ``csv`` file is a dump of the bonds "DataFrame"::
+The ``csv`` file is a dump of the bonds "DataFrame":
 
 .. code-block:: console
 
