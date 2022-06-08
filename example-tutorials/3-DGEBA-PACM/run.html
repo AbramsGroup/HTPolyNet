@@ -148,24 +148,19 @@
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> files are sufficient Gromacs input.  The <code class="docutils literal notranslate"><span class="pre">grx</span></code> file contains values of four extra attributes for each atom:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">..</span> <span class="n">code</span><span class="o">-</span><span class="n">block</span><span class="p">::</span> <span class="n">console</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>head <span class="m">0</span>-bondsearch-bonds.csv
+<span class="go">globalIdx  z  cycle-idx reactantName</span>
+<span class="go">        1  0          1          PAC</span>
+<span class="go">        2  0          1          PAC</span>
+<span class="go">        3  0          1          PAC</span>
+<span class="go">        4  0          1          PAC</span>
+<span class="go">        5  0          1          PAC</span>
+<span class="go">        6  0          1          PAC</span>
+<span class="go">        7  0          0          PAC</span>
+<span class="go">        8  0          2          PAC</span>
+<span class="go">        9  0          2          PAC</span>
 </pre></div>
 </div>
-<blockquote>
-<div><p>$ head 0-bondsearch-bonds.csv
-globalIdx  z  cycle-idx reactantName</p>
-<blockquote>
-<div><p>1  0          1          PAC
-2  0          1          PAC
-3  0          1          PAC
-4  0          1          PAC
-5  0          1          PAC
-6  0          1          PAC
-7  0          0          PAC
-8  0          2          PAC
-9  0          2          PAC</p>
-</div></blockquote>
-</div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">globalIdx</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">nr</span></code> attribute in the <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">atoms</span> <span class="pre">]</span></code> directive of a <code class="docutils literal notranslate"><span class="pre">top</span></code> file, or the <code class="docutils literal notranslate"><span class="pre">atomNum</span></code> attribute of a <code class="docutils literal notranslate"><span class="pre">gro</span></code> file; it is just the global atom index.  <code class="docutils literal notranslate"><span class="pre">z</span></code> is the current value of the number of available crosslink bonds for that atom.  <code class="docutils literal notranslate"><span class="pre">cycle-idx</span></code> are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  Finally, <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">csv</span></code> file is a dump of the bonds “DataFrame”:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>head <span class="m">0</span>-bondsearch-bonds.csv
