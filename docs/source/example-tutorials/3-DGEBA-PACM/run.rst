@@ -140,7 +140,7 @@ Files associated with the bondsearch begin with ``0``:
     0-bondsearch-input.gro
     0-bondsearch.top
 
-The ``gro`` and ``top`` files are sufficient Gromacs input.  The ``grx`` file contains values of four extra attributes for each atom::
+The ``gro`` and ``top`` files are sufficient Gromacs input.  The ``grx`` file contains values of four extra attributes for each atom:
 
 .. code-block:: console
 
