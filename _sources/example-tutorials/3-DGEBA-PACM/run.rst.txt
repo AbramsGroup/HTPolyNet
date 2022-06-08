@@ -126,76 +126,101 @@ That is an auxiliary file storing a link-cell index for each relevant atom (HTPo
 
 Names of files corresponding to states 0-5 all begin with their respective digits.  Names of files that do not begin with a digit are "auxiliary".  Let's consider the files in the seven states.
 
-Bondsearch state files
-----------------------
+Bondsearch files
+----------------
 
 Files associated with the bondsearch begin with ``0``:
 
 .. code-block:: console
 
-    $ ls 0-*
-    0-connect-bonds.csv  0-connect.gro  0-connect.grx  0-connect.top
+    $ ls -1 0-*
+    0-bondsearch-bonds.csv
+    0-bondsearch.gro
+    0-bondsearch.grx
+    0-bondsearch-input.gro
+    0-bondsearch.top
 
 The ``gro`` and ``top`` files are sufficient Gromacs input.  The ``grx`` file contains values of four extra attributes for each atom::
 
-     globalIdx  z  cycle-idx reactantName
-             1  0          0          DGE
-             2  0          0          DGE
-             3  0          0          DGE
-             4  0          2          DGE
-             5  0          2          DGE
-             6  0          2          DGE
-             7  0          2          DGE
-             8  0          2          DGE
-             9  0          2          DGE
-            10  0          0          DGE
-            11  0          0          DGE
-            12  0          0          DGE
-            13  1          0          DGE
-            14  1          0          DGE
-            (file continues)
+.. code-block:: console
 
-``globalIdx`` corresponds to the ``nr`` in the ``[ atoms ]`` directive of a ``top`` file, or the ``atomNum`` attribute of a ``gro`` file; it is just the global atom index.  ``z`` is the current value of the number of availale crosslink bonds for that atom.  ``cycle-idx`` are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  Finally, ``reactantName`` is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.
+    $ head 0-bondsearch-bonds.csv
+    globalIdx  z  cycle-idx reactantName
+            1  0          1          PAC
+            2  0          1          PAC
+            3  0          1          PAC
+            4  0          1          PAC
+            5  0          1          PAC
+            6  0          1          PAC
+            7  0          0          PAC
+            8  0          2          PAC
+            9  0          2          PAC
 
-The ``csv`` file is a dump of the bonds data frame::
+``globalIdx`` corresponds to the ``nr`` attribute in the ``[ atoms ]`` directive of a ``top`` file, or the ``atomNum`` attribute of a ``gro`` file; it is just the global atom index.  ``z`` is the current value of the number of available crosslink bonds for that atom.  ``cycle-idx`` are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  Finally, ``reactantName`` is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.
 
-    26515 8070 PACDGE-2 0.42452443981471805
-    29836 20684 PACDGE-2 0.42568650436676986
-    31311 21384 PACDGE-1 0.4260152579427174
-    30574 7858 PACDGE-2 0.4264387412044077
-    36395 21479 PACDGE 0.42664739539812047
-    29753 21437 PACDGE-1 0.4269297366077936
-    26925 21914 PACDGE-3 0.4275839098937192
-    32131 5420 PACDGE 0.42771135126391024
-    34673 21013 PACDGE-1 0.42801051388955424
-    35371 13211 PACDGE-2 0.42913165823555866
-    29508 14971 PACDGE-3 0.4292621576612602
-    30655 21002 PACDGE 0.4300581356049432
-    28647 11102 PACDGE-3 0.4304242093563047
+The ``csv`` file is a dump of the bonds "DataFrame"::
 
-The file does not have a heading, but the first two columns are pre-bond global atom indices for each bond-designate; the third column is the product template of the reaction type that forms this bond, and the fourth column is the instantaneous interatomic distance in nm.  This is the first real output of the bond search.
+.. code-block:: console
 
-Dragging states files
----------------------
+    $ head 0-bondsearch-bonds.csv 
+    ai aj reactantName initial-distance
+    302 32058 PACDGE-3 0.3069770155891144
+    6493 15193 PACDGE-2 0.311919861502919
+    5221 30828 PACDGE 0.32043593447052693
+    6738 17218 PACDGE-1 0.3201905682558434
+    3294 18331 PACDGE-1 0.32241122809232253
+    5427 29662 PACDGE-2 0.32537209468545386
+    7066 16423 PACDGE-1 0.32753053002735405
+    5140 18585 PACDGE-2 0.3265669915959048
+    9895 26970 PACDGE-1 0.3313744105992492
+
+
+The first two columns are pre-bond global atom indices for each bond-designate; the third column is the name of the product molecule template of the reaction type that forms this bond, and the fourth column is the instantaneous interatomic distance in nm.  This is the first real output of the bond search.  Later, in the "connect" stage, atoms listed here will inherit their ``reactantName`` from this structure.
+
+Dragging files
+--------------
 
 Files associated with prebond dragging begin with ``1``.  However, because no bond-designate length exceeded 0.5 nm, no dragging is triggered.  So the build proceeds to topology update.
 
-Topology update state files
----------------------------
+Topology update files
+---------------------
 
 Files associated with the topology update process begin with a ``2``:
 
 .. code-block:: console
 
-    $ ls 2-*
-    2-update-bonds.csv  2-update.gro  2-update.grx  2-update-resid-graph.json  2-update.top
+    $ ls -1 2*
+    2-update-complete-bonds.csv
+    2-update-complete.gro
+    2-update-complete.grx
+    2-update-complete.top
+    2-update-idx-mapper.dat
+    2-update-resid-graph.json
 
-Again, the ``gro`` and ``top`` are proper Gromacs inputs, and the ``grx`` file tabulates all ``z``, ``cycle-idx``, and ``reactantName`` attributes.  The ``csv`` file reports the bond dataframe, and the ``json`` file represents the graph structure of the network on a resid basis.  Importantly, these states must be written here because the topology update deletes two hydrogen atoms for each bond created, and therefore all atoms are reindexed, necessitating reindexing all atom indices in the topology.  Therefore, all Gromacs state files in the 0 and 1 states are **not in the same registry as** those in the states 2 and up.
+All files here represent outputs of the topology update.  Let's look at the ``2-update-idx-mapper.dat``:
 
-Relaxation states files
------------------------
+.. code-block:: console
 
-Files that begin with a ``3`` correspond to bond relaxation stages.  In this example, eigth stages are run.  Each stage produces 22 output files: the bonds ``csv``, the ``gro`` / ``grx`` / ``top`` that initializes the first stage, and then the 17 **outputs** from the minimization (5), nvt (6), and npt (6) sub-stages:
+    $ tail 2-update-idx-mapper.dat 
+    36741 36105
+    36742 36106
+    36743 36107
+    36744 36108
+    36745 36109
+    36746 36110
+    36747 36111
+    36748 36112
+    36749 36113
+    36750 36114
+
+The purpose of this file is very simple:  The first column are atom indices **before** topology update, and the second column are indices **after** topology update.  Remember that topology updating deletes sacrificial hydrogens, which means atoms are reindexed.  This file allows is to match any atoms in pre-update ``gro`` and ``top`` files to those that exist downstream of a topology update.  Note that I've chosen to show a ``tail`` of this file to highlight the largest index differences.  The post-update indexes also appear in the ``csv`` file showing all bonds.
+
+Again, the ``gro`` and ``top`` are proper Gromacs inputs, and the ``grx`` file tabulates all ``z``, ``cycle-idx``, and ``reactantName`` attributes.  The ``json`` file represents the graph structure of the network on a resid basis in JSON format.
+
+Relaxation files
+----------------
+
+Files that begin with a ``3`` correspond to bond relaxation stages.  In this example, six stages are run by virture of the bond-designate with the longest bond length (0.499 nm) and the ``relax_increment`` of 0.075 nm.  Each stage produces 22 output files: the bonds ``csv``, the ``gro`` / ``grx`` / ``top`` that initializes the first stage, and then the 17 **outputs** from the minimization (5), nvt (6), and npt (6) sub-stages:
 
 .. code-block:: console
 
@@ -222,47 +247,73 @@ Files that begin with a ``3`` correspond to bond relaxation stages.  In this exa
     3-relax-stage-1-nvt.trr
     3-relax-stage-1.top
     ...
-    3-relax-stage-8-bonds.csv
-    3-relax-stage-8.gro
-    3-relax-stage-8.grx
-    3-relax-stage-8-min.edr
-    3-relax-stage-8-min.gro
-    3-relax-stage-8-min.log
-    3-relax-stage-8-min.tpr
-    3-relax-stage-8-min.trr
-    3-relax-stage-8-npt.cpt
-    3-relax-stage-8-npt.edr
-    3-relax-stage-8-npt.gro
-    3-relax-stage-8-npt.log
-    3-relax-stage-8-npt.tpr
-    3-relax-stage-8-npt.trr
-    3-relax-stage-8-nvt.cpt
-    3-relax-stage-8-nvt.edr
-    3-relax-stage-8-nvt.gro
-    3-relax-stage-8-nvt.log
-    3-relax-stage-8-nvt.tpr
-    3-relax-stage-8-nvt.trr
-    3-relax-stage-8.top
+    3-relax-stage-6-bonds.csv
+    3-relax-stage-6.gro
+    3-relax-stage-6.grx
+    3-relax-stage-6-min.edr
+    3-relax-stage-6-min.gro
+    3-relax-stage-6-min.log
+    3-relax-stage-6-min.tpr
+    3-relax-stage-6-min.trr
+    3-relax-stage-6-npt.cpt
+    3-relax-stage-6-npt.edr
+    3-relax-stage-6-npt.gro
+    3-relax-stage-6-npt.log
+    3-relax-stage-6-npt.tpr
+    3-relax-stage-6-npt.trr
+    3-relax-stage-6-nvt.cpt
+    3-relax-stage-6-nvt.edr
+    3-relax-stage-6-nvt.gro
+    3-relax-stage-6-nvt.log
+    3-relax-stage-6-nvt.tpr
+    3-relax-stage-6-nvt.trr
+    3-relax-stage-6.top
 
-The attenuation is managed by the sequential ``top`` files.  Let's look at the entry for a particular bond in each ``top`` file's ``[ bonds ]`` directive:
+The attenuation is managed by the sequential ``top`` files.  Let's look at the entry for a particular bond (between atoms 8754 and 32687) in each stage's ``top`` file's ``[ bonds ]`` directive:
 
 .. code-block:: console
 
-    $ grep "^23795 29736" 3*top
-    3-relax-stage-1.top:23795 29736 1 0.3204220617308803 34089.14
-    3-relax-stage-2.top:23795 29736 1 0.29557176719789735 68178.28
-    3-relax-stage-3.top:23795 29736 1 0.2707214726649145 102267.42
-    3-relax-stage-4.top:23795 29736 1 0.24587117813193157 136356.56
-    3-relax-stage-5.top:23795 29736 1 0.22102088359894867 170445.7
-    3-relax-stage-6.top:23795 29736 1 0.1961705890659658 204534.84
-    3-relax-stage-7.top:23795 29736 1 0.1713202945329829 238623.97999999998
-    3-relax-stage-8.top:23795 29736 1 0.14647 272713.12
+    $ grep "^8754 32687" 3-relax-stage-?.top|awk '{if ($3==1) print $0}'
+    3-relax-stage-1.top:8754 32687 1 0.4395036912695118 45452.18666666666
+    3-relax-stage-2.top:8754 32687 1 0.38089695301560944 90904.37333333332
+    3-relax-stage-3.top:8754 32687 1 0.32229021476170705 136356.56
+    3-relax-stage-4.top:8754 32687 1 0.2636834765078047 181808.74666666664
+    3-relax-stage-5.top:8754 32687 1 0.20507673825390232 227260.93333333335
+    3-relax-stage-6.top:8754 32687 1 0.14647 272713.12
     $
 
-In a ``[ bonds ]`` topology directive, the 4th and 5th columns are ``b0`` and ``kt`` harmonic bond parameters.  In the stage-8 ``top``, we see these parameters at their proper force-field values for a C-N single bond.  Notice how the value of the distance parameter ``b0`` begins at a large initial value and systematically decreases toward the target (but never by more than an increment of 0.05 nm), while the spring constant ``kt`` starts low and increases systematically toward its target.  
+In a ``[ bonds ]`` topology directive, the 4th and 5th columns are ``b0`` and ``kt`` harmonic bond parameters.  In the stage-6 ``top``, we see these parameters at their proper force-field values for a C-N single bond.  Notice how the value of the distance parameter ``b0`` begins at a large initial value and linearly decreases toward the target (but never by *more* than an increment of 0.075 nm), while the spring constant ``kt`` starts low and increases linearly toward its target.  
+
+Equilibration files
+-------------------
+
+Files associated with final equilibration of the bonded system at the end of one CURE iteration begin with a ``4``:
+
+.. code-block:: console
+
+    $ ls 4-*
+    4-equilibrate-bonds.csv
+    4-equilibrate-complete-bonds.csv
+    4-equilibrate-complete.gro
+    4-equilibrate-complete.grx
+    4-equilibrate-complete.top
+    4-equilibrate.gro
+    4-equilibrate.grx
+    4-equilibrate.mdp
+    4-equilibrate-post.cpt
+    4-equilibrate-post.edr
+    4-equilibrate-post.gro
+    4-equilibrate-post.log
+    4-equilibrate-post.tpr
+    4-equilibrate-post.trr
+    4-equilibrate.top
+
+Files with the simple prefix ``4-equilibrate`` represent inputs to the Gromacs run.  Files with the prefixs ``4-equilibrate-post`` are the raw Gromacs mdrun outputs, and the files with the prefix ``4-equilibrate-complete`` represent the Gromacs outputs read back in to HTPolyNet and processed.  This set of ``complete`` files are copied to the next CURE iteration directory as the set of ``0-connect`` files.
 
 Subsequent CURE iterations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
 
 Post-cure reactions
 ^^^^^^^^^^^^^^^^^^^
