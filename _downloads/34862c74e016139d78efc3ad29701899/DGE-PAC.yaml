@@ -12,12 +12,12 @@ CURE_max_conversion_per_iteration: 0.25
 CURE_desired_conversion: 0.95
 CURE_late_threshold: 0.85
 drag_trigger_distance: 0.5 # nm
-max_drag_stages: 5
+drag_increment: 0.075 # nm
 drag_limit: 0.3 # nm
-drag_nvt_steps: 500
-drag_npt_steps: 1000
+drag_nvt_steps: 100
+drag_npt_steps: 2500
 drag_temperature: 600
-max_bond_relaxation_increment: 0.05
+relax_increment: 0.075 # nm
 relax_nvt_steps: 500
 relax_npt_steps: 1000
 relax_temperature: 600

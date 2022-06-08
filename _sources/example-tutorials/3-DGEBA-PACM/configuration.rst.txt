@@ -18,18 +18,17 @@ The reaction dicts from the previous section appear in a list together with many
     CURE_initial_search_radius: 0.5 # nm
     CURE_radial_increment: 0.25
     CURE_max_iterations: 150
-    CURE_max_conversion_per_iteration: 0.25
     CURE_desired_conversion: 0.95
     CURE_late_threshold: 0.85
+    drag_increment: 0.075 # nm
     drag_trigger_distance: 0.5 # nm
-    max_drag_stages: 5
     drag_limit: 0.3 # nm
-    drag_nvt_steps: 500
-    drag_npt_steps: 1000
+    drag_nvt_steps: 1000
+    drag_npt_steps: 2500
     drag_temperature: 600
-    max_bond_relaxation_increment: 0.05
-    relax_nvt_steps: 500
-    relax_npt_steps: 1000
+    relax_increment: 0.075
+    relax_nvt_steps: 1000
+    relax_npt_steps: 2500
     relax_temperature: 600
     equilibration_temperature: 300
     equilibration_pressure: 1
