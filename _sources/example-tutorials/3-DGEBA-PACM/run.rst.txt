@@ -313,7 +313,9 @@ Files with the simple prefix ``4-equilibrate`` represent inputs to the Gromacs r
 Subsequent CURE iterations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The number of CURE iterations needed to reach the specified conversion (0.95) is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Below are two plots that illustrate this process
 
+.. image:: iter-graph.png
 
 Post-cure reactions
 ^^^^^^^^^^^^^^^^^^^
