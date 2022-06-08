@@ -87,7 +87,7 @@ After a few more minutes, when the densification MD simulation has finished, let
     PAC-SC-1-1.gro
     $
 
-The ``PAC`` and ``DGE`` ``gro`` files are used by ``gmx insert-molecules`` to build the initial coordinates, which appear in ``init.gro``.  HTPolyNet built the initial topology ``init.top`` using the template topologies, and ``init.grx`` (a "Gromacs-extended" coordinate file) contains some additional atomic attributes HTPolyNet needs.  The ``mdp`` file ``minimize.mdp`` is "checked-out" from the system library and combined with ``init.top`` and ``init.gro`` via ``gmx grompp`` to build the ``mdrun`` input ``init-minimized.tpr``.  The results of that minimization are all the ``init-minimized`` files.  Densification is governed by the ``liquid-densify-npt.mdp`` file, also checked-out from the system library.  The densification results are all in the ``npt-1`` files.  The set ``init.top``, ``init.grx``, and ``npt-1.gro`` together constitute the "densified" state of the liquid system, and these are what initiates the CURE iterations to follow.
+The ``PAC`` and ``DGE`` ``gro`` files are used by ``gmx insert-molecules`` to build the initial coordinates of the low-density system, which appear in ``init.gro``.  HTPolyNet built the initial topology ``init.top`` using the template topologies, and ``init.grx`` (a "Gromacs-extended" coordinate file) contains some additional atomic attributes HTPolyNet needs.  The ``mdp`` file ``minimize.mdp`` is "checked-out" from the system library and combined with ``init.top`` and ``init.gro`` via ``gmx grompp`` to build the ``mdrun`` input ``init-minimized.tpr``.  The results of that minimization are all the ``init-minimized`` files.  Densification is governed by the ``liquid-densify-npt.mdp`` file, also checked-out from the system library.  The densification results are all in the ``npt-1`` files.  The set ``init.top``, ``init.grx``, and ``npt-1.gro`` together constitute the "densified" state of the liquid system, and these are what initiates the CURE iterations to follow.
 
 However, first a little detour:  let's go up out of ``systems/init`` and into ``plots/``:
 
@@ -114,14 +114,14 @@ The next major part of the build is the first CURE iteration, which is the most 
     $ ls
     linkcell-0.50.grx
 
-That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we'll see a large number of files.  They can be divided into seven "states":
+That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we'll see a large number of files.  They can be divided into seven "phases":
 
-0. Bondsearch system state
-1. Dragging states
-2. Topolgy update state
-3. Relaxation states
-4. Equilibration state
-5. Final state
+0. Bondsearch system
+1. Dragging
+2. Topology update
+3. Relaxation
+4. Equilibration
+5. Finalization
 6. Auxiliary files
 
 Names of files corresponding to states 0-5 all begin with their respective digits.  Names of files that do not begin with a digit are "auxiliary".  Let's consider the files in the seven states.
