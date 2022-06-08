@@ -168,22 +168,19 @@ globalIdx  z  cycle-idx reactantName</p>
 </div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">globalIdx</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">nr</span></code> attribute in the <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">atoms</span> <span class="pre">]</span></code> directive of a <code class="docutils literal notranslate"><span class="pre">top</span></code> file, or the <code class="docutils literal notranslate"><span class="pre">atomNum</span></code> attribute of a <code class="docutils literal notranslate"><span class="pre">gro</span></code> file; it is just the global atom index.  <code class="docutils literal notranslate"><span class="pre">z</span></code> is the current value of the number of available crosslink bonds for that atom.  <code class="docutils literal notranslate"><span class="pre">cycle-idx</span></code> are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  Finally, <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">csv</span></code> file is a dump of the bonds “DataFrame”:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">..</span> <span class="n">code</span><span class="o">-</span><span class="n">block</span><span class="p">::</span> <span class="n">console</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>head <span class="m">0</span>-bondsearch-bonds.csv
+<span class="go">ai aj reactantName initial-distance</span>
+<span class="go">302 32058 PACDGE-3 0.3069770155891144</span>
+<span class="go">6493 15193 PACDGE-2 0.311919861502919</span>
+<span class="go">5221 30828 PACDGE 0.32043593447052693</span>
+<span class="go">6738 17218 PACDGE-1 0.3201905682558434</span>
+<span class="go">3294 18331 PACDGE-1 0.32241122809232253</span>
+<span class="go">5427 29662 PACDGE-2 0.32537209468545386</span>
+<span class="go">7066 16423 PACDGE-1 0.32753053002735405</span>
+<span class="go">5140 18585 PACDGE-2 0.3265669915959048</span>
+<span class="go">9895 26970 PACDGE-1 0.3313744105992492</span>
 </pre></div>
 </div>
-<blockquote>
-<div><p>$ head 0-bondsearch-bonds.csv
-ai aj reactantName initial-distance
-302 32058 PACDGE-3 0.3069770155891144
-6493 15193 PACDGE-2 0.311919861502919
-5221 30828 PACDGE 0.32043593447052693
-6738 17218 PACDGE-1 0.3201905682558434
-3294 18331 PACDGE-1 0.32241122809232253
-5427 29662 PACDGE-2 0.32537209468545386
-7066 16423 PACDGE-1 0.32753053002735405
-5140 18585 PACDGE-2 0.3265669915959048
-9895 26970 PACDGE-1 0.3313744105992492</p>
-</div></blockquote>
 <p>The first two columns are pre-bond global atom indices for each bond-designate; the third column is the name of the product molecule template of the reaction type that forms this bond, and the fourth column is the instantaneous interatomic distance in nm.  This is the first real output of the bond search.  Later, in the “connect” stage, atoms listed here will inherit their <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> from this structure.</p>
 </section>
 <section id="dragging-files">
