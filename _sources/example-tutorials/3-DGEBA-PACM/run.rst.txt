@@ -346,3 +346,10 @@ Below is a trace of the density vs time as a concatenation of the sequence of al
 .. image:: all-density.png
 
 It is clear that during the post-bond relaxations, density drops to 800 kg/m3, but this is because the post-bond relaxations are all run at 600 K.  The equilibrations at 300 K all bring the system back to approx. 1000 kg/m3.
+
+Finally, here are a couple of visualizations of the final cured system:
+
+.. image:: pac-dge-fig1.png
+
+.. image:: pac-dge-fig2.png
+

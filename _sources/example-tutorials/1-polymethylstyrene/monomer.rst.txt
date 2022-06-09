@@ -1,9 +1,9 @@
 .. _tutorial_pms_monomer:
 
-monomer
+Monomer
 =======
 
-In this section, we describe how the input :download:`MST.mol2 <MST.mol2>` that specifies the 4-methylstyrene monomer is generated.  Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
+In this section, we describe how the input :download:`EMB.mol2 <EMB.mol2>` that specifies the 4-methylstyrene monomer is generated.  ("EMB" stands for "ethylmethylbenzene" for reasons that will become clear.) Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
 
 .. code-block:: console
 
@@ -16,3 +16,146 @@ In this section, we describe how the input :download:`MST.mol2 <MST.mol2>` that 
     $ cd lib/inputs
 
 Now we can generate the required ``*.mol2`` file.
+
+4-methylstyrene
+^^^^^^^^^^^^^^^
+
+.. image:: mst-vinyl.png
+
+`4-methylstyrene <https://pubchem.ncbi.nlm.nih.gov/compound/4-Methylstyrene>`_ is a common monomer in the manufacture of polyesters.  Its most important feature from the standpoint of polymerization is the carbon-carbon double bond, which will open to form a single bond and a radical if attacked by another radical.  For plain old styrene, this looks like:
+
+.. image:: styrene-polymerization.png 
+
+(http://2015.igem.org/Team:Stanford-Brown/PS)
+
+However, as described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will actually be 1-ethyl-4-methylbenzene:
+
+.. image:: 4meb.png 
+
+We can easily generate a ``mol2`` file for 1-ethyl-4-methylbenzene using `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ (or any of a variety of molecular builders):
+
+.. code-block:: console
+
+    $ echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen3d -h -omol2 > EMB-raw.mol2
+
+Now, let's have a look at this file::
+
+    @<TRIPOS>MOLECULE
+    *****
+    21 21 0 0 0
+    SMALL
+    GASTEIGER
+
+    @<TRIPOS>ATOM
+          1 C          -0.7183    1.1964   -0.0469 C.ar    1  UNL1       -0.0583
+          2 C           0.6786    1.2489   -0.0406 C.ar    1  UNL1       -0.0586
+          3 C           1.4326    0.0702   -0.0692 C.ar    1  UNL1       -0.0504
+          4 C           2.9313    0.1119   -0.1179 C.3     1  UNL1       -0.0397
+          5 C           0.7663   -1.1602   -0.0643 C.ar    1  UNL1       -0.0586
+          6 C          -0.6303   -1.2130   -0.0702 C.ar    1  UNL1       -0.0583
+          7 C          -1.3840   -0.0340   -0.0882 C.ar    1  UNL1       -0.0476
+          8 C          -2.8901   -0.0895   -0.1745 C.3     1  UNL1       -0.0305
+          9 C          -3.5635   -0.1866    1.1846 C.3     1  UNL1       -0.0613
+         10 H          -1.2827    2.1250   -0.0377 H       1  UNL1        0.0620
+         11 H           1.1716    2.2188   -0.0290 H       1  UNL1        0.0620
+         12 H           3.3028    1.1393   -0.1869 H       1  UNL1        0.0278
+         13 H           3.2926   -0.4300   -0.9987 H       1  UNL1        0.0278
+         14 H           3.3531   -0.3437    0.7826 H       1  UNL1        0.0278
+         15 H           1.3333   -2.0885   -0.0716 H       1  UNL1        0.0620
+         16 H          -1.1240   -2.1816   -0.0811 H       1  UNL1        0.0620
+         17 H          -3.1842   -0.9482   -0.7919 H       1  UNL1        0.0311
+         18 H          -3.2577    0.7973   -0.7038 H       1  UNL1        0.0311
+         19 H          -3.2530   -1.0884    1.7216 H       1  UNL1        0.0233
+         20 H          -4.6512   -0.2259    1.0596 H       1  UNL1        0.0233
+         21 H          -3.3263    0.6802    1.8094 H       1  UNL1        0.0233
+    @<TRIPOS>BOND
+          1     1     2   ar
+          2     2     3   ar
+          3     3     4    1
+          4     3     5   ar
+          5     5     6   ar
+          6     6     7   ar
+          7     1     7   ar
+          8     7     8    1
+          9     8     9    1
+         10     1    10    1
+         11     2    11    1
+         12     4    12    1
+         13     4    13    1
+         14     4    14    1
+         15     5    15    1
+         16     6    16    1
+         17     8    17    1
+         18     8    18    1
+         19     9    19    1
+         20     9    20    1
+         21     9    21    1
+
+Notice how the atom names (second column in the ``@<TRIPOS>ATOM`` section) are not unique?  HTPolyNet needs unique atom names in order to describe reactions.  So let's call the methyl-group carbon ``C1`` and the methylene carbon ``C2``.  To figure out which atoms these are in the ``mol2`` file, we can interrogate the structure in VMD (or any other suitable visualization software):
+
+.. image:: emb-labelled.png
+
+The black numbers shown here indicate internal atom indexes in VMD, and VMD starts counting at zero.  ``Mol2`` and Gromacs start counting at 1, so these atoms' indexes are one more than what is shown here.  We see the methylene carbon is index 7 in VMD, so it is index 8 in the ``mol2`` file; likewise, the methyl carbon is index 8 in VMD and so index 9 in the ``mol2`` file.  Let's use this information along with a few bells and whistles to force ``obabel`` to give us a ready-to-use ``mol2`` file:
+
+.. code-block:: console
+
+    $ echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen3d -h -omol2 --title "EMB" | \
+                                sed s/"8 C "/"8 C2"/ | \
+                                sed s/"9 C "/"9 C1"/ | \
+                                sed s/"UNL1"/"EMB "/ > EMB.mol2
+
+Let's look at the file :download:`EMB.mol2 <EMB.mol2>` that results from the command above::
+
+    @<TRIPOS>MOLECULE
+    EMB
+    21 21 0 0 0
+    SMALL
+    GASTEIGER
+
+    @<TRIPOS>ATOM
+          1 C          -0.7183    1.1964   -0.0469 C.ar    1  EMB        -0.0583
+          2 C           0.6786    1.2489   -0.0406 C.ar    1  EMB        -0.0586
+          3 C           1.4326    0.0702   -0.0692 C.ar    1  EMB        -0.0504
+          4 C           2.9313    0.1119   -0.1179 C.3     1  EMB        -0.0397
+          5 C           0.7663   -1.1602   -0.0643 C.ar    1  EMB        -0.0586
+          6 C          -0.6303   -1.2130   -0.0702 C.ar    1  EMB        -0.0583
+          7 C          -1.3840   -0.0340   -0.0882 C.ar    1  EMB        -0.0476
+          8 C2         -2.8901   -0.0895   -0.1745 C.3     1  EMB        -0.0305
+          9 C1         -3.5635   -0.1866    1.1846 C.3     1  EMB        -0.0613
+         10 H          -1.2827    2.1250   -0.0377 H       1  EMB         0.0620
+         11 H           1.1716    2.2188   -0.0290 H       1  EMB         0.0620
+         12 H           3.3028    1.1393   -0.1869 H       1  EMB         0.0278
+         13 H           3.2926   -0.4300   -0.9987 H       1  EMB         0.0278
+         14 H           3.3531   -0.3437    0.7826 H       1  EMB         0.0278
+         15 H           1.3333   -2.0885   -0.0716 H       1  EMB         0.0620
+         16 H          -1.1240   -2.1816   -0.0811 H       1  EMB         0.0620
+         17 H          -3.1842   -0.9482   -0.7919 H       1  EMB         0.0311
+         18 H          -3.2577    0.7973   -0.7038 H       1  EMB         0.0311
+         19 H          -3.2530   -1.0884    1.7216 H       1  EMB         0.0233
+         20 H          -4.6512   -0.2259    1.0596 H       1  EMB         0.0233
+         21 H          -3.3263    0.6802    1.8094 H       1  EMB         0.0233
+    @<TRIPOS>BOND
+          1     1     2   ar
+          2     2     3   ar
+          3     3     4    1
+          4     3     5   ar
+          5     5     6   ar
+          6     6     7   ar
+          7     1     7   ar
+          8     7     8    1
+          9     8     9    1
+         10     1    10    1
+         11     2    11    1
+         12     4    12    1
+         13     4    13    1
+         14     4    14    1
+         15     5    15    1
+         16     6    16    1
+         17     8    17    1
+         18     8    18    1
+         19     9    19    1
+         20     9    20    1
+         21     9    21    1
+
+
+The next thing we consider is how to create the :ref:`reaction dictionaries <pms_reaction_dictionaries>` necessary to describe the crosslinking chemistry.
