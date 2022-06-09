@@ -114,17 +114,15 @@ The next major part of the build is the first CURE iteration, which is the most 
     $ ls
     linkcell-0.50.grx
 
-That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we'll see a large number of files.  They can be divided into seven "phases":
+That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we'll see a large number of files.  They can be divided into five "phases" for each CURE iteration:
 
-0. Bondsearch system
+0. Bond search
 1. Dragging
 2. Topology update
 3. Relaxation
 4. Equilibration
-5. Finalization
-6. Auxiliary files
 
-Names of files corresponding to states 0-5 all begin with their respective digits.  Names of files that do not begin with a digit are "auxiliary".  Let's consider the files in the seven states.
+Names of files corresponding to phases 0-4 all begin with their respective digits.  Names of files that do not begin with a digit are "auxiliary".  Let's consider the files in the seven states.
 
 Bondsearch files
 ----------------
@@ -197,7 +195,7 @@ Files associated with the topology update process begin with a ``2``:
     2-update-idx-mapper.dat
     2-update-resid-graph.json
 
-All files here represent outputs of the topology update.  Let's look at the ``2-update-idx-mapper.dat``:
+All files here represent **outputs** of the topology update.  Let's look at the ``2-update-idx-mapper.dat``:
 
 .. code-block:: console
 
@@ -213,7 +211,7 @@ All files here represent outputs of the topology update.  Let's look at the ``2-
     36749 36113
     36750 36114
 
-The purpose of this file is very simple:  The first column are atom indices **before** topology update, and the second column are indices **after** topology update.  Remember that topology updating deletes sacrificial hydrogens, which means atoms are reindexed.  This file allows is to match any atoms in pre-update ``gro`` and ``top`` files to those that exist downstream of a topology update.  Note that I've chosen to show a ``tail`` of this file to highlight the largest index differences.  The post-update indexes also appear in the ``csv`` file showing all bonds.
+The purpose of this file is very simple:  The first column are atom indices **before** topology update, and the second column are indices **after** topology update.  Remember that topology updating deletes sacrificial hydrogens, which means atoms are reindexed (since Gromacs requires sequential atom indexes).  This file allows us to match any atoms in pre-update ``gro`` and ``top`` files to those that exist downstream of a topology update.  Note that I've chosen to show a ``tail`` of this file to highlight the largest index differences.  The post-update indexes also appear in the ``csv`` file showing all bonds.
 
 Again, the ``gro`` and ``top`` are proper Gromacs inputs, and the ``grx`` file tabulates all ``z``, ``cycle-idx``, and ``reactantName`` attributes.  The ``json`` file represents the graph structure of the network on a resid basis in JSON format.
 
@@ -313,28 +311,32 @@ Files with the simple prefix ``4-equilibrate`` represent inputs to the Gromacs r
 Subsequent CURE iterations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The number of CURE iterations needed to reach the specified conversion (0.95) is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Files for each iteration appear in that iteration's subdirectory and follow the same naming convention explained for the first iteration.
+The primary result of a CURE iteration is the calculated conversion, or the fraction of the maximum number of crosslink bonds possible, based on the initial composition and reaction stoichiometries, that have formed up to that point. If this fraction is below the value associated with the ``CURE_desired_conversion`` option, then a new iteration is begun.  This involves creating the next ``iter-n/`` directory under ``systems/``, and copying over the prior iteration's ``4-equilibrate-complete.top/gro/grx`` files onto the new ``0-bondsearch.top/gro/grx`` files.  At the beginning of any CURE iterations, the maximum number of new bonds required to reach the desired conversion is calculated and used as a limit in creating new bonds, so that the desired conversion is hit exactly.  
 
-Post-cure reactions
-^^^^^^^^^^^^^^^^^^^
+The number of CURE iterations needed to reach a specified conversion is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Files for each iteration's directory follow the same naming convention explained for the first iteration.
 
-After iteration 67, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  Here, because our system had 500 DGE molecules, there are 1000 epoxy groups, 950 of which have reacted, leaving 50 unreacted.  Those groups are subject to the ``Oxirane-formation`` reactions to "undo" the hydrogenation used to generate the monomer forms with sacrificial hydrogens.  These reactions do not require a bond search; HTPolyNet merely identifies unreacted C1 and C2 from DGE's and proceeds to bond them to their respective O1 and O2 atoms.  Then bond relaxation follows, and after that, a final equilibration.
+Post-cure reactions, equilibration, and finalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All files for the post-cure processing appear in the ``postcure`` directory:
+After iteration 67, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  The directory ``systems/postcure`` is created and the final outputs from the last CURE iterations are copied here.  Because our system had 500 DGE molecules, there are 1000 epoxy groups, 950 of which have reacted, leaving 50 unreacted.  Those groups are subject to the ``Oxirane-formation`` reactions to "undo" the hydrogenation used to generate the monomer forms with sacrificial hydrogens.  Only one such reaction is listed explicitly in the config file, while the other is inferred based on the symmetry-equivalent atoms.  
 
-.. code-block:: console
+These reactions do not require a bond search; HTPolyNet merely identifies unreacted C1 and C2 from DGE's and proceeds to bond them to their respective O1 and O2 atoms.  Then bond relaxation stages follows, with prefix ``5-relax-stage-``, and after that, a final equilibration with prefix ``6-equilibrate``.
 
-    $ cd ../postcure
-    $ ls -1 5-*
+After the equilibration, HTPolyNet generates the final files ``7-final.top/gro/grx``. 
     
 
-Equilibration and finalization
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Overall behavior
+^^^^^^^^^^^^^^^^
 
+If the build is run with ``--loglevel debug`` indicated on the command-line, the log file will contain a lot of information that can be used to characterize the efficiency of the build process.  The ``HTPolyNet.plot`` module has a method ``cure_graph`` that can be used to generate plots showing the conversion vs. run time in hours, and the iteration number vs. run time in hours.  Generating this plot from the directory the log file is in can be done using an interactive python session:
 
+.. code-block:: python
 
-Below are two plots that illustrate this process:
+    >>> from HTPolyNet.plot import cure_graph
+    >>> cure_graph('my_build.log',xmax=20.)
+
+This generates the following plots (as a PNG file):
 
 .. image:: iter-graph.png
 
-On the left is a plot of the conversion vs. run time in hours.  In this case, on a moderately slow workstation, this build took just under 17 hours to reach 0.95
+In this case, on a moderately slow workstation, this build took just under 17 hours to reach 0.95 conversion.  
