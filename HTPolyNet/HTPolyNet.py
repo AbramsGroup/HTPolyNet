@@ -715,8 +715,6 @@ class HTPolyNet:
             def __init__(self,bondtuple,reactantname,distance,probability=1.0,order=1):
                 assert len(bondtuple)==2
                 assert type(bondtuple)==tuple
-                assert type(bondtuple[0])==int
-                assert type(bondtuple[1])==int
                 self.bond=bondtuple
                 self.reactantname=reactantname
                 self.distance=distance
