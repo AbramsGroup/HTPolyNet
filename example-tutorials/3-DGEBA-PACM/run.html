@@ -125,17 +125,15 @@
 <span class="go">linkcell-0.50.grx</span>
 </pre></div>
 </div>
-<p>That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we’ll see a large number of files.  They can be divided into seven “phases”:</p>
+<p>That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we’ll see a large number of files.  They can be divided into five “phases” for each CURE iteration:</p>
 <ol class="arabic simple" start="0">
-<li><p>Bondsearch system</p></li>
+<li><p>Bond search</p></li>
 <li><p>Dragging</p></li>
 <li><p>Topology update</p></li>
 <li><p>Relaxation</p></li>
 <li><p>Equilibration</p></li>
-<li><p>Finalization</p></li>
-<li><p>Auxiliary files</p></li>
 </ol>
-<p>Names of files corresponding to states 0-5 all begin with their respective digits.  Names of files that do not begin with a digit are “auxiliary”.  Let’s consider the files in the seven states.</p>
+<p>Names of files corresponding to phases 0-4 all begin with their respective digits.  Names of files that do not begin with a digit are “auxiliary”.  Let’s consider the files in the seven states.</p>
 <section id="bondsearch-files">
 <h3>Bondsearch files<a class="headerlink" href="#bondsearch-files" title="Permalink to this headline">¶</a></h3>
 <p>Files associated with the bondsearch begin with <code class="docutils literal notranslate"><span class="pre">0</span></code>:</p>
@@ -194,7 +192,7 @@
 <span class="go">2-update-resid-graph.json</span>
 </pre></div>
 </div>
-<p>All files here represent outputs of the topology update.  Let’s look at the <code class="docutils literal notranslate"><span class="pre">2-update-idx-mapper.dat</span></code>:</p>
+<p>All files here represent <strong>outputs</strong> of the topology update.  Let’s look at the <code class="docutils literal notranslate"><span class="pre">2-update-idx-mapper.dat</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tail <span class="m">2</span>-update-idx-mapper.dat
 <span class="go">36741 36105</span>
 <span class="go">36742 36106</span>
@@ -208,7 +206,7 @@
 <span class="go">36750 36114</span>
 </pre></div>
 </div>
-<p>The purpose of this file is very simple:  The first column are atom indices <strong>before</strong> topology update, and the second column are indices <strong>after</strong> topology update.  Remember that topology updating deletes sacrificial hydrogens, which means atoms are reindexed.  This file allows is to match any atoms in pre-update <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> files to those that exist downstream of a topology update.  Note that I’ve chosen to show a <code class="docutils literal notranslate"><span class="pre">tail</span></code> of this file to highlight the largest index differences.  The post-update indexes also appear in the <code class="docutils literal notranslate"><span class="pre">csv</span></code> file showing all bonds.</p>
+<p>The purpose of this file is very simple:  The first column are atom indices <strong>before</strong> topology update, and the second column are indices <strong>after</strong> topology update.  Remember that topology updating deletes sacrificial hydrogens, which means atoms are reindexed (since Gromacs requires sequential atom indexes).  This file allows us to match any atoms in pre-update <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> files to those that exist downstream of a topology update.  Note that I’ve chosen to show a <code class="docutils literal notranslate"><span class="pre">tail</span></code> of this file to highlight the largest index differences.  The post-update indexes also appear in the <code class="docutils literal notranslate"><span class="pre">csv</span></code> file showing all bonds.</p>
 <p>Again, the <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> are proper Gromacs inputs, and the <code class="docutils literal notranslate"><span class="pre">grx</span></code> file tabulates all <code class="docutils literal notranslate"><span class="pre">z</span></code>, <code class="docutils literal notranslate"><span class="pre">cycle-idx</span></code>, and <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> attributes.  The <code class="docutils literal notranslate"><span class="pre">json</span></code> file represents the graph structure of the network on a resid basis in JSON format.</p>
 </section>
 <section id="relaxation-files">
@@ -299,22 +297,25 @@
 </section>
 <section id="subsequent-cure-iterations">
 <h2>Subsequent CURE iterations<a class="headerlink" href="#subsequent-cure-iterations" title="Permalink to this headline">¶</a></h2>
-<p>The number of CURE iterations needed to reach the specified conversion (0.95) is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Files for each iteration appear in that iteration’s subdirectory and follow the same naming convention explained for the first iteration.</p>
+<p>The primary result of a CURE iteration is the calculated conversion, or the fraction of the maximum number of crosslink bonds possible, based on the initial composition and reaction stoichiometries, that have formed up to that point. If this fraction is below the value associated with the <code class="docutils literal notranslate"><span class="pre">CURE_desired_conversion</span></code> option, then a new iteration is begun.  This involves creating the next <code class="docutils literal notranslate"><span class="pre">iter-n/</span></code> directory under <code class="docutils literal notranslate"><span class="pre">systems/</span></code>, and copying over the prior iteration’s <code class="docutils literal notranslate"><span class="pre">4-equilibrate-complete.top/gro/grx</span></code> files onto the new <code class="docutils literal notranslate"><span class="pre">0-bondsearch.top/gro/grx</span></code> files.  At the beginning of any CURE iterations, the maximum number of new bonds required to reach the desired conversion is calculated and used as a limit in creating new bonds, so that the desired conversion is hit exactly.</p>
+<p>The number of CURE iterations needed to reach a specified conversion is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Files for each iteration’s directory follow the same naming convention explained for the first iteration.</p>
 </section>
-<section id="post-cure-reactions">
-<h2>Post-cure reactions<a class="headerlink" href="#post-cure-reactions" title="Permalink to this headline">¶</a></h2>
-<p>After iteration 67, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  Here, because our system had 500 DGE molecules, there are 1000 epoxy groups, 950 of which have reacted, leaving 50 unreacted.  Those groups are subject to the <code class="docutils literal notranslate"><span class="pre">Oxirane-formation</span></code> reactions to “undo” the hydrogenation used to generate the monomer forms with sacrificial hydrogens.  These reactions do not require a bond search; HTPolyNet merely identifies unreacted C1 and C2 from DGE’s and proceeds to bond them to their respective O1 and O2 atoms.  Then bond relaxation follows, and after that, a final equilibration.</p>
-<p>All files for the post-cure processing appear in the <code class="docutils literal notranslate"><span class="pre">postcure</span></code> directory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ../postcure
-<span class="gp">$ </span>ls -1 <span class="m">5</span>-*
+<section id="post-cure-reactions-equilibration-and-finalization">
+<h2>Post-cure reactions, equilibration, and finalization<a class="headerlink" href="#post-cure-reactions-equilibration-and-finalization" title="Permalink to this headline">¶</a></h2>
+<p>After iteration 67, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  The directory <code class="docutils literal notranslate"><span class="pre">systems/postcure</span></code> is created and the final outputs from the last CURE iterations are copied here.  Because our system had 500 DGE molecules, there are 1000 epoxy groups, 950 of which have reacted, leaving 50 unreacted.  Those groups are subject to the <code class="docutils literal notranslate"><span class="pre">Oxirane-formation</span></code> reactions to “undo” the hydrogenation used to generate the monomer forms with sacrificial hydrogens.  Only one such reaction is listed explicitly in the config file, while the other is inferred based on the symmetry-equivalent atoms.</p>
+<p>These reactions do not require a bond search; HTPolyNet merely identifies unreacted C1 and C2 from DGE’s and proceeds to bond them to their respective O1 and O2 atoms.  Then bond relaxation stages follows, with prefix <code class="docutils literal notranslate"><span class="pre">5-relax-stage-</span></code>, and after that, a final equilibration with prefix <code class="docutils literal notranslate"><span class="pre">6-equilibrate</span></code>.</p>
+<p>After the equilibration, HTPolyNet generates the final files <code class="docutils literal notranslate"><span class="pre">7-final.top/gro/grx</span></code>.</p>
+</section>
+<section id="overall-behavior">
+<h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this headline">¶</a></h2>
+<p>If the build is run with <code class="docutils literal notranslate"><span class="pre">--loglevel</span> <span class="pre">debug</span></code> indicated on the command-line, the log file will contain a lot of information that can be used to characterize the efficiency of the build process.  The <code class="docutils literal notranslate"><span class="pre">HTPolyNet.plot</span></code> module has a method <code class="docutils literal notranslate"><span class="pre">cure_graph</span></code> that can be used to generate plots showing the conversion vs. run time in hours, and the iteration number vs. run time in hours.  Generating this plot from the directory the log file is in can be done using an interactive python session:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">HTPolyNet.plot</span> <span class="kn">import</span> <span class="n">cure_graph</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cure_graph</span><span class="p">(</span><span class="s1">&#39;my_build.log&#39;</span><span class="p">,</span><span class="n">xmax</span><span class="o">=</span><span class="mf">20.</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
-<section id="equilibration-and-finalization">
-<h2>Equilibration and finalization<a class="headerlink" href="#equilibration-and-finalization" title="Permalink to this headline">¶</a></h2>
-<p>Below are two plots that illustrate this process:</p>
+<p>This generates the following plots (as a PNG file):</p>
 <img alt="../../_images/iter-graph.png" src="../../_images/iter-graph.png" />
-<p>On the left is a plot of the conversion vs. run time in hours.  In this case, on a moderately slow workstation, this build took just under 17 hours to reach 0.95</p>
+<p>In this case, on a moderately slow workstation, this build took just under 17 hours to reach 0.95 conversion.</p>
 </section>
 </section>
 
