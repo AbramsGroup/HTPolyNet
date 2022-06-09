@@ -11,9 +11,10 @@ In this section, we describe how the inputs :download:`DGE.mol2 <DGE.mol2>` and 
     $ mkdir my_dgeba_pacm_build
     $ cd my_dgeba_pacm_build
     $ mkdir lib
-    $ mkdir lib/inputs
-    $ mkdir lib/parameterized
-    $ cd lib/inputs
+    $ mkdir lib/molecules
+    $ mkdir lib/molecules/inputs
+    $ mkdir lib/molecules/parameterized
+    $ cd lib/molecules/inputs
 
 Now we can generate the two required ``*.mol2`` files.
 

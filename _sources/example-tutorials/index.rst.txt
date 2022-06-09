@@ -5,7 +5,7 @@ Example Tutorials
    :maxdepth: 2
    :caption: Contents:
 
-   1-polymethylstyrene
+   1-polymethylstyrene/index
    2-DA3-vinyl-ester
    3-DGEBA-PACM/index
    4-Layered-DA3
