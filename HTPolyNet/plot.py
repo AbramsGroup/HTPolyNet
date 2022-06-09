@@ -6,11 +6,14 @@ import logging
 import networkx as nx
 from datetime import datetime
 
-def trace(qtys,edrs,outfile='plot.png',**kwargs):
+def trace(qty,edrs,outfile='plot.png',**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
     logging.disable(logging.DEBUG)
     df=pd.DataFrame()
     cmapname=kwargs.get('colormap','plasma')
+    size=kwargs.get('size',(8,6))
+    yunits=kwargs.get('yunits',None)
+    avgafter=kwargs.get('avgafter',0)
     cmap=cm.get_cmap(cmapname)
     xshift=0.0
     chkpt=[]
@@ -19,21 +22,33 @@ def trace(qtys,edrs,outfile='plot.png',**kwargs):
 #            print(df.tail(1).to_string())
             xshift=df.tail(1).iloc[0,0]
 #        print(f'xshift {xshift}')
-        data=gmx_energy_trace(edr,qtys,xshift=xshift)
+        data=gmx_energy_trace(edr,[qty],xshift=xshift)
+        # print(data.columns)
         lastchkpt=0
         if len(chkpt)>0:
             lastchkpt=chkpt[-1]
         chkpt.append(data.shape[0]+lastchkpt)
         df=pd.concat((df,data),ignore_index=True)
-    fig,ax=plt.subplots(1,1,figsize=(8,6))
+    # print(df.columns)
+    fig,ax=plt.subplots(1,1,figsize=size)
     nseg=len(chkpt)
     beg=0
     for c in df.columns[1:]:
         for seg in range(nseg):
-            ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=c,color=cmap(seg/nseg))
+            ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=None,color=cmap(seg/nseg))
             beg=chkpt[seg]
+    if avgafter>0:
+        sdf=df[df['time (ps)']>avgafter]
+        avg=sdf[c].mean()
+        ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
+    if not yunits:
+        plt.ylabel(qty)
+    else:
+        plt.ylabel(f'{qty} ({yunits})')
+    plt.xlabel('time (ps)')
     plt.legend()
     plt.savefig(outfile)
+    plt.close(fig)
     # re-establish previous logging level
     logging.disable(logging.NOTSET)
 

@@ -340,3 +340,9 @@ This generates the following plots (as a PNG file):
 .. image:: iter-graph.png
 
 In this case, on a moderately slow workstation, this build took just under 17 hours to reach 0.95 conversion.  
+
+Below is a trace of the density vs time as a concatenation of the sequence of all NPT MD simulations, beginning with the initial densification, passing through all drag/relaxationg/equilibrations in each iteration, and concluding with the final equilibration:
+
+.. image:: all-density.png
+
+It is clear that during the post-bond relaxations, density drops to 800 kg/m3, but this is because the post-bond relaxations are all run at 600 K.  The equilibrations at 300 K all bring the system back to approx. 1000 kg/m3.
