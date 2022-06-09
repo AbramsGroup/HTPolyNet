@@ -5,7 +5,7 @@
 import logging
 import os
 import shutil
-from turtle import left
+from turtle import distance, left
 import pandas as pd
 import argparse as ap
 import numpy as np
@@ -321,7 +321,7 @@ class HTPolyNet:
             msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,quiet=False,nsteps=nsteps,**self.cfg.parameters)
             logging.info(f'Generated configuration {deffnm}.gro\n')
         density_trace(deffnm,**self.cfg.parameters)
-        trace(['Density'],[deffnm],outfile='../../plots/init-density.png')
+        trace('Density',[deffnm],outfile='../../plots/init-density.png')
         # update coordinates; will wrap upon reading in
         self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
         self.TopoCoord.grofilename=os.path.abspath(f'{deffnm}.gro')
@@ -393,7 +393,7 @@ class HTPolyNet:
                 self.TopoCoord.write_gro(f'{opfx}-input.gro')
                 self.TopoCoord.grofilename=f'{opfx}-input.gro'
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    nbdf=self.cure_searchbonds(CP.radius,header=['ai','aj','reactantName'],
+                    nbdf=self.cure_searchbonds(CP.radius,
                                                 apply_probabilities=apply_probabilities,
                                                 abs_max=bond_limit)
                     if nbdf.shape[0]>0:
@@ -650,6 +650,7 @@ class HTPolyNet:
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
+                order=bond['order']
                 aname=A['atom']
                 areactantname_template=R.reactants[A['reactant']]
                 aresid_template=A['resid']
@@ -673,7 +674,10 @@ class HTPolyNet:
                 Aresids=Aset['resNum'].to_list()
                 Bresids=Bset['resNum'].to_list()
                 assert all([x==y for x,y in zip(Aresids,Bresids)]),f'Error: residue number mismatch in intramolecular reactions'
-                tbdf=pd.DataFrame({'ai':Aset['globalIdx'].to_list(),'aj':Bset['globalIdx'].to_list(),'reactantName':[R.product for _ in range(Aset.shape[0])]})
+                tbdf=pd.DataFrame({'ai':Aset['globalIdx'].to_list(),
+                                   'aj':Bset['globalIdx'].to_list(),
+                                   'reactantName':[R.product for _ in range(Aset.shape[0])],
+                                   'order':[order for _ in range(Aset.shape[0])]})
                 bdf=pd.concat((bdf,tbdf),ignore_index=True)
                 # logging.debug(f'bdf\n{bdf.to_string()}')
         return bdf
@@ -706,7 +710,19 @@ class HTPolyNet:
         self.TopoCoord.write_gro(CP.gro)
         self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
 
-    def cure_searchbonds(self,radius,header=['ai','aj','reactantName'],apply_probabilities=True,abs_max=-1):
+    def cure_searchbonds(self,radius,header=['ai','aj','reactantName','order'],apply_probabilities=True,abs_max=-1):
+        class passbond:
+            def __init__(self,bondtuple,reactantname,distance,probability=1.0,order=1):
+                assert len(bondtuple)==2
+                assert type(bondtuple)==tuple
+                assert type(bondtuple[0])==int
+                assert type(bondtuple[1])==int
+                self.bond=bondtuple
+                self.reactantname=reactantname
+                self.distance=distance
+                self.probability=probability
+                self.order=order
+
         adf=self.TopoCoord.gro_DataFrame('atoms')
         gro=self.TopoCoord.grofilename
         ncpu=self.cfg.parameters['ncpu']
@@ -722,6 +738,7 @@ class HTPolyNet:
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
+                order=bond['order']
                 aname=A['atom']
                 areactantname_template=R.reactants[A['reactant']]
                 aresid_template=A['resid']
@@ -763,7 +780,8 @@ class HTPolyNet:
                             RC,rij=R2
                             bondtestoutcomes[RC]+=1
                             if RC==BTRC.passed:
-                                passbonds.append((Pbonds[i],R.product,prob))
+                                # passbonds.append((Pbonds[i],R.product,prob))
+                                passbonds.append(passbond((Pbonds[0],Pbonds[1]),R.product,Pbonds[2],prob,order))
                         logging.debug(f'{len(passbonds)} out of {len(Pbonds)} bond-candidates pass initial filter')
                         logging.debug(f'Bond-candidate test outcomes:')
                         for k,v in bondtestoutcomes.items():
@@ -772,14 +790,14 @@ class HTPolyNet:
 
         ''' Sort new potential bonds by length (ascending) and claim each one
             in order so long as both its atoms are available '''
-        newbonds.sort(key=lambda x: x[0][2])
+        newbonds.sort(key=lambda x: x.distance)
         # logging.debug(f'*** Pruning {len(newbonds)} bonds...')
-        atomset=list(set(list([x[0][0] for x in newbonds])+list([x[0][1] for x in newbonds])))
+        atomset=list(set(list([x.bond[0] for x in newbonds])+list([x.bond[1] for x in newbonds])))
         resid_pairs=[]
         allowed_bond=[True for x in newbonds]
         for k,b in enumerate(newbonds):
-            bb,t,prob=b
-            i,j,p=bb
+            # bb,t,prob=b
+            i,j=b.bond[0],b.bond[1]
             i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
             j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
             rp=(i_resid,j_resid)
@@ -796,11 +814,11 @@ class HTPolyNet:
             if not allowed_bond[k]:
                 disallowed+=1
                 continue
-            b=n[0]
+            b=n.bond
             if b[0] in atomset and b[1] in atomset:
                 atomset.remove(b[0])
                 atomset.remove(b[1])
-                keepbonds.append((b,n[1],n[2]))
+                keepbonds.append(n)
         logging.debug(f'Accepted the {len(keepbonds)} shortest non-competing bond-candidates.')
         # logging.debug(f'    {disallowed} bond-candidates that repeat resid pairs thrown out.')
 
@@ -809,7 +827,7 @@ class HTPolyNet:
             luckybonds=[]
             for kb in keepbonds:
                 x=np.random.random()
-                if x<kb[2]:
+                if x<kb.probability:
                     luckybonds.append(kb)
             logging.debug(f'{len(keepbonds)-len(luckybonds)} bonds rejected on probability.')
         else:
@@ -821,9 +839,10 @@ class HTPolyNet:
                 luckybonds=luckybonds[:abs_max]
                 logging.debug(f'Limiting to {abs_max} allowed bonds')
 
-        kdf=pd.DataFrame({header[0]:[x[0][0] for x in luckybonds],
-                          header[1]:[x[0][1] for x in luckybonds],
-                          header[2]:[x[1] for x in luckybonds]})
+        kdf=pd.DataFrame({header[0]:[x.bond[0] for x in luckybonds],
+                          header[1]:[x.bond[1] for x in luckybonds],
+                          header[2]:[x.reactantname for x in luckybonds],
+                          header[3]:[x.order for x in luckybonds]})
         return kdf
 
     def initreport(self):

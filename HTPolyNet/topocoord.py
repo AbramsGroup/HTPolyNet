@@ -115,8 +115,8 @@ class TopoCoord:
         """Updates angles, pairs, dihedrals, atom types, and charges, based on product
             templates associated with each bond in 'bdf'
 
-        :param bonds: dataframe, columns 'ai', 'aj', 'reactantName'
-        :type bonds: pandas.DataFrame
+        :param bdf: dataframe, columns 'ai', 'aj', 'reactantName'
+        :type bdf: pandas.DataFrame
         :param moldict: dictionary of template Molecules keyed by name
         :type moldict: dict
         :raises Exception: nan found in any attribute of any new system angle
