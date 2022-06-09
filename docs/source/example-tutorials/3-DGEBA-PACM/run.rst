@@ -313,12 +313,28 @@ Files with the simple prefix ``4-equilibrate`` represent inputs to the Gromacs r
 Subsequent CURE iterations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The number of CURE iterations needed to reach the specified conversion (0.95) is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Below are two plots that illustrate this process
-
-.. image:: iter-graph.png
+The number of CURE iterations needed to reach the specified conversion (0.95) is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 67 CURE iterations were required to reach 0.95.  Files for each iteration appear in that iteration's subdirectory and follow the same naming convention explained for the first iteration.
 
 Post-cure reactions
 ^^^^^^^^^^^^^^^^^^^
 
+After iteration 67, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  Here, because our system had 500 DGE molecules, there are 1000 epoxy groups, 950 of which have reacted, leaving 50 unreacted.  Those groups are subject to the ``Oxirane-formation`` reactions to "undo" the hydrogenation used to generate the monomer forms with sacrificial hydrogens.  These reactions do not require a bond search; HTPolyNet merely identifies unreacted C1 and C2 from DGE's and proceeds to bond them to their respective O1 and O2 atoms.  Then bond relaxation follows, and after that, a final equilibration.
+
+All files for the post-cure processing appear in the ``postcure`` directory:
+
+.. code-block:: console
+
+    $ cd ../postcure
+    $ ls -1 5-*
+    
+
 Equilibration and finalization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+Below are two plots that illustrate this process:
+
+.. image:: iter-graph.png
+
+On the left is a plot of the conversion vs. run time in hours.  In this case, on a moderately slow workstation, this build took just under 17 hours to reach 0.95
