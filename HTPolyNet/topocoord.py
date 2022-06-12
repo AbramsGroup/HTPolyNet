@@ -290,7 +290,7 @@ class TopoCoord:
         # logging.debug(f'update_topology_and_coordinates begins.')
         if bdf.shape[0]>0:
             # pull out just the atom index pairs (first element of each tuple)
-            at_idx=[(x['ai'],x['aj']) for i,x in bdf.iterrows()]
+            at_idx=[(x['ai'],x['aj'],x['order']) for i,x in bdf.iterrows()]
             logging.debug(f'Making {len(at_idx)} bonds.')
             idx_to_delete=self.make_bonds(at_idx)
             # logging.debug(f'Deleting {len(idx_to_delete)} atoms.')

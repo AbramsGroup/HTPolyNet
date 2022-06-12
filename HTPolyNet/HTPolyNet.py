@@ -779,7 +779,7 @@ class HTPolyNet:
                             bondtestoutcomes[RC]+=1
                             if RC==BTRC.passed:
                                 # passbonds.append((Pbonds[i],R.product,prob))
-                                passbonds.append(passbond((Pbonds[0],Pbonds[1]),R.product,Pbonds[2],prob,order))
+                                passbonds.append(passbond((Pbonds[i][0],Pbonds[i][1]),R.product,Pbonds[i][2],prob,order))
                         logging.debug(f'{len(passbonds)} out of {len(Pbonds)} bond-candidates pass initial filter')
                         logging.debug(f'Bond-candidate test outcomes:')
                         for k,v in bondtestoutcomes.items():

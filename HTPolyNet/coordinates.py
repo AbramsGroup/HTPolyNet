@@ -830,7 +830,7 @@ class Coordinates:
         idx_to_delete=[]
         for i,b in enumerate(pairs):
             if not i in skip_pairs:
-                ai,aj=b
+                ai,aj,o=b
                 idx_to_delete.extend(self.sacH(ai,aj,T,rename=rename))
         return idx_to_delete
 

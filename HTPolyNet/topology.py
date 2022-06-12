@@ -582,13 +582,21 @@ class Topology:
         :type pairs: list, optional
         :raises Exception: dies if an existing bond is in the list of pairs
         """
+        logging.debug('add_bonds begins')
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
         pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
         for b in pairs:
-            ai,aj=idxorder(b)
+            logging.debug(f'{b}')
+            bondtuple=(b[0],b[1])
+            try:
+                order=b[2]
+            except:
+                logging.debug(f'{b}')
+                exit()
+            ai,aj=idxorder(bondtuple)
             # if this bond is not in the topology
             if not (ai,aj) in bmi:
                 # TODO: allow for creation of double bonds from single bonds
@@ -630,7 +638,8 @@ class Topology:
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
                 # TODO: need to allow for possibility of converting an existing single bond to a double bond
-                raise Exception(f'attempt to add already existing bond {ai}-{aj}')
+                pass
+                # raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         # update the bondlist
         for b in newbonds:
             self.bondlist.append(b)
