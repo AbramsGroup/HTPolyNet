@@ -120,8 +120,8 @@ class HTPolyNet:
             if len(M.reaction_bonds)>0:
                 logging.debug(f'Template {M.name}:')
                 for b in M.reaction_bonds:
-                    (i,j),(ri,rj),(A,B)=b
-                    logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B})')
+                    (i,j),(ri,rj),(A,B),order=b
+                    logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B}) order {order}')
 
     def generate_molecule(self,M,**kwargs):
         mname=M.name
@@ -548,9 +548,12 @@ class HTPolyNet:
                 trace('Density',[f'{opfx}-post'],outfile='density.png')
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
+                iterations_exceeded=False
+                conversion_reached=False
                 if max_nxlinkbonds>0:
                     curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
                     conversion_reached=curr_conversion>=desired_conversion
+                    iterations_exceeded=CP.iter>=maxiter
                     logging.info(f'Iter {CP.iter} current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
                     if conversion_reached:
                         logging.info(f'Current conversion {curr_conversion} exceeds desired conversion {desired_conversion}')
@@ -561,10 +564,9 @@ class HTPolyNet:
                     assert curr_conversion==0.0
                     assert curr_nxlinkbonds==0
                     conversion_reached=True
-                iterations_exceeded=CP.iter>=maxiter
                 cure_finished = conversion_reached or iterations_exceeded
-            if cure_finished:
-                CP.set_state(CPstate.postcure)
+                if cure_finished:
+                    CP.set_state(CPstate.postcure)
 
         self.post_CURE(CP)
         if CP.state==CPstate.finished:

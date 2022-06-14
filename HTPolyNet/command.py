@@ -19,7 +19,7 @@ class Command:
                 logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
             if len(err)>0:
                 logging.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
-                raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
+            raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
         else:
             # logging.info(f'Returncode: {process.returncode}.')
             if len(override)==2:

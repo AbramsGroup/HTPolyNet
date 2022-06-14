@@ -7,6 +7,7 @@ import logging
 import hashlib
 import shutil
 import parmed
+import os
 from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
 
@@ -16,23 +17,26 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     mol2in=f'{inputPrefix}.mol2'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
+    new_mol2in=mol2in
     if mol2in==mol2out:
-        logging.info(f'Antechamber overwrites input {mol2in}; backing up to {mol2in}.bak')
-        shutil.copy(f'{mol2in}',f'{mol2in}.bak')
+        # mol2pfx,mol2sfx=os.path.splitext(mol2in)
+        new_mol2in=inputPrefix+'-input.mol2'
+        logging.info(f'Antechamber overwrites input {mol2in}; backing up to {new_mol2in}')
+        shutil.copy(f'{mol2in}',new_mol2in)
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
-    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemethod,at='gaff',i=mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
-    c.run()
+    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemethod,at='gaff',i=new_mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
+    c.run(quiet=False)
     logging.info(f'Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
-    c.run()
+    c.run(quiet=False)
     # Antechamber ignores SUBSTRUCTURES but we would like tleap to 
     # recognize them.  So we will simply use the antechamber-INPUT mol2 file
     # resName and resNum atom record fields over the antechamber-OUTPUT mol2 file
     # to generate the tleap-INPUT mol2 file.  Also, since tleap can't handle
     # wacky filenames, we'll hash the outputPrefix temporarily.
-    goodMol2=Coordinates.read_mol2(mol2in)
+    goodMol2=Coordinates.read_mol2(new_mol2in)
     acOutMol2=Coordinates.read_mol2(mol2out)
     adf=acOutMol2.A
     adf['resName']=goodMol2.A['resName'].copy()

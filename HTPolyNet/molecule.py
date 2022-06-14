@@ -199,14 +199,14 @@ class Molecule:
             composite_mol=Molecule()
             shifts=[(0,0,0)]  # atom, bond, resid
             for n,ri in R.reactants.items():
-                logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
+                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
             self.set_sequence()
             self.set_reaction_bonds(available_molecules=available_molecules)
             reactantName=R.product
-            logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
-            logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
+            # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
+            # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds()
             # nrb=[]
             # for b in self.reaction_bonds:
@@ -449,7 +449,9 @@ class Molecule:
         # the H's identified in transrot plus those identified by make_bonds
         # must be deleted
         idx_scratch.extend(hs_from_tr)
-        return self.TopoCoord.delete_atoms(idx_scratch)
+        idx_mapper=self.TopoCoord.delete_atoms(idx_scratch)
+
+        return idx_mapper
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid):
         # Rotate and translate 

@@ -981,6 +981,14 @@ class Coordinates:
         acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
             logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
+        if not self.mol2_bonds.empty and bondsDF.empty:
+            bdf=self.mol2_bonds
+        elif not bondsDF.empty and self.mol2_bonds.empty:
+            bdf=bondsDF
+        else:
+            logging.info('Coordinates.write_mol2 provided with both a bondsDF parameter and a mol2_bonds attribute')
+            logging.info('Using the parameter')
+            bdf=bondsDF
         for i in self.mol2_atom_attributes:
             # logging.debug(f'checking {i}')
             if not i in self.A.columns:
@@ -1025,9 +1033,7 @@ class Coordinates:
                 rdf=acopy[['resNum','resName']].copy().drop_duplicates()
                 rdf['rootatom']=[1]*len(rdf)
                 rdf['residue']=['RESIDUE']*len(rdf)
-                nBonds=self.metadat.get('nBonds',0)
-                if not nBonds:
-                    nBonds=bondsDF.shape[0]
+                nBonds=bdf.shape[0]
                 nSubs=len(rdf)
                 nFeatures=self.metadat.get('nFeatures',0)
                 nSets=self.metadat.get('nSets',0)

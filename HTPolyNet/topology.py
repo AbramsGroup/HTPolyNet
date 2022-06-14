@@ -868,6 +868,9 @@ class Topology:
                         #logging.debug(d.to_string())
                         # logging.debug(f'Updating bondlist using\n{d.to_string()}')
                         self.bondlist=Bondlist.fromDataFrame(d)
+                    if pt=='mol2_bonds':
+                        nBonds=self.D[pt].shape[0]
+                        self.D[pt]['bondIdx']=list(range(1,nBonds+1))
         d=self.D['angles']
         # assert d.ai.dtype==int,f'pre-delete lost angle ai dtype {d.ai.dtype}'
         # assert d.aj.dtype==int,f'pre-delete lost angle aj dtype {d.aj.dtype}'
