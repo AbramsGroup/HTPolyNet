@@ -120,7 +120,7 @@ class HTPolyNet:
             if len(M.reaction_bonds)>0:
                 logging.debug(f'Template {M.name}:')
                 for b in M.reaction_bonds:
-                    (i,j),(ri,rj),(A,B),order=b
+                    (i,j),(ri,rj),(A,B),(aoresids,boresids),order=b
                     logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B}) order {order}')
 
     def generate_molecule(self,M,**kwargs):
@@ -473,7 +473,7 @@ class HTPolyNet:
                 opfx=f'{stepno}-{stepnm}'
                 logging.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: UPDATE TOPOLOGY')
                 CP.read_checkpoint(self)
-                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
+                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat',reaction_list=self.cfg.reactions)
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.make_resid_graph(json_file=f'{opfx}-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
@@ -660,6 +660,8 @@ class HTPolyNet:
         for R in PCR:
             assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
             logging.debug(f'Reaction {R.name}')
+            if R.probability==0.0:
+                continue
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
                 B=R.atoms[bond['atoms'][1]]
@@ -742,7 +744,7 @@ class HTPolyNet:
         newbonds=[]
         ''' generate the dataframe of new bonds to make '''
         for R in self.cfg.reactions:
-            if R.stage=='post-cure': # ignore post-cure reactions
+            if R.stage=='post-cure' or R.probability==0.0: # ignore post-cure reactions
                 continue
             logging.debug(f'Reaction {R.name}')
             prob=R.probability
@@ -763,7 +765,7 @@ class HTPolyNet:
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
                 Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
-                logging.debug(f'Examining {Aset.shape[0]}x{Bset.shape[0]}={len(Pbonds)} bond-candidates')
+                logging.debug(f'Examining {Aset.shape[0]}x{Bset.shape[0]}={len(Pbonds)} bond-candidates of order {order}')
                 passbonds=[]
                 if len(Pbonds)>0:
                     bondtestoutcomes={k:0 for k in BTRC}
@@ -778,9 +780,10 @@ class HTPolyNet:
                     logging.debug(f'{jdf.shape[0]} bond-candidates with lengths below {radius}')
                     if jdf.shape[0]>0:
                         Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
-                        logging.debug(f'Bond-candidate testing will use {ncpu} processors')
+                        logging.debug(f'Testing of {len(Pbonds)} bond-candidates will use {ncpu} processors')
                         p=Pool(processes=ncpu)
                         Pbonds_split=np.array_split(Pbonds,ncpu)
+                        logging.debug(f'Decomposed list lengths: {", ".join([str(len(x)) for x in Pbonds_split])}')
                         results=p.map(partial(self.TopoCoord.bondtest_par), Pbonds_split)
                         p.close()
                         p.join()
@@ -832,6 +835,10 @@ class HTPolyNet:
                 keepbonds.append(n)
         logging.debug(f'Accepted the {len(keepbonds)} shortest non-competing bond-candidates.')
         # logging.debug(f'    {disallowed} bond-candidates that repeat resid pairs thrown out.')
+
+        # TODO: Alter reactantName fields if necessary
+        for x in keepbonds:
+            pass
 
         ''' roll the dice '''
         if apply_probabilities:

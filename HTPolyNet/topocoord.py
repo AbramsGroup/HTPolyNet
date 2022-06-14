@@ -111,7 +111,42 @@ class TopoCoord:
         assert type(idx_mapper)==dict
         return idx_mapper
 
-    def map_from_templates(self,bdf,moldict):
+    def select_template(self,bond,moldict,reaction_list):
+        ai,aj=bond
+        itn=self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':ai})
+        jtn=self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':aj})
+        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ai})
+        jresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aj})
+
+        assert itn==jtn
+        
+        # TODO:  figure out how to set the template so that spurious hydrogens are avoided
+        # template is determined by 
+        # 1. the actual bond
+        # 2. the neighbors of iresid that are *not* jresid, and the particular bonds associated with these
+        # 3. the neighbors of jresid that are *not* iresid, and the particular bonds associated with these
+        # This assumes that a single generation of resid neighbors is sufficient to allow for all bonded
+        # interactions and atom types arising from *just this one bond* are correctly represented.
+        # importantly, this does not apply when a bond to a neighbor of iresid *shares an atom with* the
+        # bond to jresid; (like amine nitrogens), since this is taken care of already.  However, this
+        # should be used in the case where the atom in iresid that bonds to jresid is itself bonded to another
+        # atom in iresid that is bonded to another neighbor of iresid, as in vinyl-type polymerizations.
+
+        # loop over all atoms in iresid that are not ai, and ask if any have bonded neighbors of a *different*
+        # resid than iresid (and is not jresid) -> list of iai,niresid,nai (iresid-atom, other resid and resid-atom
+        # to which iai is bound)
+
+        # same for jresid -> list of ibj,njresid,naj
+
+        # if both lists are empty, just return moldict[itn]
+        # consider the list [[niresid],iresid] and find the entry in the moldict that has this sequence
+        # same for [[njresid],jresid]
+        # find a reaction with these two reactants that forms this bond, and use the product as the template
+        
+        
+        return moldict[itn]
+
+    def map_from_templates(self,bdf,moldict,reaction_list):
         """Updates angles, pairs, dihedrals, atom types, and charges, based on product
             templates associated with each bond in 'bdf'
 
@@ -128,13 +163,22 @@ class TopoCoord:
         :raises Exception: nan found in any system pair
         """
         atdf=self.Topology.D['atoms']
+        # first pass -- set all reactant names
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
             template_name=b['reactantName']
-            T=moldict[template_name]
-            # logging.debug(f'Bond {bb} using template {T.name}')
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[0]})
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
+            i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
+            j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
+            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid})')
+        for i,b in bdf.iterrows():
+            bb=[b['ai'],b['aj']]
+            T=self.select_template(bb,moldict,reaction_list)  # select template based on neighbors
+            # T=moldict[template_name]
+            i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
+            j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
+            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             # get the bidirectional instance<->template mapping dictionaries
             inst2temp,temp2inst=T.idx_mappers(self,bb)
@@ -203,12 +247,20 @@ class TopoCoord:
             inst_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
             inst_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
             inst_dihedrals.al=temp_dihedrals.al.map(temp2inst)
+            d=inst_dihedrals
+            check=True
+            for a in ['ai','aj','ak','al']:
+                check=check and d[a].isnull().values.any()
+            if check:
+                logging.error(f'a {a} NAN in dihedrals')
+                raise Exception
             # add new dihedrals to global topology
             d=self.Topology.D['dihedrals']
             self.Topology.D['dihedrals']=pd.concat((d,inst_dihedrals),ignore_index=True)
             # update any necessary atom types and charges
             for a in ['ai','aj','ak','al']:
                 for inst_atom,temp_atom in zip(inst_dihedrals[a],temp_dihedrals[a]):
+                    logging.debug(f'a {a} inst_atom {inst_atom} temp_atom {temp_atom}')
                     inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
                     temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
                     # logging.debug(f'dih temp {temp_atom} {temp_type} {temp_charge}')
@@ -277,7 +329,7 @@ class TopoCoord:
                 logging.error('NAN in pairs post mapping')
                 raise Exception
 
-    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None):    
+    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,reaction_list=[]):    
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
 
         :param bdf: bonds dataframe, columns 'ai', 'aj', 'reactantName'
@@ -317,7 +369,7 @@ class TopoCoord:
             pi_df=pd.DataFrame({'ai':pai,'aj':paj})
             self.decrement_z(at_idx)
             self.make_ringlist()
-            self.map_from_templates(ri_bdf,template_dict)
+            self.map_from_templates(ri_bdf,template_dict,reaction_list)
             self.Topology.null_check(msg='map_from_templates')
             self.adjust_charges(msg='')
             if write_mapper_to:
@@ -798,6 +850,10 @@ class TopoCoord:
         i,j,rij=b
         i=int(i)
         j=int(j)
+        # check for short-circuits, defined as a residue attempting to bond to another
+        # residue to which it was already previously bonded
+        if self.shortcircuit(i,j):
+            return BTRC.failed_short_circuit,0
         Ri=self.get_R(i)
         Rj=self.get_R(j)
         Rij=self.Coordinates.mic(Ri-Rj,pbc)
@@ -816,10 +872,6 @@ class TopoCoord:
                 sub.write_gro(f'ring-{i}-{j}'+'.gro')
                 logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}\n{C.to_string()}')
             return BTRC.failed_pierce_ring,0
-        # check for short-circuits, defined as a residue attempting to bond to another
-        # residue to which it was already previously bonded
-        if self.shortcircuit(i,j):
-            return BTRC.failed_short_circuit,0
         if self.polyethylene_cycle(i,j):
             return BTRC.failed_polyethylene_cycle,0
         logging.debug(f'passed bondtest: {i:>7d} {j:>7d} {rij:>6.3f} nm')
@@ -841,6 +893,10 @@ class TopoCoord:
         j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j})
         i_neighbors=self.partners_of(i)
         j_neighbors=self.partners_of(j)
+        # logging.debug(f'shortcircuit: {i} {i_neighbors} {j} {j_neighbors}')
+        if i in j_neighbors or j in i_neighbors:
+            return True
+
         assert not j in i_neighbors # haven't made the bond yet...
         assert not i in j_neighbors # haven't made the bond yet...
 

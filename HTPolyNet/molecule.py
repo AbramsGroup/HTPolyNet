@@ -69,10 +69,10 @@ class Reaction:
         A,B=[self.atoms[i] for i in bonddict['atoms']]
         # logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
         # logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
-        Aidx,Aresid=self.get_atom_globalIndx(A,mol,moldict)
-        Bidx,Bresid=self.get_atom_globalIndx(B,mol,moldict)
+        Aidx,Aresid,Aoresids=self.get_atom_globalIndx(A,mol,moldict)
+        Bidx,Bresid,Boresids=self.get_atom_globalIndx(B,mol,moldict)
         # logging.debug(f'     A: {Aidx},{Aresid}  B: {Bidx},{Bresid}')
-        return (Aidx,Bidx),(Aresid,Bresid),(A['atom'],B['atom'])
+        return (Aidx,Bidx),(Aresid,Bresid),(Aoresids,Boresids),(A['atom'],B['atom'])
 
     def get_atom_globalIndx(self,A,mol,moldict):
         # logging.debug(f'get_atom_globalIndx moldict {list(moldict.keys())}')
@@ -81,6 +81,14 @@ class Reaction:
         areactantname=self.reactants[aN]
         aresid_inreactant=A['resid']
         # logging.debug(f'determining globalIdx of aname {aname} in reactant {aN}({areactantname}):{aresid_inreactant}')
+        # generate the apparent resid in the composite molecule by visiting reactants in order
+        resids={}
+        cresid=0
+        for k,v in self.reactants.items():
+            resids[k]=[]
+            for i in range(1,len(moldict[v].sequence)+1):
+                resids[k].append(i+cresid)
+            cresid+=len(moldict[v].sequence)
         aresid=0
         for k,v in self.reactants.items():
             if k==aN:
@@ -89,9 +97,10 @@ class Reaction:
             else:
                 # logging.debug(f'preseq {v} {moldict[v].sequence}')
                 aresid+=len(moldict[v].sequence)
+        resids[aN].remove(aresid)
         # logging.debug(f'reaction {self.name}: asking for globalIdx of resNum {aresid} atomName {aname}')
         idx=mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'resNum':aresid,'atomName':aname})
-        return idx,aresid
+        return idx,aresid,resids[aN]
 
     def get_raz(self,moldict={}):  # [resname][atomname]=[list of z-values detected in this reaction]
         reactantdict=self.reactants
@@ -233,8 +242,8 @@ class Molecule:
         self.reaction_bonds=[]
         if R:
             for bond in R.bonds:
-                (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,self,available_molecules)
-                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aname,Bname),bond['order']))
+                (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,self,available_molecules)
+                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),bond['order']))
             logging.debug(f'{R.name} reaction_bonds\n{self.reaction_bonds}')
 
     def set_sequence(self):
@@ -305,7 +314,7 @@ class Molecule:
         temp_jresid=-1
         # identify the template bond represented by the other_bond parameter
         for b in self.reaction_bonds:
-            (Aidx,Bidx),(aresid,bresid),(Aname,Bname),order=b
+            (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),order=b
             Aresname=self.sequence[aresid-1]
             Bresname=self.sequence[bresid-1]
             # logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
@@ -434,12 +443,13 @@ class Molecule:
         skip_H=[]
         # TODO: fix this to allow order to be passed in
         for i,B in enumerate(self.reaction_bonds):
-            (aidx,bidx),(aresid,bresid),(aname,bname),order=B
+            (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
             logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
             bonds.append((aidx,bidx,order))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
-                hxi,hxj=self.transrot(aidx,aresid,bidx,bresid)
+                # TODO: fix so this is not resid-dependent but molecule-dependent
+                hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=boresids)
                 skip_H.append(i)
                 hs_from_tr.append(hxi)
                 hs_from_tr.append(hxj)
@@ -453,7 +463,7 @@ class Molecule:
 
         return idx_mapper
 
-    def transrot(self,at_idx,at_resid,from_idx,from_resid):
+    def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):
         # Rotate and translate 
         # logging.debug('transrot for building {self.name} from {at_resid}:{at_idx} -- {from_resid}:{from_idx}')
         if at_resid==from_resid:
@@ -463,7 +473,9 @@ class Molecule:
         BTC=TopoCoord()
         C=TC.gro_DataFrame('atoms')
         ATC.Coordinates.A=C[C['resNum']==at_resid].copy()
-        BTC.Coordinates.A=C[C['resNum']==from_resid].copy()
+        bresids=connected_resids[:]
+        bresids.append(from_resid)
+        BTC.Coordinates.A=C[C['resNum'].isin(bresids)].copy()
         mypartners=TC.partners_of(at_idx)
         otpartners=TC.partners_of(from_idx)
         # logging.debug(f'Partners of {at_idx} {mypartners}')
