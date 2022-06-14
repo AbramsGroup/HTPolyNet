@@ -234,8 +234,8 @@ class Molecule:
         if R:
             for bond in R.bonds:
                 (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,self,available_molecules)
-                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aname,Bname)))
-            # logging.debug(f'{R.name} reaction_bonds\n{self.reaction_bonds}')
+                self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aname,Bname),bond['order']))
+            logging.debug(f'{R.name} reaction_bonds\n{self.reaction_bonds}')
 
     def set_sequence(self):
         """set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list
@@ -305,7 +305,7 @@ class Molecule:
         temp_jresid=-1
         # identify the template bond represented by the other_bond parameter
         for b in self.reaction_bonds:
-            (Aidx,Bidx),(aresid,bresid),(Aname,Bname)=b
+            (Aidx,Bidx),(aresid,bresid),(Aname,Bname),order=b
             Aresname=self.sequence[aresid-1]
             Bresname=self.sequence[bresid-1]
             # logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
@@ -434,9 +434,9 @@ class Molecule:
         skip_H=[]
         # TODO: fix this to allow order to be passed in
         for i,B in enumerate(self.reaction_bonds):
-            (aidx,bidx),(aresid,bresid),(aname,bname)=B
-            logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx}')
-            bonds.append((aidx,bidx))
+            (aidx,bidx),(aresid,bresid),(aname,bname),order=B
+            logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
+            bonds.append((aidx,bidx,order))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
                 hxi,hxj=self.transrot(aidx,aresid,bidx,bresid)

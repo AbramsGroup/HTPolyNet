@@ -148,7 +148,7 @@ class HTPolyNet:
             logging.info(f'Fetching parameterized {mname}; molecules {list(self.molecules.keys())}')
             for ex in ['mol2','top','itp','gro']:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
-            M.load_top_gro(f'{mname}.top',f'{mname}.gro')
+            M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2')
             M.set_sequence()
             M.set_reaction_bonds(self.molecules)
             M.TopoCoord.set_gro_attribute('reactantName',M.name)

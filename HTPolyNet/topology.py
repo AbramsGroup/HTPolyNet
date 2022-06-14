@@ -591,15 +591,10 @@ class Topology:
         for b in pairs:
             logging.debug(f'{b}')
             bondtuple=(b[0],b[1])
-            try:
-                order=b[2]
-            except:
-                logging.debug(f'{b}')
-                exit()
+            order=b[2]
             ai,aj=idxorder(bondtuple)
             # if this bond is not in the topology
             if not (ai,aj) in bmi:
-                # TODO: allow for creation of double bonds from single bonds
                 newbonds.append((ai,aj))
                 # logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
                 it=at.iloc[ai-1].type
@@ -638,6 +633,9 @@ class Topology:
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
                 # TODO: need to allow for possibility of converting an existing single bond to a double bond
+                ityp=at.loc[ai-1]['type']
+                jtyp=at.loc[aj-1]['type']
+                logging.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
                 pass
                 # raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         # update the bondlist
