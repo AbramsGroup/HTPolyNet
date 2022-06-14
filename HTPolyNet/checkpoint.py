@@ -2,6 +2,8 @@ import os
 import yaml
 import pandas as pd
 from enum import Enum
+import logging
+
 class CPstate(Enum):
     """Enumerated CURE state
     """
@@ -66,9 +68,6 @@ class Checkpoint:
         self.bonds_are=bonds_are
     
     def read_checkpoint(self,system):
-        self.current_stage=0
-        self.current_radidx=0
-        self.state=CPstate.fresh
         if os.path.exists(self.checkpoint_file):
             with open(self.checkpoint_file,'r') as f:
                 basedict=yaml.safe_load(f)
@@ -87,6 +86,8 @@ class Checkpoint:
             self.bonds_file=os.path.basename(bf)
             self._read_bondsfile()
             system.set_system(CP=self)
+        # else:
+        #     logging.debug(f'read_checkpoint: no file, empty checkpoint')
 
     def write_checkpoint(self,system,state,prefix='checkpoint'):
         self.state=state

@@ -2,6 +2,7 @@
 """
 @author: huang, abrams
 """
+from calendar import c
 import logging
 import os
 import shutil
@@ -371,6 +372,10 @@ class HTPolyNet:
         cure_finished=False
         CP=Checkpoint(checkpoint_file=checkpoint_file)
         CP.iter=1
+        if max_nxlinkbonds==0:
+            CP.state=CPstate.equilibrate
+        else:
+            CP.state=CPstate.fresh
         while not CP.state==CPstate.postcure:
             # Checkpointing in this loop uses the CP.state variable; at the end of
             # each section, CP.state is set to indicate the next section
@@ -540,18 +545,24 @@ class HTPolyNet:
                 msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,nsteps=equilibration_steps,quiet=False,**self.cfg.parameters)
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{opfx}-post.gro'))
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix=f'{opfx}-complete')
+                trace('Density',[f'{opfx}-post'],outfile='density.png')
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
-                curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
-                logging.info(f'Iter {CP.iter} current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
-                conversion_reached=curr_conversion>=desired_conversion
+                if max_nxlinkbonds>0:
+                    curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
+                    conversion_reached=curr_conversion>=desired_conversion
+                    logging.info(f'Iter {CP.iter} current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
+                    if conversion_reached:
+                        logging.info(f'Current conversion {curr_conversion} exceeds desired conversion {desired_conversion}')
+                    if iterations_exceeded:
+                        logging.info(f'Current cure iteration {CP.iter} is at the maximum {maxiter}')
+                    CP.reset_for_next_iter()
+                else:
+                    assert curr_conversion==0.0
+                    assert curr_nxlinkbonds==0
+                    conversion_reached=True
                 iterations_exceeded=CP.iter>=maxiter
                 cure_finished = conversion_reached or iterations_exceeded
-                if conversion_reached:
-                    logging.info(f'Current conversion {curr_conversion} exceeds desired conversion {desired_conversion}')
-                if iterations_exceeded:
-                    logging.info(f'Current cure iteration {CP.iter} is at the maximum {maxiter}')
-                CP.reset_for_next_iter()
             if cure_finished:
                 CP.set_state(CPstate.postcure)
 

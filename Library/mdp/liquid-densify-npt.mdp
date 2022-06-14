@@ -26,6 +26,7 @@ tcoupl      = Berendsen
 tc-grps     = System
 tau_t       = 0.1
 ref_t       = 300
+gen-vel     = yes
 gen-temp    = 300
 pcoupl              = Berendsen
 pcoupltype          = isotropic

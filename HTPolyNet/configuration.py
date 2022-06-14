@@ -72,7 +72,8 @@ class Configuration:
     def parse(self):
         self.Title=self.basedict.get('Title','No Title Provided')
         ''' reactions must declare molecules '''
-        self.reactions=[Reaction(r) for r in self.basedict['reactions']]
+        rlist=self.basedict.get('reactions',[])
+        self.reactions=[Reaction(r) for r in rlist]
         for R in self.reactions:
             for rkey,r in R.reactants.items():
                 ''' reactants do not get assigned generators if they are *only* reactants '''

@@ -35,7 +35,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     beg=0
     for c in df.columns[1:]:
         for seg in range(nseg):
-            ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=None,color=cmap(seg/nseg))
+            ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=(c if seg==0 else None),color=cmap(seg/nseg))
             beg=chkpt[seg]
     if avgafter>0:
         sdf=df[df['time (ps)']>avgafter]
