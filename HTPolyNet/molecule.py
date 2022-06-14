@@ -188,24 +188,25 @@ class Molecule:
         if self.generator:
             R=self.generator
             assert type(R)==Reaction,'HTPolyNet only recognizes Reaction-type generators at the moment'
-            logging.info(f'Using reaction(s) {R.name} to generate {self.name}.mol2.')
+            logging.info(f'Using reaction {R.name} to generate {self.name}.mol2.')
             # this molecule is to be generated using a reaction
             # check to make sure this reactions reactants are among the available molecules
             can_react=all([a in available_molecules for a in R.reactants.values()])
+            logging.debug(f'can_react: {can_react}')
             if not can_react:
                 raise Exception(f'Cannot generate {self.name} because required reactants have not been generated')
 
             composite_mol=Molecule()
             shifts=[(0,0,0)]  # atom, bond, resid
             for n,ri in R.reactants.items():
-                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
+                logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
             self.set_sequence()
             self.set_reaction_bonds(available_molecules=available_molecules)
             reactantName=R.product
-            # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
-            # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
+            logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
+            logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds()
             # nrb=[]
             # for b in self.reaction_bonds:
@@ -434,7 +435,7 @@ class Molecule:
         # TODO: fix this to allow order to be passed in
         for i,B in enumerate(self.reaction_bonds):
             (aidx,bidx),(aresid,bresid),(aname,bname)=B
-            # logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx}')
+            logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx}')
             bonds.append((aidx,bidx))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
