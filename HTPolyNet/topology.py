@@ -93,6 +93,62 @@ def treadmills(L):
         nL=nnL
     return r
 
+def _get_unique_cycles_dict(G,min_length=-1):
+    ucycles={}
+    counts_by_length={}
+    for u in nx.simple_cycles(G):
+        sl=len(u)
+        if min_length<=sl:
+            logging.debug(f'a cycle {u}')
+            if not sl in counts_by_length:
+                counts_by_length[sl]=0
+            counts_by_length[sl]+=1
+            if not sl in ucycles:
+                ucycles[sl]=[]
+            u=[x+1 for x in u]
+            utl=treadmills(u)
+            ur=list(reversed(u))
+            urtl=treadmills(ur)
+            eqv=utl+[ur]+urtl
+            ll=min_length if min_length!=-1 else min(counts_by_length.keys())
+            uu=max(counts_by_length.keys())
+            for l in range(ll,uu+1):
+                if len(u)==l:
+                    found=False
+                    for e in eqv:
+                        if e in ucycles[l]:
+                            found=True
+                            break
+                    if not found:
+                        ucycles[l].append(u)
+    return ucycles
+
+def _present_and_contiguous(subL,L):
+    """_present_and_contiguous returns True is elements in subL appear as a contiguous sub-block in L
+
+    :param subL: a sublist
+    :type subL: list
+    :param L: a list
+    :type L: list
+    :param forward_and_reverse: _description_, defaults to True
+    :type forward_and_reverse: bool, optional
+    :param periodic: _description_, defaults to True
+    :type periodic: bool, optional
+    :return: True or false
+    :rtype: boolean
+    """
+    pretest=all([x in L for x in subL])
+    if not pretest:
+        return False
+    for A in [L,L[::-1]]:
+        T=treadmills(A)
+        for t in T:
+            testL=t[:len(subL)]
+            logging.debug(f'___ {subL} {testL}')
+            if all([x==y for x,y in zip(subL,testL)]):
+                return True
+    return False
+
 _GromacsIntegers_=('nr','atnum','resnr','ai','aj','ak','al','#mols','nrexcl','funct','func','nbfunc','comb-rule')
 _GromacsFloats_=('charge','mass','chargeB','massB',*tuple([f'c{i}' for i in range(5)]),
                  'b0','kb','th0','cth','rub','kub','phase','kd','pn','fudgeLJ','fudgeQQ')
@@ -335,26 +391,9 @@ class Topology:
         :rtype: dict
         """
         g=self.bondlist.graph()
-        cycles={}
-        for a in range(3,8):
-            cycles[a]=[]
-        for u in nx.simple_cycles(g):
-            u=[x+1 for x in u]
-            utl=treadmills(u)
-            ur=list(reversed(u))
-            urtl=treadmills(ur)
-            eqv=utl+[ur]+urtl
-            for l in range(3,8):
-                if len(u)==l:
-                    found=False
-                    for e in eqv:
-                        if e in cycles[l]:
-                            found=True
-                            break
-                    if not found:
-                        cycles[l].append(u)
+        cycles=_get_unique_cycles_dict(g,min_length=3)
         cycles_by_name={}
-        for a in range(3,8):
+        for a in cycles:
             cycles_by_name[a]=[]
             for c in cycles[a]:
                 atoms=[]
@@ -619,6 +658,61 @@ class Topology:
         self.polyethylenes.remove_edge(i,j)
         return makes_a_cycle
 
+    def polyethylene_cycles_collective(self,B):
+        """polyethylene_cycles_collective look for cycles that appear when two or more proposed bonds are created
+
+        :param B: list of proposed bonds as "passbond" instances
+        :type B: list of bondrecordtuples (ai,aj,rij)
+        """
+        '''
+                self.bond=bondtuple
+                self.reactantname=reactantname
+                self.distance=distance
+                self.probability=probability
+                self.order=order
+        
+        '''
+
+        for b in B:
+            ai,aj=b.bond
+            self.polyethylenes.add_edge(ai,aj)
+            assert ai in self.polyethylenes.nodes
+            assert aj in self.polyethylenes.nodes
+        bad_cycles=[]
+        bad_cycle_dict=_get_unique_cycles_dict(self.polyethylenes,min_length=4)
+        logging.debug(f'bad_cycle_dict: {bad_cycle_dict}')
+        for k,v in bad_cycle_dict.items():
+            bad_cycles.extend(v)
+
+        if len(bad_cycles)>0:
+            logging.debug(f'Proposed bondset forms {len(bad_cycles)} disallowed cycles')
+            for b in B:
+                ai,aj=b.bond
+                logging.debug(f' -- b {ai} - {aj}')
+            for c in bad_cycles:
+                logging.debug(f' || c {c}')
+        
+        bad_bonds=[]
+        for b in B:
+            ai,aj=b.bond
+            # logging.debug(f'collective pe cycle testing bond {ai} {aj}')
+            self.polyethylenes.remove_edge(ai,aj)
+
+            # is this pair in any of the cycles?
+            target_cycles=[]
+            for bc in bad_cycles:
+                if _present_and_contiguous([ai,aj],bc):
+                    logging.debug(f'Proposed bond {ai}-{aj} lives in cycle {bc}')
+                    target_cycles.append(bc)
+                    bad_bonds.append(b)
+                    bad_cycles.remove(bc)
+                    break
+        if len(bad_bonds)>1:
+            logging.debug(f'Proposed bonds to remove: {bad_bonds}')
+            for b in bad_bonds:
+                B.remove(b)
+        return B
+        
     def add_bonds(self,pairs=[]):
         """add_bonds Adds bonds indicated in list pairs to the topology
 

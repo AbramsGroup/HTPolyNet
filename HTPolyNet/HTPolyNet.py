@@ -638,7 +638,7 @@ class HTPolyNet:
                     os.remove(f'{rempref}-{stg}.mdp')
                 CP.current_stage-=1
                 CP.bonds_are='relaxed'
-                CP.write_checkpoint(self,CPstate.postcure_equilibration,prefix=f'{opfx}-complete')
+            CP.write_checkpoint(self,CPstate.postcure_equilibration,prefix=f'{opfx}-complete')
         if CP.state==CPstate.postcure_equilibration:
             stepno=6
             stepnm='equilibrate'
@@ -812,12 +812,15 @@ class HTPolyNet:
                         rc=[]
                         for i,l in enumerate(results):
                             rc.extend(l)
+                        gatheredbonds=[]
                         for i,R2 in enumerate(rc):
                             RC,rij=R2
                             bondtestoutcomes[RC]+=1
                             if RC==BTRC.passed:
+                                gatheredbonds.append(Pbonds[i])
+                        for i in range(len(gatheredbonds)):
                                 # passbonds.append((Pbonds[i],R.product,prob))
-                                passbonds.append(passbond((Pbonds[i][0],Pbonds[i][1]),R.product,Pbonds[i][2],prob,order))
+                            passbonds.append(passbond((gatheredbonds[i][0],gatheredbonds[i][1]),R.product,gatheredbonds[i][2],prob,order))
                         logging.debug(f'{len(passbonds)} out of {len(Pbonds)} bond-candidates pass initial filter')
                         logging.debug(f'Bond-candidate test outcomes:')
                         for k,v in bondtestoutcomes.items():
@@ -857,10 +860,8 @@ class HTPolyNet:
                 keepbonds.append(n)
         logging.debug(f'Accepted the {len(keepbonds)} shortest non-competing bond-candidates.')
         # logging.debug(f'    {disallowed} bond-candidates that repeat resid pairs thrown out.')
-
-        # TODO: Alter reactantName fields if necessary
-        for x in keepbonds:
-            pass
+        
+        keepbonds=self.TopoCoord.Topology.polyethylene_cycles_collective(keepbonds)
 
         ''' roll the dice '''
         if apply_probabilities:

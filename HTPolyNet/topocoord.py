@@ -939,7 +939,7 @@ class TopoCoord:
         """Determine if bond b is to be allowed to form based on geometric and 
             topological criteria
 
-        :param b: bond, tuple of two global atom indicies
+        :param b: bond, tuple (ai,aj,rij)
         :type b: 2-tuple
         :param pbc: periodic boundary condition flags in each direction, defaults to [1,1,1]
         :type pbc: list, optional
@@ -978,6 +978,8 @@ class TopoCoord:
             return BTRC.failed_polyethylene_cycle,0
         logging.debug(f'passed bondtest: {i:>7d} {j:>7d} {rij:>6.3f} nm')
         return BTRC.passed,rij
+
+    
 
     def shortcircuit(self,i,j):
         """Determine whether atoms i and j, if bonded, would produce a short circuit, 
@@ -1040,12 +1042,16 @@ class TopoCoord:
                 jrn=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':jdx})
                 if irn!=jrn:
                     T.polyethylenes.add_edge(idx,jdx) # bonded, different residues
+                    assert idx in T.polyethylenes.nodes
+                    assert jdx in T.polyethylenes.nodes
                 else:
                     jz=self.get_gro_attribute_by_attributes('z',{'globalIdx':jdx})
                     jnr=self.get_gro_attribute_by_attributes('nreactions',{'globalIdx':jdx})
                     jtv=jz>0 or jnr>0
                     if rtv and jtv: # same residue, bonded, both reactive
                         T.polyethylenes.add_edge(idx,jdx)
+                        assert idx in T.polyethylenes.nodes
+                        assert jdx in T.polyethylenes.nodes
         cycles=list(nx.simple_cycles(T.polyethylenes))
         clens={}
         for c in cycles:
