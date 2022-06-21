@@ -150,6 +150,8 @@ class Configuration:
             P=list(product(*[v for v in sseq]))
             logging.debug(f'P {P}')
             idx=1
+            if len(P)==0:
+                continue
             trydict[P[0]]=R.product
             for p in P[1:]: # skip the first permutation -- assume this is the explicit one!
                 logging.debug(f'{R.name}-{idx} {p}({len(p)}) -> {R.product}-{idx}')

@@ -626,6 +626,7 @@ class Topology:
         # logging.debug('add_bonds begins')
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
+        #mb=self.D['mol2_bonds']
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
         pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
@@ -674,10 +675,37 @@ class Topology:
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
                 # TODO: need to allow for possibility of converting an existing single bond to a double bond
+                def dec_order_atom_name_gaff(nm):
+                    il=list(nm)
+                    logging.debug(f'expect this? {il}')
+                    elnm=''
+                    nsfx=''
+                    for i in range(len(il)):
+                        logging.debug(f'query {il[i]} {il[i].isdigit()}')
+                        if not il[i].isdigit():
+                            elnm+=il[i]
+                        else:
+                            nsfx+=il[i]
+                    logging.debug(f'and this? {elnm} {nsfx}')
+                    n=int(nsfx)
+                    n-=1
+                    nn=elnm+str(n)
+                    return nn
+
                 ityp=at.loc[ai-1]['type']
                 jtyp=at.loc[aj-1]['type']
                 logging.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
-                pass
+                nityp=dec_order_atom_name_gaff(ityp)
+                njtyp=dec_order_atom_name_gaff(jtyp)
+                logging.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
+                at.loc[ai-1,'type']=nityp
+                at.loc[aj-1,'type']=njtyp
+                logging.debug(f'Updated topology [ atoms ]\n:{at.to_string()}')
+                if 'mol2_bonds' in self.D:
+                    mb=self.D['mol2_bonds']
+                    bi=(mb['ai']==ai)&(mb['aj']==aj)
+                    mb.loc[bi,'type']=2
+                    logging.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
                 # raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         # update the bondlist
         for b in newbonds:

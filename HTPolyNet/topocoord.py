@@ -899,6 +899,7 @@ class TopoCoord:
         other_attributes=pd.DataFrame()
         other_attributes['type']=self.Topology.D['atoms']['type']
         other_attributes['charge']=self.Topology.D['atoms']['charge']
+        logging.debug(f'write_mol2, other_attributes:\n{other_attributes.to_string()}')
         if 'mol2_bonds' in self.Topology.D:
             self.Coordinates.write_mol2(filename,molname=molname,bondsDF=self.Topology.D['mol2_bonds'],other_attributes=other_attributes)
         else:

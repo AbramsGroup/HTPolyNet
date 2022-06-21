@@ -984,6 +984,7 @@ class Coordinates:
         :param other_attributes: auxiliary dataframe of attributes, defaults to pd.DataFrame()
         :type other_attributes: pandas.DataFrame, optional
         """
+        logging.debug(f'write_mol2 {filename}')
         acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
             logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
@@ -995,14 +996,10 @@ class Coordinates:
             logging.info('Coordinates.write_mol2 provided with both a bondsDF parameter and a mol2_bonds attribute')
             logging.info('Using the parameter')
             bdf=bondsDF
-        for i in self.mol2_atom_attributes:
-            # logging.debug(f'checking {i}')
-            if not i in self.A.columns:
-                if not i in other_attributes.columns:
-                    logging.debug(f'No attribute "{i}" found.')
-                    acopy[i]=[pd.NA]*self.A.shape[0]
-                else:
-                    acopy[i]=other_attributes[i]
+        for i in other_attributes.columns: #self.mol2_atom_attributes:
+            logging.debug(f'importing/overwriting other_attribute {i}...')
+            acopy[i]=other_attributes[i]
+        logging.debug(f'Updated [ atoms ]:\n{acopy.to_string()}')
         com=self.geometric_center()
         if filename!='':
             atomformatters = [

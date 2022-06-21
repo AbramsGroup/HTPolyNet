@@ -77,9 +77,10 @@ Parameter                          Type            Description (default)
 ``drag_temperature``               float           Temperature in K for dragging MD simulations (300)
 ``drag_nvt_steps``                 int             number of MD steps for NVT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
 ``drag_npt_steps``                 int             number of MD steps for NPT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
+``drag_cutoff_pad``                float           extra cutoff (nm); 0.2 nm by default
 ===============================    ==============  =====================
 
-The recommended usage of dragging is to enable it using the ``drag_trigger_distance`` parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (``rvdw`` or ``rcoulomb`` in the ``*.mdp`` file), ``grompp`` will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together **before** introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the ``*.mdp`` file to increase the cutoffs in the staged dragging simulations so that it is always longer than the longest bond.  
+The recommended usage of dragging is to enable it using the ``drag_trigger_distance`` parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (``rvdw`` or ``rcoulomb`` in the ``*.mdp`` file), ``grompp`` will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together **before** introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the ``*.mdp`` file to increase the cutoffs in the staged dragging simulations so that it is always longer (by an amount dictated by ``drag_cutoff_pad``) than the longest bond.  
 
 Bond relaxation parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -93,8 +94,11 @@ Parameter                            Type            Description (default)
 ``relax_increment``                  float           maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides ``relax_nstages``)
 ``relax_temperature``                float           Temperature in K for relaxation MD simulations (300)
 ``relax_nvt_steps``                  int             number of MD steps for NVT relaxation 
-``relax_npt_steps``                  int             number of MD steps for NPT relaxation 
+``relax_npt_steps``                  int             number of MD steps for NPT relaxation
+``relax_cutoff_pad``                 float           extra cutoff distance (nm); 0.2 nm by default
 =================================    ==============  =====================
+
+When new bonds are formed, interatomic distances associated with the bonds include the bond lengths themselves in addition to any 1-4 interaction distances.  ``grompp`` demands that the cutoff used in ``mdrun`` be longer than the largest of these distances.  ``HTPolyNet`` determines this maximum, and if it larger than the default, updates the ``mdp`` file to reflect this.  The ``relax_cutoff_pad`` is *always* added to the cutoff before modifying the ``mdp`` file.
 
 Chemistry parameters
 ''''''''''''''''''''
