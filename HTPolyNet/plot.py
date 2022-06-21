@@ -55,7 +55,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
 def network_graph(G,filename,**kwargs):
     logging.disable(logging.DEBUG)
     fig,ax=plt.subplots(1,1,figsize=(8,8))
-    nx.draw_networkx(G,ax=ax)
+    nx.draw_networkx(G,ax=ax,arrows=False,node_size=200)
     plt.savefig(filename)
     plt.close(fig)
     logging.disable(logging.NOTSET)

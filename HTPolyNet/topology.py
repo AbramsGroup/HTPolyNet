@@ -600,7 +600,10 @@ class Topology:
             if not l in clens:
                 clens[l]=0
             clens[l]+=1
-        makes_a_cycle=any([l>2 for l in clens])
+        makes_a_cycle=any([l>2 for l in clens.keys()])
+        if makes_a_cycle:
+            logging.debug(f'there is a problem with the polyethylene cycles!')
+            network_graph(self.polyethylenes,'pe_net_bad.png')
         assert not makes_a_cycle
 
         self.polyethylenes.add_edge(i,j)
@@ -695,17 +698,19 @@ class Topology:
                 ityp=at.loc[ai-1]['type']
                 jtyp=at.loc[aj-1]['type']
                 logging.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
-                nityp=dec_order_atom_name_gaff(ityp)
-                njtyp=dec_order_atom_name_gaff(jtyp)
-                logging.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
-                at.loc[ai-1,'type']=nityp
-                at.loc[aj-1,'type']=njtyp
-                logging.debug(f'Updated topology [ atoms ]\n:{at.to_string()}')
+                # nityp=dec_order_atom_name_gaff(ityp)
+                # njtyp=dec_order_atom_name_gaff(jtyp)
+                # logging.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
+                # at.loc[ai-1,'type']=nityp
+                # at.loc[aj-1,'type']=njtyp
+                # logging.debug(f'Updated topology [ atoms ]\n:{at.to_string()}')
                 if 'mol2_bonds' in self.D:
                     mb=self.D['mol2_bonds']
                     bi=(mb['ai']==ai)&(mb['aj']==aj)
-                    mb.loc[bi,'type']=2
-                    logging.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
+                    mb.loc[bi,'type']=order
+                else:
+                    logging.warning(f'No way to update this bond since there is not a mol2_bonds attribute in the Topology.')
+                    # logging.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
                 # raise Exception(f'attempt to add already existing bond {ai}-{aj}')
         # update the bondlist
         for b in newbonds:

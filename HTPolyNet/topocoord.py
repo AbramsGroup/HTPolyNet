@@ -15,6 +15,7 @@ from tokenize import maybe
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
+from HTPolyNet.plot import network_graph
 import logging
 import numpy as np
 import networkx as nx
@@ -899,7 +900,7 @@ class TopoCoord:
         other_attributes=pd.DataFrame()
         other_attributes['type']=self.Topology.D['atoms']['type']
         other_attributes['charge']=self.Topology.D['atoms']['charge']
-        logging.debug(f'write_mol2, other_attributes:\n{other_attributes.to_string()}')
+        # logging.debug(f'write_mol2, other_attributes:\n{other_attributes.to_string()}')
         if 'mol2_bonds' in self.Topology.D:
             self.Coordinates.write_mol2(filename,molname=molname,bondsDF=self.Topology.D['mol2_bonds'],other_attributes=other_attributes)
         else:
@@ -1053,5 +1054,8 @@ class TopoCoord:
                 clens[l]=0
             clens[l]+=1
         logging.debug(f'polyethyelene cycle lengths:counts {clens}')
+        if any([x>2 for x in clens.keys()]):
+            logging.debug(f'there is a problem with the polyethylene cycles!')
+            network_graph(self.Topology.polyethylenes,'pe_net_bad.png')
                 
 

@@ -457,7 +457,7 @@ class HTPolyNet:
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                     logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    rcommon=max([gromacs_rdefault,maxL])+drag_cutoff_pad
+                    rcommon=max([gromacs_rdefault,maxL+drag_cutoff_pad])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
                     for stg in ['minimize','nvt','npt']:
@@ -495,7 +495,7 @@ class HTPolyNet:
                 pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 logging.debug(f'{opfx}: Bond-designate-1-4 pairs lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                rcommon=max([gromacs_rdefault,maxL,pmaxL])+relax_cutoff_pad
+                rcommon=max([gromacs_rdefault,maxL+relax_cutoff_pad,pmaxL+relax_cutoff_pad])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
@@ -521,7 +521,7 @@ class HTPolyNet:
                     pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
                     logging.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     logging.debug(f'{stagepref}: Bond-designate-1-4 pair lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                    rcommon=max([maxL,gromacs_rdefault,pmaxL])
+                    rcommon=max([maxL+relax_cutoff_pad,gromacs_rdefault,pmaxL+relax_cutoff_pad])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
                     for stg in ['minimize','nvt','npt']:

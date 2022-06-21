@@ -984,7 +984,7 @@ class Coordinates:
         :param other_attributes: auxiliary dataframe of attributes, defaults to pd.DataFrame()
         :type other_attributes: pandas.DataFrame, optional
         """
-        logging.debug(f'write_mol2 {filename}')
+        # logging.debug(f'write_mol2 {filename}')
         acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
             logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
@@ -997,9 +997,9 @@ class Coordinates:
             logging.info('Using the parameter')
             bdf=bondsDF
         for i in other_attributes.columns: #self.mol2_atom_attributes:
-            logging.debug(f'importing/overwriting other_attribute {i}...')
+            # logging.debug(f'importing/overwriting other_attribute {i}...')
             acopy[i]=other_attributes[i]
-        logging.debug(f'Updated [ atoms ]:\n{acopy.to_string()}')
+        # logging.debug(f'Updated [ atoms ]:\n{acopy.to_string()}')
         com=self.geometric_center()
         if filename!='':
             atomformatters = [
@@ -1059,7 +1059,7 @@ class Coordinates:
                     bdf['aj']=bdf['aj'].astype(int)
                     f.write(bdf.to_string(columns=self.mol2_bond_attributes,header=False,index=False,formatters=bondformatters))
                 elif not self.mol2_bonds.empty:
-                    logging.info(f'Mol2 bonds from mol2_bonds')
+                    # logging.info(f'write_mol2 ({filename}): Mol2 bonds from mol2_bonds attribute')
                     f.write(self.mol2_bonds.to_string(columns=self.mol2_bond_attributes,header=False,index=False,formatters=bondformatters))
                 f.write('\n')
                 ''' write substructure section '''

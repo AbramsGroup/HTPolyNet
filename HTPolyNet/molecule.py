@@ -309,13 +309,13 @@ class Molecule:
                 if xx_resNum!=i_resNum and xx_resNum!=j_resNum:
                     resid_bystanders_of_jji.append((xx_resNum,xx_resName))
 
-        # logging.debug(f'idx_mappers: resid_bystanders_of_ij {resid_bystanders_of_ij}')
-        # logging.debug(f'idx_mappers: resid_bystanders_of_iij {resid_bystanders_of_iij}')
-        # logging.debug(f'idx_mappers: resid_bystanders_of_ji {resid_bystanders_of_ji}')
-        # logging.debug(f'idx_mappers: resid_bystanders_of_jji {resid_bystanders_of_jji}')
+        logging.debug(f'idx_mappers: resid_bystanders_of_ij {resid_bystanders_of_ij}')
+        logging.debug(f'idx_mappers: resid_bystanders_of_iij {resid_bystanders_of_iij}')
+        logging.debug(f'idx_mappers: resid_bystanders_of_ji {resid_bystanders_of_ji}')
+        logging.debug(f'idx_mappers: resid_bystanders_of_jji {resid_bystanders_of_jji}')
 
-        # resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij,*resid_bystanders_of_ji,*resid_bystanders_of_jji]
-        # logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
+        resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij,*resid_bystanders_of_ji,*resid_bystanders_of_jji]
+        logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
         temp_bystanders=[]
         inst_bystanders=[]
         # for xx in resid_bystanders:
@@ -360,24 +360,26 @@ class Molecule:
 
         iapp_inst_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij]
         assert len(iapp_inst_bystanders)==len(Aoresids)
-        # logging.debug(f'idx_mappers: iapp_inst_bystanders {iapp_inst_bystanders} Aoresids {Aoresids}')
+        logging.debug(f'idx_mappers: iapp_inst_bystanders {iapp_inst_bystanders} Aoresids {Aoresids}')
         for ib,tb in zip(iapp_inst_bystanders,Aoresids):
             inst_bystanders.append(ib[0])
             temp_bystanders.append(tb)
         japp_inst_bystanders=[*resid_bystanders_of_ji,*resid_bystanders_of_jji]
         assert len(japp_inst_bystanders)==len(Boresids)
-        # logging.debug(f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}')
+        logging.debug(f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}')
         for ib,tb in zip(japp_inst_bystanders,Boresids):
             inst_bystanders.append(ib[0])
             temp_bystanders.append(tb)
-        # logging.debug(f'idx_mappers: inst_bystanders {inst_bystanders}')
-        # logging.debug(f'idx_mappers: temp_bystanders {temp_bystanders}')
+        logging.debug(f'idx_mappers: inst_bystanders {inst_bystanders}')
+        logging.debug(f'idx_mappers: temp_bystanders {temp_bystanders}')
 
         # use dataframe merges to create globalIdx maps
         instdf=otherTC.Coordinates.A
         tempdf=self.TopoCoord.Coordinates.A
         inst2temp={}
         temp2inst={}
+        logging.debug(f'inst resids from {[i_resNum,j_resNum,*inst_bystanders]}')
+        logging.debug(f'temp resids from {[temp_iresid,temp_jresid,*temp_bystanders]}')
         for inst,temp in zip([i_resNum,j_resNum,*inst_bystanders],[temp_iresid,temp_jresid,*temp_bystanders]):
             idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()
             # logging.debug(f'idf res {inst}:\n{idf.to_string()}')
@@ -393,6 +395,14 @@ class Molecule:
                 if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
                     raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')
                 temp2inst[temp_idx]=inst_idx
+        if len(inst2temp)!=len(temp2inst):
+            logging.debug(f'len(inst2temp) {len(inst2temp)} != len(temp2inst) {len(temp2inst)}')
+            logging.debug(f'inst2temp:')
+            for k,v in inst2temp.items():
+                logging.debug(f'   {k} <-> {v}')
+            logging.debug(f'temp2inst:')
+            for k,v in temp2inst.items():
+                logging.debug(f'   {k} <-> {v}')
         assert len(inst2temp)==len(temp2inst),f'Error: could not establish two-way dict of atom globalIdx'
         return (inst2temp,temp2inst)
 
