@@ -2,6 +2,7 @@ from itertools import chain
 import os
 from copy import deepcopy
 from re import A
+from telnetlib import AO
 import pandas as pd
 import numpy as np
 import logging
@@ -267,6 +268,8 @@ class Molecule:
         i_idx,j_idx=other_bond
         i_resName,i_resNum,i_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
         j_resName,j_resNum,j_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j_idx})
+        # logging.debug(f'idx_mappers: i_idx {i_idx} i_resName {i_resName} i_resNum {i_resNum} i_atomName {i_atomName}')
+        # logging.debug(f'idx_mappers: j_idx {j_idx} j_resName {j_resName} j_resNum {j_resNum} j_atomName {j_atomName}')
         # Either of atom i or j *could* bond to a third or even fourth residue that
         # is not the residue of the other.  Any such "bystander" residue is asserted
         # to be represented in the template molecule, and must therefore be included
@@ -274,40 +277,62 @@ class Molecule:
         # can be mapped.
         neighbors_of_i=otherTC.partners_of(i_idx)
         resid_bystanders_of_ij=[]  # bystanders bonded to atom i that are not in resid of atom j
+        resid_bystanders_of_iij=[] # bystanders bonded to _a neighbor of_ atom i that are not in resid of atom _i or_ j
         # logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
         for xx in neighbors_of_i:
+            neighbors_of_in=otherTC.partners_of(xx)
+            # neighbors_of_in.remove(i_idx)
             x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
+            # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_in}')
             if x_resNum!=i_resNum and x_resNum!=j_resNum:
                 resid_bystanders_of_ij.append((x_resNum,x_resName))
-                # logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
+            for xxx in neighbors_of_in:
+                xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
+                # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
+                if xx_resNum!=i_resNum and xx_resNum!=j_resNum:
+                    resid_bystanders_of_iij.append((xx_resNum,xx_resName))
         neighbors_of_j=otherTC.partners_of(j_idx)
         # logging.debug(f'neighbors of j {j_idx} {j_resName} {j_resNum} {j_atomName}:')
-        resid_bystanders_of_ji=[] # bystanders bonded to atom j that are not in resid of atom i
+        resid_bystanders_of_ji=[]  # bystanders bonded to atom j that are not in resid of atom i
+        resid_bystanders_of_jji=[] # bystanders bonded to _a neighbor of_ atom j that are not in resid of atom i _or j_
         for xx in neighbors_of_j:
+            neighbors_of_jn=otherTC.partners_of(xx)
+            # neighbors_of_jn.remove(j_idx)
             x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
+            # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_jn}')
             if x_resNum!=i_resNum and x_resNum!=j_resNum:
                 resid_bystanders_of_ji.append((x_resNum,x_resName))
                 # logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
+            for xxx in neighbors_of_jn:
+                xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
+                # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
+                if xx_resNum!=i_resNum and xx_resNum!=j_resNum:
+                    resid_bystanders_of_jji.append((xx_resNum,xx_resName))
 
-        resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_ji]
+        # logging.debug(f'idx_mappers: resid_bystanders_of_ij {resid_bystanders_of_ij}')
+        # logging.debug(f'idx_mappers: resid_bystanders_of_iij {resid_bystanders_of_iij}')
+        # logging.debug(f'idx_mappers: resid_bystanders_of_ji {resid_bystanders_of_ji}')
+        # logging.debug(f'idx_mappers: resid_bystanders_of_jji {resid_bystanders_of_jji}')
+
+        # resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij,*resid_bystanders_of_ji,*resid_bystanders_of_jji]
         # logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
         temp_bystanders=[]
         inst_bystanders=[]
-        for xx in resid_bystanders:
-            rn,rname=xx
-            if not rname in self.sequence:
-                logging.error(f'secondary neighbor {rn} {rname}: no res in pattern sequence {self.sequence}')
-                raise Exception('this is a bug')
-            for i,rnm in enumerate(self.sequence):
-                ib=seq_res_is_bystander[i]
-                if rnm==rname and not ib:
-                    seq_res_is_bystander[i]=True
-                    temp_bystanders.append(i+1) # resids start at 1 not 0!!!
-                    inst_bystanders.append(rn)
-                    break
-            else:
-                logging.error(f'secondary neighbor {rn} {rname}: no available res in pattern sequence {self.sequence} {seq_res_is_bystander}')
-                    
+        # for xx in resid_bystanders:
+            # rn,rname=xx
+            # if not rname in self.sequence:
+            #     logging.error(f'secondary neighbor {rn} {rname}: no res in pattern sequence {self.sequence}')
+            #     raise Exception('this is a bug')
+            # for i,rnm in enumerate(self.sequence):
+            #     ib=seq_res_is_bystander[i]
+            #     if rnm==rname and not ib: # won't work if all resnames are same!!!
+            #         seq_res_is_bystander[i]=True
+            #         temp_bystanders.append(i+1) # resids start at 1 not 0!!!
+            #         inst_bystanders.append(rn)
+            #         break
+            # else:
+            #     logging.error(f'secondary neighbor {rn} {rname}: no available res in pattern sequence {self.sequence} {seq_res_is_bystander}')
+
         temp2inst={}
         inst2temp={}
         temp_iresid=-1
@@ -317,18 +342,36 @@ class Molecule:
             (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),order=b
             Aresname=self.sequence[aresid-1]
             Bresname=self.sequence[bresid-1]
+            # logging.debug(f'idx_mappers: reaction_bond {b}')
             # logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
             if (i_atomName,i_resName)==(Aname,Aresname):
                 temp_iresid=aresid
                 temp_jresid=bresid
+                # logging.debug(f'idx_mappers: temp_iresid {temp_iresid} temp_jresid {temp_jresid}')
                 break # found it -- stop looking
             elif (i_atomName,i_resName)==(Bname,Bresname):
                 temp_iresid=bresid
                 temp_jresid=aresid
+                # logging.debug(f'idx_mappers: temp_iresid {temp_iresid} temp_jresid {temp_jresid}')
                 break
         if temp_iresid==-1:
             logging.error(f'Mappers using template {self.name} unable to map from instance bond {i_resName}-{i_resNum}-{i_atomName}---{j_resName}-{j_resNum}-{j_atomName}')
             raise Exception
+
+        iapp_inst_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij]
+        assert len(iapp_inst_bystanders)==len(Aoresids)
+        # logging.debug(f'idx_mappers: iapp_inst_bystanders {iapp_inst_bystanders} Aoresids {Aoresids}')
+        for ib,tb in zip(iapp_inst_bystanders,Aoresids):
+            inst_bystanders.append(ib[0])
+            temp_bystanders.append(tb)
+        japp_inst_bystanders=[*resid_bystanders_of_ji,*resid_bystanders_of_jji]
+        assert len(japp_inst_bystanders)==len(Boresids)
+        # logging.debug(f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}')
+        for ib,tb in zip(japp_inst_bystanders,Boresids):
+            inst_bystanders.append(ib[0])
+            temp_bystanders.append(tb)
+        # logging.debug(f'idx_mappers: inst_bystanders {inst_bystanders}')
+        # logging.debug(f'idx_mappers: temp_bystanders {temp_bystanders}')
 
         # use dataframe merges to create globalIdx maps
         instdf=otherTC.Coordinates.A

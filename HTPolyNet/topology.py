@@ -176,7 +176,7 @@ class Topology:
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
         self.residue_network=nx.DiGraph()
-#        self.poly_ethylenes=nx.DiGraph()
+        self.polyethylenes=nx.DiGraph()
         self.empty=True
 
     @classmethod
@@ -575,6 +575,47 @@ class Topology:
             to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index.values[0])
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
+
+    def update_polyethylenes(self,bdf,idx_mapper):
+        self.polyethylenes=nx.relabel_nodes(self.polyethylenes,idx_mapper)
+        for i,r in bdf.iterrows():
+            a=r['ai']
+            b=r['aj']
+            self.polyethylenes.add_edge(a,b)
+    
+    def polyethylene_cycle(self,i,j):
+        """polyethylene_cycle return True if adding edge i<->j generates a cycle in
+           self.polythelenes
+
+        :param i: one atom index
+        :type i: int
+        :param j: another atom index
+        :type j: int
+        """
+        precycles=list(nx.simple_cycles(self.polyethylenes))
+        makes_a_cycle=False
+        clens={}
+        for c in precycles:
+            l=len(c)
+            if not l in clens:
+                clens[l]=0
+            clens[l]+=1
+        makes_a_cycle=any([l>2 for l in clens])
+        assert not makes_a_cycle
+
+        self.polyethylenes.add_edge(i,j)
+        cycles=list(nx.simple_cycles(self.polyethylenes))
+        makes_a_cycle=False
+        clens={}
+        for c in cycles:
+            l=len(c)
+            if not l in clens:
+                clens[l]=0
+            clens[l]+=1
+        makes_a_cycle=any([l>2 for l in clens])
+        self.polyethylenes.remove_edge(i,j)
+        return makes_a_cycle
+
     def add_bonds(self,pairs=[]):
         """add_bonds Adds bonds indicated in list pairs to the topology
 
@@ -864,8 +905,6 @@ class Topology:
                         d.ai=d.ai.map(mapper)
                         d.aj=d.aj.map(mapper)
                     if pt=='bonds':
-                        #logging.debug(f'delete atom: bondlist remake from')
-                        #logging.debug(d.to_string())
                         # logging.debug(f'Updating bondlist using\n{d.to_string()}')
                         self.bondlist=Bondlist.fromDataFrame(d)
                     if pt=='mol2_bonds':
@@ -1065,15 +1104,6 @@ class Topology:
             for c in connectors:
                 a,n=c
                 bondtype="cross"
-                # examine all other connectors in this resnr; if any of them is bound internally to this 
-                # connector and bound to a different outside residue, then this is a "polyethylene"-type
-                # connection
-                for d in connectors:
-                    if c!=d:
-                        b,m=d
-                        if n!=m and b in self.bondlist.partners_of(a):
-                            bondtype="polyethylene"
-                            break
                 if not self.residue_network.has_edge(i,n):
                     self.residue_network.add_edge(i,n,bondtype=bondtype)
         if json_file:

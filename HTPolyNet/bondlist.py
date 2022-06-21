@@ -32,7 +32,7 @@ class Bondlist:
     
     def partners_of(self,idx):
         if idx in self.B:
-            return self.B[idx]
+            return self.B[idx][:]
         return []
 
     def are_bonded(self,idx,jdx):

@@ -291,7 +291,8 @@ class HTPolyNet:
         self.TopoCoord.atom_count()
         self.TopoCoord.inherit_attributes_from_molecules(['cycle-idx','reactantName'],self.cfg.molecules)
         self.TopoCoord.set_z(self.cfg.reactions,self.molecules)
-        self.TopoCoord.write_gro_attributes(['z','cycle-idx','reactantName'],f'{inpfnm}.grx')
+        self.TopoCoord.set_polyethylenes()
+        self.TopoCoord.write_gro_attributes(['z','cycle-idx','reactantName','nreactions'],f'{inpfnm}.grx')
         self.TopoCoord.make_ringlist()
         self.TopoCoord.make_resid_graph()
 
@@ -711,13 +712,14 @@ class HTPolyNet:
         self.TopoCoord=TopoCoord(top,gro)
         if (grx):
             self.TopoCoord.read_gro_attributes(grx)
+            self.TopoCoord.set_polyethylenes()
 
-    def register_system(self,CP,extra_attributes=['z','cycle-idx','reactantName']):
+    def register_system(self,CP,extra_attributes=['z','cycle-idx','reactantName','nreactions']):
         """register_system Create
 
         :param CP: checkpoint
         :type CP: Checkpoint
-        :param extra_attributes: list of extra atom attributes, defaults to ['z','cycle-idx','reactantName']
+        :param extra_attributes: list of extra atom attributes, defaults to ['z','cycle-idx','reactantName','nreactions']
         :type extra_attributes: list, optional
         """
         logging.debug(f'WRITING SYSTEM TO {CP.top} {CP.gro} {CP.grx}')
@@ -735,6 +737,15 @@ class HTPolyNet:
                 self.distance=distance
                 self.probability=probability
                 self.order=order
+        def resid_filter(P):
+            Q=[]
+            for p in P:
+                i,j=p 
+                irn=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
+                jrn=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
+                if irn!=jrn:
+                    Q.append(p)
+            return Q
 
         adf=self.TopoCoord.gro_DataFrame('atoms')
         gro=self.TopoCoord.grofilename
@@ -764,12 +775,21 @@ class HTPolyNet:
                 bz=B['z']
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
-                Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
-                logging.debug(f'Examining {Aset.shape[0]}x{Bset.shape[0]}={len(Pbonds)} bond-candidates of order {order}')
+                alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list()))
+                blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list()))
+                crosses=list(product(alist,blist))
+                idf=pd.DataFrame({'ai':[x[0][0] for x in crosses],
+                                  'ri':[x[0][1] for x in crosses],
+                                  'aj':[x[1][0] for x in crosses],
+                                  'rj':[x[1][1] for x in crosses]})
+                idf=idf[idf['ri']!=idf['rj']].copy()
+                # Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
+                # Pbonds=resid_filter(Pbonds)
+                logging.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
                 passbonds=[]
-                if len(Pbonds)>0:
+                if idf.shape[0]>0:
                     bondtestoutcomes={k:0 for k in BTRC}
-                    idf=pd.DataFrame({'ai':[x[0] for x in Pbonds],'aj':[x[1] for x in Pbonds]})
+                    # idf=pd.DataFrame({'ai':[x[0] for x in Pbonds],'aj':[x[1] for x in Pbonds]})
                     # logging.debug(f'build df with {idf.shape[0]} entries')
                     gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
                     # logging.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} lengths -- mean {idf["r"].mean():.3f} nm')

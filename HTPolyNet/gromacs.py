@@ -190,7 +190,7 @@ def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     ''' create the index file '''
     with open('tmp.ndx','w') as f:
         f.write('[ bonds-1 ]\n')
-        idf.to_csv(f,sep=' ',header=False,index=False)
+        idf[['ai','aj']].to_csv(f,sep=' ',header=False,index=False)
         # logging.debug('wrote tmp.ndx')
     ''' create the user-input file '''
     with open ('gmx.in','w') as f:

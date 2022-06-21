@@ -10,11 +10,13 @@
 #
 #  class for methods that need to work with both Topology and Coordinates
 from itertools import product
+from operator import is_
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
 import logging
 import numpy as np
+import networkx as nx
 from enum import Enum
 
 class BTRC(Enum):
@@ -111,40 +113,108 @@ class TopoCoord:
         assert type(idx_mapper)==dict
         return idx_mapper
 
-    def select_template(self,bond,moldict,reaction_list):
-        ai,aj=bond
-        itn=self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':ai})
-        jtn=self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':aj})
-        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ai})
-        jresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aj})
-
-        assert itn==jtn
+    def select_template(self,bondrec,moldict,reaction_list):
+        def is_product(a,reaction_list):
+            return a in [r.product for r in reaction_list]
+        def is_reactant(a,reaction_list):
+            reactants=[]
+            for r in reaction_list:
+                for v in r.reactants.values():
+                    if not v in reactants:
+                        reactants.append(v)
+            return a in v
+        def find_reaction(reaction_list,bondrec=[]):
+            (ian,irn),(jan,jrn)=bondrec
+            for R in reaction_list:
+                # find the bond in this reaction that corresponds to the bond
+                # implied by bondrec
+                iar,jar=None,None
+                for B in R.bonds:
+                    a,b=B['atoms']
+                    an,bn=R.atoms[a]['atom'],R.atoms[b]['atom']
+                    if (ian,jan)==(an,bn):
+                        iar,jar=a,b
+                        break
+                    elif (ian,jan)==(bn,an):
+                        iar,jar=b,a
+                        break
+                if iar and jar:
+                    # find the reactants for these two atoms
+                    irk=R.atoms[iar]['reactant']
+                    jrk=R.atoms[jar]['reactant']
+                    # are these two reactants the reactants these atoms brought in?
+                    if R.reactants[irk]==irn and R.reactants[jrk]==jrn:
+                        return R
+            
+            return None
         
-        # TODO:  figure out how to set the template so that spurious hydrogens are avoided
-        # template is determined by 
-        # 1. the actual bond
-        # 2. the neighbors of iresid that are *not* jresid, and the particular bonds associated with these
-        # 3. the neighbors of jresid that are *not* iresid, and the particular bonds associated with these
-        # This assumes that a single generation of resid neighbors is sufficient to allow for all bonded
-        # interactions and atom types arising from *just this one bond* are correctly represented.
-        # importantly, this does not apply when a bond to a neighbor of iresid *shares an atom with* the
-        # bond to jresid; (like amine nitrogens), since this is taken care of already.  However, this
-        # should be used in the case where the atom in iresid that bonds to jresid is itself bonded to another
-        # atom in iresid that is bonded to another neighbor of iresid, as in vinyl-type polymerizations.
+        ai,aj,prodname=bondrec
+        # itn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':ai})
+        # jtn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':aj})
+        ian=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':ai})
+        jan=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':aj})
 
-        # loop over all atoms in iresid that are not ai, and ask if any have bonded neighbors of a *different*
-        # resid than iresid (and is not jresid) -> list of iai,niresid,nai (iresid-atom, other resid and resid-atom
-        # to which iai is bound)
+#        assert itn==jtn # both atoms will have the same reactantName
 
-        # same for jresid -> list of ibj,njresid,naj
+        n_of_ai=self.partners_of(ai)
+        # logging.debug(f'ai {ai} n {n_of_ai}')
+        n_of_ai.remove(aj)
+        n_of_aj=self.partners_of(aj)
+        # logging.debug(f'aj {aj} n {n_of_aj}')
+        n_of_aj.remove(ai)
+        an_of_n_ai=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in n_of_ai]
+        an_of_n_aj=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in n_of_aj]
+        rn_of_iresid=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in n_of_ai]
+        rn_of_jresid=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in n_of_aj]
+        nitn=[self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':x}) for x in n_of_ai]
+        njtn=[self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':x}) for x in n_of_aj]
+        # b/c of removals above, don't expect jresid to be on iresid-neighbors
+        # if jresid in rn_of_iresid:
+        #     rn_of_iresid.remove(jresid)
+        # if iresid in rn_of_jresid:
+        #     rn_of_jresid.remove(iresid)
 
-        # if both lists are empty, just return moldict[itn]
-        # consider the list [[niresid],iresid] and find the entry in the moldict that has this sequence
-        # same for [[njresid],jresid]
-        # find a reaction with these two reactants that forms this bond, and use the product as the template
-        
-        
-        return moldict[itn]
+        in_prods=[]
+        # logging.debug(f'ai {ai} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":ai})} template {self.get_gro_attribute_by_attributes("reactantName",{"globalIdx":ai})}:')
+        for n,an,r,rn in zip(n_of_ai,an_of_n_ai,rn_of_iresid,nitn):
+            # logging.debug(f'  {n} {an} {r} {rn} product? {is_product(rn,reaction_list)}')
+            if is_product(rn,reaction_list):
+                in_prods.append((n,an,r,rn))
+
+        jn_prods=[]
+        # logging.debug(f'aj {aj} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":aj})} template {self.get_gro_attribute_by_attributes("reactantName",{"globalIdx":aj})}:')
+        for n,an,r,rn in zip(n_of_aj,an_of_n_aj,rn_of_jresid,njtn):
+            # logging.debug(f'  {n} {an} {r} {rn} product? {is_product(rn,reaction_list)}')
+            if is_product(rn,reaction_list):
+                jn_prods.append((n,an,r,rn))
+
+        logging.debug(f'ai {ai} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":ai})} template {prodname} in_prods {in_prods}:')
+        logging.debug(f'aj {aj} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":aj})} template {prodname} jn_prods {jn_prods}:')
+
+        if len(in_prods)==0 and len(jn_prods)==0:
+            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':ai})
+            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':aj})
+            return moldict[prodname]
+        elif len(in_prods)==0 and len(jn_prods)==1:
+            irn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':ai})
+            jrn=jn_prods[0][3]
+        elif len(in_prods)==1 and len(jn_prods)==0:
+            jrn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':aj})
+            irn=in_prods[0][3]
+        elif len(in_prods)==1 and len(jn_prods)==1:
+            irn=in_prods[0][3]
+            jrn=jn_prods[0][3]
+        else:
+            logging.error(f'ai {ai} in_prods {in_prods} aj {aj} {jn_prods}: too many reactant names')
+            raise Exception('Cannot identify template product for this bond formation reaction')
+        R=find_reaction(reaction_list,bondrec=[(ian,irn),(jan,jrn)])
+        logging.debug(f'template name {R.product} from reaction {R.name}')
+        prodname=R.product
+        # you should only do this if prodname is a reactant
+        if is_reactant(prodname,reaction_list):
+            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':ai})
+            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':aj})
+        return moldict[prodname]
 
     def map_from_templates(self,bdf,moldict,reaction_list):
         """Updates angles, pairs, dihedrals, atom types, and charges, based on product
@@ -163,6 +233,8 @@ class TopoCoord:
         :raises Exception: nan found in any system pair
         """
         atdf=self.Topology.D['atoms']
+        grodf=self.Coordinates.A
+        grodf['old_reactantName']=grodf['reactantName'].copy()
         # first pass -- set all reactant names
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
@@ -171,14 +243,15 @@ class TopoCoord:
             self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
             i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
             j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
-            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid})')
+            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) template {template_name}')
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
-            T=self.select_template(bb,moldict,reaction_list)  # select template based on neighbors
+            bbb=[b['ai'],b['aj'],b['reactantName']]
+            T=self.select_template(bbb,moldict,reaction_list)  # select template based on neighbors
             # T=moldict[template_name]
-            i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
-            j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
-            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
+            # i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
+            # j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
+            # logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             # get the bidirectional instance<->template mapping dictionaries
             inst2temp,temp2inst=T.idx_mappers(self,bb)
@@ -248,11 +321,11 @@ class TopoCoord:
             inst_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
             inst_dihedrals.al=temp_dihedrals.al.map(temp2inst)
             d=inst_dihedrals
-            check=True
+            check=False
             for a in ['ai','aj','ak','al']:
-                check=check and d[a].isnull().values.any()
+                check=check or d[a].isnull().values.any()
             if check:
-                logging.error(f'a {a} NAN in dihedrals')
+                logging.error(f'a {a} NAN in dihedrals\n{inst_dihedrals.to_string()}')
                 raise Exception
             # add new dihedrals to global topology
             d=self.Topology.D['dihedrals']
@@ -348,10 +421,12 @@ class TopoCoord:
             # logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             self.Topology.null_check(msg='delete_atoms')
+            self.write_gro('tmp.gro')
             # reindex all atoms in the list of bonds sent in, and write it out
             ri_bdf=bdf.copy()
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
+            self.Topology.update_polyethylenes(ri_bdf,idx_mapper)
             # each of these bonds results in 1-4 pair interactions 
             at_idx=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
             bl=self.Topology.bondlist
@@ -670,7 +745,7 @@ class TopoCoord:
 
         :param reaction_list: List of Reactions read in from cfg file or autogenerated via 
             symmetry operations
-        :type reaction_list: list of Reaction
+        :type reaction_list: list of Reactions
         :param moldict:  Dictionary of all molecular templates
         :type moldict:  Dictionary
         """
@@ -702,6 +777,20 @@ class TopoCoord:
                     z=razdict[rn][an]-len(irb)
             zsrs.append(z)
         self.set_gro_attribute('z',zsrs)
+        self.set_gro_attribute('nreactions',[0]*len(zsrs))
+        # for i,r in self.Coordinates.A.iterrows():
+        #     z=r['z']
+        #     if z>0:
+        #         idx=r['globalIdx']
+        #         irnum=r['resNum']
+        #         n=self.Topology.bondlist.partners_of(idx)
+        #         for jdx in n:
+        #             jz=self.get_gro_attribute_by_attributes('z',{'globalIdx':jdx})
+        #             jrnum=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':jdx})
+        #             if irnum==jrnum and jz>0:
+        #                 # two reactive atoms in the same residue bound to each other are
+        #                 # part of a polyethylene chain
+        #                 self.Topology.update_polyethylenes(idx,jdx)
 
     def label_ring_atoms(self):
         cycles=self.ring_detector()
@@ -893,20 +982,24 @@ class TopoCoord:
         j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j})
         i_neighbors=self.partners_of(i)
         j_neighbors=self.partners_of(j)
-        # logging.debug(f'shortcircuit: {i} {i_neighbors} {j} {j_neighbors}')
         if i in j_neighbors or j in i_neighbors:
+            # logging.debug(f'atoms {i} and {j} already on each other\'s list of bonded partners')
             return True
 
         assert not j in i_neighbors # haven't made the bond yet...
         assert not i in j_neighbors # haven't made the bond yet...
 
+        # logging.debug(f'shortcircuit: i_idx {i} i_resnum {i_resNum} i_neighbors {i_neighbors}')
         for ix in i_neighbors:
             ix_resName,ix_resNum,ix_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':ix})
+            # logging.debug(f'-> ix_idx {ix} ix_resnum {ix_resNum} ix_atomName {ix_atomName}')
             if ix_resNum==j_resNum:
                 # logging.debug(f'resid {i_resNum} is already bound to an atom in {j_resNum}')
                 return True
+        # logging.debug(f'shortcircuit: j_idx {j} j_resNum {j_resNum} j_atomName {j_atomName} j_neighbors {j_neighbors}')
         for jx in j_neighbors:
             jx_resName,jx_resNum,jx_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':jx})
+            # logging.debug(f'-> jx_idx {jx} jx_resnum {jx_resNum} jx_atomName {jx_atomName}')
             if jx_resNum==i_resNum:
                 # logging.debug(f'resid {j_resNum} is already bound to an atom in {i_resNum}')
                 return True
@@ -914,16 +1007,39 @@ class TopoCoord:
         return False
 
     def polyethylene_cycle(self,a,b):
-        # 1. determine if a,b can be a polyethylene type bond
-        #    is a bound to any atom a' in its own residue that is bound to a different residue AND
-        #    is b bound to any atom b' in its own residue that is bound to yet a different residue?
-        #    if yes, this would be a polyethylene-type bond
-        #    if no, return False
-        # 2. make a polyethylene bond subgraph (a copy); if empty, just return False
-        # 3. add the nodes implied by atoms i and j
-        #    - get resids of i and j
-        #    - for each of i and j, if it is bonded to another atom in its residue that is bound
-        #      
-        return False
+        return self.Topology.polyethylene_cycle(a,b)
 
+    def set_polyethylenes(self):
+        """set_polyethylenes regenerate the polyethylene network using z/nreactions
+        """
+        CDF=self.Coordinates.A
+        T=self.Topology
+        T.polyethylenes=nx.DiGraph()
+        BL=T.bondlist
+        for i,r in CDF.iterrows():
+            idx=r['globalIdx']
+            irn=r['resNum']
+            iz=r['z']
+            inr=r['nreactions']
+            rtv=iz>0 or inr>0
+            n=BL.partners_of(idx)
+            for jdx in n:
+                jrn=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':jdx})
+                if irn!=jrn:
+                    T.polyethylenes.add_edge(idx,jdx) # bonded, different residues
+                else:
+                    jz=self.get_gro_attribute_by_attributes('z',{'globalIdx':jdx})
+                    jnr=self.get_gro_attribute_by_attributes('nreactions',{'globalIdx':jdx})
+                    jtv=jz>0 or jnr>0
+                    if rtv and jtv: # same residue, bonded, both reactive
+                        T.polyethylenes.add_edge(idx,jdx)
+        cycles=list(nx.simple_cycles(T.polyethylenes))
+        clens={}
+        for c in cycles:
+            l=len(c)
+            if not l in clens:
+                clens[l]=0
+            clens[l]+=1
+        logging.debug(f'polyethyelene cycle lengths:counts {clens}')
+                
 

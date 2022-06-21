@@ -701,7 +701,13 @@ class Coordinates:
             # logging.debug(f'Setting z of {ajn}-{aj} to {jz}')
             self.set_atom_attribute('z',iz,{'globalIdx':ai})
             self.set_atom_attribute('z',jz,{'globalIdx':aj})
-
+            inr=self.get_atom_attribute('nreactions',{'globalIdx':ai})+1
+            jnr=self.get_atom_attribute('nreactions',{'globalIdx':aj})+1
+            # logging.debug(f'Setting z of {ain}-{ai} to {iz}')
+            # logging.debug(f'Setting z of {ajn}-{aj} to {jz}')
+            self.set_atom_attribute('nreactions',inr,{'globalIdx':ai})
+            self.set_atom_attribute('nreactions',jnr,{'globalIdx':aj})
+            
     def show_z_report(self):
         zhists={}
         for i,r in self.A.iterrows():
