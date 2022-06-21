@@ -428,35 +428,34 @@ class TopoCoord:
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
             self.Topology.update_polyethylenes(ri_bdf,idx_mapper)
-            # each of these bonds results in 1-4 pair interactions 
             at_idx=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
-            bl=self.Topology.bondlist
+
+            self.decrement_z(at_idx)
+            self.make_ringlist()
+            self.map_from_templates(ri_bdf,template_dict,reaction_list)
             # TODO: enumerate ALL pairs involving either or both of the bonded atoms
+            pdf=self.Topology.D['pairs']
+            # each of these bonds results in 1-4 pair interactions 
+            bl=self.Topology.bondlist
             pai=[]
             paj=[]
             for p in at_idx:
-                # central
                 j,k=p
                 nj=bl.partners_of(j)
                 nj.remove(k)
-                nk=bl.partners_of(j)
+                nk=bl.partners_of(k)
                 nk.remove(j)
                 this_pairs=list(product(nj,nk))
                 pai.extend([x[0] for x in this_pairs])
                 paj.extend([x[1] for x in this_pairs])
-                for kk in nj:
-                    nkk=bl.partners_of(kk)
-                    nkk.remove(j)
-                    for ll in nkk:
-                        nll=bl.partners_of(ll)
-                        nll.remove(kk)
-                        nii=nkk.remove(ll)
-                        this_pairs=list(product(nii,nll))
-
+                jpdf=pdf[(pdf['ai']==j)|(pdf['aj']==j)].copy()
+                pai.extend(jpdf['ai'].to_list())
+                paj.extend(jpdf['aj'].to_list())
+                kpdf=pdf[(pdf['ai']==k)|(pdf['aj']==k)].copy()
+                pai.extend(kpdf['ai'].to_list())
+                paj.extend(kpdf['aj'].to_list())
             pi_df=pd.DataFrame({'ai':pai,'aj':paj})
-            self.decrement_z(at_idx)
-            self.make_ringlist()
-            self.map_from_templates(ri_bdf,template_dict,reaction_list)
+            pi_df.drop_duplicates(inplace=True,ignore_index=True)
             self.Topology.null_check(msg='map_from_templates')
             self.adjust_charges(msg='')
             if write_mapper_to:

@@ -352,6 +352,7 @@ class HTPolyNet:
         relax_nstages=self.cfg.parameters.get('relax_nstages',6)
         relax_increment=self.cfg.parameters.get('relax_increment',0)
         relax_temperature=self.cfg.parameters.get('relax_temperature',300.0)
+        relax_cutoff_pad=self.cfg.parameters.get('relax_cutoff_pad',0.2)
 
         equilibration_temperature=self.cfg.parameters.get('equilibration_temperature',300.0)
         equilibration_pressure=self.cfg.parameters.get('equilibration_pressure',1.0)
@@ -363,6 +364,7 @@ class HTPolyNet:
         drag_nstages=self.cfg.parameters.get('drag_nstages',0)
         drag_increment=self.cfg.parameters.get('drag_increment',0.0)
         drag_temperature=self.cfg.parameters.get('drag_temperature',300.0)
+        drag_cutoff_pad=self.cfg.parameters.get('drag_cutoff_pad',0.2)
         if (drag_nstages>0 or drag_increment>0.0) and drag_limit_nm>0.0:
              dragging_enabled=True
 
@@ -455,7 +457,7 @@ class HTPolyNet:
                     CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                     maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
                     logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    rcommon=max([gromacs_rdefault,maxL])
+                    rcommon=max([gromacs_rdefault,maxL])+drag_cutoff_pad
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
                     for stg in ['minimize','nvt','npt']:
@@ -493,7 +495,7 @@ class HTPolyNet:
                 pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
                 logging.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 logging.debug(f'{opfx}: Bond-designate-1-4 pairs lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                rcommon=max([gromacs_rdefault,maxL,pmaxL])
+                rcommon=max([gromacs_rdefault,maxL,pmaxL])+relax_cutoff_pad
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
