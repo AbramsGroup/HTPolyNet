@@ -61,7 +61,7 @@ Suggested approaches for obtaining these are below.
 
          source /usr/local/gromacs/bin/GMXRC
      
-     This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.
+     This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below has a buggy version of ``gmx distance``, so better to use the latest Gromacs.
 
 
 

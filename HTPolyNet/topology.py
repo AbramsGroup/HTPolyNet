@@ -623,14 +623,14 @@ class Topology:
         :type pairs: list, optional
         :raises Exception: dies if an existing bond is in the list of pairs
         """
-        logging.debug('add_bonds begins')
+        # logging.debug('add_bonds begins')
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
         pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
         for b in pairs:
-            logging.debug(f'{b}')
+            # logging.debug(f'{b}')
             bondtuple=(b[0],b[1])
             order=b[2]
             ai,aj=idxorder(bondtuple)

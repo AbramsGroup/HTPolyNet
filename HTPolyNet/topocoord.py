@@ -11,6 +11,7 @@
 #  class for methods that need to work with both Topology and Coordinates
 from itertools import product
 from operator import is_
+from tokenize import maybe
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
@@ -188,8 +189,8 @@ class TopoCoord:
             if is_product(rn,reaction_list):
                 jn_prods.append((n,an,r,rn))
 
-        logging.debug(f'ai {ai} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":ai})} template {prodname} in_prods {in_prods}:')
-        logging.debug(f'aj {aj} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":aj})} template {prodname} jn_prods {jn_prods}:')
+        # logging.debug(f'ai {ai} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":ai})} template {prodname} in_prods {in_prods}:')
+        # logging.debug(f'aj {aj} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":aj})} template {prodname} jn_prods {jn_prods}:')
 
         if len(in_prods)==0 and len(jn_prods)==0:
             self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':ai})
@@ -208,7 +209,7 @@ class TopoCoord:
             logging.error(f'ai {ai} in_prods {in_prods} aj {aj} {jn_prods}: too many reactant names')
             raise Exception('Cannot identify template product for this bond formation reaction')
         R=find_reaction(reaction_list,bondrec=[(ian,irn),(jan,jrn)])
-        logging.debug(f'template name {R.product} from reaction {R.name}')
+        # logging.debug(f'template name {R.product} from reaction {R.name}')
         prodname=R.product
         # you should only do this if prodname is a reactant
         if is_reactant(prodname,reaction_list):
@@ -333,7 +334,7 @@ class TopoCoord:
             # update any necessary atom types and charges
             for a in ['ai','aj','ak','al']:
                 for inst_atom,temp_atom in zip(inst_dihedrals[a],temp_dihedrals[a]):
-                    logging.debug(f'a {a} inst_atom {inst_atom} temp_atom {temp_atom}')
+                    # logging.debug(f'a {a} inst_atom {inst_atom} temp_atom {temp_atom}')
                     inst_type,inst_charge=atdf[atdf['nr']==inst_atom][['type','charge']].values[0]
                     temp_type,temp_charge=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge']].values[0]
                     # logging.debug(f'dih temp {temp_atom} {temp_type} {temp_charge}')
@@ -430,17 +431,28 @@ class TopoCoord:
             # each of these bonds results in 1-4 pair interactions 
             at_idx=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
             bl=self.Topology.bondlist
+            # TODO: enumerate ALL pairs involving either or both of the bonded atoms
             pai=[]
             paj=[]
             for p in at_idx:
-                i,j=p
-                ni=bl.partners_of(i)
+                # central
+                j,k=p
                 nj=bl.partners_of(j)
-                ni.remove(j)
-                nj.remove(i)
-                this_pairs=list(product(ni,nj))
+                nj.remove(k)
+                nk=bl.partners_of(j)
+                nk.remove(j)
+                this_pairs=list(product(nj,nk))
                 pai.extend([x[0] for x in this_pairs])
                 paj.extend([x[1] for x in this_pairs])
+                for kk in nj:
+                    nkk=bl.partners_of(kk)
+                    nkk.remove(j)
+                    for ll in nkk:
+                        nll=bl.partners_of(ll)
+                        nll.remove(kk)
+                        nii=nkk.remove(ll)
+                        this_pairs=list(product(nii,nll))
+
             pi_df=pd.DataFrame({'ai':pai,'aj':paj})
             self.decrement_z(at_idx)
             self.make_ringlist()
