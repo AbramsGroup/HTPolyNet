@@ -215,9 +215,13 @@
 <td><p>int</p></td>
 <td><p>number of MD steps for NPT relaxation during dragging (-2, signals <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">mdrun</span></code> to use the value in the mdp file)</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">drag_cutoff_pad</span></code></p></td>
+<td><p>float</p></td>
+<td><p>extra cutoff (nm); 0.2 nm by default</p></td>
+</tr>
 </tbody>
 </table>
-<p>The recommended usage of dragging is to enable it using the <code class="docutils literal notranslate"><span class="pre">drag_trigger_distance</span></code> parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (<code class="docutils literal notranslate"><span class="pre">rvdw</span></code> or <code class="docutils literal notranslate"><span class="pre">rcoulomb</span></code> in the <code class="docutils literal notranslate"><span class="pre">*.mdp</span></code> file), <code class="docutils literal notranslate"><span class="pre">grompp</span></code> will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together <strong>before</strong> introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the <code class="docutils literal notranslate"><span class="pre">*.mdp</span></code> file to increase the cutoffs in the staged dragging simulations so that it is always longer than the longest bond.</p>
+<p>The recommended usage of dragging is to enable it using the <code class="docutils literal notranslate"><span class="pre">drag_trigger_distance</span></code> parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (<code class="docutils literal notranslate"><span class="pre">rvdw</span></code> or <code class="docutils literal notranslate"><span class="pre">rcoulomb</span></code> in the <code class="docutils literal notranslate"><span class="pre">*.mdp</span></code> file), <code class="docutils literal notranslate"><span class="pre">grompp</span></code> will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together <strong>before</strong> introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the <code class="docutils literal notranslate"><span class="pre">*.mdp</span></code> file to increase the cutoffs in the staged dragging simulations so that it is always longer (by an amount dictated by <code class="docutils literal notranslate"><span class="pre">drag_cutoff_pad</span></code>) than the longest bond.</p>
 </section>
 <section id="bond-relaxation-parameters">
 <h3>Bond relaxation parameters<a class="headerlink" href="#bond-relaxation-parameters" title="Permalink to this headline">¶</a></h3>
@@ -255,8 +259,13 @@
 <td><p>int</p></td>
 <td><p>number of MD steps for NPT relaxation</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">relax_cutoff_pad</span></code></p></td>
+<td><p>float</p></td>
+<td><p>extra cutoff distance (nm); 0.2 nm by default</p></td>
+</tr>
 </tbody>
 </table>
+<p>When new bonds are formed, interatomic distances associated with the bonds include the bond lengths themselves in addition to any 1-4 interaction distances.  <code class="docutils literal notranslate"><span class="pre">grompp</span></code> demands that the cutoff used in <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> be longer than the largest of these distances.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> determines this maximum, and if it larger than the default, updates the <code class="docutils literal notranslate"><span class="pre">mdp</span></code> file to reflect this.  The <code class="docutils literal notranslate"><span class="pre">relax_cutoff_pad</span></code> is <em>always</em> added to the cutoff before modifying the <code class="docutils literal notranslate"><span class="pre">mdp</span></code> file.</p>
 </section>
 </section>
 <section id="chemistry-parameters">
