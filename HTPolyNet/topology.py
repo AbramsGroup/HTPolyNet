@@ -99,13 +99,12 @@ def _get_unique_cycles_dict(G,min_length=-1):
     for u in nx.simple_cycles(G):
         sl=len(u)
         if min_length<=sl:
-            logging.debug(f'a cycle {u}')
+            # logging.debug(f'a cycle {u}')
             if not sl in counts_by_length:
                 counts_by_length[sl]=0
             counts_by_length[sl]+=1
             if not sl in ucycles:
                 ucycles[sl]=[]
-            #u=[x+1 for x in u] # why am i doing this?
             utl=treadmills(u)
             ur=list(reversed(u))
             urtl=treadmills(ur)
@@ -124,17 +123,14 @@ def _get_unique_cycles_dict(G,min_length=-1):
     return ucycles
 
 def _present_and_contiguous(subL,L):
-    """_present_and_contiguous returns True is elements in subL appear as a contiguous sub-block in L
+    """_present_and_contiguous returns True is elements in subL appear as a contiguous sub-block in 
+       periodic and bidirectional list L
 
     :param subL: a sublist
     :type subL: list
-    :param L: a list
+    :param L: a list, treated as periodic and bidirectional
     :type L: list
-    :param forward_and_reverse: _description_, defaults to True
-    :type forward_and_reverse: bool, optional
-    :param periodic: _description_, defaults to True
-    :type periodic: bool, optional
-    :return: True or false
+    :return: True if sublist appears as part L
     :rtype: boolean
     """
     pretest=all([x in L for x in subL])
@@ -144,7 +140,7 @@ def _present_and_contiguous(subL,L):
         T=treadmills(A)
         for t in T:
             testL=t[:len(subL)]
-            logging.debug(f'___ {subL} {testL}')
+            # logging.debug(f'___ {subL} {testL}')
             if all([x==y for x,y in zip(subL,testL)]):
                 return True
     return False
@@ -614,8 +610,16 @@ class Topology:
             to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index.values[0])
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
-
     def update_polyethylenes(self,bdf,idx_mapper):
+        """update_polyethylenes Update the polyethylene bond network by
+        1. applying idx_mapper to reindex all nodes
+        2. adding new crosslink bonds from bdf
+
+        :param bdf: new bonds
+        :type bdf: pandas DataFrame
+        :param idx_mapper: old-to-new atom index mapper
+        :type idx_mapper: dict
+        """
         self.polyethylenes=nx.relabel_nodes(self.polyethylenes,idx_mapper)
         for i,r in bdf.iterrows():
             a=r['ai']
@@ -662,17 +666,8 @@ class Topology:
         """polyethylene_cycles_collective look for cycles that appear when two or more proposed bonds are created
 
         :param B: list of proposed bonds as "passbond" instances
-        :type B: list of bondrecordtuples (ai,aj,rij)
+        :type B: list of "passbond" instances (attributes: bond (a 2-tuple of atom indexes), and others...)
         """
-        '''
-                self.bond=bondtuple
-                self.reactantname=reactantname
-                self.distance=distance
-                self.probability=probability
-                self.order=order
-        
-        '''
-
         for b in B:
             ai,aj=b.bond
             self.polyethylenes.add_edge(ai,aj)
@@ -680,17 +675,19 @@ class Topology:
             assert aj in self.polyethylenes.nodes
         bad_cycles=[]
         bad_cycle_dict=_get_unique_cycles_dict(self.polyethylenes,min_length=4)
-        logging.debug(f'bad_cycle_dict: {bad_cycle_dict}')
+        # logging.debug(f'bad_cycle_dict: {bad_cycle_dict}')
         for k,v in bad_cycle_dict.items():
             bad_cycles.extend(v)
 
-        if len(bad_cycles)>0:
-            logging.debug(f'Proposed bondset forms {len(bad_cycles)} disallowed cycles')
-            for b in B:
-                ai,aj=b.bond
-                logging.debug(f' -- b {ai} - {aj}')
-            for c in bad_cycles:
-                logging.debug(f' || c {c}')
+        # if len(bad_cycles)>0:
+        nbc=len(bad_cycles)
+        ess='' if nbc==1 else 's'
+        logging.debug(f'Proposed bondset comprises {nbc} latent cycle{ess}')
+            # for b in B:
+            #     ai,aj=b.bond
+            #     logging.debug(f' -- b {ai} - {aj}')
+            # for c in bad_cycles:
+            #     logging.debug(f' || c {c}')
         
         bad_bonds=[]
         for b in B:
@@ -707,8 +704,10 @@ class Topology:
                     bad_bonds.append(b)
                     bad_cycles.remove(bc)
                     break
-        if len(bad_bonds)>1:
-            logging.debug(f'Proposed bonds to remove: {bad_bonds}')
+        if len(bad_bonds)>0:
+            # logging.debug(f'{len(target_cycles)} latent cycles detected for proposed bond set.')
+            ess='' if len(bad_bonds)==1 else 's'
+            logging.debug(f'Proposed bond{ess} to be removed: {", ".join([f"{x.bond[0]}-{x.bond[1]}" for x in bad_bonds])}')
             for b in bad_bonds:
                 B.remove(b)
         return B
@@ -732,7 +731,9 @@ class Topology:
             bondtuple=(b[0],b[1])
             order=b[2]
             ai,aj=idxorder(bondtuple)
-            # if this bond is not in the topology
+            '''
+            if this bond is not in the topology, then add it
+            '''
             if not (ai,aj) in bmi:
                 newbonds.append((ai,aj))
                 # logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
@@ -749,7 +750,9 @@ class Topology:
                     b0=1.5
                     kb=999999
                     # raise Exception(f'no bondtype {idx} found.')
-                # add a new bond!
+                '''
+                add a new bond!
+                '''
                 h=_GromacsTopologyDirectiveHeaders_['bonds']
                 data=[ai,aj,bt,b0,kb]  # this new bond will have override parameters
                 assert len(h)==len(data), 'Error: not enough data for new bond?'
@@ -771,27 +774,14 @@ class Topology:
                     indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
-                # TODO: need to allow for possibility of converting an existing single bond to a double bond
-                def dec_order_atom_name_gaff(nm):
-                    il=list(nm)
-                    logging.debug(f'expect this? {il}')
-                    elnm=''
-                    nsfx=''
-                    for i in range(len(il)):
-                        logging.debug(f'query {il[i]} {il[i].isdigit()}')
-                        if not il[i].isdigit():
-                            elnm+=il[i]
-                        else:
-                            nsfx+=il[i]
-                    logging.debug(f'and this? {elnm} {nsfx}')
-                    n=int(nsfx)
-                    n-=1
-                    nn=elnm+str(n)
-                    return nn
-
-                ityp=at.loc[ai-1]['type']
-                jtyp=at.loc[aj-1]['type']
-                logging.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
+                ''' 
+                if it is, do nothing; it will be templated; if mol2_bonds are present (usually
+                because a Topology is part of a molecule being parameterized), update the order
+                of the bond.
+                '''
+                # ityp=at.loc[ai-1]['type']
+                # jtyp=at.loc[aj-1]['type']
+                # logging.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
                 # nityp=dec_order_atom_name_gaff(ityp)
                 # njtyp=dec_order_atom_name_gaff(jtyp)
                 # logging.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
@@ -802,11 +792,12 @@ class Topology:
                     mb=self.D['mol2_bonds']
                     bi=(mb['ai']==ai)&(mb['aj']==aj)
                     mb.loc[bi,'type']=order
-                else:
-                    logging.warning(f'No way to update this bond since there is not a mol2_bonds attribute in the Topology.')
+                # else:
+                #     logging.warning(f'No way to update this bond since there is not a mol2_bonds attribute in the Topology.')
                     # logging.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
-                # raise Exception(f'attempt to add already existing bond {ai}-{aj}')
-        # update the bondlist
+        '''
+        update the bondlist
+        '''
         for b in newbonds:
             self.bondlist.append(b)
         # logging.debug(f'Added {len(newbonds)} new bonds')

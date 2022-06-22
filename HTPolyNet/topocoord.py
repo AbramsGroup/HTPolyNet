@@ -30,7 +30,7 @@ class BTRC(Enum):
     passed = 0
     failed_pierce_ring = 1        # does this bond-candidate pierce a ring?
     failed_short_circuit = 2      # does this bond-candidate result in short-circuit?
-    failed_polyethylene_cycle = 3 # does this bond-candidate create a polyethylene cycle?
+    failed_polyethylene_cycle = 3 # does this bond-candidate create a polyethylene cycle on its own?
 
 class TopoCoord:
     """Container for Topology and Coordinates, along with methods that 
@@ -952,10 +952,16 @@ class TopoCoord:
         i,j,rij=b
         i=int(i)
         j=int(j)
-        # check for short-circuits, defined as a residue attempting to bond to another
-        # residue to which it was already previously bonded
         if self.shortcircuit(i,j):
             return BTRC.failed_short_circuit,0
+        if self.polyethylene_cycle(i,j):
+            return BTRC.failed_polyethylene_cycle,0
+        if self.ringpierce(i,j,pbc=pbc,show_piercings=show_piercings):
+            return BTRC.failed_pierce_ring,0
+        logging.debug(f'passed bondtest: {i:>7d} {j:>7d} {rij:>6.3f} nm')
+        return BTRC.passed,rij
+
+    def ringpierce(self,i,j,pbc=[1,1,1],show_piercings=True):
         Ri=self.get_R(i)
         Rj=self.get_R(j)
         Rij=self.Coordinates.mic(Ri-Rj,pbc)
@@ -972,18 +978,15 @@ class TopoCoord:
                 idx.extend(C['globalIdx'].to_list()) # list of globalIdx's for this output
                 sub=self.Coordinates.subcoords(self.Coordinates.A[self.Coordinates.A['globalIdx'].isin(idx)].copy())
                 sub.write_gro(f'ring-{i}-{j}'+'.gro')
-                logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj} : {rij}\n{C.to_string()}')
-            return BTRC.failed_pierce_ring,0
-        if self.polyethylene_cycle(i,j):
-            return BTRC.failed_polyethylene_cycle,0
-        logging.debug(f'passed bondtest: {i:>7d} {j:>7d} {rij:>6.3f} nm')
-        return BTRC.passed,rij
-
-    
+                logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj}\n{C.to_string()}')
+            return True
+        return False
+        # if self.polyethylene_cycle(i,j):
+        #     return BTRC.failed_polyethylene_cycle,0
 
     def shortcircuit(self,i,j):
         """Determine whether atoms i and j, if bonded, would produce a short circuit, 
-           for now defined as an instance in which i and j belong to residues that are already 
+           defined as an instance in which i and j belong to residues that are already 
            bonded to each other
 
         :param i: global index of first atom
@@ -995,30 +998,34 @@ class TopoCoord:
         """
         i_resName,i_resNum,i_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i})
         j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j})
+        '''
+        In a cure reaction, atoms that react should be in different residues
+        '''
+        assert i_resNum!=j_resNum,f'shortcircuit test error {i}-{j} both in residue {i_resNum}?'
         i_neighbors=self.partners_of(i)
         j_neighbors=self.partners_of(j)
-        if i in j_neighbors or j in i_neighbors:
-            # logging.debug(f'atoms {i} and {j} already on each other\'s list of bonded partners')
-            return True
-
-        assert not j in i_neighbors # haven't made the bond yet...
-        assert not i in j_neighbors # haven't made the bond yet...
-
-        # logging.debug(f'shortcircuit: i_idx {i} i_resnum {i_resNum} i_neighbors {i_neighbors}')
-        for ix in i_neighbors:
-            ix_resName,ix_resNum,ix_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':ix})
-            # logging.debug(f'-> ix_idx {ix} ix_resnum {ix_resNum} ix_atomName {ix_atomName}')
-            if ix_resNum==j_resNum:
-                # logging.debug(f'resid {i_resNum} is already bound to an atom in {j_resNum}')
+        # if i in j_neighbors or j in i_neighbors:
+        #     # logging.debug(f'atoms {i} and {j} already on each other\'s list of bonded partners')
+        #     return True
+        '''
+        Should never test a proposed bond that already exists
+        '''
+        assert not j in i_neighbors
+        assert not i in j_neighbors
+        '''
+        Set up a DataFrame for heavy atoms in each residue
+        '''
+        ADF=self.Coordinates.A
+        R1DF=ADF[ADF['resNum']==i_resNum]
+        R1DF=R1DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R1DF['atomName']]]
+        R2DF=ADF[ADF['resNum']==j_resNum]
+        R2DF=R2DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R2DF['atomName']]]
+        '''
+        Test to see if there exists any bond between these two residues
+        '''
+        for i,j in product(R1DF['globalIdx'].to_list(),R2DF['globalIdx'].to_list()):
+            if self.are_bonded(i,j):
                 return True
-        # logging.debug(f'shortcircuit: j_idx {j} j_resNum {j_resNum} j_atomName {j_atomName} j_neighbors {j_neighbors}')
-        for jx in j_neighbors:
-            jx_resName,jx_resNum,jx_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':jx})
-            # logging.debug(f'-> jx_idx {jx} jx_resnum {jx_resNum} jx_atomName {jx_atomName}')
-            if jx_resNum==i_resNum:
-                # logging.debug(f'resid {j_resNum} is already bound to an atom in {i_resNum}')
-                return True
-
         return False
 
     def polyethylene_cycle(self,a,b):
@@ -1028,30 +1035,25 @@ class TopoCoord:
         """set_polyethylenes regenerate the polyethylene network using z/nreactions
         """
         CDF=self.Coordinates.A
+        '''
+        Only carbon atoms (assumed to have names that begin with 'C' or 'c') can be in polyethylene cycles
+        '''
+        CCDF=CDF[[(b.startswith('C') or b.startswith('c')) for b in CDF['atomName']]]
+        '''
+        Only atoms that are potentially reactive or have already reacted can be in (putative) polyethylene
+        cycles
+        '''
+        CCDF=CCDF[(CCDF['z']>0)|(CCDF['nreactions']>0)]
+
         T=self.Topology
         T.polyethylenes=nx.DiGraph()
         BL=T.bondlist
-        for i,r in CDF.iterrows():
-            idx=r['globalIdx']
-            irn=r['resNum']
-            iz=r['z']
-            inr=r['nreactions']
-            rtv=iz>0 or inr>0
-            n=BL.partners_of(idx)
-            for jdx in n:
-                jrn=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':jdx})
-                if irn!=jrn:
-                    T.polyethylenes.add_edge(idx,jdx) # bonded, different residues
-                    assert idx in T.polyethylenes.nodes
-                    assert jdx in T.polyethylenes.nodes
-                else:
-                    jz=self.get_gro_attribute_by_attributes('z',{'globalIdx':jdx})
-                    jnr=self.get_gro_attribute_by_attributes('nreactions',{'globalIdx':jdx})
-                    jtv=jz>0 or jnr>0
-                    if rtv and jtv: # same residue, bonded, both reactive
-                        T.polyethylenes.add_edge(idx,jdx)
-                        assert idx in T.polyethylenes.nodes
-                        assert jdx in T.polyethylenes.nodes
+        for idx in CCDF['globalIdx']:
+            for jdx in [x for x in BL.partners_of(idx) if x in CCDF['globalIdx'].values]:
+                '''
+                Atoms are bonded and in different residues, or reactive and in same residue
+                '''
+                T.polyethylenes.add_edge(idx,jdx)
         cycles=list(nx.simple_cycles(T.polyethylenes))
         clens={}
         for c in cycles:
@@ -1059,9 +1061,13 @@ class TopoCoord:
             if not l in clens:
                 clens[l]=0
             clens[l]+=1
-        logging.debug(f'polyethyelene cycle lengths:counts {clens}')
-        if any([x>2 for x in clens.keys()]):
-            logging.debug(f'there is a problem with the polyethylene cycles!')
-            network_graph(self.Topology.polyethylenes,'pe_net_bad.png')
-                
+        if len(clens)>0:
+            logging.debug(f'Polyethyelene cycle lengths:counts {clens}')
+            '''
+            Sanity check!
+            '''
+            if any([x>2 for x in clens.keys()]):
+                logging.debug(f'There is a problem with the polyethylene cycles!')
+                network_graph(self.Topology.polyethylenes,'pe_net_bad.png')
+                    
 

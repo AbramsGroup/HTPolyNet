@@ -799,8 +799,10 @@ class HTPolyNet:
                     logging.debug(f'{idf["r"].shape[0]} bond-candidate lengths avg/min/max: {bcmean:0.3f}/{bcmin:0.3f}/{bcmax:0.3f}')
                     jdf=idf[idf['r']<radius]
                     # logging.debug(f'idf:\n{idf.head().to_string()}')
-                    logging.debug(f'{jdf.shape[0]} bond-candidates with lengths below {radius}')
-                    if jdf.shape[0]>0:
+                    npassers=jdf.shape[0]
+                    ess='' if npassers!=1 else 's'
+                    logging.debug(f'{npassers} bond-candidate{ess} with lengths below {radius} nm')
+                    if npassers>0:
                         Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
                         logging.debug(f'Testing of {len(Pbonds)} bond-candidates will use {ncpu} processors')
                         p=Pool(processes=ncpu)

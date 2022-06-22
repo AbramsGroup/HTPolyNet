@@ -276,6 +276,7 @@ class Molecule:
         # along with the residues of i and j among the residues from which interactions
         # can be mapped.
         neighbors_of_i=otherTC.partners_of(i_idx)
+        neighbors_of_i.remove(j_idx)
         resid_bystanders_of_ij=[]  # bystanders bonded to atom i that are not in resid of atom j
         resid_bystanders_of_iij=[] # bystanders bonded to _a neighbor of_ atom i that are not in resid of atom _i or_ j
         # logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
@@ -284,14 +285,15 @@ class Molecule:
             # neighbors_of_in.remove(i_idx)
             x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
             # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_in}')
-            if x_resNum!=i_resNum and x_resNum!=j_resNum:
+            if x_resNum!=i_resNum and x_resNum!=j_resNum and (x_resNum,x_resName) not in resid_bystanders_of_ij:
                 resid_bystanders_of_ij.append((x_resNum,x_resName))
             for xxx in neighbors_of_in:
                 xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
                 # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
-                if xx_resNum!=i_resNum and xx_resNum!=j_resNum:
+                if xx_resNum!=i_resNum and xx_resNum!=j_resNum and (xx_resNum,xx_resName) not in resid_bystanders_of_iij:
                     resid_bystanders_of_iij.append((xx_resNum,xx_resName))
         neighbors_of_j=otherTC.partners_of(j_idx)
+        neighbors_of_j.remove(i_idx)
         # logging.debug(f'neighbors of j {j_idx} {j_resName} {j_resNum} {j_atomName}:')
         resid_bystanders_of_ji=[]  # bystanders bonded to atom j that are not in resid of atom i
         resid_bystanders_of_jji=[] # bystanders bonded to _a neighbor of_ atom j that are not in resid of atom i _or j_
@@ -300,13 +302,13 @@ class Molecule:
             # neighbors_of_jn.remove(j_idx)
             x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
             # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_jn}')
-            if x_resNum!=i_resNum and x_resNum!=j_resNum:
+            if x_resNum!=i_resNum and x_resNum!=j_resNum and (x_resNum,x_resName) not in resid_bystanders_of_ji:
                 resid_bystanders_of_ji.append((x_resNum,x_resName))
                 # logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
             for xxx in neighbors_of_jn:
                 xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
                 # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
-                if xx_resNum!=i_resNum and xx_resNum!=j_resNum:
+                if xx_resNum!=i_resNum and xx_resNum!=j_resNum and (xx_resNum,xx_resName) not in resid_bystanders_of_jji:
                     resid_bystanders_of_jji.append((xx_resNum,xx_resName))
 
         logging.debug(f'idx_mappers: resid_bystanders_of_ij {resid_bystanders_of_ij}')
@@ -358,14 +360,14 @@ class Molecule:
             logging.error(f'Mappers using template {self.name} unable to map from instance bond {i_resName}-{i_resNum}-{i_atomName}---{j_resName}-{j_resNum}-{j_atomName}')
             raise Exception
 
-        iapp_inst_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij]
+        iapp_inst_bystanders=list(set([*resid_bystanders_of_ij,*resid_bystanders_of_iij]))
         assert len(iapp_inst_bystanders)==len(Aoresids)
         logging.debug(f'idx_mappers: iapp_inst_bystanders {iapp_inst_bystanders} Aoresids {Aoresids}')
         for ib,tb in zip(iapp_inst_bystanders,Aoresids):
             inst_bystanders.append(ib[0])
             temp_bystanders.append(tb)
-        japp_inst_bystanders=[*resid_bystanders_of_ji,*resid_bystanders_of_jji]
-        assert len(japp_inst_bystanders)==len(Boresids)
+        japp_inst_bystanders=list(set([*resid_bystanders_of_ji,*resid_bystanders_of_jji]))
+        assert len(japp_inst_bystanders)==len(Boresids),f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}'
         logging.debug(f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}')
         for ib,tb in zip(japp_inst_bystanders,Boresids):
             inst_bystanders.append(ib[0])
