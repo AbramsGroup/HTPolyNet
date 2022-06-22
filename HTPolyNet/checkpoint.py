@@ -83,9 +83,11 @@ class Checkpoint:
             bf=basedict.get('BONDSFILE',None)
             # assert bf,f'Error: BONDSFILE not found in {self.checkpoint_file}.'
             self.bonds_are=basedict.get('BONDS_ARE',None)
-            self.bonds_file=os.path.basename(bf)
             if bf:
+                self.bonds_file=os.path.basename(bf)
                 self._read_bondsfile()
+            else:
+                self.bonds_file=None
             system.set_system(CP=self)
         # else:
         #     logging.debug(f'read_checkpoint: no file, empty checkpoint')
