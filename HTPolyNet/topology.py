@@ -105,7 +105,7 @@ def _get_unique_cycles_dict(G,min_length=-1):
             counts_by_length[sl]+=1
             if not sl in ucycles:
                 ucycles[sl]=[]
-            u=[x+1 for x in u]
+            #u=[x+1 for x in u] # why am i doing this?
             utl=treadmills(u)
             ur=list(reversed(u))
             urtl=treadmills(ur)

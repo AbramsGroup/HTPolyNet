@@ -114,5 +114,5 @@ class Bondlist:
         g.add_nodes_from(list(range(N)))
         for i,n in self.B.items():
             for j in n:
-                g.add_edge(i-1,j-1)
+                g.add_edge(i,j)
         return g
