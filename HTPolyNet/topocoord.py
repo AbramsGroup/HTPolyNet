@@ -981,8 +981,6 @@ class TopoCoord:
                 logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj}\n{C.to_string()}')
             return True
         return False
-        # if self.polyethylene_cycle(i,j):
-        #     return BTRC.failed_polyethylene_cycle,0
 
     def shortcircuit(self,i,j):
         """Determine whether atoms i and j, if bonded, would produce a short circuit, 
