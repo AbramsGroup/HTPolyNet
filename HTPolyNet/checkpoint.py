@@ -81,10 +81,11 @@ class Checkpoint:
             self.current_radidx=basedict['CURRENT_RADIDX']
             self.radius=basedict['RADIUS']
             bf=basedict.get('BONDSFILE',None)
-            assert bf,f'Error: BONDSFILE not found in {self.checkpoint_file}.'
+            # assert bf,f'Error: BONDSFILE not found in {self.checkpoint_file}.'
             self.bonds_are=basedict.get('BONDS_ARE',None)
             self.bonds_file=os.path.basename(bf)
-            self._read_bondsfile()
+            if bf:
+                self._read_bondsfile()
             system.set_system(CP=self)
         # else:
         #     logging.debug(f'read_checkpoint: no file, empty checkpoint')
