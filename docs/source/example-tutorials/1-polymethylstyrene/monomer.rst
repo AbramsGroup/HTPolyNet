@@ -28,7 +28,9 @@ Now we can generate the required ``*.mol2`` file.
 
 (http://2015.igem.org/Team:Stanford-Brown/PS)
 
-However, as described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will actually be 1-ethyl-4-methylbenzene:
+Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to conveniently distinguish between these two.  To see how we do that, let's turn to a way to build the ``mol2`` file.
+
+As described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene:
 
 .. image:: 4meb.png 
 
@@ -91,7 +93,7 @@ Now, let's have a look at this file::
          20     9    20    1
          21     9    21    1
 
-Notice how the atom names (second column in the ``@<TRIPOS>ATOM`` section) are not unique?  HTPolyNet needs unique atom names in order to describe reactions.  So let's call the methyl-group carbon ``C1`` and the methylene carbon ``C2``.  To figure out which atoms these are in the ``mol2`` file, we can interrogate the structure in VMD (or any other suitable visualization software):
+Notice how the atom names (second column in the ``@<TRIPOS>ATOM`` section) are not unique?  Let's call the radical-bearing carbon ``C1`` and the methyl carbon ``C2``.  To figure out which atoms these are in the ``mol2`` file, we can interrogate the structure in VMD (or any other suitable visualization software):
 
 .. image:: emb-labelled.png
 
@@ -99,10 +101,11 @@ The black numbers shown here indicate internal atom indexes in VMD, and VMD star
 
 .. code-block:: console
 
-    $ echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen3d -h -omol2 --title "EMB" | \
-                                sed s/"8 C "/"8 C2"/ | \
-                                sed s/"9 C "/"9 C1"/ | \
-                                sed s/"UNL1"/"EMB "/ > EMB.mol2
+    $ echo "C1=CC(C)=CC=C1CC" | \ 
+      obabel -ismi --gen3d -h -omol2 --title "EMB" | \
+      sed s/" 8 C "/" 8 C1"/ | \
+      sed s/" 9 C "/" 9 C2"/ | \
+      sed s/"UNL1"/"EMB "/ > EMB.mol2
 
 Let's look at the file :download:`EMB.mol2 <EMB.mol2>` that results from the command above::
 
