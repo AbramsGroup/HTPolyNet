@@ -1018,6 +1018,8 @@ class TopoCoord:
         R1DF=R1DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R1DF['atomName']]]
         R2DF=ADF[ADF['resNum']==j_resNum]
         R2DF=R2DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R2DF['atomName']]]
+        assert R1DF.shape[0]>0
+        assert R2DF.shape[0]>0
         '''
         Test to see if there exists any bond between these two residues
         '''
