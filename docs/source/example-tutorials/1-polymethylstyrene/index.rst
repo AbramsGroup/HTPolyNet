@@ -1,4 +1,4 @@
-.. _dgeba_pms_tutorial:
+.. _pms_tutorial:
 
 Poly(4-methyl styrene)
 ======================
