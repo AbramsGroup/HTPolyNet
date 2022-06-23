@@ -94,7 +94,7 @@ HTPolyNet automatically generates a plot of density vs. time for the densificati
 
 .. image:: init-density.png
 
-We can see that we've successfully arrived at the liquid-like density of about 900 kg/m\ :sup:`3`.
+We can see that we've successfully arrived at the liquid-like density of about 810 kg/m\ :sup:`3`. (The actual density is 860, so we are a bit low.)
 
 The first CURE iteration
 ^^^^^^^^^^^^^^^^^^^^^^^^

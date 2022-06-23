@@ -157,4 +157,4 @@ The reaction dicts from the previous section appear in a list together with many
 
 * ``initial_composition`` (lines 97-98):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 100 EMB's.
 
-Now we are ready to :ref:`run the calculation <pms_run>`.
+Now we are ready to :ref:`run the build <pms_run>`.

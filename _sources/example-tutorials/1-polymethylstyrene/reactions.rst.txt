@@ -101,3 +101,5 @@ Finally, we can choose to revert any fully unreacted monomers back to true doubl
         {atoms: [A, B], order: 2}
       ]
     }
+
+The next thing we consider is the :ref:`configuration file <pms_configuration_file>` necessary to describe the crosslinking chemistry and determine the system build.
