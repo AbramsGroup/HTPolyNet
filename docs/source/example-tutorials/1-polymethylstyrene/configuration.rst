@@ -1,14 +1,14 @@
-.. _dgeba_configuration_file:
+.. _pms_configuration_file:
 
 The Configuration File
 ======================
 
-The reaction dicts from the previous section appear in a list together with many other parameters in the YAML-format configuration file :download:`DGE-PAC.yaml <DGE-PAC.yaml>`.  Below is a full listing of this file, followed by a detailed explanation (line numbers are added here for guidance):
+The reaction dicts from the previous section appear in a list together with many other parameters in the YAML-format configuration file :download:`pMSTY.yaml <pMSTY.yaml>`.  Below is a full listing of this file, followed by a detailed explanation (line numbers are added here for guidance):
 
 .. code-block:: yaml
     :linenos:
 
-    Title: DGEBA-PACM thermoset
+    Title: polymethylstyrene
     gmx: 'gmx'
     gmx_options: '-quiet -nobackup'
     initial_density: 300.0  # kg/m3
@@ -20,71 +20,93 @@ The reaction dicts from the previous section appear in a list together with many
     CURE_max_iterations: 150
     CURE_desired_conversion: 0.95
     CURE_late_threshold: 0.85
-    drag_increment: 0.075 # nm
     drag_trigger_distance: 0.5 # nm
+    max_drag_stages: 5
     drag_limit: 0.3 # nm
     drag_nvt_steps: 1000
-    drag_npt_steps: 2500
+    drag_npt_steps: 2000
     drag_temperature: 600
-    relax_increment: 0.075
+    max_bond_relaxation_increment: 0.05
     relax_nvt_steps: 1000
-    relax_npt_steps: 2500
+    relax_npt_steps: 2000
     relax_temperature: 600
     equilibration_temperature: 300
-    equilibration_pressure: 1
     equilibration_steps: 50000
     charge_method: gas  # only needed if parameterizing
-    symmetry_equivalent_atoms: { 
-        PAC: [[N1,N2],[C1,C2]], 
-        DGE: [[C1,C2],[C3,C4],[O1,O2]] 
-    }
-    stereocenters: { PAC: [C1], DGE: [C3] }
     reactions:
-    - {
-        name:     'Primary-to-secondary-amine',
-        stage:     cure,
-        reactants: {1: PAC, 2: DGE},
-        product:   PACDGE,
-        probability: 1.0,
-        atoms: {
-            A: {reactant: 1, resid: 1, atom: N1, z: 2},
-            B: {reactant: 2, resid: 1, atom: C1, z: 1}
-        },
-        bonds: [
+      - {
+          name:        'EMB1_1',
+          stage:       cure,
+          reactants:   {1: EMB, 2: EMB},
+          product:     EMB1_1,
+          probability: 1.0,
+          atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 2, resid: 1, atom: C2, z: 1}
+          },
+          bonds: [
             {atoms: [A, B], order: 1}
-        ]
+          ]
         }
-    - {
-        name: 'Secondary-to-tertiary-amine',
-        reactants: {1: PACDGE, 2: DGE},
-        product: PACDGE2,
-        stage: cure,
-        probability: 0.5,
-        atoms: {
-            A: {reactant: 1, resid: 1, atom: N1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C1, z: 1}
-        },
-        bonds: [
+      - {
+          name:        'EMB2_1',
+          stage:       cure,
+          reactants:   {1: EMB1_1, 2: EMB},
+          product:     EMB2_1,
+          probability: 0.0,
+          atoms: {
+            A: {reactant: 1, resid: 2, atom: C1, z: 1},
+            B: {reactant: 2, resid: 1, atom: C2, z: 1}
+          },
+          bonds: [
             {atoms: [A, B], order: 1}
-        ]
+          ]
         }
-    - { 
-        name: 'Oxirane-formation',
-        reactants: {1: DGE},
-        product: DGEC,
-        stage: post-cure,
-        probability: 1.0,
-        atoms: {
-            A: {reactant: 1, resid: 1, atom: O1, z: 1},
-            B: {reactant: 1, resid: 1, atom: C1, z: 1}
-        },
-        bonds: [
+      - {
+          name:        'EMB1_2',
+          stage:       cure,
+          reactants:   {1: EMB, 2: EMB1_1},
+          product:     EMB1_2,
+          probability: 0.0,
+          atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 2, resid: 1, atom: C2, z: 1}
+          },
+          bonds: [
             {atoms: [A, B], order: 1}
-        ]
+          ]
+        }
+      - {
+          name:        'EMB2_2',
+          stage:       cure,
+          reactants:   {1: EMB1_1, 2: EMB1_1},
+          product:     EMB2_2,
+          probability: 0.0,
+          atoms: {
+            A: {reactant: 1, resid: 2, atom: C1, z: 1},
+            B: {reactant: 2, resid: 1, atom: C2, z: 1}
+          },
+          bonds: [
+            {atoms: [A, B], order: 1}
+          ]
+        }
+      - {
+          name:         'EMBCC',
+          stage:        post-cure,
+          reactants:    {1: EMB},
+          product:      EMBCC,
+          probability:  1.0,
+          atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 1, resid: 1, atom: C2, z: 1}
+          },
+          bonds: [
+            {atoms: [A, B], order: 2}
+          ]
         }
     initial_composition:
-    - {molecule: DGE, count: 500}
-    - {molecule: PAC, count: 250}
+      - {molecule: EMB, count: 100}
+
 
 
 * ``Title`` (line 1): A descriptive title.  Not really used anywhere but in logging output.
@@ -123,23 +145,16 @@ The reaction dicts from the previous section appear in a list together with many
 * **Equilibration parameters:** These parameters govern the single MD simulation performed once all cure and post-cure reactions are complete.
 
   * ``equilibration_temperature`` (line 23): Temperature in K; 300 by default.
-  * ``equilibration_pressure`` (line 24):  Pressure in bar; 1 by default.
-  * ``equilibration_steps`` (line 25):  Number of time-steps; 50000 by default.
+  * ``equilibration_steps`` (line 24):  Number of time-steps; 50000 by default.
 
 * **Chemistry parameters:**  These parameters govern the parameterization of monomers and other molecules.
 
-  * ``charge_method`` (line 26):  Charge method designation understandable by ``antechamber``'s ``-c`` option.  "gas" (Gasteiger) by default.
-  * ``symmetry_equivalent_atoms`` (lines 27-30):  Dictionary of symmetry-equivalent atoms in each molecule.  Here, we are declaring that N1 and N2 are symmetry-equivalent in PACM, as are C1 and C2, while in DGEBA, C1 and C2, C3 and C4, and O1 and O2 all constitute symmetry-equivalent atom pairs.  Since we only refer to on atom in each symmetry set in reactions, this information is used to enumerate all reactions based on symmetry.
-  * ``stereocenters`` (line 31): Dictionary of chiral carbons in each molecule.  Here we are declaring that C1 is chiral in PACM and C3 is chiral in DGEBA.  Symmetry-equivalence is also applied to these atoms.
+  * ``charge_method`` (line 25):  Charge method designation understandable by ``antechamber``'s ``-c`` option.  "gas" (Gasteiger) by default.
 
 * Reaction dictionaries:
 
-  These are explained in detail in :ref:`the previous section <dgeba_reaction_dictionaries>`.
+  These are explained in detail in :ref:`the previous section <pms_reaction_dictionaries>`.
 
-  * Primary-to-secondary-amine (lines 33-46):  Defines the generation of one secondary amine group through reaction of DGEBA to PACM.
-  * Secondary-to-tertiary-amine (lines 48-60):  Defines the generation of one tertiary amine group through reaction of DGEBA to PACM that has already reacted with another DGEBA.
-  * Oxirane-formation (lines 62-74): Defines the formation of the oxirane cycle from its open, hydrogenated form.  This is a post-cure reaction so bond-designates are identified and relaxed after the CURE iterations have completed.
+* ``initial_composition`` (lines 97-98):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 100 EMB's.
 
-* ``initial_composition`` (lines 75-77):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 500 DGEBA's and 250 PACM's, which is a stoichiometric mixture in terms of epoxy groups (1000) and primary amines (500).  This dictates that at most 1000 crosslink bonds can form.
-
-Now we are ready to :ref:`run the calculation <dgeba_run>`.
+Now we are ready to :ref:`run the calculation <pms_run>`.
