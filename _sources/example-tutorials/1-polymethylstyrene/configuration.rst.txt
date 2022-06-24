@@ -20,13 +20,13 @@ The reaction dicts from the previous section appear in a list together with many
     CURE_max_iterations: 150
     CURE_desired_conversion: 0.95
     CURE_late_threshold: 0.85
+    drag_increment: 0.05 # nm
     drag_trigger_distance: 0.5 # nm
-    max_drag_stages: 5
     drag_limit: 0.3 # nm
     drag_nvt_steps: 1000
     drag_npt_steps: 2000
     drag_temperature: 600
-    max_bond_relaxation_increment: 0.05
+    relax_increment: 0.05
     relax_nvt_steps: 1000
     relax_npt_steps: 2000
     relax_temperature: 600
@@ -124,7 +124,7 @@ The reaction dicts from the previous section appear in a list together with many
   * ``CURE_radial_increment`` (line 9): The increment in nm by which the cutoff radius is increased in bond searching.  The radius is increased incrementally until at least on possible bond is identified or it reaches half the shortest box dimension.  0.25 nm by default.
   * ``CURE_max_iterations`` (line 10):  The upper limit of CURE iterations to allow.  150 by default.
   * ``CURE_desired_conversion`` (line 11):  The target conversion.  MUST BE SPECIFIED; there is no default.
-  * ``CURE_late_threshold`` (line 12):  The conversion beyond which bond relative probabilities are ignored.  1.0 by default (no limitation).  This can be helpful in speeding up very late stages of the cure process.
+  * ``CURE_late_threshold`` (line 12):  The conversion beyond which bond relative probabilities are ignored.  1.0 by default (no limitation).  This can be helpful in speeding up very late stages of the cure process (but is not here since there is only one type of bond).
 
 * **Dragging parameters:**  The parameters govern the series of iterative MD simulations that aim to pull atoms together before activating their bonds.
 
