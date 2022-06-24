@@ -568,8 +568,8 @@ class HTPolyNet:
                     assert curr_nxlinkbonds==0
                     conversion_reached=True
                 cure_finished = conversion_reached or iterations_exceeded
-                if cure_finished:
-                    CP.set_state(CPstate.postcure)
+            if cure_finished:
+                CP.set_state(CPstate.postcure)
 
         self.post_CURE(CP)
         if CP.state==CPstate.finished:
