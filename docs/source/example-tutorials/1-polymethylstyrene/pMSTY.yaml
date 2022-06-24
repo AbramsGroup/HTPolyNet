@@ -12,7 +12,7 @@ CURE_max_iterations: 150
 CURE_desired_conversion: 0.95
 CURE_late_threshold: 0.85
 drag_trigger_distance: 0.5 # nm
-drag_nstages: 5
+drag_increment: 0.05 #nm
 drag_limit: 0.3 # nm
 drag_nvt_steps: 1000
 drag_npt_steps: 2000
