@@ -312,4 +312,31 @@ Post-cure reactions, equilibration, and finalization
 
 After iteration 9, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  The directory ``systems/postcure`` is created and the final outputs from the last CURE iterations are copied here.  If there were any monomers that had not yet reacted (here there are not), then the EMBCC reaction would be used to revert them back to double bonds, followed by an equilibration. After the equilibration, HTPolyNet generates the final files ``7-final.top/gro/grx``. 
     
+Overall behavior
+^^^^^^^^^^^^^^^^
+
+If the build is run with ``--loglevel debug`` indicated on the command-line, the log file will contain a lot of information that can be used to characterize the efficiency of the build process.  The ``HTPolyNet.plot`` module has a method ``cure_graph`` that can be used to generate plots showing the conversion vs. run time in hours, and the iteration number vs. run time in hours.  Generating this plot from the directory the log file is in can be done using an interactive python session:
+
+.. code-block:: python
+
+    >>> from HTPolyNet.plot import cure_graph
+    >>> cure_graph(['my_build.log'],xmax=20.)
+
+We ran 10 independent system builds of 100 monomers each using the provided ``mol2`` and ``yaml`` input files; they generated the logs ``0.log``, ``1.log``, ..., ``9.log``.  The plot below was made using:
+
+.. code-block:: python
+
+    >>> from glob import glob
+    >>> from HTPolyNet.plot import cure_graph
+    >>> cure_graph([glob('[0-9].log')],xmax=0.3)
+
+.. image:: iter-graph.png
+
+In this case, on a moderately slow workstation, these builds took 10-15 minutes to reach 0.95 conversion, usually in 9 iterations.
+
+Below is a trace of the density vs time as a concatenation of the sequence of all NPT MD simulations, beginning with the initial densification, passing through all drag/relaxationg/equilibrations in each iteration, and concluding with the final equilibration:
+
+.. image:: all-density.png
+
+It is clear that during the post-bond relaxations, density drops to 700 kg/m3, but this is because the post-bond relaxations are all run at 600 K.  The equilibrations at 300 K all bring the system back to approx. 900 kg/m3.
 

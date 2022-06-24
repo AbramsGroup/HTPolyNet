@@ -299,6 +299,25 @@
 <h2>Post-cure reactions, equilibration, and finalization<a class="headerlink" href="#post-cure-reactions-equilibration-and-finalization" title="Permalink to this headline">¶</a></h2>
 <p>After iteration 9, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  The directory <code class="docutils literal notranslate"><span class="pre">systems/postcure</span></code> is created and the final outputs from the last CURE iterations are copied here.  If there were any monomers that had not yet reacted (here there are not), then the EMBCC reaction would be used to revert them back to double bonds, followed by an equilibration. After the equilibration, HTPolyNet generates the final files <code class="docutils literal notranslate"><span class="pre">7-final.top/gro/grx</span></code>.</p>
 </section>
+<section id="overall-behavior">
+<h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this headline">¶</a></h2>
+<p>If the build is run with <code class="docutils literal notranslate"><span class="pre">--loglevel</span> <span class="pre">debug</span></code> indicated on the command-line, the log file will contain a lot of information that can be used to characterize the efficiency of the build process.  The <code class="docutils literal notranslate"><span class="pre">HTPolyNet.plot</span></code> module has a method <code class="docutils literal notranslate"><span class="pre">cure_graph</span></code> that can be used to generate plots showing the conversion vs. run time in hours, and the iteration number vs. run time in hours.  Generating this plot from the directory the log file is in can be done using an interactive python session:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">HTPolyNet.plot</span> <span class="kn">import</span> <span class="n">cure_graph</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cure_graph</span><span class="p">([</span><span class="s1">&#39;my_build.log&#39;</span><span class="p">],</span><span class="n">xmax</span><span class="o">=</span><span class="mf">20.</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We ran 10 independent system builds of 100 monomers each using the provided <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and <code class="docutils literal notranslate"><span class="pre">yaml</span></code> input files; they generated the logs <code class="docutils literal notranslate"><span class="pre">0.log</span></code>, <code class="docutils literal notranslate"><span class="pre">1.log</span></code>, …, <code class="docutils literal notranslate"><span class="pre">9.log</span></code>.  The plot below was made using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">HTPolyNet.plot</span> <span class="kn">import</span> <span class="n">cure_graph</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cure_graph</span><span class="p">([</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;[0-9].log&#39;</span><span class="p">)],</span><span class="n">xmax</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+</pre></div>
+</div>
+<img alt="../../_images/iter-graph.png" src="../../_images/iter-graph.png" />
+<p>In this case, on a moderately slow workstation, these builds took 10-15 minutes to reach 0.95 conversion, usually in 9 iterations.</p>
+<p>Below is a trace of the density vs time as a concatenation of the sequence of all NPT MD simulations, beginning with the initial densification, passing through all drag/relaxationg/equilibrations in each iteration, and concluding with the final equilibration:</p>
+<img alt="../../_images/all-density.png" src="../../_images/all-density.png" />
+<p>It is clear that during the post-bond relaxations, density drops to 700 kg/m3, but this is because the post-bond relaxations are all run at 600 K.  The equilibrations at 300 K all bring the system back to approx. 900 kg/m3.</p>
+</section>
 </section>
 
 
