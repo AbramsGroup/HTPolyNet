@@ -163,7 +163,7 @@ The first two columns are pre-bond global atom indices for each bond-designate; 
 Dragging files
 --------------
 
-Files associated with prebond dragging begin with ``1``.  However, because no bond-designate length exceeded 0.5 nm, no dragging is triggered.  So the build proceeds to topology update.
+Files associated with prebond dragging begin with ``1``.  However, because no bond-designate length exceeded 0.5 nm, no dragging is triggered.  So the build proceeds to the topology update.
 
 Topology update files
 ---------------------
