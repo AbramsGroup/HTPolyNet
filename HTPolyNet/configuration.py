@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 
 read cfg file
@@ -6,7 +5,6 @@ read cfg file
 
 """
 import json
-from threading import currentThread
 import yaml
 import os
 import logging
@@ -71,32 +69,54 @@ class Configuration:
     
     def parse(self):
         self.Title=self.basedict.get('Title','No Title Provided')
-        ''' reactions must declare molecules '''
-        rlist=self.basedict.get('reactions',[])
-        self.reactions=[Reaction(r) for r in rlist]
-        for R in self.reactions:
-            for rkey,r in R.reactants.items():
-                ''' reactants do not get assigned generators if they are *only* reactants '''
-                if not r in self.molecules:
-                    self.molecules[r]=Molecule(r)
-                else:
-                    logging.debug(f'Reactant {r} in reaction {R.name} is already on the global Molecules list')
-                    if self.molecules[r].generator:
-                        logging.debug(f'{r} is a product of reaction {self.molecules[r].generator.name}')
-            if not R.product in self.molecules:
-                self.molecules[R.product]=Molecule(R.product,generator=R)
+        '''
+        add a molecule for each unique molecule specified in initial_composition
+        '''
         self.initial_composition=self.basedict.get('initial_composition',[])
-        ''' any molecules lists in the initial composition
-        may not have been declared in reactions '''
         for item in self.initial_composition:
             m=item['molecule']
             if m not in self.molecules:
+                logging.debug(f'new {m}')
                 self.molecules[m]=Molecule(m)
+        '''
+        add additional molecules that appear as either reactants or products of reactions
+        '''
+        rlist=self.basedict.get('reactions',[])
+        self.reactions=[Reaction(r) for r in rlist]
+        for R in self.reactions:
+            '''
+            add every reactant in this reaction to the list of molecules
+            '''
+            for rnum,rname in R.reactants.items():
+                zrecs=[]
+                logging.debug(f'{R.name} rname {rname}')
+                for atnum,atrec in R.atoms.items():
+                    if atrec['reactant']==rnum:
+                        cprec=atrec.copy()
+                        del cprec['reactant']
+                        # this atom is in this reactant
+                        zrecs.append(cprec)
+                if not rname in self.molecules:
+                    self.molecules[rname]=Molecule(rname)
+                self.molecules[rname].update_zrecs(zrecs)
+        for R in self.reactions:
+            '''
+            add product of this reaction or update generator if product is already on the list
+            '''
+            r=R.product
+            if not r in self.molecules:
+                self.molecules[r]=Molecule(r,generator=R)
+            else:
+                self.molecules[r].generator=R
 
+        ''' 
+        
+        '''
         for mname,M in self.molecules.items():
-            M.sequence,M.reactive_atoms_seq=_determine_sequence(mname,self.molecules,[])
-            logging.debug(f'Sequence of {mname}: {M.sequence}')
-            logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
+            logging.debug(f'{M.name} {M.zrecs}')
+            # M.sequence,M.reactive_atoms_seq=_determine_sequence(mname,self.molecules,[])
+            # logging.debug(f'Sequence of {mname}: {M.sequence}')
+            # logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
 
         self.parameters=self.basedict
         if not 'ncpu' in self.parameters:
@@ -125,7 +145,7 @@ class Configuration:
                 for atrec in matrectlist:
                     atomName=atrec['atom']
                     seaidx=residue.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'atomName':atomName})
-                    if seaidx==-1:
+                    if seaidx<=-1:
                         logging.debug(f'No atoms symmetric with {atomName}')
                         continue
                     clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
@@ -210,6 +230,16 @@ class Configuration:
         # logging.debug(f'extra reactions:')
         # for R in extra_reactions:
         #     logging.debug(R)
+        self.reactions.extend(extra_reactions)
+        return extra_molecules
+
+    def multimer_expand_reactions(self,molecules):
+        extra_reactions=[]
+        extra_molecules={}
+        for mname,M in molecules.items():
+            adf=M.TopoCoord.Coordinates.A
+            logging.debug(f'{mname} coordinates:\n{adf.to_string()}')
+            logging.debug(f'{mname} has {len(M.reactive_double_bonds)} reactive double bonds\n{M.reactive_double_bonds}')
         self.reactions.extend(extra_reactions)
         return extra_molecules
 

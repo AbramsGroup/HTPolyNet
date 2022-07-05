@@ -773,9 +773,13 @@ class TopoCoord:
                     if not an in razdict[rn]:
                         razdict[rn][an]=[]
                     razdict[rn][an].extend(raz[rn][an])
+        # take the max z value implied by the config file for atom 'an' in residue 'rn'
         for rn in razdict:
             for an in razdict[rn]:
                 razdict[rn][an]=max(razdict[rn][an])
+            # if any two atoms with z>0 in this residue are bound to each other, these
+            # two atoms must be in a reactive double-bond (in the inactive residue)
+
         # logging.debug(f'razdict {razdict}')
         zsrs=[]
         for i,r in self.Coordinates.A.iterrows():
@@ -817,23 +821,23 @@ class TopoCoord:
         # logging.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
 
 
-    def analyze_sea_topology(self):
-        """Checks for consistency of atom type, charge, and mass for all atoms in each      
-            symmetry class.  If consistency is lacking, logs a warning.
-        """
-        tadf=self.Topology.D['atoms']
-        cadf=self.Coordinates.A
-        maxsea=cadf['sea-idx'].max()
-        for i in range(maxsea+1):
-            sea_indexes=cadf[cadf['sea-idx']==i]['globalIdx'].to_list()
-            sea_cls=tadf[tadf['nr'].isin(sea_indexes)]
-            # logging.debug(f'{self.name} symmetry class {i}:\n{sea_cls.to_string()}')
-            for attr in ['type', 'residue', 'charge', 'mass']:
-                values=sea_cls[attr].values
-                flg=values[0]
-                chk=all(values==flg)
-                if not chk:
-                    logging.warning(f'Warning: atoms in symmetry class {i} have different values of {attr}\n{sea_cls.to_string()}')
+    # def analyze_sea_topology(self):
+    #     """Checks for consistency of atom type, charge, and mass for all atoms in each      
+    #         symmetry class.  If consistency is lacking, logs a warning.
+    #     """
+    #     tadf=self.Topology.D['atoms']
+    #     cadf=self.Coordinates.A
+    #     maxsea=cadf['sea-idx'].max()
+    #     for i in range(maxsea+1):
+    #         sea_indexes=cadf[cadf['sea-idx']==i]['globalIdx'].to_list()
+    #         sea_cls=tadf[tadf['nr'].isin(sea_indexes)]
+    #         # logging.debug(f'{self.name} symmetry class {i}:\n{sea_cls.to_string()}')
+    #         for attr in ['type', 'residue', 'charge', 'mass']:
+    #             values=sea_cls[attr].values
+    #             flg=values[0]
+    #             chk=all(values==flg)
+    #             if not chk:
+    #                 logging.warning(f'Warning: atoms in symmetry class {i} have different values of {attr}\n{sea_cls.to_string()}')
 
     def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=False):
         """Initialize the linkcell structure; a wrapper for Coordinates
