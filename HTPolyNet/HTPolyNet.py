@@ -120,6 +120,17 @@ class HTPolyNet:
                     (i,j),(ri,rj),(A,B),(aoresids,boresids),order=b
                     logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B}) order {order}')
 
+    # def infer_molecule_z_from_reactions(self):
+    #     monomers=[]
+    #     for mname,M in self.molecules.items():
+    #         if M.generator==None:
+    #             monomers.append(M)
+    #             # M.parse_zrecs()
+    #             logging.debug(f'{M.name} reactive_double_bonds: {M.reactive_double_bonds}')
+    #     for mname,M in self.molecules.items():
+    #         if M.generator!=None:
+    #             pass
+
     def generate_molecule(self,M,**kwargs):
         mname=M.name
         checkin=pfs.checkin
@@ -144,13 +155,14 @@ class HTPolyNet:
                 return False
         else:
             logging.info(f'Fetching parameterized {mname}; molecules {list(self.molecules.keys())}')
-            for ex in ['mol2','top','itp','gro']:
+            for ex in ['mol2','top','itp','gro','grx']:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2')
             M.set_sequence()
             M.set_reaction_bonds(self.molecules)
             M.TopoCoord.set_gro_attribute('reactantName',M.name)
             M.set_origin('previously parameterized')
+
         ''' The cfg allows user to indicate and use
             symmetry-equivalent atoms in any molecule. '''
         if 'symmetry_equivalent_atoms' in self.cfg.parameters and mname in self.cfg.parameters['symmetry_equivalent_atoms']:

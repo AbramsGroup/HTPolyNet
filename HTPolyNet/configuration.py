@@ -73,6 +73,9 @@ class Configuration:
            
         """
         self.Title=self.basedict.get('Title','No Title Provided')
+        self.parameters=self.basedict
+        if not 'ncpu' in self.parameters:
+            self.parameters['ncpu']=os.cpu_count()
         '''
         add a molecule for each unique molecule specified in initial_composition
         '''
@@ -103,6 +106,8 @@ class Configuration:
                 if not rname in self.molecules:
                     self.molecules[rname]=Molecule(rname)
                 self.molecules[rname].update_zrecs(zrecs)
+                if rname in self.parameters['symmetry_equivalent_atoms']:
+                    self.molecules[rname].symmetry_relateds=self.parameters['symmetry_equivalent_atoms'][rname]
         for R in self.reactions:
             '''
             add product of this reaction or update generator if product is already in the list of molecules
@@ -122,9 +127,6 @@ class Configuration:
             # logging.debug(f'Sequence of {mname}: {M.sequence}')
             # logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
 
-        self.parameters=self.basedict
-        if not 'ncpu' in self.parameters:
-            self.parameters['ncpu']=os.cpu_count()
 
     def symmetry_expand_reactions(self,unique_molecules):
         # logging.debug('symmetry_expand_reactions')
@@ -241,12 +243,36 @@ class Configuration:
     def multimer_expand_reactions(self,molecules):
         extra_reactions=[]
         extra_molecules={}
+        monomers=[]
+        dimer_lefts=[]
+        dimer_rights=[]
         for mname,M in molecules.items():
-            adf=M.TopoCoord.Coordinates.A
-            logging.debug(f'{mname} coordinates:\n{adf.to_string()}')
-            logging.debug(f'{mname} sequence: {M.sequence}')
-            logging.debug(f'{mname} zrecs from config: {M.zrecs}')
-            logging.debug(f'{mname} has {len(M.reactive_double_bonds)} reactive double bonds\n{M.reactive_double_bonds}')
+            if len(M.sequence)==1 and len(M.reactive_double_bonds)>0:
+                monomers.append(M)
+            elif len(M.sequence)==2:
+                A=molecules[M.sequence[0]]
+                if len(A.reactive_double_bonds)>0:
+                    dimer_lefts.append(M)
+                A=molecules[M.sequence[1]]
+                if len(A.reactive_double_bonds)>0:
+                    dimer_rights.append(M)
+        for mon in monomers:
+            logging.debug(f'Monomer {mon.name} has {len(mon.reactive_double_bonds)} reactive double bonds\n{mon.reactive_double_bonds}')
+        for dim in dimer_lefts:
+            logging.debug(f'Dimer_left {dim.name} has sequence {dim.sequence}')
+        for dim in dimer_rights:
+            logging.debug(f'Dimer_right {dim.name} has sequence {dim.sequence}')
+
+        MD=product(monomers,dimer_lefts)
+        for m,d in MD:
+            logging.debug(f'monomer {m.name} will attack dimer {d.name} -> {m.name}{d.name}')
+        MD=product(monomers,dimer_rights)
+        for m,d in MD:
+            logging.debug(f'dimer {d.name} will attack monomer {m.name} -> {d.name}{m.name}')
+        DD=product(dimer_rights,dimer_lefts)
+        for da,db in DD:
+            logging.debug(f'dimer_right {da.name} will attack dimer_left {db.name} -> {da.name}{db.name}')
+
         self.reactions.extend(extra_reactions)
         return extra_molecules
 

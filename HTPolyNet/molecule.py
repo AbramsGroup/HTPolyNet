@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, product
 import os
 from copy import deepcopy
 import pandas as pd
@@ -140,10 +140,35 @@ class Molecule:
     def get_origin(self):
         return self.origin
 
-    def update_zrecs(self,recs):
-        for r in recs:
-            if not r in self.zrecs:
-                self.zrecs.append(r)
+    def update_zrecs(self,zrecs):
+        for zr in zrecs:
+            if not zr in self.zrecs:
+                self.zrecs.append(zr)
+
+    def parse_zrecs(self):
+        TC=self.TopoCoord
+        TC.set_gro_attribute('z',0)
+        idx=[]
+        for zr in self.zrecs:
+            an=zr['atom']
+            rnum=zr['resid']
+            z=zr['z']
+            TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
+            idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
+            for sr in self.symmetry_relateds:
+                a,b=sr
+                if a==an:
+                    idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':b,'resNum':rnum}))
+                    TC.set_gro_attribute_by_attributes('z',z,{'atomName':b,'resNum':rnum})
+                elif b==an:
+                    idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':a,'resNum':rnum}))
+                    TC.set_gro_attribute_by_attributes('z',z,{'atomName':a,'resNum':rnum})
+
+        pairs=product(idx,idx)
+        for i,j in pairs:
+            if i<j:
+                if TC.are_bonded(i,j):
+                    self.reactive_double_bonds.append([i,j])
 
     def previously_parameterized(self):
         rval=True
@@ -212,19 +237,21 @@ class Molecule:
             composite_mol=Molecule()
             shifts=[(0,0,0)]  # atom, bond, resid
             for n,ri in R.reactants.items():
-                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
+                logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
+            logging.debug(f'composite mol\n{self.TopoCoord.Coordinates.A.to_string()}')
             self.set_sequence()
             self.set_reaction_bonds(available_molecules=available_molecules)
             reactantName=R.product
             # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds()
+            self.write_gro_attributes(['z','sea-idx'],f'{reactantName}.grx')
             # nrb=[]
             # for b in self.reaction_bonds:
             #     at,rr,nn=b
-            #     i,j=at
+            #     i,j=atmake_bonds
             #     i=idx_mapper[i]
             #     j=idx_mapper[j]
             #     nrb.append(((i,j),rr,nn))
@@ -234,11 +261,28 @@ class Molecule:
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
             # self.set_reaction_bonds(available_molecules=available_molecules)
             reactantName=self.name
+            
             # self.sequence.append(self.name)
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)
         self.set_sequence()
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
+        if not self.generator:
+            self.parse_zrecs()
+            self.TopoCoord.set_gro_attribute('sea-idx',-1)
+            sea_idx=1
+            for s in self.symmetry_relateds:
+                for a,b in s:
+                    self.TopoCoord.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'globalIdx':a})
+                    self.TopoCoord.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'globalIdx':b})
+                sea_idx+=1
+            grx=f'{reactantName}.grx'
+            self.write_gro_attributes(['z','sea-idx'],f'{reactantName}.grx')
+        else:
+            grx=f'{reactantName}.grx'
+            if (os.path.exists(grx)):
+                self.TopoCoord.read_gro_attributes(grx)
+        logging.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
 
     def set_reaction_bonds(self,available_molecules={}):
         # logging.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
@@ -516,7 +560,6 @@ class Molecule:
         bonds=[]
         hs_from_tr=[]
         skip_H=[]
-        # TODO: fix this to allow order to be passed in
         for i,B in enumerate(self.reaction_bonds):
             (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
             logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
@@ -535,7 +578,14 @@ class Molecule:
         # must be deleted
         idx_scratch.extend(hs_from_tr)
         idx_mapper=self.TopoCoord.delete_atoms(idx_scratch)
-
+        for i,B in enumerate(self.reaction_bonds):
+            (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
+            aidx=idx_mapper[aidx]
+            bidx=idx_mapper[bidx]
+            az=self.TopoCoord.get_gro_attribute_by_attributes('z',{'globalIdx':aidx})
+            bz=self.TopoCoord.get_gro_attribute_by_attributes('z',{'globalIdx':bidx})
+            self.TopoCoord.set_gro_attribute_by_attributes('z',az-1,{'globalIdx':aidx})
+            self.TopoCoord.set_gro_attribute_by_attributes('z',bz-1,{'globalIdx':bidx})
         return idx_mapper
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):
