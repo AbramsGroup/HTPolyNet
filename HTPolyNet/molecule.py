@@ -42,7 +42,7 @@ def get_base_reactants(mname,mdict):
     return mine
 
 class Reaction:
-    def __init__(self,jsondict):
+    def __init__(self,jsondict={}):
         self.jsondict=jsondict
         self.name=jsondict.get('name','')
         self.atoms=jsondict.get('atoms',{})
@@ -237,10 +237,10 @@ class Molecule:
             composite_mol=Molecule()
             shifts=[(0,0,0)]  # atom, bond, resid
             for n,ri in R.reactants.items():
-                logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
+                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
                 shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
-            logging.debug(f'composite mol\n{self.TopoCoord.Coordinates.A.to_string()}')
+            # logging.debug(f'composite mol\n{self.TopoCoord.Coordinates.A.to_string()}')
             self.set_sequence()
             self.set_reaction_bonds(available_molecules=available_molecules)
             reactantName=R.product
@@ -282,7 +282,7 @@ class Molecule:
             grx=f'{reactantName}.grx'
             if (os.path.exists(grx)):
                 self.TopoCoord.read_gro_attributes(grx)
-        logging.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
+        # logging.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
 
     def set_reaction_bonds(self,available_molecules={}):
         # logging.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
