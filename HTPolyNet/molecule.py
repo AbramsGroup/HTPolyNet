@@ -453,21 +453,38 @@ class Molecule:
         # logging.debug(f'{self.name} sequence: {self.sequence}')
         return self.sequence[internal_resid-1]
 
-    def inherit_attribute_from_reactants(self,attribute,available_molecules,increment=True):
+    def inherit_attribute_from_reactants(self,attribute,available_molecules,increment=True,no_increment_if_negative=True):
         adf=self.TopoCoord.Coordinates.A
         ordered_attribute_idx=[]
         curr_max=0
         # logging.debug(f'{self.name}({adf.shape[0]}) inheriting {attribute} from {self.sequence}')
         # logging.debug(f'available molecules {list(available_molecules.keys())}')
         for i,r in enumerate(self.sequence):
+            '''
+            for this residue number, read the list of unique atom names
+            '''
             namesinres=list(adf[adf['resNum']==(i+1)]['atomName'])
+            '''
+            access coordinates of standalone residue template with this name 'r' on the list of available molecules
+            '''
             rdf=available_molecules[r].TopoCoord.Coordinates.A
+            '''
+            get the attribute values from residue template
+            '''
             x=list(rdf[rdf['atomName'].isin(namesinres)][attribute])
             # logging.debug(f'{r}->{len(x)}')
+            '''
+            increment these attribute value based on residue number in this molecule
+            '''
             if increment:
-                x=[y+curr_max for y in x]
-                curr_max=max(x)
-            ordered_attribute_idx.extend(x)
+                i_x=[]
+                for y in x:
+                    if y>0 or (y<0 and not no_increment_if_negative):
+                        i_x.append(y+curr_max)
+                    else:
+                        i_x.append(y)
+                curr_max=max(i_x)
+            ordered_attribute_idx.extend(i_x)
         assert len(ordered_attribute_idx)==adf.shape[0]
         adf[attribute]=ordered_attribute_idx
 

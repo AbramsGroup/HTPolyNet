@@ -68,6 +68,10 @@ class Configuration:
         return inst
     
     def parse(self):
+        """parse parse self.basedict to set Title, initial_composition, and lists of
+           reactions and molecules.
+           
+        """
         self.Title=self.basedict.get('Title','No Title Provided')
         '''
         add a molecule for each unique molecule specified in initial_composition
@@ -101,7 +105,7 @@ class Configuration:
                 self.molecules[rname].update_zrecs(zrecs)
         for R in self.reactions:
             '''
-            add product of this reaction or update generator if product is already on the list
+            add product of this reaction or update generator if product is already in the list of molecules
             '''
             r=R.product
             if not r in self.molecules:
@@ -121,7 +125,6 @@ class Configuration:
         self.parameters=self.basedict
         if not 'ncpu' in self.parameters:
             self.parameters['ncpu']=os.cpu_count()
-        return self
 
     def symmetry_expand_reactions(self,unique_molecules):
         # logging.debug('symmetry_expand_reactions')
@@ -133,20 +136,21 @@ class Configuration:
         for R in self.reactions:
             logging.debug(f'Symmetry-expanding reaction {R.name}')
             pro_seq,pro_ra=_determine_sequence(R.product,current_molecules,[])
-            # logging.debug(f'{R.product} {pro_seq} {pro_ra}')
+            logging.debug(f'{R.product} {pro_seq} {pro_ra}')
             sseq=[]
             for mname,matrectlist in zip(pro_seq,pro_ra):
                 # how many se versions of this reactant?
                 # -> product of number of members of symmetry class of each reactive atom in this
                 # reactant
                 residue=current_molecules[mname]
-                sclass[mname]={}
+                if not mname in sclass:
+                    sclass[mname]={}
                 sp=[]
                 for atrec in matrectlist:
                     atomName=atrec['atom']
                     seaidx=residue.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'atomName':atomName})
                     if seaidx<=-1:
-                        logging.debug(f'No atoms symmetric with {atomName}')
+                        logging.debug(f'No atoms symmetric with {mname} {atomName}')
                         continue
                     clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
                                                 same_attribute='sea-idx',
@@ -158,6 +162,7 @@ class Configuration:
                     clu.insert(0,atomName)
                     logging.debug(f'Atoms symmetry-equivalent to {mname} {atomName}: {clu}')
                     sclass[mname][atomName]=clu
+                    logging.debug(f'sclass {sclass}')
                     sp.append(clu)
 
                 # logging.debug(f'sp {sp}')
@@ -165,8 +170,8 @@ class Configuration:
                     sseq.append(list(product(*sp)))
                 else:
                     sseq.append(list(zip(*sp)))
-            # logging.debug(f'sclass {sclass}')
-            # logging.debug(f'Reaction reactant sealist: {sseq}')                      
+            logging.debug(f'sclass {sclass}')
+            logging.debug(f'Reaction reactant sealist: {sseq}')                      
             P=list(product(*[v for v in sseq]))
             logging.debug(f'P {P}')
             idx=1
@@ -205,15 +210,15 @@ class Configuration:
                     reactant_idx=atomrec['reactant']
                     reactant=R.reactants[reactant_idx]
                     resname=current_molecules[reactant].sequence[resid-1]
-                    # logging.debug(f'need to alter atom: {atomName} resid: {resid} reactant: {reactant_idx} ({reactant})')
-                    # logging.debug(f'have {pdiv[reactant_idx]} {len(pdiv[reactant_idx])}')
+                    logging.debug(f'need to alter atom: {atomName} resid: {resid} reactant: {reactant_idx} ({reactant})')
+                    logging.debug(f'have {pdiv[reactant_idx]} {len(pdiv[reactant_idx])}')
                     new_atomName=atomName
                     for q in pdiv[reactant_idx]:
-                        # logging.debug(f'{q}')
+                        logging.debug(f'{q}')
                         for qq in q:
-                            # logging.debug(f'is it {qq}?')
+                            logging.debug(f'is it {qq}?')
                             isit=qq in sclass[resname][atomName]
-                            # logging.debug(f'{isit}')
+                            logging.debug(f'{isit}')
                             if isit:
                                 new_atomName=qq
                     newR.atoms[aL]={'atom':new_atomName,'resid':resid,'reactant':reactant_idx,'z':z}
@@ -239,6 +244,8 @@ class Configuration:
         for mname,M in molecules.items():
             adf=M.TopoCoord.Coordinates.A
             logging.debug(f'{mname} coordinates:\n{adf.to_string()}')
+            logging.debug(f'{mname} sequence: {M.sequence}')
+            logging.debug(f'{mname} zrecs from config: {M.zrecs}')
             logging.debug(f'{mname} has {len(M.reactive_double_bonds)} reactive double bonds\n{M.reactive_double_bonds}')
         self.reactions.extend(extra_reactions)
         return extra_molecules
