@@ -218,6 +218,12 @@ class TopoCoord:
             self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':aj})
         return moldict[prodname]
 
+    def count_H(self,idx):
+        aneigh=self.partners_of(idx)
+        aneighnames=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':y}) for y in aneigh]
+        anH=sum([int(x.upper().startswith('H')) for x in aneighnames])
+        return anH
+
     def map_from_templates(self,bdf,moldict,reaction_list):
         """Updates angles, pairs, dihedrals, atom types, and charges, based on product
             templates associated with each bond in 'bdf'

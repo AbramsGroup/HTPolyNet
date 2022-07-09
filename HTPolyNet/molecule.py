@@ -131,7 +131,7 @@ class Molecule:
         self.reaction_bonds=[]
         self.symmetry_relateds=[]
         self.stereoisomers=[]
-        self.reactive_double_bonds=[]
+        self.chains=[]
         self.zrecs=[]
 
     def set_origin(self,value):
@@ -168,7 +168,25 @@ class Molecule:
         for i,j in pairs:
             if i<j:
                 if TC.are_bonded(i,j):
-                    self.reactive_double_bonds.append([i,j])
+                    # this monomer has two atoms capable of reacting
+                    # that are bound to each other -- this means that
+                    # the two originated as a double-bond.
+                    # *If* there is one with three hydrogens 
+                    # (remember this is an activated monomer)
+                    # then it is the "tail"; the other is the "head".
+                    i_nH=TC.count_H(i)
+                    j_nH=TC.count_H(j)
+                    if i_nH==3 and j_nH!=3:
+                        # i is the tail
+                        entry=[j,i]
+                    elif i_nH!=3 and j_nH==3:
+                        # j is the tail
+                        entry=[i,j]
+                    else:
+                        logging.warning(f'In molecule {self.name}, cannot identify head and tail atoms in reactive double bond\nAssuming {j} is head and {i} is tail')
+                        entry=[j,i]
+                    logging.debug(f'Adding {entry} to chains of {self.name}')
+                    self.chains.append(entry)
 
     def previously_parameterized(self):
         rval=True
@@ -238,8 +256,10 @@ class Molecule:
             shifts=[(0,0,0)]  # atom, bond, resid
             for n,ri in R.reactants.items():
                 # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
-                shifts.append(composite_mol.merge(deepcopy(available_molecules[ri])))
+                new_reactant=deepcopy(available_molecules[ri])
+                shifts.append(composite_mol.merge(new_reactant))
             self.TopoCoord=deepcopy(composite_mol.TopoCoord)
+            self.chains=deepcopy(composite_mol.chains)
             # logging.debug(f'composite mol\n{self.TopoCoord.Coordinates.A.to_string()}')
             self.set_sequence()
             self.set_reaction_bonds(available_molecules=available_molecules)
@@ -247,6 +267,7 @@ class Molecule:
             # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds()
+            # self.update_chains(idx_mapper)
             self.write_gro_attributes(['z','sea-idx'],f'{reactantName}.grx')
             # nrb=[]
             # for b in self.reaction_bonds:
@@ -292,6 +313,7 @@ class Molecule:
             for bond in R.bonds:
                 (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,self,available_molecules)
                 self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),bond['order']))
+
             logging.debug(f'{R.name} reaction_bonds\n{self.reaction_bonds}')
 
     def set_sequence(self):
@@ -533,7 +555,10 @@ class Molecule:
         adf[attribute]=ordered_attribute_idx
 
     def merge(self,other):
-        self.TopoCoord.merge(other.TopoCoord)
+        shifts=self.TopoCoord.merge(other.TopoCoord)
+        for c in other.chains:
+            self.chains.append([x+shifts[0] for x in c])
+        return shifts
 
     def load_top_gro(self,topfilename,grofilename,mol2filename=''):
         self.TopoCoord=TopoCoord(topfilename=topfilename,grofilename=grofilename,mol2filename=mol2filename)
@@ -578,6 +603,10 @@ class Molecule:
         # must be deleted
         idx_scratch.extend(hs_from_tr)
         idx_mapper=self.TopoCoord.delete_atoms(idx_scratch)
+        remapped_chains=[]
+        for c in self.chains:
+            remapped_chains.append([idx_mapper[x] for x in c])
+        self.chains=remapped_chains
         for i,B in enumerate(self.reaction_bonds):
             (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
             aidx=idx_mapper[aidx]
@@ -586,6 +615,20 @@ class Molecule:
             bz=self.TopoCoord.get_gro_attribute_by_attributes('z',{'globalIdx':bidx})
             self.TopoCoord.set_gro_attribute_by_attributes('z',az-1,{'globalIdx':aidx})
             self.TopoCoord.set_gro_attribute_by_attributes('z',bz-1,{'globalIdx':bidx})
+            cnms=[]
+            for c in self.chains:
+                cnms.append([self.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
+            logging.debug(f'pre {self.name} chains {self.chains} {cnms}')
+            for c1,c2 in product(self.chains,self.chains):
+                if c1!=c2:
+                    if (aidx==c1[0] and bidx==c2[-1]) or (bidx==c1[0] and aidx==c2[-1]):
+                        c2.extend(c1)
+                        self.chains.remove(c1)
+                        break
+            cnms=[]
+            for c in self.chains:
+                cnms.append([self.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
+            logging.debug(f'post {self.name} chains {self.chains} {cnms}')
         return idx_mapper
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):

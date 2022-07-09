@@ -247,154 +247,112 @@ class Configuration:
         dimer_lefts=[]
         dimer_rights=[]
         for mname,M in molecules.items():
-            if len(M.sequence)==1 and len(M.reactive_double_bonds)>0:
+            if len(M.sequence)==1 and len(M.chains)>0 and M.generator==None:
                 monomers.append(M)
             elif len(M.sequence)==2:
                 A=molecules[M.sequence[0]]
-                if len(A.reactive_double_bonds)>0:
+                if len(A.chains)>0:
                     dimer_lefts.append(M)
                 A=molecules[M.sequence[1]]
-                if len(A.reactive_double_bonds)>0:
+                if len(A.chains)>0:
                     dimer_rights.append(M)
         for mon in monomers:
-            logging.debug(f'Monomer {mon.name} has {len(mon.reactive_double_bonds)} reactive double bonds\n{mon.reactive_double_bonds}')
+            cnms=[]
+            for c in mon.chains:
+                cnms.append([mon.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
+            logging.debug(f'Monomer {mon.name} has {len(mon.chains)} 2-chains\n{mon.chains} {cnms}')
+
         for dim in dimer_lefts:
             logging.debug(f'Dimer_left {dim.name} has sequence {dim.sequence}')
+            logging.debug(f'-> chains: {dim.chains}')
         for dim in dimer_rights:
             logging.debug(f'Dimer_right {dim.name} has sequence {dim.sequence}')
+            logging.debug(f'-> chains: {dim.chains}')
 
+        # monomer head attacks dimer tail
         MD=product(monomers,dimer_lefts)
         for m,d in MD:
-            for mb in m.reactive_double_bonds:
-                maname=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':mb[0]})
-                mbname=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':mb[1]})
-                # attacker has only one or two H's, receiver has 3
-                aneigh=m.TopoCoord.partners_of(mb[0])
-                bneigh=m.TopoCoord.partners_of(mb[1])
-                aneighnames=[m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':y}) for y in aneigh]
-                bneighnames=[m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':y}) for y in bneigh]
-                anH=sum([int(x.upper().startswith('H')) for x in aneighnames])
-                bnH=sum([int(x.upper().startswith('H')) for x in bneighnames])
-                if (anH==2 or anH==1) and bnH==3:
-                    pass
-                elif anH==3 and (bnH==2 or bnH==1):
-                    maname,mbname=mbname,maname
-                else:
-                    logging.debug(f'{m.name} {d.name} {mb}')
-                    logging.debug(f'{m.name}-{maname}-{mbname}+{d.name} aneigh {aneigh} {aneighnames} {anH}')
-                    logging.debug(f'{m.name}-{maname}-{mbname}+{d.name} bneigh {bneigh} {bneighnames} {bnH}')
-                    raise Exception('cannot identify methylene/methyl carbons in reactive double bond')
-                logging.debug(f'monomer {m.name}[{maname}-{mbname}] will attack dimer {d.name} -> {m.name}{d.name}')
-                logging.debug(f'resid 0 of {d.name} is {d.sequence[0]}')
-
-                # TODO: Identify bond in the dimer to identify attackable atom in resid 1
-
-                pattern_reactants={}
-                pattern_reactants[1]=m.name
-                pattern_reactants[2]=d.sequence[0]
-                BR=None
-                for r in self.reactions:
-                    if r.stage=='cure':
-                        if all([x==y for x,y in zip(r.reactants.values(),pattern_reactants.values())]):
-                            atoms=[x['atom'] for x in r.atoms.values()]
-                            if maname==atoms[0] or mbname==atoms[0]:
-                                BR=r
-                                break
-                assert BR!=None,f'No template reaction to create trimer from {m.name}+{d.name} -- this means something is missing from your config file'
-                logging.debug(f'Reaction borrowed is {BR.name}')
-                R=deepcopy(BR)
+            for mb in m.chains:
+                h_idx=mb[0]
+                h_name=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})
+                # by definition, the dimer must have one chain of length 4
+                D4=[]
+                for dc in d.chains:
+                    if len(dc)==4:
+                        D4.append(dc)
+                assert len(D4)==1,f'dimer {d.name} should have exactly one length-4 chain! {len(D4)} detected.'
+                DC=D4[0]
+                t_idx=DC[-1]
+                t_name=d.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
+                logging.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {m.name}_{h_name}+{d.name}')
+                '''construct reaction'''
+                R=Reaction()
+                R.reactants={1:m.name, 2:d.name}
+                R.atoms={'A':{'reactant':1,'resid':1,'atom':h_name,'z':1},
+                         'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
+                R.bonds=[{'atoms':['A','B'],'order':1}]
                 R.stage='template-only'
-                R.reactants[1]=m.name
-                R.reactants[2]=d.name
-                new_rxnname=m.name.lower()+'_'+maname+'+'+d.name.lower()
+                new_rxnname=m.name.lower()+'_'+h_name+'+'+d.name.lower()
                 R.name=new_rxnname
-                R.product=m.name+'_'+maname+'+'+d.name
+                R.product=m.name+'_'+h_name+'+'+d.name
                 newP=Molecule(name=R.product,generator=R)
                 extra_molecules[R.product]=newP
                 logging.debug(f'New reaction is {R}')
                 extra_reactions.append(R)
+        # dimer head attacks monomer tail
         MD=product(monomers,dimer_rights)
         for m,d in MD:
-            for mb in m.reactive_double_bonds:
-                maname=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':mb[0]})
-                mbname=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':mb[1]})
-                # attacker has only one or two H's, receiver has 3
-                aneigh=m.TopoCoord.partners_of(mb[0])
-                bneigh=m.TopoCoord.partners_of(mb[1])
-                aneighnames=[m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':y}) for y in aneigh]
-                bneighnames=[m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':y}) for y in bneigh]
-                anH=sum([int(x.upper().startswith('H')) for x in aneighnames])
-                bnH=sum([int(x.upper().startswith('H')) for x in bneighnames])
-                if (anH==2 or anH==1) and bnH==3:
-                    pass
-                elif anH==3 and (bnH==2 or bnH==1):
-                    maname,mbname=mbname,maname
-                else:
-                    logging.debug(f'{d.name} {m.name} {mb}')
-                    logging.debug(f'{d.name}+{m.name}-{mbname} aneigh {aneigh} {aneighnames} {anH}')
-                    logging.debug(f'{d.name}+{m.name}-{mbname} bneigh {bneigh} {bneighnames} {bnH}')
-                    raise Exception('cannot identify methylene/methyl carbons in reactive double bond')
-                logging.debug(f'dimer {d.name} will attack monomer {m.name} -> {d.name}{m.name}[{maname}-{mbname}]')
-
-                # TODO: Identify bond in the dimer to identify attacking atom in resid 2
-
-                pattern_reactants={}
-                pattern_reactants[1]=d.sequence[1]
-                pattern_reactants[2]=m.name
-                logging.debug(f'Searching original reaction set for {pattern_reactants} {mbname}')
-                BR=None
-                for r in self.reactions:
-                    if r.stage=='cure':
-                        if all([x==y for x,y in zip(r.reactants.values(),pattern_reactants.values())]):
-                            atoms=[x['atom'] for x in r.atoms.values()]
-                            if mbname==atoms[1] or mbname==atoms[1]:
-                                BR=r
-                                break
-                assert BR!=None,f'No template reaction to create trimer from {d.name}+{m.name} -- this means something is missing from your config file'
-                logging.debug(f'Reaction borrowed is {BR.name}')
-                R=deepcopy(BR)
-                R.stage='template-only'
-                R.reactants[1]=d.name
-                R.reactants[2]=m.name
-                R.atoms['A']['resid']=2
-                new_rxnname=d.name.lower()+'+'+m.name.lower()+'_'+mbname
-                R.name=new_rxnname
-                R.product=d.name+'+'+m.name+'_'+mbname
-                newP=Molecule(name=R.product,generator=R)
-                extra_molecules[R.product]=newP
-                logging.debug(f'New reaction is {R}')
-                extra_reactions.append(R)
+            for mb in m.chains:
+                assert len(mb)==2,f'monomer {m.name} has a chain that is not legnth-2 -- this is IMPOSSIBLE'
+                t_idx=mb[-1]
+                t_name=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
+                D4=[]
+                for dc in d.chains:
+                    if len(dc)==4:
+                        D4.append(dc)
+                for DC in D4:
+                    h_idx=DC[0]
+                    h_name=d.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})
+                    logging.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attach monomer atom {m.name}_{t_name}-> {d.name}+{m.name}_{h_name}')
+                    '''construct reaction'''
+                    R=Reaction()
+                    R.reactants={1:d.name, 2:m.name}
+                    R.atoms={'A':{'reactant':1,'resid':2,'atom':h_name,'z':1},
+                            'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
+                    R.bonds=[{'atoms':['A','B'],'order':1}]
+                    R.stage='template-only'
+                    new_rxnname=d.name.lower()+'+'+m.name.lower()+'_'+t_name
+                    R.name=new_rxnname
+                    R.product=d.name+'+'+m.name+'_'+t_name
+                    newP=Molecule(name=R.product,generator=R)
+                    extra_molecules[R.product]=newP
+                    logging.debug(f'New reaction is {R}')
+                    extra_reactions.append(R)
 
         DD=product(dimer_rights,dimer_lefts)
-        for da,db in DD:
-            
-            # TODO: Identify bonds in each dimer to identify attackable atom in resid 1 of db and attacker in resid 2 of da
+        for dr,dl in DD:
+            ''' head of dr attacks tail of dl '''
+            for cr,cl in product(dr.chains,dl.chains):
+                if len(cr)==4 and len(cl)==4:
+                    h_idx=cr[0]
+                    h_name=dr.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})
+                    t_idx=cl[-1]
+                    t_name=dl.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
+                    logging.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {dr.name}-{dr.sequence[1]}2_{h_name}+{dl.name}-{dl.sequence[0]}1_{t_name}')
+                    '''construct reaction'''
+                    R=Reaction()
+                    R.reactants={1:dr.name, 2:dl.name}
+                    R.atoms={'A':{'reactant':1,'resid':2,'atom':h_name,'z':1},
+                             'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
+                    R.bonds=[{'atoms':['A','B'],'order':1}]
+                    R.stage='template-only'
+                    R.product=f'{dr.name}-{dr.sequence[1]}2_{h_name}+{dl.name}-{dl.sequence[0]}1_{t_name}'.lower()
+                    R.name=R.product.lower()
+                    newP=Molecule(name=R.product,generator=R)
+                    extra_molecules[R.product]=newP
+                    logging.debug(f'New reaction is {R}')
+                    extra_reactions.append(R)
 
-            logging.debug(f'dimer_right {da.name} will attack dimer_left {db.name} -> {da.name}{db.name}')
-            pattern_reactants={}
-            pattern_reactants[1]=da.sequence[1]
-            pattern_reactants[2]=db.sequence[0]
-            logging.debug(f'Searching original reaction set for {pattern_reactants}')
-            BR=None
-            for r in self.reactions:
-                if r.stage=='cure':
-                    if all([x==y for x,y in zip(r.reactants.values(),pattern_reactants.values())]):
-                        BR=r
-                        break
-            assert BR!=None,f'No template reaction to create quadrimer from {da.name}+{db.name} -- this means something is missing from your config file'
-            logging.debug(f'Reaction borrowed is {BR.name}')
-            R=deepcopy(BR)
-            R.stage='template-only'
-            R.reactants[1]=da.name
-            R.reactants[2]=db.name
-            R.atoms['A']['resid']=2
-            new_rxnname=da.name.lower()+'+'+db.name.lower()
-            R.name=new_rxnname
-            R.product=da.name+'+'+db.name
-            newP=Molecule(name=R.product,generator=R)
-            extra_molecules[R.product]=newP
-            logging.debug(f'New reaction is {R}')
-            extra_reactions.append(R)
         self.reactions.extend(extra_reactions)
         return extra_molecules
 
