@@ -187,6 +187,7 @@ class Molecule:
                         entry=[j,i]
                     logging.debug(f'Adding {entry} to chains of {self.name}')
                     self.chains.append(entry)
+        self.reset_chain_attributes()
 
     def previously_parameterized(self):
         rval=True
@@ -268,7 +269,7 @@ class Molecule:
             # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds()
             # self.update_chains(idx_mapper)
-            self.write_gro_attributes(['z','sea-idx'],f'{reactantName}.grx')
+            self.write_gro_attributes(['z','sea-idx','chain','chain-idx'],f'{reactantName}.grx')
             # nrb=[]
             # for b in self.reaction_bonds:
             #     at,rr,nn=b
@@ -298,11 +299,12 @@ class Molecule:
                     self.TopoCoord.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'globalIdx':b})
                 sea_idx+=1
             grx=f'{reactantName}.grx'
-            self.write_gro_attributes(['z','sea-idx'],f'{reactantName}.grx')
+            self.write_gro_attributes(['z','sea-idx','chain','chain-idx'],f'{reactantName}.grx')
         else:
             grx=f'{reactantName}.grx'
             if (os.path.exists(grx)):
                 self.TopoCoord.read_gro_attributes(grx)
+                self.reset_chains_from_attributes()
         # logging.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
 
     def set_reaction_bonds(self,available_molecules={}):
@@ -554,10 +556,38 @@ class Molecule:
         assert len(ordered_attribute_idx)==adf.shape[0]
         adf[attribute]=ordered_attribute_idx
 
+    def reset_chain_attributes(self):
+        self.TopoCoord.set_gro_attribute('chain',-1)
+        self.TopoCoord.set_gro_attribute('chain-idx',-1)
+        for i,c in enumerate(self.chains):
+            for j,x in enumerate(c):
+                self.TopoCoord.set_gro_attribute_by_attributes('chain',i,{'globalIdx':x})
+                self.TopoCoord.set_gro_attribute_by_attributes('chain-idx',j,{'globalIdx':x})
+
+    def reset_chains_from_attributes(self):
+        adf=self.TopoCoord.Coordinates.A
+        tmp_chain_dict={}
+        for i,r in adf.iterrows():
+            gix=r['globalIdx']
+            cid=r['chain']
+            cix=r['chain-idx']
+            if cid!=-1:
+                if not cid in tmp_chain_dict:
+                    tmp_chain_dict[cid]={}
+                tmp_chain_dict[cid][cix]=gix
+        logging.debug(f'tmp_chain_dict: {tmp_chain_dict}')
+        nchains=len(tmp_chain_dict)
+        self.chains=[[] for _ in range(nchains)]
+        for i in range(nchains):
+            for j in range(len(tmp_chain_dict[i])):
+                self.chains[i].append(tmp_chain_dict[i][j])
+        logging.debug(f'-> chains: {self.chains}')
+
     def merge(self,other):
         shifts=self.TopoCoord.merge(other.TopoCoord)
         for c in other.chains:
             self.chains.append([x+shifts[0] for x in c])
+        self.reset_chain_attributes()
         return shifts
 
     def load_top_gro(self,topfilename,grofilename,mol2filename=''):
@@ -607,6 +637,7 @@ class Molecule:
         for c in self.chains:
             remapped_chains.append([idx_mapper[x] for x in c])
         self.chains=remapped_chains
+        self.reset_chain_attributes()
         for i,B in enumerate(self.reaction_bonds):
             (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
             aidx=idx_mapper[aidx]
@@ -628,6 +659,7 @@ class Molecule:
             cnms=[]
             for c in self.chains:
                 cnms.append([self.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
+            self.reset_chain_attributes()
             logging.debug(f'post {self.name} chains {self.chains} {cnms}')
         return idx_mapper
 

@@ -346,7 +346,7 @@ class Configuration:
                              'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                     R.bonds=[{'atoms':['A','B'],'order':1}]
                     R.stage='template-only'
-                    R.product=f'{dr.name}-{dr.sequence[1]}2_{h_name}+{dl.name}-{dl.sequence[0]}1_{t_name}'.lower()
+                    R.product=f'{dr.name}-{dr.sequence[1]}2_{h_name}+{dl.name}-{dl.sequence[0]}1_{t_name}'
                     R.name=R.product.lower()
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP

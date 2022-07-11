@@ -83,8 +83,6 @@ class HTPolyNet:
                         logging.info(f'Generated {mname}.')
             all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
 
-        # self.infer_molecule_z_from_reactions()
-
         ''' Generate all reactions and products that result from invoking symmetry '''
         new_molecules=self.cfg.symmetry_expand_reactions(self.molecules)
         for mname,M in new_molecules.items():
@@ -120,17 +118,6 @@ class HTPolyNet:
                     (i,j),(ri,rj),(A,B),(aoresids,boresids),order=b
                     logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B}) order {order}')
 
-    # def infer_molecule_z_from_reactions(self):
-    #     monomers=[]
-    #     for mname,M in self.molecules.items():
-    #         if M.generator==None:
-    #             monomers.append(M)
-    #             # M.parse_zrecs()
-    #             logging.debug(f'{M.name} reactive_double_bonds: {M.reactive_double_bonds}')
-    #     for mname,M in self.molecules.items():
-    #         if M.generator!=None:
-    #             pass
-
     def generate_molecule(self,M,**kwargs):
         mname=M.name
         checkin=pfs.checkin
@@ -144,7 +131,7 @@ class HTPolyNet:
             if generatable:
                 logging.info(f'Yes -- calling {mname}.generate(); molecules {list(self.molecules.keys())}')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
-                for ex in ['mol2','top','itp','gro']:
+                for ex in ['mol2','top','itp','gro','grx']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
                 M.set_origin('newly parameterized')
             else:
@@ -161,6 +148,8 @@ class HTPolyNet:
             M.set_sequence()
             M.set_reaction_bonds(self.molecules)
             M.TopoCoord.set_gro_attribute('reactantName',M.name)
+            M.TopoCoord.read_gro_attributes(f'{mname}.grx')
+            M.reset_chains_from_attributes()
             M.set_origin('previously parameterized')
 
         ''' The cfg allows user to indicate and use
@@ -767,7 +756,7 @@ class HTPolyNet:
         newbonds=[]
         ''' generate the dataframe of new bonds to make '''
         for R in self.cfg.reactions:
-            if R.stage=='post-cure' or R.probability==0.0: # ignore post-cure reactions
+            if R.stage!='cure' or R.probability==0.0: # ignore post-cure reactions
                 continue
             logging.debug(f'Reaction {R.name}')
             prob=R.probability
