@@ -2,7 +2,7 @@
 
 .. module:: topocoords
    :synopsis: Class for jointly handling Topology and Coordinate instances
-   
+
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
 """
@@ -10,8 +10,7 @@
 #
 #  class for methods that need to work with both Topology and Coordinates
 from itertools import product
-from operator import is_
-from tokenize import maybe
+from mimetypes import init
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
@@ -30,10 +29,10 @@ class BTRC(Enum):
     passed = 0
     failed_pierce_ring = 1        # does this bond-candidate pierce a ring?
     failed_short_circuit = 2      # does this bond-candidate result in short-circuit?
-    failed_polyethylene_cycle = 3 # does this bond-candidate create a polyethylene cycle on its own?
+    failed_bond_cycle = 3         # does this bond-candidate create a bondcycle on its own?
 
 class TopoCoord:
-    """Container for Topology and Coordinates, along with methods that 
+    """Container for Topology and Coordinates, along with methods that
         use either or both of them
     """
     def __init__(self,topfilename='',grofilename='',mol2filename='',system_name='htpolynet'):
@@ -58,17 +57,21 @@ class TopoCoord:
             self.Topology=Topology(system_name=system_name) # empty
         if mol2filename!='':
             self.mol2filename=mol2filename
-            self.read_mol2(mol2filename) 
+            self.read_mol2(mol2filename)
             # will overwrite coords and add 'mol2_bonds' section to topology
+
+        self.idx_lists={}
+        self.idx_lists['chain']=[]
+        self.idx_lists['cycle']=[]
 
     def make_bonds(self,pairs,skip_H=[]):
         """Adds new bonds to the global topology
 
         :param pairs: list of pairs of atom global indices indicating each new bond
         :type pairs: list
-        :param skip_H: list of pairs of atom global indices to skip when identifying 
-            the sacrificial H atoms; likely these are identified during molecule-building to 
-            optimize mutual orientation and placement of the two reactant molecules, defaults 
+        :param skip_H: list of pairs of atom global indices to skip when identifying
+            the sacrificial H atoms; likely these are identified during molecule-building to
+            optimize mutual orientation and placement of the two reactant molecules, defaults
             to []
         :type skip_H: list, optional
         :return: list of indexes of atoms that must now be deleted (sacrifical H's)
@@ -77,6 +80,7 @@ class TopoCoord:
         idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H)
         # logging.debug(f'idx_to_ignore {idx_to_ignore}')
         self.Topology.add_bonds(pairs)
+        self.chainlist_update(pairs,msg='TopoCoord.make_bonds')
         self.Topology.null_check(msg='add_bonds')
         rename=True if len(skip_H)>0 else False
         idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H,rename=rename)
@@ -95,7 +99,7 @@ class TopoCoord:
 
     # def add_pairs(self,pairdf,kb=300000.0):
     #     """Adds a pair for each pair in the pairdf (['ai'],['aj'],['initial-distance'])
-        
+
     #     :param pairdf: dataframe of pairs
     #     :type pardf: pandas.DataFrames
     #     """
@@ -110,9 +114,14 @@ class TopoCoord:
             remaining atoms to make sure global indexes are sequential
         :rtype: dict
         """
+        # logging.debug(f'delete_atoms: {atomlist}')
         self.Coordinates.delete_atoms(atomlist)
         idx_mapper=self.Topology.delete_atoms(atomlist)
         assert type(idx_mapper)==dict
+        # logging.debug(f'idx_mapper: {idx_mapper}')
+        for list_name in ['chain','cycle']:
+            # logging.debug(f'remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}')
+            self.remap_idx_list(list_name,idx_mapper)
         return idx_mapper
 
     def select_template(self,bondrec,moldict,reaction_list):
@@ -147,9 +156,9 @@ class TopoCoord:
                     # are these two reactants the reactants these atoms brought in?
                     if R.reactants[irk]==irn and R.reactants[jrk]==jrn:
                         return R
-            
+
             return None
-        
+
         ai,aj,prodname=bondrec
         # itn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':ai})
         # jtn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':aj})
@@ -234,9 +243,9 @@ class TopoCoord:
         :type moldict: dict
         :raises Exception: nan found in any attribute of any new system angle
         :raises Exception: nan found in any attribute of any new system dihedral
-        :raises Exception: nan found in any attribute of any new system pair 
+        :raises Exception: nan found in any attribute of any new system pair
             that came along with a dihedral
-        :raises Exception: nan found in ai attribute of any template pair 
+        :raises Exception: nan found in ai attribute of any template pair
         :raises Exception: nan found in aj attribute of any template pair
         :raises Exception: nan found in any system pair
         """
@@ -244,25 +253,78 @@ class TopoCoord:
         grodf=self.Coordinates.A
         grodf['old_reactantName']=grodf['reactantName'].copy()
         # first pass -- set all reactant names
+        bystander_list=[]
+        oneaway_list=[]
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
             template_name=b['reactantName']
-            self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[0]})
-            self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[1]})
-            i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
-            j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
-            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) template {template_name}')
+            # oreactantName=[self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':bb[i]}) for i in [0,1]]
+            chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':bb[i]}) for i in [0,1]]
+            assert chains[0]==chains[1],f'Error: templatable pair {bb} in different chains -- bug!'
+            resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[i]}) for i in [0,1]]
+            logging.debug(f'Bond {bb} resid {resids} chains {chains} template_name {template_name}')
+            # what atoms should inherit the product name?  atoms in the same "chain" as the two that are designated to bond *and* have z>0.  This is so that later if one of them is called on to bond, it will "know" what its reactant is so that the product template can be selected correctly.
+            bystanders=[[],[]]  # residues with atoms bound to either reacting atom that are not residues of the two reacting atoms
+            oneaways=[None,None] # residues that are one-residue-away along a chain from each reacting atom
+            for x in [0,1]:
+                self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[x]})
+                logging.debug(f'map_from_templates: assigning {template_name} to reactantName bond-member {bb[x]}')
+                # determine if there are any bystanders resids and save them
+                atom_bystanders=self.interresidue_partners_of(bb[x])
+                atom_bystanders.remove(bb[1-x])
+                bystanders[x]=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':y}) for y in atom_bystanders]
+                for bx in bystanders[x]:
+                    self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bx})
+                    logging.debug(f'map_from_templates: assigning {template_name} to reactantName of {x}-bystander {bx}')
+            bystander_list.append(bystanders)
+            if chains[0]!=-1:
+                # set reactantName attr for any atom along the chain to which these newly bonded atoms belog
+                cdf=grodf[(grodf['chain']==chains[0])&(~grodf['globalIdx'].isin(bb))]
+                for idx in cdf['globalIdx'].to_list():
+                    self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':idx})
+                    logging.debug(f'map_from_templates: assigning {template_name} to reactantName of chain-{chains[0]} member {idx}')
+                cdf=grodf[grodf['chain']==chains[0]]
+                this_chain=self.idx_lists['chain'][chains[0]]
+                cidxs=[this_chain.index(bb[x]) for x in [0,1]]
+                if cidxs[0]<cidxs[1]: # first is closer to head
+                    for ii in this_chain[cidxs[0]::-1]:
+                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
+                        if iresid!=resids[0]: # this is one!
+                            oneaways[0]=iresid
+                            break
+                    for ii in this_chain[cidxs[1]:]:
+                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
+                        if iresid!=resids[1]: # this is one!
+                            oneaways[1]=iresid
+                            break
+                else:
+                    for ii in this_chain[cidxs[0]:]:
+                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
+                        if iresid!=resids[0]: # this is one!
+                            oneaways[0]=iresid
+                            break
+                    for ii in this_chain[cidxs[1]::-1]:
+                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
+                        if iresid!=resids[1]: # this is one!
+                            oneaways[1]=iresid
+                            break
+                logging.debug(f'Bond {bb} oneaway resids {oneaways}')
+            oneaway_list.append(oneaways)
+            logging.debug(f'Bond {bb} (resids {resids[0]} and {resids[1]}) template {template_name}')
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
-            bbb=[b['ai'],b['aj'],b['reactantName']]
-            T=self.select_template(bbb,moldict,reaction_list)  # select template based on neighbors
-            # T=moldict[template_name]
-            # i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
-            # j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
-            # logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
+            bystanders=bystander_list[i]
+            oneaways=oneaway_list[i]
+            # bbb=[b['ai'],b['aj'],b['reactantName']]
+            # T=self.select_template(bbb,moldict,reaction_list)  # select template based on neighbors
+            template_name=b['reactantName']
+            T=moldict[template_name]
+            i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
+            j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
+            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             # get the bidirectional instance<->template mapping dictionaries
-            inst2temp,temp2inst=T.idx_mappers(self,bb)
+            inst2temp,temp2inst=T.idx_mappers(self,bb,bystanders,oneaways)
             # some hard checks on compatibility of the dicts
             assert len(inst2temp)==len(temp2inst)
             check=True
@@ -322,7 +384,7 @@ class TopoCoord:
                 logging.error('NAN in angles')
                 raise Exception
 
-            # map from template atom indicies to system atom indicies in dihedrals            
+            # map from template atom indicies to system atom indicies in dihedrals
             inst_dihedrals=temp_dihedrals.copy()
             inst_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
             inst_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
@@ -410,7 +472,7 @@ class TopoCoord:
                 logging.error('NAN in pairs post mapping')
                 raise Exception
 
-    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,reaction_list=[]):    
+    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,reaction_list=[]):
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
 
         :param bdf: bonds dataframe, columns 'ai', 'aj', 'reactantName'
@@ -429,20 +491,23 @@ class TopoCoord:
             # logging.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             self.Topology.null_check(msg='delete_atoms')
-            self.write_gro('tmp.gro')
+            # self.write_gro('tmp.gro')
             # reindex all atoms in the list of bonds sent in, and write it out
             ri_bdf=bdf.copy()
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
-            self.Topology.update_polyethylenes(ri_bdf,idx_mapper)
+            # self.Topology.update_polyethylenes(ri_bdf,idx_mapper)
             at_idx=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
-
-            self.decrement_z(at_idx)
-            self.make_ringlist()
+            for idx_pair in at_idx:
+                for idx in idx_pair:
+                    self.decrement_gro_attribute_by_attributes('z',{'globalIdx':idx})
+                    self.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':idx})
+            # self.chainlist_update(at_idx)
+            # self.make_ringlist()
             self.map_from_templates(ri_bdf,template_dict,reaction_list)
             # TODO: enumerate ALL pairs involving either or both of the bonded atoms
             pdf=self.Topology.D['pairs']
-            # each of these bonds results in 1-4 pair interactions 
+            # each of these bonds results in 1-4 pair interactions
             bl=self.Topology.bondlist
             pai=[]
             paj=[]
@@ -508,10 +573,10 @@ class TopoCoord:
                 self.Topology.bond_source_check()
 
     def swap_atom_names(self,ai,aj):
-        """Swaps the names of the two atoms with global indicies ai and aj.  This is used when 
+        """Swaps the names of the two atoms with global indicies ai and aj.  This is used when
         automatically selected which of several possible sacrificial H's will actually be
-        selected.  Surviving H's are renamed so it always appears that the H with "least 
-        important" name (lowest order if sorted) is the sacrificial H.  Why do we do this?  It 
+        selected.  Surviving H's are renamed so it always appears that the H with "least
+        important" name (lowest order if sorted) is the sacrificial H.  Why do we do this?  It
         gives us perfect control of the names of the atoms that survive a bond.
 
         :param ai: global index of first atom
@@ -544,7 +609,7 @@ class TopoCoord:
         self.read_gro(grofilename)
 
     def write_top(self,topfilename):
-        """Write a Gromacs-format topology file; this will only write an in-line version,    
+        """Write a Gromacs-format topology file; this will only write an in-line version,
             no itp; wrapper for Topology.to_file()
 
         :param topfilename: name of file to write
@@ -606,10 +671,10 @@ class TopoCoord:
         self.Topology.remove_restraints(pairsdf)
 
     def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0,init_colname='initial-distance'):
-        """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
+        """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
-            bond is multiplied by x and the distance is 1 xth of the way from its maximum value 
+            bond is multiplied by x and the distance is 1 xth of the way from its maximum value
             to its equilibrium value.
 
         :param bonds: bonds dataframe, 'ai', 'aj', 'initial-distance'
@@ -624,11 +689,11 @@ class TopoCoord:
         self.Topology.attenuate_bond_parameters(bonds,i,n,minimum_distance=minimum_distance,init_colname=init_colname)
 
     def attenuate_pair_parameters(self,pairdf,i,n,draglimit_nm=0.3):
-        """Alter the kb and b0 parameters for new pre-crosslink pairs according 
-            to the values prior to dragging (stored in pairdf['initial-distances']), 
-            the desired lower limit of interatomic distance 'draglimit_nm', 
+        """Alter the kb and b0 parameters for new pre-crosslink pairs according
+            to the values prior to dragging (stored in pairdf['initial-distances']),
+            the desired lower limit of interatomic distance 'draglimit_nm',
             and the ratio stage/max_stages.
-            
+
         :param pairdf: pairs dataframe (['ai'],['aj'],['initial-distance'])
         :type pairdf: pandas.DataFrame
         :param stage: index of stage in the series of pre-bond-formation dragging
@@ -675,7 +740,11 @@ class TopoCoord:
         :param attribute_list: list of attributes to take, defaults to [] (take all)
         :type attribute_list: list, optional
         """
-        self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
+        attributes_read=self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
+        if 'chain' in attributes_read and 'chain-idx' in attributes_read:
+            self.reset_idx_list_from_grx_attributes('chain')
+        if 'cycle' in attributes_read and 'cycle-idx' in attributes_read:
+            self.reset_idx_list_from_grx_attributes('cycle')
 
     def set_gro_attribute(self,attribute,srs):
         self.Coordinates.set_atomset_attribute(attribute,srs)
@@ -685,6 +754,18 @@ class TopoCoord:
 
     def get_gro_attribute_by_attributes(self,att_name,attribute_dict):
         return self.Coordinates.get_atom_attribute(att_name,attribute_dict)
+
+    def increment_gro_attribute_by_attributes(self,att_name,attribute_dict):
+        val=self.get_gro_attribute_by_attributes(att_name,attribute_dict)
+        # logging.debug(f'increment {att_name} {attribute_dict} {val}')
+        val+=1
+        self.set_gro_attribute_by_attributes(att_name,val,attribute_dict)
+
+    def decrement_gro_attribute_by_attributes(self,att_name,attribute_dict):
+        val=self.get_gro_attribute_by_attributes(att_name,attribute_dict)
+        # logging.debug(f'decrement {att_name} {attribute_dict} {val}')
+        val-=1
+        self.set_gro_attribute_by_attributes(att_name,val,attribute_dict)
 
     def get_gro_attributelist_by_attributes(self,attribute_list,attribute_dict):
         return self.Coordinates.get_atoms_w_attribute(attribute_list,attribute_dict)
@@ -701,7 +782,19 @@ class TopoCoord:
     def partners_of(self,i):
         return self.Topology.bondlist.partners_of(i)
 
-    def interresidue_parters_of(self,i):
+    def resid_partners_of(self,ri):
+        result=[]
+        adf=self.Coordinates.A
+        radf=adf[adf['resNum']==ri]
+        for at in radf['globalIdx'].to_list():
+            bl=self.Topology.bondlist.partners_of(at)
+            for j in bl:
+                theirresid=adf.iloc[j-1]['resNum']
+                if theirresid!=ri and not theirresid in result:
+                    result.append(theirresid)
+        return result
+
+    def interresidue_partners_of(self,i):
         result=[]
         bl=self.Topology.bondlist.partners_of(i)
         myresid=self.Coordinates.A.iloc[i-1]['resNum']
@@ -756,79 +849,77 @@ class TopoCoord:
         self.Coordinates.A=C.reset_index()
         # logging.debug(f'after update:\n{self.Coordinates.A.to_string()}')
 
-    def set_z(self,reaction_list,moldict):
-        """Sets the z attribute of each atom in self using information in the list of 
-        reactions and the dictionary of molecules.  'z' is an integer showing the
-        number of available interresidue bonds an atom can participate in.
+    # def set_z(self,reaction_list,moldict):
+    #     """Sets the z attribute of each atom in self using information in the list of
+    #     reactions and the dictionary of molecules.  'z' is an integer showing the
+    #     number of available interresidue bonds an atom can participate in.
 
-        :param reaction_list: List of Reactions read in from cfg file or autogenerated via 
-            symmetry operations
-        :type reaction_list: list of Reactions
-        :param moldict:  Dictionary of all molecular templates
-        :type moldict:  Dictionary
-        """
-        razdict={}  # [resname][atomname]=[list of z-values detected]
-        for R in reaction_list:
-            # logging.debug(f'Set z: scanning reaction {R.name} for raz')
-            raz=R.get_raz(moldict)  # [resname][atomname]=[list of z-values detected in this reaction]
-            # logging.debug(f'-> raz {raz}')
-            for rn in raz:
-                if not rn in razdict:
-                    razdict[rn]={}
-                for an in raz[rn]:
-                    if not an in razdict[rn]:
-                        razdict[rn][an]=[]
-                    razdict[rn][an].extend(raz[rn][an])
-        # take the max z value implied by the config file for atom 'an' in residue 'rn'
-        for rn in razdict:
-            for an in razdict[rn]:
-                razdict[rn][an]=max(razdict[rn][an])
-            # if any two atoms with z>0 in this residue are bound to each other, these
-            # two atoms must be in a reactive double-bond (in the inactive residue)
+    #     :param reaction_list: List of Reactions read in from cfg file or autogenerated via
+    #         symmetry operations
+    #     :type reaction_list: list of Reactions
+    #     :param moldict:  Dictionary of all molecular templates
+    #     :type moldict:  Dictionary
+    #     """
+    #     razdict={}  # [resname][atomname]=[list of z-values detected]
+    #     for R in reaction_list:
+    #         # logging.debug(f'Set z: scanning reaction {R.name} for raz')
+    #         raz=R.get_raz(moldict)  # [resname][atomname]=[list of z-values detected in this reaction]
+    #         # logging.debug(f'-> raz {raz}')
+    #         for rn in raz:
+    #             if not rn in razdict:
+    #                 razdict[rn]={}
+    #             for an in raz[rn]:
+    #                 if not an in razdict[rn]:
+    #                     razdict[rn][an]=[]
+    #                 razdict[rn][an].extend(raz[rn][an])
+    #     # take the max z value implied by the config file for atom 'an' in residue 'rn'
+    #     for rn in razdict:
+    #         for an in razdict[rn]:
+    #             razdict[rn][an]=max(razdict[rn][an])
+    #         # if any two atoms with z>0 in this residue are bound to each other, these
+    #         # two atoms must be in a reactive double-bond (in the inactive residue)
 
-        # logging.debug(f'razdict {razdict}')
-        zsrs=[]
-        for i,r in self.Coordinates.A.iterrows():
-            rn=r['resName']
-            an=r['atomName']
-            idx=r['globalIdx']
-            z=0
-            if rn in razdict:
-                if an in razdict[rn]:
-                    irb=self.interresidue_parters_of(idx)
-                    z=razdict[rn][an]-len(irb)
-            zsrs.append(z)
-        self.set_gro_attribute('z',zsrs)
-        self.set_gro_attribute('nreactions',[0]*len(zsrs))
-        # for i,r in self.Coordinates.A.iterrows():
-        #     z=r['z']
-        #     if z>0:
-        #         idx=r['globalIdx']
-        #         irnum=r['resNum']
-        #         n=self.Topology.bondlist.partners_of(idx)
-        #         for jdx in n:
-        #             jz=self.get_gro_attribute_by_attributes('z',{'globalIdx':jdx})
-        #             jrnum=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':jdx})
-        #             if irnum==jrnum and jz>0:
-        #                 # two reactive atoms in the same residue bound to each other are
-        #                 # part of a polyethylene chain
-        #                 self.Topology.update_polyethylenes(idx,jdx)
+    #     # logging.debug(f'razdict {razdict}')
+    #     zsrs=[]
+    #     for i,r in self.Coordinates.A.iterrows():
+    #         rn=r['resName']
+    #         an=r['atomName']
+    #         idx=r['globalIdx']
+    #         z=0
+    #         if rn in razdict:
+    #             if an in razdict[rn]:
+    #                 irb=self.interresidue_partners_of(idx)
+    #                 z=razdict[rn][an]-len(irb)
+    #         zsrs.append(z)
+    #     self.set_gro_attribute('z',zsrs)
+    #     self.set_gro_attribute('nreactions',[0]*len(zsrs))
+    #     # for i,r in self.Coordinates.A.iterrows():
+    #     #     z=r['z']
+    #     #     if z>0:
+    #     #         idx=r['globalIdx']
+    #     #         irnum=r['resNum']
+    #     #         n=self.Topology.bondlist.partners_of(idx)
+    #     #         for jdx in n:
+    #     #             jz=self.get_gro_attribute_by_attributes('z',{'globalIdx':jdx})
+    #     #             jrnum=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':jdx})
+    #     #             if irnum==jrnum and jz>0:
+    #     #                 # two reactive atoms in the same residue bound to each other are
+    #     #                 # part of a polyethylene chain
+    #     #                 self.Topology.update_polyethylenes(idx,jdx)
 
-    def label_ring_atoms(self):
-        cycles=self.ring_detector()
-        adf=self.gro_DataFrame('atoms')
-        self.set_gro_attribute('cycle-idx',np.zeros(adf.shape[0]).astype(int))
-        cidx=1
-        for l,cl in cycles.items():
-            for c in cl:
-                for idx in c:
-                    self.set_gro_attribute_by_attributes('cycle-idx',cidx,{'globalIdx':idx})
-                cidx+=1
+    def label_cycle_atoms(self):
+        adf=self.Coordinates.A
+        cycle_idx=list(sorted(list(set(adf['cycle'].to_list()))))
+        if -1 in cycle_idx:
+            cycle_idx.remove(-1)
+        for c in cycle_idx:
+            cnames=adf[adf['cycle']==c]['atomName'].to_list()
+            logging.debug(f'cycle {c}: {cnames}')
         # logging.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
 
 
     # def analyze_sea_topology(self):
-    #     """Checks for consistency of atom type, charge, and mass for all atoms in each      
+    #     """Checks for consistency of atom type, charge, and mass for all atoms in each
     #         symmetry class.  If consistency is lacking, logs a warning.
     #     """
     #     tadf=self.Topology.D['atoms']
@@ -856,7 +947,7 @@ class TopoCoord:
         self.Coordinates.linkcell_initialize(cutoff,ncpu=ncpu,populate=True,force_repopulate=force_repopulate)
 
     def atom_count(self):
-        """Check to be sure the Coordinate and Topology members contain the same number of 
+        """Check to be sure the Coordinate and Topology members contain the same number of
             atoms
 
         :return: the number of atoms
@@ -878,17 +969,81 @@ class TopoCoord:
     def wrap_coords(self):
         self.Coordinates.wrap_coords()
 
-    def inherit_attributes_from_molecules(self,attribute_list,molecule_dict):
-        self.Coordinates.inherit_attributes_from_molecules(attribute_list,molecule_dict)
+    def inherit_grx_attributes_from_molecules(self,attributes,molecule_dict,initial_composition,globally_unique=[],unset_defaults=[],overall_default=0):
+        """inherit_grx_attributes_from_molecules Copy non-Gromacs-standard atom attributes in list "attributes" from molecule templates in molecule_dict according to molecule counts in dict initial_composition.
 
-    def make_ringlist(self):
-        self.Coordinates.make_ringlist()
+        :param attributes: list of labels of attributes to copy
+        :type attributes: list
+        :param molecule_dict: dictionary of available molecules (name:Molecule)
+        :type molecule_dict: dict
+        :param initial_composition: dictionary of initial composition (name:count)
+        :type initial_composition: dict
+        :param globally_unique: boolean list indicating attributes that must be globally unique, defaults to []
+        :type globally_unique: list, optional
+        :param unset_defaults: list of values, one per attribute, that signify UNSET, defaults to []
+        :type unset_defaults: list, optional
+        :param overall_default: default UNSET value for all attributes if unset_defaults is empty, defaults to 0
+        :type overall_default: int, optional
+        """
+        # logging.debug(f'inherit grx {attributes} {unset_defaults} {globally_unique}')
+        ''' set up the globally_unique and unset_defaults list if necessary '''
+        if len(globally_unique)!=len(attributes):
+            globally_unique=[False for _ in range(len(attributes))]
+        if len(unset_defaults)!=len(attributes):
+            unset_defaults=[overall_default for _ in range(len(attributes))]
+
+        ''' drop all attribute values from current global atom dataframe '''
+        adf=self.Coordinates.A
+        self.Coordinates.A=adf.drop(columns=[a for a in attributes if a in adf])
+
+        logging.debug(f'{adf.shape[0]} atoms inheriting these attributes from molecular templates:')
+        logging.debug(f'    Attribute name   Default value   Globally unique?')
+        for attname,defval,gu in zip(attributes,unset_defaults,globally_unique):
+            logging.debug(f'    {attname:<15s}    {str(defval):<13s}   {gu}')
+        if len(unset_defaults)==len(attributes):
+            att_running_maxval={}
+            for k,v in zip(attributes,unset_defaults):
+                if type(v)==int or type(v)==float:
+                    att_running_maxval[k]=0
+                else:
+                    att_running_maxval[k]='0'
+        else:
+            att_running_maxval={k:overall_default for k in attributes}
+
+        attribute_lists={k:[] for k in attributes}
+        value_counts={k:0 for k in attributes}
+        for icdict in initial_composition:
+            molecule=icdict['molecule']
+            count=icdict['count']
+            mol_adf=molecule_dict[molecule].TopoCoord.Coordinates.A
+            mol_attr_df=mol_adf[attributes]
+            for i in range(count):
+                for i,k in enumerate(attributes):
+                    tra=mol_attr_df[k].to_list()
+                    # nv=len(tra)-tra.count(unset_defaults[i])
+                    nuv=len(list(set([x for x in tra if x != unset_defaults[i]])))
+                    utra=[]
+                    for x in tra:
+                        if globally_unique[i] and (type(x)==int or type(x)==float):
+                            xx=x+value_counts[k] if x!=unset_defaults[i] else unset_defaults[i]
+                        else:
+                            xx=x
+                        utra.append(xx)
+                    attribute_lists[k].extend(utra)
+                    value_counts[k]+=nuv
+
+        for k,L in attribute_lists.items():
+            self.Coordinates.A[k]=L
+        # logging.debug(f'postinherit adf columns {self.Coordinates.A.columns}')
+
+    # def make_ringlist(self):
+    #     self.Coordinates.make_ringlist()
 
     def make_resid_graph(self,json_file=None,draw=None):
         self.Topology.make_resid_graph(json_file=json_file,draw=draw)
 
     def maxspan(self):
-        """Returns the maxspan of the Coordinates (dimensions of orthorhombic 
+        """Returns the maxspan of the Coordinates (dimensions of orthorhombic
             convex hull enclosing Coordinates). Just a wrapper.
 
         :return: array of x-span, y-span, z-span
@@ -915,7 +1070,7 @@ class TopoCoord:
             self.Coordinates.write_mol2(filename,molname=molname,bondsDF=self.Topology.D['mol2_bonds'],other_attributes=other_attributes)
         else:
             self.Coordinates.write_mol2(filename,molname=molname,other_attributes=other_attributes)
-    
+
     def merge(self,other):
         """Merges the TopoCoord instance "other" to self
 
@@ -925,7 +1080,13 @@ class TopoCoord:
         :rtype: tuple
         """
         self.Topology.merge(other.Topology)
-        return self.Coordinates.merge(other.Coordinates)
+        shifts=self.Coordinates.merge(other.Coordinates)
+        for name,idx_lists in other.idx_lists.items():
+            # logging.debug(f'TopoCoord merge: list_name {name} lists {idx_lists}')
+            for a_list in idx_lists:
+                self.idx_lists[name].append([x+shifts[0] for x in a_list])
+            self.reset_grx_attributes_from_idx_list(name)
+        return shifts
 
     def bondtest_par(self,B,pbc=[1,1,1],show_piercings=True):
         """Parallelization of bondtest
@@ -934,7 +1095,7 @@ class TopoCoord:
         :type B: list of 2-tuples
         :param pbc: periodic boundary condition flags in each direction, defaults to [1,1,1]
         :type pbc: list, optional
-        :param show_piercings: flag indicating you want to write gro files showing 
+        :param show_piercings: flag indicating you want to write gro files showing
             pierced rings
         :type show_piercings: bool
         :return: list of booleans, each is True if that bond is permitted
@@ -946,14 +1107,14 @@ class TopoCoord:
         return L
 
     def bondtest(self,b,pbc=[1,1,1],show_piercings=True):
-        """Determine if bond b is to be allowed to form based on geometric and 
+        """Determine if bond b is to be allowed to form based on geometric and
             topological criteria
 
         :param b: bond, tuple (ai,aj,rij)
         :type b: 2-tuple
         :param pbc: periodic boundary condition flags in each direction, defaults to [1,1,1]
         :type pbc: list, optional
-        :param show_piercings: flag indicating you want to write gro files showing 
+        :param show_piercings: flag indicating you want to write gro files showing
             pierced rings
         :type show_piercings: bool
         :return: BTRC instance
@@ -962,16 +1123,18 @@ class TopoCoord:
         i,j,rij=b
         i=int(i)
         j=int(j)
-        if self.shortcircuit(i,j):
+        if self.makes_shortcircuit(i,j):
             return BTRC.failed_short_circuit,0
-        if self.polyethylene_cycle(i,j):
-            return BTRC.failed_polyethylene_cycle,0
-        if self.ringpierce(i,j,pbc=pbc,show_piercings=show_piercings):
+        if self.makes_cycle(i,j):
+            return BTRC.failed_bond_cycle,0
+        if self.pierces_ring(i,j,pbc=pbc,show_piercings=show_piercings):
             return BTRC.failed_pierce_ring,0
         logging.debug(f'passed bondtest: {i:>7d} {j:>7d} {rij:>6.3f} nm')
         return BTRC.passed,rij
 
-    def ringpierce(self,i,j,pbc=[1,1,1],show_piercings=True):
+    def pierces_ring(self,i,j,pbc=[1,1,1],show_piercings=True):
+        adf=self.Coordinates.A
+        LC=self.Coordinates.linkcell
         Ri=self.get_R(i)
         Rj=self.get_R(j)
         Rij=self.Coordinates.mic(Ri-Rj,pbc)
@@ -979,22 +1142,33 @@ class TopoCoord:
         # assert np.isclose(rij,chk_rij,atol=1.e-3),f'{i} {j} {rij} {chk_rij}'
         # generate the nearest periodic image of Rj to Ri
         Rjp=Ri-Rij
-        # return array of atom coordinates of ring pierced by this bond, if any
-        C=self.Coordinates.ringpierce(Ri,Rjp,pbc)
-        if type(C)==np.ndarray:  # this is a ring
-            # all this generate a special output file for inspection
-            if show_piercings:
-                idx=[i,j]
-                idx.extend(C['globalIdx'].to_list()) # list of globalIdx's for this output
-                sub=self.Coordinates.subcoords(self.Coordinates.A[self.Coordinates.A['globalIdx'].isin(idx)].copy())
-                sub.write_gro(f'ring-{i}-{j}'+'.gro')
-                logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj}\n{C.to_string()}')
-            return True
+        # at the current state, a linkcell is active under Coordinates
+        # with spacing *greater* than the initial length of any bond.
+        # so we can visit rings with one or more atom in a cell neighboring
+        # the cells of the two atoms
+        assert 'linkcell-idx' in adf,f'Error: atoms have no linkcell-idx attribute - bug!'
+        i_lcidx=self.get_gro_attribute_by_attributes('linkcell-idx',{'globalIdx':i})
+        j_lcidx=self.get_gro_attribute_by_attributes('linkcell-idx',{'globalIdx':j})
+        joint_idx=[]
+        for idx in LC.neighborlists[i_lcidx]+LC.neighborlists[j_lcidx]+[i_lcidx,j_lcidx]:
+            if not idx in joint_idx:
+                joint_idx.append(idx)
+        cycle_tags=list(set(adf[(adf['cycle']!=-1)&(adf['linkcell-idx'].isin(joint_idx))]['cycle'].to_list()))
+        for c in cycle_tags:
+            C=adf[adf['cycle']==c].copy()
+            if self.Coordinates.pierces(Ri,Rjp,C,pbc=pbc):
+                if show_piercings:
+                    idx=[i,j]
+                    idx.extend(C['globalIdx'].to_list()) # list of globalIdx's for this output
+                    sub=self.Coordinates.subcoords(self.Coordinates.A[self.Coordinates.A['globalIdx'].isin(idx)].copy())
+                    sub.write_gro(f'ring-{i}-{j}'+'.gro')
+                    logging.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj}\n{C.to_string()}')
+                return True
         return False
 
-    def shortcircuit(self,i,j):
-        """Determine whether atoms i and j, if bonded, would produce a short circuit, 
-           defined as an instance in which i and j belong to residues that are already 
+    def makes_shortcircuit(self,i,j):
+        """Determine whether atoms i and j, if bonded, would produce a short circuit,
+           defined as an instance in which i and j belong to residues that are already
            bonded to each other
 
         :param i: global index of first atom
@@ -1038,46 +1212,187 @@ class TopoCoord:
                 return True
         return False
 
-    def polyethylene_cycle(self,a,b):
-        return self.Topology.polyethylene_cycle(a,b)
+    # def polyethylene_cycle(self,a,b):
+    #     return self.Topology.polyethylene_cycle(a,b)
 
-    def set_polyethylenes(self):
-        """set_polyethylenes regenerate the polyethylene network using z/nreactions
+    # def set_polyethylenes(self):
+    #     """set_polyethylenes regenerate the polyethylene network using z/nreactions
+    #     """
+    #     CDF=self.Coordinates.A
+    #     '''
+    #     Only carbon atoms (assumed to have names that begin with 'C' or 'c') can be in polyethylene cycles
+    #     '''
+    #     CCDF=CDF[[(b.startswith('C') or b.startswith('c')) for b in CDF['atomName']]]
+    #     '''
+    #     Only atoms that are potentially reactive or have already reacted can be in (putative) polyethylene
+    #     cycles
+    #     '''
+    #     CCDF=CCDF[(CCDF['z']>0)|(CCDF['nreactions']>0)]
+
+    #     T=self.Topology
+    #     T.polyethylenes=nx.DiGraph()
+    #     BL=T.bondlist
+    #     for idx in CCDF['globalIdx']:
+    #         for jdx in [x for x in BL.partners_of(idx) if x in CCDF['globalIdx'].values]:
+    #             '''
+    #             Atoms are bonded and in different residues, or reactive and in same residue
+    #             '''
+    #             T.polyethylenes.add_edge(idx,jdx)
+    #     cycles=list(nx.simple_cycles(T.polyethylenes))
+    #     clens={}
+    #     for c in cycles:
+    #         l=len(c)
+    #         if not l in clens:
+    #             clens[l]=0
+    #         clens[l]+=1
+    #     if len(clens)>0:
+    #         logging.debug(f'Polyethyelene cycle lengths:counts {clens}')
+    #         '''
+    #         Sanity check!
+    #         '''
+    #         if any([x>2 for x in clens.keys()]):
+    #             logging.debug(f'There is a problem with the polyethylene cycles!')
+    #             network_graph(self.Topology.polyethylenes,'pe_net_bad.png')
+
+    def reset_grx_attributes_from_idx_list(self,list_name):
+        self.set_gro_attribute(list_name,-1)
+        self.set_gro_attribute(f'{list_name}-idx',-1)
+        for i,c in enumerate(self.idx_lists[list_name]):
+            for j,x in enumerate(c):
+                self.set_gro_attribute_by_attributes(list_name,i,{'globalIdx':x})
+                self.set_gro_attribute_by_attributes(f'{list_name}-idx',j,{'globalIdx':x})
+
+    def reset_idx_list_from_grx_attributes(self,list_name):
+        adf=self.Coordinates.A
+        # logging.debug(f'reset: columns {adf.columns}')
+        tmp_dict={}
+        for i,r in adf.iterrows():
+            gix=r['globalIdx']
+            cid=r[list_name]
+            cix=r[f'{list_name}-idx']
+            if cid!=-1:
+                if not cid in tmp_dict:
+                    tmp_dict[cid]={}
+                tmp_dict[cid][cix]=gix
+        # logging.debug(f'{list_name} tmp_dict item count: {len(tmp_dict)}')
+        if tmp_dict:
+            assert all([a in tmp_dict for a in range(len(tmp_dict))]),f'{list_name} reset_idx_list for group attribute {list_name} has non-consecutive integer keys -- bug\n{[a in tmp_dict for a in range(len(tmp_dict))]}'
+            ngroups=len(tmp_dict)
+            self.idx_lists[list_name]=[[] for _ in range(ngroups)]
+            for i in range(ngroups):
+                for j in range(len(tmp_dict[i])):
+                    self.idx_lists[list_name][i].append(tmp_dict[i][j])
+        # logging.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
+
+    def remap_idx_list(self,list_name,mapper):
+        remapped_groups=[]
+        for c in self.idx_lists[list_name]:
+            remapped_groups.append([mapper[x] for x in c])
+        self.idx_lists[list_name]=remapped_groups
+        self.reset_grx_attributes_from_idx_list(list_name)
+
+    def chainlist_update(self,new_bond_recs,msg=''):
+        chainlists=self.idx_lists['chain']
+        # logging.debug(f'pre {msg} chains')
+        # for i,c in enumerate(chainlists):
+        #     logging.debug(f'  {i} {c}')
+        for b in new_bond_recs:
+            aidx,bidx=b[0],b[1]
+            # logging.debug(f'chainlist_update pair {aidx} {bidx}')
+            ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
+            bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
+            # logging.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
+            # logging.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            if ac==-1 or bc==-1:
+                # neither of these newly bonded atoms is already in a chain, so
+                # there is no possibility that this new bond can join two chains.
+                continue
+            aci=self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':aidx})
+            bci=self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':bidx})
+            # logging.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
+            # one must be a head and the other a tail
+            if aci==0: # a is a head
+                assert len(chainlists[bc])-1==bci,f'incorrect tail'
+                c1=ac
+                c2=bc
+            elif bci==0: # b is a head
+                assert len(chainlists[ac])-1==aci,f'incorrect tail'
+                c1=bc
+                c2=ac
+            else:
+                raise Exception(f'chain parse error')
+            chainlists[c2].extend(chainlists[c1])
+            for aidx in chainlists[c1]:
+                self.set_gro_attribute_by_attributes('chain',c2,{'globalIdx':aidx})
+                self.set_gro_attribute_by_attributes('chain-idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
+            chainlists.remove(chainlists[c1])
+            # since we remove c1, all indices greater than c1 must decrement
+            dec_us=np.array(self.Coordinates.A['chain'])
+            bad_chain_idx=np.where(dec_us>c1)
+            dec_us[bad_chain_idx]-=1
+            self.Coordinates.A['chain']=dec_us
+            # for d in dec_us:
+            #     self.decrement_gro_attribute_by_attributes('chain',{'globalIdx':d})
+
+        # self.reset_grx_attributes_from_idx_list('chain') # should not be necessary due to in-loop bookkeeping
+
+        cnms=[]
+        for c in self.idx_lists['chain']:
+            cnms.append([self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
+        # logging.debug(f'post {msg} chains {self.idx_lists["chain"]} {cnms}')
+
+    def makes_cycle(self,aidx,bidx):
+        # is there a chain with aidx as head and bidx as tail, or vice versa?
+        for c in self.idx_lists['chain']:
+            if (aidx==c[0] and bidx==c[-1]) or (aidx==c[-1] and bidx==c[0]):
+                return True
+        return False
+
+    def cycle_collective(self,bondrecs):
+        """cycle_collective Check to see if, when considered as a collective, this
+        set of bondrecs leads to one or more cyclic chain; if so, longest bonds that 
+        break cycles are removed from bondrecs list and resulting list is returned
+
+        :param bondrecs: list of bond records; attribute `bond` is a 2-tuple of global atom indexes and attribue `distance` is the interatomic distance; list should already be sorted by distance (ascending)
+        :type bondrecs: list
+        :return: list of bond records that results in no new cycles
+        :rtype: list
         """
-        CDF=self.Coordinates.A
-        '''
-        Only carbon atoms (assumed to have names that begin with 'C' or 'c') can be in polyethylene cycles
-        '''
-        CCDF=CDF[[(b.startswith('C') or b.startswith('c')) for b in CDF['atomName']]]
-        '''
-        Only atoms that are potentially reactive or have already reacted can be in (putative) polyethylene
-        cycles
-        '''
-        CCDF=CCDF[(CCDF['z']>0)|(CCDF['nreactions']>0)]
-
-        T=self.Topology
-        T.polyethylenes=nx.DiGraph()
-        BL=T.bondlist
-        for idx in CCDF['globalIdx']:
-            for jdx in [x for x in BL.partners_of(idx) if x in CCDF['globalIdx'].values]:
-                '''
-                Atoms are bonded and in different residues, or reactive and in same residue
-                '''
-                T.polyethylenes.add_edge(idx,jdx)
-        cycles=list(nx.simple_cycles(T.polyethylenes))
-        clens={}
-        for c in cycles:
-            l=len(c)
-            if not l in clens:
-                clens[l]=0
-            clens[l]+=1
-        if len(clens)>0:
-            logging.debug(f'Polyethyelene cycle lengths:counts {clens}')
-            '''
-            Sanity check!
-            '''
-            if any([x>2 for x in clens.keys()]):
-                logging.debug(f'There is a problem with the polyethylene cycles!')
-                network_graph(self.Topology.polyethylenes,'pe_net_bad.png')
-                    
-
+        def addlink(chainlist,i,j):
+            i_cidx=(-1,-1)
+            j_cidx=(-1,-1)
+            for cidx,c in enumerate(chainlist):
+                if i in c:
+                    i_cidx=(cidx,c.index(i))
+                if j in c:
+                    j_cidx=(cidx,c.index(j))
+            if not (i_cidx==(-1,-1) or (j_cidx==(-1,-1))):
+                # logging.debug(f'cycle_collective: {i} is in chain {i_cidx[0]} at {i_cidx[1]}')
+                # logging.debug(f'cycle_collective: {j} is in chain {j_cidx[0]} at {j_cidx[1]}')
+                if i_cidx[0]==j_cidx[0]:
+                    # cyclized!
+                    logging.debug(f'chain {i_cidx[0]} is cyclized!')
+                    return i_cidx[0],True
+                old_head,old_tail=(i_cidx,j_cidx) if i_cidx[1]==0 else (j_cidx,i_cidx)
+                chainlist[old_tail[0]].extend(chainlist[old_head[0]])
+                # logging.debug(f'new chain {old_tail[0]} {chainlist[old_tail[0]]}')
+                chainlist.remove(chainlist[old_head[0]])
+                return old_tail[0],False
+        kb=bondrecs.copy()
+        chains=self.idx_lists['chain'].copy()
+        cyclized_chains={}
+        chains_of_bonds=[]
+        for b in bondrecs:
+            ai,aj=b.bond
+            chain_idx,cyclized=addlink(chains,ai,aj)
+            chains_of_bonds.append(chain_idx)
+            if cyclized and not chain_idx in cyclized_chains:
+                cyclized_chains[chain_idx]=[]
+        for i,b in enumerate(bondrecs):
+            cidx=chains_of_bonds[i]
+            if cidx in cyclized_chains:
+                cyclized_chains[cidx].append(b)
+        for k,v in cyclized_chains.items():
+            lb=v[-1]  # last bondrec in list
+            kb.remove(lb)
+        return kb

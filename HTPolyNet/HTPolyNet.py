@@ -42,17 +42,17 @@ class HTPolyNet:
     def checkout(self,filename,altpath=None):
         if not pfs.checkout(filename):
             searchpath=pfs.local_data_searchpath()
-            logging.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
+            # logging.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
             if altpath:
                 searchpath.append(altpath)
-                logging.info(f'and alternative path {altpath}')
+                # logging.info(f'and alternative path {altpath}')
             for p in searchpath:
-                logging.debug(f'Searching {p}...')
+                # logging.debug(f'Searching {p}...')
                 fullfilename=os.path.join(p,filename)
                 if os.path.exists(fullfilename):
                     basefilename=os.path.basename(filename)
                     shutil.copyfile(fullfilename,basefilename)
-                    logging.info(f'Found at {fullfilename}')
+                    logging.info(f'Checkout {fullfilename} to {os.getcwd()}')
                     return True
             logging.debug(f'Could not find {filename} anywhere!')
             return False
@@ -95,7 +95,7 @@ class HTPolyNet:
         self.molecules.update(new_molecules)
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
-        new_molecules=self.cfg.multimer_expand_reactions(self.molecules)
+        new_molecules=self.cfg.chain_expand_reactions(self.molecules)
         for mname,M in new_molecules.items():
             if mname not in self.molecules:
                 logging.debug(f'Generating {mname}...')
@@ -109,14 +109,13 @@ class HTPolyNet:
         logging.info(f'Maximum conversion is {self.cfg.maxconv} bonds.')
         for M in self.molecules.values():
             logging.debug(f'Ring detector for {M.name}')
-            M.label_ring_atoms()
+            M.label_cycle_atoms()
         logging.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():
             if len(M.reaction_bonds)>0:
                 logging.debug(f'Template {M.name}:')
                 for b in M.reaction_bonds:
-                    (i,j),(ri,rj),(A,B),(aoresids,boresids),order=b
-                    logging.debug(f'   {i}({ri}:{A})---{j}({rj}:{B}) order {order}')
+                    logging.debug(f'   {str(b)}')
 
     def generate_molecule(self,M,**kwargs):
         mname=M.name
@@ -124,12 +123,11 @@ class HTPolyNet:
         exists=pfs.exists
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
-        # userlib=kwargs.get('userlib',None)
         if force_parameterization or not M.previously_parameterized():
             logging.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
             if generatable:
-                logging.info(f'Yes -- calling {mname}.generate(); molecules {list(self.molecules.keys())}')
+                logging.info(f'Yes -- calling {mname}.generate().')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro','grx']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
@@ -145,63 +143,33 @@ class HTPolyNet:
             for ex in ['mol2','top','itp','gro','grx']:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2')
-            M.set_sequence()
-            M.set_reaction_bonds(self.molecules)
-            M.TopoCoord.set_gro_attribute('reactantName',M.name)
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
-            M.reset_chains_from_attributes()
+            M.set_sequence()
             M.set_origin('previously parameterized')
 
-        ''' The cfg allows user to indicate and use
-            symmetry-equivalent atoms in any molecule. '''
-        if 'symmetry_equivalent_atoms' in self.cfg.parameters and mname in self.cfg.parameters['symmetry_equivalent_atoms']:
-            M.TopoCoord.set_gro_attribute('sea-idx',-1)
-            list_of_symmetry_sets=self.cfg.parameters['symmetry_equivalent_atoms'][mname]
-            sea_idx=1
-            for s in list_of_symmetry_sets:
-                for at in s:
-                    logging.debug(f'Sym: res {mname} at {at} sea-idx {sea_idx}')
-                    M.TopoCoord.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'atomName':at})
-                sea_idx+=1
-            M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
-        else: # assume no symmetry specified for this molecule
-            if len(M.sequence)==1: # this is a monomer, but not symmetric
-                # since its name is not a key in self.cfg.parameters['symmetry_equivalent_atoms']
-                M.TopoCoord.set_gro_attribute('sea-idx',-1)
-            else: # this is an oligomer
-                M.inherit_attribute_from_reactants('sea-idx',available_molecules=self.molecules)
-            M.write_gro_attributes(['sea-idx'],f'{M.name}.sea')
-
-        if 'stereocenters' in self.cfg.parameters and mname in self.cfg.parameters['stereocenters']:
+        ''' generate all stereoisomers of this molecule but ONLY for
+            liquid system building -- stereoisomers do NOT differ in
+            MD topology 
+        '''
+        if len(M.stereocenters)>0:
             M.stereoisomers=[]
-            my_sc=self.cfg.parameters['stereocenters'][mname]
-            logging.debug(f'Stereocenters in {mname}: {my_sc}')
-            my_sc_idx=[]
-            for n in my_sc:
-                my_sc_idx.append(M.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}))
-            adds=[]
-            if 'symmetry_equivalent_atoms' in self.cfg.parameters and mname in self.cfg.parameters['symmetry_equivalent_atoms']:
-                for idx in my_sc_idx:
-                    adds.extend(M.sea_of(idx))
-            my_sc_idx=adds
-            sc_names=[]
-            for idx in my_sc_idx:
-                sc_names.append(M.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':idx}))
-            logging.debug(f'With symmetry, stereocenters are {sc_names}')
-            flip=[[0,1] for _ in range(len(my_sc_idx))]
+            # logging.debug(f'{M.name} stereocenters {M.stereocenters}')
+            st_idx=[M.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}) for n in M.stereocenters]
+            flip=[[0,1] for _ in range(len(M.stereocenters))]
             P=product(*flip)
             next(P) # one with no flips is the original molecule, so skip it
             for p in P:
-                logging.debug(f'stereocenter pattern {p}')
                 MM=deepcopy(M)
                 MM.name+='-SC-'+'-'.join([str(_) for _ in p])
-                logging.debug(f'generates {MM.name}')
-                fsc=[]
-                # for i in range(my_sc_idx)
-                fsc=[my_sc_idx[i] for i in range(len(my_sc_idx)) if p[i]]
-                for f in fsc:
-                    MM.flip_stereocenter(f)
-                MM.TopoCoord.Coordinates.write_gro(f'{MM.name}.gro')
+                logging.debug(f'Stereocenter sequence {p} generates stereoisomer {MM.name}')
+                if os.path.exists(f'{MM.name}.gro'):
+                    MM.TopoCoord.Coordinates.read_gro(f'{MM.name}.gro')
+                    logging.debug(f' -> already generated')
+                else:
+                    fsc=[st_idx[i] for i in range(len(M.stereocenters)) if p[i]]
+                    for f in fsc:
+                        MM.flip_stereocenter(f)
+                    MM.TopoCoord.Coordinates.write_gro(f'{MM.name}.gro')
                 M.stereoisomers.append(MM.name)
         return True
 
@@ -288,11 +256,17 @@ class HTPolyNet:
             logging.info(f'Found {inpfnm}.gro.')
         self.TopoCoord.read_gro(f'{inpfnm}.gro')
         self.TopoCoord.atom_count()
-        self.TopoCoord.inherit_attributes_from_molecules(['cycle-idx','reactantName'],self.cfg.molecules)
-        self.TopoCoord.set_z(self.cfg.reactions,self.molecules)
-        self.TopoCoord.set_polyethylenes()
-        self.TopoCoord.write_gro_attributes(['z','cycle-idx','reactantName','nreactions'],f'{inpfnm}.grx')
-        self.TopoCoord.make_ringlist()
+        self.TopoCoord.inherit_grx_attributes_from_molecules(
+            ['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx'],self.cfg.molecules,self.cfg.initial_composition,
+            globally_unique=[False,False,False,True,False,True,False],
+            unset_defaults=[0,0,'UNSET',-1,-1,-1,-1])
+        # self.TopoCoord.set_z(self.cfg.reactions,self.molecules
+        # logging.debug(f'idx_lists: {self.TopoCoord.idx_lists}')
+        for list_name in ['cycle','chain']:
+            self.TopoCoord.reset_idx_list_from_grx_attributes(list_name)
+        # self.TopoCoord.set_polyethylenes()
+        self.TopoCoord.write_gro_attributes(['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx'],f'{inpfnm}.grx')
+        # self.TopoCoord.make_ringlist()
         self.TopoCoord.make_resid_graph()
 
     def do_liquid_simulation(self,inpfnm='init',deffnm='npt-1'):
@@ -713,14 +687,14 @@ class HTPolyNet:
         self.TopoCoord=TopoCoord(top,gro)
         if (grx):
             self.TopoCoord.read_gro_attributes(grx)
-            self.TopoCoord.set_polyethylenes()
+            #self.TopoCoord.set_polyethylenes()
 
-    def register_system(self,CP,extra_attributes=['z','cycle-idx','reactantName','nreactions']):
+    def register_system(self,CP,extra_attributes=['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx']):
         """register_system Create
 
         :param CP: checkpoint
         :type CP: Checkpoint
-        :param extra_attributes: list of extra atom attributes, defaults to ['z','cycle-idx','reactantName','nreactions']
+        :param extra_attributes: list of extra atom attributes, defaults to ['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx']
         :type extra_attributes: list, optional
         """
         logging.debug(f'WRITING SYSTEM TO {CP.top} {CP.gro} {CP.grx}')
@@ -738,15 +712,15 @@ class HTPolyNet:
                 self.distance=distance
                 self.probability=probability
                 self.order=order
-        def resid_filter(P):
-            Q=[]
-            for p in P:
-                i,j=p 
-                irn=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
-                jrn=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
-                if irn!=jrn:
-                    Q.append(p)
-            return Q
+        # def resid_filter(P):
+        #     Q=[]
+        #     for p in P:
+        #         i,j=p 
+        #         irn=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
+        #         jrn=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
+        #         if irn!=jrn:
+        #             Q.append(p)
+        #     return Q
 
         adf=self.TopoCoord.gro_DataFrame('atoms')
         gro=self.TopoCoord.grofilename
@@ -783,6 +757,7 @@ class HTPolyNet:
                                   'ri':[x[0][1] for x in crosses],
                                   'aj':[x[1][0] for x in crosses],
                                   'rj':[x[1][1] for x in crosses]})
+                # exclude atom pairs that have same resid
                 idf=idf[idf['ri']!=idf['rj']].copy()
                 # Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
                 # Pbonds=resid_filter(Pbonds)
@@ -834,12 +809,23 @@ class HTPolyNet:
         # logging.debug(f'*** Pruning {len(newbonds)} bonds...')
         atomset=list(set(list([x.bond[0] for x in newbonds])+list([x.bond[1] for x in newbonds])))
         resid_pairs=[]
+        just_resids=[]
         allowed_bond=[True for x in newbonds]
         for k,b in enumerate(newbonds):
             # bb,t,prob=b
             i,j=b.bond[0],b.bond[1]
             i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
             j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
+            # strictly forbidding any one residue from participating in two
+            # bond events in one cycle
+            if not i_resid in just_resids:
+                just_resids.append(i_resid)
+            else:
+                allowed_bond[k]=False
+            if not j_resid in just_resids:
+                just_resids.append(j_resid)
+            else:
+                allowed_bond[k]=False
             rp=(i_resid,j_resid)
             if not rp in resid_pairs:
                 resid_pairs.append(rp)
@@ -860,9 +846,10 @@ class HTPolyNet:
                 atomset.remove(b[1])
                 keepbonds.append(n)
         logging.debug(f'Accepted the {len(keepbonds)} shortest non-competing bond-candidates.')
-        # logging.debug(f'    {disallowed} bond-candidates that repeat resid pairs thrown out.')
+        logging.debug(f'    {disallowed} bond-candidates that repeat resids thrown out.')
         
-        keepbonds=self.TopoCoord.Topology.polyethylene_cycles_collective(keepbonds)
+        keepbonds=self.TopoCoord.cycle_collective(keepbonds)
+        # keepbonds=self.TopoCoord.Topology.polyethylene_cycles_collective(keepbonds)
 
         ''' roll the dice '''
         if apply_probabilities:

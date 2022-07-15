@@ -25,6 +25,8 @@ from HTPolyNet.ring import Ring,Segment
 #             return True
 #     return False
 
+GRX_ATTRIBUTES=['z','nreactions','sea-idx','cycle','cycle-idx','chain','chain-idx']
+
 def _dfrotate(df,R):
     for i,srow in df.iterrows():
         ri=srow[['posX','posY','posZ']].values
@@ -139,6 +141,7 @@ class Coordinates:
     mol2_atom_attributes = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
     mol2_bond_attributes = ['bondIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_attributes, [int, int, int, str])}
+    grx_attributes=GRX_ATTRIBUTES
 
     def __init__(self,name=''):
         self.name=name
@@ -150,7 +153,7 @@ class Coordinates:
         self.linkcell=Linkcell()
         self.empty=True
         self.box=np.zeros((3,3))
-        self.ringlist=[]
+        # self.ringlist=[]
         
     @classmethod
     def read_gro(cls,filename):
@@ -295,43 +298,25 @@ class Coordinates:
             lc_idx=r['linkcell-idx']
             self.A.loc[idx-1,'linkcell-idx']=lc_idx
 
-    def inherit_attributes_from_molecules(self,attributes=[],molecules={}):
-        ''' transfer any resname-atomname specific attributes from molecular templates to all residues in 
-            self.  Attributes to transfer are in the list 'attributes' and the dictionary
-            of molecular templates is in 'molecules' '''
-        assert type(molecules)==dict,'Must pass a *dictionary* name:Molecule as parameter "molecules"'
-        a=self.A
-        logging.debug(f'{a.shape[0]} atoms inheriting values of {attributes} from molecular templates.')
-        for att in attributes:
-            a[att]=[0]*a.shape[0]
-        for resname in a['resName'].unique():
-            ''' resname is a unique residue name in the system '''
-            if resname in molecules:
-                adf=molecules[resname].TopoCoord.Coordinates.A
-                for i,ma in adf.iterrows():
-                    atomName=ma['atomName']
-                    z=ma[attributes].to_dict()
-                    _set_rows_attributes_from_dict(a,z,{'atomName':atomName,'resName':resname})
-            else:
-                logging.warning(f'Resname {resname} not found in molecular templates')
-
-    def make_ringlist(self):
-        self.ringlist=list(self.rings())
+    def inherit_grx_attributes_from_molecules(self,attributes=[],molecules={},globally_unique=[],unset_defaults=[],overall_default=0):
+        pass
+    # def make_ringlist(self):
+    #     self.ringlist=list(self.rings())
 
     # def make_ringdflist(self):
     #     self.ringlist=list(self.ringdfs())
 
-    def reindex_ringlist(self,idx_mapper):
-        pass
+    # def reindex_ringlist(self,idx_mapper):
+    #     pass
 
-    def rings(self):
-        a=self.A
-        for resid in a['resNum'].unique():
-            mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
-            if not mr.empty:
-                for ri in mr['cycle-idx'].unique():
-                    R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']]
-                    yield R
+    # def rings(self):
+    #     a=self.A
+    #     for resid in a['resNum'].unique():
+    #         mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
+    #         if not mr.empty:
+    #             for ri in mr['cycle-idx'].unique():
+    #                 R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']]
+    #                 yield R
 
     # def rings(self): # an iterator over all rings
     #     a=self.A
@@ -665,9 +650,13 @@ class Coordinates:
         if len(attributes)==0:
             df=pd.read_csv(filename,sep='\s+',header=0)
             assert 'globalIdx' in df,f'Error: {filename} does not have a \'globalIdx\' column'
+            attributes_read=list(df.columns)
+            attributes_read.remove('globalIdx')
         else:
             df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
+            attributes_read=attributes
         self.A=self.A.merge(df,how='outer',on='globalIdx')
+        return attributes_read
         # logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
     def set_atomset_attribute(self,attribute,srs):
@@ -1066,4 +1055,4 @@ class Coordinates:
                 f.write('@<TRIPOS>SUBSTRUCTURE\n')
                 f.write(rdf.to_string(header=False,index=False,formatters=substructureformatters))
                 f.write('\n')
-    
+   

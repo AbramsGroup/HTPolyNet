@@ -59,7 +59,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
                     numadded=int(tokens[1])
                     break
             if numadded!=num:
-                logging.error(f'{sw.gmx} insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your boxsize.')
+                logging.error(f'{sw.gmx} insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your initial boxsize or lower your initial density.')
                 raise Exception('need bigger box')
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):

@@ -279,11 +279,11 @@ class Topology:
                 tdf=pd.DataFrame(series)
                 if directive=='dihedraltypes':
                     if directive in inst.D:
-                        logging.info(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
+                        # logging.info(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
                         # we have already read-in a dihedraltypes section
                         # so let's append this one
                         inst.D['dihedraltypes']=pd.concat([inst.D['dihedraltypes'],tdf],ignore_index=True).drop_duplicates()
-                        logging.info(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
+                        # logging.info(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
                     else:
                         inst.D[directive]=tdf
                 elif directive=='dihedrals':
@@ -335,13 +335,13 @@ class Topology:
         """bond_source_check Checks to ensure the 'bonds' dataframe and 'mol2_bonds' dataframe contain the same bonds.  A mol2 dataframe is only created when a mol2 file is read by the Coordinates module.
         """
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
-            logging.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
+            # logging.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
             bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
             mbmi=mol2bonds.set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
-            logging.info(f'Result: {check}')
+            # logging.info(f'Result: {check}')
             if not check:
                 logging.info(f'GROMACS:')
                 logging.info(grobonds[['ai','aj']].head().to_string())
@@ -379,6 +379,11 @@ class Topology:
             cols=self.D[directive].columns.get_indexer(idxlabels)
             self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
 
+    def detect_cycles(self):
+        g=self.bondlist.graph()
+        cycles=_get_unique_cycles_dict(g,min_length=3)
+        return cycles
+
     def ring_detector(self):
         """ring_detector Detects all 3 to 7-members rings in a topology for one residue using the bondlist and networkx
         sets the Cycles attribute of self to ring-lists of atom names
@@ -386,8 +391,7 @@ class Topology:
         :return: A dictionary of ring-lists keyed on ring size; each ring-list is a list of atom indexes
         :rtype: dict
         """
-        g=self.bondlist.graph()
-        cycles=_get_unique_cycles_dict(g,min_length=3)
+        cycles=self.detect_cycles()
         cycles_by_name={}
         for a in cycles:
             cycles_by_name[a]=[]
@@ -610,107 +614,107 @@ class Topology:
             to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index.values[0])
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
-    def update_polyethylenes(self,bdf,idx_mapper):
-        """update_polyethylenes Update the polyethylene bond network by
-        1. applying idx_mapper to reindex all nodes
-        2. adding new crosslink bonds from bdf
+    # def update_polyethylenes(self,bdf,idx_mapper):
+    #     """update_polyethylenes Update the polyethylene bond network by
+    #     1. applying idx_mapper to reindex all nodes
+    #     2. adding new crosslink bonds from bdf
 
-        :param bdf: new bonds
-        :type bdf: pandas DataFrame
-        :param idx_mapper: old-to-new atom index mapper
-        :type idx_mapper: dict
-        """
-        self.polyethylenes=nx.relabel_nodes(self.polyethylenes,idx_mapper)
-        for i,r in bdf.iterrows():
-            a=r['ai']
-            b=r['aj']
-            self.polyethylenes.add_edge(a,b)
+    #     :param bdf: new bonds
+    #     :type bdf: pandas DataFrame
+    #     :param idx_mapper: old-to-new atom index mapper
+    #     :type idx_mapper: dict
+    #     """
+    #     self.polyethylenes=nx.relabel_nodes(self.polyethylenes,idx_mapper)
+    #     for i,r in bdf.iterrows():
+    #         a=r['ai']
+    #         b=r['aj']
+    #         self.polyethylenes.add_edge(a,b)
     
-    def polyethylene_cycle(self,i,j):
-        """polyethylene_cycle return True if adding edge i<->j generates a cycle in
-           self.polythelenes
+    # def polyethylene_cycle(self,i,j):
+    #     """polyethylene_cycle return True if adding edge i<->j generates a cycle in
+    #        self.polythelenes
 
-        :param i: one atom index
-        :type i: int
-        :param j: another atom index
-        :type j: int
-        """
-        precycles=list(nx.simple_cycles(self.polyethylenes))
-        makes_a_cycle=False
-        clens={}
-        for c in precycles:
-            l=len(c)
-            if not l in clens:
-                clens[l]=0
-            clens[l]+=1
-        makes_a_cycle=any([l>2 for l in clens.keys()])
-        if makes_a_cycle:
-            logging.debug(f'there is a problem with the polyethylene cycles!')
-            network_graph(self.polyethylenes,'pe_net_bad.png')
-        assert not makes_a_cycle
+    #     :param i: one atom index
+    #     :type i: int
+    #     :param j: another atom index
+    #     :type j: int
+    #     """
+    #     precycles=list(nx.simple_cycles(self.polyethylenes))
+    #     makes_a_cycle=False
+    #     clens={}
+    #     for c in precycles:
+    #         l=len(c)
+    #         if not l in clens:
+    #             clens[l]=0
+    #         clens[l]+=1
+    #     makes_a_cycle=any([l>2 for l in clens.keys()])
+    #     if makes_a_cycle:
+    #         logging.debug(f'there is a problem with the polyethylene cycles!')
+    #         network_graph(self.polyethylenes,'pe_net_bad.png')
+    #     assert not makes_a_cycle
 
-        self.polyethylenes.add_edge(i,j)
-        cycles=list(nx.simple_cycles(self.polyethylenes))
-        makes_a_cycle=False
-        clens={}
-        for c in cycles:
-            l=len(c)
-            if not l in clens:
-                clens[l]=0
-            clens[l]+=1
-        makes_a_cycle=any([l>2 for l in clens])
-        self.polyethylenes.remove_edge(i,j)
-        return makes_a_cycle
+    #     self.polyethylenes.add_edge(i,j)
+    #     cycles=list(nx.simple_cycles(self.polyethylenes))
+    #     makes_a_cycle=False
+    #     clens={}
+    #     for c in cycles:
+    #         l=len(c)
+    #         if not l in clens:
+    #             clens[l]=0
+    #         clens[l]+=1
+    #     makes_a_cycle=any([l>2 for l in clens])
+    #     self.polyethylenes.remove_edge(i,j)
+    #     return makes_a_cycle
 
-    def polyethylene_cycles_collective(self,B):
-        """polyethylene_cycles_collective look for cycles that appear when two or more proposed bonds are created
+    # def polyethylene_cycles_collective(self,B):
+    #     """polyethylene_cycles_collective look for cycles that appear when two or more proposed bonds are created
 
-        :param B: list of proposed bonds as "passbond" instances
-        :type B: list of "passbond" instances (attributes: bond (a 2-tuple of atom indexes), and others...)
-        """
-        for b in B:
-            ai,aj=b.bond
-            self.polyethylenes.add_edge(ai,aj)
-            assert ai in self.polyethylenes.nodes
-            assert aj in self.polyethylenes.nodes
-        bad_cycles=[]
-        bad_cycle_dict=_get_unique_cycles_dict(self.polyethylenes,min_length=4)
-        # logging.debug(f'bad_cycle_dict: {bad_cycle_dict}')
-        for k,v in bad_cycle_dict.items():
-            bad_cycles.extend(v)
+    #     :param B: list of proposed bonds as "passbond" instances
+    #     :type B: list of "passbond" instances (attributes: bond (a 2-tuple of atom indexes), and others...)
+    #     """
+    #     for b in B:
+    #         ai,aj=b.bond
+    #         self.polyethylenes.add_edge(ai,aj)
+    #         assert ai in self.polyethylenes.nodes
+    #         assert aj in self.polyethylenes.nodes
+    #     bad_cycles=[]
+    #     bad_cycle_dict=_get_unique_cycles_dict(self.polyethylenes,min_length=4)
+    #     # logging.debug(f'bad_cycle_dict: {bad_cycle_dict}')
+    #     for k,v in bad_cycle_dict.items():
+    #         bad_cycles.extend(v)
 
-        # if len(bad_cycles)>0:
-        nbc=len(bad_cycles)
-        ess='' if nbc==1 else 's'
-        logging.debug(f'Proposed bondset comprises {nbc} latent cycle{ess}')
-            # for b in B:
-            #     ai,aj=b.bond
-            #     logging.debug(f' -- b {ai} - {aj}')
-            # for c in bad_cycles:
-            #     logging.debug(f' || c {c}')
+    #     # if len(bad_cycles)>0:
+    #     nbc=len(bad_cycles)
+    #     ess='' if nbc==1 else 's'
+    #     logging.debug(f'Proposed bondset comprises {nbc} latent cycle{ess}')
+    #         # for b in B:
+    #         #     ai,aj=b.bond
+    #         #     logging.debug(f' -- b {ai} - {aj}')
+    #         # for c in bad_cycles:
+    #         #     logging.debug(f' || c {c}')
         
-        bad_bonds=[]
-        for b in B:
-            ai,aj=b.bond
-            # logging.debug(f'collective pe cycle testing bond {ai} {aj}')
-            self.polyethylenes.remove_edge(ai,aj)
+    #     bad_bonds=[]
+    #     for b in B:
+    #         ai,aj=b.bond
+    #         # logging.debug(f'collective pe cycle testing bond {ai} {aj}')
+    #         self.polyethylenes.remove_edge(ai,aj)
 
-            # is this pair in any of the cycles?
-            target_cycles=[]
-            for bc in bad_cycles:
-                if _present_and_contiguous([ai,aj],bc):
-                    logging.debug(f'Proposed bond {ai}-{aj} lives in cycle {bc}')
-                    target_cycles.append(bc)
-                    bad_bonds.append(b)
-                    bad_cycles.remove(bc)
-                    break
-        if len(bad_bonds)>0:
-            # logging.debug(f'{len(target_cycles)} latent cycles detected for proposed bond set.')
-            ess='' if len(bad_bonds)==1 else 's'
-            logging.debug(f'Proposed bond{ess} to be removed: {", ".join([f"{x.bond[0]}-{x.bond[1]}" for x in bad_bonds])}')
-            for b in bad_bonds:
-                B.remove(b)
-        return B
+    #         # is this pair in any of the cycles?
+    #         target_cycles=[]
+    #         for bc in bad_cycles:
+    #             if _present_and_contiguous([ai,aj],bc):
+    #                 logging.debug(f'Proposed bond {ai}-{aj} lives in cycle {bc}')
+    #                 target_cycles.append(bc)
+    #                 bad_bonds.append(b)
+    #                 bad_cycles.remove(bc)
+    #                 break
+    #     if len(bad_bonds)>0:
+    #         # logging.debug(f'{len(target_cycles)} latent cycles detected for proposed bond set.')
+    #         ess='' if len(bad_bonds)==1 else 's'
+    #         logging.debug(f'Proposed bond{ess} to be removed: {", ".join([f"{x.bond[0]}-{x.bond[1]}" for x in bad_bonds])}')
+    #         for b in bad_bonds:
+    #             B.remove(b)
+    #     return B
         
     def add_bonds(self,pairs=[]):
         """add_bonds Adds bonds indicated in list pairs to the topology
