@@ -114,8 +114,15 @@ class HTPolyNet:
         logging.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():
             if len(M.reaction_bonds)>0:
-                logging.debug(f'Template {M.name}:')
+                logging.debug(f'Bond {M.name}:')
                 for b in M.reaction_bonds:
+                    logging.debug(f'   {str(b)}')
+
+        logging.debug(f'Bond template(s) in each molecular template:')
+        for M in self.molecules.values():
+            if len(M.bond_templates)>0:
+                logging.debug(f'Template {M.name}:')
+                for b in M.bond_templates:
                     logging.debug(f'   {str(b)}')
 
     def generate_molecule(self,M:Molecule,**kwargs):

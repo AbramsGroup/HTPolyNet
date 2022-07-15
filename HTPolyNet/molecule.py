@@ -6,7 +6,7 @@ import numpy as np
 import logging
 
 from HTPolyNet.topocoord import TopoCoord
-from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList
+from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
 from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
@@ -114,38 +114,24 @@ class Reaction:
     #     return razdict
 
 ReactionList = list[Reaction]
-
-class ReactionBond:
-    def __init__(self,idx,resids,order,bystanders,oneaways):
-        self.idx=idx
-        # self.names=names
-        self.resids=resids
-        self.bystander_resids=bystanders
-        self.oneaway_resids=oneaways
-        self.order=order
-    def __str__(self):
-        return f'ReactionBond {self.idx} resids {self.resids} order {self.order} bystander-resids {self.bystander_resids} oneaway-resids {self.oneaway_resids}'
     
-    def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
-        nreactants=len(R.reactants)
-        for bondrec in R.bonds:
-            atom_keys=bondrec['atoms']
-            order=bondrec['order']
-            assert len(atom_keys)==2
-            atomrecs=[R.atoms[x] for x in atom_keys]
-            atom_names=[x['atom'] for x in atomrecs]
-            in_reactant_resids=[x['resid'] for x in atomrecs]
-            if nreactants==1:
-                in_product_resids=[resid_mapper[0][in_reactant_resids[x]] for x in [0,1]]
-            else:
-                in_product_resids=[resid_mapper[x][in_reactant_resids[x]] for x in [0,1]]
-            atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
-            bystander_resids,bystander_resnames=TC.get_bystanders(atom_idx)
-            oneaway_resids,oneaway_resnames=TC.get_oneaways(atom_idx)
-            yield ReactionBond(atom_idx,in_product_resids,order,bystander_resids,oneaway_resids)
-
-
-ReactionBondList = list[ReactionBond]
+def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
+    nreactants=len(R.reactants)
+    for bondrec in R.bonds:
+        atom_keys=bondrec['atoms']
+        order=bondrec['order']
+        assert len(atom_keys)==2
+        atomrecs=[R.atoms[x] for x in atom_keys]
+        atom_names=[x['atom'] for x in atomrecs]
+        in_reactant_resids=[x['resid'] for x in atomrecs]
+        if nreactants==1:
+            in_product_resids=[resid_mapper[0][in_reactant_resids[x]] for x in [0,1]]
+        else:
+            in_product_resids=[resid_mapper[x][in_reactant_resids[x]] for x in [0,1]]
+        atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
+        bystander_resids,bystander_resnames=TC.get_bystanders(atom_idx)
+        oneaway_resids,oneaway_resnames=TC.get_oneaways(atom_idx)
+        yield ReactionBond(atom_idx,in_product_resids,order,bystander_resids,oneaway_resids)
 
 
 class Molecule:
@@ -315,7 +301,7 @@ class Molecule:
             # logging.debug(f'{self.TopoCoord.idx_lists}')
             # logging.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
             self.set_sequence()
-            bonds_to_make=list(ReactionBond.yield_bonds(R,self.TopoCoord,resid_mapper))
+            bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
             # self.prepare_new_bonds(available_molecules=available_molecules)
             # self.set_reaction_bonds(available_molecules=available_molecules)
             # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
@@ -364,7 +350,7 @@ class Molecule:
         self.reaction_bonds=[]
         self.bond_templates=[]
         TC=self.TopoCoord
-        # logging.debug(f'prepare_new_bonds {self.name}: chainlists {TC.idx_lists["chain"]}')
+        logging.debug(f'prepare_new_bonds {self.name}: chainlists {TC.idx_lists["chain"]}')
         for bondrec in R.bonds:
             atom_keys=bondrec['atoms']
             order=bondrec['order']
@@ -392,7 +378,7 @@ class Molecule:
             # logging.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
             bystander_resids,bystander_resnames=TC.get_bystanders(atom_idx)
             oneaway_resids,oneaway_resnames=TC.get_oneaways(atom_idx)
-            # logging.debug(f'prepare_new_bonds {self.name} oneaways {oneaways}')
+            logging.debug(f'prepare_new_bonds {self.name} oneaways {oneaway_resids} {oneaway_resnames}')
             self.reaction_bonds.append(ReactionBond(atom_idx,in_product_resids,order,bystander_resids,oneaway_resids))
             self.bond_templates.append(BondTemplate(atom_names,in_product_resnames,order,bystander_resnames,oneaway_resnames))
 
@@ -422,13 +408,13 @@ class Molecule:
         logging.debug(f'idx_mappers: j_idx {j_idx} j_resName {j_resName} j_resNum {j_resNum} j_atomName {j_atomName}')
         # identify the template bond represented by the other_bond parameter
         ij=[]
-        for B in self.reaction_bonds:
-            temp_resids=B.resids
-            temp_iname,temp_jname=B.names
-            temp_iresname=self.sequence[temp_resids[0]-1]
-            temp_jresname=self.sequence[temp_resids[1]-1]
-            temp_bystanders=B.bystanders
-            temp_oneaways=B.oneaways
+        for RB,BT in zip(self.reaction_bonds,self.bond_templates):
+            logging.debug(f'{type(RB)}, {type(BT)}')
+            temp_resids=RB.resids
+            temp_iname,temp_jname=BT.names
+            temp_iresname,temp_jresname=BT.resnames
+            temp_bystander_resids=RB.bystander_resids
+            temp_oneaway_resids=RB.oneaway_resids
             logging.debug(f'idx_mappers: temp_iresname {temp_iresname} temp_iname {temp_iname}')
             logging.debug(f'idx_mappers: temp_jresname {temp_jresname} temp_jname {temp_jname}')
             if (i_atomName,i_resName)==(temp_iname,temp_iresname):
@@ -440,9 +426,9 @@ class Molecule:
         assert len(ij)==2,f'Mappers using template {self.name} unable to map from instance bond {i_resName}-{i_resNum}-{i_atomName}---{j_resName}-{j_resNum}-{j_atomName}'
         inst_resids=[i_resNum,j_resNum]
         inst_resids=[inst_resids[ij[x]] for x in [0,1]]
-        inst_bystanders=[bystanders[ij[x]] for x in [0,1]]
-        inst_oneaways=[oneaways[ij[x]] for x in [0,1]]
-        assert all([len(inst_bystanders[x])==len(temp_bystanders[0]) for x in [0,1]]),f'Error: bystander count mismatch'
+        inst_bystander_resids=[bystanders[ij[x]] for x in [0,1]]
+        inst_oneaway_resids=[oneaways[ij[x]] for x in [0,1]]
+        assert all([len(inst_bystander_resids[x])==len(temp_bystander_resids[0]) for x in [0,1]]),f'Error: bystander count mismatch'
            # use dataframe merges to create globalIdx maps
         instdf=otherTC.Coordinates.A
         tempdf=self.TopoCoord.Coordinates.A
@@ -450,8 +436,8 @@ class Molecule:
         temp2inst={}
         # logging.debug(f'inst resids from {[i_resNum,j_resNum,*inst_bystanders]}') 
         # logging.debug(f'temp resids from {[temp_iresid,temp_jresid,*temp_bystanders]}')
-        for inst,temp in zip([*inst_resids,*inst_bystanders[0],*inst_bystanders[1],*inst_oneaways],
-                             [*temp_resids,*temp_bystanders[0],*temp_bystanders[1],*temp_oneaways]):
+        for inst,temp in zip([*inst_resids,*inst_bystander_resids[0],*inst_bystander_resids[1],*inst_oneaway_resids],
+                             [*temp_resids,*temp_bystander_resids[0],*temp_bystander_resids[1],*temp_oneaway_resids]):
             if inst and temp:  # None's in the bystander lists and oneaways lists should be ignored
                 logging.debug(f'map inst resid {inst} to template resid {temp}')
                 idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()

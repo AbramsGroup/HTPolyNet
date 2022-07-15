@@ -14,7 +14,7 @@ from mimetypes import init
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
-from HTPolyNet.bondtemplate import BondTemplate
+from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
 # from HTPolyNet.molecule import MoleculeDict,ReactionList
 from HTPolyNet.plot import network_graph
 import logging
@@ -254,12 +254,14 @@ class TopoCoord:
         atdf=self.Topology.D['atoms']
         grodf=self.Coordinates.A
         grodf['old_reactantName']=grodf['reactantName'].copy()
+        logging.debug(f'TopoCoord.map_from_templates() begins.')
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
             order=b['order']
             names=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in bb]
             resnames=[self.get_gro_attribute_by_attributes('resName',{'globalIdx':x}) for x in bb]
             resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in bb]
+            i_resid,j_resid=resids
             # this is the product name of the reaction used to identify this bond
             product_name=b['reactantName']
             P=moldict[product_name]
@@ -272,18 +274,38 @@ class TopoCoord:
             bystander_resids,bystander_resnames=self.get_bystanders(bb)
             oneaway_resids,oneaway_resnames=self.get_oneaways(bb)
             BT=BondTemplate(names,resnames,order,bystander_resnames,oneaway_resnames)
-            # RB=ReactionBond(bb,resids,order,bystander_resids,oneaway_resids)
+            RB=ReactionBond(bb,resids,order,bystander_resids,oneaway_resids)
+            logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid})')
+            logging.debug(f'apparent bond template {str(BT)}')
+            logging.debug(f'apparent bond instance {str(RB)}')
+            use_T=None
             for template_name,T in moldict.items():
-                if BT in T.bond_templates:
+                # if BT in T.bond_templates:
+                #     use_T=T
+                #     break
+                use_T=None
+                for bt in T.bond_templates:
+                    logging.debug(f'comparing to {T.name} {str(bt)}')
+                    if bt==BT:
+                        logging.debug(f'TRUE')
+                        use_T=T
+                        break
+                    if bt.is_reverse_of(BT):
+                        logging.debug(f'TRUE, but...')
+                        use_T=T
+                        RB.reverse()
+                        logging.debug(f'reversed bond instance {str(RB)}')
+                if use_T!=None:
                     break
             else:
                 logging.error(f'No template is found for {bb}: {str(BT)}')
                 raise Exception('you have a bond for which I cannot find a template')
-            i_resid,j_resid=resids
+            
+            T=use_T
             logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             # get the bidirectional instance<->template mapping dictionaries
-            inst2temp,temp2inst=T.idx_mappers(self,bb,bystander_resids,oneaway_resids)
+            inst2temp,temp2inst=T.idx_mappers(self,RB.idx,RB.bystander_resids,RB.oneaway_resids)
             # some hard checks on compatibility of the dicts
             assert len(inst2temp)==len(temp2inst)
             check=True
@@ -956,7 +978,7 @@ class TopoCoord:
         self.Coordinates.A=adf.drop(columns=[a for a in attributes if a in adf])
 
         logging.debug(f'{adf.shape[0]} atoms inheriting these attributes from molecular templates:')
-        logging.debug(f'    Attribute name   Default value   Globally unique?')
+        logging.debug(f'    Attribute name     Default value   Globally unique?')
         for attname,defval,gu in zip(attributes,unset_defaults,globally_unique):
             logging.debug(f'    {attname:<15s}    {str(defval):<13s}   {gu}')
         if len(unset_defaults)==len(attributes):
@@ -1371,7 +1393,7 @@ class TopoCoord:
         # resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
         chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
         chain_idx=[self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':x}) for x in atom_idx]
-        # logging.debug(f'get_oneaways chains {chains} chain_idx {chain_idx}')
+        logging.debug(f'get_oneaways chains {chains} chain_idx {chain_idx}')
         oneaway_resids=[None,None]
         oneaway_resnames=[None,None]
         # assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head
@@ -1388,14 +1410,17 @@ class TopoCoord:
                     resnamelist.append(self.get_gro_attribute_by_attributes('resName',{'globalIdx':y}))
                 chainlists_resids.append(residlist)
                 chainlists_resnames.append(resnamelist)
-            # logging.debug(f'get_oneaways chainlists_idx: {chainlists_idx}')
-            # logging.debug(f'get_oneaways chainlists_resids: {chainlists_resids}')
-            # logging.debug(f'get_oneaways chainlists_resnames: {chainlists_resnames}')
+            logging.debug(f'get_oneaways chainlists_idx: {chainlists_idx}')
+            logging.debug(f'get_oneaways chainlists_resids: {chainlists_resids}')
+            logging.debug(f'get_oneaways chainlists_resnames: {chainlists_resnames}')
             if chain_idx[0]==0 or chain_idx[0]>chain_idx[1]:
                 oa_chain_idx=[chain_idx[0]+2,chain_idx[1]-2]
             elif chain_idx[1]==0 or chain_idx[1]>chain_idx[0]:
                 oa_chain_idx=[chain_idx[0]-2,chain_idx[1]+2]
-            # logging.debug(f'oa_chain_idx {oa_chain_idx}')
+            logging.debug(f'oa_chain_idx {oa_chain_idx}')
+            for i in range(len(oa_chain_idx)):
+                if oa_chain_idx[i]<0:
+                    oa_chain_idx[i]=None
             oa_idx=[None,None]
             for i in [0,1]:
                 try:
@@ -1405,5 +1430,5 @@ class TopoCoord:
                 if oa_idx[i]:
                     oneaway_resids[i]=chainlists_resids[i][oa_chain_idx[i]]
                     oneaway_resnames[i]=chainlists_resnames[i][oa_chain_idx[i]]
-        # logging.debug(f'get_oneaways result oneaway_resids {oneaway_resids} oneaway_resnames {oneaway_resnames}')
+        logging.debug(f'get_oneaways result oneaway_resids {oneaway_resids} oneaway_resnames {oneaway_resnames}')
         return oneaway_resids,oneaway_resnames
