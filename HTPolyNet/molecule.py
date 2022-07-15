@@ -327,6 +327,7 @@ class Molecule:
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)
         self.set_sequence()
+        self.prepare_new_bonds(available_molecules=available_molecules)
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
         if not self.generator:
             self.initialize_monomer_grx_attributes()
@@ -341,6 +342,9 @@ class Molecule:
     # def set_reaction_bonds(self,available_molecules={}):
     def prepare_new_bonds(self,available_molecules={}):
         # logging.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
+        if len(self.reaction_bonds)>0:
+            # assume prepare_new_bonds was called during construction
+            return
         R=self.generator
         self.reaction_bonds=[]
         TC=self.TopoCoord
@@ -357,7 +361,6 @@ class Molecule:
                 reactant_names=[R.reactants[reactant_keys[0]]]
             else:
                 reactant_names=[R.reactants[x] for x in reactant_keys]
-            # TODO: fix to allow for single-residue-reactant reactions
             reactant_sequences=[available_molecules[x].sequence for x in reactant_names]
             sequence_residue_idx_origins=[0,0]
             if len(reactant_sequences)==2:
@@ -365,20 +368,25 @@ class Molecule:
             in_product_resids=[in_reactant_resids[x]+sequence_residue_idx_origins[x] for x in [0,1]]
             atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
             # logging.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
-            bystanders=[TC.interresidue_partners_of(x) for x in atom_idx]
+            bystanders=[[],[]]
+            for x in [0,1]:
+                atom_bystanders=self.TopoCoord.interresidue_partners_of(atom_idx[x])
+                if atom_idx[1-x] in atom_bystanders: # if new bond has not yet formed
+                    atom_bystanders.remove(atom_idx[1-x])
+                bystanders[x]=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':y}) for y in atom_bystanders]
             chains=[TC.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
             chain_idx=[TC.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':x}) for x in atom_idx]
             oneaways=[None,None]
-            assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head
+            # assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head
             if chains != [-1,-1]:
                 # logging.debug(f'finding oneaways: chains: {chains} chain_idx: {chain_idx}')
                 # intraresidue_chainmates=[TC.get_gro_attribute_by_attributes('globalIdx',{'chain':chains[x],'resNum':in_product_resids[x]}) for x in [0,1]]
                 chain_idx_lists=[TC.idx_lists['chain'][chains[x]] for x in [0,1]]
                 # logging.debug(f'chain_idx_lists: {chain_idx_lists}')
-                if chain_idx[0]==0:
+                if chain_idx[0]==0 or chain_idx[0]>chain_idx[1]:
                     # find next member of chainlist that is *not* in *this* residue
                     # logging.debug(f'querying resids from {chain_idx_lists[0][1:]}')
-                    for idx in chain_idx_lists[0][1:]:
+                    for idx in chain_idx_lists[0][chain_idx[0]+1:]:
                         nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
                         if nresid!=in_product_resids[0]:
                             oneaways[0]=nresid
@@ -387,8 +395,8 @@ class Molecule:
                         nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
                         if nresid!=in_product_resids[1]:
                             oneaways[1]=nresid
-                elif chain_idx[1]==0:
-                    for idx in chain_idx_lists[1][1:]:
+                elif chain_idx[1]==0 or chain_idx[1]>chain_idx[0]:
+                    for idx in chain_idx_lists[1][chain_idx[1]+1:]:
                         nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
                         if nresid!=in_product_resids[1]:
                             oneaways[1]=nresid
@@ -440,6 +448,8 @@ class Molecule:
             temp_jresname=self.sequence[temp_resids[1]-1]
             temp_bystanders=B.bystanders
             temp_oneaways=B.oneaways
+            logging.debug(f'idx_mappers: temp_iresname {temp_iresname} temp_iname {temp_iname}')
+            logging.debug(f'idx_mappers: temp_jresname {temp_jresname} temp_jname {temp_jname}')
             if (i_atomName,i_resName)==(temp_iname,temp_iresname):
                 ij=[0,1]
                 break # found it -- stop looking
@@ -461,30 +471,24 @@ class Molecule:
         # logging.debug(f'temp resids from {[temp_iresid,temp_jresid,*temp_bystanders]}')
         for inst,temp in zip([*inst_resids,*inst_bystanders[0],*inst_bystanders[1],*inst_oneaways],
                              [*temp_resids,*temp_bystanders[0],*temp_bystanders[1],*temp_oneaways]):
-            logging.debug(f'map inst resid {inst} to template resid {temp}')
-            idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()
-            # logging.debug(f'idf res {inst}:\n{idf.to_string()}')
-            tdf=tempdf[tempdf['resNum']==temp][['globalIdx','atomName']].copy()
-            # logging.debug(f'tdf res {temp}:\n{tdf.to_string()}')
-            tdf=tdf.merge(idf,on='atomName',how='inner',suffixes=('_template','_instance'))
-            # logging.debug(f'merged\n{tdf.to_string()}')
-            for i,r in tdf.iterrows():
-                temp_idx=r['globalIdx_template']
-                inst_idx=r['globalIdx_instance']
-                # logging.debug(f't {temp_idx} <-> i {inst_idx}')
-                inst2temp[inst_idx]=temp_idx
-                if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
-                    raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')
-                temp2inst[temp_idx]=inst_idx
-
-        # the template contains whole residues in each of these groups:
-        #   group 1: residues of each of the two atoms that are bonding
-        #   group 2: residues of atoms bound to either of the two atoms that are not in group 1 (i.e., bystanders);
-        #   group 3: residues of atoms in the same chain as that of the two atoms that are bonding such that
-        #            they are no more than one chainlink away from either *partner* of each bonded atom
-        # need to identify them in the otherTC
-
-
+            if inst and temp:  # None's in the bystander lists and oneaways lists should be ignored
+                logging.debug(f'map inst resid {inst} to template resid {temp}')
+                idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()
+                # logging.debug(f'idf res {inst}:\n{idf.to_string()}')
+                tdf=tempdf[tempdf['resNum']==temp][['globalIdx','atomName']].copy()
+                # logging.debug(f'tdf res {temp}:\n{tdf.to_string()}')
+                tdf=tdf.merge(idf,on='atomName',how='inner',suffixes=('_template','_instance'))
+                # logging.debug(f'merged\n{tdf.to_string()}')
+                for i,r in tdf.iterrows():
+                    temp_idx=r['globalIdx_template']
+                    inst_idx=r['globalIdx_instance']
+                    # logging.debug(f't {temp_idx} <-> i {inst_idx}')
+                    inst2temp[inst_idx]=temp_idx
+                    if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
+                        raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')
+                    temp2inst[temp_idx]=inst_idx
+        assert len(inst2temp)==len(temp2inst),f'Error: could not establish two-way dict of atom globalIdx'
+        return (inst2temp,temp2inst)
 
     def x_idx_mappers(self,otherTC,other_bond):
         seq_res_is_bystander=[False for _ in self.sequence]

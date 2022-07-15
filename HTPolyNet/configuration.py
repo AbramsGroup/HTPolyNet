@@ -369,7 +369,7 @@ class Configuration:
                     R.atoms={'A':{'reactant':1,'resid':1,'atom':h_name,'z':1},
                             'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                     R.bonds=[{'atoms':['A','B'],'order':1}]
-                    R.stage='template-only'
+                    R.stage='cure'
                     R.name=new_mname.lower()
                     R.product=new_mname
                     newP=Molecule(name=R.product,generator=R)
@@ -398,7 +398,7 @@ class Configuration:
                     R.atoms={'A':{'reactant':1,'resid':2,'atom':h_name,'z':1},
                             'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                     R.bonds=[{'atoms':['A','B'],'order':1}]
-                    R.stage='template-only'
+                    R.stage='cure'
                     new_rxnname=new_mname.lower()
                     R.name=new_rxnname
                     R.product=new_mname
@@ -424,7 +424,7 @@ class Configuration:
                     R.atoms={'A':{'reactant':1,'resid':2,'atom':h_name,'z':1},
                              'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                     R.bonds=[{'atoms':['A','B'],'order':1}]
-                    R.stage='template-only'
+                    R.stage='cure'
                     R.product=new_mname
                     R.name=R.product.lower()
                     newP=Molecule(name=R.product,generator=R)

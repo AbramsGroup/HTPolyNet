@@ -23,6 +23,7 @@ import HTPolyNet.software as software
 from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace, mdp_modify, mdp_library, gromacs_distance
 from HTPolyNet.checkpoint import CPstate, Checkpoint
 from HTPolyNet.plot import trace
+from HTPolyNet.molecule import Molecule
 
 class HTPolyNet:
     ''' Class for a single HTPolyNet runtime session '''
@@ -117,7 +118,7 @@ class HTPolyNet:
                 for b in M.reaction_bonds:
                     logging.debug(f'   {str(b)}')
 
-    def generate_molecule(self,M,**kwargs):
+    def generate_molecule(self,M:Molecule,**kwargs):
         mname=M.name
         checkin=pfs.checkin
         exists=pfs.exists
@@ -145,6 +146,8 @@ class HTPolyNet:
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2')
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             M.set_sequence()
+            if M.generator:
+                M.prepare_new_bonds(available_molecules=self.molecules)
             M.set_origin('previously parameterized')
 
         ''' generate all stereoisomers of this molecule but ONLY for
