@@ -109,7 +109,7 @@ class HTPolyNet:
         self.cfg.maxconv=self.cfg.calculate_maximum_conversion()
         logging.info(f'Maximum conversion is {self.cfg.maxconv} bonds.')
         for M in self.molecules.values():
-            logging.debug(f'Ring detector for {M.name}')
+            logging.debug(f'Cycles for {M.name}')
             M.label_cycle_atoms()
         logging.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():

@@ -14,6 +14,8 @@ from mimetypes import init
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
+from HTPolyNet.bondtemplate import BondTemplate
+# from HTPolyNet.molecule import MoleculeDict,ReactionList
 from HTPolyNet.plot import network_graph
 import logging
 import numpy as np
@@ -252,79 +254,36 @@ class TopoCoord:
         atdf=self.Topology.D['atoms']
         grodf=self.Coordinates.A
         grodf['old_reactantName']=grodf['reactantName'].copy()
-        # first pass -- set all reactant names
-        bystander_list=[]
-        oneaway_list=[]
         for i,b in bdf.iterrows():
             bb=[b['ai'],b['aj']]
-            template_name=b['reactantName']
-            # oreactantName=[self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':bb[i]}) for i in [0,1]]
-            chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':bb[i]}) for i in [0,1]]
-            assert chains[0]==chains[1],f'Error: templatable pair {bb} in different chains -- bug!'
-            resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[i]}) for i in [0,1]]
-            logging.debug(f'Bond {bb} resid {resids} chains {chains} template_name {template_name}')
-            # what atoms should inherit the product name?  atoms in the same "chain" as the two that are designated to bond *and* have z>0.  This is so that later if one of them is called on to bond, it will "know" what its reactant is so that the product template can be selected correctly.
-            bystanders=[[],[]]  # residues with atoms bound to either reacting atom that are not residues of the two reacting atoms
-            oneaways=[None,None] # residues that are one-residue-away along a chain from each reacting atom
-            for x in [0,1]:
-                self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bb[x]})
-                logging.debug(f'map_from_templates: assigning {template_name} to reactantName bond-member {bb[x]}')
-                # determine if there are any bystanders resids and save them
-                atom_bystanders=self.interresidue_partners_of(bb[x])
-                atom_bystanders.remove(bb[1-x])
-                bystanders[x]=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':y}) for y in atom_bystanders]
-                for bx in bystanders[x]:
-                    self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':bx})
-                    logging.debug(f'map_from_templates: assigning {template_name} to reactantName of {x}-bystander {bx}')
-            bystander_list.append(bystanders)
-            if chains[0]!=-1:
-                # set reactantName attr for any atom along the chain to which these newly bonded atoms belog
-                cdf=grodf[(grodf['chain']==chains[0])&(~grodf['globalIdx'].isin(bb))]
-                for idx in cdf['globalIdx'].to_list():
-                    self.set_gro_attribute_by_attributes('reactantName',template_name,{'globalIdx':idx})
-                    logging.debug(f'map_from_templates: assigning {template_name} to reactantName of chain-{chains[0]} member {idx}')
-                cdf=grodf[grodf['chain']==chains[0]]
-                this_chain=self.idx_lists['chain'][chains[0]]
-                cidxs=[this_chain.index(bb[x]) for x in [0,1]]
-                if cidxs[0]<cidxs[1]: # first is closer to head
-                    for ii in this_chain[cidxs[0]::-1]:
-                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
-                        if iresid!=resids[0]: # this is one!
-                            oneaways[0]=iresid
-                            break
-                    for ii in this_chain[cidxs[1]:]:
-                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
-                        if iresid!=resids[1]: # this is one!
-                            oneaways[1]=iresid
-                            break
-                else:
-                    for ii in this_chain[cidxs[0]:]:
-                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
-                        if iresid!=resids[0]: # this is one!
-                            oneaways[0]=iresid
-                            break
-                    for ii in this_chain[cidxs[1]::-1]:
-                        iresid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':ii})
-                        if iresid!=resids[1]: # this is one!
-                            oneaways[1]=iresid
-                            break
-                logging.debug(f'Bond {bb} oneaway resids {oneaways}')
-            oneaway_list.append(oneaways)
-            logging.debug(f'Bond {bb} (resids {resids[0]} and {resids[1]}) template {template_name}')
-        for i,b in bdf.iterrows():
-            bb=[b['ai'],b['aj']]
-            bystanders=bystander_list[i]
-            oneaways=oneaway_list[i]
-            # bbb=[b['ai'],b['aj'],b['reactantName']]
-            # T=self.select_template(bbb,moldict,reaction_list)  # select template based on neighbors
-            template_name=b['reactantName']
-            T=moldict[template_name]
-            i_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[0]})
-            j_resid=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bb[1]})
+            order=b['order']
+            names=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in bb]
+            resnames=[self.get_gro_attribute_by_attributes('resName',{'globalIdx':x}) for x in bb]
+            resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in bb]
+            # this is the product name of the reaction used to identify this bond
+            product_name=b['reactantName']
+            P=moldict[product_name]
+            if P.is_reactant:
+                # if the product of this reaction is also a reactant in a cure reaction, we should
+                # change the reactantName attribute of the two atoms to match this so either of
+                # these atoms can be found in a later bond search
+                for j in bb:
+                    self.set_gro_attribute_by_attributes('reactantName',product_name,{'globalIdx':j})
+            bystander_resids,bystander_resnames=self.get_bystanders(bb)
+            oneaway_resids,oneaway_resnames=self.get_oneaways(bb)
+            BT=BondTemplate(names,resnames,order,bystander_resnames,oneaway_resnames)
+            # RB=ReactionBond(bb,resids,order,bystander_resids,oneaway_resids)
+            for template_name,T in moldict.items():
+                if BT in T.bond_templates:
+                    break
+            else:
+                logging.error(f'No template is found for {bb}: {str(BT)}')
+                raise Exception('you have a bond for which I cannot find a template')
+            i_resid,j_resid=resids
             logging.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             # get the bidirectional instance<->template mapping dictionaries
-            inst2temp,temp2inst=T.idx_mappers(self,bb,bystanders,oneaways)
+            inst2temp,temp2inst=T.idx_mappers(self,bb,bystander_resids,oneaway_resids)
             # some hard checks on compatibility of the dicts
             assert len(inst2temp)==len(temp2inst)
             check=True
@@ -1396,3 +1355,55 @@ class TopoCoord:
             lb=v[-1]  # last bondrec in list
             kb.remove(lb)
         return kb
+
+    def get_bystanders(self,atom_idx):
+        bystander_resids=[[int],[int]]
+        bystander_resnames=[[str],[str]]
+        for x in [0,1]:
+            atom_bystanders=self.interresidue_partners_of(atom_idx[x])
+            if atom_idx[1-x] in atom_bystanders: # if new bond has not yet formed
+                atom_bystanders.remove(atom_idx[1-x])
+            bystander_resids[x]=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':y}) for y in atom_bystanders]
+            bystander_resnames[x]=[self.get_gro_attribute_by_attributes('resName',{'globalIdx':y}) for y in atom_bystanders]
+        return bystander_resids,bystander_resnames
+    
+    def get_oneaways(self,atom_idx):
+        # resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
+        chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
+        chain_idx=[self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':x}) for x in atom_idx]
+        # logging.debug(f'get_oneaways chains {chains} chain_idx {chain_idx}')
+        oneaway_resids=[None,None]
+        oneaway_resnames=[None,None]
+        # assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head
+        if chains!=[-1,-1]:
+            chainlists_idx=[self.idx_lists['chain'][chains[x]] for x in [0,1]]
+            chainlists_resids=[]
+            chainlists_resnames=[]
+            for x in [0,1]:
+                residlist=[]
+                resnamelist=[]
+                for y in chainlists_idx[x]:
+                    r=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':y})
+                    residlist.append(r)
+                    resnamelist.append(self.get_gro_attribute_by_attributes('resName',{'globalIdx':y}))
+                chainlists_resids.append(residlist)
+                chainlists_resnames.append(resnamelist)
+            # logging.debug(f'get_oneaways chainlists_idx: {chainlists_idx}')
+            # logging.debug(f'get_oneaways chainlists_resids: {chainlists_resids}')
+            # logging.debug(f'get_oneaways chainlists_resnames: {chainlists_resnames}')
+            if chain_idx[0]==0 or chain_idx[0]>chain_idx[1]:
+                oa_chain_idx=[chain_idx[0]+2,chain_idx[1]-2]
+            elif chain_idx[1]==0 or chain_idx[1]>chain_idx[0]:
+                oa_chain_idx=[chain_idx[0]-2,chain_idx[1]+2]
+            # logging.debug(f'oa_chain_idx {oa_chain_idx}')
+            oa_idx=[None,None]
+            for i in [0,1]:
+                try:
+                    oa_idx[i]=chainlists_idx[i][oa_chain_idx[i]]
+                except:
+                    oa_idx[i]=None
+                if oa_idx[i]:
+                    oneaway_resids[i]=chainlists_resids[i][oa_chain_idx[i]]
+                    oneaway_resnames[i]=chainlists_resnames[i][oa_chain_idx[i]]
+        # logging.debug(f'get_oneaways result oneaway_resids {oneaway_resids} oneaway_resnames {oneaway_resnames}')
+        return oneaway_resids,oneaway_resnames

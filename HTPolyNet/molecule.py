@@ -6,6 +6,7 @@ import numpy as np
 import logging
 
 from HTPolyNet.topocoord import TopoCoord
+from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList
 from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
@@ -32,15 +33,6 @@ def _rotmat(axis,radians):
         R[2][2]=cr
     return R
 
-def get_base_reactants(mname,mdict):
-    mol=mdict[mname]
-    if not mol.generator:
-        return [mol]
-    mine=[]
-    for r in mol.generator.reactants.values():
-        mine.extend(get_base_reactants(r,mdict))
-    return mine
-
 class Reaction:
     def __init__(self,jsondict={}):
         self.jsondict=jsondict
@@ -64,75 +56,97 @@ class Reaction:
             retstr+=f'bond {b}\n'
         return retstr
 
-    def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
-        A,B=[self.atoms[i] for i in bonddict['atoms']]
-        # logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
-        # logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
-        Aidx,Aresid,Aoresids=self.get_atom_globalIndx(A,mol,moldict)
-        Bidx,Bresid,Boresids=self.get_atom_globalIndx(B,mol,moldict)
-        # logging.debug(f'     A: {Aidx},{Aresid}  B: {Bidx},{Bresid}')
-        return (Aidx,Bidx),(Aresid,Bresid),(Aoresids,Boresids),(A['atom'],B['atom'])
+    # def get_bond_atom_globalIdx(self,bonddict,mol,moldict):
+    #     A,B=[self.atoms[i] for i in bonddict['atoms']]
+    #     # logging.debug(f'get_bond_atom_globalIdx: mol {mol.name}')
+    #     # logging.debug(f'  -> bond\n    {self.reactants}\n    {bonddict}:\n    A {A}\n    B {B}')
+    #     Aidx,Aresid,Aoresids=self.get_atom_globalIndx(A,mol,moldict)
+    #     Bidx,Bresid,Boresids=self.get_atom_globalIndx(B,mol,moldict)
+    #     # logging.debug(f'     A: {Aidx},{Aresid}  B: {Bidx},{Bresid}')
+    #     return (Aidx,Bidx),(Aresid,Bresid),(Aoresids,Boresids),(A['atom'],B['atom'])
 
-    def get_atom_globalIndx(self,A,mol,moldict):
-        # logging.debug(f'get_atom_globalIndx moldict {list(moldict.keys())}')
-        aname=A['atom']
-        aN=A['reactant']
-        areactantname=self.reactants[aN]
-        aresid_inreactant=A['resid']
-        # logging.debug(f'determining globalIdx of aname {aname} in reactant {aN}({areactantname}):{aresid_inreactant}')
-        # generate the apparent resid in the composite molecule by visiting reactants in order
-        resids={}
-        cresid=0
-        for k,v in self.reactants.items():
-            resids[k]=[]
-            for i in range(1,len(moldict[v].sequence)+1):
-                resids[k].append(i+cresid)
-            cresid+=len(moldict[v].sequence)
-        aresid=0
-        for k,v in self.reactants.items():
-            if k==aN:
-                aresid+=aresid_inreactant
-                break
-            else:
-                # logging.debug(f'preseq {v} {moldict[v].sequence}')
-                aresid+=len(moldict[v].sequence)
-        resids[aN].remove(aresid)
-        # logging.debug(f'reaction {self.name}: asking for globalIdx of resNum {aresid} atomName {aname}')
-        idx=mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'resNum':aresid,'atomName':aname})
-        return idx,aresid,resids[aN]
+    # def get_atom_globalIndx(self,A,mol,moldict):
+    #     # logging.debug(f'get_atom_globalIndx moldict {list(moldict.keys())}')
+    #     aname=A['atom']
+    #     aN=A['reactant']
+    #     areactantname=self.reactants[aN]
+    #     aresid_inreactant=A['resid']
+    #     # logging.debug(f'determining globalIdx of aname {aname} in reactant {aN}({areactantname}):{aresid_inreactant}')
+    #     # generate the apparent resid in the composite molecule by visiting reactants in order
+    #     resids={}
+    #     cresid=0
+    #     for k,v in self.reactants.items():
+    #         resids[k]=[]
+    #         for i in range(1,len(moldict[v].sequence)+1):
+    #             resids[k].append(i+cresid)
+    #         cresid+=len(moldict[v].sequence)
+    #     aresid=0
+    #     for k,v in self.reactants.items():
+    #         if k==aN:
+    #             aresid+=aresid_inreactant
+    #             break
+    #         else:
+    #             # logging.debug(f'preseq {v} {moldict[v].sequence}')
+    #             aresid+=len(moldict[v].sequence)
+    #     resids[aN].remove(aresid)
+    #     # logging.debug(f'reaction {self.name}: asking for globalIdx of resNum {aresid} atomName {aname}')
+    #     idx=mol.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'resNum':aresid,'atomName':aname})
+    #     return idx,aresid,resids[aN]
 
-    def get_raz(self,moldict={}):  # [resname][atomname]=[list of z-values detected in this reaction]
-        reactantdict=self.reactants
-        razdict={}
-        for ltr,atomrec in self.atoms.items():
-            reactant_name=reactantdict[atomrec['reactant']]
-            resid=atomrec['resid']
-            an=atomrec['atom']
-            z=atomrec['z']
-            if len(moldict)==0:
-                resname=reactant_name
-            else:
-                # logging.debug(f'grabbing resname of {resid} from position {resid-1} of {reactant_name} {moldict[reactant_name].sequence}')
-                resname=moldict[reactant_name].sequence[resid-1]
-            if not resname in razdict:
-                razdict[resname]={}
-            if not an in razdict[resname]:
-                razdict[resname][an]=[]
-            razdict[resname][an].append(z)
-        return razdict
+    # def get_raz(self,moldict={}):  # [resname][atomname]=[list of z-values detected in this reaction]
+    #     reactantdict=self.reactants
+    #     razdict={}
+    #     for ltr,atomrec in self.atoms.items():
+    #         reactant_name=reactantdict[atomrec['reactant']]
+    #         resid=atomrec['resid']
+    #         an=atomrec['atom']
+    #         z=atomrec['z']
+    #         if len(moldict)==0:
+    #             resname=reactant_name
+    #         else:
+    #             # logging.debug(f'grabbing resname of {resid} from position {resid-1} of {reactant_name} {moldict[reactant_name].sequence}')
+    #             resname=moldict[reactant_name].sequence[resid-1]
+    #         if not resname in razdict:
+    #             razdict[resname]={}
+    #         if not an in razdict[resname]:
+    #             razdict[resname][an]=[]
+    #         razdict[resname][an].append(z)
+    #     return razdict
+
+ReactionList = list[Reaction]
 
 class ReactionBond:
-    def __init__(self,idx,names,resids,order,bystanders,oneaways):
+    def __init__(self,idx,resids,order,bystanders,oneaways):
         self.idx=idx
-        self.names=names
+        # self.names=names
         self.resids=resids
-        self.bystanders=bystanders
-        self.oneaways=oneaways
+        self.bystander_resids=bystanders
+        self.oneaway_resids=oneaways
         self.order=order
     def __str__(self):
-        return f'bond {self.idx} order {self.order} bystander-resids {self.bystanders} oneaway-resids {self.oneaways}'
+        return f'ReactionBond {self.idx} resids {self.resids} order {self.order} bystander-resids {self.bystander_resids} oneaway-resids {self.oneaway_resids}'
+    
+    def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
+        nreactants=len(R.reactants)
+        for bondrec in R.bonds:
+            atom_keys=bondrec['atoms']
+            order=bondrec['order']
+            assert len(atom_keys)==2
+            atomrecs=[R.atoms[x] for x in atom_keys]
+            atom_names=[x['atom'] for x in atomrecs]
+            in_reactant_resids=[x['resid'] for x in atomrecs]
+            if nreactants==1:
+                in_product_resids=[resid_mapper[0][in_reactant_resids[x]] for x in [0,1]]
+            else:
+                in_product_resids=[resid_mapper[x][in_reactant_resids[x]] for x in [0,1]]
+            atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
+            bystander_resids,bystander_resnames=TC.get_bystanders(atom_idx)
+            oneaway_resids,oneaway_resnames=TC.get_oneaways(atom_idx)
+            yield ReactionBond(atom_idx,in_product_resids,order,bystander_resids,oneaway_resids)
+
 
 ReactionBondList = list[ReactionBond]
+
 
 class Molecule:
     def __init__(self,name='',generator:Reaction=None):
@@ -142,11 +156,13 @@ class Molecule:
         self.sequence=[]
         self.origin=None
         self.reaction_bonds:ReactionBondList=[]
+        self.bond_templates:BondTemplateList=[]
         self.symmetry_relateds=[]
         self.stereocenters=[]
         self.stereoisomers=[]
         #self.chains=[]
         self.zrecs=[]
+        self.is_reactant=False
 
     def set_origin(self,value):
         self.origin=value
@@ -284,28 +300,27 @@ class Molecule:
         if self.generator:
             R=self.generator
             self.TopoCoord=TopoCoord()
-            # assert type(R)==Reaction,'HTPolyNet only recognizes Reaction-type generators at the moment'
             logging.info(f'Using reaction {R.name} to generate {self.name}.mol2.')
             # this molecule is to be generated using a reaction
             # check to make sure this reactions reactants are among the available molecules
             # can_react=all([a in available_molecules for a in R.reactants.values()])
-            # logging.debug(f'can_react: {can_react}')
-            # assert can_react,f'Cannot generate {self.name} because required reactants have not been generated'
-            # composite_mol=Molecule()
-            shifts=[(0,0,0)]  # atom, bond, resid
+            #shifts=[(0,0,0)]  # atom, bond, resid
+            resid_mapper=[]
             for ri in R.reactants.values():
-                # logging.debug(f'adding {available_molecules[ri].name} to composite:\n{available_molecules[ri].TopoCoord.Coordinates.A.to_string()}')
                 new_reactant=deepcopy(available_molecules[ri])
-                shifts.append(self.TopoCoord.merge(new_reactant.TopoCoord))
-            # self.TopoCoord=deepcopy(composite_mol.TopoCoord)
-            #self.chains=deepcopy(composite_mol.chains)
-            # logging.debug(f'composite mol\n{self.TopoCoord.Coordinates.A.to_string()}')
+                rnr=len(new_reactant.sequence)
+                shifts=self.TopoCoord.merge(new_reactant.TopoCoord)
+                resid_mapper.append({k:v for k,v in zip(range(1,rnr+1),range(1+shifts[2],1+rnr+shifts[2]))})
+            # logging.debug(f'{self.name}: resid_mapper {resid_mapper}')
+            # logging.debug(f'{self.TopoCoord.idx_lists}')
+            # logging.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
             self.set_sequence()
-            self.prepare_new_bonds(available_molecules=available_molecules)
+            bonds_to_make=list(ReactionBond.yield_bonds(R,self.TopoCoord,resid_mapper))
+            # self.prepare_new_bonds(available_molecules=available_molecules)
             # self.set_reaction_bonds(available_molecules=available_molecules)
             # logging.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logging.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
-            idx_mapper=self.make_bonds()
+            idx_mapper=self.make_bonds(bonds_to_make)
             # self.update_chains(idx_mapper)
             self.TopoCoord.set_gro_attribute('reactantName',R.product)
             self.write_gro_attributes(['z','nreactions','reactantName','sea-idx','cycle','cycle-idx','chain','chain-idx'],f'{R.product}.grx')
@@ -327,7 +342,6 @@ class Molecule:
         self.parameterize(outname,**kwargs)
         self.minimize(outname,**kwargs)
         self.set_sequence()
-        self.prepare_new_bonds(available_molecules=available_molecules)
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
         if not self.generator:
             self.initialize_monomer_grx_attributes()
@@ -338,15 +352,17 @@ class Molecule:
                 self.TopoCoord.read_gro_attributes(grx)
                 #self.reset_chains_from_attributes()
         # logging.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
+        self.prepare_new_bonds(available_molecules=available_molecules)
+
 
     # def set_reaction_bonds(self,available_molecules={}):
     def prepare_new_bonds(self,available_molecules={}):
         # logging.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
-        if len(self.reaction_bonds)>0:
-            # assume prepare_new_bonds was called during construction
-            return
         R=self.generator
+        if not R:
+            return
         self.reaction_bonds=[]
+        self.bond_templates=[]
         TC=self.TopoCoord
         # logging.debug(f'prepare_new_bonds {self.name}: chainlists {TC.idx_lists["chain"]}')
         for bondrec in R.bonds:
@@ -362,58 +378,23 @@ class Molecule:
             else:
                 reactant_names=[R.reactants[x] for x in reactant_keys]
             reactant_sequences=[available_molecules[x].sequence for x in reactant_names]
+            product_sequence=[]
+            for seq in reactant_sequences:
+                product_sequence.extend(seq)
+            logging.debug(f'product_sequence {product_sequence}')
             sequence_residue_idx_origins=[0,0]
             if len(reactant_sequences)==2:
                 sequence_residue_idx_origins[1]=len(reactant_sequences[0])
             in_product_resids=[in_reactant_resids[x]+sequence_residue_idx_origins[x] for x in [0,1]]
+            logging.debug(f'in_product_resids {in_product_resids}')
+            in_product_resnames=[product_sequence[in_product_resids[x]-1] for x in [0,1]]
             atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
             # logging.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
-            bystanders=[[],[]]
-            for x in [0,1]:
-                atom_bystanders=self.TopoCoord.interresidue_partners_of(atom_idx[x])
-                if atom_idx[1-x] in atom_bystanders: # if new bond has not yet formed
-                    atom_bystanders.remove(atom_idx[1-x])
-                bystanders[x]=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':y}) for y in atom_bystanders]
-            chains=[TC.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
-            chain_idx=[TC.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':x}) for x in atom_idx]
-            oneaways=[None,None]
-            # assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head
-            if chains != [-1,-1]:
-                # logging.debug(f'finding oneaways: chains: {chains} chain_idx: {chain_idx}')
-                # intraresidue_chainmates=[TC.get_gro_attribute_by_attributes('globalIdx',{'chain':chains[x],'resNum':in_product_resids[x]}) for x in [0,1]]
-                chain_idx_lists=[TC.idx_lists['chain'][chains[x]] for x in [0,1]]
-                # logging.debug(f'chain_idx_lists: {chain_idx_lists}')
-                if chain_idx[0]==0 or chain_idx[0]>chain_idx[1]:
-                    # find next member of chainlist that is *not* in *this* residue
-                    # logging.debug(f'querying resids from {chain_idx_lists[0][1:]}')
-                    for idx in chain_idx_lists[0][chain_idx[0]+1:]:
-                        nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
-                        if nresid!=in_product_resids[0]:
-                            oneaways[0]=nresid
-                    # logging.debug(f'querying resids from {chain_idx_lists[1][chain_idx[1]-1::-1]}')
-                    for idx in chain_idx_lists[1][chain_idx[1]-1::-1]:
-                        nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
-                        if nresid!=in_product_resids[1]:
-                            oneaways[1]=nresid
-                elif chain_idx[1]==0 or chain_idx[1]>chain_idx[0]:
-                    for idx in chain_idx_lists[1][chain_idx[1]+1:]:
-                        nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
-                        if nresid!=in_product_resids[1]:
-                            oneaways[1]=nresid
-                    for idx in chain_idx_lists[0][chain_idx[1]::-1]:
-                        nresid=TC.get_gro_attribute_by_attributes('resNum',{'globalIdx':idx})
-                        if nresid!=in_product_resids[0]:
-                            oneaways[0]=nresid
+            bystander_resids,bystander_resnames=TC.get_bystanders(atom_idx)
+            oneaway_resids,oneaway_resnames=TC.get_oneaways(atom_idx)
             # logging.debug(f'prepare_new_bonds {self.name} oneaways {oneaways}')
-            self.reaction_bonds.append(ReactionBond(atom_idx,atom_names,in_product_resids,order,bystanders,oneaways))
-
-            # (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname)=R.get_bond_atom_globalIdx(bond,self,available_molecules)
-            # rb.bond=(Aidx,Bidx)
-            # rb=ReactionBond([Aidx,Bidx],)
-
-            # self.reaction_bonds.append(((Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),bond['order']))
-        # outstr='\n'+"\n".join([str(x) for x in self.reaction_bonds])
-        # logging.debug(f'{R.name} reaction_bonds {outstr}')
+            self.reaction_bonds.append(ReactionBond(atom_idx,in_product_resids,order,bystander_resids,oneaway_resids))
+            self.bond_templates.append(BondTemplate(atom_names,in_product_resnames,order,bystander_resnames,oneaway_resnames))
 
     def set_sequence(self):
         """set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list
@@ -490,152 +471,152 @@ class Molecule:
         assert len(inst2temp)==len(temp2inst),f'Error: could not establish two-way dict of atom globalIdx'
         return (inst2temp,temp2inst)
 
-    def x_idx_mappers(self,otherTC,other_bond):
-        seq_res_is_bystander=[False for _ in self.sequence]
-        logging.debug(f'idx_mappers begins: template name {self.name}')
-        # get system resName, resNum, and atomNames for each of the two bonded atoms
-        i_idx,j_idx=other_bond
-        i_resName,i_resNum,i_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
-        j_resName,j_resNum,j_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j_idx})
-        logging.debug(f'idx_mappers: i_idx {i_idx} i_resName {i_resName} i_resNum {i_resNum} i_atomName {i_atomName}')
-        logging.debug(f'idx_mappers: j_idx {j_idx} j_resName {j_resName} j_resNum {j_resNum} j_atomName {j_atomName}')
-        # Either of atom i or j *could* bond to a third or even fourth residue that
-        # is not the residue of the other.  Any such "bystander" residue is asserted
-        # to be represented in the template molecule, and must therefore be included
-        # along with the residues of i and j among the residues from which interactions
-        # can be mapped.
-        neighbors_of_i=otherTC.partners_of(i_idx)
-        neighbors_of_i.remove(j_idx)
-        resid_bystanders_of_ij=[]  # bystanders bonded to atom i that are not in resid of atom j
-        resid_bystanders_of_iij=[] # bystanders bonded to _a neighbor of_ atom i that are not in resid of atom _i or_ j
-        logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
-        for xx in neighbors_of_i:
-            neighbors_of_in=otherTC.partners_of(xx)
-            # neighbors_of_in.remove(i_idx)
-            x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
-            # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_in}')
-            if x_resNum!=i_resNum and x_resNum!=j_resNum and (x_resNum,x_resName) not in resid_bystanders_of_ij:
-                resid_bystanders_of_ij.append((x_resNum,x_resName))
-            for xxx in neighbors_of_in:
-                xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
-                # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
-                if xx_resNum!=i_resNum and xx_resNum!=j_resNum and (xx_resNum,xx_resName) not in resid_bystanders_of_iij:
-                    resid_bystanders_of_iij.append((xx_resNum,xx_resName))
-        neighbors_of_j=otherTC.partners_of(j_idx)
-        neighbors_of_j.remove(i_idx)
-        # logging.debug(f'neighbors of j {j_idx} {j_resName} {j_resNum} {j_atomName}:')
-        resid_bystanders_of_ji=[]  # bystanders bonded to atom j that are not in resid of atom i
-        resid_bystanders_of_jji=[] # bystanders bonded to _a neighbor of_ atom j that are not in resid of atom i _or j_
-        for xx in neighbors_of_j:
-            neighbors_of_jn=otherTC.partners_of(xx)
-            # neighbors_of_jn.remove(j_idx)
-            x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
-            # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_jn}')
-            if x_resNum!=i_resNum and x_resNum!=j_resNum and (x_resNum,x_resName) not in resid_bystanders_of_ji:
-                resid_bystanders_of_ji.append((x_resNum,x_resName))
-                # logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
-            for xxx in neighbors_of_jn:
-                xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
-                # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
-                if xx_resNum!=i_resNum and xx_resNum!=j_resNum and (xx_resNum,xx_resName) not in resid_bystanders_of_jji:
-                    resid_bystanders_of_jji.append((xx_resNum,xx_resName))
+    # def x_idx_mappers(self,otherTC,other_bond):
+    #     seq_res_is_bystander=[False for _ in self.sequence]
+    #     logging.debug(f'idx_mappers begins: template name {self.name}')
+    #     # get system resName, resNum, and atomNames for each of the two bonded atoms
+    #     i_idx,j_idx=other_bond
+    #     i_resName,i_resNum,i_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i_idx})
+    #     j_resName,j_resNum,j_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j_idx})
+    #     logging.debug(f'idx_mappers: i_idx {i_idx} i_resName {i_resName} i_resNum {i_resNum} i_atomName {i_atomName}')
+    #     logging.debug(f'idx_mappers: j_idx {j_idx} j_resName {j_resName} j_resNum {j_resNum} j_atomName {j_atomName}')
+    #     # Either of atom i or j *could* bond to a third or even fourth residue that
+    #     # is not the residue of the other.  Any such "bystander" residue is asserted
+    #     # to be represented in the template molecule, and must therefore be included
+    #     # along with the residues of i and j among the residues from which interactions
+    #     # can be mapped.
+    #     neighbors_of_i=otherTC.partners_of(i_idx)
+    #     neighbors_of_i.remove(j_idx)
+    #     resid_bystanders_of_ij=[]  # bystanders bonded to atom i that are not in resid of atom j
+    #     resid_bystanders_of_iij=[] # bystanders bonded to _a neighbor of_ atom i that are not in resid of atom _i or_ j
+    #     logging.debug(f'neighbors of i {i_idx} {i_resName} {i_resNum} {i_atomName}:')
+    #     for xx in neighbors_of_i:
+    #         neighbors_of_in=otherTC.partners_of(xx)
+    #         # neighbors_of_in.remove(i_idx)
+    #         x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
+    #         # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_in}')
+    #         if x_resNum!=i_resNum and x_resNum!=j_resNum and (x_resNum,x_resName) not in resid_bystanders_of_ij:
+    #             resid_bystanders_of_ij.append((x_resNum,x_resName))
+    #         for xxx in neighbors_of_in:
+    #             xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
+    #             # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
+    #             if xx_resNum!=i_resNum and xx_resNum!=j_resNum and (xx_resNum,xx_resName) not in resid_bystanders_of_iij:
+    #                 resid_bystanders_of_iij.append((xx_resNum,xx_resName))
+    #     neighbors_of_j=otherTC.partners_of(j_idx)
+    #     neighbors_of_j.remove(i_idx)
+    #     # logging.debug(f'neighbors of j {j_idx} {j_resName} {j_resNum} {j_atomName}:')
+    #     resid_bystanders_of_ji=[]  # bystanders bonded to atom j that are not in resid of atom i
+    #     resid_bystanders_of_jji=[] # bystanders bonded to _a neighbor of_ atom j that are not in resid of atom i _or j_
+    #     for xx in neighbors_of_j:
+    #         neighbors_of_jn=otherTC.partners_of(xx)
+    #         # neighbors_of_jn.remove(j_idx)
+    #         x_resName,x_resNum,x_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xx})
+    #         # logging.debug(f'-> {xx} {x_resName} {x_resNum} {x_atomName} n {neighbors_of_jn}')
+    #         if x_resNum!=i_resNum and x_resNum!=j_resNum and (x_resNum,x_resName) not in resid_bystanders_of_ji:
+    #             resid_bystanders_of_ji.append((x_resNum,x_resName))
+    #             # logging.debug(f'{xx} {x_resName} {x_resNum} {x_atomName}')
+    #         for xxx in neighbors_of_jn:
+    #             xx_resName,xx_resNum,xx_atomName=otherTC.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':xxx})
+    #             # logging.debug(f'   -> {xxx} {xx_resName} {xx_resNum} {xx_atomName}')
+    #             if xx_resNum!=i_resNum and xx_resNum!=j_resNum and (xx_resNum,xx_resName) not in resid_bystanders_of_jji:
+    #                 resid_bystanders_of_jji.append((xx_resNum,xx_resName))
 
-        # logging.debug(f'idx_mappers: resid_bystanders_of_ij {resid_bystanders_of_ij}')
-        # logging.debug(f'idx_mappers: resid_bystanders_of_iij {resid_bystanders_of_iij}')
-        # logging.debug(f'idx_mappers: resid_bystanders_of_ji {resid_bystanders_of_ji}')
-        # logging.debug(f'idx_mappers: resid_bystanders_of_jji {resid_bystanders_of_jji}')
+    #     # logging.debug(f'idx_mappers: resid_bystanders_of_ij {resid_bystanders_of_ij}')
+    #     # logging.debug(f'idx_mappers: resid_bystanders_of_iij {resid_bystanders_of_iij}')
+    #     # logging.debug(f'idx_mappers: resid_bystanders_of_ji {resid_bystanders_of_ji}')
+    #     # logging.debug(f'idx_mappers: resid_bystanders_of_jji {resid_bystanders_of_jji}')
 
-        resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij,*resid_bystanders_of_ji,*resid_bystanders_of_jji]
-        # logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
-        temp_bystanders=[]
-        inst_bystanders=[]
-        # for xx in resid_bystanders:
-            # rn,rname=xx
-            # if not rname in self.sequence:
-            #     logging.error(f'secondary neighbor {rn} {rname}: no res in pattern sequence {self.sequence}')
-            #     raise Exception('this is a bug')
-            # for i,rnm in enumerate(self.sequence):
-            #     ib=seq_res_is_bystander[i]
-            #     if rnm==rname and not ib: # won't work if all resnames are same!!!
-            #         seq_res_is_bystander[i]=True
-            #         temp_bystanders.append(i+1) # resids start at 1 not 0!!!
-            #         inst_bystanders.append(rn)
-            #         break
-            # else:
-            #     logging.error(f'secondary neighbor {rn} {rname}: no available res in pattern sequence {self.sequence} {seq_res_is_bystander}')
+    #     resid_bystanders=[*resid_bystanders_of_ij,*resid_bystanders_of_iij,*resid_bystanders_of_ji,*resid_bystanders_of_jji]
+    #     # logging.debug(f'idx_mappers: other_bond {other_bond} resid_bystanders {resid_bystanders}')
+    #     temp_bystanders=[]
+    #     inst_bystanders=[]
+    #     # for xx in resid_bystanders:
+    #         # rn,rname=xx
+    #         # if not rname in self.sequence:
+    #         #     logging.error(f'secondary neighbor {rn} {rname}: no res in pattern sequence {self.sequence}')
+    #         #     raise Exception('this is a bug')
+    #         # for i,rnm in enumerate(self.sequence):
+    #         #     ib=seq_res_is_bystander[i]
+    #         #     if rnm==rname and not ib: # won't work if all resnames are same!!!
+    #         #         seq_res_is_bystander[i]=True
+    #         #         temp_bystanders.append(i+1) # resids start at 1 not 0!!!
+    #         #         inst_bystanders.append(rn)
+    #         #         break
+    #         # else:
+    #         #     logging.error(f'secondary neighbor {rn} {rname}: no available res in pattern sequence {self.sequence} {seq_res_is_bystander}')
 
-        temp2inst={}
-        inst2temp={}
-        temp_iresid=-1
-        temp_jresid=-1
-        # identify the template bond represented by the other_bond parameter
-        for b in self.reaction_bonds:
-            (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),order=b
-            Aresname=self.sequence[aresid-1]
-            Bresname=self.sequence[bresid-1]
-            # logging.debug(f'idx_mappers: reaction_bond {b}')
-            # logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
-            if (i_atomName,i_resName)==(Aname,Aresname):
-                temp_iresid=aresid
-                temp_jresid=bresid
-                # logging.debug(f'idx_mappers: temp_iresid {temp_iresid} temp_jresid {temp_jresid}')
-                break # found it -- stop looking
-            elif (i_atomName,i_resName)==(Bname,Bresname):
-                temp_iresid=bresid
-                temp_jresid=aresid
-                # logging.debug(f'idx_mappers: temp_iresid {temp_iresid} temp_jresid {temp_jresid}')
-                break
-        if temp_iresid==-1:
-            logging.error(f'Mappers using template {self.name} unable to map from instance bond {i_resName}-{i_resNum}-{i_atomName}---{j_resName}-{j_resNum}-{j_atomName}')
-            raise Exception
+    #     temp2inst={}
+    #     inst2temp={}
+    #     temp_iresid=-1
+    #     temp_jresid=-1
+    #     # identify the template bond represented by the other_bond parameter
+    #     for b in self.reaction_bonds:
+    #         (Aidx,Bidx),(aresid,bresid),(Aoresids,Boresids),(Aname,Bname),order=b
+    #         Aresname=self.sequence[aresid-1]
+    #         Bresname=self.sequence[bresid-1]
+    #         # logging.debug(f'idx_mappers: reaction_bond {b}')
+    #         # logging.debug(f'idx_mappers: {Aresname} {aresid} {Bresname} {bresid}')
+    #         if (i_atomName,i_resName)==(Aname,Aresname):
+    #             temp_iresid=aresid
+    #             temp_jresid=bresid
+    #             # logging.debug(f'idx_mappers: temp_iresid {temp_iresid} temp_jresid {temp_jresid}')
+    #             break # found it -- stop looking
+    #         elif (i_atomName,i_resName)==(Bname,Bresname):
+    #             temp_iresid=bresid
+    #             temp_jresid=aresid
+    #             # logging.debug(f'idx_mappers: temp_iresid {temp_iresid} temp_jresid {temp_jresid}')
+    #             break
+    #     if temp_iresid==-1:
+    #         logging.error(f'Mappers using template {self.name} unable to map from instance bond {i_resName}-{i_resNum}-{i_atomName}---{j_resName}-{j_resNum}-{j_atomName}')
+    #         raise Exception
 
-        iapp_inst_bystanders=list(set([*resid_bystanders_of_ij,*resid_bystanders_of_iij]))
-        assert len(iapp_inst_bystanders)==len(Aoresids)
-        # logging.debug(f'idx_mappers: iapp_inst_bystanders {iapp_inst_bystanders} Aoresids {Aoresids}')
-        for ib,tb in zip(iapp_inst_bystanders,Aoresids):
-            inst_bystanders.append(ib[0])
-            temp_bystanders.append(tb)
-        japp_inst_bystanders=list(set([*resid_bystanders_of_ji,*resid_bystanders_of_jji]))
-        assert len(japp_inst_bystanders)==len(Boresids),f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}'
-        # logging.debug(f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}')
-        for ib,tb in zip(japp_inst_bystanders,Boresids):
-            inst_bystanders.append(ib[0])
-            temp_bystanders.append(tb)
-        # logging.debug(f'idx_mappers: inst_bystanders {inst_bystanders}')
-        # logging.debug(f'idx_mappers: temp_bystanders {temp_bystanders}')
+    #     iapp_inst_bystanders=list(set([*resid_bystanders_of_ij,*resid_bystanders_of_iij]))
+    #     assert len(iapp_inst_bystanders)==len(Aoresids)
+    #     # logging.debug(f'idx_mappers: iapp_inst_bystanders {iapp_inst_bystanders} Aoresids {Aoresids}')
+    #     for ib,tb in zip(iapp_inst_bystanders,Aoresids):
+    #         inst_bystanders.append(ib[0])
+    #         temp_bystanders.append(tb)
+    #     japp_inst_bystanders=list(set([*resid_bystanders_of_ji,*resid_bystanders_of_jji]))
+    #     assert len(japp_inst_bystanders)==len(Boresids),f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}'
+    #     # logging.debug(f'idx_mappers: japp_inst_bystanders {japp_inst_bystanders} Boresids {Boresids}')
+    #     for ib,tb in zip(japp_inst_bystanders,Boresids):
+    #         inst_bystanders.append(ib[0])
+    #         temp_bystanders.append(tb)
+    #     # logging.debug(f'idx_mappers: inst_bystanders {inst_bystanders}')
+    #     # logging.debug(f'idx_mappers: temp_bystanders {temp_bystanders}')
 
-        # use dataframe merges to create globalIdx maps
-        instdf=otherTC.Coordinates.A
-        tempdf=self.TopoCoord.Coordinates.A
-        inst2temp={}
-        temp2inst={}
-        # logging.debug(f'inst resids from {[i_resNum,j_resNum,*inst_bystanders]}')
-        # logging.debug(f'temp resids from {[temp_iresid,temp_jresid,*temp_bystanders]}')
-        for inst,temp in zip([i_resNum,j_resNum,*inst_bystanders],[temp_iresid,temp_jresid,*temp_bystanders]):
-            idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()
-            # logging.debug(f'idf res {inst}:\n{idf.to_string()}')
-            tdf=tempdf[tempdf['resNum']==temp][['globalIdx','atomName']].copy()
-            # logging.debug(f'tdf res {temp}:\n{tdf.to_string()}')
-            tdf=tdf.merge(idf,on='atomName',how='inner',suffixes=('_template','_instance'))
-            # logging.debug(f'merged\n{tdf.to_string()}')
-            for i,r in tdf.iterrows():
-                temp_idx=r['globalIdx_template']
-                inst_idx=r['globalIdx_instance']
-                # logging.debug(f't {temp_idx} <-> i {inst_idx}')
-                inst2temp[inst_idx]=temp_idx
-                if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
-                    raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')
-                temp2inst[temp_idx]=inst_idx
-        # if len(inst2temp)!=len(temp2inst):
-            # logging.debug(f'len(inst2temp) {len(inst2temp)} != len(temp2inst) {len(temp2inst)}')
-            # logging.debug(f'inst2temp:')
-            # for k,v in inst2temp.items():
-                # logging.debug(f'   {k} <-> {v}')
-            # logging.debug(f'temp2inst:')
-            # for k,v in temp2inst.items():
-                # logging.debug(f'   {k} <-> {v}')
-        assert len(inst2temp)==len(temp2inst),f'Error: could not establish two-way dict of atom globalIdx'
-        return (inst2temp,temp2inst)
+    #     # use dataframe merges to create globalIdx maps
+    #     instdf=otherTC.Coordinates.A
+    #     tempdf=self.TopoCoord.Coordinates.A
+    #     inst2temp={}
+    #     temp2inst={}
+    #     # logging.debug(f'inst resids from {[i_resNum,j_resNum,*inst_bystanders]}')
+    #     # logging.debug(f'temp resids from {[temp_iresid,temp_jresid,*temp_bystanders]}')
+    #     for inst,temp in zip([i_resNum,j_resNum,*inst_bystanders],[temp_iresid,temp_jresid,*temp_bystanders]):
+    #         idf=instdf[instdf['resNum']==inst][['globalIdx','atomName']].copy()
+    #         # logging.debug(f'idf res {inst}:\n{idf.to_string()}')
+    #         tdf=tempdf[tempdf['resNum']==temp][['globalIdx','atomName']].copy()
+    #         # logging.debug(f'tdf res {temp}:\n{tdf.to_string()}')
+    #         tdf=tdf.merge(idf,on='atomName',how='inner',suffixes=('_template','_instance'))
+    #         # logging.debug(f'merged\n{tdf.to_string()}')
+    #         for i,r in tdf.iterrows():
+    #             temp_idx=r['globalIdx_template']
+    #             inst_idx=r['globalIdx_instance']
+    #             # logging.debug(f't {temp_idx} <-> i {inst_idx}')
+    #             inst2temp[inst_idx]=temp_idx
+    #             if temp_idx in temp2inst and temp2inst[temp_idx]!=inst_idx:
+    #                 raise Exception(f'Error: temp_idx {temp_idx} already claimed in temp2inst; bug')
+    #             temp2inst[temp_idx]=inst_idx
+    #     # if len(inst2temp)!=len(temp2inst):
+    #         # logging.debug(f'len(inst2temp) {len(inst2temp)} != len(temp2inst) {len(temp2inst)}')
+    #         # logging.debug(f'inst2temp:')
+    #         # for k,v in inst2temp.items():
+    #             # logging.debug(f'   {k} <-> {v}')
+    #         # logging.debug(f'temp2inst:')
+    #         # for k,v in temp2inst.items():
+    #             # logging.debug(f'   {k} <-> {v}')
+    #     assert len(inst2temp)==len(temp2inst),f'Error: could not establish two-way dict of atom globalIdx'
+    #     return (inst2temp,temp2inst)
 
     def get_angles_dihedrals(self,bond):
         ai,aj=bond
@@ -739,7 +720,7 @@ class Molecule:
     # def update_coords(self,c):
     #     self.Coords.copy_coords(c)
 
-    def make_bonds(self):
+    def make_bonds(self,bondrecs:ReactionBondList):
         bonds=[]
         hs_from_tr=[]
         skip_H=[]
@@ -748,40 +729,48 @@ class Molecule:
         # for cl in TC.idx_lists['chain']:
         #     nl=[self.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
         #     logging.debug(f'{nl}')
-        for i,B in enumerate(self.reaction_bonds):
+        for i,B in enumerate(bondrecs):
             # logging.debug(f'{self.name} reaction bond {i}: {str(B)} ')
             aidx,bidx=B.idx
-            aname,bname=B.names
+            aname,bname=[TC.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in [aidx,bidx]]
             aresid,bresid=B.resids
-            bystanders=B.bystanders
-            oneaways=B.oneaways
+            bystanders=B.bystander_resids
+            oneaways=B.oneaway_resids
             order=B.order
-            # (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
-            logging.debug(f'generating {self.name} bond {i} {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
+            logging.debug(f'generating {self.name} bond {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
+            # logging.debug(f'bystander resids {bystanders}')
+            # logging.debug(f'oneaway resids {oneaways}')
             bonds.append((aidx,bidx,order))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
-                hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=[oneaways[1],*bystanders[1]])
+                cresids=[]
+                if len(oneaways)==2:
+                    cresids=[oneaways[1]]
+                if len(bystanders)==2:
+                    cresids.extend(bystanders[1])
+                # logging.debug(f'cresids {cresids}')
+                hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=cresids)
                 skip_H.append(i)
                 hs_from_tr.append(hxi)
                 hs_from_tr.append(hxj)
         # make_bonds returns list of sacrificial H idx's derived
         # from bonds whose indices are not in skip_H
-        idx_scratch=self.TopoCoord.make_bonds(bonds,skip_H=skip_H)
+        idx_scratch=TC.make_bonds(bonds,skip_H=skip_H)
         # the H's identified in transrot plus those identified by make_bonds
         # must be deleted
         idx_scratch.extend(hs_from_tr)
-        idx_mapper=self.TopoCoord.delete_atoms(idx_scratch)
+        idx_mapper=TC.delete_atoms(idx_scratch)
         #TC.remap_idx_list('chain',idx_mapper)
-        for i,B in enumerate(self.reaction_bonds):
+        for B in bondrecs:
+#        for i,B in enumerate(self.reaction_bonds):
             aidx,bidx=B.idx
             # (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
             aidx=idx_mapper[aidx]
             bidx=idx_mapper[bidx]
-            self.TopoCoord.decrement_gro_attribute_by_attributes('z',{'globalIdx':aidx})
-            self.TopoCoord.decrement_gro_attribute_by_attributes('z',{'globalIdx':bidx})
-            self.TopoCoord.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':aidx})
-            self.TopoCoord.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':bidx})
+            TC.decrement_gro_attribute_by_attributes('z',{'globalIdx':aidx})
+            TC.decrement_gro_attribute_by_attributes('z',{'globalIdx':bidx})
+            TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':aidx})
+            TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':bidx})
         self.initialize_molecule_cycles()
         return idx_mapper
 
@@ -964,3 +953,5 @@ class Molecule:
                                                 same_attribute='sea-idx',
                                                 return_attribute='globalIdx')
         return list(clu)
+
+MoleculeDict = dict[str,Molecule]
