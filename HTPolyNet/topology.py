@@ -988,6 +988,7 @@ class Topology:
         if len(return_idx_of)>0:
             return new_idx
         self.null_check(msg='end of delete atoms')
+        logger.debug('finished.')
         # self.to_file('tmp.top')
         return mapper
         
