@@ -501,7 +501,7 @@ class Topology:
             return self.D['atoms']['charge'].sum()
         return 0.0
 
-    def adjust_charges(self,desired_charge=0.0,overcharge_threshhold=0.1,msg=''):
+    def adjust_charges(self,atoms=[],desired_charge=0.0,overcharge_threshhold=0.1,msg=''):
         """Adjust atom partial charges a tiny bit so that total system charge is zero
 
         :param desired_charge: target system charge, defaults to 0.0
@@ -515,12 +515,13 @@ class Topology:
         """
         apparent_charge=self.total_charge()
         overcharge=apparent_charge-desired_charge
-        logger.info(f'Adjusting charges due to overcharge of {overcharge:.6f}')
+        logger.info(f'Adjusting charges of {len(atoms)} atoms due to overcharge of {overcharge:.6f}')
         if np.abs(overcharge)>overcharge_threshhold:
             logger.info(f'{msg}')
-        cpa=-overcharge/len(self.D['atoms'])
-        logger.info(f'Adjustment is {cpa:.4e} per atom ({self.D["atoms"].shape[0]} atoms)')
-        self.D['atoms']['charge']+=cpa
+        cpa=-overcharge/len(atoms)
+        logger.info(f'Adjustment is {cpa:.4e} per atom')
+        for i in atoms:
+            self.D['atoms'].loc[i-1,'charge']+=cpa
         logger.info(f'New total charge after adjustment: {self.total_charge():.6f}')
         return self
         

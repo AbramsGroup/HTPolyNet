@@ -200,7 +200,7 @@ class HTPolyNet:
             M=self.molecules[item['molecule']]
             N=item['count']
             t=deepcopy(M.TopoCoord.Topology)
-            t.adjust_charges(0)
+            t.adjust_charges(atoms=t.D['atoms']['nr'].to_list(),desired_charge=0.0,overcharge_threshhold=0.1,msg='')
             t.rep_ex(N)
             logger.info(f'Merging {N} copies of {M.name}\'s topology into global topology')
             self.TopoCoord.Topology.merge(t)
@@ -372,9 +372,9 @@ class HTPolyNet:
                 self.TopoCoord.write_gro(f'{opfx}-input.gro')
                 self.TopoCoord.grofilename=f'{opfx}-input.gro'
                 while CP.state==CPstate.bondsearch and CP.current_radidx<max_radidx:
-                    nbdf=self.cure_searchbonds(CP.radius,
-                                                apply_probabilities=apply_probabilities,
-                                                abs_max=bond_limit)
+                    nbdf=self.searchbonds(radius=CP.radius,stage='cure',
+                                          apply_probabilities=apply_probabilities,
+                                          abs_max=bond_limit)
                     if nbdf.shape[0]>0:
                         pairs=pd.DataFrame()
                         CP.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
@@ -447,7 +447,7 @@ class HTPolyNet:
                 opfx=f'{stepno}-{stepnm}'
                 logger.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: UPDATE TOPOLOGY')
                 CP.read_checkpoint(self)
-                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat',reaction_list=self.cfg.reactions)
+                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.csv')
                 CP.current_stage=0
                 CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.make_resid_graph(json_file=f'{opfx}-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
@@ -568,11 +568,11 @@ class HTPolyNet:
             opfx=f'{stepno}-{stepnm}'
             CP.read_checkpoint(self)
             ''' perform any postcure reactions '''
-            bdf=self.post_cure_searchbonds()
+            bdf=self.searchbonds(stage='post-cure')
             if bdf.shape[0]>0:
                 pairs=pd.DataFrame()
                 CP.register_bonds(bdf,pairs,bonds_are='unrelaxed')
-                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.dat')
+                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.csv')
                 CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
                 CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
                 # CP.pairs['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
@@ -627,53 +627,53 @@ class HTPolyNet:
             self.TopoCoord.copy_coords(TopoCoord(grofilename=opfx+'-post.gro'))
             CP.write_checkpoint(self,CPstate.finished,prefix=f'{opfx}-complete')
 
-    def post_cure_searchbonds(self):
-        PCR=[x for x in self.cfg.reactions if x.stage=='post-cure']
-        logger.debug(f'Executing {len(PCR)} post-cure reactions')
-        adf=self.TopoCoord.gro_DataFrame('atoms')
-        raset=adf[adf['z']>0]
-        bdf=pd.DataFrame()
-        for R in PCR:
-            assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
-            logger.debug(f'Reaction {R.name}')
-            if R.probability==0.0:
-                continue
-            for bond in R.bonds:
-                A=R.atoms[bond['atoms'][0]]
-                B=R.atoms[bond['atoms'][1]]
-                order=bond['order']
-                aname=A['atom']
-                areactantname_template=R.reactants[A['reactant']]
-                aresid_template=A['resid']
-                aresname=self.molecules[areactantname_template].get_resname(aresid_template)
-                az=A['z']
-                bname=B['atom']
-                breactantname_template=R.reactants[B['reactant']]
-                bresid_template=B['resid']
-                bresname=self.molecules[breactantname_template].get_resname(bresid_template)
-                bz=B['z']
-                assert areactantname_template==breactantname_template,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different reactants'
-                assert aresname==bresname,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different residues'
-                Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
-                Aset=Aset.sort_values(by='resNum')
-                Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)&(raset['resNum'].isin(Aset['resNum']))]
-                Bset=Bset.sort_values(by='resNum')
-                Aset=Aset[Aset['resNum'].isin(Bset['resNum'].to_list())]
-                assert Aset.shape[0]==Bset.shape[0],f'Error: no good tally of intramolecular reactive atoms'
-                # logger.info(f'Aset\n{Aset["resNum"].to_string()}')
-                # logger.info(f'Bset\n{Aset["resNum"].to_string()}')
-                Aresids=Aset['resNum'].to_list()
-                Bresids=Bset['resNum'].to_list()
-                assert all([x==y for x,y in zip(Aresids,Bresids)]),f'Error: residue number mismatch in intramolecular reactions'
-                tbdf=pd.DataFrame({'ai':Aset['globalIdx'].to_list(),
-                                   'aj':Bset['globalIdx'].to_list(),
-                                   'reactantName':[R.product for _ in range(Aset.shape[0])],
-                                   'order':[order for _ in range(Aset.shape[0])]})
-                bdf=pd.concat((bdf,tbdf),ignore_index=True)
-                logger.debug(f'post-cure bdf\n{bdf.to_string()}')
-        return bdf
+    # def post_cure_searchbonds(self):
+    #     PCR=[x for x in self.cfg.reactions if x.stage=='post-cure']
+    #     logger.debug(f'Executing {len(PCR)} post-cure reactions')
+    #     adf=self.TopoCoord.gro_DataFrame('atoms')
+    #     raset=adf[adf['z']>0]
+    #     bdf=pd.DataFrame()
+    #     for R in PCR:
+    #         assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
+    #         logger.debug(f'Reaction {R.name}')
+    #         if R.probability==0.0:
+    #             continue
+    #         for bond in R.bonds:
+    #             A=R.atoms[bond['atoms'][0]]
+    #             B=R.atoms[bond['atoms'][1]]
+    #             order=bond['order']
+    #             aname=A['atom']
+    #             areactantname_template=R.reactants[A['reactant']]
+    #             aresid_template=A['resid']
+    #             aresname=self.molecules[areactantname_template].get_resname(aresid_template)
+    #             az=A['z']
+    #             bname=B['atom']
+    #             breactantname_template=R.reactants[B['reactant']]
+    #             bresid_template=B['resid']
+    #             bresname=self.molecules[breactantname_template].get_resname(bresid_template)
+    #             bz=B['z']
+    #             assert areactantname_template==breactantname_template,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different reactants'
+    #             assert aresname==bresname,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different residues'
+    #             Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
+    #             Aset=Aset.sort_values(by='resNum')
+    #             Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)&(raset['resNum'].isin(Aset['resNum']))]
+    #             Bset=Bset.sort_values(by='resNum')
+    #             Aset=Aset[Aset['resNum'].isin(Bset['resNum'].to_list())]
+    #             assert Aset.shape[0]==Bset.shape[0],f'Error: no good tally of intramolecular reactive atoms'
+    #             # logger.info(f'Aset\n{Aset["resNum"].to_string()}')
+    #             # logger.info(f'Bset\n{Aset["resNum"].to_string()}')
+    #             Aresids=Aset['resNum'].to_list()
+    #             Bresids=Bset['resNum'].to_list()
+    #             assert all([x==y for x,y in zip(Aresids,Bresids)]),f'Error: residue number mismatch in intramolecular reactions'
+    #             tbdf=pd.DataFrame({'ai':Aset['globalIdx'].to_list(),
+    #                                'aj':Bset['globalIdx'].to_list(),
+    #                                'reactantName':[R.product for _ in range(Aset.shape[0])],
+    #                                'order':[order for _ in range(Aset.shape[0])]})
+    #             bdf=pd.concat((bdf,tbdf),ignore_index=True)
+    #             logger.debug(f'post-cure bdf\n{bdf.to_string()}')
+    #     return bdf
 
-    def set_system(self,CP):
+    def set_system(self,CP:Checkpoint):
         """set_system Reads all coordinate and topological data from filenames
         indicated in the checkpoint structure; all data is overwritten; called from checkpoint
 
@@ -688,7 +688,7 @@ class HTPolyNet:
         if (grx):
             self.TopoCoord.read_gro_attributes(grx)
 
-    def register_system(self,CP,extra_attributes=['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx']):
+    def register_system(self,CP:Checkpoint,extra_attributes=['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx']):
         """register_system Create
 
         :param CP: checkpoint
@@ -701,17 +701,16 @@ class HTPolyNet:
         self.TopoCoord.write_gro(CP.gro)
         self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
 
-    def cure_searchbonds(self,radius,header=['ai','aj','reactantName','order'],apply_probabilities=True,abs_max=-1):
+    def searchbonds(self,radius=0.0,stage='cure',apply_probabilities=True,abs_max=-1):
         adf=self.TopoCoord.gro_DataFrame('atoms')
         gro=self.TopoCoord.grofilename
         ncpu=self.cfg.parameters['ncpu']
-        self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
+        if stage=='cure':
+            self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         bdf=pd.DataFrame()
-        ''' generate the dataframe of new bonds to make '''
-        for R in self.cfg.reactions:
-            if R.stage!='cure' or R.probability==0.0: # ignore post-cure reactions
-                continue
+        Rlist=[x for x in self.cfg.reactions if (x.stage==stage and x.probability>0.0)]
+        for R in Rlist:
             logger.debug(f'Reaction {R.name}')
             prob=R.probability
             for bond in R.bonds:
@@ -728,99 +727,112 @@ class HTPolyNet:
                 bresid_template=B['resid']
                 bresname=self.molecules[breactantname_template].get_resname(bresid_template)
                 bz=B['z']
+                if stage=='post-cure':
+                    assert areactantname_template==breactantname_template,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different reactants'
+                    assert aresname==bresname,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different residues'
+
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
                 alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list()))
                 blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list()))
-                crosses=list(product(alist,blist))
-                idf=pd.DataFrame({'ai':[x[0][0] for x in crosses],
-                                  'ri':[x[0][1] for x in crosses],
-                                  'aj':[x[1][0] for x in crosses],
-                                  'rj':[x[1][1] for x in crosses],
-                                  'prob':[prob for _ in crosses],
-                                  'reactantName':[R.product for _ in crosses],
-                                  'order':[order for _ in crosses]})
-                # exclude atom pairs that have same resid
-                idf=idf[idf['ri']!=idf['rj']].copy()
-                logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
-                if idf.shape[0]>0:
-                    ess='' if idf.shape[0]!=1 else 's'
-                    bondtestoutcomes={k:0 for k in BTRC}
-                    gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
-                    logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
-                    idf=idf[idf['r']<radius].copy().reset_index(drop=True)
-                    ess='' if idf.shape[0]!=1 else 's'
-                    logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {radius} nm')
-                    p=Pool(processes=ncpu)
-                    idf_split=np.array_split(idf,ncpu)
-                    logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
-                    results=p.map(partial(self.TopoCoord.bondtest_df),idf_split)
-                    p.close()
-                    p.join()
-                    # reassemble final dataframe:
-                    logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
-                    idf=pd.concat(results,ignore_index=True)
-                    logger.debug(f'Bond-candidate test outcomes:')
-                    for k in bondtestoutcomes:
-                        bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
-                        logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
-                    idf=idf[idf['result']==BTRC.passed].copy()
+                if stage=='cure':
+                    all_possible_pairs=list(product(alist,blist))
+                elif stage=='post-cure':
+                    all_possible_pairs=list(zip(alist,blist))
+                else:
+                    all_possible_pairs=[]
+                idf=pd.DataFrame({'ai':           [x[0][0] for x in all_possible_pairs],
+                                  'ri':           [x[0][1] for x in all_possible_pairs],
+                                  'aj':           [x[1][0] for x in all_possible_pairs],
+                                  'rj':           [x[1][1] for x in all_possible_pairs],
+                                  'prob':         [prob for _ in all_possible_pairs],
+                                  'reactantName': [R.product for _ in  all_possible_pairs],
+                                  'order':        [order for _ in all_possible_pairs]})
+                if stage=='cure':
+                    # exclude atom pairs that have same resid
+                    idf=idf[idf['ri']!=idf['rj']].copy()
+                    logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
+                    if idf.shape[0]>0:
+                        ess='' if idf.shape[0]!=1 else 's'
+                        bondtestoutcomes={k:0 for k in BTRC}
+                        gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
+                        logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
+                        idf=idf[idf['r']<radius].copy().reset_index(drop=True)
+                        ess='' if idf.shape[0]!=1 else 's'
+                        logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {radius} nm')
+                        p=Pool(processes=ncpu)
+                        idf_split=np.array_split(idf,ncpu)
+                        logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
+                        results=p.map(partial(self.TopoCoord.bondtest_df),idf_split)
+                        p.close()
+                        p.join()
+                        # reassemble final dataframe:
+                        logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
+                        idf=pd.concat(results,ignore_index=True)
+                        logger.debug(f'Bond-candidate test outcomes:')
+                        for k in bondtestoutcomes:
+                            bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
+                            logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
+                        idf=idf[idf['result']==BTRC.passed].copy()
+                elif stage=='post-cure':
+                    idf=idf[idf['ri']==idf['rj']].copy()
+
                 bdf=pd.concat((bdf,idf),ignore_index=True)
 
-        bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
-
-        bdf['allowed']=[True for x in range(bdf.shape[0])]
-        unique_atomidx=set(bdf.ai.to_list()).union(set(bdf.aj.to_list()))
-        unique_resids=set(bdf.ri.to_list()).union(set(bdf.rj.to_list()))
-        for i,r in bdf.iterrows():
-            if r.ai in unique_atomidx:
-                unique_atomidx.remove(r.ai)
-            else:
-                # logging.debug(f'Disallowing bond {i} due to repeated atom index {r.ai}')
-                bdf.loc[i,'allowed']=False
-            if r.aj in unique_atomidx:
-                unique_atomidx.remove(r.aj)
-            else:
-                # logging.debug(f'Disallowing bond {i} due to repeated atom index {r.aj}')
-                bdf.loc[i,'allowed']=False
-            if r.ri in unique_resids:
-                unique_resids.remove(r.ri)
-            else:
-                # logging.debug(f'Disallowing bond {i} due to repeated residue index {r.ri}')
-                bdf.loc[i,'allowed']=False
-            if r.rj in unique_resids:
-                unique_resids.remove(r.rj)
-            else:
-                # logging.debug(f'Disallowing bond {i} due to repeated residue index {r.rj}')
-                bdf.loc[i,'allowed']=False
-
-        logging.debug(f'{bdf[bdf["allowed"]==False].shape[0]} out of {bdf.shape[0]} bonds disallowed due to repeated atom indexes or residue indexes')
-
-        bdf=bdf[bdf['allowed']==True].copy().reset_index(drop=True)
-
-        bdf=self.TopoCoord.cycle_collective(bdf)
-        logger.debug(f'{bdf[bdf["remove-to-uncyclize"]==True].shape[0]} out of {bdf.shape[0]} bonds removed to break nascent cycles')
-        bdf=bdf[bdf['remove-to-uncyclize']==False].copy().reset_index(drop=True)
-
-        ''' roll the dice '''
-        bdf['lucky']=[True for _ in range(bdf.shape[0])]
-        if apply_probabilities:
+        if stage=='cure':
+            bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
+            bdf['allowed']=[True for x in range(bdf.shape[0])]
+            unique_atomidx=set(bdf.ai.to_list()).union(set(bdf.aj.to_list()))
+            unique_resids=set(bdf.ri.to_list()).union(set(bdf.rj.to_list()))
             for i,r in bdf.iterrows():
-                x=np.random.random()
-                if x>r.prob:
-                    bdf.loc[i,'lucky']=False
+                if r.ai in unique_atomidx:
+                    unique_atomidx.remove(r.ai)
+                else:
+                    # logger.debug(f'Disallowing bond {i} due to repeated atom index {r.ai}')
+                    bdf.loc[i,'allowed']=False
+                if r.aj in unique_atomidx:
+                    unique_atomidx.remove(r.aj)
+                else:
+                    # logger.debug(f'Disallowing bond {i} due to repeated atom index {r.aj}')
+                    bdf.loc[i,'allowed']=False
+                if r.ri in unique_resids:
+                    unique_resids.remove(r.ri)
+                else:
+                    # logger.debug(f'Disallowing bond {i} due to repeated residue index {r.ri}')
+                    bdf.loc[i,'allowed']=False
+                if r.rj in unique_resids:
+                    unique_resids.remove(r.rj)
+                else:
+                    # logger.debug(f'Disallowing bond {i} due to repeated residue index {r.rj}')
+                    bdf.loc[i,'allowed']=False
 
-        logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application.')
-        bdf=bdf[bdf['lucky']==True].copy().reset_index(drop=True)
+            logger.debug(f'{bdf[bdf["allowed"]==False].shape[0]} out of {bdf.shape[0]} bonds disallowed due to repeated atom indexes or residue indexes')
 
-        ''' apply the stated limit '''
-        if abs_max>-1:
-            if abs_max<bdf.shape[0]:
-                bdf=bdf.loc[:abs_max].copy().reset_index(drop=True)
-                logger.debug(f'Limiting to {bdf.shape[0]} allowed bonds')
-        logger.debug('Final bonds:')
-        for ln in bdf.to_string().split('\n'):
-            logger.debug(ln)
+            bdf=bdf[bdf['allowed']==True].copy().reset_index(drop=True)
+
+            bdf=self.TopoCoord.cycle_collective(bdf)
+            logger.debug(f'{bdf[bdf["remove-to-uncyclize"]==True].shape[0]} out of {bdf.shape[0]} bonds removed to break nascent cycles')
+            bdf=bdf[bdf['remove-to-uncyclize']==False].copy().reset_index(drop=True)
+
+            ''' roll the dice '''
+            bdf['lucky']=[True for _ in range(bdf.shape[0])]
+            if apply_probabilities:
+                for i,r in bdf.iterrows():
+                    x=np.random.random()
+                    if x>r.prob:
+                        bdf.loc[i,'lucky']=False
+
+            logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application.')
+            bdf=bdf[bdf['lucky']==True].copy().reset_index(drop=True)
+
+            ''' apply the stated limit '''
+            if abs_max>-1:
+                if abs_max<bdf.shape[0]:
+                    bdf=bdf.loc[:abs_max].copy().reset_index(drop=True)
+                    logger.debug(f'Limiting to {bdf.shape[0]} allowed bonds')
+            logger.debug('Final bonds:')
+            for ln in bdf.to_string().split('\n'):
+                logger.debug(ln)
 
         return bdf
 

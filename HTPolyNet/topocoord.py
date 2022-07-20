@@ -101,14 +101,6 @@ class TopoCoord:
         """
         self.Topology.add_restraints(pairdf,typ=typ)
 
-    # def add_pairs(self,pairdf,kb=300000.0):
-    #     """Adds a pair for each pair in the pairdf (['ai'],['aj'],['initial-distance'])
-
-    #     :param pairdf: dataframe of pairs
-    #     :type pardf: pandas.DataFrames
-    #     """
-    #     self.Topology.add_pairs(pairdf,kb=kb)
-
     def delete_atoms(self,atomlist):
         """Deletes atoms from both the Topology and Coordinates instances
 
@@ -128,116 +120,21 @@ class TopoCoord:
             self.remap_idx_list(list_name,idx_mapper)
         return idx_mapper
 
-    def select_template(self,bondrec,moldict,reaction_list):
-        def is_product(a,reaction_list):
-            return a in [r.product for r in reaction_list]
-        def is_reactant(a,reaction_list):
-            reactants=[]
-            for r in reaction_list:
-                for v in r.reactants.values():
-                    if not v in reactants:
-                        reactants.append(v)
-            return a in v
-        def find_reaction(reaction_list,bondrec=[]):
-            (ian,irn),(jan,jrn)=bondrec
-            for R in reaction_list:
-                # find the bond in this reaction that corresponds to the bond
-                # implied by bondrec
-                iar,jar=None,None
-                for B in R.bonds:
-                    a,b=B['atoms']
-                    an,bn=R.atoms[a]['atom'],R.atoms[b]['atom']
-                    if (ian,jan)==(an,bn):
-                        iar,jar=a,b
-                        break
-                    elif (ian,jan)==(bn,an):
-                        iar,jar=b,a
-                        break
-                if iar and jar:
-                    # find the reactants for these two atoms
-                    irk=R.atoms[iar]['reactant']
-                    jrk=R.atoms[jar]['reactant']
-                    # are these two reactants the reactants these atoms brought in?
-                    if R.reactants[irk]==irn and R.reactants[jrk]==jrn:
-                        return R
-
-            return None
-
-        ai,aj,prodname=bondrec
-        # itn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':ai})
-        # jtn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':aj})
-        ian=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':ai})
-        jan=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':aj})
-
-#        assert itn==jtn # both atoms will have the same reactantName
-
-        n_of_ai=self.partners_of(ai)
-        # logger.debug(f'ai {ai} n {n_of_ai}')
-        n_of_ai.remove(aj)
-        n_of_aj=self.partners_of(aj)
-        # logger.debug(f'aj {aj} n {n_of_aj}')
-        n_of_aj.remove(ai)
-        an_of_n_ai=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in n_of_ai]
-        an_of_n_aj=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in n_of_aj]
-        rn_of_iresid=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in n_of_ai]
-        rn_of_jresid=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in n_of_aj]
-        nitn=[self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':x}) for x in n_of_ai]
-        njtn=[self.get_gro_attribute_by_attributes('reactantName',{'globalIdx':x}) for x in n_of_aj]
-        # b/c of removals above, don't expect jresid to be on iresid-neighbors
-        # if jresid in rn_of_iresid:
-        #     rn_of_iresid.remove(jresid)
-        # if iresid in rn_of_jresid:
-        #     rn_of_jresid.remove(iresid)
-
-        in_prods=[]
-        # logger.debug(f'ai {ai} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":ai})} template {self.get_gro_attribute_by_attributes("reactantName",{"globalIdx":ai})}:')
-        for n,an,r,rn in zip(n_of_ai,an_of_n_ai,rn_of_iresid,nitn):
-            # logger.debug(f'  {n} {an} {r} {rn} product? {is_product(rn,reaction_list)}')
-            if is_product(rn,reaction_list):
-                in_prods.append((n,an,r,rn))
-
-        jn_prods=[]
-        # logger.debug(f'aj {aj} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":aj})} template {self.get_gro_attribute_by_attributes("reactantName",{"globalIdx":aj})}:')
-        for n,an,r,rn in zip(n_of_aj,an_of_n_aj,rn_of_jresid,njtn):
-            # logger.debug(f'  {n} {an} {r} {rn} product? {is_product(rn,reaction_list)}')
-            if is_product(rn,reaction_list):
-                jn_prods.append((n,an,r,rn))
-
-        # logger.debug(f'ai {ai} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":ai})} template {prodname} in_prods {in_prods}:')
-        # logger.debug(f'aj {aj} {self.get_gro_attribute_by_attributes("atomName",{"globalIdx":aj})} template {prodname} jn_prods {jn_prods}:')
-
-        if len(in_prods)==0 and len(jn_prods)==0:
-            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':ai})
-            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':aj})
-            return moldict[prodname]
-        elif len(in_prods)==0 and len(jn_prods)==1:
-            irn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':ai})
-            jrn=jn_prods[0][3]
-        elif len(in_prods)==1 and len(jn_prods)==0:
-            jrn=self.get_gro_attribute_by_attributes('old_reactantName',{'globalIdx':aj})
-            irn=in_prods[0][3]
-        elif len(in_prods)==1 and len(jn_prods)==1:
-            irn=in_prods[0][3]
-            jrn=jn_prods[0][3]
-        else:
-            logger.error(f'ai {ai} in_prods {in_prods} aj {aj} {jn_prods}: too many reactant names')
-            raise Exception('Cannot identify template product for this bond formation reaction')
-        R=find_reaction(reaction_list,bondrec=[(ian,irn),(jan,jrn)])
-        # logger.debug(f'template name {R.product} from reaction {R.name}')
-        prodname=R.product
-        # you should only do this if prodname is a reactant
-        if is_reactant(prodname,reaction_list):
-            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':ai})
-            self.set_gro_attribute_by_attributes('reactantName',prodname,{'globalIdx':aj})
-        return moldict[prodname]
-
     def count_H(self,idx):
+        """count_H Counts the number of hydrogens bound to atom with index idx; 
+        any atom whose name begins with the character 'H' or 'h' is assumed to be a hydrogen!
+
+        :param idx: atom global index
+        :type idx: int
+        :return: number of H atoms bound to this atom
+        :rtype: int
+        """
         aneigh=self.partners_of(idx)
         aneighnames=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':y}) for y in aneigh]
         anH=sum([int(x.upper().startswith('H')) for x in aneighnames])
         return anH
 
-    def map_from_templates(self,bdf,moldict,reaction_list):
+    def map_from_templates(self,bdf,moldict,overcharge_threshhold=0.1):
         """Updates angles, pairs, dihedrals, atom types, and charges, based on product
             templates associated with each bond in 'bdf'
 
@@ -315,7 +212,7 @@ class TopoCoord:
             # copy all bond records matching these two bonds; should be only one!!
             d=d[((d.ai==temp_i_idx)&(d.aj==temp_j_idx))|
                 ((d.ai==temp_j_idx)&(d.aj==temp_i_idx))].copy()
-            assert d.shape[0]==1,f'map_from_templates using {T.name} is sent inst-bond {i_idx}-{j_idx} which is claimed to map to {temp_i_idx}-{temp_j_idx}, but no such unique bond is found:\n{T.TopoCoord.Topology.D["bonds"].to_string()}'
+            assert d.shape[0]==1,f'Using {T.name} is sent inst-bond {i_idx}-{j_idx} which is claimed to map to {temp_i_idx}-{temp_j_idx}, but no such unique bond is found:\n{T.TopoCoord.Topology.D["bonds"].to_string()}'
             ''' check passed '''
             temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
             logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
@@ -337,23 +234,38 @@ class TopoCoord:
             for k,v in temp2inst.items():
                 check = check and (k == inst2temp[v])
             assert check,f'Error: bidirectional dicts are incompatible; bug\n{inst2temp}\b{temp2inst}'
-            logger.debug(f'map_from_templates:inst2temp {inst2temp}')
-            logger.debug(f'map_from_templates:temp2inst {temp2inst}')
+            logger.debug(f'inst2temp {inst2temp}')
+            logger.debug(f'temp2inst {temp2inst}')
             i_idx,j_idx=bb
             _temp_i_idx,_temp_j_idx=inst2temp[i_idx],inst2temp[j_idx]
             assert temp_i_idx==_temp_i_idx,f'mapping mismatch -- bug'
             assert temp_j_idx==_temp_j_idx,f'mapping mismatch -- bug'
 
             total_dcharge=0.0
-
+            temp_atdf=T.TopoCoord.Topology.D['atoms']
+            for temp_atom,inst_atom in temp2inst.items():
+                assert inst_atom in atdf['nr'].values,f'Error: mapped atom {inst_atom} not found in [ atoms ]'
+                inst_type,inst_charge,inst_name,inst_resn,inst_rnam=atdf[atdf['nr']==inst_atom][['type','charge','atom','resnr','residue']].values[0]
+                temp_type,temp_charge,temp_name,temp_resn,temp_rnam=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge','atom','resnr','residue']].values[0]
+                # logger.debug(f'temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
+                # logger.debug(f'inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
+                if inst_type!=temp_type:
+                    logger.debug(f'changing type of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_type} to {temp_type}')
+                    atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
+                if inst_charge!=temp_charge:
+                    logger.debug(f'changing charge of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_charge} to {temp_charge}')
+                    atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
+                    dcharge=temp_charge-inst_charge
+                    total_dcharge+=dcharge
+            self.adjust_charges(atoms=list(temp2inst.values()),overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
             # get all angle, dihedrals, and pairs from template that result from the existence of the specified bond
             # temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
             # logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
             # map from template atom indicies to system atom indicies in angles
-            inst_angles=temp_angles.copy()
             logger.debug(f'Template angles:')
             for ln in temp_angles.to_string().split('\n'):
                 logger.debug(ln)
+            inst_angles=temp_angles.copy()
             inst_angles.ai=temp_angles.ai.map(temp2inst)
             inst_angles.aj=temp_angles.aj.map(temp2inst)
             inst_angles.ak=temp_angles.ak.map(temp2inst)
@@ -362,25 +274,7 @@ class TopoCoord:
                 logger.debug(ln)
             # add new angles to the system topology
             d=self.Topology.D['angles']
-            self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)
-            # for all atoms identified in these angles, update types and charges if
-            # required
-            temp_atdf=T.TopoCoord.Topology.D['atoms']
-            for a in ['ai','aj','ak']:
-                for inst_atom,temp_atom in zip(inst_angles[a],temp_angles[a]):
-                    assert inst_atom in atdf['nr'].values,f'Error: mapped atom {inst_atom} not found in [ atoms ]'
-                    inst_type,inst_charge,inst_name,inst_resn,inst_rnam=atdf[atdf['nr']==inst_atom][['type','charge','atom','resnr','residue']].values[0]
-                    temp_type,temp_charge,temp_name,temp_resn,temp_rnam=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge','atom','resnr','residue']].values[0]
-                    # logger.debug(f'ang temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
-                    # logger.debug(f'ang inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
-                    if inst_type!=temp_type:
-                        logger.debug(f'(angles) {a} changing type of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_type} to {temp_type}')
-                        atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
-                    if inst_charge!=temp_charge:
-                        logger.debug(f'(angles) {a} changing charge of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_charge} to {temp_charge}')
-                        atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
-                        dcharge=temp_charge-inst_charge
-                        total_dcharge+=dcharge
+            self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)                            
             # hard check for any nan's in any atom index attribute in any angle
             d=self.Topology.D['angles']
             check=True
@@ -393,7 +287,6 @@ class TopoCoord:
             logger.debug(f'Template dihedrals:')
             for ln in temp_dihedrals.to_string().split('\n'):
                 logger.debug(ln)
-
             # map from template atom indicies to system atom indicies in dihedrals
             inst_dihedrals=temp_dihedrals.copy()
             inst_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
@@ -413,24 +306,6 @@ class TopoCoord:
             # add new dihedrals to global topology
             d=self.Topology.D['dihedrals']
             self.Topology.D['dihedrals']=pd.concat((d,inst_dihedrals),ignore_index=True)
-            # update any necessary atom types and charges
-            for a in ['ai','aj','ak','al']:
-                for inst_atom,temp_atom in zip(inst_dihedrals[a],temp_dihedrals[a]):
-                    # logger.debug(f'a {a} inst_atom {inst_atom} temp_atom {temp_atom}')
-                    inst_type,inst_charge,inst_name,inst_resn,inst_rnam=atdf[atdf['nr']==inst_atom][['type','charge','atom','resnr','residue']].values[0]
-                    temp_type,temp_charge,temp_name,temp_resn,temp_rnam=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge','atom','resnr','residue']].values[0]
-                    # logger.debug(f'dih temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
-                    # logger.debug(f'dih inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
-                    if inst_type!=temp_type:
-                        logger.debug(f'(dihedrals) {a} changing type of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_type} to {temp_type}')
-                        atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
-                    if inst_charge!=temp_charge:
-                        logger.debug(f'(dihedrals) {a} changing charge of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_charge} to {temp_charge}')
-                        atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
-                        dcharge=temp_charge-inst_charge
-                        total_dcharge+=dcharge
-            logger.debug(f'Total change in charge due to mapping: {total_dcharge}')
-
             # hard check for no nans
             d=self.Topology.D['dihedrals']
             check=True
@@ -493,7 +368,7 @@ class TopoCoord:
                 raise Exception
             # return temp_pairs
 
-    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,reaction_list=[],**kwargs):
+    def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,**kwargs):
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
 
         :param bdf: bonds dataframe, columns 'ai', 'aj', 'reactantName'
@@ -522,7 +397,7 @@ class TopoCoord:
                 for idx in idx_pair:
                     self.decrement_gro_attribute_by_attributes('z',{'globalIdx':idx})
                     self.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':idx})
-            self.map_from_templates(ri_bdf,template_dict,reaction_list)
+            self.map_from_templates(ri_bdf,template_dict,overcharge_threshhold=overcharge_threshhold)
             # enumerate ALL pairs involving either or both of the bonded atoms
             pdf=self.Topology.D['pairs']
             # each of these bonds results in 1-4 pair interactions
@@ -534,8 +409,8 @@ class TopoCoord:
             prsource=[]
             for p in at_idx:
                 j,k=p
-                jresnum,jresname,jname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':j})
-                kresnum,kresname,kname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':k})
+                # jresnum,jresname,jname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':j})
+                # kresnum,kresname,kname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':k})
                 nj=bl.partners_of(j)
                 nj.remove(k)
                 nk=bl.partners_of(k)
@@ -547,18 +422,18 @@ class TopoCoord:
                 prj.extend([k for x in this_pairs])
                 prsource.extend(['c' for x in this_pairs])
                 jpdf=pdf[(pdf['ai']==j)|(pdf['aj']==j)].copy()
-                logger.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}')
-                for ln in jpdf.to_string().split('\n'):
-                    logger.debug(ln)
+                # logger.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}')
+                # for ln in jpdf.to_string().split('\n'):
+                #     logger.debug(ln)
                 pai.extend(jpdf['ai'].to_list())
                 paj.extend(jpdf['aj'].to_list())
                 pri.extend([j for x in jpdf['ai'].to_list()])
                 prj.extend([k for x in jpdf['aj'].to_list()])
                 prsource.extend(['l' for _ in range(jpdf.shape[0])])
                 kpdf=pdf[(pdf['ai']==k)|(pdf['aj']==k)].copy()
-                logger.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}')
-                for ln in kpdf.to_string().split('\n'):
-                    logger.debug(ln)
+                # logger.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}')
+                # for ln in kpdf.to_string().split('\n'):
+                #     logger.debug(ln)
                 pai.extend(kpdf['ai'].to_list())
                 paj.extend(kpdf['aj'].to_list())
                 pri.extend([j for x in kpdf['ai'].to_list()])
@@ -567,7 +442,6 @@ class TopoCoord:
             pi_df=pd.DataFrame({'ai':pai,'aj':paj,'source':prsource,'bi':pri,'bj':prj})
             pi_df.drop_duplicates(inplace=True,ignore_index=True)
             self.Topology.null_check(msg='update_topology_and_coordinates')
-            self.adjust_charges(overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
             if write_mapper_to:
                 tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
                 tdf.to_csv(write_mapper_to,sep=' ',index=False)
@@ -862,8 +736,8 @@ class TopoCoord:
     def make_ringlist(self):
         self.Coordinates.make_ringlist()
 
-    def adjust_charges(self,overcharge_threshhold=0.1,netcharge=0.0,msg=''):
-        self.Topology.adjust_charges(overcharge_threshhold=overcharge_threshhold,desired_charge=netcharge,msg=msg)
+    def adjust_charges(self,atoms=[],overcharge_threshhold=0.1,netcharge=0.0,msg=''):
+        self.Topology.adjust_charges(atoms=atoms,overcharge_threshhold=overcharge_threshhold,desired_charge=netcharge,msg=msg)
 
     def gro_DataFrame(self,name):
         if name=='atoms':
