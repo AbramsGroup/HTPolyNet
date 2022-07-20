@@ -256,9 +256,11 @@ class TopoCoord:
         atdf=self.Topology.D['atoms']
         grodf=self.Coordinates.A
         grodf['old_reactantName']=grodf['reactantName'].copy()
-        logger.debug(f'begins; mapping {bdf.shape[0]} bonds.')
+        logger.debug(f'Mapping {bdf.shape[0]} bonds.')
         for i,b in bdf.iterrows():
-            logger.debug(f'Mapping bond {i} {b}')
+            logger.debug(f'Mapping bond {i}')
+            for ln in b.to_string().split('\n'):
+                logger.debug(f'  -> {ln}')
             bb=[b['ai'],b['aj']]
             order=b['order']
             names=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in bb]
@@ -278,16 +280,17 @@ class TopoCoord:
             oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames=self.get_oneaways(bb)
             BT=BondTemplate(names,resnames,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames)
             RB=ReactionBond(bb,resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx)
-            logger.debug(f'Bond {bb} (resids {i_resid} and {j_resid})')
             logger.debug(f'apparent bond template {str(BT)}')
             logger.debug(f'apparent bond instance {str(RB)}')
             use_T=None
+            b_idx=-1
             for template_name,T in moldict.items():
                 # if BT in T.bond_templates:
                 #     use_T=T
                 #     break
                 use_T=None
-                for bt in T.bond_templates:
+                for b_idx in range(len(T.bond_templates)):
+                    bt=T.bond_templates[b_idx]
                     # logger.debug(f'comparing to {T.name} {str(bt)}')
                     if bt==BT:
                         # logger.debug(f'TRUE')
@@ -305,10 +308,27 @@ class TopoCoord:
                 raise Exception('you have a bond for which I cannot find a template')
             
             T=use_T
-            logger.debug(f'Bond {bb} (resids {i_resid} and {j_resid}) using template {T.name}')
-            temp_atdf=T.TopoCoord.Topology.D['atoms']
+            logger.debug(f'Using template {T.name} and bond index {b_idx}')
+            rb=T.reaction_bonds[b_idx]
+            temp_i_idx,temp_j_idx=rb.idx
+            d=T.TopoCoord.Topology.D['bonds']
+            # copy all bond records matching these two bonds; should be only one!!
+            d=d[((d.ai==temp_i_idx)&(d.aj==temp_j_idx))|
+                ((d.ai==temp_j_idx)&(d.aj==temp_i_idx))].copy()
+            assert d.shape[0]==1,f'map_from_templates using {T.name} is sent inst-bond {i_idx}-{j_idx} which is claimed to map to {temp_i_idx}-{temp_j_idx}, but no such unique bond is found:\n{T.TopoCoord.Topology.D["bonds"].to_string()}'
+            ''' check passed '''
+            temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
+            logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
+            # determine the set of unique atoms in template that must be mapped to instance -- it is all
+            # atoms involved in these bonded interactions
+            uniq_temp_idx=set()
+            for df in [temp_angles,temp_dihedrals,temp_pairs]:
+                for label in ['ai','aj','ak','al']:
+                    if label in df:
+                        uniq_temp_idx=uniq_temp_idx.union(set(df[label].to_list()))
+            logger.debug(f'Template atom indexes that must be mapped: {uniq_temp_idx}')
             # get the bidirectional instance<->template mapping dictionaries
-            inst2temp,temp2inst=T.idx_mappers(self,RB.idx,RB.bystander_resids,RB.oneaway_resids)
+            inst2temp,temp2inst=T.idx_mappers(self,RB.idx,RB.bystander_resids,RB.oneaway_resids,uniq_temp_idx)
             # some hard checks on compatibility of the dicts
             assert len(inst2temp)==len(temp2inst)
             check=True
@@ -317,44 +337,42 @@ class TopoCoord:
             for k,v in temp2inst.items():
                 check = check and (k == inst2temp[v])
             assert check,f'Error: bidirectional dicts are incompatible; bug\n{inst2temp}\b{temp2inst}'
-            # logger.debug(f'map_from_templates:inst2temp {inst2temp}')
-            # logger.debug(f'map_from_templates:temp2inst {temp2inst}')
-            i_idx,j_idx=bb # the actual atoms that just bonded
-            # get their indicies in the template
-            temp_i_idx=inst2temp[i_idx]
-            temp_j_idx=inst2temp[j_idx]
-            d=T.TopoCoord.Topology.D['bonds']
-            # copy all bond records matching these two bonds; should be only one!!
-            d=d[((d.ai==temp_i_idx)&(d.aj==temp_j_idx))|
-                ((d.ai==temp_j_idx)&(d.aj==temp_i_idx))].copy()
-            if d.shape[0]!=1:
-                logger.error(f'map_from_templates using {T.name} is sent inst-bond {i_idx}-{j_idx} which is claimed to map to {temp_i_idx}-{temp_j_idx}, but no such unique bond is found:\n{T.TopoCoord.Topology.D["bonds"].to_string()}')
-            assert d.shape[0]==1,f'Error: see log'
+            logger.debug(f'map_from_templates:inst2temp {inst2temp}')
+            logger.debug(f'map_from_templates:temp2inst {temp2inst}')
+            i_idx,j_idx=bb
+            _temp_i_idx,_temp_j_idx=inst2temp[i_idx],inst2temp[j_idx]
+            assert temp_i_idx==_temp_i_idx,f'mapping mismatch -- bug'
+            assert temp_j_idx==_temp_j_idx,f'mapping mismatch -- bug'
 
             total_dcharge=0.0
 
             # get all angle, dihedrals, and pairs from template that result from the existence of the specified bond
-            temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
-            logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
+            # temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
+            # logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
             # map from template atom indicies to system atom indicies in angles
             inst_angles=temp_angles.copy()
-            logger.debug(f'Template angles:\n{temp_angles.to_string()}')
+            logger.debug(f'Template angles:')
+            for ln in temp_angles.to_string().split('\n'):
+                logger.debug(ln)
             inst_angles.ai=temp_angles.ai.map(temp2inst)
             inst_angles.aj=temp_angles.aj.map(temp2inst)
             inst_angles.ak=temp_angles.ak.map(temp2inst)
-            logger.debug(f'Mapped inst_angles:\n{inst_angles.to_string()}')
+            logger.debug(f'Mapped instance angles:')
+            for ln in inst_angles.to_string().split('\n'):
+                logger.debug(ln)
             # add new angles to the system topology
             d=self.Topology.D['angles']
             self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)
             # for all atoms identified in these angles, update types and charges if
             # required
+            temp_atdf=T.TopoCoord.Topology.D['atoms']
             for a in ['ai','aj','ak']:
                 for inst_atom,temp_atom in zip(inst_angles[a],temp_angles[a]):
                     assert inst_atom in atdf['nr'].values,f'Error: mapped atom {inst_atom} not found in [ atoms ]'
                     inst_type,inst_charge,inst_name,inst_resn,inst_rnam=atdf[atdf['nr']==inst_atom][['type','charge','atom','resnr','residue']].values[0]
                     temp_type,temp_charge,temp_name,temp_resn,temp_rnam=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge','atom','resnr','residue']].values[0]
-                    logger.debug(f'ang temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
-                    logger.debug(f'ang inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
+                    # logger.debug(f'ang temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
+                    # logger.debug(f'ang inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
                     if inst_type!=temp_type:
                         logger.debug(f'(angles) {a} changing type of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_type} to {temp_type}')
                         atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
@@ -372,12 +390,19 @@ class TopoCoord:
                 logger.error('NAN in angles')
                 raise Exception
 
+            logger.debug(f'Template dihedrals:')
+            for ln in temp_dihedrals.to_string().split('\n'):
+                logger.debug(ln)
+
             # map from template atom indicies to system atom indicies in dihedrals
             inst_dihedrals=temp_dihedrals.copy()
             inst_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
             inst_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
             inst_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
             inst_dihedrals.al=temp_dihedrals.al.map(temp2inst)
+            logger.debug(f'Mapped instance dihedrals:')
+            for ln in inst_dihedrals.to_string().split('\n'):
+                logger.debug(ln)
             d=inst_dihedrals
             check=False
             for a in ['ai','aj','ak','al']:
@@ -391,11 +416,11 @@ class TopoCoord:
             # update any necessary atom types and charges
             for a in ['ai','aj','ak','al']:
                 for inst_atom,temp_atom in zip(inst_dihedrals[a],temp_dihedrals[a]):
-                    logger.debug(f'a {a} inst_atom {inst_atom} temp_atom {temp_atom}')
+                    # logger.debug(f'a {a} inst_atom {inst_atom} temp_atom {temp_atom}')
                     inst_type,inst_charge,inst_name,inst_resn,inst_rnam=atdf[atdf['nr']==inst_atom][['type','charge','atom','resnr','residue']].values[0]
                     temp_type,temp_charge,temp_name,temp_resn,temp_rnam=temp_atdf[temp_atdf['nr']==temp_atom][['type','charge','atom','resnr','residue']].values[0]
-                    logger.debug(f'dih temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
-                    logger.debug(f'dih inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
+                    # logger.debug(f'dih temp {temp_atom} {temp_name} {temp_rnam} {temp_resn} {temp_type} {temp_charge}')
+                    # logger.debug(f'dih inst {inst_atom} {inst_name} {inst_rnam} {inst_resn} {inst_type} {inst_charge}')
                     if inst_type!=temp_type:
                         logger.debug(f'(dihedrals) {a} changing type of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_type} to {temp_type}')
                         atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
@@ -454,7 +479,9 @@ class TopoCoord:
                 logger.error('NAN in pairs aj')
                 raise Exception
             # add these pairs to the topology
-            logging.debug(f'Concatenating this pairs to global pairs:\n{temp_pairs.to_string()}')
+            logger.debug(f'Concatenating this pairs to global pairs')
+            for ln in temp_pairs.to_string().split('\n'):
+                logger.debug(ln)
             self.Topology.D['pairs']=pd.concat((d,temp_pairs),ignore_index=True)
             d=self.Topology.D['pairs']
             # check AGAIN for nans
@@ -520,14 +547,18 @@ class TopoCoord:
                 prj.extend([k for x in this_pairs])
                 prsource.extend(['c' for x in this_pairs])
                 jpdf=pdf[(pdf['ai']==j)|(pdf['aj']==j)].copy()
-                logging.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}\n{jpdf.to_string()}')
+                logger.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}')
+                for ln in jpdf.to_string().split('\n'):
+                    logger.debug(ln)
                 pai.extend(jpdf['ai'].to_list())
                 paj.extend(jpdf['aj'].to_list())
                 pri.extend([j for x in jpdf['ai'].to_list()])
                 prj.extend([k for x in jpdf['aj'].to_list()])
                 prsource.extend(['l' for _ in range(jpdf.shape[0])])
                 kpdf=pdf[(pdf['ai']==k)|(pdf['aj']==k)].copy()
-                logging.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}\n{kpdf.to_string()}')
+                logger.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}')
+                for ln in kpdf.to_string().split('\n'):
+                    logger.debug(ln)
                 pai.extend(kpdf['ai'].to_list())
                 paj.extend(kpdf['aj'].to_list())
                 pri.extend([j for x in kpdf['ai'].to_list()])
@@ -536,11 +567,9 @@ class TopoCoord:
             pi_df=pd.DataFrame({'ai':pai,'aj':paj,'source':prsource,'bi':pri,'bj':prj})
             pi_df.drop_duplicates(inplace=True,ignore_index=True)
             self.Topology.null_check(msg='update_topology_and_coordinates')
-            self.adjust_charges(overcharge_threshold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
+            self.adjust_charges(overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
             if write_mapper_to:
-                tdf=pd.Series.explode(idx_mapper).to_frame(name='new')
-                tdf['old']=tdf.index.copy()
-                tdf=tdf.reindex(['old','new'],axis=1)
+                tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
                 tdf.to_csv(write_mapper_to,sep=' ',index=False)
             return ri_bdf,pi_df
 
@@ -833,8 +862,8 @@ class TopoCoord:
     def make_ringlist(self):
         self.Coordinates.make_ringlist()
 
-    def adjust_charges(self,netcharge=0.0,msg=''):
-        self.Topology.adjust_charges(desired_charge=netcharge,msg=msg)
+    def adjust_charges(self,overcharge_threshhold=0.1,netcharge=0.0,msg=''):
+        self.Topology.adjust_charges(overcharge_threshhold=overcharge_threshhold,desired_charge=netcharge,msg=msg)
 
     def gro_DataFrame(self,name):
         if name=='atoms':
@@ -1025,6 +1054,8 @@ class TopoCoord:
             result,dummy=self.bondtest((r.ai,r.aj,r.r),pbc=pbc,show_piercings=show_piercings)
             results.append(result)
         df['result']=results
+        for ln in df[df['result']==BTRC.passed].to_string().split('\n'):
+            logger.debug(ln)
         return df
 
     # def bondtest_par(self,B,pbc=[1,1,1],show_piercings=True):
@@ -1068,7 +1099,7 @@ class TopoCoord:
             return BTRC.failed_bond_cycle,0
         if self.pierces_ring(i,j,pbc=pbc,show_piercings=show_piercings):
             return BTRC.failed_pierce_ring,0
-        logger.debug(f'passed: {i:>7d} {j:>7d} {rij:>6.3f} nm')
+        # logger.debug(f'passed: {i:>7d} {j:>7d} {rij:>6.3f} nm')
         return BTRC.passed,rij
 
     def pierces_ring(self,i,j,pbc=[1,1,1],show_piercings=True):
@@ -1276,24 +1307,28 @@ class TopoCoord:
                 chainlist.remove(chainlist[old_head[0]])
                 return old_tail[0],False
         # kb=bondrecs.copy()
+        logger.debug(f'checking set of {bdf.shape[0]} bonds for nascent cycles')
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
         chains=self.idx_lists['chain'].copy()
         cyclized_chains={}
         chains_of_bonds=[]
         for i,r in bdf.iterrows():
-            # ai,aj=b.bond
             chain_idx,cyclized=addlink(chains,r.ai,r.aj)
+            # logger.debug(f'bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to chain {chain_idx}')
             chains_of_bonds.append(chain_idx)
             if cyclized and not chain_idx in cyclized_chains:
                 cyclized_chains[chain_idx]=[]
+        assert len(chains_of_bonds)==bdf.shape[0]
         for i,r in bdf.iterrows():
+            # logger.debug(f'compiling bonds of cyclized chains: bond {i}')
             cidx=chains_of_bonds[i]
+            # logger.debug(f'compiling bonds of cyclized chains: cidx {chains_of_bonds[i]}')
             if cidx in cyclized_chains:
                 cyclized_chains[cidx].append(i)
         for k,v in cyclized_chains.items():
             lb=v[-1]  # last bondrec in list
-            new_bdf.loc[lb]['remove-to-uncyclize']=True
+            new_bdf.loc[lb,'remove-to-uncyclize']=True
         return new_bdf
 
     def get_bystanders(self,atom_idx):
@@ -1314,7 +1349,7 @@ class TopoCoord:
         # resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
         chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
         chain_idx=[self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':x}) for x in atom_idx]
-        logger.debug(f'chains {chains} chain_idx {chain_idx}')
+        # logger.debug(f'chains {chains} chain_idx {chain_idx}')
         oneaway_resids=[None,None]
         oneaway_resnames=[None,None]
         oneaway_atomidx=[None,None]
@@ -1337,15 +1372,15 @@ class TopoCoord:
                 chainlists_atomnames.append(atomnamelist)
                 chainlists_resids.append(residlist)
                 chainlists_resnames.append(resnamelist)
-            logger.debug(f'chainlists_idx: {chainlists_idx}')
-            logger.debug(f'chainlists_atomnames: {chainlists_atomnames}')
-            logger.debug(f'chainlists_resids: {chainlists_resids}')
-            logger.debug(f'chainlists_resnames: {chainlists_resnames}')
+            # logger.debug(f'chainlists_idx: {chainlists_idx}')
+            # logger.debug(f'chainlists_atomnames: {chainlists_atomnames}')
+            # logger.debug(f'chainlists_resids: {chainlists_resids}')
+            # logger.debug(f'chainlists_resnames: {chainlists_resnames}')
             if chain_idx[0]==0 or chain_idx[0]>chain_idx[1]:
                 oa_chain_idx=[chain_idx[0]+2,chain_idx[1]-2]
             elif chain_idx[1]==0 or chain_idx[1]>chain_idx[0]:
                 oa_chain_idx=[chain_idx[0]-2,chain_idx[1]+2]
-            logger.debug(f'oa_chain_idx {oa_chain_idx}')
+            # logger.debug(f'oa_chain_idx {oa_chain_idx}')
             for i in range(len(oa_chain_idx)):
                 if oa_chain_idx[i]<0:
                     oa_chain_idx[i]=None
@@ -1360,6 +1395,6 @@ class TopoCoord:
                     oneaway_atomnames[i]=chainlists_atomnames[i][oa_chain_idx[i]]
                     oneaway_resids[i]=chainlists_resids[i][oa_chain_idx[i]]
                     oneaway_resnames[i]=chainlists_resnames[i][oa_chain_idx[i]]
-        logger.debug(f'result oneaway_resids {oneaway_resids} oneaway_resnames {oneaway_resnames}')
-        logger.debug(f'oneaway_atomidx {oneaway_atomidx} oneaway_atomnames {oneaway_atomnames}')
+        # logger.debug(f'result oneaway_resids {oneaway_resids} oneaway_resnames {oneaway_resnames}')
+        # logger.debug(f'oneaway_atomidx {oneaway_atomidx} oneaway_atomnames {oneaway_atomnames}')
         return oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames

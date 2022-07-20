@@ -841,7 +841,7 @@ class Topology:
                         newpairs.append((i,l))
         return newdihedrals,newpairs
 
-    def delete_atoms(self,idx=[],reindex=True,return_idx_of=[]):
+    def delete_atoms(self,idx=[],reindex=True,return_idx_of=[],**kwargs):
         """Delete atoms from topology
 
         :param idx: list of atom indexes to delete, defaults to []
@@ -854,14 +854,14 @@ class Topology:
         :rtype: dict
         """
         #logger.debug(f'Delete atoms: {idx}')
+        paranoid_about_pairs=kwargs.get('paranoid_about_pairs',False)
         self.null_check(msg='beginning of delete atoms')
         # logger.debug(f'idx {idx}')
         d=self.D['atoms']
         new_idx=[]
         indexes_to_drop=d[d.nr.isin(idx)].index
         total_missing_charge=d.loc[indexes_to_drop]['charge'].sum()
-        logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ atoms ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-        logger.info(f'Total charge that is now missing: {total_missing_charge:.4f}')
+        logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ atoms ]; charge to make up: {total_missing_charge:.4f}')#:\n{d.loc[indexes_to_drop].to_string()}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         mapper={}
@@ -890,10 +890,7 @@ class Topology:
                 # logger.debug(f'delete atom: {pt} df prior to deleting')
                 # logger.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
-                logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-
-                # logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-                # logger.debug(f'dropping {pt} {indexes_to_drop}')
+                logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
                 if reindex:
@@ -929,8 +926,7 @@ class Topology:
         # logger.debug(f'ak {d.ak.isin(idx).to_string()}')
         indexes_to_drop=d[(d['ai'].isin(idx))|(d['aj'].isin(idx))|(d['ak'].isin(idx))].index
         # extras=d[d['ak'].isin(idx)].index
-        logger.debug(f'Deleting {len(indexes_to_drop)} [ angles ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-        # logger.debug(f'any? {list(extras)}')
+        logger.info(f'Deleting {len(indexes_to_drop)} [ angles ]')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         # logger.debug(f'drop {list(sorted(list(set(indexes_to_drop))))}')
         # logger.debug(f'keep {indexes_to_keep}')
@@ -956,22 +952,27 @@ class Topology:
         self.null_check(msg='inside delete atoms after angles reindex')
         d=self.D['dihedrals']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
-        logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-        # TODO: make sure you delete pairs!!
-        dp=self.D['pairs']
-        ddp=d.loc[indexes_to_drop]  # these are dihedrals marked for deletion
-        # determine pairs deriving from these dihedrals and delete them!
-        pai=ddp.ai.to_list()
-        pal=ddp.al.to_list()
-        dd=[]
-        for pi,pl in zip(pai,pal):
-            dwpi=dp[((dp.ai==pi)&(dp.aj==pl))|((dp.ai==pl)&(dp.aj==pi))].index.to_list()
-            dd.extend(dwpi)
-        ptk=set(range(dp.shape[0]))-set(dwpi)
-        logger.debug(f'Deleting {dp.loc[dwpi].shape[0]} [ pairs ] due to dihedral deletions')
-        # Note that we expect this to be zero if we are only deleting H's, since
-        # an H can never be a 'j' or 'k' in a dihedral!
-        self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)
+        logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')
+        # if the atoms we have deleted are truly just H's, then there will be no other
+        # spurious pairs after all dihedrals containing deleted atoms are deleted.
+        # However, we may want to still search for such pairs, so let's leave this
+        # as an option:
+        if paranoid_about_pairs:
+            dp=self.D['pairs']
+            ddp=d.loc[indexes_to_drop]  # these are dihedrals marked for deletion
+            # determine pairs deriving from these dihedrals and delete them!
+            pai=ddp.ai.to_list()
+            pal=ddp.al.to_list()
+            dd=[]
+            for pi,pl in zip(pai,pal):
+                dwpi=dp[((dp.ai==pi)&(dp.aj==pl))|((dp.ai==pl)&(dp.aj==pi))].index.to_list()
+                dd.extend(dwpi)
+            ptk=set(range(dp.shape[0]))-set(dwpi)
+            if dp.loc[dwpi].shape[0]>0:
+                logger.info(f'  -> and deleting {dp.loc[dwpi].shape[0]} [ pairs ] from those dihedrals')
+            # Note that we expect this to be zero if we are only deleting H's, since
+            # an H can never be a 'j' or 'k' in a dihedral!
+            self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['dihedrals']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         if reindex:

@@ -336,20 +336,20 @@ class Configuration:
             cnms=[]
             for c in mon.TopoCoord.idx_lists['chain']:
                 cnms.append([mon.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
-            logger.debug(f'Monomer {mon.name} has {len(mon.TopoCoord.idx_lists["chain"])} 2-chains\n{mon.TopoCoord.idx_lists["chain"]} {cnms}')
+            logger.debug(f'Monomer {mon.name} has {len(mon.TopoCoord.idx_lists["chain"])} 2-chains: {mon.TopoCoord.idx_lists["chain"]} {cnms}')
 
         for dim in dimer_lefts:
             logger.debug(f'Dimer_left {dim.name} has sequence {dim.sequence}')
             logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
             for cl in dim.TopoCoord.idx_lists['chain']:
                 nl=[dim.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
-                logger.debug(f'{nl}')
+                logger.debug(f'  -> {nl}')
         for dim in dimer_rights:
             logger.debug(f'Dimer_right {dim.name} has sequence {dim.sequence}')
             logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
             for cl in dim.TopoCoord.idx_lists['chain']:
                 nl=[dim.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
-                logger.debug(f'{nl}')
+                logger.debug(f'  -> {nl}')
 
         # monomer head attacks dimer tail
         MD=product(monomers,dimer_lefts)
@@ -366,7 +366,6 @@ class Configuration:
                     t_idx=DC[-1]
                     t_name=d.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
                     new_mname=f'{m.name}~{h_name}={t_name}~{d.name}'
-                    logger.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {new_mname}')
                     '''construct reaction'''
                     R=Reaction()
                     R.reactants={1:m.name, 2:d.name}
@@ -378,13 +377,15 @@ class Configuration:
                     R.product=new_mname
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logger.debug(f'New reaction is {R}')
+                    logger.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {new_mname}:')
+                    for ln in str(R).split('\n'):
+                        logger.debug(ln)
                     extra_reactions.append(R)
         # dimer head attacks monomer tail
         MD=product(monomers,dimer_rights)
         for m,d in MD:
             for mb in m.TopoCoord.idx_lists['chain']:
-                assert len(mb)==2,f'monomer {m.name} has a chain that is not legnth-2 -- this is IMPOSSIBLE'
+                assert len(mb)==2,f'monomer {m.name} has a chain that is not length-2 -- this is IMPOSSIBLE'
                 t_idx=mb[-1]
                 t_name=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
                 D4=[]
@@ -395,7 +396,6 @@ class Configuration:
                     h_idx=DC[0]
                     h_name=d.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})
                     new_mname=f'{d.name}~{h_name}={t_name}~{m.name}'
-                    logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attach monomer atom {m.name}_{t_name}-> {new_mname}')
                     '''construct reaction'''
                     R=Reaction()
                     R.reactants={1:d.name, 2:m.name}
@@ -408,7 +408,9 @@ class Configuration:
                     R.product=new_mname
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logger.debug(f'New reaction is {R}')
+                    logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attach monomer atom {m.name}_{t_name}-> {new_mname}:')
+                    for ln in str(R).split('\n'):
+                        logger.debug(ln)
                     extra_reactions.append(R)
 
         DD=product(dimer_rights,dimer_lefts)
@@ -421,7 +423,6 @@ class Configuration:
                     t_idx=cl[-1]
                     t_name=dl.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
                     new_mname=f'{dr.name}~{h_name}={t_name}~{dl.name}'
-                    logger.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {new_mname}')
                     '''construct reaction'''
                     R=Reaction()
                     R.reactants={1:dr.name, 2:dl.name}
@@ -433,7 +434,9 @@ class Configuration:
                     R.name=R.product.lower()
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logger.debug(f'New reaction is {R}')
+                    logger.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {new_mname}:')
+                    for ln in str(R).split('\n'):
+                        logger.debug(ln)
                     extra_reactions.append(R)
 
         self.reactions.extend(extra_reactions)

@@ -167,7 +167,8 @@ def density_trace(edr,**kwargs):
     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
-    logger.info(f'{msg}\n{density.iloc[-1].to_string()}')
+    for ln in density.iloc[-1].to_string().split('\n'):
+        logger.info(f'{ln}')
 
 def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     """Use 'gmx distance' to measure interatomic distances

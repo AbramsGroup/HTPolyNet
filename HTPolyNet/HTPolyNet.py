@@ -147,7 +147,7 @@ class HTPolyNet:
                     logger.debug(f'reactants {list(M.generator.reactants.values())}')
                 return False
         else:
-            logger.info(f'Fetching parameterized {mname}; molecules {list(self.molecules.keys())}')
+            logger.info(f'Fetching parameterized {mname}')
             for ex in ['mol2','top','itp','gro','grx']:
                 self.checkout(f'molecules/parameterized/{mname}.{ex}')
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2')
@@ -742,132 +742,65 @@ class HTPolyNet:
                                   'order':[order for _ in crosses]})
                 # exclude atom pairs that have same resid
                 idf=idf[idf['ri']!=idf['rj']].copy()
-                # Pbonds=list(product(Aset['globalIdx'].to_list(),Bset['globalIdx'].to_list()))
-                # Pbonds=resid_filter(Pbonds)
                 logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
-                passbonds=[]
                 if idf.shape[0]>0:
+                    ess='' if idf.shape[0]!=1 else 's'
                     bondtestoutcomes={k:0 for k in BTRC}
-                    # idf=pd.DataFrame({'ai':[x[0] for x in Pbonds],'aj':[x[1] for x in Pbonds]})
-                    # logger.debug(f'build df with {idf.shape[0]} entries')
                     gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
-                    # logger.debug(f'\'gmx distance\' returned {idf["r"].shape[0]} lengths -- mean {idf["r"].mean():.3f} nm')
-                    bcmin,bcmax,bcmean=idf['r'].min(),idf['r'].max(),idf['r'].mean()
-                    logger.debug(f'{idf["r"].shape[0]} bond-candidate lengths avg/min/max: {bcmean:0.3f}/{bcmin:0.3f}/{bcmax:0.3f}')
-                    idf=idf[idf['r']<radius]
-                    # logger.debug(f'idf:\n{idf.head().to_string()}')
-                    npassers=idf.shape[0]
-                    ess='' if npassers!=1 else 's'
-                    logger.debug(f'{npassers} bond-candidate{ess} with lengths below {radius} nm')
-                    if npassers>0:
-                        # Pbonds=[(int(r['ai']),int(r['aj']),r['r']) for i,r in jdf.iterrows()]
-                        # logger.debug(f'Testing of {len(Pbonds)} bond-candidates will use {ncpu} processors')
-                        p=Pool(processes=ncpu)
-                        # Pbonds_split=np.array_split(Pbonds,ncpu)
-                        idf_split=np.array_split(idf,ncpu)
-                        logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
-                        results=p.map(partial(self.TopoCoord.bondtest_df),idf_split)
-                        # results=p.map(partial(self.TopoCoord.bondtest_par),idf_split)
-                        p.close()
-                        p.join()
-                        new_idf=[result.get() for result in results]
-                        # reassemble final dataframe:
-                        idf=pd.concat(new_idf,ignore_index=True)
-                        for k in bondtestoutcomes:
-                            bondtestoutcomes[k]=idf['result'==k].shape[0]
-                        idf=idf['result'==BTRC.passed].copy()
-                        # rc=[]
-                        # for i,l in enumerate(results):
-                        #     rc.extend(l)
-                        # gatheredbonds=[]
-                        # for i,R2 in enumerate(rc):
-                        #     RC,rij=R2
-                        #     bondtestoutcomes[RC]+=1
-                        #     if RC==BTRC.passed:
-                        #         gatheredbonds.append(Pbonds[i])
-                        # for i in range(len(gatheredbonds)):
-                        #         # passbonds.append((Pbonds[i],R.product,prob))
-                        #     passbonds.append(PassBond((gatheredbonds[i][0],gatheredbonds[i][1]),R.product,gatheredbonds[i][2],prob,order))
-                        # logger.debug(f'{len(passbonds)} out of {len(Pbonds)} bond-candidates pass initial filter')
-                        logger.debug(f'Bond-candidate test outcomes:')
-                        for k,v in bondtestoutcomes.items():
-                            logger.debug(f'   {str(k)}: {v}')
-                        # newbonds.extend(passbonds)
-                bdf=bdf.concat((bdf,idf),ignore_index=True)
+                    logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
+                    idf=idf[idf['r']<radius].copy().reset_index(drop=True)
+                    ess='' if idf.shape[0]!=1 else 's'
+                    logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {radius} nm')
+                    p=Pool(processes=ncpu)
+                    idf_split=np.array_split(idf,ncpu)
+                    logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
+                    results=p.map(partial(self.TopoCoord.bondtest_df),idf_split)
+                    p.close()
+                    p.join()
+                    # reassemble final dataframe:
+                    logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
+                    idf=pd.concat(results,ignore_index=True)
+                    logger.debug(f'Bond-candidate test outcomes:')
+                    for k in bondtestoutcomes:
+                        bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
+                        logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
+                    idf=idf[idf['result']==BTRC.passed].copy()
+                bdf=pd.concat((bdf,idf),ignore_index=True)
 
-        bdf=bdf.sort_values('r',axis=0)
-        unique_atomidx=list(set(bdf.ai.to_list()+bdf.aj.to_list()))
-        unique_resids=list(set(bdf.ri.to_list()+bdf.rj.to_list()))
+        bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
+
         bdf['allowed']=[True for x in range(bdf.shape[0])]
+        unique_atomidx=set(bdf.ai.to_list()).union(set(bdf.aj.to_list()))
+        unique_resids=set(bdf.ri.to_list()).union(set(bdf.rj.to_list()))
         for i,r in bdf.iterrows():
             if r.ai in unique_atomidx:
                 unique_atomidx.remove(r.ai)
             else:
-                bdf.loc[i]['allowed']=False
+                # logging.debug(f'Disallowing bond {i} due to repeated atom index {r.ai}')
+                bdf.loc[i,'allowed']=False
             if r.aj in unique_atomidx:
                 unique_atomidx.remove(r.aj)
             else:
-                bdf.loc[i]['allowed']=False
+                # logging.debug(f'Disallowing bond {i} due to repeated atom index {r.aj}')
+                bdf.loc[i,'allowed']=False
             if r.ri in unique_resids:
                 unique_resids.remove(r.ri)
             else:
-                bdf.loc[i]['allowed']=False
+                # logging.debug(f'Disallowing bond {i} due to repeated residue index {r.ri}')
+                bdf.loc[i,'allowed']=False
             if r.rj in unique_resids:
                 unique_resids.remove(r.rj)
             else:
-                bdf.loc[i]['allowed']=False
+                # logging.debug(f'Disallowing bond {i} due to repeated residue index {r.rj}')
+                bdf.loc[i,'allowed']=False
 
         logging.debug(f'{bdf[bdf["allowed"]==False].shape[0]} out of {bdf.shape[0]} bonds disallowed due to repeated atom indexes or residue indexes')
 
-        # ''' Sort new potential bonds by length (ascending) and claim each one
-        #     in order so long as both its atoms are available '''
-        # newbonds.sort(key=lambda x: x.distance)
-        # # logger.debug(f'*** Pruning {len(newbonds)} bonds...')
-        # atomset=list(set(list([x.bond[0] for x in newbonds])+list([x.bond[1] for x in newbonds])))
-        # resid_pairs=[]
-        # just_resids=[]
-        # allowed_bond=[True for x in newbonds]
-        # for k,b in enumerate(newbonds):
-        #     # bb,t,prob=b
-        #     i,j=b.members()
-        #     i_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
-        #     j_resid=self.TopoCoord.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
-        #     # strictly forbidding any one residue from participating in two
-        #     # bond events in one cycle
-        #     if not i_resid in just_resids:
-        #         just_resids.append(i_resid)
-        #     else:
-        #         allowed_bond[k]=False
-        #     if not j_resid in just_resids:
-        #         just_resids.append(j_resid)
-        #     else:
-        #         allowed_bond[k]=False
-        #     rp=(i_resid,j_resid)
-        #     if not rp in resid_pairs:
-        #         resid_pairs.append(rp)
-        #         resid_pairs.append(rp[::-1])
-        #     else:
-        #         allowed_bond[k]=False
-        # # keep shortest bonds up to point atoms are all used up; do not repeat resid pairs
-        # so that only one bond is allowed to connect any two residues
-        # keepbonds=[]
-        # disallowed=0
-        # for k,n in enumerate(newbonds):
-        #     if not allowed_bond[k]:
-        #         disallowed+=1
-        #         continue
-        #     i,j=n.members
-        #     if i in atomset and j in atomset:
-        #         atomset.remove(i)
-        #         atomset.remove(j)
-        #         keepbonds.append(n)
-        # logger.debug(f'Accepted the {len(keepbonds)} shortest non-competing bond-candidates.')
-        # logger.debug(f'    {disallowed} bond-candidates that repeat resids thrown out.')
-        
-        bdf=bdf[bdf['allowed']==True].copy()
+        bdf=bdf[bdf['allowed']==True].copy().reset_index(drop=True)
 
         bdf=self.TopoCoord.cycle_collective(bdf)
-        bdf=bdf[bdf['remove-to-uncyclize']==False].copy()
+        logger.debug(f'{bdf[bdf["remove-to-uncyclize"]==True].shape[0]} out of {bdf.shape[0]} bonds removed to break nascent cycles')
+        bdf=bdf[bdf['remove-to-uncyclize']==False].copy().reset_index(drop=True)
 
         ''' roll the dice '''
         bdf['lucky']=[True for _ in range(bdf.shape[0])]
@@ -875,24 +808,21 @@ class HTPolyNet:
             for i,r in bdf.iterrows():
                 x=np.random.random()
                 if x>r.prob:
-                    bdf.loc[i]['lucky']=False
+                    bdf.loc[i,'lucky']=False
 
         logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application.')
-        bdf=bdf[bdf['lucky']==True].copy()
+        bdf=bdf[bdf['lucky']==True].copy().reset_index(drop=True)
 
         ''' apply the stated limit '''
         if abs_max>-1:
             if abs_max<bdf.shape[0]:
-                bdf=bdf.loc[:abs_max].copy()
+                bdf=bdf.loc[:abs_max].copy().reset_index(drop=True)
                 logger.debug(f'Limiting to {bdf.shape[0]} allowed bonds')
+        logger.debug('Final bonds:')
+        for ln in bdf.to_string().split('\n'):
+            logger.debug(ln)
 
         return bdf
-
-        # kdf=pd.DataFrame({header[0]:[x.bond[0] for x in luckybonds],
-        #                   header[1]:[x.bond[1] for x in luckybonds],
-        #                   header[2]:[x.reactantname for x in luckybonds],
-        #                   header[3]:[x.order for x in luckybonds]})
-        # return kdf
 
     def initreport(self):
         print(self.cfg)
