@@ -4,6 +4,7 @@ import shutil
 import logging
 import os
 import importlib.resources
+logger=logging.getLogger(__name__)
 
 class RuntimeLibrary:
     ''' a library object -- default creation references the Library resource package. '''
@@ -25,7 +26,7 @@ class RuntimeLibrary:
             inst.subdirs=[os.path.join(inst.root,xxx) for xxx in subdirs]
         except:
             raise ImportError(f'Could not find package {libpackage}.  Your HTPolyNet installation is corrupt.')
-        logging.info(inst.info())
+        logger.info(inst.info())
         return inst
 
     @classmethod
@@ -46,14 +47,14 @@ class RuntimeLibrary:
         system library.  We expect that the basename is in the current working directory'''
         basefilename=os.path.basename(filename)
         if not os.path.exists(basefilename):
-            logging.info(f'{basefilename} not found in {os.getcwd()}. No check-in performed.')
+            logger.info(f'{basefilename} not found in {os.getcwd()}. No check-in performed.')
             return False
         fullfilename=os.path.join(self.root,filename)
         if os.path.exists(fullfilename):
             if overwrite:
                 shutil.copyfile(basefilename,fullfilename)
             else:
-                logging.info(f'{filename} already exists in system library. No check-in performed.')
+                logger.info(f'{filename} already exists in system library. No check-in performed.')
         else:
             shutil.copyfile(basefilename,fullfilename)
         return True
@@ -65,7 +66,7 @@ class RuntimeLibrary:
             shutil.copyfile(fullfilename,os.path.join(os.getcwd(),basefilename))
             return True
         else:
-            # logging.warning(f'Could not find {filename} in system library. No check-out performed.')
+            # logger.warning(f'Could not find {filename} in system library. No check-out performed.')
             return False
     
     def exists(self,filename):
@@ -182,7 +183,7 @@ def go_to(pathstr):
     basename=os.path.basename(pathstr)
     if basename!=pathstr:  # this is not a topdir
         if not os.path.exists(basename):
-            logging.debug(f'PFS: making {basename}')
+            logger.debug(f'PFS: making {basename}')
             os.mkdir(basename)
         os.chdir(basename)
     _PFS_.cwd=os.getcwd()

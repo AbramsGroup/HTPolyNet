@@ -10,10 +10,11 @@ import parmed
 import os
 from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
+logger=logging.getLogger(__name__)
 
 def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     chargemethod=kwargs.get('charge_method','bcc')
-    logging.info(f'Ambertools: parameterizing {inputPrefix}')
+    logger.info(f'Ambertools: parameterizing {inputPrefix}')
     mol2in=f'{inputPrefix}.mol2'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
@@ -21,14 +22,14 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     if mol2in==mol2out:
         # mol2pfx,mol2sfx=os.path.splitext(mol2in)
         new_mol2in=inputPrefix+'-input.mol2'
-        logging.info(f'Antechamber overwrites input {mol2in}; backing up to {new_mol2in}')
+        logger.info(f'Antechamber overwrites input {mol2in}; backing up to {new_mol2in}')
         shutil.copy(f'{mol2in}',new_mol2in)
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
     c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemethod,at='gaff',i=new_mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
     c.run(quiet=False)
-    logging.info(f'Antechamber generated {mol2out}')
+    logger.info(f'Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
     c.run(quiet=False)
     # Antechamber ignores SUBSTRUCTURES but we would like tleap to 
@@ -44,7 +45,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     goodMol2.A=adf
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
     goodMol2.write_mol2(f'{leapprefix}.mol2')
-    logging.info(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
+    logger.info(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
     Command(f'cp {frcmodout} {leapprefix}.frcmod').run()
     with open(f'{inputPrefix}-tleap.in', 'w') as f:
         f.write(f'source leaprc.gaff\n')
@@ -62,12 +63,12 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
     try:
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')
-        logging.info(f'Writing {groOut}')
+        logger.info(f'Writing {groOut}')
         file.save(groOut,overwrite=True)
-        logging.info(f'Writing {topOut} and {itpOut}')
+        logger.info(f'Writing {topOut} and {itpOut}')
         file.save(topOut,parameters=itpOut,overwrite=True)
     except Exception as m:
-        logging.error('Unspecified parmed error')
+        logger.error('Unspecified parmed error')
         raise parmed.exceptions.GromacsError(m)
         
     

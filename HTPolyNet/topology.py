@@ -17,9 +17,10 @@ from scipy.constants import physical_constants
 import numpy as np
 import networkx as nx
 from networkx.readwrite import json_graph
-import matplotlib.pyplot as plt
 import json
 from HTPolyNet.plot import network_graph
+
+logger=logging.getLogger(__name__)
 
 def typeorder(a):
     """typeorder correctly order the tuple of atom types for particular
@@ -99,7 +100,7 @@ def _get_unique_cycles_dict(G,min_length=-1):
     for u in nx.simple_cycles(G):
         sl=len(u)
         if min_length<=sl:
-            # logging.debug(f'a cycle {u}')
+            # logger.debug(f'a cycle {u}')
             if not sl in counts_by_length:
                 counts_by_length[sl]=0
             counts_by_length[sl]+=1
@@ -140,7 +141,7 @@ def _present_and_contiguous(subL,L):
         T=treadmills(A)
         for t in T:
             testL=t[:len(subL)]
-            # logging.debug(f'___ {subL} {testL}')
+            # logger.debug(f'___ {subL} {testL}')
             if all([x==y for x,y in zip(subL,testL)]):
                 return True
     return False
@@ -173,11 +174,7 @@ _GromacsTopologyDirectiveHeaders_={
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
     }
-# _GromacsTopologyDirective_ExtraAttributes_={
-#     'bonds':['needs_relaxing'],
-#     'angles':['needs_relaxing'],
-#     'dihedrals':['needs_relaxing']
-# }
+
 _GromacsTopologyHashables_={
     'atoms':['nr'],
     'pairs':['ai', 'aj'],
@@ -189,22 +186,11 @@ _GromacsTopologyHashables_={
     'angletypes':['i','j','k'],
     'dihedraltypes':['i','j','k','l']
     }
-# _GromacsTopologyDataFields_={
-#     'atoms':['type', 'resnr', 'residue', 'atom', 'cgnr', 'charge', 'mass','typeB', 'chargeB', 'massB'],
-#     'pairs':['funct', 'c0', 'c1'],
-#     'bonds':['funct', 'c0', 'c1'],
-#     'angles':['funct', 'c0', 'c1'],
-#     'dihedrals':['funct', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'],
-#     'atomtypes':['atnum', 'mass', 'charge', 'ptype', 'sigma', 'epsilon'],
-#     'bondtypes':['func','b0','kb'],
-#     'angletypes':['func','th0','cth','rub','kub'],
-#     'dihedraltypes':['func','phase','kd','pn']
-#     }
+
 _GromacsTopologyDirectiveDefaults_={
     'system':['A_generic_system'],
     'molecules':['None',1],
     'moleculetype':['None',3],
-#    'defaults':[1,2,'no',0.5,0.83333333]
     'defaults':[1,2,'yes',0.5,0.83333333]
 }
 
@@ -228,7 +214,6 @@ class Topology:
         ''' bondlist: a class that owns a dictionary keyed on atom global index with values that are lists of global atom indices bound to the key '''
         self.bondlist=Bondlist()
         self.residue_network=nx.DiGraph()
-        self.polyethylenes=nx.DiGraph()
         self.empty=True
 
     @classmethod
@@ -279,11 +264,11 @@ class Topology:
                 tdf=pd.DataFrame(series)
                 if directive=='dihedraltypes':
                     if directive in inst.D:
-                        # logging.info(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
+                        # logger.info(f'Found second set of {len(tdf)} [ dihedraltypes ] in {inst.filename}; merging into set of {len(inst.D["dihedraltypes"])} types already read in...')
                         # we have already read-in a dihedraltypes section
                         # so let's append this one
                         inst.D['dihedraltypes']=pd.concat([inst.D['dihedraltypes'],tdf],ignore_index=True).drop_duplicates()
-                        # logging.info(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
+                        # logger.info(f'    -> now there are {len(inst.D["dihedraltypes"])} dihedral types.')
                     else:
                         inst.D[directive]=tdf
                 elif directive=='dihedrals':
@@ -335,20 +320,20 @@ class Topology:
         """bond_source_check Checks to ensure the 'bonds' dataframe and 'mol2_bonds' dataframe contain the same bonds.  A mol2 dataframe is only created when a mol2 file is read by the Coordinates module.
         """
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
-            # logging.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
+            # logger.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
             bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
             mbmi=mol2bonds.set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
-            # logging.info(f'Result: {check}')
+            # logger.info(f'Result: {check}')
             if not check:
-                logging.info(f'GROMACS:')
-                logging.info(grobonds[['ai','aj']].head().to_string())
-                logging.info(f'MOL2:')
-                logging.info(mol2bonds[['ai','aj']].head().to_string())
+                logger.info(f'GROMACS:')
+                logger.info(grobonds[['ai','aj']].head().to_string())
+                logger.info(f'MOL2:')
+                logger.info(mol2bonds[['ai','aj']].head().to_string())
                 for x,y in zip(bmi,mbmi):
-                    logging.info(f'{x} {y} {x==y}')
+                    logger.info(f'{x} {y} {x==y}')
 
     # def has_bond(self,pair):
     #     """has_bond Determines whether or not the bond represented by the two atom indices in 
@@ -401,7 +386,7 @@ class Topology:
                     atoms.append(self.get_atom_attribute(atom,'atom'))
                 cycles_by_name[a].append(atoms)
             if len(cycles_by_name[a])>0:
-                logging.debug(f'{a}-rings: {cycles_by_name[a]}')
+                logger.debug(f'{a}-rings: {cycles_by_name[a]}')
         self.Cycles=cycles_by_name
         return cycles
 
@@ -503,7 +488,7 @@ class Topology:
                     for a in _GromacsTopologyHashables_[k]:
                         check=any(self.D[k][a].isnull())
                         if check:
-                            logging.debug(f'{msg} null in {k} {a}\n{self.D[k].to_string()}')
+                            logger.debug(f'{msg} null in {k} {a}\n{self.D[k].to_string()}')
                             raise Exception('NaN error')
 
     def total_charge(self):
@@ -516,11 +501,13 @@ class Topology:
             return self.D['atoms']['charge'].sum()
         return 0.0
 
-    def adjust_charges(self,desired_charge=0.0,msg=''):
+    def adjust_charges(self,desired_charge=0.0,overcharge_threshhold=0.1,msg=''):
         """Adjust atom partial charges a tiny bit so that total system charge is zero
 
         :param desired_charge: target system charge, defaults to 0.0
         :type desired_charge: float, optional
+        :param overcharge_threshhold: threshold overcharge that triggers a message, defaults to 0.1
+        :type overcharge_threshhold: float, optional
         :param msg: A message to write if pre-adjusted system charge is too high, defaults to ''
         :type msg: str, optional
         :return: self topology
@@ -528,12 +515,13 @@ class Topology:
         """
         apparent_charge=self.total_charge()
         overcharge=apparent_charge-desired_charge
-        logging.info(f'Adjusting charges due to overcharge of {overcharge}')
-        if np.abs(overcharge)>0.1:
-            logging.info(f'{msg}')
+        logger.info(f'Adjusting charges due to overcharge of {overcharge:.6f}')
+        if np.abs(overcharge)>overcharge_threshhold:
+            logger.info(f'{msg}')
         cpa=-overcharge/len(self.D['atoms'])
+        logger.info(f'Adjustment is {cpa:.4e} per atom ({self.D["atoms"].shape[0]} atoms)')
         self.D['atoms']['charge']+=cpa
-        logging.info(f'New total charge after adjustment: {self.total_charge()}')
+        logger.info(f'New total charge after adjustment: {self.total_charge():.6f}')
         return self
         
     def total_mass(self,units='gromacs'):
@@ -559,7 +547,7 @@ class Topology:
         :rtype: int
         """
         if 'atoms' in self.D:
-            return len(self.D['atoms'])
+            return self.D['atoms'].shape[0]
         return 0
 
     # def add_pairs(self,pairsdf,kb=280160.0):
@@ -574,7 +562,7 @@ class Topology:
     #             pairtoadd=pd.DataFrame(pairdict)
     #             self.D['pairs']=pd.concat((self.D['pairs'],pairtoadd),ignore_index=True)
     #         else:
-    #             logging.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
+    #             logger.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
     
     def add_restraints(self,pairdf,typ=6,kb=300000.):
         """Add type-6 (non-topoogical) bonds to help drag atoms destined to be bonded
@@ -614,108 +602,6 @@ class Topology:
             to_drop.append(d[(d.ai==ai)&(d.aj==aj)].index.values[0])
         self.D['bonds']=self.D['bonds'].drop(to_drop)
 
-    # def update_polyethylenes(self,bdf,idx_mapper):
-    #     """update_polyethylenes Update the polyethylene bond network by
-    #     1. applying idx_mapper to reindex all nodes
-    #     2. adding new crosslink bonds from bdf
-
-    #     :param bdf: new bonds
-    #     :type bdf: pandas DataFrame
-    #     :param idx_mapper: old-to-new atom index mapper
-    #     :type idx_mapper: dict
-    #     """
-    #     self.polyethylenes=nx.relabel_nodes(self.polyethylenes,idx_mapper)
-    #     for i,r in bdf.iterrows():
-    #         a=r['ai']
-    #         b=r['aj']
-    #         self.polyethylenes.add_edge(a,b)
-    
-    # def polyethylene_cycle(self,i,j):
-    #     """polyethylene_cycle return True if adding edge i<->j generates a cycle in
-    #        self.polythelenes
-
-    #     :param i: one atom index
-    #     :type i: int
-    #     :param j: another atom index
-    #     :type j: int
-    #     """
-    #     precycles=list(nx.simple_cycles(self.polyethylenes))
-    #     makes_a_cycle=False
-    #     clens={}
-    #     for c in precycles:
-    #         l=len(c)
-    #         if not l in clens:
-    #             clens[l]=0
-    #         clens[l]+=1
-    #     makes_a_cycle=any([l>2 for l in clens.keys()])
-    #     if makes_a_cycle:
-    #         logging.debug(f'there is a problem with the polyethylene cycles!')
-    #         network_graph(self.polyethylenes,'pe_net_bad.png')
-    #     assert not makes_a_cycle
-
-    #     self.polyethylenes.add_edge(i,j)
-    #     cycles=list(nx.simple_cycles(self.polyethylenes))
-    #     makes_a_cycle=False
-    #     clens={}
-    #     for c in cycles:
-    #         l=len(c)
-    #         if not l in clens:
-    #             clens[l]=0
-    #         clens[l]+=1
-    #     makes_a_cycle=any([l>2 for l in clens])
-    #     self.polyethylenes.remove_edge(i,j)
-    #     return makes_a_cycle
-
-    # def polyethylene_cycles_collective(self,B):
-    #     """polyethylene_cycles_collective look for cycles that appear when two or more proposed bonds are created
-
-    #     :param B: list of proposed bonds as "passbond" instances
-    #     :type B: list of "passbond" instances (attributes: bond (a 2-tuple of atom indexes), and others...)
-    #     """
-    #     for b in B:
-    #         ai,aj=b.bond
-    #         self.polyethylenes.add_edge(ai,aj)
-    #         assert ai in self.polyethylenes.nodes
-    #         assert aj in self.polyethylenes.nodes
-    #     bad_cycles=[]
-    #     bad_cycle_dict=_get_unique_cycles_dict(self.polyethylenes,min_length=4)
-    #     # logging.debug(f'bad_cycle_dict: {bad_cycle_dict}')
-    #     for k,v in bad_cycle_dict.items():
-    #         bad_cycles.extend(v)
-
-    #     # if len(bad_cycles)>0:
-    #     nbc=len(bad_cycles)
-    #     ess='' if nbc==1 else 's'
-    #     logging.debug(f'Proposed bondset comprises {nbc} latent cycle{ess}')
-    #         # for b in B:
-    #         #     ai,aj=b.bond
-    #         #     logging.debug(f' -- b {ai} - {aj}')
-    #         # for c in bad_cycles:
-    #         #     logging.debug(f' || c {c}')
-        
-    #     bad_bonds=[]
-    #     for b in B:
-    #         ai,aj=b.bond
-    #         # logging.debug(f'collective pe cycle testing bond {ai} {aj}')
-    #         self.polyethylenes.remove_edge(ai,aj)
-
-    #         # is this pair in any of the cycles?
-    #         target_cycles=[]
-    #         for bc in bad_cycles:
-    #             if _present_and_contiguous([ai,aj],bc):
-    #                 logging.debug(f'Proposed bond {ai}-{aj} lives in cycle {bc}')
-    #                 target_cycles.append(bc)
-    #                 bad_bonds.append(b)
-    #                 bad_cycles.remove(bc)
-    #                 break
-    #     if len(bad_bonds)>0:
-    #         # logging.debug(f'{len(target_cycles)} latent cycles detected for proposed bond set.')
-    #         ess='' if len(bad_bonds)==1 else 's'
-    #         logging.debug(f'Proposed bond{ess} to be removed: {", ".join([f"{x.bond[0]}-{x.bond[1]}" for x in bad_bonds])}')
-    #         for b in bad_bonds:
-    #             B.remove(b)
-    #     return B
-        
     def add_bonds(self,pairs=[]):
         """add_bonds Adds bonds indicated in list pairs to the topology
 
@@ -723,7 +609,7 @@ class Topology:
         :type pairs: list, optional
         :raises Exception: dies if an existing bond is in the list of pairs
         """
-        # logging.debug('add_bonds begins')
+        # logger.debug('add_bonds begins')
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         #mb=self.D['mol2_bonds']
@@ -731,7 +617,7 @@ class Topology:
         pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
         for b in pairs:
-            # logging.debug(f'{b}')
+            # logger.debug(f'{b}')
             bondtuple=(b[0],b[1])
             order=b[2]
             ai,aj=idxorder(bondtuple)
@@ -740,7 +626,7 @@ class Topology:
             '''
             if not (ai,aj) in bmi:
                 newbonds.append((ai,aj))
-                # logging.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
+                # logger.debug(f'asking types of {ai} and {aj}; at.shape {at.shape}')
                 it=at.iloc[ai-1].type
                 jt=at.iloc[aj-1].type
                 idx=typeorder((it,jt))
@@ -749,7 +635,7 @@ class Topology:
                     kb=ij.loc[idx,'kb']
                     b0=ij.loc[idx,'b0']
                 else:
-                    logging.debug(f'no bondtype {idx} found\nI assume you are just making a mol2 file for template parameterization.')
+                    logger.debug(f'no bondtype {idx} found\nI assume you are just making a mol2 file for template parameterization.')
                     bt=1
                     b0=1.5
                     kb=999999
@@ -763,18 +649,18 @@ class Topology:
                 bonddict={k:[v] for k,v in zip(h,data)}
                 bdtoadd=pd.DataFrame(bonddict)
                 self.D['bonds']=pd.concat((self.D['bonds'],bdtoadd),ignore_index=True)
-                # logging.info(f'add_bond:\n{bdtoadd.to_string()}')
-                # logging.info(f'just added {bonddict}')
+                # logger.info(f'add_bond:\n{bdtoadd.to_string()}')
+                # logger.info(f'just added {bonddict}')
                 if 'mol2_bonds' in self.D:
                     data=[len(self.D['mol2_bonds']),ai,aj,1] # assume single bond
                     bonddict={k:[v] for k,v in zip(['bondIdx','ai','aj','type'],data)}
                     self.D['mol2_bonds']=pd.concat((self.D['mol2_bonds'],pd.DataFrame(bonddict)),ignore_index=True)
                 # remove this pair from pairs if it's in there (it won't be)
                 if idx in pmi:
-                    logging.debug(f'Warning: new bond {ai}-{aj} was evidently in the [ pairs ]!')
+                    logger.debug(f'Warning: new bond {ai}-{aj} was evidently in the [ pairs ]!')
                     d=self.D['pairs']
                     indexes_to_drop=d[(d.ai.isin(idx))&(d.aj.isin(idx))].index
-                    logging.debug(f'Dropping [ pair ]:\n{d[indexes_to_drop].to_string()}')
+                    logger.debug(f'Dropping [ pair ]:\n{d[indexes_to_drop].to_string()}')
                     indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                     self.D['pairs']=d.take(list(indexes_to_keep)).reset_index(drop=True)
             else:
@@ -785,26 +671,26 @@ class Topology:
                 '''
                 # ityp=at.loc[ai-1]['type']
                 # jtyp=at.loc[aj-1]['type']
-                # logging.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
+                # logger.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
                 # nityp=dec_order_atom_name_gaff(ityp)
                 # njtyp=dec_order_atom_name_gaff(jtyp)
-                # logging.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
+                # logger.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
                 # at.loc[ai-1,'type']=nityp
                 # at.loc[aj-1,'type']=njtyp
-                # logging.debug(f'Updated topology [ atoms ]\n:{at.to_string()}')
+                # logger.debug(f'Updated topology [ atoms ]\n:{at.to_string()}')
                 if 'mol2_bonds' in self.D:
                     mb=self.D['mol2_bonds']
                     bi=(mb['ai']==ai)&(mb['aj']==aj)
                     mb.loc[bi,'type']=order
                 # else:
-                #     logging.warning(f'No way to update this bond since there is not a mol2_bonds attribute in the Topology.')
-                    # logging.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
+                #     logger.warning(f'No way to update this bond since there is not a mol2_bonds attribute in the Topology.')
+                    # logger.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
         '''
         update the bondlist
         '''
         for b in newbonds:
             self.bondlist.append(b)
-        # logging.debug(f'Added {len(newbonds)} new bonds')
+        # logger.debug(f'Added {len(newbonds)} new bonds')
 
     def add_enumerated_angles(self,newbonds,ignores=[],quiet=True):       
         at=self.D['atoms']
@@ -825,7 +711,7 @@ class Topology:
                     angletype=ijk.loc[idx,'func']  # why no .values[0]
                 else:
                     if not quiet:
-                        logging.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
+                        logger.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
                     angletype=1
                 h=_GromacsTopologyDirectiveHeaders_['angles']
                 data=[i,j,k,angletype,pd.NA,pd.NA]
@@ -847,7 +733,7 @@ class Topology:
                     angletype=ijk.loc[idx,'func'] # why no .values[0]
                 else:
                     if not quiet:
-                        logging.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
+                        logger.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
                     angletype=1
                 h=_GromacsTopologyDirectiveHeaders_['angles']
                 data=[i,j,k,angletype,pd.NA,pd.NA]
@@ -879,7 +765,7 @@ class Topology:
                         dihedtype=ijkl.loc[idx,'func'].values[0] # why values[0]
                     else:
                         if not quiet:
-                            logging.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
+                            logger.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
                         dihedtype=9
                     h=_GromacsTopologyDirectiveHeaders_['dihedrals']
                     data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
@@ -909,7 +795,7 @@ class Topology:
                             # dihedtype=ijkl.loc[idx,'func']
                         else:
                             if not quiet:
-                                logging.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
+                                logger.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
                             dihedtype=9
                         h=_GromacsTopologyDirectiveHeaders_['dihedrals']
                         data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
@@ -939,7 +825,7 @@ class Topology:
                             dihedtype=ijkl.loc[idx,'func'].values[0]
                         else:
                             if not quiet:
-                                logging.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
+                                logger.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
                             dihedtype=9
                         h=_GromacsTopologyDirectiveHeaders_['dihedrals']
                         data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
@@ -967,13 +853,15 @@ class Topology:
         :return: old-index-to-new-index mapper
         :rtype: dict
         """
-        #logging.debug(f'Delete atoms: {idx}')
+        #logger.debug(f'Delete atoms: {idx}')
         self.null_check(msg='beginning of delete atoms')
-        # logging.debug(f'idx {idx}')
+        # logger.debug(f'idx {idx}')
         d=self.D['atoms']
         new_idx=[]
         indexes_to_drop=d[d.nr.isin(idx)].index
-        logging.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ atoms ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        total_missing_charge=d.loc[indexes_to_drop]['charge'].sum()
+        logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ atoms ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        logger.info(f'Total charge that is now missing: {total_missing_charge:.4f}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         mapper={}
@@ -982,30 +870,30 @@ class Topology:
             oldGI=d['nr'].copy()
             d['nr']=d.index+1
             mapper={k:v for k,v in zip(oldGI,d['nr'])}
-            # logging.debug(f'mapper {mapper}')
+            # logger.debug(f'mapper {mapper}')
             assert not any([x in mapper for x in idx]),f'Error: Some deleted atoms in mapper.'
             k=np.array(list(mapper.keys()))
             v=np.array(list(mapper.values()))
             if any(np.isnan(k)):
-                logging.error('null in mapper keys')
+                logger.error('null in mapper keys')
             if any(np.isnan(v)):
-                logging.error('null in mapper values')
-            # logging.debug(f'delete_atoms: mapper {mapper}')
+                logger.error('null in mapper values')
+            # logger.debug(f'delete_atoms: mapper {mapper}')
             if len(return_idx_of)>0:
-                # logging.info(f'Asking for updated global indexes of {return_idx_of}')
+                # logger.info(f'Asking for updated global indexes of {return_idx_of}')
                 new_idx=[mapper[o] for o in return_idx_of]
             #d['nr_shift']=d['nr']-oldGI  # probably not necessary
         ptt=['bonds','mol2_bonds','pairs']
         for pt in ptt:
             if pt in self.D:
                 d=self.D[pt]
-                # logging.debug(f'delete atom: {pt} df prior to deleting')
-                # logging.debug(d.to_string())
+                # logger.debug(f'delete atom: {pt} df prior to deleting')
+                # logger.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
-                logging.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+                logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
 
-                # logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-                # logging.debug(f'dropping {pt} {indexes_to_drop}')
+                # logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+                # logger.debug(f'dropping {pt} {indexes_to_drop}')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
                 if reindex:
@@ -1014,8 +902,8 @@ class Topology:
                     assert not any([x in idx for x in d.aj]),f'Error: deleted atom survived in {pt} aj'
                     assert all([x in mapper for x in d.ai]),f'Error: surviving {pt} atom ai old idx not in mapper'
                     assert all([x in mapper for x in d.aj]),f'Error: surviving {pt} atom aj old idx not in mapper'
-                    #logging.debug(f'delete atom: {pt} df prior to reindexing')
-                    #logging.debug(d.to_string())
+                    #logger.debug(f'delete atom: {pt} df prior to reindexing')
+                    #logger.debug(d.to_string())
                     # pairs deleted here were deleted because either ai or aj was among 
                     # the atoms to delete.  We assert than any dihedral for which
                     # the i atom is ai and l atom is aj will necessarily be deleted 
@@ -1027,7 +915,7 @@ class Topology:
                         d.ai=d.ai.map(mapper)
                         d.aj=d.aj.map(mapper)
                     if pt=='bonds':
-                        # logging.debug(f'Updating bondlist using\n{d.to_string()}')
+                        # logger.debug(f'Updating bondlist using\n{d.to_string()}')
                         self.bondlist=Bondlist.fromDataFrame(d)
                     if pt=='mol2_bonds':
                         nBonds=self.D[pt].shape[0]
@@ -1036,16 +924,16 @@ class Topology:
         # assert d.ai.dtype==int,f'pre-delete lost angle ai dtype {d.ai.dtype}'
         # assert d.aj.dtype==int,f'pre-delete lost angle aj dtype {d.aj.dtype}'
         # assert d.ak.dtype==int,f'pre-delete lost angle ak dtype {d.ak.dtype}'
-        # logging.debug(f'ai {d.ai.isin(idx).to_string()}')
-        # logging.debug(f'aj {d.aj.isin(idx).to_string()}')
-        # logging.debug(f'ak {d.ak.isin(idx).to_string()}')
+        # logger.debug(f'ai {d.ai.isin(idx).to_string()}')
+        # logger.debug(f'aj {d.aj.isin(idx).to_string()}')
+        # logger.debug(f'ak {d.ak.isin(idx).to_string()}')
         indexes_to_drop=d[(d['ai'].isin(idx))|(d['aj'].isin(idx))|(d['ak'].isin(idx))].index
         # extras=d[d['ak'].isin(idx)].index
-        logging.debug(f'Deleting {len(indexes_to_drop)} [ angles ]')#:\n{d.loc[indexes_to_drop].to_string()}')
-        # logging.debug(f'any? {list(extras)}')
+        logger.debug(f'Deleting {len(indexes_to_drop)} [ angles ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        # logger.debug(f'any? {list(extras)}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
-        # logging.debug(f'drop {list(sorted(list(set(indexes_to_drop))))}')
-        # logging.debug(f'keep {indexes_to_keep}')
+        # logger.debug(f'drop {list(sorted(list(set(indexes_to_drop))))}')
+        # logger.debug(f'keep {indexes_to_keep}')
         self.D['angles']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         assert d.ai.dtype==int,f'post-delete lost angle ai dtype {d.ai.dtype}'
         assert d.aj.dtype==int,f'post-delete lost angle aj dtype {d.aj.dtype}'
@@ -1057,7 +945,7 @@ class Topology:
             assert not any([x in idx for x in d.aj]),'Error: deleted atom survived in angle aj'
             zombie_tags=[x in idx for x in d.ak]
             if any(zombie_tags):
-                logging.debug(f'Zombie ak angles:\n{self.D["angles"][zombie_tags].to_string()}')
+                logger.debug(f'Zombie ak angles:\n{self.D["angles"][zombie_tags].to_string()}')
             assert not any(zombie_tags),'Error: deleted atom survived in angle ak'
             assert all([x in mapper for x in d.ai]),'Error: surviving angle atom ai old idx not in mapper'
             assert all([x in mapper for x in d.aj]),'Error: surviving angle atom aj old idx not in mapper'
@@ -1068,7 +956,7 @@ class Topology:
         self.null_check(msg='inside delete atoms after angles reindex')
         d=self.D['dihedrals']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
-        logging.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')#:\n{d.loc[indexes_to_drop].to_string()}')
+        logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')#:\n{d.loc[indexes_to_drop].to_string()}')
         # TODO: make sure you delete pairs!!
         dp=self.D['pairs']
         ddp=d.loc[indexes_to_drop]  # these are dihedrals marked for deletion
@@ -1080,7 +968,7 @@ class Topology:
             dwpi=dp[((dp.ai==pi)&(dp.aj==pl))|((dp.ai==pl)&(dp.aj==pi))].index.to_list()
             dd.extend(dwpi)
         ptk=set(range(dp.shape[0]))-set(dwpi)
-        logging.debug(f'Deleting {dp.loc[dwpi].shape[0]} [ pairs ] due to dihedral deletions')
+        logger.debug(f'Deleting {dp.loc[dwpi].shape[0]} [ pairs ] due to dihedral deletions')
         # Note that we expect this to be zero if we are only deleting H's, since
         # an H can never be a 'j' or 'k' in a dihedral!
         self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)
@@ -1121,10 +1009,10 @@ class Topology:
         :param other: a topology
         :type other: Topology
         """
-        # logging.debug('Topology.merge begins')
+        # logger.debug('Topology.merge begins')
         self.merge_ex(other)
         self.merge_types(other)
-        # logging.debug('Topology.merge ends')
+        # logger.debug('Topology.merge ends')
 
     def dup_check(self,die=True):
         """Check for duplicate type-like topology records
@@ -1135,13 +1023,13 @@ class Topology:
         """
         L=['atomtypes','bondtypes','angletypes']
         Not=' not' if not die else ''
-        logging.debug(f'Checking for duplicate {L}; will{Not} die if found.')
+        logger.debug(f'Checking for duplicate {L}; will{Not} die if found.')
         for t in L:
             i=_GromacsTopologyHashables_[t]
             ''' checking for types with duplicate atom-type indices '''
             dups=self.D[t].duplicated(subset=i,keep=False)
             if any(dups):
-                logging.error(f'Duplicate {t} with different parameters detected\n'+self.D[t][dups].to_string())
+                logger.error(f'Duplicate {t} with different parameters detected\n'+self.D[t][dups].to_string())
                 if die:
                     raise Exception('duplicate topology types with different parameters detected')
 
@@ -1193,7 +1081,7 @@ class Topology:
         :return: atom typ
         :rtype: str
         """
-#        logging.debug(f'Asking get_atomtype for type of atom with index {idx}')
+#        logger.debug(f'Asking get_atomtype for type of atom with index {idx}')
         return self.D['atoms'].iloc[idx-1].type
 
     def make_resid_graph(self,json_file=None,draw=None):
@@ -1207,12 +1095,6 @@ class Topology:
         
         resnrs=adf['resnr'].unique()
         for i in resnrs:
-            # identify any inter-residue bonds emanating from
-            # this residue, and classify
-            #  - cross
-            #  - polyethylene -- a bond from a carbon that is attached to another carbon that itself pariticpates in
-            # an inter-residue crosslink
-
             # atom global indexes in this resnr
             ats=adf[adf['resnr']==i]['nr'].to_list()
             connectors=[]
@@ -1231,24 +1113,24 @@ class Topology:
         if json_file:
             the_data=json_graph.node_link_data(self.residue_network)
             assert type(the_data)==dict,f'Error: node_link_data returns a {type(the_data)} but should return a dict'
-            logging.debug(f'writing graph node_link_data to {json_file}')
+            logger.debug(f'writing graph node_link_data to {json_file}')
             the_data_str=str(the_data)
             the_data_str=the_data_str.replace('True','"True"')
             the_data_str=the_data_str.replace('False','"False"')
             if "'" in the_data_str:
-                logging.debug(f'json_graph.node_link_data produces single-quoted dict keys -- this is not JSON standard')
+                logger.debug(f'json_graph.node_link_data produces single-quoted dict keys -- this is not JSON standard')
                 json_compatible_string=the_data_str.replace("'",'"')
                 try:
                     the_data=json.loads(json_compatible_string)
                 except Exception as msg:
-                    logging.debug(str(msg))
-                    logging.debug(f'json.loads fails to encode string:\n{json_compatible_string}')
+                    logger.debug(str(msg))
+                    logger.debug(f'json.loads fails to encode string:\n{json_compatible_string}')
             with open (json_file,'w') as f:
                 try:
                     json.dump(the_data,f)
                 except Exception as msg:
-                    logging.debug(str(msg))
-                    logging.debug(f'writing resid graph to JSON not currently supported')
+                    logger.debug(str(msg))
+                    logger.debug(f'writing resid graph to JSON not currently supported')
                     f.write(str(the_data)+'\n')
         if draw:
             network_graph(self.residue_network,draw)
@@ -1266,9 +1148,9 @@ class Topology:
         saveme=pd.DataFrame(columns=bdf.columns)
         for i,b in bonds.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
-            # logging.debug(f'copy parameters for ai {ai} aj {aj}')
+            # logger.debug(f'copy parameters for ai {ai} aj {aj}')
             saveme=pd.concat((saveme,bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()),ignore_index=True)
-        # logging.info(f'saved bond override params\n{saveme.to_string()}')
+        # logger.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
 
     def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0,init_colname='initial-distance'):
@@ -1289,7 +1171,7 @@ class Topology:
         """
         bdf=self.D['bonds']
         factor=(stage+1)/max_stages
-        logging.debug(f'Attenuating {bondsdf.shape[0]} bond{"s" if bondsdf.shape[0]>1 else ""} in stage {stage+1}/{max_stages}')
+        logger.debug(f'Attenuating {bondsdf.shape[0]} bond{"s" if bondsdf.shape[0]>1 else ""} in stage {stage+1}/{max_stages}')
         for i,b in bondsdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
             rij=b[init_colname]
@@ -1298,7 +1180,7 @@ class Topology:
                 b0=minimum_distance
             new_b0=rij-factor*(rij-b0)
             new_kb=kb*factor
-            # logging.debug(f'bond attenuation target for {ai}-{aj}:\nb0 {b0:.5f} kb {kb:.2f}; using b0 {new_b0:.5f} kb {new_kb:.2f}')
+            # logger.debug(f'bond attenuation target for {ai}-{aj}:\nb0 {b0:.5f} kb {kb:.2f}; using b0 {new_b0:.5f} kb {new_kb:.2f}')
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=new_b0
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=new_kb
 
@@ -1358,7 +1240,7 @@ class Topology:
         pdf=self.D['pairs']
         ess='s' if pairsdf.shape[0]>1 else ''
         factor=(stage+1)/max_stages
-        logging.debug(f'Attenuating {pairsdf.shape[0]} pair{ess} in stage {stage+1}/{max_stages}')
+        logger.debug(f'Attenuating {pairsdf.shape[0]} pair{ess} in stage {stage+1}/{max_stages}')
         for i,b in pairsdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
             b0=b['initial-distance']

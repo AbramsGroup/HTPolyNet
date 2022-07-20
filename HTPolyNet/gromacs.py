@@ -13,7 +13,7 @@ import numpy as np
 from pytrr import GroTrrReader
 from HTPolyNet.command import Command
 import HTPolyNet.software as sw
-
+logger=logging.getLogger(__name__)
 mdp_library = {'liquid-densify':'liquid-densify-npt',
                'sea':'sea-nvt',
                'minimize-single-molecule':'minimize-single-molecule',
@@ -42,7 +42,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     for name,num in composition.items():  # composition determines order
         if os.path.isfile(f'{outName}.gro'):
-            logging.info(f'gmx insert-molecules inserts into existing {outName}.gro')
+            logger.info(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
             c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
         else:
@@ -50,7 +50,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
             c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
         out,err=c.run()
         out+=err
-        logging.info(f'Output of "{sw.gmx} insert-molecules"\n'+out)
+        logger.info(f'Output of "{sw.gmx} insert-molecules"\n'+out)
         if 'Added' in out:
             outlines=out.split('\n')
             for ol in outlines:
@@ -59,7 +59,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
                     numadded=int(tokens[1])
                     break
             if numadded!=num:
-                logging.error(f'{sw.gmx} insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your initial boxsize or lower your initial density.')
+                logger.error(f'{sw.gmx} insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your initial boxsize or lower your initial density.')
                 raise Exception('need bigger box')
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
@@ -85,9 +85,9 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     c.run(quiet=quiet)
     if os.path.exists(f'{out}.gro'):
         pass
-        # logging.info(f'grompp_and_run completed.  Check {gro}.gro.')
+        # logger.info(f'grompp_and_run completed.  Check {gro}.gro.')
     else:
-        logging.error(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
+        logger.error(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
         raise Exception(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
 
 def get_energy_menu(edr,**kwargs):
@@ -167,7 +167,7 @@ def density_trace(edr,**kwargs):
     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
-    logging.info(f'{msg}\n{density.iloc[-1].to_string()}')
+    logger.info(f'{msg}\n{density.iloc[-1].to_string()}')
 
 def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     """Use 'gmx distance' to measure interatomic distances
@@ -184,14 +184,14 @@ def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     :rtype: numpy.ndarray
     """
     npair=idf.shape[0]
-    # logging.debug(f'idf dtype {idf["ai"].dtype}')
+    # logger.debug(f'idf dtype {idf["ai"].dtype}')
     if 'r' in idf and not force_recalculate:
         return None
     ''' create the index file '''
     with open('tmp.ndx','w') as f:
         f.write('[ bonds-1 ]\n')
         idf[['ai','aj']].to_csv(f,sep=' ',header=False,index=False)
-        # logging.debug('wrote tmp.ndx')
+        # logger.debug('wrote tmp.ndx')
     ''' create the user-input file '''
     with open ('gmx.in','w') as f:
         f.write('0\n\n')
@@ -201,7 +201,7 @@ def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     with open ('tmp.xvg','r') as f:
         datastr=f.read().split()
     datastr=datastr[1:]
-    # logging.debug(f'0 {datastr[0]} - {len(datastr)-1} {datastr[-1]}')
+    # logger.debug(f'0 {datastr[0]} - {len(datastr)-1} {datastr[-1]}')
     data=np.array([float(x) for x in datastr])
     nd=len(data)
     ''' clean up '''
@@ -308,9 +308,9 @@ def analyze_sea(deffnm,thresh=0.1):
         same if A and B are symmetry-equivalent.
     '''
     if not os.path.exists(f'{deffnm}.trr'):
-        logging.error(f'{deffnm}.trr not found.')
+        logger.error(f'{deffnm}.trr not found.')
         return []
-    logging.debug(f'SEA analysis from {deffnm}.trr')
+    logger.debug(f'SEA analysis from {deffnm}.trr')
     with GroTrrReader(f'{deffnm}.trr') as trrfile:
         d=np.array((0,))
         nframes=0
@@ -328,7 +328,7 @@ def analyze_sea(deffnm,thresh=0.1):
             nframes+=1
         # averages over frames
         d/=nframes
-        logging.debug(f'{deffnm}.trr: {nframes} frames')
+        logger.debug(f'{deffnm}.trr: {nframes} frames')
         # send the distance matrix to be processed, return
         # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
@@ -356,12 +356,12 @@ def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
                 v=v.strip()
                 all_dict[k]=v
             else:
-                logging.debug(f'mdp_modify: line {l} in {mdp_filename} skipped')
-    # logging.debug(f'mdp_modify: all_dict: {all_dict}')
+                logger.debug(f'line {l} in {mdp_filename} skipped')
+    # logger.debug(f'mdp_modify: all_dict: {all_dict}')
     for k,v in opt_dict.items():
         if not k in all_dict:
             if add_if_missing:
-                logging.debug(f'mdp_modify: adding {k} = {v} to {mdp_filename}')
+                logger.debug(f'adding {k} = {v} to {mdp_filename}')
                 all_dict[k]=v
         else:
             all_dict[k]=v
@@ -369,9 +369,9 @@ def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
         with open(new_filename,'w') as f:
             for k,v in all_dict.items():
                 f.write(f'{k} = {v}\n')
-        # logging.debug(f'mdp_modify wrote {new_filename}.')
+        # logger.debug(f'wrote {new_filename}.')
     else:
         with open(mdp_filename,'w') as f:
             for k,v in all_dict.items():
                 f.write(f'{k} = {v}\n')
-        # logging.debug(f'mdp_modify wrote {mdp_filename}.')
+        # logger.debug(f'wrote {mdp_filename}.')

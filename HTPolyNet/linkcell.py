@@ -4,6 +4,7 @@ import logging
 from itertools import product
 from multiprocessing import Pool
 from functools import partial
+logger=logging.getLogger(__name__)
 
 class Linkcell:
     """ Handles the link-cell algorithm for searching for bonding partners within a
@@ -50,7 +51,7 @@ class Linkcell:
             self.cells[i,j,k]=self.celldim*np.array([i,j,k])+self.origin
         # set up neighbor lists using linear indices
         self.make_neighborlists()
-        logging.debug(f'Linkcell structure: {len(self.cellndx)} cells ({self.ncells}) dim {self.celldim}')
+        logger.debug(f'Linkcell structure: {len(self.cellndx)} cells ({self.ncells}) dim {self.celldim}')
 
     def cellndx_of_point(self,R):
         """cellndx_of_point returns the (i,j,k) cell index of point R
@@ -64,8 +65,8 @@ class Linkcell:
         lowdim=(C<np.zeros(3).astype(int)).astype(int) # will never happen if R is wrapped
         hidim=(C>=self.ncells).astype(int) # could happen if exactly there
         if (any(lowdim) or any(hidim)):
-            logging.warning(f'Warning: point {R} maps to out-of-bounds-cell {C} ({self.ncells})')
-            logging.warning(f'box: {self.box}')
+            logger.warning(f'Warning: point {R} maps to out-of-bounds-cell {C} ({self.ncells})')
+            logger.warning(f'box: {self.box}')
         C+=lowdim
         C-=hidim
         return C
@@ -161,11 +162,11 @@ class Linkcell:
         :raises Exception: dies if a point's assigned (i,j,k) cell is outside the cell structure (this would mean the atom's position is outside the periodic box, which is an error.  Atom coordinates are always to be held in wrapped configuration, but be careful: gro files unwrap!)
         """
         N=Coordinates.A.shape[0]
-        logging.debug(f'Linkcell: assigning cell indices to {N} atoms in {self.box}...')
+        logger.debug(f'Linkcell: assigning cell indices to {N} atoms in {self.box}...')
         Coordinates.set_atomset_attribute('linkcell-idx',-1*np.ones(N).astype(int))
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
         ess='s' if ncpu>1 else ''
-        logging.debug(f'Linkcell assignment will use {ncpu} processor{ess}')
+        logger.debug(f'Linkcell assignment will use {ncpu} processor{ess}')
         p=Pool(processes=ncpu)
         adf_split=np.array_split(Coordinates.A,ncpu)
         result=p.map(partial(self.populate_par),adf_split)
@@ -181,11 +182,11 @@ class Linkcell:
             try:
                 self.memberlists[lc_idx].append(i)
             except:
-                logging.debug(f'Linear linkcell index {lc_idx} of atom {i} is out of range.\ncellndx.shape[0] is {self.cellndx.shape[0]}\nThis is a bug.')
+                logger.debug(f'Linear linkcell index {lc_idx} of atom {i} is out of range.\ncellndx.shape[0] is {self.cellndx.shape[0]}\nThis is a bug.')
                 raise Exception
 
         # for i in range(len(self.memberlists)):
-        #     logging.debug(f'{i} {len(self.memberlists[i])}')
+        #     logger.debug(f'{i} {len(self.memberlists[i])}')
 
         idx_list=list(range(len(self.memberlists)))
         p=Pool(processes=ncpu)
@@ -197,8 +198,8 @@ class Linkcell:
         avg_cell_pop=result.mean()
         min_cell_pop=int(result.min())
         max_cell_pop=int(result.max())
-        logging.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
-        # logging.debug(f'Linkcell.populate() ends.')
+        logger.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
+        # logger.debug(f'Linkcell.populate() ends.')
 
     def make_neighborlists(self):
         self.neighborlists=[[] for _ in range(self.cellndx.shape[0])]
@@ -211,7 +212,7 @@ class Linkcell:
     def make_memberlists(self,cdf):
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
         rdf=cdf[cdf['linkcell-idx']!=-1]
-        # logging.debug(f'Generated {len(self.memberlists)} empty memberlists.')
+        # logger.debug(f'Generated {len(self.memberlists)} empty memberlists.')
         for i,r in rdf.iterrows():
             cidx=r['linkcell-idx']
             idx=r['globalIdx']
@@ -221,7 +222,7 @@ class Linkcell:
         avg_cell_pop=rl.mean()
         min_cell_pop=int(rl.min())
         max_cell_pop=int(rl.max())
-        logging.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
+        logger.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
 
     def neighbors_of_cellndx(self,Ci):
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'

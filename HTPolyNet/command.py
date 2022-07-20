@@ -1,5 +1,6 @@
 import logging
 import subprocess
+logger=logging.getLogger(__name__)
 
 class Command:
     linelen=55
@@ -10,25 +11,25 @@ class Command:
         
     def run(self,override=(),ignore_codes=[],quiet=True):
         if not quiet:
-            logging.debug(f'{self.c}')
+            logger.debug(f'{self.c}')
         process=subprocess.Popen(self.c,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         out,err=process.communicate()
         if process.returncode!=0 and not process.returncode in ignore_codes:
-            logging.error(f'Returncode: {process.returncode}')
+            logger.error(f'Returncode: {process.returncode}')
             if len(out)>0:
-                logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
+                logger.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
             if len(err)>0:
-                logging.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
+                logger.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
             raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
         else:
-            # logging.info(f'Returncode: {process.returncode}.')
+            # logger.info(f'Returncode: {process.returncode}.')
             if len(override)==2:
                 needle,msg=override
                 if needle in out or needle in err:
-                    logging.info(f'Returncode: {process.returncode}, but another error was detected:')
-                    logging.error(msg)
+                    logger.info(f'Returncode: {process.returncode}, but another error was detected:')
+                    logger.error(msg)
                     if len(out)>0:
-                        logging.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
+                        logger.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)
                     if len(err)>0:
-                        logging.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
+                        logger.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
         return out,err

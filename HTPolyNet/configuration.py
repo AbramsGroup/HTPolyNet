@@ -14,6 +14,8 @@ from itertools import product
 
 from HTPolyNet.molecule import Molecule, Reaction
 
+logger=logging.getLogger(__name__)
+
 def _determine_sequence(m,moldict,atoms):
     if not moldict[m].generator:
         return [m],[atoms]
@@ -101,7 +103,7 @@ class Configuration:
         for item in self.initial_composition:
             m=item['molecule']
             if m not in self.molecules:
-                logging.debug(f'new {m}')
+                logger.debug(f'new {m}')
                 self.molecules[m]=self.NewMolecule(m)
         '''
         add additional molecules that appear as either reactants or products of reactions
@@ -114,7 +116,7 @@ class Configuration:
             '''
             for rnum,rname in R.reactants.items():
                 zrecs=[]
-                logging.debug(f'{R.name} rname {rname}')
+                logger.debug(f'{R.name} rname {rname}')
                 for atnum,atrec in R.atoms.items():
                     if atrec['reactant']==rnum:
                         cprec=atrec.copy()
@@ -138,11 +140,10 @@ class Configuration:
         
         '''
         # for mname,M in self.molecules.items():
-        #     logging.debug(f'{M.name} {M.zrecs}')
+        #     logger.debug(f'{M.name} {M.zrecs}')
         #     # M.sequence,M.reactive_atoms_seq=_determine_sequence(mname,self.molecules,[])
-            # logging.debug(f'Sequence of {mname}: {M.sequence}')
-            # logging.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
-
+            # logger.debug(f'Sequence of {mname}: {M.sequence}')
+            # logger.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
 
     def symmetry_expand_reactions(self,molecules):
         extra_reactions=[]
@@ -156,18 +157,19 @@ class Configuration:
                 atomName=atomRec['atom']
                 rmol=molecules[reactantName]
                 asidx=rmol.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'resid':resid,'atomName':atomName})
+                logger.debug(f'asidx {asidx}')
                 if asidx>-1:
                     clu=rmol.atoms_w_same_attribute_as(find_dict={'atomName':atomName,'resid':resid},same_attribute='sea-idx',
                     return_attribute='atomName')
                     atom_options.append([[atomKey,c] for c in clu])
-            logging.debug(f'{R.name} {list(R.reactants.values())} {R.product} {atom_options}')
+            logger.debug(f'{R.name} {list(R.reactants.values())} {R.product} {atom_options}')
             if len(R.reactants)>1:
                 olist=list(product(*atom_options))
             else:
                 olist=list(zip(*atom_options))
             idx=1
             for P in olist[1:]:
-                logging.debug(f'{P}')
+                logger.debug(f'{P}')
                 newR=deepcopy(R)
                 newR.name=R.name+f'-S{idx}'
                 idx+=1
@@ -194,7 +196,8 @@ class Configuration:
                     else:
                         pname=R.product+f'-{idx}'
                 newR.product=pname
-                logging.debug(f'new reaction {newR.name} product {newR.product}')
+                newR.stage=R.stage
+                logger.debug(f'new reaction {newR.name} product {newR.product}')
                 extra_reactions.append(newR)
                 newP=Molecule(name=newR.product,generator=newR)
                 extra_molecules[newR.product]=newP
@@ -202,16 +205,16 @@ class Configuration:
         return extra_molecules
 
     # def x_symmetry_expand_reactions(self,unique_molecules):
-    #     # logging.debug('symmetry_expand_reactions')
+    #     # logger.debug('symmetry_expand_reactions')
     #     extra_reactions=[]
     #     current_molecules=unique_molecules
     #     extra_molecules={}
     #     trydict={}
     #     sclass={}
     #     for R in self.reactions:
-    #         logging.debug(f'Symmetry-expanding reaction {R.name}')
+    #         logger.debug(f'Symmetry-expanding reaction {R.name}')
     #         pro_seq,pro_ra=_determine_sequence(R.product,current_molecules,[])
-    #         logging.debug(f'{R.product} {pro_seq} {pro_ra}')
+    #         logger.debug(f'{R.product} {pro_seq} {pro_ra}')
     #         sseq=[]
     #         for mname,matrectlist in zip(pro_seq,pro_ra):
     #             # how many se versions of this reactant?
@@ -225,7 +228,7 @@ class Configuration:
     #                 atomName=atrec['atom']
     #                 seaidx=residue.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'atomName':atomName})
     #                 if seaidx<=-1:
-    #                     logging.debug(f'No atoms symmetric with {mname} {atomName}')
+    #                     logger.debug(f'No atoms symmetric with {mname} {atomName}')
     #                     continue
     #                 clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
     #                                             same_attribute='sea-idx',
@@ -235,31 +238,31 @@ class Configuration:
     #                 assert atomName in clu
     #                 clu.remove(atomName)
     #                 clu.insert(0,atomName)
-    #                 logging.debug(f'Atoms symmetry-equivalent to {mname} {atomName}: {clu}')
+    #                 logger.debug(f'Atoms symmetry-equivalent to {mname} {atomName}: {clu}')
     #                 sclass[mname][atomName]=clu
-    #                 logging.debug(f'sclass {sclass}')
+    #                 logger.debug(f'sclass {sclass}')
     #                 sp.append(clu)
 
-    #             # logging.debug(f'sp {sp}')
+    #             # logger.debug(f'sp {sp}')
     #             if len(R.reactants)>1:
     #                 sseq.append(list(product(*sp)))
     #             else:
     #                 sseq.append(list(zip(*sp)))
-    #         logging.debug(f'sclass {sclass}')
-    #         logging.debug(f'Reaction reactant sealist: {sseq}')                      
+    #         logger.debug(f'sclass {sclass}')
+    #         logger.debug(f'Reaction reactant sealist: {sseq}')                      
     #         P=list(product(*[v for v in sseq]))
-    #         logging.debug(f'P {P}')
+    #         logger.debug(f'P {P}')
     #         idx=1
     #         if len(P)==0:
     #             continue
     #         trydict[P[0]]=R.product
     #         for p in P[1:]: # skip the first permutation -- assume this is the explicit one!
-    #             logging.debug(f'{R.name}-{idx} {p}({len(p)}) -> {R.product}-{idx}')
+    #             logger.debug(f'{R.name}-{idx} {p}({len(p)}) -> {R.product}-{idx}')
     #             trydict[p]=f'{R.product}-{idx}'
     #             newR=deepcopy(R)
     #             newR.name+=f'-{idx}'
     #             newR.product+=f'-{idx}'
-    #             logging.debug(f'copy {R.name} with reactants {R.reactants} to {newR.name} with {newR.reactants}')
+    #             logger.debug(f'copy {R.name} with reactants {R.reactants} to {newR.name} with {newR.reactants}')
     #             ip=0
     #             pdiv={}
     #             if len(R.reactants)==1: # unimolecular reaction
@@ -267,15 +270,15 @@ class Configuration:
     #             else:
     #                 # map patterns to previously created resnames
     #                 for nri,nR in R.reactants.items():
-    #                     logging.debug(f'reactant {nri}: {nR}')
+    #                     logger.debug(f'reactant {nri}: {nR}')
     #                     nres_nR=len(current_molecules[nR].sequence)
-    #                     logging.debug(f'nres_nR {nres_nR}')
+    #                     logger.debug(f'nres_nR {nres_nR}')
     #                     subp=p[ip:ip+nres_nR]
     #                     ip+=nres_nR
     #                     nresname=nR
     #                     if subp in trydict:
     #                         nresname=trydict[subp]
-    #                     logging.debug(f'  {nR} {nresname} {subp}')
+    #                     logger.debug(f'  {nR} {nresname} {subp}')
     #                     newR.reactants[nri]=nresname
     #                     pdiv[nri]=subp
     #             for aL,atomrec in R.atoms.items():
@@ -285,31 +288,31 @@ class Configuration:
     #                 reactant_idx=atomrec['reactant']
     #                 reactant=R.reactants[reactant_idx]
     #                 resname=current_molecules[reactant].sequence[resid-1]
-    #                 logging.debug(f'need to alter atom: {atomName} resid: {resid} reactant: {reactant_idx} ({reactant})')
-    #                 logging.debug(f'have {pdiv[reactant_idx]} {len(pdiv[reactant_idx])}')
+    #                 logger.debug(f'need to alter atom: {atomName} resid: {resid} reactant: {reactant_idx} ({reactant})')
+    #                 logger.debug(f'have {pdiv[reactant_idx]} {len(pdiv[reactant_idx])}')
     #                 new_atomName=atomName
     #                 for q in pdiv[reactant_idx]:
-    #                     logging.debug(f'{q}')
+    #                     logger.debug(f'{q}')
     #                     for qq in q:
-    #                         logging.debug(f'is it {qq}?')
+    #                         logger.debug(f'is it {qq}?')
     #                         isit=qq in sclass[resname][atomName]
-    #                         logging.debug(f'{isit}')
+    #                         logger.debug(f'{isit}')
     #                         if isit:
     #                             new_atomName=qq
     #                 newR.atoms[aL]={'atom':new_atomName,'resid':resid,'reactant':reactant_idx,'z':z}
     #                 # pdiv[] here has one element for each reactive atom in reactant, but
     #             extra_reactions.append(newR)
     #             newP=Molecule(name=newR.product,generator=newR)
-    #             logging.debug(f'...generated {newR.name} as generator of {newP.name}')
-    #             logging.debug(f'   {newR.name} uses reactants {newR.reactants}')
+    #             logger.debug(f'...generated {newR.name} as generator of {newP.name}')
+    #             logger.debug(f'   {newR.name} uses reactants {newR.reactants}')
     #             extra_molecules[newR.product]=newP
     #             idx+=1
-    #     # logging.debug(f'trydict {trydict}')
+    #     # logger.debug(f'trydict {trydict}')
     #     # for R in self.reactions:
-    #     #     logging.debug(R)
-    #     # logging.debug(f'extra reactions:')
+    #     #     logger.debug(R)
+    #     # logger.debug(f'extra reactions:')
     #     # for R in extra_reactions:
-    #     #     logging.debug(R)
+    #     #     logger.debug(R)
     #     self.reactions.extend(extra_reactions)
     #     return extra_molecules
 
@@ -333,20 +336,20 @@ class Configuration:
             cnms=[]
             for c in mon.TopoCoord.idx_lists['chain']:
                 cnms.append([mon.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
-            logging.debug(f'Monomer {mon.name} has {len(mon.TopoCoord.idx_lists["chain"])} 2-chains\n{mon.TopoCoord.idx_lists["chain"]} {cnms}')
+            logger.debug(f'Monomer {mon.name} has {len(mon.TopoCoord.idx_lists["chain"])} 2-chains\n{mon.TopoCoord.idx_lists["chain"]} {cnms}')
 
         for dim in dimer_lefts:
-            logging.debug(f'Dimer_left {dim.name} has sequence {dim.sequence}')
-            logging.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
+            logger.debug(f'Dimer_left {dim.name} has sequence {dim.sequence}')
+            logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
             for cl in dim.TopoCoord.idx_lists['chain']:
                 nl=[dim.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
-                logging.debug(f'{nl}')
+                logger.debug(f'{nl}')
         for dim in dimer_rights:
-            logging.debug(f'Dimer_right {dim.name} has sequence {dim.sequence}')
-            logging.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
+            logger.debug(f'Dimer_right {dim.name} has sequence {dim.sequence}')
+            logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
             for cl in dim.TopoCoord.idx_lists['chain']:
                 nl=[dim.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
-                logging.debug(f'{nl}')
+                logger.debug(f'{nl}')
 
         # monomer head attacks dimer tail
         MD=product(monomers,dimer_lefts)
@@ -363,7 +366,7 @@ class Configuration:
                     t_idx=DC[-1]
                     t_name=d.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
                     new_mname=f'{m.name}~{h_name}={t_name}~{d.name}'
-                    logging.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {new_mname}')
+                    logger.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {new_mname}')
                     '''construct reaction'''
                     R=Reaction()
                     R.reactants={1:m.name, 2:d.name}
@@ -375,7 +378,7 @@ class Configuration:
                     R.product=new_mname
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logging.debug(f'New reaction is {R}')
+                    logger.debug(f'New reaction is {R}')
                     extra_reactions.append(R)
         # dimer head attacks monomer tail
         MD=product(monomers,dimer_rights)
@@ -392,7 +395,7 @@ class Configuration:
                     h_idx=DC[0]
                     h_name=d.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})
                     new_mname=f'{d.name}~{h_name}={t_name}~{m.name}'
-                    logging.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attach monomer atom {m.name}_{t_name}-> {new_mname}')
+                    logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attach monomer atom {m.name}_{t_name}-> {new_mname}')
                     '''construct reaction'''
                     R=Reaction()
                     R.reactants={1:d.name, 2:m.name}
@@ -405,7 +408,7 @@ class Configuration:
                     R.product=new_mname
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logging.debug(f'New reaction is {R}')
+                    logger.debug(f'New reaction is {R}')
                     extra_reactions.append(R)
 
         DD=product(dimer_rights,dimer_lefts)
@@ -418,7 +421,7 @@ class Configuration:
                     t_idx=cl[-1]
                     t_name=dl.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
                     new_mname=f'{dr.name}~{h_name}={t_name}~{dl.name}'
-                    logging.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {new_mname}')
+                    logger.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {new_mname}')
                     '''construct reaction'''
                     R=Reaction()
                     R.reactants={1:dr.name, 2:dl.name}
@@ -430,7 +433,7 @@ class Configuration:
                     R.name=R.product.lower()
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logging.debug(f'New reaction is {R}')
+                    logger.debug(f'New reaction is {R}')
                     extra_reactions.append(R)
 
         self.reactions.extend(extra_reactions)
@@ -472,12 +475,12 @@ class Configuration:
                             Atoms.append(ib)
                         if b not in Bonds and arn in N and brn in N:
                             Bonds.append(b)
-        # logging.debug(f'atomset: {Atoms}')
+        # logger.debug(f'atomset: {Atoms}')
         Z=[]
         for a in Atoms:
             Z.append(a[4]*N[a[3]])
-        # logging.debug(f'Z: {Z}')
-        # logging.debug(f'bondset: {Bonds}')
+        # logger.debug(f'Z: {Z}')
+        # logger.debug(f'bondset: {Bonds}')
         MaxB=[]
         for B in Bonds:
             a,b=B
@@ -486,5 +489,5 @@ class Configuration:
             MaxB.append(min(az,bz))
             Z[Atoms.index(a)]-=MaxB[-1]
             Z[Atoms.index(b)]-=MaxB[-1]
-        # logging.debug(f'MaxB: {MaxB} {sum(MaxB)}')
+        # logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         return sum(MaxB)

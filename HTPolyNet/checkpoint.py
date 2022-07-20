@@ -3,6 +3,7 @@ import yaml
 import pandas as pd
 from enum import Enum
 import logging
+logger=logging.getLogger(__name__)
 
 class CPstate(Enum):
     """Enumerated CURE state

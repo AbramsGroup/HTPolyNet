@@ -18,6 +18,8 @@ from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.linkcell import Linkcell
 from HTPolyNet.ring import Ring,Segment
 
+logger=logging.getLogger(__name__)
+
 # def my_check(A,item):
 #     idx=item[0].astype(int)
 #     for a in A:
@@ -58,7 +60,7 @@ def _get_row_attribute(df,name,attributes):
     l=[True]*df.shape[0]
     for i in range(len(c)):
         l = (l) & (c[i]==V[i])
-    # logging.debug(f'_get_row_attribute {name} {attributes} -> {df[list(l)][name].values}')
+    # logger.debug(f'_get_row_attribute {name} {attributes} -> {df[list(l)][name].values}')
     return df[list(l)][name].values[0]
 
 def _get_row_as_string(df,attributes):
@@ -95,7 +97,7 @@ def _set_row_attribute(df,name,value,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
     exla={k:v for k,v in attributes.items() if not k in df}
     if len(exla)>0:
-        logging.warning(f'Caller attempts to use unrecognized attributes to refer to row: {exla}')
+        logger.warning(f'Caller attempts to use unrecognized attributes to refer to row: {exla}')
     if name in df and len(ga)>0:
         c=[df[k] for k in ga]
         V=list(ga.values())
@@ -111,7 +113,7 @@ def _set_rows_attributes_from_dict(df,valdict,attributes):
     ga={k:v for k,v in attributes.items() if k in df}
     exla={k:v for k,v in attributes.items() if not k in df}
     if len(exla)>0:
-        logging.warning(f'using unknown attributes to refer to atom: {exla}')
+        logger.warning(f'using unknown attributes to refer to atom: {exla}')
     if all([x in df for x in valdict]) and len(ga)>0:
         c=[df[k] for k in ga]
         V=list(ga.values())
@@ -199,7 +201,7 @@ class Coordinates:
                     del series['velZ']
                 assert inst.N==len(series['globalIdx']), f'Atom count mismatch inside {filename}'
                 # for k,v in series.items():
-                #     logging.debug(f'in coordinates.read_gro: {k} has {len(v)} items.')
+                #     logger.debug(f'in coordinates.read_gro: {k} has {len(v)} items.')
                 inst.A=pd.DataFrame(series)
                 boxdataline=data[-1]
                 n=10
@@ -253,7 +255,7 @@ class Coordinates:
                 ai=r['ai']
                 aj=r['aj']
                 if aj<ai:
-                    logging.debug(f'mol2 bonds swapping {ai} and {aj}')
+                    logger.debug(f'mol2 bonds swapping {ai} and {aj}')
                     inst.mol2_bonds.iloc[i,inst.mol2_bonds.columns=='ai']=aj
                     inst.mol2_bonds.iloc[i,inst.mol2_bonds.columns=='aj']=ai
             inst.mol2_bondlist=Bondlist.fromDataFrame(inst.mol2_bonds)
@@ -326,7 +328,7 @@ class Coordinates:
     #             for ri in mr['cycle-idx'].unique():
     #                 R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']].values
     #                 # TODO: cast R as a pandas DataFrame to preserve int type of globalIdx
-    #                 # logging.debug(f'visiting a ring ({resid}:{ri}) of length {R.shape[0]}')
+    #                 # logger.debug(f'visiting a ring ({resid}:{ri}) of length {R.shape[0]}')
     #                 yield R
 
     def unwrap(self,P,O,pbc):
@@ -370,58 +372,58 @@ class Coordinates:
     #     total_rings=0
     #     for C in self.ringlist:
     #         total_rings+=1
-    #         # logging.debug(f'ring\n{C}')
+    #         # logger.debug(f'ring\n{C}')
     #         lcids=[]
     #         for ci in C:
     #             idx=int(ci[0])
-    #             # logging.debug(f'asking for linkcell-idx of atom {idx}')
+    #             # logger.debug(f'asking for linkcell-idx of atom {idx}')
     #             try:
     #                 rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
     #             except:
-    #                 logging.debug(f'asking for linkcell-idx of atom {idx} failed!!')
-    #                 logging.debug(f'{self.spew_atom({"globalIdx":idx})}')
-    #                 logging.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
+    #                 logger.debug(f'asking for linkcell-idx of atom {idx} failed!!')
+    #                 logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
+    #                 logger.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
     #                 raise Exception(f'asking for linkcell-idx of atom {idx} failed!!')
     #             lcids.append(rci)
     #         for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
     #             cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
-    #             # logging.debug(f'intermediate point {p} in cell {cpi}...')
+    #             # logger.debug(f'intermediate point {p} in cell {cpi}...')
     #             nears=[]
     #             for rci in lcids:
     #                 nears.append(self.linkcell.are_ldx_neighbors(cpi,rci))
-    #                 # logging.debug(f'ringc {rci} acpi {cpi} neighbors {self.linkcell.are_ldx_neighbors(cpi,rci)}')
-    #             # logging.debug(f'any(nears) {any(nears)}')
+    #                 # logger.debug(f'ringc {rci} acpi {cpi} neighbors {self.linkcell.are_ldx_neighbors(cpi,rci)}')
+    #             # logger.debug(f'any(nears) {any(nears)}')
     #             if any(nears):
-    #                 # logging.debug(f'adding C(shape={C.shape}) to nearby_rings:\n{C}')
-    #                 # logging.debug(f'nearby rings {nearby_rings.shape}\n{nearby_rings}')
+    #                 # logger.debug(f'adding C(shape={C.shape}) to nearby_rings:\n{C}')
+    #                 # logger.debug(f'nearby rings {nearby_rings.shape}\n{nearby_rings}')
     #                 if nearby_rings.size==0:
     #                     nearby_rings=np.array([C])
     #                 else:
-    #                     # logging.debug(f'{np.any(C==nearby_rings,axis=0)} {np.all(np.any(C==nearby_rings,axis=0))}')
+    #                     # logger.debug(f'{np.any(C==nearby_rings,axis=0)} {np.all(np.any(C==nearby_rings,axis=0))}')
     #                     #is_in_list=my_check(nearby_rings,C)
     #                     is_in_list=np.all(np.any(C==nearby_rings,axis=0))
-    #                     # logging.debug(f'not C in nearby_rings {not is_in_list}')
+    #                     # logger.debug(f'not C in nearby_rings {not is_in_list}')
     #                     if not is_in_list:
     #                         nearby_rings=np.append(nearby_rings,np.array([C]),axis=0)
     #                     else:
     #                         collisions+=1
-    #                 # logging.debug(f'after: nearby rings {nearby_rings.shape}\n{nearby_rings}')
-    #     # logging.debug(f'linkcellrings(): {nearby_rings.shape[0]}/{total_rings} rings to be tested.')
-    #     # logging.debug(f'Discretization of {discretization} of bond length {rij:.3f}')
-    #     # logging.debug(f'into {nip} points resulted in {collisions} overcounts.')
+    #                 # logger.debug(f'after: nearby rings {nearby_rings.shape}\n{nearby_rings}')
+    #     # logger.debug(f'linkcellrings(): {nearby_rings.shape[0]}/{total_rings} rings to be tested.')
+    #     # logger.debug(f'Discretization of {discretization} of bond length {rij:.3f}')
+    #     # logger.debug(f'into {nip} points resulted in {collisions} overcounts.')
     #     return nearby_rings
 
     # def ringpierce(self,Ri,Rj,pbc):
     #     for C in self.linkcellrings(Ri,Rj):
     #         if self.pierces(Ri,Rj,C,pbc):
-    #             # logging.debug(f'\n{C}')
+    #             # logger.debug(f'\n{C}')
     #             return C
     #     return False
 
     def ringpierce(self,Ri,Rj,pbc):
         for C in self.linkcellrings(Ri,Rj):
             if self.pierces(Ri,Rj,C,pbc):
-                # logging.debug(f'\n{C}')
+                # logger.debug(f'\n{C}')
                 return C
         return False
 
@@ -430,7 +432,7 @@ class Coordinates:
         low=any(Rij<-0.5*self.box.diagonal())
         high=any(Rij>0.5*self.box.diagonal())
         if low or high:
-            logging.debug(f'linkcellrings: Ri {Ri} and Rj {Rj} are not nearest images')
+            logger.debug(f'linkcellrings: Ri {Ri} and Rj {Rj} are not nearest images')
             Rij=self.mic(Rij,[1,1,1])
             Rj=Ri-Rij
         rij=np.sqrt(Rij.dot(Rij))
@@ -442,7 +444,7 @@ class Coordinates:
             cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
             if not cpi in bcids:
                 bcids.append(cpi)
-        # logging.debug(f'bcids {bcids}')
+        # logger.debug(f'bcids {bcids}')
         nearby_rings=[]
         adf=self.A
         R=pd.DataFrame()
@@ -460,13 +462,13 @@ class Coordinates:
             lcids=[]
             for i,ci in C.iterrows():
                 idx=ci['globalIdx']
-                # logging.debug(f'asking for linkcell-idx of atom {idx}')
+                # logger.debug(f'asking for linkcell-idx of atom {idx}')
                 try:
                     rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
                 except:
-                    logging.debug(f'asking for linkcell-idx of atom {idx} failed!!')
-                    logging.debug(f'{self.spew_atom({"globalIdx":idx})}')
-                    logging.debug(f'{len(self.ringlist)} rings; ring: {C.to_string()}\n')
+                    logger.debug(f'asking for linkcell-idx of atom {idx} failed!!')
+                    logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
+                    logger.debug(f'{len(self.ringlist)} rings; ring: {C.to_string()}\n')
                     raise Exception(f'asking for linkcell-idx of atom {idx} failed!!')
                 lcids.append(rci)
             # print(f'lcids {lcids}')
@@ -491,17 +493,17 @@ class Coordinates:
     def ringpierce_exhaustive(self,Ri,Rj,pbc):
         for C in self.rings():
             if self.pierces(Ri,Rj,C,pbc):
-            # logging.debug(f'\n{C}')
+            # logger.debug(f'\n{C}')
                 return C
         return False
 
     def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False,save=True):
-        logging.debug('Initializing link-cell structure')
+        logger.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
             lc_file=f'linkcell-{cutoff:.2f}.grx'
             if os.path.exists(lc_file) and not force_repopulate:
-                logging.debug(f'Found {lc_file}; no need to populate.')
+                logger.debug(f'Found {lc_file}; no need to populate.')
                 self.read_atomset_attributes(lc_file)
                 self.linkcell.make_memberlists(self.A)
             else:
@@ -530,7 +532,7 @@ class Coordinates:
     def rij(self,i,j,pbc=[1,1,1]):
         ''' compute distance between atoms i and j '''
         if np.any(pbc) and not np.any(self.box):
-            logging.warning('Interatomic distance calculation using PBC with no boxsize set.')
+            logger.warning('Interatomic distance calculation using PBC with no boxsize set.')
         ri=self.get_R(i)
         rj=self.get_R(j)
         Rij=self.mic(ri-rj,pbc)
@@ -570,7 +572,7 @@ class Coordinates:
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():
             self.A.loc[i,'posX':'posZ']=self.wrap_point(srow.values)
-        # logging.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
+        # logger.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
 
     def calc_distance_matrix(self):
         M=np.zeros((self.N,self.N))
@@ -657,7 +659,7 @@ class Coordinates:
             attributes_read=attributes
         self.A=self.A.merge(df,how='outer',on='globalIdx')
         return attributes_read
-        # logging.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
+        # logger.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
 
     def set_atomset_attribute(self,attribute,srs):
         """Set attribute of atoms to srs
@@ -686,14 +688,14 @@ class Coordinates:
             assert iz>=0,f'Error: decrementing z of atom {ai} gives erroneous z {iz}'
             jz=self.get_atom_attribute('z',{'globalIdx':aj})-1
             assert jz>=0,f'Error: decrementing z of atom {aj} gives erroneous z {jz}'
-            # logging.debug(f'Setting z of {ain}-{ai} to {iz}')
-            # logging.debug(f'Setting z of {ajn}-{aj} to {jz}')
+            # logger.debug(f'Setting z of {ain}-{ai} to {iz}')
+            # logger.debug(f'Setting z of {ajn}-{aj} to {jz}')
             self.set_atom_attribute('z',iz,{'globalIdx':ai})
             self.set_atom_attribute('z',jz,{'globalIdx':aj})
             inr=self.get_atom_attribute('nreactions',{'globalIdx':ai})+1
             jnr=self.get_atom_attribute('nreactions',{'globalIdx':aj})+1
-            # logging.debug(f'Setting z of {ain}-{ai} to {iz}')
-            # logging.debug(f'Setting z of {ajn}-{aj} to {jz}')
+            # logger.debug(f'Setting z of {ain}-{ai} to {iz}')
+            # logger.debug(f'Setting z of {ajn}-{aj} to {jz}')
             self.set_atom_attribute('nreactions',inr,{'globalIdx':ai})
             self.set_atom_attribute('nreactions',jnr,{'globalIdx':aj})
             
@@ -710,9 +712,9 @@ class Coordinates:
 
         for n in zhists:
             if any([zhists[n][i]>0 for i in range(1,4)]):
-                logging.debug(f'Z-hist for {n} atoms:')
+                logger.debug(f'Z-hist for {n} atoms:')
                 for i in range(4):
-                    logging.debug(f'{i:>5d} ({zhists[n][i]:>6d}): '+'*'*(zhists[n][i]//10))
+                    logger.debug(f'{i:>5d} ({zhists[n][i]:>6d}): '+'*'*(zhists[n][i]//10))
 
     def return_bond_lengths(self,bdf):
         lengths=[]
@@ -864,8 +866,8 @@ class Coordinates:
             # reverse sort names of hydrogen ligands by their number
             i_avails=list(sorted(i_Hpartners.values(),key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0')))[:-1]
             j_avails=list(sorted(j_Hpartners.values(),key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0')))[:-1]
-            logging.debug(f'i_avails {i_avails}')
-            logging.debug(f'j_avails {j_avails}')
+            logger.debug(f'i_avails {i_avails}')
+            logger.debug(f'j_avails {j_avails}')
             # remove the globalIdx of the sacrificial H's from their atom's dictionaries of H-atoms
             del i_Hpartners[ih]
             del j_Hpartners[jh]
@@ -876,12 +878,12 @@ class Coordinates:
                 i_Hpartners[h]=i_avails.pop(0)
                 Top.iloc[h-1,Top.columns=='atom']=i_Hpartners[h]
                 Cor.iloc[h-1,Cor.columns=='atomName']=i_Hpartners[h]
-                logging.debug(f'i: changed name of {h} to {i_Hpartners[h]}')
+                logger.debug(f'i: changed name of {h} to {i_Hpartners[h]}')
             for h in j_Hpartners:
                 j_Hpartners[h]=j_avails.pop(0)
                 Top.iloc[h-1,Top.columns=='atom']=j_Hpartners[h]
                 Cor.iloc[h-1,Cor.columns=='atomName']=j_Hpartners[h]
-                logging.debug(f'j: changed name of {h} to {j_Hpartners[h]}')
+                logger.debug(f'j: changed name of {h} to {j_Hpartners[h]}')
         # this makes sure that it always looks like the same atom was deleted
         return [ih,jh] # return the globalIdx's of the two sacrificial H's
 
@@ -900,7 +902,7 @@ class Coordinates:
         :param reindex: reindex remaining atoms, defaults to True
         :type reindex: bool, optional
         """
-        # logging.debug(f'Coordinates:delete_atoms {idx}')
+        # logger.debug(f'Coordinates:delete_atoms {idx}')
         adf=self.A
         indexes_to_drop=adf[adf.globalIdx.isin(idx)].index
         indexes_to_keep=set(range(adf.shape[0]))-set(indexes_to_drop)
@@ -949,7 +951,7 @@ class Coordinates:
                 else:
                     f.write(''.join([atomformatters[i](v) for i,v in enumerate(list(r[self.gro_attributes[:-3]]))])+'\n')
             if not np.any(self.box):
-                logging.warning('Writing Gromacs coordinates file but boxsize is not set.')
+                logger.warning('Writing Gromacs coordinates file but boxsize is not set.')
             f.write(f'{self.box[0][0]:10.5f}{self.box[1][1]:10.5f}{self.box[2][2]:10.5f}')
             # output off-diagonals only if at least one of them is non-zero
             x,y=self.box.nonzero()
@@ -973,22 +975,22 @@ class Coordinates:
         :param other_attributes: auxiliary dataframe of attributes, defaults to pd.DataFrame()
         :type other_attributes: pandas.DataFrame, optional
         """
-        # logging.debug(f'write_mol2 {filename}')
+        # logger.debug(f'write_mol2 {filename}')
         acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
-            logging.warning(f'Cannot write any bonds to MOL2 file {filename}')
+            logger.warning(f'Cannot write any bonds to MOL2 file {filename}')
         if not self.mol2_bonds.empty and bondsDF.empty:
             bdf=self.mol2_bonds
         elif not bondsDF.empty and self.mol2_bonds.empty:
             bdf=bondsDF
         else:
-            logging.info('Coordinates.write_mol2 provided with both a bondsDF parameter and a mol2_bonds attribute')
-            logging.info('Using the parameter')
+            logger.info('Coordinates.write_mol2 provided with both a bondsDF parameter and a mol2_bonds attribute')
+            logger.info('Using the parameter')
             bdf=bondsDF
         for i in other_attributes.columns: #self.mol2_atom_attributes:
-            # logging.debug(f'importing/overwriting other_attribute {i}...')
+            # logger.debug(f'importing/overwriting other_attribute {i}...')
             acopy[i]=other_attributes[i]
-        # logging.debug(f'Updated [ atoms ]:\n{acopy.to_string()}')
+        # logger.debug(f'Updated [ atoms ]:\n{acopy.to_string()}')
         com=self.geometric_center()
         if filename!='':
             atomformatters = [
@@ -1041,14 +1043,14 @@ class Coordinates:
                 f.write('\n')
                 f.write('@<TRIPOS>BOND\n')
                 if not bondsDF.empty:
-                    # logging.info(f'Mol2 bonds from outside')
+                    # logger.info(f'Mol2 bonds from outside')
                     bdf=bondsDF[['bondIdx','ai','aj','type']]
                     bdf['bondIdx']=bdf['bondIdx'].astype(int)
                     bdf['ai']=bdf['ai'].astype(int)
                     bdf['aj']=bdf['aj'].astype(int)
                     f.write(bdf.to_string(columns=self.mol2_bond_attributes,header=False,index=False,formatters=bondformatters))
                 elif not self.mol2_bonds.empty:
-                    # logging.info(f'write_mol2 ({filename}): Mol2 bonds from mol2_bonds attribute')
+                    # logger.info(f'write_mol2 ({filename}): Mol2 bonds from mol2_bonds attribute')
                     f.write(self.mol2_bonds.to_string(columns=self.mol2_bond_attributes,header=False,index=False,formatters=bondformatters))
                 f.write('\n')
                 ''' write substructure section '''

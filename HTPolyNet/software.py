@@ -2,6 +2,7 @@
 import subprocess
 import logging
 import os
+logger=logging.getLogger(__name__)
 
 class Software:
     ambertools=['antechamber','tleap','parmchk2']
