@@ -18,7 +18,6 @@ from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace,
 from HTPolyNet.checkpoint import CPstate, Checkpoint
 from HTPolyNet.plot import trace
 from HTPolyNet.molecule import Molecule, is_reactant
-from HTPolyNet.bondtemplate import PassBond
 
 logger=logging.getLogger(__name__)
 
@@ -627,52 +626,6 @@ class HTPolyNet:
             self.TopoCoord.copy_coords(TopoCoord(grofilename=opfx+'-post.gro'))
             CP.write_checkpoint(self,CPstate.finished,prefix=f'{opfx}-complete')
 
-    # def post_cure_searchbonds(self):
-    #     PCR=[x for x in self.cfg.reactions if x.stage=='post-cure']
-    #     logger.debug(f'Executing {len(PCR)} post-cure reactions')
-    #     adf=self.TopoCoord.gro_DataFrame('atoms')
-    #     raset=adf[adf['z']>0]
-    #     bdf=pd.DataFrame()
-    #     for R in PCR:
-    #         assert len(R.reactants)==1,f'Error: reaction {R.name} is designated post-cure but has more than one reactant'
-    #         logger.debug(f'Reaction {R.name}')
-    #         if R.probability==0.0:
-    #             continue
-    #         for bond in R.bonds:
-    #             A=R.atoms[bond['atoms'][0]]
-    #             B=R.atoms[bond['atoms'][1]]
-    #             order=bond['order']
-    #             aname=A['atom']
-    #             areactantname_template=R.reactants[A['reactant']]
-    #             aresid_template=A['resid']
-    #             aresname=self.molecules[areactantname_template].get_resname(aresid_template)
-    #             az=A['z']
-    #             bname=B['atom']
-    #             breactantname_template=R.reactants[B['reactant']]
-    #             bresid_template=B['resid']
-    #             bresname=self.molecules[breactantname_template].get_resname(bresid_template)
-    #             bz=B['z']
-    #             assert areactantname_template==breactantname_template,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different reactants'
-    #             assert aresname==bresname,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different residues'
-    #             Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
-    #             Aset=Aset.sort_values(by='resNum')
-    #             Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)&(raset['resNum'].isin(Aset['resNum']))]
-    #             Bset=Bset.sort_values(by='resNum')
-    #             Aset=Aset[Aset['resNum'].isin(Bset['resNum'].to_list())]
-    #             assert Aset.shape[0]==Bset.shape[0],f'Error: no good tally of intramolecular reactive atoms'
-    #             # logger.info(f'Aset\n{Aset["resNum"].to_string()}')
-    #             # logger.info(f'Bset\n{Aset["resNum"].to_string()}')
-    #             Aresids=Aset['resNum'].to_list()
-    #             Bresids=Bset['resNum'].to_list()
-    #             assert all([x==y for x,y in zip(Aresids,Bresids)]),f'Error: residue number mismatch in intramolecular reactions'
-    #             tbdf=pd.DataFrame({'ai':Aset['globalIdx'].to_list(),
-    #                                'aj':Bset['globalIdx'].to_list(),
-    #                                'reactantName':[R.product for _ in range(Aset.shape[0])],
-    #                                'order':[order for _ in range(Aset.shape[0])]})
-    #             bdf=pd.concat((bdf,tbdf),ignore_index=True)
-    #             logger.debug(f'post-cure bdf\n{bdf.to_string()}')
-    #     return bdf
-
     def set_system(self,CP:Checkpoint):
         """set_system Reads all coordinate and topological data from filenames
         indicated in the checkpoint structure; all data is overwritten; called from checkpoint
@@ -711,7 +664,7 @@ class HTPolyNet:
         bdf=pd.DataFrame()
         Rlist=[x for x in self.cfg.reactions if (x.stage==stage and x.probability>0.0)]
         for R in Rlist:
-            logger.debug(f'Reaction {R.name}')
+            logger.debug(f'Reaction {R.name} with {len(R.bonds)} bond(s)')
             prob=R.probability
             for bond in R.bonds:
                 A=R.atoms[bond['atoms'][0]]
@@ -776,6 +729,7 @@ class HTPolyNet:
                         idf=idf[idf['result']==BTRC.passed].copy()
                 elif stage=='post-cure':
                     idf=idf[idf['ri']==idf['rj']].copy()
+                    logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
 
                 bdf=pd.concat((bdf,idf),ignore_index=True)
 

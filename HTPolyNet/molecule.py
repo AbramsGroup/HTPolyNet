@@ -315,13 +315,14 @@ class Molecule:
             # logger.debug(f'in_product_resids {in_product_resids}')
             in_product_resnames=[product_sequence[in_product_resids[x]-1] for x in [0,1]]
             atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
-            # logger.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
+            logger.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
             bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=TC.get_bystanders(atom_idx)
             oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames=TC.get_oneaways(atom_idx)
             # logger.debug(f'{self.name} bystanders {bystander_resids} {bystander_resnames} {bystander_atomidx} {bystander_atomnames}')
             # logger.debug(f'{self.name} oneaways {oneaway_resids} {oneaway_resnames} {oneaway_atomidx} {oneaway_atomnames}')
             self.reaction_bonds.append(ReactionBond(atom_idx,in_product_resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx))
-            self.bond_templates.append(BondTemplate(atom_names,in_product_resnames,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames))
+            intraresidue=in_product_resids[0]==in_product_resids[1]
+            self.bond_templates.append(BondTemplate(atom_names,in_product_resnames,intraresidue,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames))
 
     def set_sequence(self):
         """set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list
@@ -356,8 +357,8 @@ class Molecule:
             temp_iresname,temp_jresname=BT.resnames
             temp_bystander_resids=RB.bystander_resids
             temp_oneaway_resids=RB.oneaway_resids
-            logger.debug(f'idx_mappers: temp_iresname {temp_iresname} temp_iname {temp_iname}')
-            logger.debug(f'idx_mappers: temp_jresname {temp_jresname} temp_jname {temp_jname}')
+            logger.debug(f'temp_iresname {temp_iresname} temp_iname {temp_iname}')
+            logger.debug(f'temp_jresname {temp_jresname} temp_jname {temp_jname}')
             if (i_atomName,i_resName)==(temp_iname,temp_iresname):
                 ij=[0,1]
                 break # found it -- stop looking

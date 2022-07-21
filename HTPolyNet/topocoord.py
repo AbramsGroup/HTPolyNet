@@ -175,7 +175,8 @@ class TopoCoord:
                     self.set_gro_attribute_by_attributes('reactantName',product_name,{'globalIdx':j})
             bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=self.get_bystanders(bb)
             oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames=self.get_oneaways(bb)
-            BT=BondTemplate(names,resnames,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames)
+            intraresidue=resids[0]==resids[1]
+            BT=BondTemplate(names,resnames,intraresidue,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames)
             RB=ReactionBond(bb,resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx)
             logger.debug(f'apparent bond template {str(BT)}')
             logger.debug(f'apparent bond instance {str(RB)}')
@@ -445,6 +446,7 @@ class TopoCoord:
             if write_mapper_to:
                 tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
                 tdf.to_csv(write_mapper_to,sep=' ',index=False)
+            logger.debug('finished')
             return ri_bdf,pi_df
 
     def read_top(self,topfilename):

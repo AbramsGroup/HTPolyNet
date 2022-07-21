@@ -2,9 +2,10 @@ import logging
 from copy import deepcopy
 
 class BondTemplate:
-    def __init__(self,names,resnames,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames):
+    def __init__(self,names,resnames,intraresidue,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames):
         self.names=names
         self.resnames=resnames
+        self.intraresidue=intraresidue
         self.bystander_resnames=bystander_resnames
         self.bystander_atomnames=bystander_atomnames
         self.oneaway_resnames=oneaway_resnames
@@ -18,9 +19,10 @@ class BondTemplate:
         self.oneaway_resnames=self.oneaway_resnames[::-1]
         self.oneaway_atomnames=self.oneaway_atomnames[::-1]
     def __str__(self):
-        return f'BondTemplate {self.names} resnames {self.resnames} order {self.order} bystander-resnames {self.bystander_resnames} bystander-atomnames {self.bystander_atomnames} oneaway-resnames {self.oneaway_resnames} oneaway-atomnames {self.oneaway_atomnames}'
+        return f'BondTemplate {self.names} resnames {self.resnames} intraresidue? {self.intraresidue} order {self.order} bystander-resnames {self.bystander_resnames} bystander-atomnames {self.bystander_atomnames} oneaway-resnames {self.oneaway_resnames} oneaway-atomnames {self.oneaway_atomnames}'
     def __eq__(self,other):
         check=self.names==other.names
+        check=check and self.intraresidue==other.intraresidue
         check=check and self.resnames==other.resnames
         check=check and self.bystander_resnames==other.bystander_resnames
         check=check and self.bystander_atomnames==other.bystander_atomnames

@@ -136,15 +136,6 @@ class Configuration:
                 self.molecules[r]=self.NewMolecule(r)
             self.molecules[r].generator=R
 
-        ''' 
-        
-        '''
-        # for mname,M in self.molecules.items():
-        #     logger.debug(f'{M.name} {M.zrecs}')
-        #     # M.sequence,M.reactive_atoms_seq=_determine_sequence(mname,self.molecules,[])
-            # logger.debug(f'Sequence of {mname}: {M.sequence}')
-            # logger.debug(f'Reactive atoms per sequence: {M.reactive_atoms_seq}')
-
     def symmetry_expand_reactions(self,molecules):
         extra_reactions=[]
         extra_molecules={}
@@ -203,118 +194,6 @@ class Configuration:
                 extra_molecules[newR.product]=newP
         self.reactions.extend(extra_reactions)
         return extra_molecules
-
-    # def x_symmetry_expand_reactions(self,unique_molecules):
-    #     # logger.debug('symmetry_expand_reactions')
-    #     extra_reactions=[]
-    #     current_molecules=unique_molecules
-    #     extra_molecules={}
-    #     trydict={}
-    #     sclass={}
-    #     for R in self.reactions:
-    #         logger.debug(f'Symmetry-expanding reaction {R.name}')
-    #         pro_seq,pro_ra=_determine_sequence(R.product,current_molecules,[])
-    #         logger.debug(f'{R.product} {pro_seq} {pro_ra}')
-    #         sseq=[]
-    #         for mname,matrectlist in zip(pro_seq,pro_ra):
-    #             # how many se versions of this reactant?
-    #             # -> product of number of members of symmetry class of each reactive atom in this
-    #             # reactant
-    #             residue=current_molecules[mname]
-    #             if not mname in sclass:
-    #                 sclass[mname]={}
-    #             sp=[]
-    #             for atrec in matrectlist:
-    #                 atomName=atrec['atom']
-    #                 seaidx=residue.TopoCoord.get_gro_attribute_by_attributes('sea-idx',{'atomName':atomName})
-    #                 if seaidx<=-1:
-    #                     logger.debug(f'No atoms symmetric with {mname} {atomName}')
-    #                     continue
-    #                 clu=residue.atoms_w_same_attribute_as(find_dict={'atomName':atomName},    
-    #                                             same_attribute='sea-idx',
-    #                                             return_attribute='atomName')
-    #                 # make sure atomName is the first element in clu
-    #                 clu=list(clu)
-    #                 assert atomName in clu
-    #                 clu.remove(atomName)
-    #                 clu.insert(0,atomName)
-    #                 logger.debug(f'Atoms symmetry-equivalent to {mname} {atomName}: {clu}')
-    #                 sclass[mname][atomName]=clu
-    #                 logger.debug(f'sclass {sclass}')
-    #                 sp.append(clu)
-
-    #             # logger.debug(f'sp {sp}')
-    #             if len(R.reactants)>1:
-    #                 sseq.append(list(product(*sp)))
-    #             else:
-    #                 sseq.append(list(zip(*sp)))
-    #         logger.debug(f'sclass {sclass}')
-    #         logger.debug(f'Reaction reactant sealist: {sseq}')                      
-    #         P=list(product(*[v for v in sseq]))
-    #         logger.debug(f'P {P}')
-    #         idx=1
-    #         if len(P)==0:
-    #             continue
-    #         trydict[P[0]]=R.product
-    #         for p in P[1:]: # skip the first permutation -- assume this is the explicit one!
-    #             logger.debug(f'{R.name}-{idx} {p}({len(p)}) -> {R.product}-{idx}')
-    #             trydict[p]=f'{R.product}-{idx}'
-    #             newR=deepcopy(R)
-    #             newR.name+=f'-{idx}'
-    #             newR.product+=f'-{idx}'
-    #             logger.debug(f'copy {R.name} with reactants {R.reactants} to {newR.name} with {newR.reactants}')
-    #             ip=0
-    #             pdiv={}
-    #             if len(R.reactants)==1: # unimolecular reaction
-    #                 pdiv[1]=p
-    #             else:
-    #                 # map patterns to previously created resnames
-    #                 for nri,nR in R.reactants.items():
-    #                     logger.debug(f'reactant {nri}: {nR}')
-    #                     nres_nR=len(current_molecules[nR].sequence)
-    #                     logger.debug(f'nres_nR {nres_nR}')
-    #                     subp=p[ip:ip+nres_nR]
-    #                     ip+=nres_nR
-    #                     nresname=nR
-    #                     if subp in trydict:
-    #                         nresname=trydict[subp]
-    #                     logger.debug(f'  {nR} {nresname} {subp}')
-    #                     newR.reactants[nri]=nresname
-    #                     pdiv[nri]=subp
-    #             for aL,atomrec in R.atoms.items():
-    #                 atomName=atomrec['atom']
-    #                 z=atomrec['z']
-    #                 resid=atomrec['resid']
-    #                 reactant_idx=atomrec['reactant']
-    #                 reactant=R.reactants[reactant_idx]
-    #                 resname=current_molecules[reactant].sequence[resid-1]
-    #                 logger.debug(f'need to alter atom: {atomName} resid: {resid} reactant: {reactant_idx} ({reactant})')
-    #                 logger.debug(f'have {pdiv[reactant_idx]} {len(pdiv[reactant_idx])}')
-    #                 new_atomName=atomName
-    #                 for q in pdiv[reactant_idx]:
-    #                     logger.debug(f'{q}')
-    #                     for qq in q:
-    #                         logger.debug(f'is it {qq}?')
-    #                         isit=qq in sclass[resname][atomName]
-    #                         logger.debug(f'{isit}')
-    #                         if isit:
-    #                             new_atomName=qq
-    #                 newR.atoms[aL]={'atom':new_atomName,'resid':resid,'reactant':reactant_idx,'z':z}
-    #                 # pdiv[] here has one element for each reactive atom in reactant, but
-    #             extra_reactions.append(newR)
-    #             newP=Molecule(name=newR.product,generator=newR)
-    #             logger.debug(f'...generated {newR.name} as generator of {newP.name}')
-    #             logger.debug(f'   {newR.name} uses reactants {newR.reactants}')
-    #             extra_molecules[newR.product]=newP
-    #             idx+=1
-    #     # logger.debug(f'trydict {trydict}')
-    #     # for R in self.reactions:
-    #     #     logger.debug(R)
-    #     # logger.debug(f'extra reactions:')
-    #     # for R in extra_reactions:
-    #     #     logger.debug(R)
-    #     self.reactions.extend(extra_reactions)
-    #     return extra_molecules
 
     def chain_expand_reactions(self,molecules):
         extra_reactions=[]
