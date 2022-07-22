@@ -287,7 +287,7 @@ class Configuration:
                     R.product=new_mname
                     newP=Molecule(name=R.product,generator=R)
                     extra_molecules[R.product]=newP
-                    logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attach monomer atom {m.name}_{t_name}-> {new_mname}:')
+                    logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attack monomer atom {m.name}_{t_name}-> {new_mname}:')
                     for ln in str(R).split('\n'):
                         logger.debug(ln)
                     extra_reactions.append(R)

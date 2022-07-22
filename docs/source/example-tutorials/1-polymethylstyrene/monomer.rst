@@ -28,7 +28,7 @@ Now we can generate the required ``*.mol2`` file.
 
 (http://2015.igem.org/Team:Stanford-Brown/PS)
 
-Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to conveniently distinguish between these two.  To see how we do that, let's turn to a way to build the ``mol2`` file.
+Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two.  To see how we do that, let's turn to a way to build the ``mol2`` file.
 
 As described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene:
 
@@ -40,7 +40,7 @@ We can easily generate a ``mol2`` file for 1-ethyl-4-methylbenzene using `OpenBa
 
     $ echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen3d -h -omol2 > EMB-raw.mol2
 
-Now, let's have a look at this file::
+Now, let's have a look at this file (your coordinates may be different)::
 
     @<TRIPOS>MOLECULE
     EMB
