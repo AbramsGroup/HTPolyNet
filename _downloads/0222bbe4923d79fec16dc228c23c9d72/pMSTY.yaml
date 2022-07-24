@@ -8,7 +8,6 @@ densification_steps: 150000
 CURE_initial_search_radius: 0.5 # nm
 CURE_radial_increment: 0.25
 CURE_max_iterations: 150
-#CURE_max_conversion_per_iteration: 0.50
 CURE_desired_conversion: 0.95
 CURE_late_threshold: 0.85
 drag_trigger_distance: 0.5 # nm
@@ -33,48 +32,6 @@ reactions:
       probability: 1.0,
       atoms: {
         A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-    }
-  - {
-      name:        'EMB2_1',
-      stage:       cure,
-      reactants:   {1: EMB1_1, 2: EMB},
-      product:     EMB2_1,
-      probability: 0.0,
-      atoms: {
-        A: {reactant: 1, resid: 2, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-    }
-  - {
-      name:        'EMB1_2',
-      stage:       cure,
-      reactants:   {1: EMB, 2: EMB1_1},
-      product:     EMB1_2,
-      probability: 0.0,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-    }
-  - {
-      name:        'EMB2_2',
-      stage:       cure,
-      reactants:   {1: EMB1_1, 2: EMB1_1},
-      product:     EMB2_2,
-      probability: 0.0,
-      atoms: {
-        A: {reactant: 1, resid: 2, atom: C1, z: 1},
         B: {reactant: 2, resid: 1, atom: C2, z: 1}
       },
       bonds: [

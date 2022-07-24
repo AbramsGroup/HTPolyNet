@@ -55,10 +55,7 @@
 <span class="go">molecules/  plots/  systems/</span>
 <span class="gp">$ </span><span class="nb">cd</span> molecules/parameterized
 <span class="gp">$ </span>ls EMB.*
-<span class="go">EMB.edr     EMB.log   EMB.tpr</span>
-<span class="go">EMB.frcmod  EMB.mol2  EMB.trr</span>
-<span class="go">EMB.gro     EMB.sea</span>
-<span class="go">EMB.itp     EMB.top</span>
+<span class="go">EMB.edr  EMB.frcmod  EMB.gro  EMB.grx  EMB.itp  EMB.log  EMB.mol2  EMB.top  EMB.tpr  EMB.trr</span>
 <span class="gp">$</span>
 </pre></div>
 </div>
@@ -67,16 +64,15 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">mol2</span></code> – output of <code class="docutils literal notranslate"><span class="pre">antechamber</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">frcmod</span></code> – output of <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">gro/top/itp</span></code> – output of <code class="docutils literal notranslate"><span class="pre">parmed</span></code> (<code class="docutils literal notranslate"><span class="pre">gro</span></code> is also output of Gromacs minimization)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">sea</span></code> – custom output of HTPolyNet with symmetry info (not applicable here)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">grx</span></code> – custom output of HTPolyNet with “extra” atom parameters</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">tpr/trr/edr</span></code> – files associated with a Gromacs-based energy minimization that produces an coordinate-optimized <code class="docutils literal notranslate"><span class="pre">gro</span></code> file.</p></li>
 </ol>
-<p>We can see how many molecules have been parameterized:</p>
+<p>We can see how many molecules have been parameterized (each will have its own <code class="docutils literal notranslate"><span class="pre">gro</span></code> file):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls *.gro
-<span class="go">EMB1_1.gro  EMB2_1.gro  EMBCC.gro</span>
-<span class="go">EMB1_2.gro  EMB2_2.gro  EMB.gro</span>
+<span class="go">&#39;EMB1_1~C1=C2~EMB1_1.gro&#39;  &#39;EMB1_1~C1=C2~EMB.gro&#39;   EMB1_1.gro  &#39;EMB~C1=C2~EMB1_1.gro&#39;   EMBCC.gro   EMB.gro</span>
 </pre></div>
 </div>
-<p>So we have parameterized every reaction product, and this is a sufficient set of templates.</p>
+<p>The filesname in single-quotes are the ones corresponding to the automatically “chain-expanded” reactions. So we have parameterized every reaction product, and this is a sufficient set of templates.</p>
 </section>
 <section id="liquid-generation-and-densification">
 <h2>Liquid generation and densification<a class="headerlink" href="#liquid-generation-and-densification" title="Permalink to this headline">¶</a></h2>
