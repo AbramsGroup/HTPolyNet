@@ -18,6 +18,7 @@ from HTPolyNet.gromacs import insert_molecules, grompp_and_mdrun, density_trace,
 from HTPolyNet.checkpoint import CPstate, Checkpoint
 from HTPolyNet.plot import trace
 from HTPolyNet.molecule import Molecule, is_reactant
+from HTPolyNet.expandreactions import symmetry_expand_reactions, chain_expand_reactions
 
 logger=logging.getLogger(__name__)
 
@@ -81,7 +82,9 @@ class HTPolyNet:
             all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
 
         ''' Generate all reactions and products that result from invoking symmetry '''
-        new_molecules=self.cfg.symmetry_expand_reactions(self.molecules)
+        symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
+        new_reactions,new_molecules=symmetry_expand_reactions(self.cfg.reactions,symmetry_relateds)
+        self.cfg.reactions.extend(new_reactions)
         for mname,M in new_molecules.items():
             if mname not in self.molecules:
                 logger.debug(f'Generating {mname} based on symmetry')
@@ -90,9 +93,11 @@ class HTPolyNet:
                 self.molecules[mname]=M
                 logger.info(f'Generated {mname} based on symmetry')
         self.molecules.update(new_molecules)
+
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
-        new_molecules=self.cfg.chain_expand_reactions(self.molecules)
+        new_reactions,new_molecules=chain_expand_reactions(self.molecules)
+        self.cfg.reactions.extend(new_reactions)
         for mname,M in new_molecules.items():
             if mname not in self.molecules:
                 logger.debug(f'Generating {mname}...')

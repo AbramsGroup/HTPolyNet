@@ -8,7 +8,7 @@ The reaction dicts from the previous section appear in a list together with many
 .. code-block:: yaml
     :linenos:
 
-    Title: polymethylstyrene
+    Title: polymethylEMBrene
     gmx: 'gmx'
     gmx_options: '-quiet -nobackup'
     initial_density: 300.0  # kg/m3
@@ -20,8 +20,8 @@ The reaction dicts from the previous section appear in a list together with many
     CURE_max_iterations: 150
     CURE_desired_conversion: 0.95
     CURE_late_threshold: 0.85
-    drag_increment: 0.05 # nm
     drag_trigger_distance: 0.5 # nm
+    drag_increment: 0.05 #nm
     drag_limit: 0.3 # nm
     drag_nvt_steps: 1000
     drag_npt_steps: 2000
@@ -42,48 +42,6 @@ The reaction dicts from the previous section appear in a list together with many
           probability: 1.0,
           atoms: {
             A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C2, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:        'EMB2_1',
-          stage:       cure,
-          reactants:   {1: EMB1_1, 2: EMB},
-          product:     EMB2_1,
-          probability: 0.0,
-          atoms: {
-            A: {reactant: 1, resid: 2, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C2, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:        'EMB1_2',
-          stage:       cure,
-          reactants:   {1: EMB, 2: EMB1_1},
-          product:     EMB1_2,
-          probability: 0.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C2, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:        'EMB2_2',
-          stage:       cure,
-          reactants:   {1: EMB1_1, 2: EMB1_1},
-          product:     EMB2_2,
-          probability: 0.0,
-          atoms: {
-            A: {reactant: 1, resid: 2, atom: C1, z: 1},
             B: {reactant: 2, resid: 1, atom: C2, z: 1}
           },
           bonds: [
@@ -155,6 +113,6 @@ The reaction dicts from the previous section appear in a list together with many
 
   These are explained in detail in :ref:`the previous section <pms_reaction_dictionaries>`.
 
-* ``initial_composition`` (lines 97-98):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 100 EMB's.
+* ``initial_composition`` (lines 55-56):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring 100 EMB's.
 
 Now we are ready to :ref:`run the build <pms_run>`.

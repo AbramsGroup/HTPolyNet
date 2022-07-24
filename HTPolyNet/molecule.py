@@ -46,7 +46,8 @@ class Reaction:
         self.restrictions=jsondict.get('restrictions',{})
         self.stage=jsondict.get('stage','')
         self.probability=jsondict.get('probability',1.0)
-
+        self.symmetry_versions=[]
+        
     def __str__(self):
         retstr=f'Reaction "{self.name}"\n'
         for i,r in self.reactants.items():
@@ -135,7 +136,7 @@ class Molecule:
         for s in self.symmetry_relateds:
             logger.debug(f'sea-idx {sea_idx} set for set {s}')
             for atomName in s:
-                logger.debug(f'{atomName}')
+                logger.debug(f'{atomName} {sea_idx}')
                 TC.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'atomName':atomName})
                 # TC.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'atomName':b})
             sea_idx+=1
@@ -257,6 +258,7 @@ class Molecule:
             # logger.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds(bonds_to_make)
             self.TopoCoord.set_gro_attribute('reactantName',R.product)
+            self.TopoCoord.set_gro_attribute('sea-idx',-1) # turn off symmetry-equivalence for multimers
             self.write_gro_attributes(['z','nreactions','reactantName','sea-idx','cycle','cycle-idx','chain','chain-idx'],f'{R.product}.grx')
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
         else:
@@ -739,3 +741,4 @@ class Molecule:
         return list(clu)
 
 MoleculeDict = dict[str,Molecule]
+MoleculeList = list[Molecule]

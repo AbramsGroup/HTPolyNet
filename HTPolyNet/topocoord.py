@@ -1187,6 +1187,8 @@ class TopoCoord:
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
         chains=self.idx_lists['chain'].copy()
+        if not chains:
+            return new_bdf
         cyclized_chains={}
         chains_of_bonds=[]
         for i,r in bdf.iterrows():
