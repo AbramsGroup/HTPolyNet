@@ -35,6 +35,15 @@
             
   <section id="installation-and-prerequisites">
 <h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this headline">¶</a></h1>
+<section id="python">
+<h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
+<p>If you use conda/anaconda, it is recommended that a separate python environment be created for running HTPolyNet:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda create --name mol-env python
+<span class="gp">$ </span>conda activate mol-env
+<span class="gp">$ </span>conda install numpy scipy pandas ambertools
+</pre></div>
+</div>
+</section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>Because HTPolyNet is under active development, it is best to clone the repository from Github and then pip install as in:</p>
@@ -43,6 +52,7 @@
 <span class="gp">$ </span>pip install -e .
 </pre></div>
 </div>
+<p>If you created the recommended python environment, make sure it is activated before running pip install!</p>
 </section>
 <section id="software-prequisites">
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
@@ -58,7 +68,7 @@
 <li><p><a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>. You have at least two options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>conda:  <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-force</span> <span class="pre">ambertools</span></code> installs precompiled executables into your conda environment</p></li>
+<li><p>conda:  <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-force</span> <span class="pre">ambertools</span></code> installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)</p></li>
 <li><p>compile from source (requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>):</p></li>
 </ul>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar jxf AmberTools21.tar.bz2
@@ -119,6 +129,7 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and Prerequisites</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#python">Python</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#software-prequisites">Software Prequisites</a></li>
 </ul>
