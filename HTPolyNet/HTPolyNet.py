@@ -264,12 +264,12 @@ class HTPolyNet:
         self.TopoCoord.read_gro(f'{inpfnm}.gro')
         self.TopoCoord.atom_count()
         self.TopoCoord.inherit_grx_attributes_from_molecules(
-            ['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx'],self.cfg.molecules,self.cfg.initial_composition,
+            ['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'],self.cfg.molecules,self.cfg.initial_composition,
             globally_unique=[False,False,False,True,False,True,False],
             unset_defaults=[0,0,'UNSET',-1,-1,-1,-1])
         for list_name in ['cycle','chain']:
             self.TopoCoord.reset_idx_list_from_grx_attributes(list_name)
-        self.TopoCoord.write_gro_attributes(['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx'],f'{inpfnm}.grx')
+        self.TopoCoord.write_gro_attributes(['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'],f'{inpfnm}.grx')
         self.TopoCoord.make_resid_graph()
 
     def do_liquid_simulation(self,inpfnm='init',deffnm='npt-1'):
@@ -383,8 +383,8 @@ class HTPolyNet:
                     if nbdf.shape[0]>0:
                         pairs=pd.DataFrame()
                         CP.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
-                        CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                        if dragging_enabled and CP.bonds['initial-distance'].max()>drag_trigger_distance:
+                        CP.bonds['initial_distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                        if dragging_enabled and CP.bonds['initial_distance'].max()>drag_trigger_distance:
                             next_stage=CPstate.drag
                         else:
                             next_stage=CPstate.update
@@ -405,9 +405,9 @@ class HTPolyNet:
                 opfx=f'{stepno}-{stepnm}'
                 logger.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: PREBOND DRAGGING')
                 CP.read_checkpoint(self)
-                CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
-                maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                CP.bonds['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
+                maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
                 logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 rcommon=max([gromacs_rdefault,maxL])
                 for stg in ['minimize','nvt','npt']:
@@ -422,7 +422,7 @@ class HTPolyNet:
                     logger.debug(f'{opfx}: Using {drag_nstages} drag stages with increment {drag_increment}')
                 for i in range(begin_dragstage,drag_nstages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,drag_nstages,minimum_distance=drag_limit_nm,init_colname='initial-distance')
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,drag_nstages,minimum_distance=drag_limit_nm,init_colname='initial_distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref) # writes the gro and top files
                     for stg in ['minimize','nvt','npt']:
@@ -430,8 +430,8 @@ class HTPolyNet:
                         msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
                     logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     rcommon=max([gromacs_rdefault,maxL+drag_cutoff_pad])
                     nextpref=f'{opfx}-stage-{i+2}'
@@ -454,7 +454,7 @@ class HTPolyNet:
                 CP.read_checkpoint(self)
                 CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.csv')
                 CP.current_stage=0
-                CP.bonds['initial-distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
+                CP.bonds['initial_distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
                 self.TopoCoord.make_resid_graph(json_file=f'{opfx}-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
                 CP.write_checkpoint(self,CPstate.relax,prefix=f'{opfx}-complete')
             if CP.state==CPstate.relax:
@@ -464,11 +464,11 @@ class HTPolyNet:
                 opfx=f'{stepno}-{stepnm}'
                 logger.info(f'{opfx}: CURE iteration {CP.iter}/{maxiter}: BOND RELAXATION')
                 CP.read_checkpoint(self)
-                CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
-                maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                CP.pairs['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
-                pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
+                CP.bonds['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
+                maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
+                CP.pairs['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
+                pmaxL,pminL,pmeanL=CP.pairs['current_lengths'].max(),CP.pairs['current_lengths'].min(),CP.pairs['current_lengths'].mean()
                 logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 logger.debug(f'{opfx}: Bond-designate-1-4 pairs lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 CP.pairs.to_csv(f'{opfx}-pairs.csv',sep=' ',header=False,index=False)
@@ -480,12 +480,12 @@ class HTPolyNet:
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-vel':'yes','gen-temp':relax_temperature,'ref_t':relax_temperature}
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if relax_increment>0.0:
-                    relax_nstages=int(CP.bonds['initial-distance'].max()/relax_increment)
+                    relax_nstages=int(CP.bonds['initial_distance'].max()/relax_increment)
                     logger.debug(f'{opfx}: Using {relax_nstages} relaxation stages with increment {relax_increment}')
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,relax_nstages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,relax_nstages,init_colname='initial-distance')
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,relax_nstages,init_colname='initial_distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
                     for stg in ['minimize','nvt','npt']:
@@ -493,10 +493,10 @@ class HTPolyNet:
                         msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,quiet=False,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
-                    CP.pairs['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
-                    pmaxL,pminL,pmeanL=CP.pairs['current-lengths'].max(),CP.pairs['current-lengths'].min(),CP.pairs['current-lengths'].mean()
+                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
+                    CP.pairs['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
+                    pmaxL,pminL,pmeanL=CP.pairs['current_lengths'].max(),CP.pairs['current_lengths'].min(),CP.pairs['current_lengths'].mean()
                     logger.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     logger.debug(f'{stagepref}: Bond-designate-1-4 pair lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                     rcommon=max([maxL+relax_cutoff_pad,gromacs_rdefault,pmaxL+relax_cutoff_pad])
@@ -578,10 +578,10 @@ class HTPolyNet:
                 pairs=pd.DataFrame()
                 CP.register_bonds(bdf,pairs,bonds_are='unrelaxed')
                 CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.csv')
-                CP.bonds['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                CP.bonds['current-lengths']=CP.bonds['initial-distance'].copy()
-                # CP.pairs['initial-distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
-                maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                CP.bonds['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
+                # CP.pairs['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
+                maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
                 logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
@@ -589,12 +589,12 @@ class HTPolyNet:
                     mod_dict={'gen-temp':relax_temperature,'gen-vel':'yes','ref_t':relax_temperature}
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if bond_relaxation_increment>0.0:
-                    n_stages=int(CP.bonds['initial-distance'].max()/bond_relaxation_increment)
+                    n_stages=int(CP.bonds['initial_distance'].max()/bond_relaxation_increment)
                     logger.debug(f'{opfx}: Using {n_stages} relaxation stages with increment {bond_relaxation_increment}')
                 begin_stage=CP.current_stage
                 for i in range(begin_stage,n_stages):
                     saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,init_colname='initial-distance')
+                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,init_colname='initial_distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
                     for stg in ['minimize','nvt','npt']:
@@ -602,8 +602,8 @@ class HTPolyNet:
                         msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current-lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    maxL,minL,meanL=CP.bonds['current-lengths'].max(),CP.bonds['current-lengths'].min(),CP.bonds['current-lengths'].mean()
+                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
+                    maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
                     logger.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={}
@@ -647,12 +647,12 @@ class HTPolyNet:
         if (grx):
             self.TopoCoord.read_gro_attributes(grx)
 
-    def register_system(self,CP:Checkpoint,extra_attributes=['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx']):
+    def register_system(self,CP:Checkpoint,extra_attributes=['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx']):
         """register_system Create
 
         :param CP: checkpoint
         :type CP: Checkpoint
-        :param extra_attributes: list of extra atom attributes, defaults to ['z','nreactions','reactantName','cycle','cycle-idx','chain','chain-idx']
+        :param extra_attributes: list of extra atom attributes, defaults to ['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx']
         :type extra_attributes: list, optional
         """
         logger.debug(f'WRITING SYSTEM TO {CP.top} {CP.gro} {CP.grx}')

@@ -1,6 +1,18 @@
 Installation and Prerequisites
 ==============================
 
+Python
+------
+
+If you use conda/anaconda, it is recommended that a separate python environment be created for running HTPolyNet:
+
+.. code-block:: console
+
+    $ conda create --name mol-env python
+    $ conda activate mol-env
+    $ conda install numpy scipy pandas ambertools
+
+
 Installation
 ------------
 
@@ -11,6 +23,8 @@ Because HTPolyNet is under active development, it is best to clone the repositor
     $ git clone git@github.com:AbramsGroup/HTPolyNet.git
     $ cd HTPolyNet
     $ pip install -e .
+
+If you created the recommended python environment, make sure it is activated before running pip install!
 
 Software Prequisites
 --------------------
@@ -26,7 +40,7 @@ Suggested approaches for obtaining these are below.
 
 * `AmberTools <https://ambermd.org/GetAmber.php#ambertools>`_. You have at least two options:
 
-    * conda:  ``conda install -c conda-force ambertools`` installs precompiled executables into your conda environment
+    * conda:  ``conda install -c conda-force ambertools`` installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)
     * compile from source (requires ``csh``, ``flex``, and ``bison``):
 
     .. code-block:: console

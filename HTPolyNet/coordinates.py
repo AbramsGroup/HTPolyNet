@@ -27,7 +27,7 @@ logger=logging.getLogger(__name__)
 #             return True
 #     return False
 
-GRX_ATTRIBUTES=['z','nreactions','sea-idx','cycle','cycle-idx','chain','chain-idx']
+GRX_ATTRIBUTES=['z','nreactions','sea_idx','cycle','cycle_idx','chain','chain_idx']
 
 def _dfrotate(df,R):
     for i,srow in df.iterrows():
@@ -295,10 +295,11 @@ class Coordinates:
         return newC
     
     def reconcile_subcoords(self,subc,attr):
-        for i,r in subc.A.iterrows():
-            idx=r['globalIdx']
-            lc_idx=r['linkcell-idx']
-            self.A.loc[idx-1,'linkcell-idx']=lc_idx
+        jdx=list(subc.A.columns).index(attr)
+        for r in subc.A.itertuples(index=False):
+            idx=r.globalIdx
+            lc_idx=r[jdx]
+            self.A.loc[idx-1,attr]=lc_idx
 
     def inherit_grx_attributes_from_molecules(self,attributes=[],molecules={},globally_unique=[],unset_defaults=[],overall_default=0):
         pass
@@ -314,19 +315,19 @@ class Coordinates:
     # def rings(self):
     #     a=self.A
     #     for resid in a['resNum'].unique():
-    #         mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
+    #         mr=a[(a['resNum']==resid)&(a['cycle_idx']>0)]
     #         if not mr.empty:
-    #             for ri in mr['cycle-idx'].unique():
-    #                 R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']]
+    #             for ri in mr['cycle_idx'].unique():
+    #                 R=mr[mr['cycle_idx']==ri][['globalIdx','posX','posY','posZ']]
     #                 yield R
 
     # def rings(self): # an iterator over all rings
     #     a=self.A
     #     for resid in a['resNum'].unique():
-    #         mr=a[(a['resNum']==resid)&(a['cycle-idx']>0)]
+    #         mr=a[(a['resNum']==resid)&(a['cycle_idx']>0)]
     #         if not mr.empty:
-    #             for ri in mr['cycle-idx'].unique():
-    #                 R=mr[mr['cycle-idx']==ri][['globalIdx','posX','posY','posZ']].values
+    #             for ri in mr['cycle_idx'].unique():
+    #                 R=mr[mr['cycle_idx']==ri][['globalIdx','posX','posY','posZ']].values
     #                 # TODO: cast R as a pandas DataFrame to preserve int type of globalIdx
     #                 # logger.debug(f'visiting a ring ({resid}:{ri}) of length {R.shape[0]}')
     #                 yield R
@@ -376,14 +377,14 @@ class Coordinates:
     #         lcids=[]
     #         for ci in C:
     #             idx=int(ci[0])
-    #             # logger.debug(f'asking for linkcell-idx of atom {idx}')
+    #             # logger.debug(f'asking for linkcell_idx of atom {idx}')
     #             try:
-    #                 rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
+    #                 rci=self.get_atom_attribute('linkcell_idx',{'globalIdx':idx})      
     #             except:
-    #                 logger.debug(f'asking for linkcell-idx of atom {idx} failed!!')
+    #                 logger.debug(f'asking for linkcell_idx of atom {idx} failed!!')
     #                 logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
     #                 logger.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
-    #                 raise Exception(f'asking for linkcell-idx of atom {idx} failed!!')
+    #                 raise Exception(f'asking for linkcell_idx of atom {idx} failed!!')
     #             lcids.append(rci)
     #         for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
     #             cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
@@ -451,7 +452,7 @@ class Coordinates:
         for bc in bcids:
             # print(f'searching {len(self.linkcell.searchlist_of_ldx(bc))} cells')
             for lc in self.linkcell.searchlist_of_ldx(bc):
-                r=adf[(adf['globalIdx'].isin(self.linkcell.memberlists[lc]))&(adf['cycle-idx']>0)][['resNum','cycle-idx']].copy()
+                r=adf[(adf['globalIdx'].isin(self.linkcell.memberlists[lc]))&(adf['cycle_idx']>0)][['resNum','cycle_idx']].copy()
                 R=pd.concat((R,r),ignore_index=True)
         collisions=0
         total_rings=0
@@ -460,16 +461,16 @@ class Coordinates:
             total_rings+=1
             # print(f'ring\n{C.to_string()}')
             lcids=[]
-            for i,ci in C.iterrows():
-                idx=ci['globalIdx']
-                # logger.debug(f'asking for linkcell-idx of atom {idx}')
+            for ci in C.itertuples():
+                idx=ci.globalIdx
+                # logger.debug(f'asking for linkcell_idx of atom {idx}')
                 try:
-                    rci=self.get_atom_attribute('linkcell-idx',{'globalIdx':idx})      
+                    rci=self.get_atom_attribute('linkcell_idx',{'globalIdx':idx})      
                 except:
-                    logger.debug(f'asking for linkcell-idx of atom {idx} failed!!')
+                    logger.debug(f'asking for linkcell_idx of atom {idx} failed!!')
                     logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
                     logger.debug(f'{len(self.ringlist)} rings; ring: {C.to_string()}\n')
-                    raise Exception(f'asking for linkcell-idx of atom {idx} failed!!')
+                    raise Exception(f'asking for linkcell_idx of atom {idx} failed!!')
                 lcids.append(rci)
             # print(f'lcids {lcids}')
             is_near=False
@@ -507,18 +508,18 @@ class Coordinates:
                 self.read_atomset_attributes(lc_file)
                 self.linkcell.make_memberlists(self.A)
             else:
-                self.set_atomset_attribute('linkcell-idx',-1*np.ones(self.A.shape[0]).astype(int))
-                sc=self.subcoords(self.A[(self.A['cycle-idx']>0)|(self.A['z']>0)].copy())
+                self.set_atomset_attribute('linkcell_idx',-1*np.ones(self.A.shape[0]).astype(int))
+                sc=self.subcoords(self.A[(self.A['cycle_idx']>0)|(self.A['z']>0)].copy())
                 self.linkcell.populate(sc,ncpu=ncpu)
-                self.reconcile_subcoords(sc,'linkcell-idx')
+                self.reconcile_subcoords(sc,'linkcell_idx')
                 if save:
-                    self.write_atomset_attributes(['linkcell-idx'],lc_file)
+                    self.write_atomset_attributes(['linkcell_idx'],lc_file)
 
     def linkcelltest(self,i,j):
         ''' return True if atoms i and j are within potential interaction
             range based on current link-cell structure '''
-        ci=self.get_atom_attribute('linkcell-idx',{'globalIdx':i})
-        cj=self.get_atom_attribute('linkcell-idx',{'globalIdx':j})
+        ci=self.get_atom_attribute('linkcell_idx',{'globalIdx':i})
+        cj=self.get_atom_attribute('linkcell_idx',{'globalIdx':j})
         if ci==cj:
             return True
         if self.linkcell.are_ldx_neighbors(ci,cj):
@@ -701,11 +702,11 @@ class Coordinates:
             
     def show_z_report(self):
         zhists={}
-        for i,r in self.A.iterrows():
-            n=r['atomName']
-            nn=r['resName']
+        for r in self.A.itertuples():
+            n=r.atomName
+            nn=r.resName
             k=f'{nn}:{n}'
-            z=r['z']
+            z=r.z
             if not k in zhists:
                 zhists[k]=np.zeros(4).astype(int)
             zhists[k][z]+=1
@@ -718,8 +719,8 @@ class Coordinates:
 
     def return_bond_lengths(self,bdf):
         lengths=[]
-        for i,b in bdf.iterrows():
-            lengths.append(self.rij(b['ai'],b['aj']))
+        for b in bdf.itertuples():
+            lengths.append(self.rij(b.ai,b.aj))
         return lengths
 
     # def return_pair_lengths(self,pdf):

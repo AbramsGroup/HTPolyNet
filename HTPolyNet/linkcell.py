@@ -125,7 +125,7 @@ class Linkcell:
         return self.cellndx[i]
 
     def populate_par(self,adf):
-        """populate_par populate the linkcell structure by setting the "linkcell-idx" attribute of each atom in the coordinates dataframe adf
+        """populate_par populate the linkcell structure by setting the "linkcell_idx" attribute of each atom in the coordinates dataframe adf
 
         :param adf: gromacs-format coordinate dataframe
         :type adf: pandas.DataFrame
@@ -137,7 +137,7 @@ class Linkcell:
             ri=srow.values
             C=self.cellndx_of_point(ri)
             idx=self.ldx_of_cellndx(C)
-            adf.loc[i,'linkcell-idx']=idx
+            adf.loc[i,'linkcell_idx']=idx
         return adf
 
     def _return_list_lens(self,idx_list,mlists):
@@ -163,7 +163,7 @@ class Linkcell:
         """
         N=Coordinates.A.shape[0]
         logger.debug(f'Linkcell: assigning cell indices to {N} atoms in {self.box}...')
-        Coordinates.set_atomset_attribute('linkcell-idx',-1*np.ones(N).astype(int))
+        Coordinates.set_atomset_attribute('linkcell_idx',-1*np.ones(N).astype(int))
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
         ess='s' if ncpu>1 else ''
         logger.debug(f'Linkcell assignment will use {ncpu} processor{ess}')
@@ -178,7 +178,7 @@ class Linkcell:
 
         idx_list=Coordinates.A['globalIdx'].to_list()
         for i in idx_list:
-            lc_idx=Coordinates.get_atom_attribute('linkcell-idx',{'globalIdx':i})
+            lc_idx=Coordinates.get_atom_attribute('linkcell_idx',{'globalIdx':i})
             try:
                 self.memberlists[lc_idx].append(i)
             except:
@@ -211,10 +211,10 @@ class Linkcell:
 
     def make_memberlists(self,cdf):
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
-        rdf=cdf[cdf['linkcell-idx']!=-1]
+        rdf=cdf[cdf['linkcell_idx']!=-1]
         # logger.debug(f'Generated {len(self.memberlists)} empty memberlists.')
         for i,r in rdf.iterrows():
-            cidx=r['linkcell-idx']
+            cidx=r['linkcell_idx']
             idx=r['globalIdx']
             self.memberlists[cidx].append(idx)
         rl=np.array([len(self.memberlists[i]) for i in range(self.cellndx.shape[0])])
@@ -228,15 +228,17 @@ class Linkcell:
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
         retlist=[]
         dd=np.array([-1,0,1])
-        for s in product(dd,dd,dd):
+        S=list(product(dd,dd,dd))
+        S.remove((0,0,0))
+        for s in S:
             nCi=Ci+np.array(s)
-            p=np.zeros(3).astype(int)
             for d in range(3):
                 if nCi[d]==self.ncells[d]:
                     nCi[d]=0
                 elif nCi[d]==-1:
                     nCi[d]=self.ncells[d]-1
             retlist.append(nCi)
+        assert len(retlist)==(len(dd)**3)-1
         return retlist
 
     def searchlist_of_ldx(self,i):
@@ -251,16 +253,11 @@ class Linkcell:
     def are_cellndx_neighbors(self,Ci,Cj):
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
         assert self.cellndx_in_structure(Cj),f'Error: cell {Cj} outside of cell structure {self.ncells}'
-        oneaway=np.array([False,False,False])
-        for d in range(0,3):
-            dd=Ci[d]-Cj[d]
-            if dd>self.ncells[d]/2:
-                dd-=self.ncells[d]
-            elif dd<-self.ncells[d]/2:
-                dd+=self.ncells[d]
-            add=np.abs(dd)
-            oneaway[d]=add==1
-        return oneaway.astype(int).sum()==1
+        dij=Ci-Cj
+        low=(dij<-self.ncells/2).astype(int)
+        hi=(dij>self.ncells/2).astype(int)
+        dij+=(low-hi)*self.ncells
+        return all([x in [-1,0,1] for x in dij])
 
     def are_ldx_neighbors(self,ildx,jldx):
         # should never call this for atoms with unset lc indices
@@ -284,5 +281,5 @@ if __name__=='__main__':
             D=L.cellndx[dldx]
             check2.append(L.are_cellndx_neighbors(C,D))
             n+=1
-        assert n==6
+        
     print(f'check2 {all(check2)}')

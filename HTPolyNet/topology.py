@@ -555,7 +555,7 @@ class Topology:
     #     pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
     #     for i,p in pairsdf.iterrows():
     #         ai,aj=idxorder((p['ai'],p['aj']))
-    #         l0=p['initial-distance']
+    #         l0=p['initial_distance']
     #         if not (ai,aj) in pmi: #this pair not already here, good!
     #             data=[ai,aj,1,l0,kb]
     #             h=_GromacsTopologyDirectiveHeaders_['pairs']
@@ -579,7 +579,7 @@ class Topology:
         bmi=self.D['bonds'].set_index(['ai','aj']).sort_index().index
         for i,b in pairdf.iterrows():
             ai,aj=idxorder((b['ai'],b['aj']))
-            b0=b['initial-distance']
+            b0=b['initial_distance']
             if not (ai,aj) in bmi:
                 h=_GromacsTopologyDirectiveHeaders_['bonds']
                 data=[ai,aj,typ,b0,kb]  # this new bond will have override parameters
@@ -618,10 +618,13 @@ class Topology:
         pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
         for b in pairs:
-            # logger.debug(f'{b}')
-            bondtuple=(b[0],b[1])
-            order=b[2]
+            logger.debug(f'{b}')
+            # assert type(b[0])==int
+            bondtuple=(int(b[0]),int(b[1]))
+            order=int(b[2])
             ai,aj=idxorder(bondtuple)
+            assert type(ai)==int
+            assert type(aj)==int
             '''
             if this bond is not in the topology, then add it
             '''
@@ -913,7 +916,7 @@ class Topology:
                         d.ai=d.ai.map(mapper)
                         d.aj=d.aj.map(mapper)
                     if pt=='bonds':
-                        # logger.debug(f'Updating bondlist using\n{d.to_string()}')
+                        # logger.debug(f'Updating bondlist using (first 10 shown)\n{d.head(10).to_string()}')
                         self.bondlist=Bondlist.fromDataFrame(d)
                     if pt=='mol2_bonds':
                         nBonds=self.D[pt].shape[0]
@@ -1149,14 +1152,14 @@ class Topology:
         """
         bdf=self.D['bonds']
         saveme=pd.DataFrame(columns=bdf.columns)
-        for i,b in bonds.iterrows():
-            ai,aj=idxorder((b['ai'],b['aj']))
+        for b in bonds.itertuples():
+            ai,aj=idxorder((b.ai,b.aj))
             # logger.debug(f'copy parameters for ai {ai} aj {aj}')
             saveme=pd.concat((saveme,bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()),ignore_index=True)
         # logger.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
 
-    def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0,init_colname='initial-distance'):
+    def attenuate_bond_parameters(self,bondsdf,stage,max_stages,minimum_distance=0.0,init_colname='initial_distance'):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to 
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
@@ -1175,8 +1178,8 @@ class Topology:
         bdf=self.D['bonds']
         factor=(stage+1)/max_stages
         logger.debug(f'Attenuating {bondsdf.shape[0]} bond{"s" if bondsdf.shape[0]>1 else ""} in stage {stage+1}/{max_stages}')
-        for i,b in bondsdf.iterrows():
-            ai,aj=idxorder((b['ai'],b['aj']))
+        for b in bondsdf.itertuples():
+            ai,aj=idxorder((b.ai,b.aj))
             rij=b[init_colname]
             b0,kb=self.get_bond_parameters(ai,aj)
             if minimum_distance>0.0:
@@ -1219,19 +1222,19 @@ class Topology:
         :type df: pandas DataFrame
         """
         bdf=self.D['bonds']
-        for i,r in df.iterrows():
-            ai,aj=r['ai'],r['aj']
-            c0,c1=r['c0'],r['c1']
+        for r in df.itertuples():
+            ai,aj=r.ai,r.aj
+            c0,c1=r.c0,r.c1
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c0']=c0
             bdf.loc[(bdf['ai']==ai)&(bdf['aj']==aj),'c1']=c1
 
     def attenuate_pair_parameters(self,pairsdf,stage,max_stages,draglimit_nm=0.3):
         """Alter the kb and b0 parameters for new pre-crosslink pairs according 
-            to the values prior to dragging (stored in pairdf['initial-distances']), 
+            to the values prior to dragging (stored in pairdf['initial_distances']), 
             the desired lower limit of interatomic distance 'draglimit_nm', 
             and the ratio stage/max_stages.
             
-        :param pairdf: pairs dataframe (['ai'],['aj'],['initial-distance'])
+        :param pairdf: pairs dataframe (['ai'],['aj'],['initial_distance'])
         :type pairdf: pandas.DataFrame
         :param stage: index of stage in the series of pre-bond-formation dragging
         :type stage: int
@@ -1244,9 +1247,9 @@ class Topology:
         ess='s' if pairsdf.shape[0]>1 else ''
         factor=(stage+1)/max_stages
         logger.debug(f'Attenuating {pairsdf.shape[0]} pair{ess} in stage {stage+1}/{max_stages}')
-        for i,b in pairsdf.iterrows():
-            ai,aj=idxorder((b['ai'],b['aj']))
-            b0=b['initial-distance']
+        for b in pairsdf.itertuples():
+            ai,aj=idxorder((b.ai,b.aj))
+            b0=b.initial_distance
             kb=pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c1'].values[0]
             pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c0']=draglimit_nm-factor*(b0-draglimit_nm)
             pdf.loc[(pdf['ai']==ai)&(pdf['aj']==aj),'c1']=kb*factor

@@ -127,18 +127,18 @@ class Molecule:
         TC=self.TopoCoord
         TC.set_gro_attribute('z',0)
         TC.set_gro_attribute('nreactions',0)
-        # TC.set_gro_attribute('sea-idx',-1)
-        for att in ['sea-idx','chain','chain-idx','cycle','cycle-idx']:
+        # TC.set_gro_attribute('sea_idx',-1)
+        for att in ['sea_idx','chain','chain_idx','cycle','cycle_idx']:
             TC.set_gro_attribute(att,-1)
         # set symmetry class indices
         sea_idx=1
         logger.debug(f'{self.name}: symmetry_relateds {self.symmetry_relateds}')
         for s in self.symmetry_relateds:
-            logger.debug(f'sea-idx {sea_idx} set for set {s}')
+            logger.debug(f'sea_idx {sea_idx} set for set {s}')
             for atomName in s:
                 logger.debug(f'{atomName} {sea_idx}')
-                TC.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'atomName':atomName})
-                # TC.set_gro_attribute_by_attributes('sea-idx',sea_idx,{'atomName':b})
+                TC.set_gro_attribute_by_attributes('sea_idx',sea_idx,{'atomName':atomName})
+                # TC.set_gro_attribute_by_attributes('sea_idx',sea_idx,{'atomName':b})
             sea_idx+=1
         # set z and nreactions
         idx=[]
@@ -157,7 +157,7 @@ class Molecule:
                     idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':a,'resNum':rnum}))
                     TC.set_gro_attribute_by_attributes('z',z,{'atomName':a,'resNum':rnum})
 
-        # set chain, chain-idx
+        # set chain, chain_idx
         TC.idx_lists['chain']=[]
         pairs=product(idx,idx)
         for i,j in pairs:
@@ -183,7 +183,7 @@ class Molecule:
                     # logger.debug(f'Adding {entry} to chainlist of {self.name}')
                     TC.idx_lists['chain'].append(entry)
         TC.reset_grx_attributes_from_idx_list('chain')
-        # set cycle, cycle-idx
+        # set cycle, cycle_idx
         self.initialize_molecule_cycles()
 
     def previously_parameterized(self):
@@ -219,7 +219,7 @@ class Molecule:
     #     grompp_and_mdrun(gro=f'{n}',top=f'{n}-noodly',
     #                     mdp=mdp_prefix,out=f'{n}-sea',nsteps=sea_nsteps,boxSize=boxsize)
     #     sea_srs=analyze_sea(f'{n}-sea',thresh=sea_thresh)
-    #     self.set_gro_attribute('sea-idx',sea_srs)
+    #     self.set_gro_attribute('sea_idx',sea_srs)
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
@@ -258,8 +258,8 @@ class Molecule:
             # logger.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds(bonds_to_make)
             self.TopoCoord.set_gro_attribute('reactantName',R.product)
-            self.TopoCoord.set_gro_attribute('sea-idx',-1) # turn off symmetry-equivalence for multimers
-            self.write_gro_attributes(['z','nreactions','reactantName','sea-idx','cycle','cycle-idx','chain','chain-idx'],f'{R.product}.grx')
+            self.TopoCoord.set_gro_attribute('sea_idx',-1) # turn off symmetry-equivalence for multimers
+            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{R.product}.grx')
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
         else:
             logger.info(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
@@ -273,7 +273,7 @@ class Molecule:
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
         if not self.generator:
             self.initialize_monomer_grx_attributes()
-            self.write_gro_attributes(['z','nreactions','reactantName','sea-idx','cycle','cycle-idx','chain','chain-idx'],f'{reactantName}.grx')
+            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{reactantName}.grx')
         else:
             grx=f'{reactantName}.grx'
             if (os.path.exists(grx)):
@@ -736,7 +736,7 @@ class Molecule:
 
     def sea_of(self,idx):
         clu=self.atoms_w_same_attribute_as(find_dict={'globalIdx':idx},
-                                                same_attribute='sea-idx',
+                                                same_attribute='sea_idx',
                                                 return_attribute='globalIdx')
         return list(clu)
 

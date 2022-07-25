@@ -7,6 +7,9 @@ import networkx as nx
 from datetime import datetime
 logger=logging.getLogger(__name__)
 
+# prevents "RuntimeError: main thread is not in main loop" tk bug
+plt.switch_backend('agg')
+
 def trace(qty,edrs,outfile='plot.png',**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
     logging.disable(logging.DEBUG)

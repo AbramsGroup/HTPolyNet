@@ -1,28 +1,47 @@
 ''' a simple class for constructing a two-way bondlist dictionary '''
 import numpy as np
 import networkx as nx
+import pandas as pd
+
+import logging
+logger=logging.getLogger(__name__)
 
 class Bondlist:
     def __init__(self):
         self.B={}
     
     @classmethod
-    def fromDataFrame(cls,df):
+    def fromDataFrame(cls,df:pd.DataFrame):
         inst=cls()
         inst.update(df)
         return inst
 
-    def update(self,df):
+    def update(self,df:pd.DataFrame):
         if not 'ai' in df.columns and not 'aj' in df.columns:
             raise Exception('Bondlist expects a dataframe with columns "ai" and "aj".')
+        assert df['ai'].dtype == int
+        assert df['aj'].dtype == int
         aiset=set(df.ai)
         ajset=set(df.aj)
         keyset=aiset.union(ajset)
         keys=sorted(list(keyset))
         self.B.update({k:[] for k in keys})
-        for i,row in df.iterrows():
-            self.B[row.loc['ai']].append(row.loc['aj'])
-            self.B[row.loc['aj']].append(row.loc['ai'])
+        assert all([type(x)==int for x in self.B.keys()])
+        # logger.debug(f'{df.head(10).to_string()}')
+        for r in df.itertuples():
+            # logger.debug(f'r {r}')
+            ai=r.ai 
+            aj=r.aj
+            # logger.debug(f'ai {ai} aj {aj}')
+            # assert type(ai)==int
+            # assert type(aj)==int
+            self.B[ai].append(aj)
+            self.B[aj].append(ai)
+        for k,v in self.B.items():
+            this_check=all([type(x)==int for x in v])
+            if not this_check:
+                logger.error(f'{k} {v}')
+            assert this_check
 
     def __str__(self):
         retstr=''
@@ -32,6 +51,7 @@ class Bondlist:
     
     def partners_of(self,idx):
         if idx in self.B:
+            assert all([type(x)==int for x in self.B[idx]])
             return self.B[idx][:]
         return []
 
@@ -40,17 +60,19 @@ class Bondlist:
             return jdx in self.B[idx]
         return False
 
-    def append(self,pair=[]):
-        if len(pair)==2:
-            ai,aj=min(pair),max(pair)
-            if not ai in self.B:
-                self.B[ai]=[]
-            self.B[ai].append(aj)
-            if not aj in self.B:
-                self.B[aj]=[]
-            self.B[aj].append(ai)
+    def append(self,pair):
+        assert len(pair)==2
+        ai,aj=min(pair),max(pair)
+        assert type(ai)==int
+        assert type(aj)==int
+        if not ai in self.B:
+            self.B[ai]=[]
+        self.B[ai].append(aj)
+        if not aj in self.B:
+            self.B[aj]=[]
+        self.B[aj].append(ai)
 
-    def delete_atoms(self,idx=[]):
+    def delete_atoms(self,idx):
         ''' delete entries '''
         for i in idx:
             if i in self.B:

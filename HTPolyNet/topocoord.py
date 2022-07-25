@@ -160,17 +160,17 @@ class TopoCoord:
         premapping_total_charge=self.Topology.total_charge()
         logger.debug(f'Must compensate for an overcharge of {premapping_total_charge:.4f}')
         mapped_inst_atoms=[]
-        for i,b in bdf.iterrows():
-            logger.debug(f'Mapping bond {i}')
-            for ln in b.to_string().split('\n'):
-                logger.debug(f'  -> {ln}')
-            bb=[b['ai'],b['aj']]
-            order=b['order']
+        for b in bdf.itertuples():
+            logger.debug(f'Mapping bond {b}')
+            # for ln in b.to_string().split('\n'):
+            #     logger.debug(f'  -> {ln}')
+            bb=[b.ai,b.aj]
+            order=b.order
             names=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in bb]
             resnames=[self.get_gro_attribute_by_attributes('resName',{'globalIdx':x}) for x in bb]
             resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in bb]
             # this is the product name of the reaction used to identify this bond
-            product_name=b['reactantName']
+            product_name=b.reactantName
             P=moldict[product_name]
             if P.is_reactant:
                 logger.debug(f'{P.name} is a reactant; updating \"reactantName\" attributes of {bb}')
@@ -393,8 +393,10 @@ class TopoCoord:
         overcharge_threshhold=kwargs.get('overcharge_threshhold',0.1)
         logger.debug(f'begins.')
         if bdf.shape[0]>0:
+            assert bdf['ai'].dtype==int
+            assert bdf['aj'].dtype==int
             # pull out just the atom index pairs (first element of each tuple)
-            at_idx=[(x['ai'],x['aj'],x['order']) for i,x in bdf.iterrows()]
+            at_idx=[(int(x.ai),int(x.aj),x.order) for x in bdf.itertuples()]
             logger.debug(f'Making {len(at_idx)} bonds.')
             idx_to_delete=self.make_bonds(at_idx)
             logger.debug(f'Deleting {len(idx_to_delete)} atoms.')
@@ -406,7 +408,7 @@ class TopoCoord:
             ri_bdf=bdf.copy()
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
-            at_idx=[(x['ai'],x['aj']) for i,x in ri_bdf.iterrows()]
+            at_idx=[(x.ai,x.aj) for x in ri_bdf.itertuples()]
             for idx_pair in at_idx:
                 for idx in idx_pair:
                     self.decrement_gro_attribute_by_attributes('z',{'globalIdx':idx})
@@ -598,14 +600,14 @@ class TopoCoord:
     def remove_restraints(self,pairsdf):
         self.Topology.remove_restraints(pairsdf)
 
-    def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0,init_colname='initial-distance'):
+    def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0,init_colname='initial_distance'):
         """Alter the kb and b0 parameters for new crosslink bonds according to the values prior to
             relaxation (stored in lengths), their equilibrium values, and the ratio stage/max_stages.
             Let stage/max_stages be x, and 1/max_stages <= x <= 1.  The spring constant for each
             bond is multiplied by x and the distance is 1 xth of the way from its maximum value
             to its equilibrium value.
 
-        :param bonds: bonds dataframe, 'ai', 'aj', 'initial-distance'
+        :param bonds: bonds dataframe, 'ai', 'aj', 'initial_distance'
         :type bonds: pandas.DataFrame
         :param stage: index of stage in the series of post-bond-formation relaxation
         :type stage: int
@@ -618,11 +620,11 @@ class TopoCoord:
 
     def attenuate_pair_parameters(self,pairdf,i,n,draglimit_nm=0.3):
         """Alter the kb and b0 parameters for new pre-crosslink pairs according
-            to the values prior to dragging (stored in pairdf['initial-distances']),
+            to the values prior to dragging (stored in pairdf['initial_distances']),
             the desired lower limit of interatomic distance 'draglimit_nm',
             and the ratio stage/max_stages.
 
-        :param pairdf: pairs dataframe (['ai'],['aj'],['initial-distance'])
+        :param pairdf: pairs dataframe (['ai'],['aj'],['initial_distance'])
         :type pairdf: pandas.DataFrame
         :param stage: index of stage in the series of pre-bond-formation dragging
         :type stage: int
@@ -669,9 +671,9 @@ class TopoCoord:
         :type attribute_list: list, optional
         """
         attributes_read=self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
-        if 'chain' in attributes_read and 'chain-idx' in attributes_read:
+        if 'chain' in attributes_read and 'chain_idx' in attributes_read:
             self.reset_idx_list_from_grx_attributes('chain')
-        if 'cycle' in attributes_read and 'cycle-idx' in attributes_read:
+        if 'cycle' in attributes_read and 'cycle_idx' in attributes_read:
             self.reset_idx_list_from_grx_attributes('cycle')
 
     def set_gro_attribute(self,attribute,srs):
@@ -725,6 +727,7 @@ class TopoCoord:
     def interresidue_partners_of(self,i):
         result=[]
         bl=self.Topology.bondlist.partners_of(i)
+        logger.debug(f'{i} partners {bl}')
         myresid=self.Coordinates.A.iloc[i-1]['resNum']
         for j in bl:
             theirresid=self.Coordinates.A.iloc[j-1]['resNum']
@@ -943,7 +946,7 @@ class TopoCoord:
         if df.empty:
             return df
         results=[]
-        for i,r in df.iterrows():
+        for r in df.itertuples():
             result,dummy=self.bondtest((r.ai,r.aj,r.r),pbc=pbc,show_piercings=show_piercings)
             results.append(result)
         df['result']=results
@@ -1009,14 +1012,14 @@ class TopoCoord:
         # with spacing *greater* than the initial length of any bond.
         # so we can visit rings with one or more atom in a cell neighboring
         # the cells of the two atoms
-        assert 'linkcell-idx' in adf,f'Error: atoms have no linkcell-idx attribute - bug!'
-        i_lcidx=self.get_gro_attribute_by_attributes('linkcell-idx',{'globalIdx':i})
-        j_lcidx=self.get_gro_attribute_by_attributes('linkcell-idx',{'globalIdx':j})
+        assert 'linkcell_idx' in adf,f'Error: atoms have no linkcell_idx attribute - bug!'
+        i_lcidx=self.get_gro_attribute_by_attributes('linkcell_idx',{'globalIdx':i})
+        j_lcidx=self.get_gro_attribute_by_attributes('linkcell_idx',{'globalIdx':j})
         joint_idx=[]
         for idx in LC.neighborlists[i_lcidx]+LC.neighborlists[j_lcidx]+[i_lcidx,j_lcidx]:
             if not idx in joint_idx:
                 joint_idx.append(idx)
-        cycle_tags=list(set(adf[(adf['cycle']!=-1)&(adf['linkcell-idx'].isin(joint_idx))]['cycle'].to_list()))
+        cycle_tags=list(set(adf[(adf['cycle']!=-1)&(adf['linkcell_idx'].isin(joint_idx))]['cycle'].to_list()))
         for c in cycle_tags:
             C=adf[adf['cycle']==c].copy()
             if self.Coordinates.pierces(Ri,Rjp,C,pbc=pbc):
@@ -1077,11 +1080,11 @@ class TopoCoord:
 
     def reset_grx_attributes_from_idx_list(self,list_name):
         self.set_gro_attribute(list_name,-1)
-        self.set_gro_attribute(f'{list_name}-idx',-1)
+        self.set_gro_attribute(f'{list_name}_idx',-1)
         for i,c in enumerate(self.idx_lists[list_name]):
             for j,x in enumerate(c):
                 self.set_gro_attribute_by_attributes(list_name,i,{'globalIdx':x})
-                self.set_gro_attribute_by_attributes(f'{list_name}-idx',j,{'globalIdx':x})
+                self.set_gro_attribute_by_attributes(f'{list_name}_idx',j,{'globalIdx':x})
 
     def reset_idx_list_from_grx_attributes(self,list_name):
         adf=self.Coordinates.A
@@ -1090,7 +1093,7 @@ class TopoCoord:
         for i,r in adf.iterrows():
             gix=r['globalIdx']
             cid=r[list_name]
-            cix=r[f'{list_name}-idx']
+            cix=r[f'{list_name}_idx']
             if cid!=-1:
                 if not cid in tmp_dict:
                     tmp_dict[cid]={}
@@ -1130,8 +1133,8 @@ class TopoCoord:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
                 continue
-            aci=self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':aidx})
-            bci=self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':bidx})
+            aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
+            bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
             # logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
             # one must be a head and the other a tail
             if aci==0: # a is a head
@@ -1147,7 +1150,7 @@ class TopoCoord:
             chainlists[c2].extend(chainlists[c1])
             for aidx in chainlists[c1]:
                 self.set_gro_attribute_by_attributes('chain',c2,{'globalIdx':aidx})
-                self.set_gro_attribute_by_attributes('chain-idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
+                self.set_gro_attribute_by_attributes('chain_idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
             chainlists.remove(chainlists[c1])
             # since we remove c1, all indices greater than c1 must decrement
             dec_us=np.array(self.Coordinates.A['chain'])
@@ -1245,7 +1248,7 @@ class TopoCoord:
     def get_oneaways(self,atom_idx):
         # resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
         chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
-        chain_idx=[self.get_gro_attribute_by_attributes('chain-idx',{'globalIdx':x}) for x in atom_idx]
+        chain_idx=[self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':x}) for x in atom_idx]
         # logger.debug(f'chains {chains} chain_idx {chain_idx}')
         oneaway_resids=[None,None]
         oneaway_resnames=[None,None]
