@@ -68,7 +68,7 @@ def is_reactant(name:str,reaction_list:ReactionList,stage='cure'):
             for v in r.reactants.values():
                 if not v in reactants:
                     reactants.append(v)
-    return name in v
+    return name in reactants
 
 def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
     nreactants=len(R.reactants)
@@ -372,7 +372,7 @@ class Molecule:
         inst_resids=[inst_resids[ij[x]] for x in [0,1]]
         inst_bystander_resids=[bystanders[ij[x]] for x in [0,1]]
         inst_oneaway_resids=[oneaways[ij[x]] for x in [0,1]]
-        assert all([len(inst_bystander_resids[x])==len(temp_bystander_resids[0]) for x in [0,1]]),f'Error: bystander count mismatch'
+        assert all([len(inst_bystander_resids[x])==len(temp_bystander_resids[x]) for x in [0,1]]),f'Error: bystander count mismatch'
            # use dataframe merges to create globalIdx maps
         instdf=otherTC.Coordinates.A
         tempdf=self.TopoCoord.Coordinates.A

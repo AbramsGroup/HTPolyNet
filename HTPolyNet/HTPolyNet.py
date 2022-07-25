@@ -1,5 +1,6 @@
 import logging
 import os
+# import io
 import shutil
 import pandas as pd
 import argparse as ap
@@ -699,23 +700,37 @@ class HTPolyNet:
                     all_possible_pairs=list(zip(alist,blist))
                 else:
                     all_possible_pairs=[]
-                idf=pd.DataFrame({'ai':           [x[0][0] for x in all_possible_pairs],
-                                  'ri':           [x[0][1] for x in all_possible_pairs],
-                                  'aj':           [x[1][0] for x in all_possible_pairs],
-                                  'rj':           [x[1][1] for x in all_possible_pairs],
+                idf=pd.DataFrame({'ai':           [int(x[0][0]) for x in all_possible_pairs],
+                                  'ri':           [int(x[0][1]) for x in all_possible_pairs],
+                                  'aj':           [int(x[1][0]) for x in all_possible_pairs],
+                                  'rj':           [int(x[1][1]) for x in all_possible_pairs],
                                   'prob':         [prob for _ in all_possible_pairs],
                                   'reactantName': [R.product for _ in  all_possible_pairs],
-                                  'order':        [order for _ in all_possible_pairs]})
+                                  'order':        [order for _ in all_possible_pairs]}).astype({'ai':int,'aj':int,'ri':int,'rj':int,'order':int})
                 if stage=='cure':
                     # exclude atom pairs that have same resid
                     idf=idf[idf['ri']!=idf['rj']].copy()
+                    # buffer=io.StringIO()
+                    # idf.info(buf=buffer)
+                    # logger.debug(f'Bonds not in same resids (info):\n{buffer.getvalue()}')
+                    # for ln in idf.to_string().split('\n'):
+                    #     logger.debug(ln)
+
                     logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
                     if idf.shape[0]>0:
                         ess='' if idf.shape[0]!=1 else 's'
                         bondtestoutcomes={k:0 for k in BTRC}
                         gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
+                        # idf.info(buf=buffer)
+                        # logger.debug(f'after gromacs distance:\n{buffer.getvalue()}')
                         logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
                         idf=idf[idf['r']<radius].copy().reset_index(drop=True)
+                        # idf.info(buf=buffer)
+                        # logger.debug(f'after distance filter:\n{buffer.getvalue()}')
+                        
+                        # logger.debug('Filtered (by gromacs distance) bonds:')
+                        # for ln in bdf.to_string().split('\n'):
+                        #     logger.debug(ln)
                         ess='' if idf.shape[0]!=1 else 's'
                         logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {radius} nm')
                         p=Pool(processes=ncpu)
@@ -727,16 +742,20 @@ class HTPolyNet:
                         # reassemble final dataframe:
                         logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
                         idf=pd.concat(results,ignore_index=True)
-                        logger.debug(f'Bond-candidate test outcomes:')
-                        for k in bondtestoutcomes:
-                            bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
-                            logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
-                        idf=idf[idf['result']==BTRC.passed].copy()
+                        if not idf.empty:
+                            logger.debug(f'Bond-candidate test outcomes:')
+                            for k in bondtestoutcomes:
+                                bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
+                                logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
+                            idf=idf[idf['result']==BTRC.passed].copy()
                 elif stage=='post-cure':
                     idf=idf[idf['ri']==idf['rj']].copy()
                     logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
-
-                bdf=pd.concat((bdf,idf),ignore_index=True)
+                if not idf.empty:
+                    bdf=pd.concat((bdf,idf),ignore_index=True)
+        # logger.debug('Filtered (by single-bond tests) bonds:')
+        # for ln in bdf.to_string().split('\n'):
+        #     logger.debug(ln)
 
         if stage=='cure':
             bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
@@ -768,10 +787,16 @@ class HTPolyNet:
             logger.debug(f'{bdf[bdf["allowed"]==False].shape[0]} out of {bdf.shape[0]} bonds disallowed due to repeated atom indexes or residue indexes')
 
             bdf=bdf[bdf['allowed']==True].copy().reset_index(drop=True)
+            # logger.debug('Allowed bonds:')
+            # for ln in bdf.to_string().split('\n'):
+            #     logger.debug(ln)
 
             bdf=self.TopoCoord.cycle_collective(bdf)
             logger.debug(f'{bdf[bdf["remove-to-uncyclize"]==True].shape[0]} out of {bdf.shape[0]} bonds removed to break nascent cycles')
             bdf=bdf[bdf['remove-to-uncyclize']==False].copy().reset_index(drop=True)
+            # logger.debug('Non-cyclizing bonds:')
+            # for ln in bdf.to_string().split('\n'):
+            #     logger.debug(ln)
 
             ''' roll the dice '''
             bdf['lucky']=[True for _ in range(bdf.shape[0])]
@@ -783,6 +808,9 @@ class HTPolyNet:
 
             logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application.')
             bdf=bdf[bdf['lucky']==True].copy().reset_index(drop=True)
+            # logger.debug('Lucky bonds:')
+            # for ln in bdf.to_string().split('\n'):
+            #     logger.debug(ln)
 
             ''' apply the stated limit '''
             if abs_max>-1:

@@ -34,6 +34,7 @@ class BTRC(Enum):
     failed_pierce_ring = 1        # does this bond-candidate pierce a ring?
     failed_short_circuit = 2      # does this bond-candidate result in short-circuit?
     failed_bond_cycle = 3         # does this bond-candidate create a bondcycle on its own?
+    unset = 99
 
 class TopoCoord:
     """Container for Topology and Coordinates, along with methods that
@@ -117,7 +118,9 @@ class TopoCoord:
         # logger.debug(f'idx_mapper: {idx_mapper}')
         for list_name in ['chain','cycle']:
             # logger.debug(f'remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}')
-            self.remap_idx_list(list_name,idx_mapper)
+            self.reset_idx_list_from_grx_attributes(list_name)
+            # self.remap_idx_list(list_name,idx_mapper)
+        logger.debug(f'finished')
         return idx_mapper
 
     def count_H(self,idx):
@@ -154,6 +157,9 @@ class TopoCoord:
         grodf=self.Coordinates.A
         grodf['old_reactantName']=grodf['reactantName'].copy()
         logger.debug(f'Mapping {bdf.shape[0]} bonds.')
+        premapping_total_charge=self.Topology.total_charge()
+        logger.debug(f'Must compensate for an overcharge of {premapping_total_charge:.4f}')
+        mapped_inst_atoms=[]
         for i,b in bdf.iterrows():
             logger.debug(f'Mapping bond {i}')
             for ln in b.to_string().split('\n'):
@@ -163,16 +169,18 @@ class TopoCoord:
             names=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in bb]
             resnames=[self.get_gro_attribute_by_attributes('resName',{'globalIdx':x}) for x in bb]
             resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in bb]
-            i_resid,j_resid=resids
             # this is the product name of the reaction used to identify this bond
             product_name=b['reactantName']
             P=moldict[product_name]
             if P.is_reactant:
+                logger.debug(f'{P.name} is a reactant; updating \"reactantName\" attributes of {bb}')
                 # if the product of this reaction is also a reactant in a cure reaction, we should
                 # change the reactantName attribute of the two atoms to match this so either of
                 # these atoms can be found in a later bond search
                 for j in bb:
                     self.set_gro_attribute_by_attributes('reactantName',product_name,{'globalIdx':j})
+            else:
+                logger.debug(f'{P.name} is not a reactant; no update of \"reactantName\" attributes')
             bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=self.get_bystanders(bb)
             oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames=self.get_oneaways(bb)
             intraresidue=resids[0]==resids[1]
@@ -258,7 +266,7 @@ class TopoCoord:
                     atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
                     dcharge=temp_charge-inst_charge
                     total_dcharge+=dcharge
-            self.adjust_charges(atoms=list(temp2inst.values()),overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
+            mapped_inst_atoms.extend(list(temp2inst.values()))
             # get all angle, dihedrals, and pairs from template that result from the existence of the specified bond
             # temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
             # logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
@@ -368,6 +376,9 @@ class TopoCoord:
                 logger.error('NAN in pairs post mapping')
                 raise Exception
             # return temp_pairs
+        mapped_inst_atoms=list(set(mapped_inst_atoms))
+        logger.debug(f'System overcharge after mapping: {self.Topology.total_charge():.4f}')
+        self.adjust_charges(atoms=mapped_inst_atoms,overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
 
     def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,**kwargs):
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
@@ -388,8 +399,10 @@ class TopoCoord:
             idx_to_delete=self.make_bonds(at_idx)
             logger.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
+            logger.debug(f'null check')
             self.Topology.null_check(msg='delete_atoms')
             # reindex all atoms in the list of bonds sent in, and write it out
+            logger.debug(f'z-decrement, nreactions increment')
             ri_bdf=bdf.copy()
             ri_bdf.ai=ri_bdf.ai.map(idx_mapper)
             ri_bdf.aj=ri_bdf.aj.map(idx_mapper)
@@ -398,7 +411,9 @@ class TopoCoord:
                 for idx in idx_pair:
                     self.decrement_gro_attribute_by_attributes('z',{'globalIdx':idx})
                     self.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':idx})
+            logger.debug(f'calling map_from_templates')
             self.map_from_templates(ri_bdf,template_dict,overcharge_threshhold=overcharge_threshhold)
+            logger.debug(f'1-4 pair update')
             # enumerate ALL pairs involving either or both of the bonded atoms
             pdf=self.Topology.D['pairs']
             # each of these bonds results in 1-4 pair interactions
@@ -720,8 +735,8 @@ class TopoCoord:
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         return self.Coordinates.minimum_distance(other.Coordinates,self_excludes=self_excludes,other_excludes=other_excludes)
 
-    def ring_detector(self):
-        return self.Topology.ring_detector()
+    # def ring_detector(self):
+    #     return self.Topology.ring_detector()
 
     def has_gro_attributes(self,attribute_list):
         return self.Coordinates.has_atom_attributes(attribute_list)
@@ -924,7 +939,9 @@ class TopoCoord:
             self.reset_grx_attributes_from_idx_list(name)
         return shifts
 
-    def bondtest_df(self,df,pbc=[1,1,1],show_piercings=True):
+    def bondtest_df(self,df:pd.DataFrame,pbc=[1,1,1],show_piercings=True):
+        if df.empty:
+            return df
         results=[]
         for i,r in df.iterrows():
             result,dummy=self.bondtest((r.ai,r.aj,r.r),pbc=pbc,show_piercings=show_piercings)
@@ -1089,11 +1106,13 @@ class TopoCoord:
         # logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
 
     def remap_idx_list(self,list_name,mapper):
+        logger.debug(f'{list_name}')
         remapped_groups=[]
         for c in self.idx_lists[list_name]:
             remapped_groups.append([mapper[x] for x in c])
         self.idx_lists[list_name]=remapped_groups
         self.reset_grx_attributes_from_idx_list(list_name)
+        logger.debug(f'finished.')
 
     def chainlist_update(self,new_bond_recs,msg=''):
         chainlists=self.idx_lists['chain']

@@ -369,26 +369,26 @@ class Topology:
         cycles=_get_unique_cycles_dict(g,min_length=3)
         return cycles
 
-    def ring_detector(self):
-        """ring_detector Detects all 3 to 7-members rings in a topology for one residue using the bondlist and networkx
-        sets the Cycles attribute of self to ring-lists of atom names
+    # def ring_detector(self):
+    #     """ring_detector Detects all 3 to 7-members rings in a topology for one residue using the bondlist and networkx
+    #     sets the Cycles attribute of self to ring-lists of atom names
 
-        :return: A dictionary of ring-lists keyed on ring size; each ring-list is a list of atom indexes
-        :rtype: dict
-        """
-        cycles=self.detect_cycles()
-        cycles_by_name={}
-        for a in cycles:
-            cycles_by_name[a]=[]
-            for c in cycles[a]:
-                atoms=[]
-                for atom in c:
-                    atoms.append(self.get_atom_attribute(atom,'atom'))
-                cycles_by_name[a].append(atoms)
-            if len(cycles_by_name[a])>0:
-                logger.debug(f'{a}-rings: {cycles_by_name[a]}')
-        self.Cycles=cycles_by_name
-        return cycles
+    #     :return: A dictionary of ring-lists keyed on ring size; each ring-list is a list of atom indexes
+    #     :rtype: dict
+    #     """
+    #     cycles=self.detect_cycles()
+    #     cycles_by_name={}
+    #     for a in cycles:
+    #         cycles_by_name[a]=[]
+    #         for c in cycles[a]:
+    #             atoms=[]
+    #             for atom in c:
+    #                 atoms.append(self.get_atom_attribute(atom,'atom'))
+    #             cycles_by_name[a].append(atoms)
+    #         if len(cycles_by_name[a])>0:
+    #             logger.debug(f'{a}-rings: {cycles_by_name[a]}')
+    #     self.Cycles=cycles_by_name
+    #     return cycles
 
     def rep_ex(self,count=0):
         """Replicate extensive topology components (atoms, pairs, bonds, angles, dihedrals)
@@ -610,7 +610,7 @@ class Topology:
         :type pairs: list, optional
         :raises Exception: dies if an existing bond is in the list of pairs
         """
-        # logger.debug('add_bonds begins')
+        # logger.debug('begins')
         at=self.D['atoms']
         ij=self.D['bondtypes'].set_index(['i','j'])
         #mb=self.D['mol2_bonds']
