@@ -618,7 +618,7 @@ class Topology:
         pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
         newbonds=[]
         for b in pairs:
-            logger.debug(f'{b}')
+            # logger.debug(f'{b}')
             # assert type(b[0])==int
             bondtuple=(int(b[0]),int(b[1]))
             order=int(b[2])
@@ -1178,9 +1178,10 @@ class Topology:
         bdf=self.D['bonds']
         factor=(stage+1)/max_stages
         logger.debug(f'Attenuating {bondsdf.shape[0]} bond{"s" if bondsdf.shape[0]>1 else ""} in stage {stage+1}/{max_stages}')
-        for b in bondsdf.itertuples():
+        jdx=list(bondsdf.columns).index(init_colname)
+        for b in bondsdf.itertuples(index=False):
             ai,aj=idxorder((b.ai,b.aj))
-            rij=b[init_colname]
+            rij=b[jdx]
             b0,kb=self.get_bond_parameters(ai,aj)
             if minimum_distance>0.0:
                 b0=minimum_distance

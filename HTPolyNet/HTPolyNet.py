@@ -694,19 +694,21 @@ class HTPolyNet:
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
                 alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list()))
                 blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list()))
-                if stage=='cure':
-                    all_possible_pairs=list(product(alist,blist))
-                elif stage=='post-cure':
-                    all_possible_pairs=list(zip(alist,blist))
-                else:
-                    all_possible_pairs=[]
+                all_possible_pairs=list(product(alist,blist))
+                # if stage=='cure':
+                #     all_possible_pairs=list(product(alist,blist))
+                # elif stage=='post-cure':
+                #     all_possible_pairs=list(zip(alist,blist))
+                #     logger.debug(f'all_possible_pairs [{len(all_possible_pairs)}] {all_possible_pairs}')
+                # else:
+                #     all_possible_pairs=[]
                 idf=pd.DataFrame({'ai':           [int(x[0][0]) for x in all_possible_pairs],
                                   'ri':           [int(x[0][1]) for x in all_possible_pairs],
                                   'aj':           [int(x[1][0]) for x in all_possible_pairs],
                                   'rj':           [int(x[1][1]) for x in all_possible_pairs],
                                   'prob':         [prob for _ in all_possible_pairs],
                                   'reactantName': [R.product for _ in  all_possible_pairs],
-                                  'order':        [order for _ in all_possible_pairs]}).astype({'ai':int,'aj':int,'ri':int,'rj':int,'order':int})
+                                  'order':        [order for _ in all_possible_pairs]})
                 if stage=='cure':
                     # exclude atom pairs that have same resid
                     idf=idf[idf['ri']!=idf['rj']].copy()
