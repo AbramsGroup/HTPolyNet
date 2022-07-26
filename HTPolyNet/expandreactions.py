@@ -110,10 +110,6 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
             logger.debug(f'primary:\n{str(newR)}')
             thisR_extra_reactions.append(newR)
             thisR_extra_molecules[newR.product]=Molecule(name=newR.product,generator=newR)
-            # o_seq=product_sequence_resnames(R,reactions)
-
-            # logger.debug(f' -> checking to see if {newR.product} replaces reactant {R.product} in any reactions...')
-#            jdx=1
             for rR in [x for x in reactions if R.product in x.reactants.values()]:
                 reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
                 logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
@@ -143,30 +139,6 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 jdx+=1
                 reactions.append(nooR)
                 thisR_extra_molecules[nooR.product]=Molecule(name=nooR.product,generator=nooR)
-            #     logger.debug(f'    -> created new reaction {nooR.name} as copy of {rR.name} with reactants {nooR.reactants}')
-            #     atoms_in_new_reactant={aK:aR for aK,aR in nooR.atoms.items() if aR['reactant']==reactantKey}
-            #     for aK,aR in atoms_in_new_reactant.items():
-            #         a_resid=aR['resid']
-            #         a_aN=aR['atom']
-            #         logger.debug(f'    Atom [{aK}] of {nooR.name} claims reactant {reactantKey}:{nooR.reactants[reactantKey]}')
-            #         logger.debug(f'    at resid {a_resid}:{o_seq[a_resid-1]} at atom {a_aN}.')
-            #         logger.debug(f'    Reactant {nooR.reactants[reactantKey]} is {P}-permuation of {R.product} from {R.name} with {R.reactants}')
-            #         for p in P:
-            #             a,b=p
-            #             ca_at=R.atoms[a]
-            #             reactantName=R.reactants[ca_at["reactant"]]
-            #             resid=ca_at["resid"]
-            #             presid=reactant_resid_to_presid(R,reactantName,resid,reactions)
-            #             logger.debug(f'    In {R.name}, resid {ca_at["resid"]} of {ca_at["reactant"]}:{reactantName} atom [{a}], {ca_at["atom"]} to {b}')
-            #             logger.debug(f'    corresponds to resid {presid} in {rR.name} reactant {R.product}')
-            #             if presid==a_resid:
-            #                 nooR.atoms[aK]['resid']=presid
-            #                 nooR.atoms[aK]['atom']=b
-
-            #     logger.debug(f'     -> final new reaction:\n{str(nooR)}')
-            #     jdx+=1
-            #     reactions.append(nooR)  # append this to the main reactions list so we'll hit it later to make the new molecule
-            #     logger.debug(f'   new product molecule {nooR.product} will be generated below')
             idx+=1
         logger.debug(f'SYMMETRY EXPANSION OF REACTION {R.name} ENDS')
 

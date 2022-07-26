@@ -120,7 +120,7 @@ class TopoCoord:
             # logger.debug(f'remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}')
             self.reset_idx_list_from_grx_attributes(list_name)
             # self.remap_idx_list(list_name,idx_mapper)
-        logger.debug(f'finished')
+        # logger.debug(f'finished')
         return idx_mapper
 
     def count_H(self,idx):
