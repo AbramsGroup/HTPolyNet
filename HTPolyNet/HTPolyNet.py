@@ -759,7 +759,7 @@ class HTPolyNet:
         # for ln in bdf.to_string().split('\n'):
         #     logger.debug(ln)
 
-        if stage=='cure':
+        if stage=='cure' and bdf.shape[0]>0:
             bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
             bdf['allowed']=[True for x in range(bdf.shape[0])]
             unique_atomidx=set(bdf.ai.to_list()).union(set(bdf.aj.to_list()))
