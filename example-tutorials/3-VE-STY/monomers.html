@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Monomers &#8212; HTPolyNet 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="BisGMA-Styrene Thermoset" href="index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="monomers">
+<span id="ve-sty-monomers"></span><h1>Monomers<a class="headerlink" href="#monomers" title="Permalink to this headline">¶</a></h1>
+<p>In this section, we describe how the inputs <a class="reference download internal" download="" href="../../_downloads/f71d1e692cf81a401f2bed50b01f1424/GMA.mol2"><code class="xref download docutils literal notranslate"><span class="pre">GMA.mol2</span></code></a> and <a class="reference download internal" download="" href="../../_downloads/1af0d9d08923a4f96d5ae191bbf81d30/STY.mol2"><code class="xref download docutils literal notranslate"><span class="pre">STY.mol2</span></code></a> are generated for the bisGMA and styrene monomers, respectively.  Since this represents an instance where a new system is being generated, let’s begin by creating an empty directory and then populating with a “molecule library”:abbr:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span>
+<span class="gp">$ </span>mkdir my_ve_styrene_build
+<span class="gp">$ </span><span class="nb">cd</span> my_ve_styrene_build
+<span class="gp">$ </span>mkdir lib
+<span class="gp">$ </span>mkdir lib/molecules
+<span class="gp">$ </span>mkdir lib/molecules/inputs
+<span class="gp">$ </span>mkdir lib/molecules/parameterized
+<span class="gp">$ </span><span class="nb">cd</span> lib/molecules/inputs
+</pre></div>
+</div>
+<p>Now we can generate the two required <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> files.</p>
+<section id="bisgma">
+<h2>BisGMA<a class="headerlink" href="#bisgma" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;CC(C)C(=O)OCC(O)COC1=CC=C(CC2=CC(OCC(O)COC(=O)C(C)C)=CC=C2)C=C1&quot;</span> <span class="p">|</span> <span class="se">\</span>
+        obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;GMA&quot;</span> <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;GMA    &quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot; 2 C &quot;</span>/<span class="s2">&quot; 2 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot;28 C &quot;</span>/<span class="s2">&quot;28 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot; 1 C &quot;</span>/<span class="s2">&quot; 1 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot;30 C &quot;</span>/<span class="s2">&quot;30 C4&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C5&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+        sed s/<span class="s2">&quot;22 C &quot;</span>/<span class="s2">&quot;22 C6&quot;</span>/ &gt; GMA.mol2
+</pre></div>
+</div>
+</section>
+<section id="styrene">
+<h2>Styrene<a class="headerlink" href="#styrene" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;C1=CC=CC=C1CC&quot;</span> <span class="p">|</span> <span class="se">\</span>
+       obabel -ismi -omol2 -h --gen3d --title STY <span class="p">|</span> <span class="se">\</span>
+       sed s/<span class="s2">&quot; 7 C &quot;</span>/<span class="s2">&quot; 7 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+       sed s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+       sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;STY    &quot;</span>/ &gt; STY.mol2
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Example Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../1-polymethylstyrene/index.html">Poly(4-methyl styrene)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">BisGMA-Styrene Thermoset</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Example Tutorials</a><ul>
+  <li><a href="index.html">BisGMA-Styrene Thermoset</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">BisGMA-Styrene Thermoset</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/example-tutorials/3-VE-STY/monomers.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

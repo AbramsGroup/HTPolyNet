@@ -49,10 +49,11 @@
 <p>Because HTPolyNet is under active development, it is best to clone the repository from Github and then pip install as in:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone git@github.com:AbramsGroup/HTPolyNet.git
 <span class="gp">$ </span><span class="nb">cd</span> HTPolyNet
+<span class="gp">$ </span>conda activate mol-env
 <span class="gp">$ </span>pip install -e .
 </pre></div>
 </div>
-<p>If you created the recommended python environment, make sure it is activated before running pip install!</p>
+<p>If you created the recommended python environment, make sure it is activated before running <cite>pip install</cite>!</p>
 </section>
 <section id="software-prequisites">
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
@@ -68,7 +69,7 @@
 <li><p><a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>. You have at least two options:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>conda:  <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-force</span> <span class="pre">ambertools</span></code> installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)</p></li>
+<li><p>conda:  <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">ambertools</span></code> installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)</p></li>
 <li><p>compile from source (requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>):</p></li>
 </ul>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar jxf AmberTools21.tar.bz2
@@ -101,6 +102,7 @@
 </pre></div>
 </div>
 <p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend the latest Gromacs.</p>
+<p>Finally, in the tutorials provided, we demonstrate the use of <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> to generate initial molecular structure files; though it is not strictly necessary, it is fairly convenient to use.</p>
 </li>
 </ul>
 </div></blockquote>

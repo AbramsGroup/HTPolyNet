@@ -6,7 +6,7 @@
 HTPolyNet
 =========
 
-HTPolyNet is a tool for building atomically resolved models of amorphous network polymers.
+HTPolyNet is a tool for building atomic configurations of amorphous network polymers suitable for molecular dynamics simulations.
 It uses the Generalized Amber Force Field and produces output that can be simulated 
 using Gromacs.
 
