@@ -42,9 +42,12 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
             ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=(c if seg==0 else None),color=cmap(seg/nseg))
             beg=chkpt[seg]
     if avgafter>0:
-        sdf=df[df['time (ps)']>avgafter]
-        avg=sdf[c].mean()
-        ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
+        pass
+    else:
+        avgafter=df['time (ps)']/2
+    sdf=df[df['time (ps)']>avgafter]
+    avg=sdf[c].mean()
+    ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
     if not yunits:
         plt.ylabel(qty)
     else:
@@ -55,6 +58,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     plt.close(fig)
     # re-establish previous logging level
     logging.disable(logging.NOTSET)
+    return avg
 
 def network_graph(G,filename,**kwargs):
     logging.disable(logging.DEBUG)

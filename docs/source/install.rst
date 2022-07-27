@@ -22,9 +22,10 @@ Because HTPolyNet is under active development, it is best to clone the repositor
 
     $ git clone git@github.com:AbramsGroup/HTPolyNet.git
     $ cd HTPolyNet
+    $ conda activate mol-env
     $ pip install -e .
 
-If you created the recommended python environment, make sure it is activated before running pip install!
+If you created the recommended python environment, make sure it is activated before running `pip install`!
 
 Software Prequisites
 --------------------
@@ -40,7 +41,7 @@ Suggested approaches for obtaining these are below.
 
 * `AmberTools <https://ambermd.org/GetAmber.php#ambertools>`_. You have at least two options:
 
-    * conda:  ``conda install -c conda-force ambertools`` installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)
+    * conda:  ``conda install ambertools`` installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)
     * compile from source (requires ``csh``, ``flex``, and ``bison``):
 
     .. code-block:: console
@@ -76,6 +77,8 @@ Suggested approaches for obtaining these are below.
          source /usr/local/gromacs/bin/GMXRC
      
      This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of ``gmx distance`` that limits the number of distances that can be calculated, so we (always) recommend the latest Gromacs.
+
+     Finally, in the tutorials provided, we demonstrate the use of `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ to generate initial molecular structure files; though it is not strictly necessary, it is fairly convenient to use.
 
 
 

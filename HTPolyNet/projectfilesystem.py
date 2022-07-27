@@ -11,12 +11,13 @@ class RuntimeLibrary:
     def __init__(self):
         self.root=''
         self.subdirs=[]
+        self.designation=''
 
     @classmethod
     def system(cls,libpackage='Library'):
         inst=cls()
         inst.designation='System'
-        inst.package=libpackage
+        # inst.package=libpackage
         try:
             with importlib.resources.path(libpackage,'__init__.py') as f:
                 inst.root=os.path.split(os.path.abspath(f))[0]
@@ -31,15 +32,19 @@ class RuntimeLibrary:
 
     @classmethod
     def user(cls,pathname='.'):
+        if not pathname:
+            return None
         assert os.path.exists(pathname),f'Cannot find {pathname} in {os.getcwd()}'
         tt=os.path.abspath(pathname)
         assert os.path.isdir(tt),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
+        inst.designation='User'
         inst.root=tt
         for x in ['__init__.py', 'README.md', '__pycache__']:
             if x in tt:
                 tt.remove(x)
         inst.subdirs=[x for x in tt if os.path.isdir(x)]
+        logger.info(inst.info())
         return inst
 
     def checkin(self,filename,overwrite=False):
@@ -74,8 +79,7 @@ class RuntimeLibrary:
         return os.path.exists(fullfilename)
 
     def info(self):
-        retstr=f'System libraries are under {self.root}\n'
-        return retstr
+        return f'{self.designation} library is {self.root}'
 
 _SYSTEM_LIBRARY_=None
 def lib_setup():
@@ -135,9 +139,7 @@ class ProjectFileSystem:
             if not os.path.isdir(self.projSubPaths[tops]):
                 os.mkdir(tops)
 
-
-
-_PFS_=None
+_PFS_:ProjectFileSystem=None
 
 def pfs_setup(root='.',topdirs=['molecules','systems','plots'],
                 verbose=False,reProject=False,userlibrary=None,mock=False):
@@ -192,12 +194,15 @@ def go_to(pathstr):
 def root():
     return _PFS_.rootPath
 
+def proj():
+    return _PFS_.projPath
+
 def local_data_searchpath():
     return [_PFS_.rootPath,_PFS_.projPath]
 
 def info():
     if _PFS_.userlibrary:
-        print(f'User library is {str(_PFS_.userlibrary.path)}')
+        print(_PFS_.userlibrary.info())
     print(_PFS_.library.info())
 
 if __name__=='__main__':

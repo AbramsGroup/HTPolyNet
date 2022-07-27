@@ -100,7 +100,6 @@ class Molecule:
         self.symmetry_relateds=[]
         self.stereocenters=[]
         self.stereoisomers=[]
-        #self.chains=[]
         self.zrecs=[]
         self.is_reactant=False
 
@@ -127,7 +126,6 @@ class Molecule:
         TC=self.TopoCoord
         TC.set_gro_attribute('z',0)
         TC.set_gro_attribute('nreactions',0)
-        # TC.set_gro_attribute('sea_idx',-1)
         for att in ['sea_idx','chain','chain_idx','cycle','cycle_idx']:
             TC.set_gro_attribute(att,-1)
         # set symmetry class indices
@@ -138,7 +136,6 @@ class Molecule:
             for atomName in s:
                 logger.debug(f'{atomName} {sea_idx}')
                 TC.set_gro_attribute_by_attributes('sea_idx',sea_idx,{'atomName':atomName})
-                # TC.set_gro_attribute_by_attributes('sea_idx',sea_idx,{'atomName':b})
             sea_idx+=1
         # set z and nreactions
         idx=[]
@@ -198,28 +195,6 @@ class Molecule:
             outname=f'{self.name}'
         GAFFParameterize(self.name,outname,**kwargs)
         self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2')
-        #assert self.cstale=='',f'Error: {self.cstale} coords are stale'
-
-    # def calculate_sea(self,sea_thresh=0.1,sea_temperature=1000,sea_nsteps=50000):
-    #     ''' use a hot gromacs run to establish symmetry-equivalent atoms '''
-    #     n=self.name
-    #     boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
-    #     mdp_prefix=mdp_library['sea']
-    #     pfs.checkout(f'mdp/{mdp_prefix}.mdp')
-    #     mdp_modify(f'{mdp_prefix}.mdp',{'ref_t':sea_temperature,'gen-temp':sea_temperature})
-    #     for ex in ['top','itp','gro']:
-    #         pfs.checkout(f'molecules/parameterized/{n}.{ex}')
-    #     TC=TopoCoord(topfilename=f'{n}.top',grofilename=f'{n}.gro')
-    #     dihdf=TC.Topology.D['dihedrals']
-    #     dihdf.loc[:,'c0']=0.0
-    #     dihdf.loc[:,'c1']=0.0
-    #     dihdf.loc[:,'c2']=dihdf.loc[:,'c2'].fillna(1)
-    #     TC.write_top(f'{n}-noodly.top')
-    #     logger.info(f'Hot md running...output to {n}-sea')
-    #     grompp_and_mdrun(gro=f'{n}',top=f'{n}-noodly',
-    #                     mdp=mdp_prefix,out=f'{n}-sea',nsteps=sea_nsteps,boxSize=boxsize)
-    #     sea_srs=analyze_sea(f'{n}-sea',thresh=sea_thresh)
-    #     self.set_gro_attribute('sea_idx',sea_srs)
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
@@ -242,7 +217,7 @@ class Molecule:
         if self.generator:
             R=self.generator
             self.TopoCoord=TopoCoord()
-            logger.info(f'Using reaction {R.name} to generate {self.name}.mol2.')
+            logger.debug(f'Using reaction {R.name} to generate {self.name}.mol2.')
             resid_mapper=[]
             for ri in R.reactants.values():
                 new_reactant=deepcopy(available_molecules[ri])
@@ -262,7 +237,7 @@ class Molecule:
             self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{R.product}.grx')
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
         else:
-            logger.info(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
+            logger.debug(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
             pfs.checkout(f'molecules/inputs/{self.name}.mol2')
 
         reactantName=self.name
@@ -487,10 +462,8 @@ class Molecule:
 
     def load_top_gro(self,topfilename,grofilename,mol2filename=''):
         self.TopoCoord=TopoCoord(topfilename=topfilename,grofilename=grofilename,mol2filename=mol2filename)
-
-    # def analyze_sea_topology(self):
-    #     self.TopoCoord.analyze_sea_topology()
-
+        # logger.debug(f'box: {self.TopoCoord.Coordinates.box}')
+        
     def set_gro_attribute(self,attribute,srs):
         self.TopoCoord.set_gro_attribute(attribute,srs)
 
@@ -646,6 +619,7 @@ class Molecule:
         """
         TC=self.TopoCoord
         A=TC.Coordinates.A
+        logger.debug(f'{self.name} flipping on {idx}')
         ligand_idx=self.TopoCoord.Topology.bondlist.partners_of(idx)
         if len(ligand_idx)!=4:
             logger.debug(f'Atom {idx} cannot be a stereocenter; it only has {len(ligand_idx)} ligands.')

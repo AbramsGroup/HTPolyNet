@@ -204,9 +204,12 @@ class Coordinates:
                 #     logger.debug(f'in coordinates.read_gro: {k} has {len(v)} items.')
                 inst.A=pd.DataFrame(series)
                 boxdataline=data[-1]
-                n=10
-                boxdata=list(map(float,[boxdataline[i:i+n].strip() for i in range(0,len(boxdataline),n)]))
-                inst.box[0][0],inst.box[1][1],inst.box[2][2]=boxdata[0:3]
+                boxdata=list(map(float,boxdataline.split()))
+                # logger.debug(f'boxdata {boxdata}')
+                inst.box[0][0]=boxdata[0]
+                inst.box[1][1]=boxdata[1]
+                inst.box[2][2]=boxdata[2]
+                # logger.debug(f'box: {inst.box}')
                 if len(boxdata)==9:
                     inst.box[0][1],inst.box[0][2],inst.box[1][0],inst.box[1][2],inst.box[2][0],inst.box[2][1]=boxdata[3:]
         inst.empty=False
@@ -262,7 +265,7 @@ class Coordinates:
         inst.empty=False
         return inst
 
-    def set_box(self,box):
+    def set_box(self,box:np.ndarray):
         """set_box Set the box size from box
 
         :param box: 3x1 or 3x3 box size matrix
@@ -560,15 +563,11 @@ class Coordinates:
             while R[i]>=self.box[i][i]:
                 R[i]-=self.box[i][i]
         return R
-        # bmults=np.ones(3).astype(int)-np.ceil(np.multiply(ri,np.reciprocal(self.box.diagonal()))).astype(int)
-        # if any(bmults):
-        #     self._nwrap+=1
-        #     return ri+np.multiply(self.box.diagonal(),bmults)
-        # return ri
 
     def wrap_coords(self):
         """wrap_coords Wraps all atomic coordinates into box
         """
+        assert np.any(self.box),f'Cannot wrap if boxsize is not set: {self.box}'
         self._nwrap=0
         sp=self.A[['posX','posY','posZ']]
         for i,srow in sp.iterrows():

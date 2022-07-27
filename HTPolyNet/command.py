@@ -26,7 +26,7 @@ class Command:
             if len(override)==2:
                 needle,msg=override
                 if needle in out or needle in err:
-                    logger.info(f'Returncode: {process.returncode}, but another error was detected:')
+                    logger.error(f'Returncode: {process.returncode}, but another error was detected:')
                     logger.error(msg)
                     if len(out)>0:
                         logger.error('stdout buffer follows\n'+'*'*self.linelen+'\n'+out+'\n'+'*'*self.linelen)

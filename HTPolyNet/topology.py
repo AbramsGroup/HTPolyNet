@@ -320,33 +320,21 @@ class Topology:
         """bond_source_check Checks to ensure the 'bonds' dataframe and 'mol2_bonds' dataframe contain the same bonds.  A mol2 dataframe is only created when a mol2 file is read by the Coordinates module.
         """
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
-            # logger.info(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
+            logger.debug(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
             bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
             mbmi=mol2bonds.set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
-            # logger.info(f'Result: {check}')
+            logger.debug(f'Result: {check}')
             if not check:
-                logger.info(f'GROMACS:')
-                logger.info(grobonds[['ai','aj']].head().to_string())
-                logger.info(f'MOL2:')
-                logger.info(mol2bonds[['ai','aj']].head().to_string())
+                logger.error(f'Gromacs/Mol2 bond inconsistency detected')
+                logger.debug(f'GROMACS:')
+                logger.debug(grobonds[['ai','aj']].head().to_string())
+                logger.debug(f'MOL2:')
+                logger.debug(mol2bonds[['ai','aj']].head().to_string())
                 for x,y in zip(bmi,mbmi):
-                    logger.info(f'{x} {y} {x==y}')
-
-    # def has_bond(self,pair):
-    #     """has_bond Determines whether or not the bond represented by the two atom indices in 
-    #     pair exists in the Topology
-
-    #     :param pair: two atom indexes
-    #     :type pair: tuple
-    #     :return: True if bond exists in both the 'bonds' and 'mol2_bonds' dataframes
-    #     :rtype: boolean
-    #     """
-    #     bmi=self.D['bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
-    #     mbmi=self.D['mol2_bonds'].sort_values(by=['ai','aj']).set_index(['ai','aj']).index
-    #     return pair in bmi and pair in mbmi
+                    logger.debug(f'{x} {y} {x==y}')
 
     def shiftatomsidx(self,idxshift,directive,rows=[],idxlabels=[]):
         """shiftatomsidx shifts all atoms indexes in topology directive dataframe
@@ -368,27 +356,6 @@ class Topology:
         g=self.bondlist.graph()
         cycles=_get_unique_cycles_dict(g,min_length=3)
         return cycles
-
-    # def ring_detector(self):
-    #     """ring_detector Detects all 3 to 7-members rings in a topology for one residue using the bondlist and networkx
-    #     sets the Cycles attribute of self to ring-lists of atom names
-
-    #     :return: A dictionary of ring-lists keyed on ring size; each ring-list is a list of atom indexes
-    #     :rtype: dict
-    #     """
-    #     cycles=self.detect_cycles()
-    #     cycles_by_name={}
-    #     for a in cycles:
-    #         cycles_by_name[a]=[]
-    #         for c in cycles[a]:
-    #             atoms=[]
-    #             for atom in c:
-    #                 atoms.append(self.get_atom_attribute(atom,'atom'))
-    #             cycles_by_name[a].append(atoms)
-    #         if len(cycles_by_name[a])>0:
-    #             logger.debug(f'{a}-rings: {cycles_by_name[a]}')
-    #     self.Cycles=cycles_by_name
-    #     return cycles
 
     def rep_ex(self,count=0):
         """Replicate extensive topology components (atoms, pairs, bonds, angles, dihedrals)
@@ -515,14 +482,14 @@ class Topology:
         """
         apparent_charge=self.total_charge()
         overcharge=apparent_charge-desired_charge
-        logger.info(f'Adjusting charges of {len(atoms)} atoms due to overcharge of {overcharge:.6f}')
+        logger.debug(f'Adjusting charges of {len(atoms)} atoms due to overcharge of {overcharge:.6f}')
         if np.abs(overcharge)>overcharge_threshhold:
-            logger.info(f'{msg}')
+            logger.debug(f'{msg}')
         cpa=-overcharge/len(atoms)
-        logger.info(f'Adjustment is {cpa:.4e} per atom')
+        logger.debug(f'Adjustment is {cpa:.4e} per atom')
         for i in atoms:
             self.D['atoms'].loc[i-1,'charge']+=cpa
-        logger.info(f'New total charge after adjustment: {self.total_charge():.6f}')
+        logger.debug(f'New total charge after adjustment: {self.total_charge():.6f}')
         return self
         
     def total_mass(self,units='gromacs'):
@@ -550,20 +517,6 @@ class Topology:
         if 'atoms' in self.D:
             return self.D['atoms'].shape[0]
         return 0
-
-    # def add_pairs(self,pairsdf,kb=280160.0):
-    #     pmi=self.D['pairs'].set_index(['ai','aj']).sort_index().index
-    #     for i,p in pairsdf.iterrows():
-    #         ai,aj=idxorder((p['ai'],p['aj']))
-    #         l0=p['initial_distance']
-    #         if not (ai,aj) in pmi: #this pair not already here, good!
-    #             data=[ai,aj,1,l0,kb]
-    #             h=_GromacsTopologyDirectiveHeaders_['pairs']
-    #             pairdict={k:[v] for k,v in zip(h,data)}
-    #             pairtoadd=pd.DataFrame(pairdict)
-    #             self.D['pairs']=pd.concat((self.D['pairs'],pairtoadd),ignore_index=True)
-    #         else:
-    #             logger.debug(f'Warning: pair {ai}-{aj} already in [ pairs ].  This is bug.')
     
     def add_restraints(self,pairdf,typ=6,kb=300000.):
         """Add type-6 (non-topoogical) bonds to help drag atoms destined to be bonded
@@ -654,7 +607,7 @@ class Topology:
                 bdtoadd=pd.DataFrame(bonddict)
                 self.D['bonds']=pd.concat((self.D['bonds'],bdtoadd),ignore_index=True)
                 # logger.info(f'add_bond:\n{bdtoadd.to_string()}')
-                # logger.info(f'just added {bonddict}')
+                logger.debug(f'just added {bonddict}')
                 if 'mol2_bonds' in self.D:
                     data=[len(self.D['mol2_bonds']),ai,aj,1] # assume single bond
                     bonddict={k:[v] for k,v in zip(['bondIdx','ai','aj','type'],data)}
@@ -673,28 +626,16 @@ class Topology:
                 because a Topology is part of a molecule being parameterized), update the order
                 of the bond.
                 '''
-                # ityp=at.loc[ai-1]['type']
-                # jtyp=at.loc[aj-1]['type']
-                # logger.debug(f'Need to set order of {ai}({ityp})-{aj}({jtyp}) to {order}')
-                # nityp=dec_order_atom_name_gaff(ityp)
-                # njtyp=dec_order_atom_name_gaff(jtyp)
-                # logger.debug(f'Trying {ai}:{ityp}->{nityp} and {aj}{jtyp}->{njtyp}')
-                # at.loc[ai-1,'type']=nityp
-                # at.loc[aj-1,'type']=njtyp
-                # logger.debug(f'Updated topology [ atoms ]\n:{at.to_string()}')
                 if 'mol2_bonds' in self.D:
                     mb=self.D['mol2_bonds']
                     bi=(mb['ai']==ai)&(mb['aj']==aj)
                     mb.loc[bi,'type']=order
-                # else:
-                #     logger.warning(f'No way to update this bond since there is not a mol2_bonds attribute in the Topology.')
-                    # logger.debug(f'Updated mol2_bonds:\n{mb.to_string()}')
         '''
         update the bondlist
         '''
         for b in newbonds:
             self.bondlist.append(b)
-        # logger.debug(f'Added {len(newbonds)} new bonds')
+        logger.debug(f'Added {len(newbonds)} new bonds')
 
     def add_enumerated_angles(self,newbonds,ignores=[],quiet=True):       
         at=self.D['atoms']
@@ -865,7 +806,7 @@ class Topology:
         new_idx=[]
         indexes_to_drop=d[d.nr.isin(idx)].index
         total_missing_charge=d.loc[indexes_to_drop]['charge'].sum()
-        logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ atoms ]; charge to make up: {total_missing_charge:.4f}')#:\n{d.loc[indexes_to_drop].to_string()}')
+        logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ atoms ]; charge to make up: {total_missing_charge:.4f}')#:\n{d.loc[indexes_to_drop].to_string()}')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         self.D['atoms']=d.take(list(indexes_to_keep)).reset_index(drop=True)
         mapper={}
@@ -894,7 +835,7 @@ class Topology:
                 # logger.debug(f'delete atom: {pt} df prior to deleting')
                 # logger.debug(d.to_string())
                 indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))].index
-                logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')
+                logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ {pt} ]')
                 indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
                 self.D[pt]=d.take(list(indexes_to_keep)).reset_index(drop=True)
                 if reindex:
@@ -930,7 +871,7 @@ class Topology:
         # logger.debug(f'ak {d.ak.isin(idx).to_string()}')
         indexes_to_drop=d[(d['ai'].isin(idx))|(d['aj'].isin(idx))|(d['ak'].isin(idx))].index
         # extras=d[d['ak'].isin(idx)].index
-        logger.info(f'Deleting {len(indexes_to_drop)} [ angles ]')
+        logger.debug(f'Deleting {len(indexes_to_drop)} [ angles ]')
         indexes_to_keep=set(range(d.shape[0]))-set(indexes_to_drop)
         # logger.debug(f'drop {list(sorted(list(set(indexes_to_drop))))}')
         # logger.debug(f'keep {indexes_to_keep}')
@@ -956,7 +897,7 @@ class Topology:
         self.null_check(msg='inside delete atoms after angles reindex')
         d=self.D['dihedrals']
         indexes_to_drop=d[(d.ai.isin(idx))|(d.aj.isin(idx))|(d.ak.isin(idx))|(d.al.isin(idx))].index
-        logger.info(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')
+        logger.debug(f'Deleting {d.loc[indexes_to_drop].shape[0]} [ dihedrals ]')
         # if the atoms we have deleted are truly just H's, then there will be no other
         # spurious pairs after all dihedrals containing deleted atoms are deleted.
         # However, we may want to still search for such pairs, so let's leave this
@@ -973,7 +914,7 @@ class Topology:
                 dd.extend(dwpi)
             ptk=set(range(dp.shape[0]))-set(dwpi)
             if dp.loc[dwpi].shape[0]>0:
-                logger.info(f'  -> and deleting {dp.loc[dwpi].shape[0]} [ pairs ] from those dihedrals')
+                logger.debug(f'  -> and deleting {dp.loc[dwpi].shape[0]} [ pairs ] from those dihedrals')
             # Note that we expect this to be zero if we are only deleting H's, since
             # an H can never be a 'j' or 'k' in a dihedral!
             self.D['pairs']=dp.take(list(ptk)).reset_index(drop=True)

@@ -40,7 +40,7 @@ class TopoCoord:
     """Container for Topology and Coordinates, along with methods that
         use either or both of them
     """
-    def __init__(self,topfilename='',grofilename='',mol2filename='',system_name='htpolynet'):
+    def __init__(self,topfilename='',grofilename='',mol2filename='',system_name='htpolynet',**kwargs):
         """Constructor method for TopoCoord.
 
         :param topfilename: name of Gromacs-format topology file (top), defaults to ''
@@ -475,16 +475,21 @@ class TopoCoord:
         """
         self.Topology=Topology.read_gro(topfilename)
 
-    def read_gro(self,grofilename):
+    def read_gro(self,grofilename,preserve_box=False):
         """Creates a new Coordinates member by reading from a Gromacs-style coordinates
             file.  Just a wrapper for the read_gro method of Coordinates
 
         :param grofilename: name of gro file
         :type grofilename: str
         """
+        if preserve_box:
+            savebox=self.Coordinates.box.copy()
         self.Coordinates=Coordinates.read_gro(grofilename)
+        if preserve_box:
+            self.Coordinates.box=savebox
+        # logger.debug(f'box: {self.Coordinates.box}')
 
-    def read_mol2(self,mol2filename,ignore_bonds=False):
+    def read_mol2(self,mol2filename,ignore_bonds=False,overwrite_coordinates=False):
         """Creates a new Coordinates member by reading from a SYBYL-style MOL2 file.
             A wrapper for read_mol2 from Coordinates, but also sets the 'mol2_bonds'
             dataframe in the Topology if the parameter ignore_bonds is False.  If
@@ -496,9 +501,14 @@ class TopoCoord:
             ignored, defaults to False
         :type ignore_bonds: bool, optional
         """
-        self.Coordinates=Coordinates.read_mol2(mol2filename)
+        temp_coords=Coordinates.read_mol2(mol2filename)
+        if self.Coordinates.empty or overwrite_coordinates:
+            save_box=self.Coordinates.box.copy()
+            self.Coordinates=temp_coords
+            self.Coordinates.box=save_box
+            temp_coords=self.Coordinates
         if not ignore_bonds:
-            self.Topology.D['mol2_bonds']=self.Coordinates.mol2_bonds.copy()
+            self.Topology.D['mol2_bonds']=temp_coords.mol2_bonds.copy()
             if 'bonds' in self.Topology.D:
                 self.Topology.bond_source_check()
 
@@ -1205,7 +1215,7 @@ class TopoCoord:
                 chainlist.remove(chainlist[old_head[0]])
                 return old_tail[0],False
         # kb=bondrecs.copy()
-        logger.debug(f'checking set of {bdf.shape[0]} bonds for nascent cycles')
+        # logger.debug(f'checking set of {bdf.shape[0]} bonds for nascent cycles')
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
         chains=self.idx_lists['chain'].copy()

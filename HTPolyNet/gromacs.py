@@ -42,7 +42,7 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     for name,num in composition.items():  # composition determines order
         if os.path.isfile(f'{outName}.gro'):
-            logger.info(f'gmx insert-molecules inserts into existing {outName}.gro')
+            logger.debug(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
             c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
         else:
@@ -50,7 +50,9 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
             c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
         out,err=c.run()
         out+=err
-        logger.info(f'Output of "{sw.gmx} insert-molecules"\n'+out)
+        logger.debug(f'Output of "{sw.gmx} insert-molecules"')
+        for ln in out.split('\n'):
+            logger.debug(ln)
         if 'Added' in out:
             outlines=out.split('\n')
             for ol in outlines:

@@ -14,7 +14,7 @@ logger=logging.getLogger(__name__)
 
 def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     chargemethod=kwargs.get('charge_method','bcc')
-    logger.info(f'Ambertools: parameterizing {inputPrefix}')
+    logger.info(f'AmberTools is parameterizing {inputPrefix}.mol2')
     mol2in=f'{inputPrefix}.mol2'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
@@ -22,14 +22,14 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     if mol2in==mol2out:
         # mol2pfx,mol2sfx=os.path.splitext(mol2in)
         new_mol2in=inputPrefix+'-input.mol2'
-        logger.info(f'Antechamber overwrites input {mol2in}; backing up to {new_mol2in}')
+        logger.debug(f'Antechamber overwrites input {mol2in}; backing up to {new_mol2in}')
         shutil.copy(f'{mol2in}',new_mol2in)
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
     c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemethod,at='gaff',i=new_mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
     c.run(quiet=False)
-    logger.info(f'Antechamber generated {mol2out}')
+    logger.debug(f'Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
     c.run(quiet=False)
     # Antechamber ignores SUBSTRUCTURES but we would like tleap to 
@@ -45,7 +45,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     goodMol2.A=adf
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
     goodMol2.write_mol2(f'{leapprefix}.mol2')
-    logger.info(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
+    logger.debug(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
     Command(f'cp {frcmodout} {leapprefix}.frcmod').run()
     with open(f'{inputPrefix}-tleap.in', 'w') as f:
         f.write(f'source leaprc.gaff\n')
@@ -63,9 +63,8 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     # save the results of the antechamber/parmchk2/tleap sequence as Gromacs gro and top files
     try:
         file=parmed.load_file(f'{outputPrefix}-tleap.top', xyz=f'{outputPrefix}-tleap.crd')
-        logger.info(f'Writing {groOut}')
+        logger.info(f'Writing {groOut}, {topOut}, and {itpOut}')
         file.save(groOut,overwrite=True)
-        logger.info(f'Writing {topOut} and {itpOut}')
         file.save(topOut,parameters=itpOut,overwrite=True)
     except Exception as m:
         logger.error('Unspecified parmed error')
