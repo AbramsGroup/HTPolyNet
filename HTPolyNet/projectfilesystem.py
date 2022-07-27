@@ -194,6 +194,9 @@ def go_to(pathstr):
 def root():
     return _PFS_.rootPath
 
+def cwd():
+    return os.path.relpath(os.getcwd(),start=_PFS_.rootPath)
+
 def proj():
     return _PFS_.projPath
 

@@ -60,7 +60,7 @@ class HTPolyNet:
                 if os.path.exists(fullfilename):
                     basefilename=os.path.basename(filename)
                     shutil.copyfile(fullfilename,basefilename)
-                    logger.debug(f'Checkout {fullfilename} to {os.getcwd()}')
+                    logger.debug(f'Checkout {fullfilename} to {pfs.cwd()}')
                     return True
             logger.debug(f'Could not find {filename} anywhere!')
             return False
@@ -158,7 +158,7 @@ class HTPolyNet:
             logger.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
             if generatable:
-                logger.info(f'Generating {mname}')
+                logger.debug(f'Generating {mname}')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro','grx']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
@@ -196,14 +196,14 @@ class HTPolyNet:
                 si_name=M.name+'-SC-'+'-'.join([str(_) for _ in p])
                 logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
                 if os.path.exists(f'{si_name}.gro'):
-                    logger.debug(f'{si_name}.gro exists in {os.getcwd()}')
+                    logger.debug(f'{si_name}.gro exists in {pfs.cwd()}')
                 else:
                     MM=deepcopy(M)
                     MM.name=si_name
                     fsc=[st_idx[i] for i in range(len(M.stereocenters)) if p[i]]
                     for f in fsc:
                         MM.flip_stereocenter(f)
-                    logger.debug(f'Writing {MM.name}.gro in {os.getcwd()}')
+                    logger.debug(f'Writing {MM.name}.gro in {pfs.cwd()}')
                     MM.TopoCoord.write_gro(f'{MM.name}.gro')
                 M.stereoisomers.append(MM.name)
         return True
@@ -218,7 +218,7 @@ class HTPolyNet:
         """
         cwd=pfs.go_to('systems/init')
         if os.path.isfile(f'{inpfnm}.top'):
-            logger.info(f'{inpfnm}.top already exists in {cwd} but we will rebuild it anyway!')
+            logger.debug(f'{inpfnm}.top already exists in {cwd} but we will rebuild it anyway!')
         ''' for each monomer named in the cfg, either parameterize it or fetch its parameterization '''
         already_merged=[]
         for item in self.cfg.initial_composition:
@@ -235,7 +235,7 @@ class HTPolyNet:
                 self.TopoCoord.Topology.merge_types(M.TopoCoord.Topology)
         logger.info(f'System has {self.TopoCoord.Topology.atomcount()} atoms.')
         self.TopoCoord.write_top(f'{inpfnm}.top')
-        logger.debug(f'Wrote {inpfnm}.top to {cwd}')
+        logger.debug(f'Wrote {inpfnm}.top to {pfs.cwd()}')
 
     def setup_liquid_simulation(self,inpfnm='init'):
         """Builds initial top and gro files for initial liquid simulation
@@ -311,7 +311,7 @@ class HTPolyNet:
         T=self.cfg.parameters.get('densification_temperature',300)
         P=self.cfg.parameters.get('densification_pressure',10)
         if os.path.exists(f'{deffnm}.gro') and self.cfg.parameters['restart']:
-            logger.info(f'{deffnm}.gro exists in {os.getcwd()}; assuming system is already densified.')
+            logger.info(f'{deffnm}.gro exists in {pfs.cwd()}; assuming system is already densified.')
         else:
             logger.info(f'Conducting initial NPT MD densification simulation of liquid')
             mdp_pfx=mdp_library['minimize']
@@ -386,7 +386,7 @@ class HTPolyNet:
             cwd=pfs.go_to(f'systems/iter-{CP.iter}')
             CP.read_checkpoint(self)
             if CP.state==CPstate.fresh:
-                logger.info(f'CURE iteration {CP.iter} begins in {cwd}.')
+                logger.info(f'CURE iteration {CP.iter} begins in {pfs.cwd()}.')
                 CP.set_state(CPstate.bondsearch) # no need to write a checkpoint
             if CP.state==CPstate.bondsearch:
                 stepno=0
@@ -434,7 +434,7 @@ class HTPolyNet:
                 CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
                 maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
                 logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                logger.info(f'Prebond dragging initiated on {CP.bonds.shape[0]} new bonds (max distance {maxL} nm).')
+                logger.info(f'Prebond dragging initiated on {CP.bonds.shape[0]} new bonds (max distance {maxL:.3f} nm).')
                 rcommon=max([gromacs_rdefault,maxL])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
@@ -526,7 +526,7 @@ class HTPolyNet:
                     pmaxL,pminL,pmeanL=CP.pairs['current_lengths'].max(),CP.pairs['current_lengths'].min(),CP.pairs['current_lengths'].mean()
                     logger.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
                     logger.debug(f'{stagepref}: Bond-designate-1-4 pair lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                    logger.info(f'  -> stage {i+1} max distance {maxL:.3f} nm, max 1-4 distance {pmaxL:.3f}')
+                    logger.info(f'  -> stage {i+1} max distance {maxL:.3f} nm, max 1-4 distance {pmaxL:.3f} nm')
                     rcommon=max([maxL+relax_cutoff_pad,gromacs_rdefault,pmaxL+relax_cutoff_pad])
                     nextpref=f'{opfx}-stage-{i+2}'
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
@@ -555,7 +555,7 @@ class HTPolyNet:
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{opfx}-post.gro'))
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix=f'{opfx}-complete')
                 average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
-                logging.info(f'  -> average density {average_density:.3f} kg/m^3')
+                logger.info(f'  -> average density {average_density:.3f} kg/m^3')
             if CP.state==CPstate.post_equilibration:
                 curr_nxlinkbonds+=CP.bonds.shape[0]
                 iterations_exceeded=False
@@ -655,7 +655,7 @@ class HTPolyNet:
             CP.read_checkpoint(self)
             ''' Final NPT MD equilibration with full parameters '''
             pfx=mdp_library[stepnm]
-            logging.info(f'Postcure equilibration.')
+            logger.info(f'Postcure equilibration.')
             self.checkout(f'mdp/{pfx}.mdp')
             mod_dict={'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_p':equilibration_pressure}
             mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
