@@ -1,3 +1,5 @@
+.. _example_tutorials:
+
 Example Tutorials
 =================
 

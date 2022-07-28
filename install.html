@@ -37,31 +37,31 @@
 <h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this headline">¶</a></h1>
 <section id="python">
 <h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
-<p>If you use conda/anaconda, it is recommended that a separate python environment be created for running HTPolyNet:</p>
+<p>If you use conda/anaconda, we recommended that you create a separate python environment running HTPolyNet:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda create --name mol-env python
 <span class="gp">$ </span>conda activate mol-env
-<span class="gp">$ </span>conda install numpy scipy pandas ambertools
+</pre></div>
+</div>
+<p>Once this environment is created and activated, you can install some prequisites:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda install numpy scipy pandas ambertools
 </pre></div>
 </div>
 </section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet is under active development, it is best to clone the repository from Github and then pip install as in:</p>
+<p>Because HTPolyNet is under active development, we recommend installing from a freshly cloned Github repository:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone git@github.com:AbramsGroup/HTPolyNet.git
 <span class="gp">$ </span><span class="nb">cd</span> HTPolyNet
-<span class="gp">$ </span>conda activate mol-env
 <span class="gp">$ </span>pip install -e .
 </pre></div>
 </div>
-<p>If you created the recommended python environment, make sure it is activated before running <cite>pip install</cite>!</p>
+<p>If you created the recommended python environment, make sure it is activated before running <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>!</p>
 </section>
 <section id="software-prequisites">
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, the following executables should be in your path:</p>
+<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, it expects the following executables are in your path:</p>
 <ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">parmchk2</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">tleap</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code> (from AmberTools)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code></p></li>
 </ol>
 <p>Suggested approaches for obtaining these are below.</p>
@@ -97,17 +97,18 @@
 <span class="gp">$ </span>sudo make install
 </pre></div>
 </div>
-<p>And add to <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>:</p>
+<p>And add to your <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">source /usr/local/gromacs/bin/GMXRC</span>
 </pre></div>
 </div>
-<p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend the latest Gromacs.</p>
-<p>Finally, in the tutorials provided, we demonstrate the use of <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> to generate initial molecular structure files; though it is not strictly necessary, it is fairly convenient to use.</p>
+<p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.</p>
 </li>
 </ul>
 </div></blockquote>
 </li>
 </ul>
+<p>Finally, in the tutorials provided, we demonstrate the use of <code class="docutils literal notranslate"><span class="pre">obabel</span></code> from <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.</p>
+<p>hould be</p>
 </section>
 </section>
 

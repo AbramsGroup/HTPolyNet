@@ -4,38 +4,41 @@ Installation and Prerequisites
 Python
 ------
 
-If you use conda/anaconda, it is recommended that a separate python environment be created for running HTPolyNet:
+If you use conda/anaconda, we recommended that you create a separate python environment running HTPolyNet:
 
 .. code-block:: console
 
     $ conda create --name mol-env python
     $ conda activate mol-env
+
+
+Once this environment is created and activated, you can install some prequisites:
+
+.. code-block:: console
+
     $ conda install numpy scipy pandas ambertools
 
 
 Installation
 ------------
 
-Because HTPolyNet is under active development, it is best to clone the repository from Github and then pip install as in:
+Because HTPolyNet is under active development, we recommend installing from a freshly cloned Github repository:
 
 .. code-block:: console
 
     $ git clone git@github.com:AbramsGroup/HTPolyNet.git
     $ cd HTPolyNet
-    $ conda activate mol-env
     $ pip install -e .
 
-If you created the recommended python environment, make sure it is activated before running `pip install`!
+If you created the recommended python environment, make sure it is activated before running ``pip install``!
 
 Software Prequisites
 --------------------
 
-Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, the following executables should be in your path:
+Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, it expects the following executables are in your path:
 
-1. ``antechamber``
-2. ``parmchk2``
-3. ``tleap``
-4. ``gmx`` or ``gmx_mpi``
+1. ``antechamber``, ``parmchk2``, and ``tleap`` (from AmberTools)
+2. ``gmx`` or ``gmx_mpi``
 
 Suggested approaches for obtaining these are below.
 
@@ -70,15 +73,16 @@ Suggested approaches for obtaining these are below.
          $ make check
          $ sudo make install
 
-     And add to ``~/.bashrc``:
+     And add to your ``~/.bashrc``:
 
      .. code-block:: console
 
          source /usr/local/gromacs/bin/GMXRC
      
-     This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of ``gmx distance`` that limits the number of distances that can be calculated, so we (always) recommend the latest Gromacs.
+     This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of ``gmx distance`` that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.
 
-     Finally, in the tutorials provided, we demonstrate the use of `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ to generate initial molecular structure files; though it is not strictly necessary, it is fairly convenient to use.
+Finally, in the tutorials provided, we demonstrate the use of ``obabel`` from `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.
 
 
 
+hould be 
