@@ -43,7 +43,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     adf['resName']=goodMol2.A['resName'].copy()
     adf['resNum']=goodMol2.A['resNum'].copy()
     goodMol2.A=adf
-    leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(8)
+    leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(16).replace('e','x')
     goodMol2.write_mol2(f'{leapprefix}.mol2')
     logger.debug(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')
     Command(f'cp {frcmodout} {leapprefix}.frcmod').run()

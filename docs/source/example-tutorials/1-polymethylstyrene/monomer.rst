@@ -3,11 +3,10 @@
 Monomer
 =======
 
-In this section, we describe how the input :download:`EMB.mol2 <EMB.mol2>` that specifies the 4-methylstyrene monomer is generated.  ("EMB" stands for "ethylmethylbenzene" for reasons that will become clear.) Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
+In this section, we describe how the input :download:`EMB.mol2 <EMB.mol2>` that specifies the 4-methylstyrene monomer is generated.  ("EMB" stands for "ethylmethylbenzene" for reasons that will become clear.) Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":
 
 .. code-block:: console
 
-    $ cd 
     $ mkdir my_pms_build
     $ cd my_pms_build
     $ mkdir lib
@@ -28,7 +27,7 @@ Now we can generate the required ``*.mol2`` file.
 
 (http://2015.igem.org/Team:Stanford-Brown/PS)
 
-Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two.  To see how we do that, let's turn to a way to build the ``mol2`` file.
+Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two carbon atoms.  To see how we do that, let's turn to a way to build the ``mol2`` file.
 
 As described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene:
 
@@ -93,11 +92,11 @@ Now, let's have a look at this file (your coordinates may be different)::
          20     9    20    1
          21     9    21    1
 
-Notice how the atom names (second column in the ``@<TRIPOS>ATOM`` section) are not unique?  Let's call the radical-bearing carbon ``C1`` and the methyl carbon ``C2``.  To figure out which atoms these are in the ``mol2`` file, we can interrogate the structure in VMD (or any other suitable visualization software):
+Notice how the atom names (second column in the ``@<TRIPOS>ATOM`` section) are not unique?  This is potentially a problem, since HTPolyNet always refers to particular atoms by virtue of their "residue name" and "name".  (There is only one residue here, called ``EMB``.) Let's call the radical-bearing carbon ``C1`` and the methyl carbon ``C2``.  To figure out which atoms these are in the ``mol2`` file, we can interrogate the structure in VMD (or any other suitable visualization software):
 
 .. image:: emb-labelled.png
 
-The black numbers shown here indicate internal atom indexes in VMD, and VMD starts counting at zero.  ``Mol2`` and Gromacs start counting at 1, so these atoms' indexes are one more than what is shown here.  We see the methylene carbon is index 7 in VMD, so it is index 8 in the ``mol2`` file; likewise, the methyl carbon is index 8 in VMD and so index 9 in the ``mol2`` file.  Let's use this information along with a few bells and whistles to force ``obabel`` to give us a ready-to-use ``mol2`` file:
+The black numbers shown here indicate internal atom indexes in VMD, and VMD starts counting at zero.  ``Mol2`` and Gromacs start counting at 1, so these atoms' indexes are one more than what is shown here.  We see the methylene carbon is index 7 in VMD, so it is index 8 in the ``mol2`` file; likewise, the methyl carbon is index 8 in VMD and so index 9 in the ``mol2`` file.  Let's use this information along to force ``obabel`` to give us a ready-to-use ``mol2`` file:
 
 .. code-block:: console
 
@@ -162,4 +161,4 @@ Let's look at the file :download:`EMB.mol2 <EMB.mol2>` that results from the com
 
 You can see how atoms 8 and 9 (``mol2`` indexes) are now named ``C1`` and ``C2``, respectively.
 
-The next thing we consider is how to create the :ref:`reaction dictionaries <pms_reaction_dictionaries>` necessary to describe the crosslinking chemistry.
+The next thing we consider is how to create the :ref:`reaction dictionaries <pms_reaction_dictionaries>` necessary to describe the polymerization chemistry.
