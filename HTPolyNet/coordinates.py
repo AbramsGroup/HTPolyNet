@@ -158,7 +158,7 @@ class Coordinates:
         # self.ringlist=[]
         
     @classmethod
-    def read_gro(cls,filename):
+    def read_gro(cls,filename,wrap_coords=True):
         """read_gro Read a Gromacs gro file
 
         :param filename: name of gro file
@@ -213,7 +213,9 @@ class Coordinates:
                 if len(boxdata)==9:
                     inst.box[0][1],inst.box[0][2],inst.box[1][0],inst.box[1][2],inst.box[2][0],inst.box[2][1]=boxdata[3:]
         inst.empty=False
-        inst.wrap_coords()
+        logger.debug(f'{inst.box} {inst.checkbox()}')
+        if wrap_coords:
+            inst.wrap_coords()
         return inst
 
     @classmethod
@@ -789,6 +791,15 @@ class Coordinates:
                 sp.posZ.max()-sp.posZ.min()
             ]
         )
+
+    def minmax(self):
+        sp=self.A[['posX','posY','posZ']]
+        return np.array([sp.posX.min(),sp.posY.min(),sp.posZ.min()]),np.array([sp.posX.max(),sp.posY.max(),sp.posZ.max()])
+
+    def checkbox(self):
+        mm,MM=self.minmax()
+        bb=self.box.diagonal()
+        return mm<bb,MM>bb
 
     def get_idx(self,attributes):
         df=self.A

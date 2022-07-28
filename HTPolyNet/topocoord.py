@@ -50,9 +50,10 @@ class TopoCoord:
         :param mol2filename: name of SYBYL MOL2-format coordinate/bonds file, defaults to ''
         :type mol2filename: str, optional
         """
+        wrap_coords=kwargs.get("wrap_coords",True)
         if grofilename!='':
             self.grofilename=grofilename
-            self.read_gro(grofilename)
+            self.read_gro(grofilename,wrap_coords=wrap_coords)
         else:
             self.Coordinates=Coordinates()  # empty
         if topfilename!='':
@@ -475,7 +476,7 @@ class TopoCoord:
         """
         self.Topology=Topology.read_gro(topfilename)
 
-    def read_gro(self,grofilename,preserve_box=False):
+    def read_gro(self,grofilename,preserve_box=False,wrap_coords=True):
         """Creates a new Coordinates member by reading from a Gromacs-style coordinates
             file.  Just a wrapper for the read_gro method of Coordinates
 
@@ -484,7 +485,7 @@ class TopoCoord:
         """
         if preserve_box:
             savebox=self.Coordinates.box.copy()
-        self.Coordinates=Coordinates.read_gro(grofilename)
+        self.Coordinates=Coordinates.read_gro(grofilename,wrap_coords=wrap_coords)
         if preserve_box:
             self.Coordinates.box=savebox
         # logger.debug(f'box: {self.Coordinates.box}')
@@ -914,6 +915,13 @@ class TopoCoord:
         :rtype: numpy.ndarray
         """
         return self.Coordinates.maxspan()
+
+
+    def minmax(self):
+        return self.Coordinates.minmax()
+
+    def checkbox(self):
+        return self.Coordinates.checkbox()
 
     def write_mol2(self,filename,molname=''):
         """Writes a SYBYL MOL2-format file using Coordinates, with certain

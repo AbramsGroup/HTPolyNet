@@ -194,21 +194,32 @@ class Molecule:
         if outname=='':
             outname=f'{self.name}'
         GAFFParameterize(self.name,outname,**kwargs)
-        self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2')
+        self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2',wrap_coords=False)
 
     def minimize(self,outname='',**kwargs):
         if outname=='':
             outname=f'{self.name}'
         n=self.name
         boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
+        self.center_coords(new_boxsize=boxsize)
         mdp_prefix=mdp_library['minimize-single-molecule']
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
-        if 'checkout_required' in kwargs:
-            for ex in ['top','itp','gro']:
-                pfs.checkout(f'molecules/parameterized/{n}.{ex}')
         grompp_and_mdrun(gro=f'{n}',top=f'{n}',
                         mdp=mdp_prefix,out=f'{outname}',boxSize=boxsize)
-        self.TopoCoord.read_gro(f'{n}.gro')
+        self.TopoCoord.read_gro(f'{n}.gro',wrap_coords=False)
+
+    def center_coords(self,new_boxsize:np.ndarray=None):
+        if type(new_boxsize)==np.ndarray:
+            if new_boxsize.shape==(3,):
+                box_vectors=new_boxsize*np.identity(3,dtype=float)
+                logger.debug(f'{box_vectors}')
+            elif new_boxsize.shape==(3,3):
+                box_vectors=new_boxsize
+            self.TopoCoord.Coordinates.box=box_vectors
+        center=self.TopoCoord.Coordinates.box.diagonal()/2.0
+        gc=self.TopoCoord.Coordinates.geometric_center()
+        addme=center-gc
+        self.TopoCoord.Coordinates.translate(addme)
 
     def generate(self,outname='',available_molecules={},**kwargs):
         # logger.info(f'Generating {self.name}.mol2 for parameterization')
@@ -221,12 +232,15 @@ class Molecule:
             resid_mapper=[]
             for ri in R.reactants.values():
                 new_reactant=deepcopy(available_molecules[ri])
+                new_reactant.TopoCoord.write_mol2(filename=f'{self.name}-reactant{ri}-prebonding.mol2',molname=self.name)
                 rnr=len(new_reactant.sequence)
                 shifts=self.TopoCoord.merge(new_reactant.TopoCoord)
                 resid_mapper.append({k:v for k,v in zip(range(1,rnr+1),range(1+shifts[2],1+rnr+shifts[2]))})
             # logger.debug(f'{self.name}: resid_mapper {resid_mapper}')
             # logger.debug(f'{self.TopoCoord.idx_lists}')
             # logger.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
+            logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
+            self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
             self.set_sequence()
             bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
             # logger.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
@@ -460,10 +474,11 @@ class Molecule:
         shifts=self.TopoCoord.merge(other.TopoCoord)
         return shifts
 
-    def load_top_gro(self,topfilename,grofilename,mol2filename=''):
-        self.TopoCoord=TopoCoord(topfilename=topfilename,grofilename=grofilename,mol2filename=mol2filename)
+    def load_top_gro(self,topfilename,grofilename,mol2filename='',**kwargs):
+        wrap_coords=kwargs.get('wrap_coords',True)
+        self.TopoCoord=TopoCoord(topfilename=topfilename,grofilename=grofilename,mol2filename=mol2filename,wrap_coords=wrap_coords)
         # logger.debug(f'box: {self.TopoCoord.Coordinates.box}')
-        
+
     def set_gro_attribute(self,attribute,srs):
         self.TopoCoord.set_gro_attribute(attribute,srs)
 
@@ -503,10 +518,12 @@ class Molecule:
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
                 cresids=[]
-                if len(oneaways)==2:
+                if len(oneaways)==2 and oneaways[1]!=None:
                     cresids=[oneaways[1]]
-                if len(bystanders)==2:
+                if len(bystanders)==2 and any(bystanders[1]):
                     cresids.extend(bystanders[1])
+                # cresids=[x for x in oneaways if x]
+                # cresids.extend([x for x in bystanders if x])
                 # logger.debug(f'cresids {cresids}')
                 hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=cresids)
                 skip_H.append(i)
@@ -531,11 +548,12 @@ class Molecule:
             TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':aidx})
             TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':bidx})
         self.initialize_molecule_cycles()
+        # cb=self.TopoCoord.checkbox()
+        # logger.debug(f'checkbox: {cb}')
         return idx_mapper
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):
         # Rotate and translate
-        # logger.debug('transrot for building {self.name} from {at_resid}:{at_idx} -- {from_resid}:{from_idx}')
         if at_resid==from_resid:
             return
         TC=self.TopoCoord
@@ -543,9 +561,14 @@ class Molecule:
         BTC=TopoCoord()
         C=TC.gro_DataFrame('atoms')
         ATC.Coordinates.A=C[C['resNum']==at_resid].copy()
-        bresids=connected_resids[:]
+        bresids=connected_resids.copy()
         bresids.append(from_resid)
         BTC.Coordinates.A=C[C['resNum'].isin(bresids)].copy()
+        NONROT=C[~C['resNum'].isin(bresids)].shape[0]
+        logger.debug(f'{self.TopoCoord.Coordinates.A.shape[0]} atoms')
+        logger.debug(f'holding {at_resid} ({NONROT})')
+        logger.debug(f'rotating/translating {bresids} ({BTC.Coordinates.A.shape[0]})')
+        assert self.TopoCoord.Coordinates.A.shape[0]==(NONROT+BTC.Coordinates.A.shape[0])
         mypartners=TC.partners_of(at_idx)
         otpartners=TC.partners_of(from_idx)
         # logger.debug(f'Partners of {at_idx} {mypartners}')
@@ -566,7 +589,7 @@ class Molecule:
         overall_maximum=(-1.e9,-1,-1)
         coord_trials={}
         for myH,myHnm in myHpartners.items():  # keys are globalIdx's, values are names
-            coord_trials[myH]={}
+            coord_trials[myH]:dict[TopoCoord]={}
             Rh=TC.get_R(myH)
             Rih=Ri-Rh
             Rih*=1.0/np.linalg.norm(Rih)
@@ -594,7 +617,6 @@ class Molecule:
                 # overlap the two H atoms by translation
                 Rik=Rh-Rk
                 coord_trials[myH][otH].translate(Rik)
-                # coord_trials[myH][otH].Coordinates.write_mol2(f'{self.name}-{myH}-{otH}.mol2')
                 minD=TC.minimum_distance(coord_trials[myH][otH],self_excludes=[myH],other_excludes=[otH])
                 # logger.debug(f'{self.name}: minD {minD}')
                 if minD>overall_maximum[0]:
