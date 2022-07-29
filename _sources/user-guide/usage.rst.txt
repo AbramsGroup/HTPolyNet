@@ -13,19 +13,19 @@ where ``<my_config.yaml>`` is replaced by the name of your input configuration f
                  [--loglevel LOGLEVEL]
                  command config
 
-positional arguments:
-  command               command (info, parameterize, run)
-  config                input configuration file in YAML format
+  positional arguments:
+    command               command (info, parameterize, run)
+    config                input configuration file in YAML format
 
-options:
-  -h, --help            show this help message and exit
-  -lib LIB              local user library of molecular structures and parameterizations
-  -log LOG              diagnostic log file
-  -restart              restart in latest proj dir
-  --force-parameterization
-                        force GAFF parameterization of any input mol2 structures
-  --force-checkin       force check-in of any generated parameter files to the system library
-  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)
+  options:
+    -h, --help            show this help message and exit
+    -lib LIB              local user library of molecular structures and parameterizations
+    -log LOG              diagnostic log file
+    -restart              restart in latest proj dir
+    --force-parameterization
+                          force GAFF parameterization of any input mol2 structures
+    --force-checkin       force check-in of any generated parameter files to the system library
+    --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)
 
 What this does
 ^^^^^^^^^^^^^^
@@ -34,8 +34,8 @@ Invoking ``htpolynet`` always generates a ``proj-n`` subdirectory, where ``n`` i
 
 * ``molecules/``
 
-  All molecular parameterization files are written to ``molecules/parameterized`` if any are done; otherwise, this directory is populated with any molecule parameterizations (``*.gro``, ``*.top`` / ``*.itp``, and ``*.sea`` files).  (See :ref:`symmetry_equivalence` for a description of ``*.sea`` files.)
-* ``systems/``
+  All molecular parameterization files are written to ``molecules/parameterized`` if any are done; otherwise, this directory is populated with any molecule parameterizations (``*.gro``, ``*.top`` / ``*.itp``, and ``*.grx`` files) and miscellaneous outputs used in their parameterizations.
+* ``systems/``: This will eventually contain
 
   * ``init/``: The initial liquid system is built and simulated here.
   * ``iter-n``: The ``n``-th CURE iteration system is simulated here.
@@ -43,6 +43,6 @@ Invoking ``htpolynet`` always generates a ``proj-n`` subdirectory, where ``n`` i
 
 * ``plots/``
 
-  A variety of plots are put here.  Currently, only a plot of the density as a function of time from the densification of the initial liquid is put here.
+  A variety of plots are put here.  One is a plot of the density as a function of time from the densification of the initial liquid.  Rudimentary "graph" representations of residue-level connectivity structures are also made after each CURE iteration.
 
 HTPolyNet reports on the progress of execution by messages to the terminal console.  It also generates a lot of diagnostic output, which by default is saved in the file ``htpolynet_runtime_diagnostics.log``.  The diagnostic output is crucial for us to understand why an execution fails, so it is a good idea to keep it.  Examples of the console output and diagnostic logs are discussed in the :ref:`example_tutorials`.

@@ -48,20 +48,24 @@
 <p>Now we can generate the two required <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> files.</p>
 <section id="bisgma">
 <h2>BisGMA<a class="headerlink" href="#bisgma" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;CC(C)C(=O)OCC(O)COC1=CC=C(CC2=CC(OCC(O)COC(=O)C(C)C)=CC=C2)C=C1&quot;</span> <span class="p">|</span> <span class="se">\</span>
-        obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;GMA&quot;</span> <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;GMA    &quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot; 2 C &quot;</span>/<span class="s2">&quot; 2 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot;28 C &quot;</span>/<span class="s2">&quot;28 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot; 1 C &quot;</span>/<span class="s2">&quot; 1 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot;30 C &quot;</span>/<span class="s2">&quot;30 C4&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C5&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
-        sed s/<span class="s2">&quot;22 C &quot;</span>/<span class="s2">&quot;22 C6&quot;</span>/ &gt; GMA.mol2
+<img alt="../../_images/GMA-2d.png" src="../../_images/GMA-2d.png" />
+<p>Bisphenol A-glycidyl methacrylate, or “BisGMA”, is a crosslinking monomer that can be used in vinyl ester resin formulations.  In the structure above, we have shown the terminal double bonds as hydrogenated in accordance with our use of sacrificial hydrogens during cure.  In analogy with the poly(methyl styrene) example, we will call the radical carbon <code class="docutils literal notranslate"><span class="pre">C1</span></code> and its partner <code class="docutils literal notranslate"><span class="pre">C3</span></code>; since there are two double bonds that can react in bisGMA, we will call the other radical carbon <code class="docutils literal notranslate"><span class="pre">C2</span></code> and its partner <code class="docutils literal notranslate"><span class="pre">C4</span></code>.  There are four stereocenters: in the non-hydrogenated molecule, both <code class="docutils literal notranslate"><span class="pre">C1</span></code> and <code class="docutils literal notranslate"><span class="pre">C2</span></code> are chiral (even though they are not in the hydrogenated version, we must treat them as chiral since they will be if the monomer reacts!); and the two others we will term <code class="docutils literal notranslate"><span class="pre">C5</span></code> and <code class="docutils literal notranslate"><span class="pre">C6</span></code>.  The following command uses the SMILES string for bisGMA as input and correctly names the important atoms:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;CC(C)C(=O)OCC(COC1=CC=C(C=C1)C(C)(C)C2=CC=C(C=C2)OCC(COC(=O)C(C)C)O)O&quot;</span> <span class="p">|</span> <span class="se">\</span>
+  obabel -ismi -h --gen3d --title GMA -omol2 <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot; 1 C &quot;</span>/<span class="s2">&quot; 1 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot; 2 C &quot;</span>/<span class="s2">&quot; 2 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C5&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot;33 C &quot;</span>/<span class="s2">&quot;33 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot;34 C &quot;</span>/<span class="s2">&quot;34 C4&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot;28 C &quot;</span>/<span class="s2">&quot;28 C6&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+  sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;GMA    &quot;</span>/ &gt; GMA.mol2
 </pre></div>
 </div>
 </section>
 <section id="styrene">
 <h2>Styrene<a class="headerlink" href="#styrene" title="Permalink to this headline">¶</a></h2>
+<img alt="../../_images/STY-2d.png" src="../../_images/STY-2d.png" />
+<p>The command below generates a mol2 file for styrene in which the radical carbon is <code class="docutils literal notranslate"><span class="pre">C1</span></code> and its partner is <code class="docutils literal notranslate"><span class="pre">C2</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;C1=CC=CC=C1CC&quot;</span> <span class="p">|</span> <span class="se">\</span>
        obabel -ismi -omol2 -h --gen3d --title STY <span class="p">|</span> <span class="se">\</span>
        sed s/<span class="s2">&quot; 7 C &quot;</span>/<span class="s2">&quot; 7 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
