@@ -88,7 +88,7 @@ class HTPolyNet:
                 if mname not in self.molecules:
                     if self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin):
                         self.molecules[mname]=M
-                        logger.info(f'Generated {mname}.')
+                        logger.debug(f'Generated {mname}.')
             all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
 
         ''' Generate all reactions and products that result from invoking symmetry '''
@@ -124,7 +124,7 @@ class HTPolyNet:
                     self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                     assert M.get_origin()!='unparameterized'
                     self.molecules[mname]=M
-                    logger.info(f'Generated {mname}.')
+                    logger.debug(f'Generated {mname}.')
                 else:
                     logger.error(f'Chaining-implied molecule {mname} already on list of molecules.')
             self.molecules.update(new_molecules)

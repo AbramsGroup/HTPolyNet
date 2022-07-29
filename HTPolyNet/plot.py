@@ -44,7 +44,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     if avgafter>0:
         pass
     else:
-        avgafter=df['time (ps)']/2
+        avgafter=df['time (ps)'].iloc[-1]/2
     sdf=df[df['time (ps)']>avgafter]
     avg=sdf[c].mean()
     ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')

@@ -12,22 +12,22 @@ from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
 logger=logging.getLogger(__name__)
 
-def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
+def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kwargs):
     chargemethod=kwargs.get('charge_method','bcc')
-    logger.info(f'AmberTools is parameterizing {inputPrefix}.mol2')
-    mol2in=f'{inputPrefix}.mol2'
+    logger.info(f'AmberTools is parameterizing {inputPrefix}.{input_structure_format}')
+    structin=f'{inputPrefix}.{input_structure_format}'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
-    new_mol2in=mol2in
-    if mol2in==mol2out:
+    new_structin=structin
+    if structin==mol2out:
         # mol2pfx,mol2sfx=os.path.splitext(mol2in)
-        new_mol2in=inputPrefix+'-input.mol2'
-        logger.debug(f'Antechamber overwrites input {mol2in}; backing up to {new_mol2in}')
-        shutil.copy(f'{mol2in}',new_mol2in)
+        new_structin=inputPrefix+f'-input.{input_structure_format}'
+        logger.debug(f'Antechamber overwrites input {structin}; backing up to {new_structin}')
+        shutil.copy(structin,new_structin)
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
-    c=Command('antechamber',j=4,fi='mol2',fo='mol2',c=chargemethod,at='gaff',i=new_mol2in,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
+    c=Command('antechamber',j=4,fi=input_structure_format,fo='mol2',c=chargemethod,at='gaff',i=new_structin,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
     c.run(quiet=False)
     logger.debug(f'Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
@@ -37,12 +37,15 @@ def GAFFParameterize(inputPrefix,outputPrefix,**kwargs):
     # resName and resNum atom record fields over the antechamber-OUTPUT mol2 file
     # to generate the tleap-INPUT mol2 file.  Also, since tleap can't handle
     # wacky filenames, we'll hash the outputPrefix temporarily.
-    goodMol2=Coordinates.read_mol2(new_mol2in)
-    acOutMol2=Coordinates.read_mol2(mol2out)
-    adf=acOutMol2.A
-    adf['resName']=goodMol2.A['resName'].copy()
-    adf['resNum']=goodMol2.A['resNum'].copy()
-    goodMol2.A=adf
+    if input_structure_format=='mol2':
+        goodMol2=Coordinates.read_mol2(new_structin)
+        acOutMol2=Coordinates.read_mol2(mol2out)
+        adf=acOutMol2.A
+        adf['resName']=goodMol2.A['resName'].copy()
+        adf['resNum']=goodMol2.A['resNum'].copy()
+        goodMol2.A=adf
+    else:
+        goodMol2=Coordinates.read_mol2(mol2out)
     leapprefix=hashlib.shake_128(outputPrefix.encode("utf-8")).hexdigest(16).replace('e','x')
     goodMol2.write_mol2(f'{leapprefix}.mol2')
     logger.debug(f'Replacing string "{outputPrefix}" with hash "{leapprefix}" for leap input files.')

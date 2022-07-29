@@ -189,11 +189,11 @@ class Molecule:
             rval=rval and pfs.exists(os.path.join('molecules/parameterized',f'{self.name}.{ext}'))
         return rval
 
-    def parameterize(self,outname='',**kwargs):
-        assert os.path.exists(f'{self.name}.mol2'),f'Cannot parameterize molecule {self.name} without {self.name}.mol2 as input'
+    def parameterize(self,outname='',input_structure_format='mol2',**kwargs):
+        assert os.path.exists(f'{self.name}.{input_structure_format}'),f'Cannot parameterize molecule {self.name} without {self.name}.{input_structure_format} as input'
         if outname=='':
             outname=f'{self.name}'
-        GAFFParameterize(self.name,outname,**kwargs)
+        GAFFParameterize(self.name,outname,input_structure_format=input_structure_format,**kwargs)
         self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2',wrap_coords=False)
 
     def minimize(self,outname='',**kwargs):
@@ -229,6 +229,7 @@ class Molecule:
             R=self.generator
             self.TopoCoord=TopoCoord()
             logger.debug(f'Using reaction {R.name} to generate {self.name}.mol2.')
+            isf='mol2'
             resid_mapper=[]
             for ri in R.reactants.values():
                 new_reactant=deepcopy(available_molecules[ri])
@@ -251,12 +252,18 @@ class Molecule:
             self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{R.product}.grx')
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
         else:
-            logger.debug(f'Using input molecules/inputs/{self.name}.mol2 as a generator.')
-            pfs.checkout(f'molecules/inputs/{self.name}.mol2')
+            # this is a monomer; we need an input structure file to feed antechamber
+            input_structure_formats=['mol2','pdb']
+            isf=None
+            for isf in input_structure_formats:
+                if pfs.exists(f'molecules/inputs/{self.name}.{isf}'):
+                    logger.debug(f'Using input molecules/inputs/{self.name}.{isf} as a generator.')
+                    pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
+                    break
+            assert isf,'Error: no valid input structure file found'
 
         reactantName=self.name
-            # self.sequence.append(self.name)
-        self.parameterize(outname,**kwargs)
+        self.parameterize(outname,input_structure_format=isf,**kwargs)
         self.minimize(outname,**kwargs)
         self.set_sequence()
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)

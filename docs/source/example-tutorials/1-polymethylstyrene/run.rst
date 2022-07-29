@@ -10,14 +10,138 @@ Now, in our working directory ``my_pms_build``, we are ready to launch HTPolyNet
     $ cd my_pms_build
     $ ls 
     pMSTY.yaml  lib/
-    $ htpolynet run pMSTY.yaml -lib lib -log my_build.log --loglevel debug &
+    $ htpolynet run pMSTY.yaml &> info.log &
     [1]
     $ ls
-    pMSTY.yaml  my_build.log  lib/  proj-0/
+    pMSTY.yaml  htpolynet_runtime_diagnostics.log  info.log  lib/  proj-0/
     $
 
-HTPolyNet is instructed here to use the local ``./lib/`` as the molecule library; not including a value for ``-lib`` forces HTPolyNet to use the system library in the ``Library`` subpackage, and if you are making new molecules, they won't be there.  It is also instructive to write logging messages to ``my_build.log`` at the ``debug`` (most informative) level.  The build can take several minutes, so we are running it in the background.  All the action is happening in ``proj-0`` (and of course being reportedon in ``my_build.log``), so let's look in there.  
+HTPolyNet by default uses the local ``./lib/`` as the molecule library; not including a value for ``-lib`` forces HTPolyNet to use the system library in the ``Library`` subpackage, and if you are making new molecules, they won't be there.  It is also instructive to write console messages to ``info.log``.  Detailed diagnostic messages appear in ``htpolynet_runtime_diagnostics.log``.  The build can take several minutes, so we are running it in the background.  All the action is happening in ``proj-0`` (and of course being reported on in ``info.log``), so let's look in there.  
 
+Console output
+^^^^^^^^^^^^^^
+
+While the build is running, you can monitor its progress using ``tail -f`` on the ``info.log`` file.  A sample of its contents are shown below for an example build, where I show messages related to startup, template parameterization, liquid simulation, the first CURE iteration and the last CURE iteration, and finalization:
+
+.. code-block:: console
+
+    $ more info.log
+    INFO> HTPolyNet runtime begins.
+    INFO> System library is /home/cfa/Git/HTPolyNet/Library
+    INFO> User library is /home/cfa/htpolynet-tests/styrene/my_pms_build/lib
+    INFO> Ambertools commands available for HTPolyNet to use:
+    INFO>  antechamber (ver.   22.0) at antechamber                                       
+    INFO>        tleap (ver.   22.0) at tleap                                             
+    INFO>     parmchk2 (ver.   22.0) at parmchk2                                          
+    INFO> 
+    INFO> Configuration: pMSTY.yaml
+    INFO> ********** Generating molecular templates **********
+    INFO> ********** 3 molecules explicit in pMSTY.yaml **********
+    INFO> EMB, EMB1_1, EMBCC
+    INFO> AmberTools is parameterizing EMB.mol2
+    INFO> Generated EMB.
+    INFO> AmberTools is parameterizing EMB1_1.mol2
+    INFO> Generated EMB1_1.
+    INFO> AmberTools is parameterizing EMBCC.mol2
+    INFO> Generated EMBCC.
+    INFO> ********** 3 molecules implied by chaining **********
+    INFO> EMB~C1=C2~EMB1_1, EMB1_1~C1=C2~EMB, EMB1_1~C1=C2~EMB1_1
+    INFO> AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2
+    INFO> Generated EMB~C1=C2~EMB1_1.
+    INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2
+    INFO> Generated EMB1_1~C1=C2~EMB.
+    INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2
+    INFO> Generated EMB1_1~C1=C2~EMB1_1.
+    INFO> ********** Generated 6 molecule templates **********
+    INFO> System initial composition is EMB 100
+    INFO> Maximum conversion is 100 bonds.
+    INFO> System has 2100 atoms.
+    INFO> Initial density: 300.0 kg/m^3
+    INFO> Total mass: 1.996e-23 kg
+    INFO> Box aspect ratio: 1 x 1 x 1
+    INFO> -> Resulting initial box side lengths: 4.052 nm x 4.052 nm x 4.052 nm
+    INFO> Generated init.top and init.gro.
+    INFO> Conducting initial NPT MD densification simulation of liquid
+    INFO> Densified coordinates in npt-1.gro
+    INFO> time(ps)                   300.000000
+    INFO> density(kg/m^3)            824.783875
+    INFO> Running-average-density    772.877910
+    INFO> AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2
+    INFO> Generated EMB~C1=C2~EMB1_1.
+    INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2
+    INFO> Generated EMB1_1~C1=C2~EMB.
+    INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2
+    INFO> Generated EMB1_1~C1=C2~EMB1_1.
+    INFO> ********** Generated 6 molecule templates **********
+    INFO> System initial composition is EMB 100
+    INFO> Maximum conversion is 100 bonds.
+    INFO> System has 2100 atoms.
+    INFO> Initial density: 300.0 kg/m^3
+    INFO> Total mass: 1.996e-23 kg
+    INFO> Box aspect ratio: 1 x 1 x 1
+    INFO> -> Resulting initial box side lengths: 4.052 nm x 4.052 nm x 4.052 nm
+    INFO> Generated init.top and init.gro.
+    INFO> Conducting initial NPT MD densification simulation of liquid
+    INFO> Densified coordinates in npt-1.gro
+    INFO> time(ps)                   300.000000
+    INFO> density(kg/m^3)            824.783875
+    INFO> Running-average-density    772.877910
+    INFO> Rolling-average-10         821.042603
+    INFO> ********** Connect-Update-Relax-Equilibrate (CURE) begins **********
+    INFO> CURE iteration 1 begins in proj-0/systems/iter-1.
+    INFO> Bondsearch using radius 0.5 nm initiated.
+    INFO> CURE iteration 1 will generate 23 new bonds.
+    INFO> Topology update
+    INFO> Relaxation of 23 bonds; max distance 0.476 nm, max 1-4 distance 0.699 nm
+    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
+    INFO>          1              0.442                  0.656
+    INFO>          2              0.417                  0.632
+    INFO>          3              0.376                  0.603
+    INFO>          4              0.340                  0.572
+    INFO>          5              0.290                  0.514
+    INFO>          6              0.259                  0.486
+    INFO>          7              0.230                  0.465
+    INFO>          8              0.197                  0.447
+    INFO>          9              0.167                  0.422
+    INFO> Equilibration for 50000 steps at 300 K and 1.0 bar
+    INFO>   -> average density 766.016 kg/m^3
+    INFO> Current conversion: 0.23 (23/100)
+    ... (skipping)
+    INFO> CURE iteration 11 begins in proj-0/systems/iter-11.
+    INFO> Bondsearch using radius 0.5 nm initiated.
+    INFO> Increasing cutoff radius to 0.75 nm
+    INFO> CURE iteration 11 will generate 2 new bonds.
+    INFO> Prebond dragging initiated on 2 new bonds (max distance 0.617 nm).
+    INFO>      Stage  Max-distance (nm)
+    INFO>          1              0.602
+    INFO>          2              0.591
+    INFO>          3              0.541
+    INFO>          4              0.525
+    INFO>          5              0.486
+    INFO>          6              0.456
+    INFO>          7              0.443
+    INFO>          8              0.406
+    INFO>          9              0.376
+    INFO>         10              0.354
+    INFO>         11              0.329
+    INFO>         12              0.302
+    INFO> Topology update
+    INFO> Relaxation of 2 bonds; max distance 0.302 nm, max 1-4 distance 0.562 nm
+    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
+    INFO>          1              0.289                  0.547
+    INFO>          2              0.261                  0.493
+    INFO>          3              0.241                  0.466
+    INFO>          4              0.217                  0.459
+    INFO>          5              0.184                  0.440
+    INFO>          6              0.165                  0.413
+    INFO> Equilibration for 50000 steps at 300 K and 1.0 bar
+    INFO>   -> average density 812.544 kg/m^3
+    INFO> Current conversion: 0.96 (96/100)
+    INFO> Current conversion 0.96 exceeds desired conversion 0.95
+    INFO> Postcure equilibration.
+    INFO> CURE finished.
+    INFO> HTPolynet runtime ends.
+    
 Parameterization results
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -124,37 +248,39 @@ The ``gro`` and ``top`` files are sufficient Gromacs input.  The ``grx`` file co
 .. code-block:: console
 
     $ head 0-bondsearch.grx
-    globalIdx  z  cycle-idx reactantName  nreactions
-            1  0          1          EMB           0
-            2  0          1          EMB           0
-            3  0          1          EMB           0
-            4  0          0          EMB           0
-            5  0          1          EMB           0
-            6  0          1          EMB           0
-            7  0          1          EMB           0
-            8  1          0          EMB           0
-            9  1          0          EMB           0
+    globalIdx  z  nreactions reactantName  cycle  cycle_idx  chain  chain_idx
+            1  0           0          EMB      0          0     -1         -1
+            2  0           0          EMB      0          5     -1         -1
+            3  0           0          EMB      0          4     -1         -1
+            4  0           0          EMB     -1         -1     -1         -1
+            5  0           0          EMB      0          3     -1         -1
+            6  0           0          EMB      0          2     -1         -1
+            7  0           0          EMB      0          1     -1         -1
+            8  1           0          EMB     -1         -1      0          0
+            9  1           0          EMB     -1         -1      0          1
 
 
-``globalIdx`` corresponds to the ``nr`` attribute in the ``[ atoms ]`` directive of a ``top`` file, or the ``atomNum`` attribute of a ``gro`` file; it is just the global atom index.  ``z`` is the current value of the number of available crosslink bonds for that atom.  ``cycle-idx`` are unique indices indicated which ring the atom belongs to; rings are labeled uniquely within a residue.  ``reactantName`` is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.  Finally, ``nreactions`` simply reports the number of times this atom has participated in a reaction.
+``globalIdx`` corresponds to the ``nr`` attribute in the ``[ atoms ]`` directive of a ``top`` file, or the ``atomNum`` attribute of a ``gro`` file; it is just the global atom index.  ``z`` is the current value of the number of available crosslink bonds for that atom.  ``nreactions`` is the number of times the atom has reacted; by default the sum of ``z`` and ``nreactions`` must be a constant.  ``reactantName`` is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.  ``cycle`` indicates the index of the particular cyclic functional group the atom belongs to, with ``-1`` indicating "none"; here, atoms 1, 2, 3, 5, 6, and 7 all belong to cycle 0.  ``cycle_idx`` is the local index of that atom inside its cycle.  Similarly, ``chain`` indicates the index of the individual chain the atom belongs to; here, atoms 8 and 9 belong to chain 0.  ``chain_idx`` is the local index of that atom inside its chain.  Both ``cycle`` and ``chain`` are maintained as globally unique over the whole system.
 
-The ``csv`` file is a dump of the bonds "DataFrame":
+The ``csv`` file is a dump of the bonds "DataFrame" showing all the bonds that have been identified and that HTPolyNet intends to implement. If you must, it's good to examine it using ``pandas``:
 
 .. code-block:: console
 
-    $ head 0-bondsearch-bonds.csv 
-    ai aj reactantName order initial-distance
-    239 2025 EMB1_1 1 0.3540478556636094
-    953 975 EMB1_1 1 0.3623175402875217
-    29 1794 EMB1_1 1 0.3648054275912023
-    1037 1962 EMB1_1 1 0.3691002573827334
-    1835 2088 EMB1_1 1 0.37332157719585396
-    386 1269 EMB1_1 1 0.3767585433669687
-    512 30 EMB1_1 1 0.3765328670913073
-    1331 1941 EMB1_1 1 0.3772466886534595
-    134 1206 EMB1_1 1 0.381443311646698
+    $ python
+    Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import pandas as pd
+    >>> a=pd.read_csv('0-bondsearch-bonds.csv',sep=' ',header=0,index_col=None)
+    >>> a.head()
+         ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance
+    0  1184  57  1584  76   1.0       EMB1_1      1  0.352  BTRC.passed     True                False   True          0.352211
+    1   260  13   933  45   1.0       EMB1_1      1  0.354  BTRC.passed     True                False   True          0.353531
+    2   491  24  1290  62   1.0       EMB1_1      1  0.363  BTRC.passed     True                False   True          0.363341
+    3  1499  72   996  48   1.0       EMB1_1      1  0.369  BTRC.passed     True                False   True          0.368711
+    4  2003  96   681  33   1.0       EMB1_1      1  0.371  BTRC.passed     True                False   True          0.371210
+    >>>
 
-The first two columns are pre-bond global atom indices for each bond-designate; the third column is the name of the product molecule template of the reaction type that forms this bond, and the fourth column is the instantaneous interatomic distance in nm.  This is the first real output of the bond search.  Later, in the "connect" stage, atoms listed here will inherit their ``reactantName`` from this structure.
+``ai`` and ``aj`` are the global atom indices for each bond-designate; ``ri`` and ``rj`` are their respective residue indices.  For example, the first bond will join residue 57 to 76.  ``prob`` is the a priori probability that the bond was permitted, and it is just whatever is in the ``probability`` field of the reaction that defines this bond in the input file.  ``reactantName`` indicates the the product template of the bond.  ``order`` is the bond order, again just from the reaction input.  ``r`` is the instantaneous interatomic distance in nm.  ``result`` is a code indicating whether or not it passed the bond filters (all bonds that are saved to this file survived, so they will all have ``BTRC.passed`` as a ``result``.)  ``allowed``, ``remove-to-uncyclize``, and ``lucky`` are Booleans used in the bond filtering process, and their particular meanings are not crucial to understand here.  ``initial_distance`` is the same as ``r`` but it is the result of computing distances by a different module and is retained for consistency-checking.
 
 Dragging files
 --------------
@@ -198,10 +324,23 @@ The file ``2-update-complete-bonds.csv`` is just the initial ``0-bondsearch-bond
 
 .. code-block:: console
 
-    $ tail -1 2-update-complete-bonds.csv
-    1033 581 EMB1_1 1 0.4951201874292745
+    $ python
+    Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> import pandas as pd
+    >>> a=pd.read_csv('2-update-complete-bonds.csv',sep=' ',header=0,index_col=None)
+    >>> a.head()
+        ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance
+    0  1157  57  1547  76   1.0       EMB1_1      1  0.352  BTRC.passed     True                False   True          0.351936
+    1   254  13   911  45   1.0       EMB1_1      1  0.354  BTRC.passed     True                False   True          0.353531
+    2   478  24  1258  62   1.0       EMB1_1      1  0.363  BTRC.passed     True                False   True          0.363341
+    3  1464  72   972  48   1.0       EMB1_1      1  0.369  BTRC.passed     True                False   True          0.368711
+    4  1959  96   665  33   1.0       EMB1_1      1  0.371  BTRC.passed     True                False   True          0.371199
+    >>> 
 
-Again, the ``gro`` and ``top`` are proper Gromacs inputs, and the ``grx`` file tabulates all ``z``, ``cycle-idx``, ``reactantName``, and ``nreactions`` attributes.  The ``json`` file represents the graph structure of the network on a resid basis in JSON format.
+The bonds in ``2-update-complete-bonds.csv`` are the same as those in ``0-bondsearch-bonds.csv`` except with updated atom indices.  Note for instance that the first bond still indicates a linkage between residues 57 and 76.
+
+Again, the ``gro`` and ``top`` are proper Gromacs inputs, and the ``grx`` file tabulates all the "extended" attributes first presented when describing ``0-bondsearch.grx``.  The ``json`` file represents the graph structure of the network on a resid basis in JSON format.
 
 Relaxation files
 ----------------
