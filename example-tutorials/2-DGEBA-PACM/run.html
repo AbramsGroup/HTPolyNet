@@ -39,10 +39,8 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> my_dgeba_pacm_build
 <span class="gp">$ </span>ls
 <span class="go">DGE-PAC.yaml  lib/</span>
-<span class="gp">$ </span>htpolynet run DGE-PAC.yaml -lib lib -log my_build.log --loglevel debug <span class="p">&amp;</span>
+<span class="gp">$ </span>htpolynet run DGE-PAC.yaml <span class="p">&amp;</span>&gt; info.log <span class="p">&amp;</span>
 <span class="go">[1]</span>
-<span class="gp">$ </span>ls
-<span class="go">DGE-PAC.yaml  my_build.log  lib/  proj-0/</span>
 <span class="gp">$</span>
 </pre></div>
 </div>
@@ -127,7 +125,7 @@
 </pre></div>
 </div>
 <p>That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we’ll see a large number of files.  They can be divided into five “phases” for each CURE iteration:</p>
-<ol class="arabic simple" start="0">
+<ol class="arabic simple">
 <li><p>Bond search</p></li>
 <li><p>Dragging</p></li>
 <li><p>Topology update</p></li>

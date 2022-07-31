@@ -41,12 +41,10 @@
 <span class="go">pMSTY.yaml  lib/</span>
 <span class="gp">$ </span>htpolynet run pMSTY.yaml <span class="p">&amp;</span>&gt; info.log <span class="p">&amp;</span>
 <span class="go">[1]</span>
-<span class="gp">$ </span>ls
-<span class="go">pMSTY.yaml  htpolynet_runtime_diagnostics.log  info.log  lib/  proj-0/</span>
 <span class="gp">$</span>
 </pre></div>
 </div>
-<p>HTPolyNet by default uses the local <code class="docutils literal notranslate"><span class="pre">./lib/</span></code> as the molecule library; not including a value for <code class="docutils literal notranslate"><span class="pre">-lib</span></code> forces HTPolyNet to use the system library in the <code class="docutils literal notranslate"><span class="pre">Library</span></code> subpackage, and if you are making new molecules, they won’t be there.  It is also instructive to write console messages to <code class="docutils literal notranslate"><span class="pre">info.log</span></code>.  Detailed diagnostic messages appear in <code class="docutils literal notranslate"><span class="pre">htpolynet_runtime_diagnostics.log</span></code>.  The build can take several minutes, so we are running it in the background.  All the action is happening in <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> (and of course being reported on in <code class="docutils literal notranslate"><span class="pre">info.log</span></code>), so let’s look in there.</p>
+<p>HTPolyNet by default uses the local <code class="docutils literal notranslate"><span class="pre">./lib/</span></code> as the molecule library; not including a value for <code class="docutils literal notranslate"><span class="pre">-lib</span></code> forces HTPolyNet to use the system library in the <code class="docutils literal notranslate"><span class="pre">Library</span></code> subpackage, and if you are making new molecules, they won’t be there.  It is also instructive to write console messages to <code class="docutils literal notranslate"><span class="pre">info.log</span></code>.  Detailed diagnostic messages appear in <code class="docutils literal notranslate"><span class="pre">./htpolynet_runtime_diagnostics.log</span></code>.  The build can take several minutes, so we are running it in the background.  All the action is happening in <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> (and of course being reported on in <code class="docutils literal notranslate"><span class="pre">info.log</span></code>), so let’s look in there.</p>
 <section id="console-output">
 <h2>Console output<a class="headerlink" href="#console-output" title="Permalink to this headline">¶</a></h2>
 <p>While the build is running, you can monitor its progress using <code class="docutils literal notranslate"><span class="pre">tail</span> <span class="pre">-f</span></code> on the <code class="docutils literal notranslate"><span class="pre">info.log</span></code> file.  A sample of its contents are shown below for an example build, where I show messages related to startup, template parameterization, liquid simulation, the first CURE iteration and the last CURE iteration, and finalization:</p>
@@ -64,39 +62,13 @@
 <span class="go">INFO&gt; ********** 3 molecules explicit in pMSTY.yaml **********</span>
 <span class="go">INFO&gt; EMB, EMB1_1, EMBCC</span>
 <span class="go">INFO&gt; AmberTools is parameterizing EMB.mol2</span>
-<span class="go">INFO&gt; Generated EMB.</span>
 <span class="go">INFO&gt; AmberTools is parameterizing EMB1_1.mol2</span>
-<span class="go">INFO&gt; Generated EMB1_1.</span>
 <span class="go">INFO&gt; AmberTools is parameterizing EMBCC.mol2</span>
-<span class="go">INFO&gt; Generated EMBCC.</span>
 <span class="go">INFO&gt; ********** 3 molecules implied by chaining **********</span>
 <span class="go">INFO&gt; EMB~C1=C2~EMB1_1, EMB1_1~C1=C2~EMB, EMB1_1~C1=C2~EMB1_1</span>
 <span class="go">INFO&gt; AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2</span>
-<span class="go">INFO&gt; Generated EMB~C1=C2~EMB1_1.</span>
 <span class="go">INFO&gt; AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2</span>
-<span class="go">INFO&gt; Generated EMB1_1~C1=C2~EMB.</span>
 <span class="go">INFO&gt; AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2</span>
-<span class="go">INFO&gt; Generated EMB1_1~C1=C2~EMB1_1.</span>
-<span class="go">INFO&gt; ********** Generated 6 molecule templates **********</span>
-<span class="go">INFO&gt; System initial composition is EMB 100</span>
-<span class="go">INFO&gt; Maximum conversion is 100 bonds.</span>
-<span class="go">INFO&gt; System has 2100 atoms.</span>
-<span class="go">INFO&gt; Initial density: 300.0 kg/m^3</span>
-<span class="go">INFO&gt; Total mass: 1.996e-23 kg</span>
-<span class="go">INFO&gt; Box aspect ratio: 1 x 1 x 1</span>
-<span class="go">INFO&gt; -&gt; Resulting initial box side lengths: 4.052 nm x 4.052 nm x 4.052 nm</span>
-<span class="go">INFO&gt; Generated init.top and init.gro.</span>
-<span class="go">INFO&gt; Conducting initial NPT MD densification simulation of liquid</span>
-<span class="go">INFO&gt; Densified coordinates in npt-1.gro</span>
-<span class="go">INFO&gt; time(ps)                   300.000000</span>
-<span class="go">INFO&gt; density(kg/m^3)            824.783875</span>
-<span class="go">INFO&gt; Running-average-density    772.877910</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2</span>
-<span class="go">INFO&gt; Generated EMB~C1=C2~EMB1_1.</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2</span>
-<span class="go">INFO&gt; Generated EMB1_1~C1=C2~EMB.</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2</span>
-<span class="go">INFO&gt; Generated EMB1_1~C1=C2~EMB1_1.</span>
 <span class="go">INFO&gt; ********** Generated 6 molecule templates **********</span>
 <span class="go">INFO&gt; System initial composition is EMB 100</span>
 <span class="go">INFO&gt; Maximum conversion is 100 bonds.</span>
@@ -168,6 +140,7 @@
 <span class="go">INFO&gt; HTPolynet runtime ends.</span>
 </pre></div>
 </div>
+<p>This output should give you some idea of the flow of HTPolyNet.  The first major task is generating molecular templates; in this case, that means the molecules that are named explicitly in the configuration file (either as part of <code class="docutils literal notranslate"><span class="pre">initial_composition</span></code> or as a reactant or product of any reaction).  It then builds the simulation box and runs a “densification” MD simulation.  Then, CURE iterations start.  I show here the output from the first iteration and the last iteration only.  Note in the last iteration that the search radius was increased by one increment (0.25 nm), and the new bonds had to be pre-dragged before being formed and relaxed.  The conversion at that point is 96%, so the algorithm terminates.  Let’s look inside the project directory structure to find more results.</p>
 </section>
 <section id="parameterization-results">
 <h2>Parameterization results<a class="headerlink" href="#parameterization-results" title="Permalink to this headline">¶</a></h2>
@@ -198,7 +171,7 @@
 </section>
 <section id="liquid-generation-and-densification">
 <h2>Liquid generation and densification<a class="headerlink" href="#liquid-generation-and-densification" title="Permalink to this headline">¶</a></h2>
-<p>After a few more minutes, when the densification MD simulation has finished, let’s back out of the <code class="docutils literal notranslate"><span class="pre">molecules/parameterized/</span></code> subdirectory and drop into <code class="docutils literal notranslate"><span class="pre">systems/init/</span></code>:</p>
+<p>Let’s back out of the <code class="docutils literal notranslate"><span class="pre">molecules/parameterized/</span></code> subdirectory and drop into <code class="docutils literal notranslate"><span class="pre">systems/init/</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ../../systems/init
 <span class="gp">$ </span>ls
 <span class="go">EMB.gro                 mdout.mdp</span>
@@ -324,12 +297,19 @@
 <span class="go">&gt;&gt;&gt; import pandas as pd</span>
 <span class="go">&gt;&gt;&gt; a=pd.read_csv(&#39;2-update-complete-bonds.csv&#39;,sep=&#39; &#39;,header=0,index_col=None)</span>
 <span class="go">&gt;&gt;&gt; a.head()</span>
-<span class="go">    ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance</span>
+<span class="go">     ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance</span>
 <span class="go">0  1157  57  1547  76   1.0       EMB1_1      1  0.352  BTRC.passed     True                False   True          0.351936</span>
 <span class="go">1   254  13   911  45   1.0       EMB1_1      1  0.354  BTRC.passed     True                False   True          0.353531</span>
 <span class="go">2   478  24  1258  62   1.0       EMB1_1      1  0.363  BTRC.passed     True                False   True          0.363341</span>
 <span class="go">3  1464  72   972  48   1.0       EMB1_1      1  0.369  BTRC.passed     True                False   True          0.368711</span>
 <span class="go">4  1959  96   665  33   1.0       EMB1_1      1  0.371  BTRC.passed     True                False   True          0.371199</span>
+<span class="go">&gt;&gt;&gt; a.tail()</span>
+<span class="go">      ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance</span>
+<span class="go">18  1298  64  1238  61   1.0       EMB1_1      1  0.429  BTRC.passed     True                False   True          0.428661</span>
+<span class="go">19   334  17   645  32   1.0       EMB1_1      1  0.439  BTRC.passed     True                False   True          0.438782</span>
+<span class="go">20   991  49   768  38   1.0       EMB1_1      1  0.440  BTRC.passed     True                False   True          0.439869</span>
+<span class="go">21   294  15  1117  55   1.0       EMB1_1      1  0.470  BTRC.passed     True                False   True          0.470325</span>
+<span class="go">22   747  37   275  14   1.0       EMB1_1      1  0.476  BTRC.passed     True                False   True          0.475644</span>
 <span class="go">&gt;&gt;&gt;</span>
 </pre></div>
 </div>
@@ -386,17 +366,20 @@
 </pre></div>
 </div>
 <p>The attenuation is managed by the sequential <code class="docutils literal notranslate"><span class="pre">top</span></code> files.  Let’s look at the entry for a particular bond (between atoms 581 and 1033) in each stage’s <code class="docutils literal notranslate"><span class="pre">top</span></code> file’s <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> directive:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>grep <span class="s2">&quot;^581 1033&quot;</span> <span class="m">3</span>-relax-stage-?.top<span class="p">|</span>awk <span class="s1">&#39;{if ($3==1) print $0}&#39;</span>
-<span class="go">3-relax-stage-1.top:581 1033 1 0.43822515619106206 41965.52</span>
-<span class="go">3-relax-stage-2.top:581 1033 1 0.3813301249528497 83931.04</span>
-<span class="go">3-relax-stage-3.top:581 1033 1 0.32443509371463725 125896.56</span>
-<span class="go">3-relax-stage-4.top:581 1033 1 0.2675400624764248 167862.08</span>
-<span class="go">3-relax-stage-5.top:581 1033 1 0.21064503123821238 209827.6</span>
-<span class="go">3-relax-stage-6.top:581 1033 1 0.15375 251793.12</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>grep <span class="s2">&quot;^275 747&quot;</span> <span class="m">3</span>-relax-stage-?.top<span class="p">|</span>awk <span class="s1">&#39;{if ($3==1) print $0}&#39;</span>
+<span class="go">3-relax-stage-1.top:275 747 1 0.4398777993494193 27977.013333333332</span>
+<span class="go">3-relax-stage-2.top:275 747 1 0.4041118244307419 55954.026666666665</span>
+<span class="go">3-relax-stage-3.top:275 747 1 0.36834584951206445 83931.04</span>
+<span class="go">3-relax-stage-4.top:275 747 1 0.33257987459338706 111908.05333333333</span>
+<span class="go">3-relax-stage-5.top:275 747 1 0.2968138996747096 139885.06666666668</span>
+<span class="go">3-relax-stage-6.top:275 747 1 0.2610479247560322 167862.08</span>
+<span class="go">3-relax-stage-7.top:275 747 1 0.22528194983735483 195839.09333333332</span>
+<span class="go">3-relax-stage-8.top:275 747 1 0.18951597491867744 223816.10666666666</span>
+<span class="go">3-relax-stage-9.top:275 747 1 0.15375 251793.12</span>
 <span class="gp">$</span>
 </pre></div>
 </div>
-<p>In a <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> topology directive, the 4th and 5th columns are <code class="docutils literal notranslate"><span class="pre">b0</span></code> and <code class="docutils literal notranslate"><span class="pre">kt</span></code> harmonic bond parameters.  In the stage-6 <code class="docutils literal notranslate"><span class="pre">top</span></code>, we see these parameters at their proper force-field values for a C-C single bond.  Notice how the value of the distance parameter <code class="docutils literal notranslate"><span class="pre">b0</span></code> begins at a large initial value and linearly decreases toward the target (but never by <em>more</em> than an increment of 0.075 nm), while the spring constant <code class="docutils literal notranslate"><span class="pre">kt</span></code> starts low and increases linearly toward its target.</p>
+<p>In a <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> topology directive, the 4th and 5th columns are THE <code class="docutils literal notranslate"><span class="pre">b0</span></code> and <code class="docutils literal notranslate"><span class="pre">kt</span></code> harmonic bond parameters.  In the stage-9 <code class="docutils literal notranslate"><span class="pre">top</span></code>, we see these parameters at their proper force-field values for a C-C single bond.  Notice how the value of the distance parameter <code class="docutils literal notranslate"><span class="pre">b0</span></code> begins at a large initial value and linearly decreases toward the target (but never by <em>more</em> than an increment of 0.075 nm), while the spring constant <code class="docutils literal notranslate"><span class="pre">kt</span></code> starts low and increases linearly toward its target.</p>
 </section>
 <section id="equilibration-files">
 <h3>Equilibration files<a class="headerlink" href="#equilibration-files" title="Permalink to this headline">¶</a></h3>

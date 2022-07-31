@@ -12,11 +12,9 @@ Now, in our working directory ``my_pms_build``, we are ready to launch HTPolyNet
     pMSTY.yaml  lib/
     $ htpolynet run pMSTY.yaml &> info.log &
     [1]
-    $ ls
-    pMSTY.yaml  htpolynet_runtime_diagnostics.log  info.log  lib/  proj-0/
     $
 
-HTPolyNet by default uses the local ``./lib/`` as the molecule library; not including a value for ``-lib`` forces HTPolyNet to use the system library in the ``Library`` subpackage, and if you are making new molecules, they won't be there.  It is also instructive to write console messages to ``info.log``.  Detailed diagnostic messages appear in ``htpolynet_runtime_diagnostics.log``.  The build can take several minutes, so we are running it in the background.  All the action is happening in ``proj-0`` (and of course being reported on in ``info.log``), so let's look in there.  
+HTPolyNet by default uses the local ``./lib/`` as the molecule library; not including a value for ``-lib`` forces HTPolyNet to use the system library in the ``Library`` subpackage, and if you are making new molecules, they won't be there.  It is also instructive to write console messages to ``info.log``.  Detailed diagnostic messages appear in ``./htpolynet_runtime_diagnostics.log``.  The build can take several minutes, so we are running it in the background.  All the action is happening in ``proj-0`` (and of course being reported on in ``info.log``), so let's look in there.  
 
 Console output
 ^^^^^^^^^^^^^^
@@ -39,39 +37,13 @@ While the build is running, you can monitor its progress using ``tail -f`` on th
     INFO> ********** 3 molecules explicit in pMSTY.yaml **********
     INFO> EMB, EMB1_1, EMBCC
     INFO> AmberTools is parameterizing EMB.mol2
-    INFO> Generated EMB.
     INFO> AmberTools is parameterizing EMB1_1.mol2
-    INFO> Generated EMB1_1.
     INFO> AmberTools is parameterizing EMBCC.mol2
-    INFO> Generated EMBCC.
     INFO> ********** 3 molecules implied by chaining **********
     INFO> EMB~C1=C2~EMB1_1, EMB1_1~C1=C2~EMB, EMB1_1~C1=C2~EMB1_1
     INFO> AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2
-    INFO> Generated EMB~C1=C2~EMB1_1.
     INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2
-    INFO> Generated EMB1_1~C1=C2~EMB.
     INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2
-    INFO> Generated EMB1_1~C1=C2~EMB1_1.
-    INFO> ********** Generated 6 molecule templates **********
-    INFO> System initial composition is EMB 100
-    INFO> Maximum conversion is 100 bonds.
-    INFO> System has 2100 atoms.
-    INFO> Initial density: 300.0 kg/m^3
-    INFO> Total mass: 1.996e-23 kg
-    INFO> Box aspect ratio: 1 x 1 x 1
-    INFO> -> Resulting initial box side lengths: 4.052 nm x 4.052 nm x 4.052 nm
-    INFO> Generated init.top and init.gro.
-    INFO> Conducting initial NPT MD densification simulation of liquid
-    INFO> Densified coordinates in npt-1.gro
-    INFO> time(ps)                   300.000000
-    INFO> density(kg/m^3)            824.783875
-    INFO> Running-average-density    772.877910
-    INFO> AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2
-    INFO> Generated EMB~C1=C2~EMB1_1.
-    INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2
-    INFO> Generated EMB1_1~C1=C2~EMB.
-    INFO> AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2
-    INFO> Generated EMB1_1~C1=C2~EMB1_1.
     INFO> ********** Generated 6 molecule templates **********
     INFO> System initial composition is EMB 100
     INFO> Maximum conversion is 100 bonds.
@@ -142,6 +114,8 @@ While the build is running, you can monitor its progress using ``tail -f`` on th
     INFO> CURE finished.
     INFO> HTPolynet runtime ends.
     
+This output should give you some idea of the flow of HTPolyNet.  The first major task is generating molecular templates; in this case, that means the molecules that are named explicitly in the configuration file (either as part of ``initial_composition`` or as a reactant or product of any reaction).  It then builds the simulation box and runs a "densification" MD simulation.  Then, CURE iterations start.  I show here the output from the first iteration and the last iteration only.  Note in the last iteration that the search radius was increased by one increment (0.25 nm), and the new bonds had to be pre-dragged before being formed and relaxed.  The conversion at that point is 96\%, so the algorithm terminates.  Let's look inside the project directory structure to find more results.
+
 Parameterization results
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -177,7 +151,7 @@ The filesname in single-quotes are the ones corresponding to the automatically "
 Liquid generation and densification
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-After a few more minutes, when the densification MD simulation has finished, let's back out of the ``molecules/parameterized/`` subdirectory and drop into ``systems/init/``:
+Let's back out of the ``molecules/parameterized/`` subdirectory and drop into ``systems/init/``:
 
 .. code-block:: console
 
@@ -330,13 +304,20 @@ The file ``2-update-complete-bonds.csv`` is just the initial ``0-bondsearch-bond
     >>> import pandas as pd
     >>> a=pd.read_csv('2-update-complete-bonds.csv',sep=' ',header=0,index_col=None)
     >>> a.head()
-        ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance
+         ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance
     0  1157  57  1547  76   1.0       EMB1_1      1  0.352  BTRC.passed     True                False   True          0.351936
     1   254  13   911  45   1.0       EMB1_1      1  0.354  BTRC.passed     True                False   True          0.353531
     2   478  24  1258  62   1.0       EMB1_1      1  0.363  BTRC.passed     True                False   True          0.363341
     3  1464  72   972  48   1.0       EMB1_1      1  0.369  BTRC.passed     True                False   True          0.368711
     4  1959  96   665  33   1.0       EMB1_1      1  0.371  BTRC.passed     True                False   True          0.371199
-    >>> 
+    >>> a.tail()
+          ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance
+    18  1298  64  1238  61   1.0       EMB1_1      1  0.429  BTRC.passed     True                False   True          0.428661
+    19   334  17   645  32   1.0       EMB1_1      1  0.439  BTRC.passed     True                False   True          0.438782
+    20   991  49   768  38   1.0       EMB1_1      1  0.440  BTRC.passed     True                False   True          0.439869
+    21   294  15  1117  55   1.0       EMB1_1      1  0.470  BTRC.passed     True                False   True          0.470325
+    22   747  37   275  14   1.0       EMB1_1      1  0.476  BTRC.passed     True                False   True          0.475644
+    >>>
 
 The bonds in ``2-update-complete-bonds.csv`` are the same as those in ``0-bondsearch-bonds.csv`` except with updated atom indices.  Note for instance that the first bond still indicates a linkage between residues 57 and 76.
 
@@ -398,16 +379,19 @@ The attenuation is managed by the sequential ``top`` files.  Let's look at the e
 
 .. code-block:: console
 
-    $ grep "^581 1033" 3-relax-stage-?.top|awk '{if ($3==1) print $0}'
-    3-relax-stage-1.top:581 1033 1 0.43822515619106206 41965.52
-    3-relax-stage-2.top:581 1033 1 0.3813301249528497 83931.04
-    3-relax-stage-3.top:581 1033 1 0.32443509371463725 125896.56
-    3-relax-stage-4.top:581 1033 1 0.2675400624764248 167862.08
-    3-relax-stage-5.top:581 1033 1 0.21064503123821238 209827.6
-    3-relax-stage-6.top:581 1033 1 0.15375 251793.12
+    $ grep "^275 747" 3-relax-stage-?.top|awk '{if ($3==1) print $0}'
+    3-relax-stage-1.top:275 747 1 0.4398777993494193 27977.013333333332
+    3-relax-stage-2.top:275 747 1 0.4041118244307419 55954.026666666665
+    3-relax-stage-3.top:275 747 1 0.36834584951206445 83931.04
+    3-relax-stage-4.top:275 747 1 0.33257987459338706 111908.05333333333
+    3-relax-stage-5.top:275 747 1 0.2968138996747096 139885.06666666668
+    3-relax-stage-6.top:275 747 1 0.2610479247560322 167862.08
+    3-relax-stage-7.top:275 747 1 0.22528194983735483 195839.09333333332
+    3-relax-stage-8.top:275 747 1 0.18951597491867744 223816.10666666666
+    3-relax-stage-9.top:275 747 1 0.15375 251793.12
     $
 
-In a ``[ bonds ]`` topology directive, the 4th and 5th columns are ``b0`` and ``kt`` harmonic bond parameters.  In the stage-6 ``top``, we see these parameters at their proper force-field values for a C-C single bond.  Notice how the value of the distance parameter ``b0`` begins at a large initial value and linearly decreases toward the target (but never by *more* than an increment of 0.075 nm), while the spring constant ``kt`` starts low and increases linearly toward its target.  
+In a ``[ bonds ]`` topology directive, the 4th and 5th columns are THE ``b0`` and ``kt`` harmonic bond parameters.  In the stage-9 ``top``, we see these parameters at their proper force-field values for a C-C single bond.  Notice how the value of the distance parameter ``b0`` begins at a large initial value and linearly decreases toward the target (but never by *more* than an increment of 0.075 nm), while the spring constant ``kt`` starts low and increases linearly toward its target.  
 
 Equilibration files
 -------------------

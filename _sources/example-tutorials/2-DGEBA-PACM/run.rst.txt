@@ -10,10 +10,8 @@ Now, in our working directory ``my_dgeba_pacm_build``, we are ready to launch HT
     $ cd my_dgeba_pacm_build
     $ ls 
     DGE-PAC.yaml  lib/
-    $ htpolynet run DGE-PAC.yaml -lib lib -log my_build.log --loglevel debug &
+    $ htpolynet run DGE-PAC.yaml &> info.log &
     [1]
-    $ ls
-    DGE-PAC.yaml  my_build.log  lib/  proj-0/
     $
 
 HTPolyNet is instructed here to use the local ``./lib/`` as the molecule library; not including a value for ``-lib`` forces HTPolyNet to use the system library in the ``Library`` subpackage, and if you are making new molecules, they won't be there.  It is also instructed to write logging messages to ``my_build.log`` at the ``debug`` (most informative) level.  The build can take several hours, so we are running it in the background.  All the action is happening in ``proj-0`` (and of course being reportedon in ``my_build.log``), so let's look in there.  
@@ -116,11 +114,11 @@ The next major part of the build is the first CURE iteration, which is the most 
 
 That is an auxiliary file storing a link-cell index for each relevant atom (HTPolyNet uses a link-cell algorithm to perform the bond searching).  However, once the bond search is complete and any dragging or relaxation is done, we'll see a large number of files.  They can be divided into five "phases" for each CURE iteration:
 
-0. Bond search
-1. Dragging
-2. Topology update
-3. Relaxation
-4. Equilibration
+1. Bond search
+2. Dragging
+3. Topology update
+4. Relaxation
+5. Equilibration
 
 Names of files corresponding to phases 0-4 all begin with their respective digits.  Names of files that do not begin with a digit are "auxiliary".  Let's consider the files in the seven states.
 
