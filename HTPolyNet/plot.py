@@ -5,6 +5,9 @@ import pandas as pd
 import logging
 import networkx as nx
 from datetime import datetime
+from glob import glob
+import argparse as ap
+
 logger=logging.getLogger(__name__)
 
 # prevents "RuntimeError: main thread is not in main loop" tk bug
@@ -41,13 +44,16 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
         for seg in range(nseg):
             ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=(c if seg==0 else None),color=cmap(seg/nseg))
             beg=chkpt[seg]
-    if avgafter>0:
-        pass
+    if 'avgafter' in kwargs:
+        if avgafter>0:
+            pass
+        else:
+            avgafter=df['time (ps)'].iloc[-1]/2
+        sdf=df[df['time (ps)']>avgafter]
+        avg=sdf[c].mean()
+        ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
     else:
-        avgafter=df['time (ps)'].iloc[-1]/2
-    sdf=df[df['time (ps)']>avgafter]
-    avg=sdf[c].mean()
-    ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
+        avg=df[c].mean()
     if not yunits:
         plt.ylabel(qty)
     else:
@@ -71,29 +77,31 @@ def network_graph(G,filename,**kwargs):
 def cure_graph(logfiles,filename,**kwargs):
     xmax=kwargs.get('xmax',-1)
     logging.disable(logging.DEBUG)
-    df={}
+    df:dict[pd.DataFrame]={}
     for logfile in logfiles:
         with open(logfile,'r') as f:
             lines=f.read().split('\n')
-        # extracting lines of this format:
-        # 2022-06-06 10:49:38,673 Iter 52 current conversion: 0.927 (927/1000)
+        # extracting lines of these formats:
+        # 2022-07-28 13:28:52,379 HTPolyNet.HTPolyNet.CURE INFO> ********** Connect-Update-Relax-Equilibrate (CURE) begins
+        # 2022-07-28 13:13:37,328 HTPolyNet.HTPolyNet.CURE INFO> Current conversion: 0.26 (26/100)
         data={}
         data['time']=[]
         data['conv']=[]
-        data['iter']=[]
         for l in lines:
-            # CURE iteration 1/150 begins in
             tok=l.split()
-            if len(tok)>2:
-                if len(tok)>6:
-                    if tok[2]=='CURE' and tok[5]=='begins' and tok[4][0:2]=='1/':
-                        data['time'].append(datetime.strptime(' '.join(tok[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
-                        data['conv'].append(0.0)
-                        data['iter'].append(0)
-                if tok[2]=='Iter' and tok[4]=='current':
-                    data['time'].append(datetime.strptime(' '.join(tok[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
-                    data['conv'].append(float(tok[6]))
-                    data['iter'].append(int(tok[3]))
+            ntoks=len(tok)
+            if ntoks<8:
+                continue
+            if tok[2]!='HTPolyNet.HTPolyNet.CURE':
+                continue
+            if tok[3]!='INFO>':
+                continue
+            if tok[4]=='**********' and tok[5]=='Connect-Update-Relax-Equilibrate' and tok[7]=='begins':
+                data['time'].append(datetime.strptime(' '.join(tok[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
+                data['conv'].append(0.0)
+            if tok[4]=='Current' and tok[5]=='conversion:':
+                data['time'].append(datetime.strptime(' '.join(tok[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
+                data['conv'].append(float(tok[6]))
         df[logfile]=pd.DataFrame(data)
         df[logfile]['elapsed']=(df[logfile]['time']-df[logfile].loc[0]['time']).astype(int)/1.e9/3600.0
     fig,ax=plt.subplots(1,2,sharex=True,figsize=(10,6))
@@ -106,7 +114,53 @@ def cure_graph(logfiles,filename,**kwargs):
         ax[0].set_xlim([0,xmax])
     for logfile in logfiles:
         ax[0].plot(df[logfile]['elapsed'],df[logfile]['conv'])
-        ax[1].plot(df[logfile]['elapsed'],df[logfile]['iter'])
+        ax[1].plot(df[logfile]['elapsed'],df[logfile].index+1)
     plt.savefig(filename)
     plt.close(fig)
     logging.disable(logging.NOTSET)
+
+def density_evolution():
+    D=glob('proj-[0-9]') + glob('proj-[1-9][0-9]')
+    for e in D:
+        d=os.path.join(e,'systems')
+        edrs=[os.path.join(d,'init/npt-1')]
+        iter=1
+        while os.path.exists(os.path.join(d,f'iter-{iter}')):
+            print(iter)
+            this_stgs=[]
+            dstg=1
+            while os.path.exists(os.path.join(d,f'iter-{iter}/1-drag-stage-{dstg}-npt.edr')):
+                this_stgs.append(os.path.join(d,f'iter-{iter}/1-drag-stage-{dstg}-npt'))
+                edrs.append(os.path.join(d,f'iter-{iter}/1-drag-stage-{dstg}-npt'))
+                dstg+=1
+            rstg=1
+            while os.path.exists(os.path.join(d,f'iter-{iter}/3-relax-stage-{rstg}-npt.edr')):
+                this_stgs.append(os.path.join(d,f'iter-{iter}/3-relax-stage-{rstg}-npt'))
+                edrs.append(os.path.join(d,f'iter-{iter}/3-relax-stage-{rstg}-npt'))
+                rstg+=1
+            this_stgs.append(os.path.join(d,f'iter-{iter}/4-equilibrate-post'))
+            edrs.append(os.path.join(d,f'iter-{iter}/4-equilibrate-post'))
+            trace('Density',this_stgs,outfile=os.path.join(d,f'iter-{iter}/density-trace.png'),size=(16,4),yunits='kg/m3')
+            iter+=1
+
+        rstg=1
+        this_stgs=[]
+        while os.path.exists(os.path.join(d,f'postcure/5-relax-stage-{rstg}-npt.edr')):
+            this_stgs.append(os.path.join(d,f'postcure/5-relax-stage-{rstg}-npt'))
+            edrs.append(os.path.join(d,f'postcure/5-relax-stage-{rstg}-npt'))
+            rstg+=1
+        this_stgs.append(os.path.join(d,f'postcure/6-equilibrate-post'))
+        edrs.append(os.path.join(d,f'postcure/6-equilibrate-post'))
+        print(this_stgs)
+        trace('Density',this_stgs,outfile=os.path.join(d,f'postcure/density-trace.png'),size=(16,4),yunits='kg/m3')
+        #print(edrs)    
+        trace('Density',edrs,outfile=f'{e}-density.png',size=(16,4),yunits='kg/m3')
+    
+def htpolynet_cure_plots():
+    parser=ap.ArgumentParser()
+    parser.add_argument('log',type=str,default=None,help='name of diagnostic log file')
+    parser.add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
+    args=parser.parse_args()
+    log=args.log
+    cure_graph([log],args.plotfile)
+    density_evolution()

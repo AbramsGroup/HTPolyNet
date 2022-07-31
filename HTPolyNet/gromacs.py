@@ -146,10 +146,7 @@ def gmx_energy_trace(edr,names=[],**kwargs):
         colnames.insert(0,'time (ps)')
         data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
         data.iloc[:,0]+=xshift
-    #    print(data.iloc[0,0])
-        # cnames=['time (ps)'].extend(names)
-        # if len(names)==len(data.columns):
-        #     data.columns=cnames
+        os.remove('gmx.in')
         return data
     else:
         return pd.DataFrame()
