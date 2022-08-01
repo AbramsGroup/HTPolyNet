@@ -21,7 +21,7 @@ Now we can generate the two required ``*.mol2`` files.
 BisGMA
 ^^^^^^
 
-.. image:: GMA-2d.png
+.. image:: GMA.png
 
 Bisphenol A-glycidyl methacrylate, or "BisGMA", is a crosslinking monomer that can be used in vinyl ester resin formulations.  In the structure above, we have shown the terminal double bonds as hydrogenated in accordance with our use of sacrificial hydrogens during cure.  In analogy with the poly(methyl styrene) example, we will call the radical carbon ``C1`` and its partner ``C3``; since there are two double bonds that can react in bisGMA, we will call the other radical carbon ``C2`` and its partner ``C4``.  There are four stereocenters: in the non-hydrogenated molecule, both ``C1`` and ``C2`` are chiral (even though they are not in the hydrogenated version, we must treat them as chiral since they will be if the monomer reacts!); and the two others we will term ``C5`` and ``C6``.  The following command uses the SMILES string for bisGMA as input and correctly names the important atoms:
 
@@ -40,7 +40,7 @@ Bisphenol A-glycidyl methacrylate, or "BisGMA", is a crosslinking monomer that c
 Styrene
 ^^^^^^^
 
-.. image:: STY-2d.png
+.. image:: STY.png
 
 The command below generates a mol2 file for styrene in which the radical carbon is ``C1`` and its partner is ``C2``:
 
@@ -173,4 +173,4 @@ The command below generates a mol2 file for styrene in which the radical carbon 
             41    15    40    1
             42    15    41    1
 
-    The next thing we consider is how to create the :ref:`reaction dictionaries <dgeba_reaction_dictionaries>` necessary to describe the crosslinking chemistry.
+The next thing we consider is how to create the :ref:`reaction dictionaries <ve_reaction_dictionaries>` necessary to describe the crosslinking chemistry.
