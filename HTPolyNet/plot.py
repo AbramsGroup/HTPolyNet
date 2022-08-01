@@ -81,6 +81,7 @@ def cure_graph(logfiles,filename,**kwargs):
     for logfile in logfiles:
         with open(logfile,'r') as f:
             lines=f.read().split('\n')
+        print(f'read {len(lines)} lines from {logfile}')
         # extracting lines of these formats:
         # 2022-07-28 13:28:52,379 HTPolyNet.HTPolyNet.CURE INFO> ********** Connect-Update-Relax-Equilibrate (CURE) begins
         # 2022-07-28 13:13:37,328 HTPolyNet.HTPolyNet.CURE INFO> Current conversion: 0.26 (26/100)
@@ -92,7 +93,7 @@ def cure_graph(logfiles,filename,**kwargs):
             ntoks=len(tok)
             if ntoks<8:
                 continue
-            if tok[2]!='HTPolyNet.HTPolyNet.CURE':
+            if tok[2]!='HTPolyNet.runtime.CURE' and tok[2]!='HTPolyNet.HTPolyNet.CURE':
                 continue
             if tok[3]!='INFO>':
                 continue
@@ -156,11 +157,3 @@ def density_evolution():
         #print(edrs)    
         trace('Density',edrs,outfile=f'{e}-density.png',size=(16,4),yunits='kg/m3')
     
-def htpolynet_cure_plots():
-    parser=ap.ArgumentParser()
-    parser.add_argument('log',type=str,default=None,help='name of diagnostic log file')
-    parser.add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
-    args=parser.parse_args()
-    log=args.log
-    cure_graph([log],args.plotfile)
-    density_evolution()
