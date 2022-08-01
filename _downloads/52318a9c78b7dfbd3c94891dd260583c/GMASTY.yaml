@@ -1,0 +1,115 @@
+Title: vinyl-ester-styrene
+gmx: 'gmx'
+gmx_options: '-quiet -nobackup'
+initial_density: 150.0  # kg/m3
+densification_temperature: 300
+densification_pressure: 10
+densification_steps: 150000
+CURE_initial_search_radius: 0.5 # nm
+CURE_radial_increment: 0.25
+CURE_max_iterations: 150
+CURE_desired_conversion: 0.95
+CURE_late_threshold: 0.85
+drag_trigger_distance: 0.5 # nm
+drag_increment: 0.05 #nm
+drag_limit: 0.3 # nm
+drag_nvt_steps: 1000
+drag_npt_steps: 2000
+drag_temperature: 600
+relax_increment: 0.05
+relax_nvt_steps: 1000
+relax_npt_steps: 2000
+relax_temperature: 600
+equilibration_temperature: 300
+equilibration_steps: 50000
+charge_method: gas
+symmetry_equivalent_atoms: { GMA: [[C1,C2],[C3,C4],[C5,C6]] }
+stereocenters: { GMA: [C1,C5] }
+reactions:
+  - {
+      name:        'sty~c1-c2~sty',
+      stage:       cure,
+      reactants:   {1: STY, 2: STY},
+      product:     STY~C1-C2~STY,
+      probability: 1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: C1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+  - {
+      name:        'gma~c1-c2~sty',
+      stage:       cure,
+      reactants:   {1: GMA, 2: STY},
+      product:     GMA~C1-C2~STY,
+      probability: 1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: C1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+  - {
+      name:        'sty~c1-c3~gma',
+      stage:       cure,
+      reactants:   {1: STY, 2: GMA},
+      product:     STY~C1-C3~GMA,
+      probability: 1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: C1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C3, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+  - {
+      name:        'gma~c1-c3~gma',
+      stage:       cure,
+      reactants:   {1: GMA, 2: GMA},
+      product:     GMA~C1-C3~GMA,
+      probability: 1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: C1, z: 1},
+        B: {reactant: 2, resid: 1, atom: C3, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 1}
+      ]
+    }
+  - {
+      name:         'styCC',
+      stage:        post-cure,
+      reactants:    {1: STY},
+      product:      STYCC,
+      probability:  1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: C1, z: 1},
+        B: {reactant: 1, resid: 1, atom: C2, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 2}
+      ]
+    }
+  - {
+      name:         'gmaCC',
+      stage:        post-cure,
+      reactants:    {1: GMA},
+      product:      GMACC,
+      probability:  1.0,
+      atoms: {
+        A: {reactant: 1, resid: 1, atom: C1, z: 1},
+        B: {reactant: 1, resid: 1, atom: C3, z: 1}
+      },
+      bonds: [
+        {atoms: [A, B], order: 2}
+      ]
+    }
+initial_composition:
+  - {molecule: STY, count: 150}
+  - {molecule: GMA, count: 75}
