@@ -213,7 +213,10 @@ class Coordinates:
                 if len(boxdata)==9:
                     inst.box[0][1],inst.box[0][2],inst.box[1][0],inst.box[1][2],inst.box[2][0],inst.box[2][1]=boxdata[3:]
         inst.empty=False
-        logger.debug(f'{inst.box} {inst.checkbox()}')
+        # logger.debug(f'{inst.checkbox()}')
+        logger.debug('Box vectors:')
+        for ln in str(inst.box).split('\n'):
+            logger.debug(ln)
         if wrap_coords:
             inst.wrap_coords()
         return inst

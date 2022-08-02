@@ -79,11 +79,11 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         c.run(quiet=quiet)
     maxwarn=kwargs.get('maxwarn',4)
-    nsteps=kwargs.get('nsteps',-2)
+    # nsteps=kwargs.get('nsteps',-2)
     rdd=kwargs.get('rdd',0)
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run(quiet=quiet)
-    c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd,nsteps=nsteps)
+    c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd)
     c.run(quiet=quiet,ignore_codes=[-11])
     if os.path.exists(f'{out}.gro'):
         pass

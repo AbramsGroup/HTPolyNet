@@ -155,6 +155,9 @@ class TopoCoord:
         :raises Exception: nan found in any system pair
         """
         atdf=self.Topology.D['atoms']
+        # ij=self.Topology.D['bondtypes'].set_index(['i','j'])
+        #mb=self.D['mol2_bonds']
+        # bmi=self.Topology.D['bonds'].set_index(['ai','aj']).sort_index().index
         grodf=self.Coordinates.A
         grodf['old_reactantName']=grodf['reactantName'].copy()
         logger.debug(f'Mapping {bdf.shape[0]} bonds.')
@@ -251,6 +254,7 @@ class TopoCoord:
             assert temp_i_idx==_temp_i_idx,f'mapping mismatch -- bug'
             assert temp_j_idx==_temp_j_idx,f'mapping mismatch -- bug'
 
+            need_new_bond_parameters=False
             total_dcharge=0.0
             temp_atdf=T.TopoCoord.Topology.D['atoms']
             for temp_atom,inst_atom in temp2inst.items():
@@ -262,12 +266,18 @@ class TopoCoord:
                 if inst_type!=temp_type:
                     logger.debug(f'changing type of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_type} to {temp_type}')
                     atdf.loc[atdf['nr']==inst_atom,'type']=temp_type
+                    if inst_atom==b.ai or inst_atom==b.aj:
+                        # changed type of one or both of the bond atoms
+                        need_new_bond_parameters=True
                 if inst_charge!=temp_charge:
                     logger.debug(f'changing charge of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_charge} to {temp_charge}')
                     atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
                     dcharge=temp_charge-inst_charge
                     total_dcharge+=dcharge
             mapped_inst_atoms.extend(list(temp2inst.values()))
+            if need_new_bond_parameters:
+                self.Topology.reset_override_from_type('bonds','bondtypes',inst_idx=(b.ai,b.aj))
+
             # get all angle, dihedrals, and pairs from template that result from the existence of the specified bond
             # temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
             # logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')

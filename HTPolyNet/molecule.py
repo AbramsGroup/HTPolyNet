@@ -146,13 +146,9 @@ class Molecule:
             TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
             idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
             for sr in self.symmetry_relateds:
-                a,b=sr
-                if a==an:
-                    idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':b,'resNum':rnum}))
-                    TC.set_gro_attribute_by_attributes('z',z,{'atomName':b,'resNum':rnum})
-                elif b==an:
-                    idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':a,'resNum':rnum}))
-                    TC.set_gro_attribute_by_attributes('z',z,{'atomName':a,'resNum':rnum})
+                if an in sr:
+                    idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
+                    TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
 
         # set chain, chain_idx
         TC.idx_lists['chain']=[]
@@ -212,7 +208,9 @@ class Molecule:
         if type(new_boxsize)==np.ndarray:
             if new_boxsize.shape==(3,):
                 box_vectors=new_boxsize*np.identity(3,dtype=float)
-                logger.debug(f'{box_vectors}')
+                logger.debug('Box vectors:')
+                for ln in str(box_vectors).split('\n'):
+                    logger.debug(ln)
             elif new_boxsize.shape==(3,3):
                 box_vectors=new_boxsize
             self.TopoCoord.Coordinates.box=box_vectors

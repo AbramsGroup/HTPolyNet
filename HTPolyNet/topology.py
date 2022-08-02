@@ -194,6 +194,25 @@ _GromacsTopologyDirectiveDefaults_={
     'defaults':[1,2,'yes',0.5,0.83333333]
 }
 
+def select_topology_type_option(options,typename='dihedraltypes',rule='stiffest'):
+    hashables=_GromacsTopologyHashables_[typename]
+    headers=_GromacsTopologyDirectiveHeaders_[typename].copy()
+    for i in hashables:
+        headers.remove(i)
+    if rule=='stiffest' or rule=='softest':
+        if typename=='bondtypes':
+            parindex=headers.index('kb')
+        elif typename=='angletypes':
+            parindex=headers.index('cth')
+        elif typename=='dihedraltypes':
+            parindex=headers.index('kd')
+    sorted_options=list(sorted(options,key=lambda x: x[parindex]))
+    if rule=='stiffest':
+        return sorted_options[-1]
+    elif rule=='softest':
+        return sorted_options[0]
+    return []
+
 class Topology:
     """ Class for handling gromacs top data
     """
@@ -205,7 +224,7 @@ class Topology:
         """
         ''' D: a dictionay keyed on Gromacs topology directives with values that are lists of
                one or more pandas dataframes corresponding to sections '''
-        self.D={}
+        self.D:dict[str:pd.DataFrame]={}
         for k,v in _GromacsTopologyDirectiveDefaults_.items():
             hdr=_GromacsTopologyDirectiveHeaders_[k]
             dfdict={kk:[a] for kk,a in zip(hdr,v)}
@@ -284,31 +303,36 @@ class Topology:
             # atom indices or atom type name, where appropriate.
             inst.null_check(msg=f'read from {filename}')
             if 'atomtypes' in inst.D:
-                inst.D['atomtypes'].sort_values(by='name',inplace=True)
+                inst.D['atomtypes']=inst.D['atomtypes'].sort_values(by='name').reset_index(drop=True)
+#                inst.D['atomtypes'].sort_values(by='name',inplace=True)
             if 'bonds' in inst.D:
                 inst.D['bonds']=inst.D['bonds'].sort_values(by=['ai','aj']).reset_index(drop=True)
                 inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
             if 'bondtypes' in inst.D:
                 df_typeorder(inst.D['bondtypes'],typs=['i','j'])
-                inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
+#                inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
+                inst.D['bondtypes']=inst.D['bondtypes'].sort_values(by=['i','j']).reset_index(drop=True)
             if 'pairs' in inst.D:
                 inst.D['pairs']=inst.D['pairs'].sort_values(by=['ai','aj']).reset_index(drop=True)
             if 'pairtypes' in inst.D:
                 df_typeorder(inst.D['pairtypes'],typs=['i','j'])
-                inst.D['pairtypes'].sort_values(by=['i','j'],inplace=True)
+#                inst.D['pairtypes'].sort_values(by=['i','j'],inplace=True)
+                inst.D['pairtypes']=inst.D['pairtypes'].sort_values(by=['i','j']).reset_index(drop=True)
             if 'angles' in inst.D:
                 # central atom (aj) is the primary index
                 inst.D['angles']=inst.D['angles'].sort_values(by=['aj','ai','ak']).reset_index(drop=True)
             if 'angletypes' in inst.D:
                 df_typeorder(inst.D['angletypes'],typs=['i','j','k'])
-                inst.D['angletypes'].sort_values(by=['j','i','k'],inplace=True)
+#                inst.D['angletypes'].sort_values(by=['j','i','k'],inplace=True)
+                inst.D['angletypes']=inst.D['angletypes'].sort_values(by=['j','i','k']).reset_index(drop=True)
             if 'dihedrals' in inst.D:
                 # central atoms (aj,ak) are the primary index
                 inst.D['dihedrals']=inst.D['dihedrals'].sort_values(by=['aj','ak','ai','al']).reset_index(drop=True)
             if 'dihedraltypes' in inst.D:
                 df_typeorder(inst.D['dihedraltypes'],typs=['i','j','k','l'])
                 # print(f'    -> pre sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
-                inst.D['dihedraltypes'].sort_values(by=['j','k','i','l'],inplace=True)
+#                inst.D['dihedraltypes'].sort_values(by=['j','k','i','l'],inplace=True)
+                inst.D['dihedraltypes']=inst.D['dihedraltypes'].sort_values(by=['j','k','i','l']).reset_index(drop=True)
                 # print(f'    -> post sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
             for f in inst.includes:
                 # print(f'reading included topology {f}')
@@ -592,9 +616,9 @@ class Topology:
                     kb=ij.loc[idx,'kb']
                     b0=ij.loc[idx,'b0']
                 else:
-                    logger.debug(f'no bondtype {idx} found\nI assume you are just making a mol2 file for template parameterization.')
+                    logger.debug(f'no bondtype {idx} found; using placeholder parameters')
                     bt=1
-                    b0=1.5
+                    b0=0.15
                     kb=999999
                     # raise Exception(f'no bondtype {idx} found.')
                 '''
@@ -957,9 +981,161 @@ class Topology:
         :type other: Topology
         """
         # logger.debug('Topology.merge begins')
+        # look for duplicated types between self and other.  If any are found, delete those types from other and copy their parameters into the explicit interactions they correspond to.
         self.merge_ex(other)
         self.merge_types(other)
         # logger.debug('Topology.merge ends')
+
+    # def handle_duplicate_types(self,other,copy_directive='other_to_self',typename='',funcidx=4):
+#         if not typename in self.D or not typename in other.D:
+#             return
+#         stdf=self.D[typename]
+#         otdf=other.D[typename]
+#         hashables=_GromacsTopologyHashables_[typename]
+#         headers=_GromacsTopologyDirectiveHeaders_[typename].copy()
+#         logger.debug(f'{hashables} {headers}')
+#         for i in hashables:
+#             headers.remove(i)
+#         common=[]
+#         fi=headers.index('func')
+#         copy_idx_pairs=[]
+#         for idx,r in otdf.iterrows():
+#             typidx=typeorder(tuple([r[i] for i in hashables]))
+#             idata=[r[i] for i in headers]
+#             for jdx,q in stdf.iterrows():
+#                 typjdx=typeorder(tuple([q[i] for i in hashables]))
+#                 jdata=[q[i] for i in headers]
+#                 if typidx==typjdx and idata==jdata:
+#                     common.append(typidx)
+#             for jdx,q in stdf.iterrows():
+#                 typjdx=typeorder(tuple([q[i] for i in hashables]))
+#                 jdata=[q[i] for i in headers]
+#                 if typidx==typjdx and idata!=jdata and not typidx in common and idata[fi]==funcidx and jdata[fi]==funcidx:
+#                     logger.debug(f'duplicate {typename} {typidx}')
+#                     logger.debug(f'o {idx} {idata}')
+#                     logger.debug(f's {jdx} {jdata}')
+#                     if not (idx,jdx) in copy_idx_pairs:
+#                         copy_idx_pairs.append((idx,jdx))
+#         if copy_directive=='other_to_self' and len(copy_idx_pairs)>0:
+#             for o,s in copy_idx_pairs:
+#                 self.D[typename].iloc[s]=other.D[typename].iloc[o]
+#         elif copy_directive=='self_to_other' and len(copy_idx_pairs)>0:
+#             for o,s in copy_idx_pairs:
+#                 other.D[typename].iloc[o]=self.D[typename].iloc[s]
+#           # logger.debug(f'{typidx}')
+# #        pass
+    def report_type(self,typidx_q,typename='',funcidx=-1):
+        if not typename in self.D:
+            return
+        stdf=self.D[typename]
+        hashables=_GromacsTopologyHashables_[typename]
+        headers=_GromacsTopologyDirectiveHeaders_[typename].copy()
+        for i in hashables:
+            headers.remove(i)
+        fi=headers.index('func')
+        for idx,r in stdf.iterrows():
+            typidx=typeorder(tuple([r[i] for i in hashables]))
+            idata=[r[i] for i in headers]
+            if typidx==typidx_q and idata[fi]==funcidx:
+                return [r[i] for i in headers]
+        return []
+    '''
+    'bonds':        ['ai', 'aj', 'funct', 'c0', 'c1'],
+    'bondtypes':    [ 'i',  'j', 'func',  'b0', 'kb'],
+    'angles':       ['ai', 'aj', 'ak', 'funct', 'c0',  'c1'],
+    'angletypes':   [ 'i',  'j',  'k', 'func',  'th0', 'cth', 'rub', 'kub'],
+    'dihedrals':    ['ai', 'aj', 'ak', 'al', 'funct', 'c0',    'c1', 'c2', 'c3', 'c4', 'c5'],
+    'dihedraltypes':[ 'i',  'j',  'k',  'l', 'func',  'phase', 'kd', 'pn'],
+    '''
+    def reset_override_from_type(self,interactionname,typename,inst_idx):
+        if not typename in self.D:
+            return
+        typ_hashables=_GromacsTopologyHashables_[typename]
+        stdf=self.D[typename].set_index(typ_hashables)
+        sidf=self.D[interactionname]
+        typ_headers=_GromacsTopologyDirectiveHeaders_[typename].copy()
+        ins_hashables=_GromacsTopologyHashables_[interactionname]
+        ins_headers=_GromacsTopologyDirectiveHeaders_[interactionname].copy()
+        typidx=[self.D['atoms'].iloc[x-1]['type'] for x in inst_idx]
+        typidx=typeorder(tuple(typidx))
+        for i in typ_hashables:
+            typ_headers.remove(i)
+        for i in ins_hashables:
+            ins_headers.remove(i)
+        iidx=idxorder(tuple(inst_idx))
+        idx=-1
+        for i,r in sidf.iterrows():
+            jdx=tuple([r[a] for a in ins_hashables])
+            if iidx==jdx:
+                idx=i
+                break
+        assert idx!=-1
+        num_data=min([len(typ_headers),len(ins_headers)])
+        typ_headers=typ_headers[:num_data]
+        ins_headers=ins_headers[:num_data]
+        typrec=stdf.loc[typidx][typ_headers]
+        cols=self.D[interactionname].columns.get_indexer(ins_headers)
+        logger.debug(f'Resetting override in {interactionname} for {inst_idx} from')
+        for ln in self.D[interactionname].iloc[idx,cols].to_string().split('\n'):
+            logger.debug(ln)
+        logger.debug('to')
+        self.D[interactionname].iloc[idx,cols]=typrec
+        for ln in self.D[interactionname].iloc[idx,cols].to_string().split('\n'):
+            logger.debug(ln)
+        
+
+    def reset_type(self,typename,typidx_t,values):
+        if not typename in self.D:
+            return
+        stdf=self.D[typename]
+        hashables=_GromacsTopologyHashables_[typename]
+        headers=_GromacsTopologyDirectiveHeaders_[typename].copy()
+        for i in hashables:
+            headers.remove(i)
+        cols=self.D[typename].columns.get_indexer(headers)
+        idxs=[]
+        for idx,r in stdf.iterrows():
+            typidx=typeorder(tuple([r[i] for i in hashables]))
+            if typidx==typidx_t:
+                idxs.append(idx)
+        assert len(headers)==len(values)
+        logger.debug(f'Resetting {len(idxs)} entries {headers} to {values}')
+        for idx in idxs:
+            self.D[typename].iloc[idx,cols]=values
+            for ln in self.D[typename].iloc[idx][headers].to_string().split('\n'):
+                logger.debug(ln)
+
+    def report_duplicate_types(self,other,typename='',funcidx=4):
+        if not typename in self.D or not typename in other.D:
+            return
+        stdf=self.D[typename]
+        otdf=other.D[typename]
+        hashables=_GromacsTopologyHashables_[typename]
+        headers=_GromacsTopologyDirectiveHeaders_[typename].copy()
+        # logger.debug(f'{hashables} {headers}')
+        for i in hashables:
+            headers.remove(i)
+        common=[]
+        fi=headers.index('func')
+        true_duplicate_types=[]
+        for idx,r in otdf.iterrows():
+            typidx=typeorder(tuple([r[i] for i in hashables]))
+            idata=[r[i] for i in headers]
+            for jdx,q in stdf.iterrows():
+                typjdx=typeorder(tuple([q[i] for i in hashables]))
+                jdata=[q[i] for i in headers]
+                if typidx==typjdx and idata==jdata:
+                    common.append(typidx)
+        for idx,r in otdf.iterrows():
+            typidx=typeorder(tuple([r[i] for i in hashables]))
+            idata=[r[i] for i in headers]
+            for jdx,q in stdf.iterrows():
+                typjdx=typeorder(tuple([q[i] for i in hashables]))
+                jdata=[q[i] for i in headers]
+                if typidx==typjdx and idata!=jdata and not typidx in common and idata[fi]==funcidx and jdata[fi]==funcidx:
+                    # logger.debug(f'duplicate {typename} {typidx}')
+                    true_duplicate_types.append(typidx)
+        return true_duplicate_types
 
     def dup_check(self,die=True):
         """Check for duplicate type-like topology records
@@ -986,6 +1162,7 @@ class Topology:
         :param other: topology containing attribute D, a dictionary of dataframes
         :type other: Topology
         """
+        # self.handle_duplicate_types(other,typename='dihedraltypes',funcidx=4,drop_directive='drop_from_self')
         L=['atomtypes','bondtypes','angletypes','dihedraltypes']
         for t in L:
             self._myconcat(other,directive=t,drop_duplicates=True)

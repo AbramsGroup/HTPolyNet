@@ -107,7 +107,9 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 pname=R.product+f'-{idx}'
             newR.product=pname 
             newR.stage=R.stage
-            logger.debug(f'primary:\n{str(newR)}')
+            logger.debug(f'Primary:')
+            for ln in str(newR).split('\n'):
+                logger.debug(ln)
             thisR_extra_reactions.append(newR)
             thisR_extra_molecules[newR.product]=Molecule(name=newR.product,generator=newR)
             for rR in [x for x in reactions if R.product in x.reactants.values()]:
@@ -135,7 +137,9 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 if len(noor_pname)==0:
                     noor_pname=rR.product+f'-{jdx}'
                 nooR.product=noor_pname
-                logger.debug(f'secondary:\n{str(nooR)}')
+                logger.debug(f'Secondary:')
+                for ln in str(nooR).split('\n'):
+                    logger.debug(ln)
                 jdx+=1
                 reactions.append(nooR)
                 thisR_extra_molecules[nooR.product]=Molecule(name=nooR.product,generator=nooR)

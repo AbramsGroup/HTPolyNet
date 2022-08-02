@@ -11,6 +11,7 @@ from multiprocessing import Pool
 from functools import partial
 
 from HTPolyNet.configuration import Configuration
+from HTPolyNet.topology import select_topology_type_option
 from HTPolyNet.topocoord import TopoCoord, BTRC
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
@@ -132,6 +133,10 @@ class Runtime:
         for M in self.molecules:
             self.molecules[M].is_reactant=is_reactant(M,self.cfg.reactions,stage='cure')
 
+        if 'resolve_type_discrepancies' in self.cfg.parameters:
+            for resolve_directive in self.cfg.parameters['resolve_type_discrepancies']:
+                self.type_consistency_check(typename=resolve_directive['typename'],funcidx=resolve_directive.get('funcidx',4),selection_rule=resolve_directive['rule'])
+
         ess='' if len(self.molecules)==1 else 's'
         logger.info('*'*10+f' Generated {len(self.molecules)} molecule template{ess} '+'*'*10)
 
@@ -212,6 +217,39 @@ class Runtime:
                 M.stereoisomers.append(MM.name)
         return True
 
+    def type_consistency_check(self,typename='dihedraltypes',funcidx=4,selection_rule='stiffest'):
+        logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested.')
+        mnames=list(self.molecules.keys())
+        types_duplicated=[]
+        for i in range(len(mnames)):
+            logger.debug(f'{mnames[i]}...')
+            for j in range(i+1,len(mnames)):
+                mol1topo=self.molecules[mnames[i]].TopoCoord.Topology
+                mol2topo=self.molecules[mnames[j]].TopoCoord.Topology
+                this_duptypes=mol1topo.report_duplicate_types(mol2topo,typename=typename,funcidx=funcidx)
+                logger.debug(f'...{mnames[j]} {len(this_duptypes)}')
+                for d in this_duptypes:
+                    if not d in types_duplicated:
+                        types_duplicated.append(d)
+        logger.debug(f'Duplicated {typename}: {types_duplicated}')
+        options={}
+        for t in types_duplicated:
+            logger.debug(f'Duplicate {t}:')
+            options[t]=[]
+            for i in range(len(mnames)):
+                moltopo=self.molecules[mnames[i]].TopoCoord.Topology
+                this_type=moltopo.report_type(t,typename='dihedraltypes',funcidx=4)
+                if len(this_type)>0 and not this_type in options[t]:
+                    options[t].append(this_type)
+                logger.debug(f'{mnames[i]} reports {this_type}')
+            logger.debug(f'Conflicting options for this type: {options[t]}')
+            selected_type=select_topology_type_option(options[t],typename,rule=selection_rule)
+            logger.debug(f'Under selection rule "{selection_rule}", preferred type is {selected_type}')
+            for i in range(len(mnames)):
+                logger.debug(f'resetting {mnames[i]}')
+                moltopo=self.molecules[mnames[i]].TopoCoord.Topology
+                moltopo.reset_type(typename,t,selected_type)
+
     def initialize_topology(self,inpfnm='init'):
         """Create a full gromacs topology that includes all directives necessary
             for an initial liquid simulation.  This will NOT use any #include's;
@@ -223,6 +261,7 @@ class Runtime:
         cwd=pfs.go_to('systems/init')
         if os.path.isfile(f'{inpfnm}.top'):
             logger.debug(f'{inpfnm}.top already exists in {cwd} but we will rebuild it anyway!')
+        
         ''' for each monomer named in the cfg, either parameterize it or fetch its parameterization '''
         already_merged=[]
         for item in self.cfg.initial_composition:
@@ -236,6 +275,7 @@ class Runtime:
             already_merged.append(M.name)
         for othermol,M in self.molecules.items():
             if not othermol in already_merged:
+                logger.debug(f'Merging types from {othermol}\'s topology into global topology')
                 self.TopoCoord.Topology.merge_types(M.TopoCoord.Topology)
         logger.info(f'System has {self.TopoCoord.Topology.atomcount()} atoms.')
         self.TopoCoord.write_top(f'{inpfnm}.top')
@@ -323,8 +363,11 @@ class Runtime:
             msg=grompp_and_mdrun(gro=inpfnm,top=inpfnm,out=f'{inpfnm}-minimized',mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
             mdp_pfx=mdp_library['liquid-densify']
             self.checkout(f'mdp/{mdp_pfx}.mdp')
-            mdp_modify(f'{mdp_pfx}.mdp',{'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P})
-            msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,quiet=False,nsteps=nsteps,**self.cfg.parameters)
+            mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P}
+            if nsteps!=-2:
+                mod_dict['nsteps']=nsteps
+            mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
+            msg=grompp_and_mdrun(gro=f'{inpfnm}-minimized',top=inpfnm,out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
             logger.info(f'Densified coordinates in {deffnm}.gro')
         density_trace(deffnm,**self.cfg.parameters)
         trace('Density',[deffnm],outfile='../../plots/init-density.png')
@@ -412,7 +455,7 @@ class Runtime:
                                           apply_probabilities=apply_probabilities,
                                           abs_max=bond_limit)
                     if nbdf.shape[0]>0:
-                        ess='s' if nbdf.shape[0]==1 else 's'
+                        ess='' if nbdf.shape[0]==1 else 's'
                         logger.info(f'CURE iteration {CP.iter} will generate {nbdf.shape[0]} new bond{ess}.')
                         pairs=pd.DataFrame()
                         CP.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
@@ -441,12 +484,16 @@ class Runtime:
                 CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
                 maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
                 logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                logger.info(f'Prebond dragging initiated on {CP.bonds.shape[0]} new bonds (max distance {maxL:.3f} nm).')
+                ess='' if CP.bonds.shape[0]==1 else 's'
+                logger.info(f'Prebond dragging initiated on {CP.bonds.shape[0]} new bond{ess} (max distance {maxL:.3f} nm).')
                 rcommon=max([gromacs_rdefault,maxL])
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
+                    nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':drag_temperature,'ref_t':drag_temperature,'gen-vel':'yes'}
+                    if nsteps!=-2:
+                        mod_dict['nsteps']=nsteps
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_dragstage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 self.TopoCoord.add_restraints(CP.bonds,typ=6)
                 begin_dragstage=CP.current_dragstage
@@ -460,9 +507,10 @@ class Runtime:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,drag_nstages,minimum_distance=drag_limit_nm,init_colname='initial_distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.drag,prefix=stagepref) # writes the gro and top files
+                    stggro=stagepref
                     for stg in ['minimize','nvt','npt']:
-                        nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
-                        msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                        msg=grompp_and_mdrun(gro=stggro,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,**self.cfg.parameters)
+                        stggro=f'{stagepref}-{stg}'
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
@@ -513,7 +561,10 @@ class Runtime:
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
+                    nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
                     mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-vel':'yes','gen-temp':relax_temperature,'ref_t':relax_temperature}
+                    if nsteps!=-2:
+                        mod_dict['nsteps']=nsteps
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if relax_increment>0.0:
                     relax_nstages=int(CP.bonds['initial_distance'].max()/relax_increment)
@@ -526,9 +577,10 @@ class Runtime:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,relax_nstages,init_colname='initial_distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
+                    stggro=stagepref
                     for stg in ['minimize','nvt','npt']:
-                        nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
-                        msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,quiet=False,**self.cfg.parameters)
+                        msg=grompp_and_mdrun(gro=stggro,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,quiet=False,**self.cfg.parameters)
+                        stggro=f'{stagepref}-{stg}'
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
@@ -559,10 +611,10 @@ class Runtime:
                 CP.read_checkpoint(self)
                 pfx=mdp_library[stepnm]
                 self.checkout(f'mdp/{pfx}.mdp')
-                mod_dict={'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_t':equilibration_temperature,'ref_p':equilibration_pressure}
+                mod_dict={'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_t':equilibration_temperature,'ref_p':equilibration_pressure,'nsteps':equilibration_steps}
                 mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
                 CP.write_checkpoint(self,CP.state,prefix=opfx)
-                msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,nsteps=equilibration_steps,quiet=False,**self.cfg.parameters)
+                msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,quiet=False,**self.cfg.parameters)
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{opfx}-post.gro'))
                 CP.write_checkpoint(self,CPstate.post_equilibration,prefix=f'{opfx}-complete')
                 average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
@@ -575,9 +627,9 @@ class Runtime:
                     curr_conversion=curr_nxlinkbonds/max_nxlinkbonds
                     conversion_reached=curr_conversion>=desired_conversion
                     iterations_exceeded=CP.iter>=maxiter
-                    logger.info(f'Current conversion: {curr_conversion} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
+                    logger.info(f'Current conversion: {curr_conversion:.3f} ({curr_nxlinkbonds}/{max_nxlinkbonds})')
                     if conversion_reached:
-                        logger.info(f'Current conversion {curr_conversion} exceeds desired conversion {desired_conversion}')
+                        logger.info(f'Current conversion {curr_conversion:.3f} exceeds desired conversion {desired_conversion}')
                     if iterations_exceeded:
                         logger.info(f'Current cure iteration {CP.iter} is at the maximum {maxiter}')
                     CP.reset_for_next_iter()
@@ -627,7 +679,10 @@ class Runtime:
                 for stg in ['minimize','nvt','npt']:
                     impfx=mdp_library[f'{stepnm}-{stg}']
                     self.checkout(f'mdp/{impfx}.mdp')
+                    nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
                     mod_dict={'gen-temp':relax_temperature,'gen-vel':'yes','ref_t':relax_temperature}
+                    if nsteps!=-2:
+                        mod_dict['nsteps']=nsteps
                     mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
                 if bond_relaxation_increment>0.0:
                     n_stages=int(CP.bonds['initial_distance'].max()/bond_relaxation_increment)
@@ -639,9 +694,10 @@ class Runtime:
                     self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,n_stages,init_colname='initial_distance')
                     stagepref=f'{opfx}-stage-{i+1}'
                     CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
+                    stggro=stagepref
                     for stg in ['minimize','nvt','npt']:
-                        nsteps=self.cfg.parameters.get(f'{stepnm}_{stg}_steps',-2)
-                        msg=grompp_and_mdrun(gro=stagepref,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,nsteps=nsteps,**self.cfg.parameters)
+                        msg=grompp_and_mdrun(gro=stggro,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,**self.cfg.parameters)
+                        stggro=f'{stagepref}-{stg}'
                     self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
                     self.TopoCoord.restore_bond_parameters(saveT)
                     CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
@@ -669,10 +725,10 @@ class Runtime:
             pfx=mdp_library[stepnm]
             logger.info(f'Postcure equilibration.')
             self.checkout(f'mdp/{pfx}.mdp')
-            mod_dict={'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_p':equilibration_pressure}
+            mod_dict={'ref_t':equilibration_temperature,'gen-temp':equilibration_temperature,'gen-vel':'yes','ref_p':equilibration_pressure,'nsteps':equilibration_steps}
             mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
             CP.write_checkpoint(self,CPstate.relax,prefix=opfx)
-            msg=grompp_and_mdrun(gro=opfx,top=opfx,out=opfx+'-post',mdp=opfx,steps=equilibration_steps,**self.cfg.parameters)
+            msg=grompp_and_mdrun(gro=opfx,top=opfx,out=opfx+'-post',mdp=opfx,**self.cfg.parameters)
             self.TopoCoord.copy_coords(TopoCoord(grofilename=opfx+'-post.gro'))
             CP.write_checkpoint(self,CPstate.finished,prefix=f'{opfx}-complete')
 
