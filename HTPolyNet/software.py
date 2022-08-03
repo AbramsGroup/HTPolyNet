@@ -17,9 +17,17 @@ class Software:
         assert passes,f'Could not find {cnf}'
 
     def set_gmx_preferences(self,parameters):
-        self.gmx_options=parameters.get('gmx_options','')
-        self.gmx=parameters.get('gmx','gmx')
-        self.mdrun=parameters.get('gmx_mdrun',f'{self.gmx} {self.gmx_options} mdrun')
+        gromacs_dict=parameters.get('gromacs',{})
+        logger.debug(f'gromacs_dict {gromacs_dict}')
+        if gromacs_dict:
+            self.gmx=gromacs_dict.get('gmx','gmx')
+            self.gmx_options=gromacs_dict.get('gmx_options','-quiet')
+            self.mdrun=gromacs_dict.get('mdrun','gmx mdrun')
+            logger.debug(f'{self.gmx}, {self.gmx_options}, {self.mdrun}')
+        else:
+            self.gmx_options=parameters.get('gmx_options','')
+            self.gmx=parameters.get('gmx','gmx')
+            self.mdrun=parameters.get('gmx_mdrun',f'{self.gmx} {self.gmx_options} mdrun')
         CP=subprocess.run(['which',self.gmx],capture_output=True,text=True)
         assert CP.returncode==0,f'{self.gmx} not found'
 
@@ -51,7 +59,7 @@ def to_string():
     return str(_SW_)
 
 gmx='gmx'
-gmx_options=''
+gmx_options='-quiet'
 mdrun=f'{gmx} mdrun'
 def set_gmx_preferences(parmdict):
     global gmx

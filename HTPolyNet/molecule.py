@@ -10,7 +10,7 @@ from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,Re
 from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
-from HTPolyNet.gromacs import grompp_and_mdrun, mdp_library
+from HTPolyNet.gromacs import mdp_modify  #, gmx_traj_info
 
 logger=logging.getLogger(__name__)
 
@@ -198,11 +198,31 @@ class Molecule:
         n=self.name
         boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
         self.center_coords(new_boxsize=boxsize)
-        mdp_prefix=mdp_library['minimize-single-molecule']
+        mdp_prefix='single-molecule-min'
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
-        grompp_and_mdrun(gro=f'{n}',top=f'{n}',
-                        mdp=mdp_prefix,out=f'{outname}',boxSize=boxsize)
-        self.TopoCoord.read_gro(f'{n}.gro',wrap_coords=False)
+        self.TopoCoord.grompp_and_mdrun(out=f'{outname}',
+                        mdp=mdp_prefix,boxSize=boxsize)
+
+    def relax(self,relax_dict):
+        deffnm=relax_dict.get('deffnm',f'{self.name}-relax')
+        nsteps=relax_dict.get('nsteps',10000)
+        temperature=relax_dict.get('temperature',10000)
+        n=self.name
+        boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
+        self.center_coords(new_boxsize=boxsize)
+        mdp_prefix='single-molecule-nvt'
+        pfs.checkout(f'mdp/{mdp_prefix}.mdp')
+        mdp_modify(f'{mdp_prefix}.mdp',{'nsteps':nsteps,'gen-vel':'yes','ref_t':temperature,'gen-temp':temperature})
+        logger.info(f'In vacuo equilibration of {self.name}.gro for {nsteps} steps at {temperature} K')
+        self.TopoCoord.grompp_and_mdrun(out=deffnm,mdp=mdp_prefix,boxSize=boxsize)
+
+    # def generate_samples(self,trr=None,nsamples=-1):
+    #     if not trr:
+    #         return
+    #     trjinfo=gmx_traj_info(trr)
+    #     skip,extra=divmod(trjinfo.nframes,nsamples)
+
+    #     pass
 
     def center_coords(self,new_boxsize:np.ndarray=None):
         if type(new_boxsize)==np.ndarray:
@@ -740,6 +760,30 @@ class Molecule:
                                                 same_attribute='sea_idx',
                                                 return_attribute='globalIdx')
         return list(clu)
+
+    def generate_stereoisomers(self):
+        if len(self.stereocenters)>0:
+            self.stereoisomers=[]
+            # logger.debug(f'{self.name} stereocenters {self.stereocenters}; each needs a gro file')
+            st_idx=[self.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}) for n in self.stereocenters]
+            flip=[[0,1] for _ in range(len(self.stereocenters))]
+            P=product(*flip)
+            next(P) # one with no flips is the original molecule, so skip it
+            for p in P:
+                si_name=self.name+'-SC-'+'-'.join([str(_) for _ in p])
+                logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
+                if os.path.exists(f'{si_name}.gro'):
+                    logger.debug(f'{si_name}.gro exists in {pfs.cwd()}')
+                else:
+                    MM=deepcopy(self)
+                    MM.name=si_name
+                    fsc=[st_idx[i] for i in range(len(self.stereocenters)) if p[i]]
+                    for f in fsc:
+                        MM.flip_stereocenter(f)
+                    logger.debug(f'Writing {MM.name}.gro in {pfs.cwd()}')
+                    MM.TopoCoord.write_gro(f'{MM.name}.gro')
+                self.stereoisomers.append(MM.name)
+
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]

@@ -27,7 +27,7 @@ logger=logging.getLogger(__name__)
 #             return True
 #     return False
 
-GRX_ATTRIBUTES=['z','nreactions','sea_idx','cycle','cycle_idx','chain','chain_idx']
+GRX_ATTRIBUTES=['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx']
 
 def _dfrotate(df,R):
     for i,srow in df.iterrows():
@@ -143,7 +143,6 @@ class Coordinates:
     mol2_atom_attributes = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
     mol2_bond_attributes = ['bondIdx','ai','aj','type']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_attributes, [int, int, int, str])}
-    grx_attributes=GRX_ATTRIBUTES
 
     def __init__(self,name=''):
         self.name=name
@@ -155,7 +154,7 @@ class Coordinates:
         self.linkcell=Linkcell()
         self.empty=True
         self.box=np.zeros((3,3))
-        # self.ringlist=[]
+        self.grx_attributes=GRX_ATTRIBUTES
         
     @classmethod
     def read_gro(cls,filename,wrap_coords=True):

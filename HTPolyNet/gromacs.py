@@ -10,21 +10,23 @@ import logging
 import os
 import pandas as pd
 import numpy as np
+from collections import namedtuple
+
 from pytrr import GroTrrReader
 from HTPolyNet.command import Command
 import HTPolyNet.software as sw
 logger=logging.getLogger(__name__)
-mdp_library = {'liquid-densify':'liquid-densify-npt',
-               'sea':'sea-nvt',
-               'minimize-single-molecule':'minimize-single-molecule',
-               'minimize':'minimize',
-               'equilibrate':'equilibrate-npt',
-               'drag-minimize':'drag-minimize',
-               'drag-nvt':'drag-nvt',
-               'drag-npt':'drag-npt',
-               'relax-minimize':'relax-minimize',
-               'relax-nvt':'relax-nvt',
-               'relax-npt':'relax-npt'}
+# mdp_library = {'liquid-densify':'liquid-densify-npt',
+#                'sea':'sea-nvt',
+#                'minimize-single-molecule':'minimize-single-molecule',
+#                'minimize':'minimize',
+#                'equilibrate':'equilibrate-npt',
+#                'drag-minimize':'drag-minimize',
+#                'drag-nvt':'drag-nvt',
+#                'drag-npt':'drag-npt',
+#                'relax-minimize':'relax-minimize',
+#                'relax-nvt':'relax-nvt',
+#                'relax-npt':'relax-npt'}
 
 def insert_molecules(composition,boxSize,outName,**kwargs):
     ''' launcher for `gmx insert-molecules`
@@ -72,22 +74,25 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
         boxsize: (optional) desired box size; triggers editconf before grompp
     '''
     quiet=kwargs.get('quiet',True)
+    ignore_codes=kwargs.get('ignore_codes',[-11])
+    maxwarn=kwargs.get('maxwarn',4)
+    rdd=kwargs.get('rdd',0)
     if gro=='' or top=='' or out=='' or mdp=='':
-        raise Exception('grompp_and_run requires gro, top, out, and mdp filename prefixes.')
+        raise Exception('grompp_and_mdrun requires gro, top, out, and mdp filename prefixes.')
+    infiles=[f'{gro}.gro',f'{top}.top',f'{mdp}.mdp']
+    assert all([os.path.exists(x) for x in infiles])
     if len(boxSize)>0:
         c=Command(f'{sw.gmx} {sw.gmx_options} editconf',f=f'{gro}.gro',o=gro,
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         c.run(quiet=quiet)
-    maxwarn=kwargs.get('maxwarn',4)
     # nsteps=kwargs.get('nsteps',-2)
-    rdd=kwargs.get('rdd',0)
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run(quiet=quiet)
     c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd)
-    c.run(quiet=quiet,ignore_codes=[-11])
+    c.run(quiet=quiet,ignore_codes=ignore_codes)
     if os.path.exists(f'{out}.gro'):
         pass
-        # logger.info(f'grompp_and_run completed.  Check {gro}.gro.')
+        # logger.info(f'grompp_and_mdrun completed.  Check {gro}.gro.')
     else:
         logger.error(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
         raise Exception(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
@@ -133,6 +138,7 @@ def gmx_energy_trace(edr,names=[],**kwargs):
     assert os.path.exists(edr+'.edr'),f'Error: {edr}.edr not found'
     assert len(names)>0,f'Nothing to plot'
     xshift=kwargs.get('xshift',0)
+    report_averages=kwargs.get('report_averages',False)
     menu=get_energy_menu(edr)
     with open('gmx.in','w') as f:
         for i in names:
@@ -142,32 +148,39 @@ def gmx_energy_trace(edr,names=[],**kwargs):
     if any([i in menu for i in names]):
         c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
         c.run()
+        os.remove('gmx.in')
         colnames=names
         colnames.insert(0,'time (ps)')
         data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
         data.iloc[:,0]+=xshift
-        os.remove('gmx.in')
+        ndata=data.shape[0]
+        if report_averages:
+            for i in names[1:]:
+                data[f'Running-average-{i}']=data[i].expanding(1).mean()
+                data[f'Rolling-10-average-{i}']=data[i].rolling(window=ndata//10).mean()
+                for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string().split('\n'):
+                    logger.info(f'{ln}')
         return data
     else:
         return pd.DataFrame()
         
-def density_trace(edr,**kwargs):
-    """Report density trace from edr file
+# def density_trace(edr,**kwargs):
+#     """Report density trace from edr file
 
-    :param edr: edr file name
-    :type edr: str
-    """
-    msg=kwargs.get('msg','Density:')
-    with open('gmx.in','w') as f:
-        f.write('22\n\n')
-    c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
-    c.run()
-    os.remove('gmx.in')
-    density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
-    density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
-    density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
-    for ln in density.iloc[-1].to_string().split('\n'):
-        logger.info(f'{ln}')
+#     :param edr: edr file name
+#     :type edr: str
+#     """
+#     msg=kwargs.get('msg','Density:')
+#     with open('gmx.in','w') as f:
+#         f.write('22\n\n')
+#     c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
+#     c.run()
+#     os.remove('gmx.in')
+#     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
+#     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
+#     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
+#     for ln in density.iloc[-1].to_string().split('\n'):
+#         logger.info(f'{ln}')
 
 def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     """Use 'gmx distance' to measure interatomic distances
@@ -375,3 +388,21 @@ def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
             for k,v in all_dict.items():
                 f.write(f'{k} = {v}\n')
         # logger.debug(f'wrote {mdp_filename}.')
+
+def gmx_traj_info(trr):
+    Result=namedtuple('gmx_check','nframes time')
+    c=Command(f'{sw.gmx} {sw.gmx_options} check -f {trr}')
+    out,err=c.run()
+    out+=err
+    for l in out.split('\n'):
+        tok=l.split()
+        if len(tok)==0:
+            continue
+        if tok[0]=='Step':
+            # print(tok)
+            nframes=int(tok[1])
+            ts_ps=float(tok[2])
+            break
+    result=Result(nframes,(nframes-1)*ts_ps)
+    return result
+    

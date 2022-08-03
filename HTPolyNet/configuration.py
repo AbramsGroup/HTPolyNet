@@ -33,6 +33,7 @@ class Configuration:
         self.parameters = {}
         ''' raw dict read from JSON/YAML '''
         self.basedict = {}
+        self.maxconv=0.0
 
     @classmethod
     def read(cls,filename):
@@ -64,10 +65,19 @@ class Configuration:
     
     def NewMolecule(self,mol_name):
         M=Molecule(mol_name)
-        sea=self.parameters.get('symmetry_equivalent_atoms',{})
-        M.symmetry_relateds=sea.get(mol_name,[])
-        sc=self.parameters.get('stereocenters',{})
-        M.stereocenters=sc.get(mol_name,[])
+        constituents=self.parameters.get('constituents',{})
+        if constituents:
+            try:
+                molrec=constituents[mol_name]
+            except KeyError:
+                raise Exception(f'{mol_name} not present in config file.')
+            M.symmetry_relateds=molrec.get('symmetry_equivalent_atoms',[])
+            M.stereocenters=molrec.get('stereocenters',[])
+        else:
+            sea=self.parameters.get('symmetry_equivalent_atoms',{})
+            M.symmetry_relateds=sea.get(mol_name,[])
+            sc=self.parameters.get('stereocenters',{})
+            M.stereocenters=sc.get(mol_name,[])
         extra_stereocenters=[]
         for stc in M.stereocenters:
             for sc in M.symmetry_relateds:
@@ -91,6 +101,10 @@ class Configuration:
         add a molecule for each unique molecule specified in initial_composition
         '''
         self.initial_composition=self.basedict.get('initial_composition',[])
+        if len(self.initial_composition)==0:
+            constituents=self.basedict.get('constituents',{})
+            for k,v in constituents.items():
+                self.initial_composition.append({'molecule':k,'count':v['count']})
         for item in self.initial_composition:
             m=item['molecule']
             if m not in self.molecules:
@@ -170,4 +184,5 @@ class Configuration:
             Z[Atoms.index(B.ai)]-=MaxB[-1]
             Z[Atoms.index(B.aj)]-=MaxB[-1]
         # logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
-        return sum(MaxB)
+        self.maxconv=sum(MaxB)
+        # return sum(MaxB)

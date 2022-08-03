@@ -10,17 +10,19 @@
 #
 #  class for methods that need to work with both Topology and Coordinates
 from itertools import product
-from mimetypes import init
 import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
 from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
+from HTPolyNet.gromacs import grompp_and_mdrun
 # from HTPolyNet.molecule import MoleculeDict,ReactionList
-from HTPolyNet.plot import network_graph
+#from HTPolyNet.plot import network_graph
+import HTPolyNet.projectfilesystem as pfs
 import logging
 import numpy as np
-import networkx as nx
 from enum import Enum
+import os
+import shutil
 
 logger=logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ class TopoCoord:
     """Container for Topology and Coordinates, along with methods that
         use either or both of them
     """
-    def __init__(self,topfilename='',grofilename='',mol2filename='',system_name='htpolynet',**kwargs):
+    def __init__(self,topfilename='',grofilename='',grxfilename='',mol2filename='',system_name='htpolynet',**kwargs):
         """Constructor method for TopoCoord.
 
         :param topfilename: name of Gromacs-format topology file (top), defaults to ''
@@ -50,25 +52,30 @@ class TopoCoord:
         :param mol2filename: name of SYBYL MOL2-format coordinate/bonds file, defaults to ''
         :type mol2filename: str, optional
         """
-        wrap_coords=kwargs.get("wrap_coords",True)
+        wrap_coords=kwargs.get('wrap_coords',True)
+        self.files={}
+        self.files['gro']=grofilename
+        self.files['top']=topfilename
+        self.files['grx']=grxfilename
+        self.files['mol2']=mol2filename
+        self.gfxattr=[]
+        self.idx_lists={}
+        self.idx_lists['chain']=[]
+        self.idx_lists['cycle']=[]
         if grofilename!='':
-            self.grofilename=grofilename
             self.read_gro(grofilename,wrap_coords=wrap_coords)
+            if grxfilename!='':
+                self.gfxattr=self.read_gro_attributes(grxfilename)
         else:
             self.Coordinates=Coordinates()  # empty
         if topfilename!='':
-            self.topfilename=topfilename
             self.read_top(topfilename)
         else:
             self.Topology=Topology(system_name=system_name) # empty
         if mol2filename!='':
-            self.mol2filename=mol2filename
             self.read_mol2(mol2filename)
-            # will overwrite coords and add 'mol2_bonds' section to topology
-
-        self.idx_lists={}
-        self.idx_lists['chain']=[]
-        self.idx_lists['cycle']=[]
+        if grxfilename!='':
+            self.read_gro_attributes(grxfilename)
 
     def make_bonds(self,pairs,skip_H=[]):
         """Adds new bonds to the global topology
@@ -484,6 +491,7 @@ class TopoCoord:
         :param topfilename: name of topology file
         :type topfilename: str
         """
+        self.files['top']=os.path.abspath(topfilename)
         self.Topology=Topology.read_gro(topfilename)
 
     def read_gro(self,grofilename,preserve_box=False,wrap_coords=True):
@@ -493,6 +501,7 @@ class TopoCoord:
         :param grofilename: name of gro file
         :type grofilename: str
         """
+        self.files['gro']=os.path.abspath(grofilename)
         if preserve_box:
             savebox=self.Coordinates.box.copy()
         self.Coordinates=Coordinates.read_gro(grofilename,wrap_coords=wrap_coords)
@@ -512,6 +521,7 @@ class TopoCoord:
             ignored, defaults to False
         :type ignore_bonds: bool, optional
         """
+        self.files['mol2']=os.path.abspath(mol2filename)
         temp_coords=Coordinates.read_mol2(mol2filename)
         if self.Coordinates.empty or overwrite_coordinates:
             save_box=self.Coordinates.box.copy()
@@ -567,6 +577,7 @@ class TopoCoord:
         :type topfilename: str
         """
         self.Topology.to_file(topfilename)
+        self.files['top']=os.path.abspath(topfilename)
 
     def write_gro(self,grofilename):
         """Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()
@@ -575,6 +586,7 @@ class TopoCoord:
         :type grofilename: str
         """
         self.Coordinates.write_gro(grofilename)
+        self.files['gro']=os.path.abspath(grofilename)
 
     def write_top_gro(self,topfilename,grofilename):
         """Writes both a Gromacs top file and Gromacs coordinate file
@@ -664,6 +676,7 @@ class TopoCoord:
         """
         self.Coordinates.copy_coords(other.Coordinates)
         self.Coordinates.box=other.Coordinates.box.copy()
+        self.files['gro']=other.files['gro']
 
     def restore_bond_parameters(self,saved):
         """Retores saved bond parameters in df saved by overwriting
@@ -673,6 +686,9 @@ class TopoCoord:
         """
         self.Topology.restore_bond_parameters(saved)
 
+    def set_grx_attributes(self,attributes):
+        self.grxattr=attributes
+    
     def write_gro_attributes(self,attributes_list,grxfilename):
         """Writes atomic attributes to a file
 
@@ -682,6 +698,10 @@ class TopoCoord:
         :type grxfilename: str
         """
         self.Coordinates.write_atomset_attributes(attributes_list,grxfilename)
+        self.files['grx']=os.path.abspath(grxfilename)
+
+    def write_grx_attributes(self,grxfilename):
+        self.write_gro_attributes(self.grxattr,grxfilename)
 
     def read_gro_attributes(self,grxfilename,attribute_list=[]):
         """Read attributes from file into self.Coordinates.A
@@ -691,11 +711,14 @@ class TopoCoord:
         :param attribute_list: list of attributes to take, defaults to [] (take all)
         :type attribute_list: list, optional
         """
+        self.files['grx']=os.path.abspath(grxfilename)
         attributes_read=self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
         if 'chain' in attributes_read and 'chain_idx' in attributes_read:
             self.reset_idx_list_from_grx_attributes('chain')
         if 'cycle' in attributes_read and 'cycle_idx' in attributes_read:
             self.reset_idx_list_from_grx_attributes('cycle')
+        if attributes_read!=self.grxattr:
+            self.grxattr=attributes_read
 
     def set_gro_attribute(self,attribute,srs):
         self.Coordinates.set_atomset_attribute(attribute,srs)
@@ -844,7 +867,7 @@ class TopoCoord:
     def wrap_coords(self):
         self.Coordinates.wrap_coords()
 
-    def inherit_grx_attributes_from_molecules(self,attributes,molecule_dict,initial_composition,globally_unique=[],unset_defaults=[],overall_default=0):
+    def inherit_grx_attributes_from_molecules(self,molecule_dict,initial_composition,globally_unique=[],unset_defaults=[],overall_default=0):
         """inherit_grx_attributes_from_molecules Copy non-Gromacs-standard atom attributes in list "attributes" from molecule templates in molecule_dict according to molecule counts in dict initial_composition.
 
         :param attributes: list of labels of attributes to copy
@@ -862,38 +885,40 @@ class TopoCoord:
         """
         # logger.debug(f'inherit grx {attributes} {unset_defaults} {globally_unique}')
         ''' set up the globally_unique and unset_defaults list if necessary '''
-        if len(globally_unique)!=len(attributes):
-            globally_unique=[False for _ in range(len(attributes))]
-        if len(unset_defaults)!=len(attributes):
-            unset_defaults=[overall_default for _ in range(len(attributes))]
+        if len(globally_unique)!=len(self.grxattr):
+            globally_unique=[False for _ in range(len(self.grxattr))]
+        if len(unset_defaults)!=len(self.grxattr):
+            unset_defaults=[overall_default for _ in range(len(self.grxattr))]
 
         ''' drop all attribute values from current global atom dataframe '''
         adf=self.Coordinates.A
-        self.Coordinates.A=adf.drop(columns=[a for a in attributes if a in adf])
+        self.Coordinates.A=adf.drop(columns=[a for a in self.grxattr if a in adf])
 
         logger.debug(f'{adf.shape[0]} atoms inheriting these attributes from molecular templates:')
         logger.debug(f'    Attribute name     Default value   Globally unique?')
-        for attname,defval,gu in zip(attributes,unset_defaults,globally_unique):
+        for attname,defval,gu in zip(self.grxattr,unset_defaults,globally_unique):
             logger.debug(f'    {attname:<15s}    {str(defval):<13s}   {gu}')
-        if len(unset_defaults)==len(attributes):
+        if len(unset_defaults)==len(self.grxattr):
             att_running_maxval={}
-            for k,v in zip(attributes,unset_defaults):
+            for k,v in zip(self.grxattr,unset_defaults):
                 if type(v)==int or type(v)==float:
                     att_running_maxval[k]=0
                 else:
                     att_running_maxval[k]='0'
         else:
-            att_running_maxval={k:overall_default for k in attributes}
+            att_running_maxval={k:overall_default for k in self.grxattr}
 
-        attribute_lists={k:[] for k in attributes}
-        value_counts={k:0 for k in attributes}
+        attribute_lists={k:[] for k in self.grxattr}
+        value_counts={k:0 for k in self.grxattr}
         for icdict in initial_composition:
             molecule=icdict['molecule']
             count=icdict['count']
             mol_adf=molecule_dict[molecule].TopoCoord.Coordinates.A
-            mol_attr_df=mol_adf[attributes]
+            for ln in mol_adf.to_string().split('\n'):
+                logger.debug(ln)
+            mol_attr_df=mol_adf[self.grxattr]
             for i in range(count):
-                for i,k in enumerate(attributes):
+                for i,k in enumerate(self.grxattr):
                     tra=mol_attr_df[k].to_list()
                     # nv=len(tra)-tra.count(unset_defaults[i])
                     nuv=len(list(set([x for x in tra if x != unset_defaults[i]])))
@@ -947,6 +972,7 @@ class TopoCoord:
         other_attributes=pd.DataFrame()
         other_attributes['type']=self.Topology.D['atoms']['type']
         other_attributes['charge']=self.Topology.D['atoms']['charge']
+        self.files['mol2']=os.path.abspath(filename)
         # logger.debug(f'write_mol2, other_attributes:\n{other_attributes.to_string()}')
         if 'mol2_bonds' in self.Topology.D:
             self.Coordinates.write_mol2(filename,molname=molname,bondsDF=self.Topology.D['mol2_bonds'],other_attributes=other_attributes)
@@ -1326,3 +1352,24 @@ class TopoCoord:
         # logger.debug(f'result oneaway_resids {oneaway_resids} oneaway_resnames {oneaway_resnames}')
         # logger.debug(f'oneaway_atomidx {oneaway_atomidx} oneaway_atomnames {oneaway_atomnames}')
         return oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames
+
+    def grab_files(self):
+        cwd=os.getcwd()
+        for ext in ['top','gro']:
+            filename=self.files[ext]
+            logger.debug(f'{ext} grabbing {filename} for {cwd}')  
+            if os.path.commonprefix([cwd,filename])!=cwd:
+                shutil.copy(filename,cwd)
+            self.files[ext]=os.path.abspath(os.path.basename(filename))
+
+    def grompp_and_mdrun(self,out,mdp,**kwargs):
+        self.grab_files()
+        top=os.path.basename(self.files['top']).replace('.top','')
+        gro=os.path.basename(self.files['gro']).replace('.gro','')
+        assert os.path.exists(f'{top}.top')
+        assert os.path.exists(f'{gro}.gro')
+        assert os.path.exists(f'{mdp}.mdp')
+        logger.debug(f'{os.getcwd()} {pfs.cwd()} {top}, {gro}, {mdp}')
+        msg=grompp_and_mdrun(gro=gro,top=top,out=out,mdp=mdp,**kwargs)
+        self.copy_coords(TopoCoord(grofilename=f'{out}.gro'))
+        return msg

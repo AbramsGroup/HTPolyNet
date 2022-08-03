@@ -165,20 +165,23 @@ def checkin(filename,overwrite=False,priority='user'):
 def subpath(name):
     return _PFS_.projSubPaths[name]
 
+def go_proj():
+    _PFS_.cdproj()
+
 def go_to(pathstr):
     """go_to Change the current working directory to "pathstr" which is assumed to be 
         under the project root.
 
     :param pathstr: pathname of directory relative to project root
-    :type pathstr: _type_
+    :type pathstr: str
     :return: absolute path of current working direcory
     :rtype: os.path
     """
+    _PFS_.cdproj()
     dirname=os.path.dirname(pathstr)
     if dirname=='':
         dirname=pathstr # assume this is a topdir
     assert dirname in _PFS_.projSubPaths,f'Error: cannot navigate using pathstring {pathstr}'
-    _PFS_.cdproj()
     if not os.path.exists(dirname):
         os.mkdir(dirname)
     os.chdir(dirname)

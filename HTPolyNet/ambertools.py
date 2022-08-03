@@ -1,26 +1,24 @@
-# -*- coding: utf-8 -*-
-"""
-
-@author: huang
-"""
 import logging
 import hashlib
 import shutil
 import parmed
-import os
+# import os
 from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
 logger=logging.getLogger(__name__)
 
 def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kwargs):
-    chargemethod=kwargs.get('charge_method','bcc')
-    logger.info(f'AmberTools is parameterizing {inputPrefix}.{input_structure_format}')
+    ambertools_dict=kwargs.get('ambertools',{})
+    if ambertools_dict:
+        chargemethod=ambertools_dict.get('charge_method','bcc')
+    else:
+        chargemethod=kwargs.get('charge_method','bcc')
+    logger.info(f'AmberTools is parameterizing {inputPrefix}.{input_structure_format} using charge method {chargemethod}')
     structin=f'{inputPrefix}.{input_structure_format}'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
     new_structin=structin
     if structin==mol2out:
-        # mol2pfx,mol2sfx=os.path.splitext(mol2in)
         new_structin=inputPrefix+f'-input.{input_structure_format}'
         logger.debug(f'Antechamber overwrites input {structin}; backing up to {new_structin}')
         shutil.copy(structin,new_structin)
