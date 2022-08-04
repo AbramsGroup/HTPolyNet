@@ -49,25 +49,26 @@ class Runtime:
         if self.cfg.parameters['restart']:
             logger.info(f'Restarting in {pfs.proj()}')
         self.molecules:MoleculeDict={}
+        self.cc=CureController(self.cfg.basedict)
 
-    def checkout(self,filename,altpath=None):
-        if not pfs.checkout(filename):
-            searchpath=pfs.local_data_searchpath()
-            # logger.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
-            if altpath:
-                searchpath.append(altpath)
-                # logger.info(f'and alternative path {altpath}')
-            for p in searchpath:
-                # logger.debug(f'Searching {p}...')
-                fullfilename=os.path.join(p,filename)
-                if os.path.exists(fullfilename):
-                    basefilename=os.path.basename(filename)
-                    shutil.copyfile(fullfilename,basefilename)
-                    logger.debug(f'Checkout {fullfilename} to {pfs.cwd()}')
-                    return True
-            logger.debug(f'Could not find {filename} anywhere!')
-            return False
-        return True
+    # def checkout(self,filename,altpath=None):
+    #     if not pfs.checkout(filename):
+    #         searchpath=pfs.local_data_searchpath()
+    #         # logger.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
+    #         if altpath:
+    #             searchpath.append(altpath)
+    #             # logger.info(f'and alternative path {altpath}')
+    #         for p in searchpath:
+    #             # logger.debug(f'Searching {p}...')
+    #             fullfilename=os.path.join(p,filename)
+    #             if os.path.exists(fullfilename):
+    #                 basefilename=os.path.basename(filename)
+    #                 shutil.copyfile(fullfilename,basefilename)
+    #                 logger.debug(f'Checkout {fullfilename} to {pfs.cwd()}')
+    #                 return True
+    #         logger.debug(f'Could not find {filename} anywhere!')
+    #         return False
+    #     return True
 
     def generate_molecules(self,force_parameterization=False,force_checkin=False):
         GAFF_dict=self.cfg.parameters.get('GAFF',{})
@@ -192,7 +193,7 @@ class Runtime:
         else:
             logger.info(f'Fetching parameterized {mname}')
             for ex in ['mol2','top','itp','gro','grx']:
-                self.checkout(f'molecules/parameterized/{mname}.{ex}')
+                pfs.checkout(f'molecules/parameterized/{mname}.{ex}')
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2',wrap_coords=False)
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             # logger.debug(f'{M.name} box {M.TopoCoord.Coordinates.box}')
@@ -321,13 +322,13 @@ class Runtime:
             if leftovers>0:
                 c_togromacs[M.name]+=1
                 leftovers-=1
-            self.checkout(f'molecules/parameterized/{M.name}.gro',altpath=pfs.subpath('molecules'))
+            pfs.checkout(f'molecules/parameterized/{M.name}.gro',altpath=pfs.subpath('molecules'))
             for isomer in M.stereoisomers:
                 c_togromacs[isomer]=count_per_isomer
                 if leftovers>0:
                     c_togromacs[isomer]+=1
                     leftovers-=1
-                self.checkout(f'molecules/parameterized/{isomer}.gro',altpath=pfs.subpath('molecules'))
+                pfs.checkout(f'molecules/parameterized/{isomer}.gro',altpath=pfs.subpath('molecules'))
         msg=insert_molecules(c_togromacs,boxsize,inpfnm,**self.cfg.parameters)
         logger.info(f'Generated {inpfnm}.top and {inpfnm}.gro.')
         self.TopoCoord.read_gro(f'{inpfnm}.gro')
@@ -364,11 +365,11 @@ class Runtime:
             densification_dict['temperature']=self.cfg.parameters.get('densification_temperature',300)
             densification_dict['pressure']=self.cfg.parameters.get('densification_pressure',10)
         logger.info(f'Densification for {densification_dict["nsteps"]} steps at {densification_dict["temperature"]} K and {densification_dict["pressure"]} bar')
-        self.checkout(f'mdp/min.mdp')
+        pfs.checkout(f'mdp/min.mdp')
         logger.debug(f'{self.TopoCoord.files}')
         msg=self.TopoCoord.grompp_and_mdrun(out=f'{inpfnm}-minimized',mdp='min',quiet=False,**self.cfg.parameters)
         logger.debug(f'{self.TopoCoord.files}')
-        self.checkout(f'mdp/liquid-densify-npt.mdp')
+        pfs.checkout(f'mdp/liquid-densify-npt.mdp')
         mod_dict={'ref_t':densification_dict['temperature'],'gen-temp':densification_dict['temperature'],'gen-vel':'yes','ref_p':densification_dict['pressure'],'nsteps':densification_dict['nsteps']}
         mdp_modify(f'liquid-densify-npt.mdp',mod_dict)
         msg=self.TopoCoord.grompp_and_mdrun(out=deffnm,mdp='liquid-densify-npt',quiet=False,**self.cfg.parameters)
@@ -395,7 +396,7 @@ class Runtime:
         else:
             logger.info(f'Precure equilibration for {pe_dict["nsteps"]} steps at {pe_dict["temperature"]} K and {pe_dict["pressure"]} bar')
             mdp_pfx='equilibrate-npt'
-            self.checkout(f'mdp/{mdp_pfx}.mdp')
+            pfs.checkout(f'mdp/{mdp_pfx}.mdp')
             mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}
             mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
             msg=grompp_and_mdrun(gro=f'{inpfnm}',top=top,out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
@@ -409,481 +410,58 @@ class Runtime:
         cp.write(self.TopoCoord,'do_precure_equilibration')
 
     def do_cure(self):
-        cc=CureController(self.cfg.basedict)
-
-    def do_bondsearch(self,cure_dict):
-        CP=self.CP
-        opfx=CP.pfx()
-        CP.radius=cure_dict['search_radius']+CP.current_radidx*cure_dict['radial_increment']
-        logger.info(f'Bondsearch using radius {CP.radius} nm initiated.')
-        apply_probabilities=CP.curr_conversion<cure_dict['late_threshold']
-        bond_limit=int(cure_dict['max_conversion_per_iteration']*CP.max_nxlinkbonds)
-        bond_target=int((cure_dict['desired_conversion']-CP.curr_conversion)*CP.max_nxlinkbonds)
-        bond_limit=min([bond_limit,bond_target])
-        logger.debug(f'Iteration limited to at most {bond_limit} new bonds')
-        nbonds=0
-        while nbonds==0 and CP.current_radidx<CP.max_radidx:
-            nbdf=self.searchbonds(radius=CP.radius,stage='cure',
-                                    apply_probabilities=apply_probabilities,
-                                    abs_max=bond_limit)
-            nbonds=nbdf.shape[0]
-            if nbonds==0:
-                CP.current_radidx+=1
-                CP.radius+=cure_dict['radial_increment']
-                logger.info(f'Increasing cutoff radius to {CP.radius} nm')    
-        if nbonds>0:
-            ess='' if nbonds==1 else 's'
-            logger.info(f'CURE iteration {CP.iter} will generate {nbdf.shape[0]} new bond{ess}.')
-            pairs=pd.DataFrame()
-            CP.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
-            CP.bonds['initial_distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                
-    def CURE(self):
-        # if len(self.cfg.reactions)==0:
-        #     return
-        # Connect - Update - Relax - Equilibrate       
+        cc=self.cc
+        TC=self.TopoCoord
+        RL=self.cfg.reactions
+        MD=self.molecules
+        cc.setup(max_nxlinkbonds=self.cfg.maxconv,
+        max_search_radius=min(TC.Coordinates.box.diagonal()/2))
         logger.info('*'*10+' Connect-Update-Relax-Equilibrate (CURE) begins '+'*'*10)
 
-
-        CP=self.CP
-        CP.max_nxlinkbonds=self.cfg.maxconv
-        CP.max_search_radius=min(self.TopoCoord.Coordinates.box.diagonal()/2)
-        CP.max_radidx=int((CP.max_search_radius-cure_dict['search_radius'])/cure_dict['radial_increment'])
-        cure_finished=CP.is_cured()
-        if not cure_finished:
-            CP.iter=1
-            CP.state=CPstate.bondsearch
+        cc.reset()
+        cure_finished=cc.is_cured()
         while not cure_finished:
-            cwd=pfs.go_to(f'systems/iter-{CP.iter}')
-            CP.read_checkpoint(self)
-            if CP.state==CPstate.bondsearch:
-                self.do_bondsearch(CP,cure_dict)
-                if CP.bonds.shape[0]>0:
-                    if dragging_enabled and CP.bonds['initial_distance'].max()>drag_dict['trigger_distance']:
-                        next_stage=CPstate.drag
-                    else:
-                        next_stage=CPstate.update
-                    CP.write_checkpoint(self,next_stage,prefix=opfx)
-                else:
-                    logger.info(f'Failed to find new bonds.')
-                    cure_finished=True
-            if CP.state==CPstate.drag:
-                opfx=CP.pfx()
-                CP.read_checkpoint(self)
-                CP.bonds['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
-                maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
-                logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                ess='' if CP.bonds.shape[0]==1 else 's'
-                logger.info(f'Prebond dragging initiated on {CP.bonds.shape[0]} new bond{ess} (max distance {maxL:.3f} nm).')
-                rcommon=max([gromacs_dict['rdefault'],maxL])
-                for stg in ['minimize','nvt','npt']:
-                    impfx=f'{CP.state}-{stg}'
-                    self.checkout(f'mdp/{impfx}.mdp')
-                    nsteps=drag_dict['nsteps']
-                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':drag_dict['temperature'],'ref_t':drag_dict['temperature'],'gen-vel':'yes'}
-                    if stg=='npt':
-                        mod_dict['ref_p']=drag_dict['pressure']
-                    if nsteps!=-2:
-                        mod_dict['nsteps']=nsteps
-                    mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_dragstage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
-                self.TopoCoord.add_restraints(CP.bonds,typ=6)
-                begin_dragstage=CP.current_dragstage
-                if drag_dict['increment']>0.0:
-                    drag_nstages=int(maxL/drag_dict['drag_increment'])
-                    ess='' if drag_nstages==1 else 's'
-                    logger.debug(f'{opfx}: Using {drag_nstages} drag stage{ess} with increment {drag_dict["increment"]}')
-                logger.info('     Stage  Max-distance (nm)')
-                for i in range(begin_dragstage,drag_nstages):
-                    saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,drag_nstages,minimum_distance=drag_dict['limit'],init_colname='initial_distance')
-                    stagepref=f'{opfx}-stage-{i+1}'
-                    CP.write_checkpoint(self,CPstate.drag,prefix=stagepref) # writes the gro and top files
-                    stggro=stagepref
-                    for stg in ['minimize','nvt','npt']:
-                        msg=grompp_and_mdrun(gro=stggro,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,**self.cfg.parameters)
-                        stggro=f'{stagepref}-{stg}'
-                    self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
-                    self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
-                    logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    logger.info(f'{i+1:>10d}  {maxL:>17.3f}')
-                    rcommon=max([gromacs_dict['rdefault'],maxL+drag_dict['cutoff_pad']])
-                    nextpref=f'{opfx}-stage-{i+2}'
-                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
-                    for stg in ['minimize','nvt','npt']:
-                        mdp_modify(f'{stagepref}-{stg}.mdp',mod_dict,new_filename=f'{nextpref}-{stg}.mdp')
-                    CP.current_dragstage+=1
-                remstage=CP.current_dragstage
-                rempref=f'{opfx}-stage-{remstage}'
-                for stg in ['minimize','nvt','npt']:
-                    os.remove(f'{rempref}-{stg}.mdp')
-                CP.current_dragstage-=1
-                self.TopoCoord.remove_restraints(CP.bonds)
-                CP.write_checkpoint(self,CPstate.update,prefix=f'{opfx}-complete')
-            if CP.state==CPstate.update:
-                opfx=CP.pfx()
-                logger.info(f'Topology update')
-                CP.read_checkpoint(self)
-                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.csv')
-                CP.current_stage=0
-                CP.bonds['initial_distance']=self.TopoCoord.return_bond_lengths(CP.bonds)
-                self.TopoCoord.make_resid_graph(json_file=f'{opfx}-resid-graph.json',draw=f'../../plots/iter-{CP.iter}-graph.png')
-                CP.write_checkpoint(self,CPstate.relax,prefix=f'{opfx}-complete')
-            if CP.state==CPstate.relax:
-                ''' Relax all new bonds using progressively shorter and stiffer bond parameters '''
-                opfx=CP.pfx()
-                CP.read_checkpoint(self)
-                CP.bonds['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
-                maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
-                CP.pairs['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
-                pmaxL,pminL,pmeanL=CP.pairs['current_lengths'].max(),CP.pairs['current_lengths'].min(),CP.pairs['current_lengths'].mean()
-                logger.info(f'Relaxation of {CP.bonds.shape[0]} bonds; max distance {maxL:.3f} nm, max 1-4 distance {pmaxL:.3f} nm')
-                logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                logger.debug(f'{opfx}: Bond-designate-1-4 pairs lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                CP.pairs.to_csv(f'{opfx}-pairs.csv',sep=' ',header=False,index=False)
-                rcommon=max([gromacs_dict['rdefault'],maxL+relax_dict['cutoff_pad'],pmaxL+relax_dict['cutoff_pad']])
-                logger.debug(f'rcommon {rcommon}')
-                for stg in ['minimize','nvt','npt']:
-                    impfx=f'{CP.state}-{stg}'
-                    self.checkout(f'mdp/{impfx}.mdp')
-                    nsteps=relax_dict['nsteps']
-                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-vel':'yes','gen-temp':relax_dict['temperature'],'ref_t':relax_dict['temperature']}
-                    if nsteps!=-2:
-                        mod_dict['nsteps']=nsteps
-                    mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
-                if relax_dict['increment']>0.0:
-                    relax_dict['nstages']=int(CP.bonds['initial_distance'].max()/relax_dict['increment'])
-                    ess='' if relax_dict['nstages']==1 else 's'
-                    logger.debug(f'{opfx}: Using {relax_dict["nstages"]} relaxation stage{ess} with increment {relax_dict["increment"]}')
-                logger.info('     Stage  Max-distance (nm)  Max-1-4-distance (nm)')
-                begin_stage=CP.current_stage
-                for i in range(begin_stage,relax_dict['nstages']):
-                    saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,relax_dict['nstages'],init_colname='initial_distance')
-                    stagepref=f'{opfx}-stage-{i+1}'
-                    CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
-                    stggro=stagepref
-                    for stg in ['minimize','nvt','npt']:
-                        msg=grompp_and_mdrun(gro=stggro,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,quiet=False,**self.cfg.parameters)
-                        stggro=f'{stagepref}-{stg}'
-                    self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
-                    self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
-                    CP.pairs['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
-                    pmaxL,pminL,pmeanL=CP.pairs['current_lengths'].max(),CP.pairs['current_lengths'].min(),CP.pairs['current_lengths'].mean()
-                    logger.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    logger.debug(f'{stagepref}: Bond-designate-1-4 pair lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                    logger.info(f'{i+1:>10d}  {maxL:>17.3f}  {pmaxL:>21.3f}')
-                    rcommon=max([maxL+relax_dict['cutoff_pad'],gromacs_dict['rdefault'],pmaxL+relax_dict['cutoff_pad']])
-                    nextpref=f'{opfx}-stage-{i+2}'
-                    mod_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
-                    for stg in ['minimize','nvt','npt']:
-                        mdp_modify(f'{stagepref}-{stg}.mdp',mod_dict,new_filename=f'{nextpref}-{stg}.mdp')
-                    CP.current_stage+=1
-                remstage=CP.current_stage
-                rempref=f'{opfx}-stage-{remstage}'
-                for stg in ['minimize','nvt','npt']:
-                    os.remove(f'{rempref}-{stg}.mdp')
-                CP.current_stage-=1
-                CP.bonds_are='relaxed'
-                CP.write_checkpoint(self,CPstate.equilibrate,prefix=f'{opfx}-complete')
-            if CP.state==CPstate.equilibrate:
-                opfx=CP.pfx()
-                logger.info(f'Equilibration for {equil_dict["nsteps"]} steps at {equil_dict["temperature"]} K and {equil_dict["pressure"]} bar')
-                CP.read_checkpoint(self)
-                pfx=f'{CP.state}-npt'
-                self.checkout(f'mdp/{pfx}.mdp')
-                mod_dict={'gen-temp':equil_dict['temperature'],'gen-vel':'yes','ref_t':equil_dict['temperature'],'ref_p':equil_dict['pressure'],'nsteps':equil_dict['nsteps']}
-                mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
-                CP.write_checkpoint(self,CP.state,prefix=opfx)
-                msg=grompp_and_mdrun(gro=opfx,top=opfx,out=f'{opfx}-post',mdp=opfx,quiet=False,**self.cfg.parameters)
-                self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{opfx}-post.gro'))
-                CP.write_checkpoint(self,CPstate.post_equilibration,prefix=f'{opfx}-complete')
-                average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
-                logger.info(f'  -> average density {average_density:.3f} kg/m^3')
-                CP.curr_nxlinkbonds+=CP.bonds.shape[0]
-                iterations_exceeded=False
-                conversion_reached=False
-                if CP.max_nxlinkbonds>0:
-                    CP.curr_conversion=CP.curr_nxlinkbonds/CP.max_nxlinkbonds
-                    conversion_reached=CP.curr_conversion>=cure_dict['desired_conversion']
-                    iterations_exceeded=CP.iter>=cure_dict['max_iterations']
-                    logger.info(f'Current conversion: {CP.curr_conversion:.3f} ({CP.curr_nxlinkbonds}/{CP.max_nxlinkbonds})')
-                    if conversion_reached:
-                        logger.info(f'Current conversion {CP.curr_conversion:.3f} exceeds desired conversion {cure_dict["desired_conversion"]}')
-                    if iterations_exceeded:
-                        logger.info(f'Current cure iteration {CP.iter} is at the maximum {cure_dict["max_iterations"]}')
-                    CP.reset_for_next_iter()
-                else:
-                    assert CP.curr_conversion==0.0
-                    assert CP.curr_nxlinkbonds==0
-                    conversion_reached=True
-                cure_finished = conversion_reached or iterations_exceeded
-                CP.state=CPstate.postcure
-
-        self.post_CURE(CP,relax_dict,equil_dict)
-        if CP.state==CPstate.finished:
-            logger.info(f'CURE finished.')
-            CP.read_checkpoint(self)
-            CP.write_checkpoint(self,CPstate.finished,prefix=CP.pfx())
-
-    def post_CURE(self,CP,relax_dict,pc_equil_dict):
+            cwd=pfs.go_to(f'systems/iter-{cc.iter}')
+            TC.grab_files()
+            cc.do_bondsearch(TC,RL,MD)
+            cc.do_preupdate_dragging(TC)
+            cc.do_topology_update(TC)
+            cc.do_relax(TC)
+            cc.do_equilibrate(TC)
+            cure_finished=cc.is_cured() and cc.next_iter()
         cwd=pfs.go_to(f'systems/postcure')
-        if CP.state==CPstate.postcure:
-            opfx=CP.pfx()
-            CP.read_checkpoint(self)
-            ''' perform any postcure reactions '''
-            bdf=self.searchbonds(stage='post-cure')
-            if bdf.shape[0]>0:
-                pairs=pd.DataFrame()
-                CP.register_bonds(bdf,pairs,bonds_are='unrelaxed')
-                CP.bonds,CP.pairs=self.TopoCoord.update_topology_and_coordinates(CP.bonds,template_dict=self.molecules,write_mapper_to=f'{opfx}-idx-mapper.csv')
-                CP.bonds['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                CP.bonds['current_lengths']=CP.bonds['initial_distance'].copy()
-                # CP.pairs['initial_distance']=np.array(self.TopoCoord.return_bond_lengths(CP.pairs))
-                maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
-                logger.debug(f'{opfx}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                logger.info(f'Postcure forms {bdf.shape[0]} new intra-residue bonds; max distance {maxL:.3f} nm')
-                for stg in ['minimize','nvt','npt']:
-                    impfx='{CP.state}-{stg}'
-                    self.checkout(f'mdp/{impfx}.mdp')
-                    nsteps=self.cfg.parameters.get(f'{CP.state}_{stg}_steps',-2)
-                    mod_dict={'gen-temp':relax_dict['temperature'],'gen-vel':'yes','ref_t':relax_dict['temperature']}
-                    if stg=='npt':
-                        mod_dict['ref_p']=relax_dict['pressure']
-                    if nsteps!=-2:
-                        mod_dict['nsteps']=nsteps
-                    mdp_modify(f'{impfx}.mdp',mod_dict,new_filename=f'{opfx}-stage-{CP.current_stage+1}-{stg}.mdp',add_if_missing=(stg!='minimize'))
-                if relax_dict['increment']>0.0:
-                    relax_dict['nstages']=int(CP.bonds['initial_distance'].max()/relax_dict['increment'])
-                    logger.debug(f'{opfx}: Using {relax_dict["nstages"]} post-cure relaxation stages with increment {relax_dict["increment"]}')
-                begin_stage=CP.current_stage
-                logger.info('     Stage  Max-distance (nm)')
-                for i in range(begin_stage,relax_dict['nstages']):
-                    saveT=self.TopoCoord.copy_bond_parameters(CP.bonds)
-                    self.TopoCoord.attenuate_bond_parameters(CP.bonds,i,relax_dict['nstages'],init_colname='initial_distance')
-                    stagepref=f'{opfx}-stage-{i+1}'
-                    CP.write_checkpoint(self,CPstate.relax,prefix=stagepref)
-                    stggro=stagepref
-                    for stg in ['minimize','nvt','npt']:
-                        msg=grompp_and_mdrun(gro=stggro,top=stagepref,out=f'{stagepref}-{stg}',mdp=f'{stagepref}-{stg}',rdd=CP.radius,**self.cfg.parameters)
-                        stggro=f'{stagepref}-{stg}'
-                    self.TopoCoord.copy_coords(TopoCoord(grofilename=stagepref+'-npt.gro'))
-                    self.TopoCoord.restore_bond_parameters(saveT)
-                    CP.bonds['current_lengths']=np.array(self.TopoCoord.return_bond_lengths(CP.bonds))
-                    maxL,minL,meanL=CP.bonds['current_lengths'].max(),CP.bonds['current_lengths'].min(),CP.bonds['current_lengths'].mean()
-                    logger.debug(f'{stagepref}: Bond-designate lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
-                    logger.info(f'{i+1:>10d} {maxL:>17.3f}')
-                    nextpref=f'{opfx}-stage-{i+2}'
-                    mod_dict={}
-                    for stg in ['minimize','nvt','npt']:
-                        mdp_modify(f'{stagepref}-{stg}.mdp',mod_dict,new_filename=f'{nextpref}-{stg}.mdp')
-                    CP.current_stage+=1
-                remstage=CP.current_stage
-                rempref=f'{opfx}-stage-{remstage}'
-                for stg in ['minimize','nvt','npt']:
-                    os.remove(f'{rempref}-{stg}.mdp')
-                CP.current_stage-=1
-                CP.bonds_are='relaxed'
-            CP.write_checkpoint(self,CPstate.postcure_equilibrate,prefix=f'{opfx}-complete')
-        if CP.state==CPstate.postcure_equilibrate:
-            opfx=CP.pfx()
-            CP.read_checkpoint(self)
-            ''' Final NPT MD equilibration with full parameters '''
-            pfx='equilibrate-npt'
-            logger.info(f'Equilibrating for {pc_equil_dict["nsteps"]} at {pc_equil_dict["temperature"]} K and {pc_equil_dict["pressure"]} bar')
-            self.checkout(f'mdp/{pfx}.mdp')
-            mod_dict={'ref_t':pc_equil_dict['temperature'],'gen-temp':pc_equil_dict['temperature'],'gen-vel':'yes','ref_p':pc_equil_dict['pressure'],'nsteps':pc_equil_dict['nsteps']}
-            mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
-            CP.write_checkpoint(self,CPstate.relax,prefix=opfx)
-            msg=grompp_and_mdrun(gro=opfx,top=opfx,out=opfx+'-post',mdp=opfx,**self.cfg.parameters)
-            self.TopoCoord.copy_coords(TopoCoord(grofilename=opfx+'-post.gro'))
-            CP.write_checkpoint(self,CPstate.finished,prefix=f'{opfx}-complete')
+        cc.do_postcure_bondsearch(TC,RL,MD)
+        cc.do_topology_update(TC)
+        cc.do_relax(TC)
+        cc.do_postcure_equilibration(TC)
+ 
+    # def set_system(self,CP):
+    #     """set_system Reads all coordinate and topological data from filenames
+    #     indicated in the checkpoint structure; all data is overwritten; called from checkpoint
 
-    def set_system(self,CP):
-        """set_system Reads all coordinate and topological data from filenames
-        indicated in the checkpoint structure; all data is overwritten; called from checkpoint
+    #     :param CP: checkpoint structure
+    #     :type CP: Checkpoint
+    #     """
+    #     top=CP.top
+    #     gro=CP.gro
+    #     grx=CP.grx
+    #     logger.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
+    #     self.TopoCoord=TopoCoord(top,gro)
+    #     if (grx):
+    #         self.TopoCoord.read_gro_attributes(grx)
 
-        :param CP: checkpoint structure
-        :type CP: Checkpoint
-        """
-        top=CP.top
-        gro=CP.gro
-        grx=CP.grx
-        logger.debug(f'RESETTING SYSTEM FROM {top} {gro} {grx}')
-        self.TopoCoord=TopoCoord(top,gro)
-        if (grx):
-            self.TopoCoord.read_gro_attributes(grx)
+    # def register_system(self,CP,extra_attributes=['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx']):
+    #     """register_system Create
 
-    def register_system(self,CP,extra_attributes=['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx']):
-        """register_system Create
-
-        :param CP: checkpoint
-        :type CP: Checkpoint
-        :param extra_attributes: list of extra atom attributes, defaults to ['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx']
-        :type extra_attributes: list, optional
-        """
-        logger.debug(f'Writing system to {CP.top}/{CP.gro}/{CP.grx}')
-        self.TopoCoord.write_top(CP.top)
-        self.TopoCoord.write_gro(CP.gro)
-        self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
-
-    def searchbonds(self,radius=0.0,stage='cure',apply_probabilities=True,abs_max=-1) -> pd.DataFrame:
-        adf=self.TopoCoord.gro_DataFrame('atoms')
-        gro=self.TopoCoord.files['gro']
-        ncpu=self.cfg.parameters['ncpu']
-        if stage=='cure':
-            self.TopoCoord.linkcell_initialize(radius,ncpu=ncpu)
-        raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
-        bdf=pd.DataFrame()
-        Rlist=[x for x in self.cfg.reactions if (x.stage==stage and x.probability>0.0)]
-        for R in Rlist:
-            logger.debug(f'Reaction {R.name} with {len(R.bonds)} bond(s)')
-            prob=R.probability
-            for bond in R.bonds:
-                A=R.atoms[bond['atoms'][0]]
-                B=R.atoms[bond['atoms'][1]]
-                order=bond['order']
-                aname=A['atom']
-                areactantname_template=R.reactants[A['reactant']]
-                aresid_template=A['resid']
-                aresname=self.molecules[areactantname_template].get_resname(aresid_template)
-                az=A['z']
-                bname=B['atom']
-                breactantname_template=R.reactants[B['reactant']]
-                bresid_template=B['resid']
-                bresname=self.molecules[breactantname_template].get_resname(bresid_template)
-                bz=B['z']
-                if stage=='post-cure':
-                    assert areactantname_template==breactantname_template,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different reactants'
-                    assert aresname==bresname,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different residues'
-
-                Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
-                Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
-                alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list()))
-                blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list()))
-                all_possible_pairs=list(product(alist,blist))
-
-                idf=pd.DataFrame({'ai':           [int(x[0][0]) for x in all_possible_pairs],
-                                  'ri':           [int(x[0][1]) for x in all_possible_pairs],
-                                  'aj':           [int(x[1][0]) for x in all_possible_pairs],
-                                  'rj':           [int(x[1][1]) for x in all_possible_pairs],
-                                  'prob':         [prob for _ in all_possible_pairs],
-                                  'reactantName': [R.product for _ in  all_possible_pairs],
-                                  'order':        [order for _ in all_possible_pairs]})
-                if stage=='cure':
-                    # exclude atom pairs that have same resid
-                    idf=idf[idf['ri']!=idf['rj']].copy()
-                    logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
-                    if idf.shape[0]>0:
-                        ess='' if idf.shape[0]!=1 else 's'
-                        bondtestoutcomes={k:0 for k in BTRC}
-                        gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
-                        # idf.info(buf=buffer)
-                        # logger.debug(f'after gromacs distance:\n{buffer.getvalue()}')
-                        logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
-                        idf=idf[idf['r']<radius].copy().reset_index(drop=True)
-                        # idf.info(buf=buffer)
-                        # logger.debug(f'after distance filter:\n{buffer.getvalue()}')
-                        
-                        # logger.debug('Filtered (by gromacs distance) bonds:')
-                        # for ln in bdf.to_string().split('\n'):
-                        #     logger.debug(ln)
-                        ess='' if idf.shape[0]!=1 else 's'
-                        logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {radius} nm')
-                        p=Pool(processes=ncpu)
-                        idf_split=np.array_split(idf,ncpu)
-                        logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
-                        results=p.map(partial(self.TopoCoord.bondtest_df),idf_split)
-                        p.close()
-                        p.join()
-                        # reassemble final dataframe:
-                        logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
-                        idf=pd.concat(results,ignore_index=True)
-                        if not idf.empty:
-                            logger.debug(f'Bond-candidate test outcomes:')
-                            for k in bondtestoutcomes:
-                                bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
-                                logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
-                            idf=idf[idf['result']==BTRC.passed].copy()
-                elif stage=='post-cure':
-                    idf=idf[idf['ri']==idf['rj']].copy()
-                    logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
-                if not idf.empty:
-                    bdf=pd.concat((bdf,idf),ignore_index=True)
-        # logger.debug('Filtered (by single-bond tests) bonds:')
-        # for ln in bdf.to_string().split('\n'):
-        #     logger.debug(ln)
-
-        if stage=='cure' and bdf.shape[0]>0:
-            bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
-            bdf['allowed']=[True for x in range(bdf.shape[0])]
-            unique_atomidx=set(bdf.ai.to_list()).union(set(bdf.aj.to_list()))
-            unique_resids=set(bdf.ri.to_list()).union(set(bdf.rj.to_list()))
-            for i,r in bdf.iterrows():
-                if r.ai in unique_atomidx:
-                    unique_atomidx.remove(r.ai)
-                else:
-                    # logger.debug(f'Disallowing bond {i} due to repeated atom index {r.ai}')
-                    bdf.loc[i,'allowed']=False
-                if r.aj in unique_atomidx:
-                    unique_atomidx.remove(r.aj)
-                else:
-                    # logger.debug(f'Disallowing bond {i} due to repeated atom index {r.aj}')
-                    bdf.loc[i,'allowed']=False
-                if r.ri in unique_resids:
-                    unique_resids.remove(r.ri)
-                else:
-                    # logger.debug(f'Disallowing bond {i} due to repeated residue index {r.ri}')
-                    bdf.loc[i,'allowed']=False
-                if r.rj in unique_resids:
-                    unique_resids.remove(r.rj)
-                else:
-                    # logger.debug(f'Disallowing bond {i} due to repeated residue index {r.rj}')
-                    bdf.loc[i,'allowed']=False
-
-            logger.debug(f'{bdf[bdf["allowed"]==False].shape[0]} out of {bdf.shape[0]} bonds disallowed due to repeated atom indexes or residue indexes')
-
-            bdf=bdf[bdf['allowed']==True].copy().reset_index(drop=True)
-            # logger.debug('Allowed bonds:')
-            # for ln in bdf.to_string().split('\n'):
-            #     logger.debug(ln)
-
-            bdf=self.TopoCoord.cycle_collective(bdf)
-            logger.debug(f'{bdf[bdf["remove-to-uncyclize"]==True].shape[0]} out of {bdf.shape[0]} bonds removed to break nascent cycles')
-            bdf=bdf[bdf['remove-to-uncyclize']==False].copy().reset_index(drop=True)
-            # logger.debug('Non-cyclizing bonds:')
-            # for ln in bdf.to_string().split('\n'):
-            #     logger.debug(ln)
-
-            ''' roll the dice '''
-            bdf['lucky']=[True for _ in range(bdf.shape[0])]
-            if apply_probabilities:
-                for i,r in bdf.iterrows():
-                    x=np.random.random()
-                    if x>r.prob:
-                        bdf.loc[i,'lucky']=False
-
-            logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application.')
-            bdf=bdf[bdf['lucky']==True].copy().reset_index(drop=True)
-            # logger.debug('Lucky bonds:')
-            # for ln in bdf.to_string().split('\n'):
-            #     logger.debug(ln)
-
-            ''' apply the stated limit '''
-            if abs_max>-1:
-                if abs_max<bdf.shape[0]:
-                    bdf=bdf.loc[:abs_max].copy().reset_index(drop=True)
-                    logger.debug(f'Limiting to {bdf.shape[0]} allowed bonds')
-            logger.debug('Final bonds:')
-            for ln in bdf.to_string().split('\n'):
-                logger.debug(ln)
-
-        return bdf
+    #     :param CP: checkpoint
+    #     :type CP: Checkpoint
+    #     :param extra_attributes: list of extra atom attributes, defaults to ['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx']
+    #     :type extra_attributes: list, optional
+    #     """
+    #     logger.debug(f'Writing system to {CP.top}/{CP.gro}/{CP.grx}')
+    #     self.TopoCoord.write_top(CP.top)
+    #     self.TopoCoord.write_gro(CP.gro)
+    #     self.TopoCoord.write_gro_attributes(extra_attributes,CP.grx)
 
     def do_postcure_anneal(self):
         pass
@@ -911,6 +489,6 @@ class Runtime:
         self.initialize_coordinates()
         self.do_densification()
         self.do_precure_equilibration()
-        self.CURE()
+        self.do_cure()
         self.do_postcure_anneal()
         self.do_postanneal_equilibration()

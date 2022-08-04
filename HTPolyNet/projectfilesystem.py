@@ -64,7 +64,7 @@ class RuntimeLibrary:
             shutil.copyfile(basefilename,fullfilename)
         return True
 
-    def checkout(self,filename):
+    def checkout(self,filename,altpath=None):
         basefilename=os.path.basename(filename)
         fullfilename=os.path.join(self.root,filename)
         if os.path.exists(fullfilename):
@@ -72,6 +72,20 @@ class RuntimeLibrary:
             return True
         else:
             # logger.warning(f'Could not find {filename} in system library. No check-out performed.')
+            searchpath=self.local_data_searchpath()
+            # logger.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
+            if altpath:
+                searchpath.append(altpath)
+                # logger.info(f'and alternative path {altpath}')
+            for p in searchpath:
+                # logger.debug(f'Searching {p}...')
+                fullfilename=os.path.join(p,filename)
+                if os.path.exists(fullfilename):
+                    basefilename=os.path.basename(filename)
+                    shutil.copyfile(fullfilename,basefilename)
+                    logger.debug(f'Checkout {fullfilename} to {pfs.cwd()}')
+                    return True
+            logger.debug(f'Could not find {filename} anywhere!')
             return False
     
     def exists(self,filename):

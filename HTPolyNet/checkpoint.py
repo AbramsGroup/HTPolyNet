@@ -7,38 +7,11 @@ from HTPolyNet.topocoord import TopoCoord
 
 logger=logging.getLogger(__name__)
 
-class state(Enum):
-    """Enumerated CURE state
-    """
-    bondsearch=0
-    drag=1
-    update=2
-    relax=3
-    equilibrate=4
-    postcure=5
-    postcure_equilibrate=6
-    finished=7
-    unknown=99
-    def __str__(self):
-        return self.name
+
 
 class Checkpoint:
     def __init__(self):
-        self.state=state.unknown
-        self.iter=0
-        self.curr_conversion=0.0
-        self.max_search_radius=0.0
-        self.max_radidx=0
-        self.curr_nxlinkbonds=0
-        self.max_nxlinkbonds=0
-        self.current_dragstage=0
-        self.current_stage=0
-        self.current_radidx=0
-        self.radius=0.0
         self.checkpoint_file=''
-        self.bonds_file=None
-        self.bonds=pd.DataFrame()
-        self.bonds_are='nonexistent!'
         self.top=None
         self.gro=None
         self.grx=None
@@ -46,42 +19,8 @@ class Checkpoint:
         self.cwd=os.getcwd()
         self.stepschecked=[]
 
-    def pfx(self):
-        return f'{self.state.value}-{self.state}'
 
-    def set_state(self,state):
-        self.state=state
-
-    def is_cured(self):
-        return self.curr_nxlinkbonds==self.max_nxlinkbonds
-
-    def reset_for_next_cure_iter(self):
-        self.iter+=1
-        self.state=state.bondsearch
-        self.curr_conversion=0.0
-        self.max_search_radius=0.0
-        self.max_radidx=0
-        self.curr_nxlinkbonds=0
-        self.current_dragstage=0
-        self.current_stage=0
-        self.current_radidx=0
-        self.radius=0.0
-        self.bonds_file=None
-        self.bonds=pd.DataFrame()
-        self.bonds_are='nonexistent!'
-
-    def _write_bondsfile(self):
-        self.bonds.to_csv(self.bonds_file,sep=' ',mode='w',index=False,header=True,doublequote=False)
-
-    def _read_bondsfile(self):
-        assert os.path.exists(self.bonds_file),f'Error: {self.bonds_file} not found.'
-        self.bonds=pd.read_csv(self.bonds_file,sep='\s+',header=0)
-
-    def register_bonds(self,bonds,pairs,bonds_are='unrelaxed'):
-        self.bonds=bonds
-        self.pairs=pairs
-        self.bonds_are=bonds_are
-    
+ 
     def read_checkpoint(self): #,system):
         if os.path.exists(self.checkpoint_file):
             with open(self.checkpoint_file,'r') as f:
