@@ -64,15 +64,13 @@ class RuntimeLibrary:
             shutil.copyfile(basefilename,fullfilename)
         return True
 
-    def checkout(self,filename,altpath=None):
+    def checkout(self,filename,searchpath=[],altpath=[]):
         basefilename=os.path.basename(filename)
         fullfilename=os.path.join(self.root,filename)
         if os.path.exists(fullfilename):
             shutil.copyfile(fullfilename,os.path.join(os.getcwd(),basefilename))
             return True
         else:
-            # logger.warning(f'Could not find {filename} in system library. No check-out performed.')
-            searchpath=self.local_data_searchpath()
             # logger.info(f'No {filename} found in libraries; checking local data searchpath {searchpath}')
             if altpath:
                 searchpath.append(altpath)
@@ -85,7 +83,7 @@ class RuntimeLibrary:
                     shutil.copyfile(fullfilename,basefilename)
                     logger.debug(f'Checkout {fullfilename} to {pfs.cwd()}')
                     return True
-            logger.debug(f'Could not find {filename} anywhere!')
+            # logger.debug(f'Could not find {filename} anywhere in user library!')
             return False
     
     def exists(self,filename):
@@ -103,7 +101,7 @@ def lib_setup():
     return _SYSTEM_LIBRARY_
 
 class ProjectFileSystem:
-    def __init__(self,root='.',topdirs=['molecules','systems','plots'],verbose=False,reProject=False,userlibrary=None,mock=False):
+    def __init__(self,root='.',topdirs=['molecules','systems','plots'],projdir='next',verbose=False,reProject=False,userlibrary=None,mock=False):
         self.library=lib_setup()
         self.userlibrary=None
         if userlibrary:
@@ -113,7 +111,7 @@ class ProjectFileSystem:
         self.cwd=self.rootPath
         self.verbose=verbose
         if not mock:
-            self._next_project_dir(reProject=reProject)
+            self._next_project_dir(projdir=projdir,reProject=reProject)
             self._setup_project_dir(topdirs=topdirs)
         
 
@@ -128,22 +126,30 @@ class ProjectFileSystem:
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
 
-    def _next_project_dir(self,reProject=False,prefix='proj-'):
-        i=0
-        lastprojdir=''
-        currentprojdir=''
-        while(os.path.isdir(os.path.join(self.rootPath,f'{prefix}{i}'))):
-            lastprojdir=f'{prefix}{i}'
-            i+=1
-        if not reProject or lastprojdir=='': # this is a fresh project
-            if lastprojdir=='':
-                currentprojdir=f'{prefix}0'
-            else:
-                currentprojdir=f'{prefix}{i}'
+    def _next_project_dir(self,projdir='next',reProject=False,prefix='proj-'):
+        if not projdir=='next':  # explicit project directory is named
+            if os.path.exists(projdir) and not reProject:
+                raise Exception(f'Project directory {projdir} exists but you did not indicate you wanted to restart with the "-restart" flag')
             self.projPath=os.path.join(self.rootPath,currentprojdir)
-            os.mkdir(currentprojdir)
+            logger.info(f'Restarting build in {self.projPath}')
         else:
-            self.projPath=os.path.join(self.rootPath,lastprojdir)
+            i=0
+            lastprojdir=''
+            currentprojdir=''
+            while(os.path.isdir(os.path.join(self.rootPath,f'{prefix}{i}'))):
+                lastprojdir=f'{prefix}{i}'
+                i+=1
+            if not reProject or lastprojdir=='': # this is a fresh project
+                if lastprojdir=='':
+                    currentprojdir=f'{prefix}0'
+                else:
+                    currentprojdir=f'{prefix}{i}'
+                self.projPath=os.path.join(self.rootPath,currentprojdir)
+                logger.info(f'Starting new build in {self.projPath}')
+                os.mkdir(currentprojdir)
+            else:
+                self.projPath=os.path.join(self.rootPath,lastprojdir)
+                logger.info(f'Restarting build in {self.projPath} (latest project)')
 
     def _setup_project_dir(self,topdirs=['molecules','systems','plots']):
         os.chdir(self.projPath)
@@ -155,13 +161,13 @@ class ProjectFileSystem:
 
 _PFS_:ProjectFileSystem=None
 
-def pfs_setup(root='.',topdirs=['molecules','systems','plots'],
+def pfs_setup(root='.',topdirs=['molecules','systems','plots'],projdir='next',
                 verbose=False,reProject=False,userlibrary=None,mock=False):
     global _PFS_
-    _PFS_=ProjectFileSystem(root=root,topdirs=topdirs,verbose=verbose,reProject=reProject,userlibrary=userlibrary,mock=mock)
+    _PFS_=ProjectFileSystem(root=root,topdirs=topdirs,projdir=projdir,verbose=verbose,reProject=reProject,userlibrary=userlibrary,mock=mock)
 
-def checkout(filename):
-    if _PFS_.userlibrary and _PFS_.userlibrary.checkout(filename):
+def checkout(filename,altpath=[]):
+    if _PFS_.userlibrary and _PFS_.userlibrary.checkout(filename,searchpath=[_PFS_.rootPath,_PFS_.projPath],altpath=altpath):
         return True
     return _PFS_.library.checkout(filename)
 
@@ -196,8 +202,10 @@ def go_to(pathstr):
     if dirname=='':
         dirname=pathstr # assume this is a topdir
     assert dirname in _PFS_.projSubPaths,f'Error: cannot navigate using pathstring {pathstr}'
+    reentry=True
     if not os.path.exists(dirname):
         os.mkdir(dirname)
+        reentry=False
     os.chdir(dirname)
     basename=os.path.basename(pathstr)
     if basename!=pathstr:  # this is not a topdir
@@ -206,7 +214,7 @@ def go_to(pathstr):
             os.mkdir(basename)
         os.chdir(basename)
     _PFS_.cwd=os.getcwd()
-    return _PFS_.cwd
+    return reentry
 
 def root():
     return _PFS_.rootPath

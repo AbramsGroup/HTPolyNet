@@ -1,111 +1,103 @@
 import os
 import yaml
-import pandas as pd
-from enum import Enum
 import logging
 from HTPolyNet.topocoord import TopoCoord
 
 logger=logging.getLogger(__name__)
 
-
-
 class Checkpoint:
+    reqd_attr=['stepschecked','substepschecked','currentstepname']
+    reqd_files={'topology':'top','coordinates':'gro','extra_attributes':'grx'}
+    opt_files={'mol2_coordinates':'mol2'}
     def __init__(self):
         self.checkpoint_file=''
-        self.top=None
-        self.gro=None
-        self.grx=None
-        self.mol2=None
-        self.cwd=os.getcwd()
+        self.files={}
         self.stepschecked=[]
-
-
+        self.substepschecked=[]
+        self.currentstepname=None
  
-    def read_checkpoint(self): #,system):
+    def read_checkpoint(self,TC:TopoCoord):
         if os.path.exists(self.checkpoint_file):
             with open(self.checkpoint_file,'r') as f:
                 basedict=yaml.safe_load(f)
-            self.top=os.path.basename(basedict['topology'])
-            self.gro=os.path.basename(basedict['coordinates'])
-            self.grx=os.path.basename(basedict['extra_attributes'])
-            self.mol2=basedict.get('mol2_coordinates',None)
-            if self.mol2:
-                self.mol2=os.path.basename(basedict['mol2_coordinates'])
-            self.cwd=os.path.commonpath([basedict['topology'],basedict['coordinates']])
-            os.chdir(self.cwd)
-            # self.iter=basedict['ITERATION']
-            # self.state=CPstate[basedict['STATE']]
-            # self.current_dragstage=basedict['CURRENT_DRAGSTAGE']
-            # self.current_stage=basedict['CURRENT_STAGE']
-            # self.current_radidx=basedict['CURRENT_RADIDX']
-            # self.radius=basedict['RADIUS']
-            # bf=basedict.get('BONDSFILE',None)
-            # # assert bf,f'Error: BONDSFILE not found in {self.checkpoint_file}.'
-            # self.bonds_are=basedict.get('BONDS_ARE',None)
-            # if bf:
-            #     self.bonds_file=os.path.basename(bf)
-            #     self._read_bondsfile()
-            # else:
-                # self.bonds_file=None
-            #system.set_system(CP=self)
-        # else:
-        #     logging.debug(f'read_checkpoint: no file, empty checkpoint')
+            all_there=all([x in basedict for x in self.reqd_attr+list(self.reqd_files.keys())])
+            assert all_there,f'{self.checkpoint_file} is missing one or more of {self.reqd_attr+list(self.reqd_files.keys())}'
+            all_abs=all([basedict[filetype]==os.path.abspath(basedict[filetype]) for filetype in self.reqd_files.keys()])
+            assert all_abs,f'{self.checkpoint_file} should contain absolute path names'
+            self.stepschecked=basedict['stepschecked']
+            self.substepschecked=basedict['substepschecked']
+            self.currentstepname=basedict['currentstepname']
+            for filetype,ext in self.reqd_files.items():
+                self.files[filetype]=basedict[filetype]
+                TC.files[ext]=basedict[filetype]
+            for filetype,ext in self.opt_files.items():
+                filename=basedict.get(filetype,None)
+                if filename:
+                    assert os.path.abspath(filename)==filename,f'{self.checkpoint_file} should contain absolute path names'
+                    self.files[filetype]=filename
+                    TC.files[ext]=basedict[filetype]
+            return True
+        return False
 
-    def write_checkpoint(self,TC:TopoCoord,stepname): #,state): #system,state,prefix='checkpoint'):
-        # self.state=state
+    def set_checkpoint(self,TC:TopoCoord,stepname):
+        logger.debug(f'{stepname} {TC.files}')
         self.stepschecked.append(stepname)
-        self.top,self.gro,self.grx,self.mol2=[os.path.basename(TC.files[x]) for x in ['top','gro','grx','mol2']]
-        if self.top:
-            TC.write_top(self.top)
-        if self.gro:
-            TC.write_gro(self.gro)
-        if self.grx:
-            TC.write_grx_attributes(self.grx)
-        if self.mol2:
-            TC.write_mol2(self.mol2)
-        self.cwd=os.getcwd()
-        # self.bonds_file=prefix+'-bonds.csv'
-        # system.register_system(CP=self)
+        self.substepschecked=[]
+        self.currentstepname='none'
+        self.write(TC)
+
+    def set_subcheckpoint(self,TC:TopoCoord,currentstepname,substepname):
+        self.currentstepname=currentstepname
+        self.substepschecked.append(substepname)
+        self.write(TC)
+
+    def write(self,TC:TopoCoord):
+        for k,v in self.reqd_files.items():
+            self.files[k]=os.path.abspath(TC.files[v])
+        for k,v in self.opt_files.items():
+            if v in TC.files and TC.files[v]:
+                self.files[k]=os.path.abspath(TC.files[v])
         with open(self.checkpoint_file,'w') as f:
-            # f.write(f'ITERATION: {self.iter}\n')
-            # f.write(f'STATE: {str(self.state)}\n')
-            # f.write(f'CURRENT_DRAGSTAGE: {self.current_dragstage}\n')
-            # f.write(f'CURRENT_STAGE: {self.current_stage}\n')
-            # f.write(f'CURRENT_RADIDX: {self.current_radidx}\n')
-            # f.write(f'RADIUS: {self.radius}\n')
             f.write(f'stepschecked: {self.stepschecked}\n')
-            f.write(f'cwd: {self.cwd}\n')
-            if self.top:
-                f.write(f'topology: {self.top}\n')
-            if self.gro:
-                f.write(f'coordinates: {self.gro}\n')
-            if self.grx:
-                f.write(f'extra_attributes: {self.grx}\n')
-            if self.mol2:
-                f.write(f'mol2_coordinates: {self.mol2}\n')
-            # if self.bonds.shape[0]>0:
-            #     f.write(f'BONDS_ARE: {self.bonds_are}\n')
-            #     f.write(f'BONDSFILE: {self.bonds_file}\n')
+            f.write(f'substepschecked: {self.substepschecked}\n')
+            f.write(f'currentstepname: {self.currentstepname}\n')
+            for k,v in self.reqd_files.items():
+                f.write(f'{k}: {self.files[k]}\n')
+            for k,v in self.opt_files.items():
+                if k in self.files:
+                    f.write(f'{k}: {self.files[k]}\n')
             f.close()
-        # self._write_bondsfile()
+    
 
 _CP_=Checkpoint()
-def setup(checkpoint_file='checkpoint.yaml'):
+def setup(TC:TopoCoord,checkpoint_file='checkpoint.yaml'):
     global _CP_
     if os.path.exists(checkpoint_file):
         _CP_.checkpoint_file=os.path.abspath(checkpoint_file)
+        logger.debug(f'Reading existing checkpoint file {checkpoint_file}')
+        return _CP_.read_checkpoint(TC)
     else:
+        logger.debug(f'Checkpoints to {_CP_.checkpoint_file}')
         _CP_.checkpoint_file=os.path.join(os.getcwd(),checkpoint_file)
-    logger.debug(f'checkpoints to {_CP_.checkpoint_file}')
+        return False
 
-def write(TC:TopoCoord,stepname):#,state:CPstate):
+def set(TC:TopoCoord,stepname):#,state:CPstate):
     global _CP_
-    _CP_.write_checkpoint(TC,stepname)
+    _CP_.set_checkpoint(TC,stepname)
 
-def read():
+def subset(TC:TopoCoord,currentstepname,substepname):
     global _CP_
-    _CP_.read_checkpoint()
-    return TopoCoord(topfilename=_CP_.top,grofilename=_CP_.gro,grxfilename=_CP_.grx,mol2filename=_CP_.mol2)
+    _CP_.set_subcheckpoint(TC,currentstepname,substepname)
+
+# def read():
+#     global _CP_
+#     return _CP_.read_checkpoint()
 
 def passed(stepname):
     return stepname in _CP_.stepschecked
+
+def is_currentstepname(testname):
+    return _CP_.currentstepname==testname
+
+def last_substep():
+    return _CP_.substepschecked[-1]

@@ -25,6 +25,7 @@ class Configuration:
         self.Title = ''
         ''' List of (Molecule, count) '''
         self.initial_composition = []
+        self.constituents = {}
         ''' Dictionary of name:Molecule '''
         self.molecules:MoleculeDict = {}
         ''' List of Reaction instances '''
@@ -65,19 +66,19 @@ class Configuration:
     
     def NewMolecule(self,mol_name):
         M=Molecule(mol_name)
-        constituents=self.parameters.get('constituents',{})
-        if constituents:
-            try:
-                molrec=constituents[mol_name]
-            except KeyError:
-                raise Exception(f'{mol_name} not present in config file.')
-            M.symmetry_relateds=molrec.get('symmetry_equivalent_atoms',[])
-            M.stereocenters=molrec.get('stereocenters',[])
-        else:
+        if not mol_name in self.constituents: return M 
+        molrec=self.constituents[mol_name]
+        symmetry_relateds=molrec.get('symmetry_equivalent_atoms',[])
+        if not symmetry_relateds:
             sea=self.parameters.get('symmetry_equivalent_atoms',{})
-            M.symmetry_relateds=sea.get(mol_name,[])
+            symmetry_relateds=sea.get(mol_name,[])
+        M.symmetry_relateds=symmetry_relateds
+
+        stereocenters=molrec.get('stereocenters',[])
+        if not stereocenters:
             sc=self.parameters.get('stereocenters',{})
-            M.stereocenters=sc.get(mol_name,[])
+            stereocenters=sc.get(mol_name,[])
+        M.stereocenters=stereocenters
         extra_stereocenters=[]
         for stc in M.stereocenters:
             for sc in M.symmetry_relateds:
@@ -100,11 +101,17 @@ class Configuration:
         '''
         add a molecule for each unique molecule specified in initial_composition
         '''
+        self.constituents=self.basedict.get('constituents',{})
         self.initial_composition=self.basedict.get('initial_composition',[])
-        if len(self.initial_composition)==0:
-            constituents=self.basedict.get('constituents',{})
-            for k,v in constituents.items():
-                self.initial_composition.append({'molecule':k,'count':v['count']})
+        assert self.constituents or self.initial_composition,'Must specify initial composition in config file'
+        if not self.constituents:
+            for crec in self.initial_composition:
+                self.constituents[crec['molecule']]['count']=crec['count']
+        if not self.initial_composition:
+            for molecule,mrec in self.constituents.items():
+                self.initial_composition.append({'molecule':molecule,'count':mrec['count']})
+        logger.debug(f'{self.constituents}')
+        logger.debug(f'{self.initial_composition}')
         for item in self.initial_composition:
             m=item['molecule']
             if m not in self.molecules:

@@ -4,12 +4,14 @@ import numpy as np
 import os
 from itertools import product
 from HTPolyNet.topocoord import TopoCoord, BTRC
+from HTPolyNet.plot import trace
 from HTPolyNet.gromacs import gromacs_distance, mdp_modify
 from HTPolyNet.configuration import ReactionList
 from HTPolyNet.molecule import MoleculeDict
 from multiprocessing import Pool
 from functools import partial
 import HTPolyNet.projectfilesystem as pfs
+import HTPolyNet.checkpoint as cp
 
 import logging
 
@@ -74,7 +76,7 @@ class CureController:
         'gromacs': {
             'rdefault': 0.9
         },
-        'postcure_equilibration': {
+        'pc_equil': {
             'temperature': 300,
             'pressure': 1,
             'nsteps': 50000,
@@ -92,7 +94,7 @@ class CureController:
         self.max_nxlinkbonds=0
         self.cum_nxlinkbonds=0
         self.max_search_radius=0.0
-        self.max_radidx
+        self.max_radidx=0
         self.state=state.unknown
         self.iter=0
         self.max_search_radius=0.0
@@ -106,6 +108,7 @@ class CureController:
         self.radius=0.0
         self.bonds=pd.DataFrame()
         self.bonds_are='nonexistent!'
+        self.search_failed=False
         self.dicts={}
         for k,v in self.parameter_dicts.items():
             self.dicts[k]=basedict.get(v,{})
@@ -125,17 +128,15 @@ class CureController:
         self.max_radidx=int((self.max_search_radius-self.dicts['cure']['search_radius'])/self.dicts['cure']['radial_increment'])
 
     def is_cured(self):
-        return self.cum_nxlinkbonds==self.max_nxlinkbonds
+        return self.search_failed or (self.cum_nxlinkbonds==self.max_nxlinkbonds)
 
     def curr_conversion(self):
         if not self.max_nxlinkbonds: return 0
-        return self.cum_nxlinkbonds/self.max_nxlinkbonds
+        return float(self.cum_nxlinkbonds)/self.max_nxlinkbonds
 
     def reset(self):
         self.iter=1
         self.state=state.bondsearch
-        self.max_search_radius=0.0
-        self.max_radidx=0
         self.curr_nxlinkbonds=0
         self.current_stage['drag']=0
         self.current_stage['relax']=0
@@ -144,40 +145,47 @@ class CureController:
         self.bonds_file=None
         self.bonds_df=pd.DataFrame()
         self.bonds_are='nonexistent!'
+        self.search_failed=False
 
     def next_iter(self):
         i=self.iter+1
         self.reset()
         self.iter=i
-        return self.iter<self.dicts['cure']['max_iterations']
+        logger.debug(f'{self.iter}')
+        return self.iter>=self.dicts['cure']['max_iterations']
 
-    def _write_bonds_df(self):
-        self.bonds_df.to_csv(self.bonds_file,sep=' ',mode='w',index=False,header=True,doublequote=False)
+    def _write_bonds_df(self,bondsfile='bonds.csv'):
+        self.bonds_df.to_csv(bondsfile,sep=' ',mode='w',index=False,header=True,doublequote=False)
 
-    def _read_bonds_df(self):
-        assert os.path.exists(self.bonds_file),f'Error: {self.bonds_file} not found.'
-        self.bonds_df=pd.read_csv(self.bonds_file,sep='\s+',header=0)
+    def _read_bonds_df(self,bonds_file_override=''):
+        infile=self.bonds_file if not bonds_file_override else bonds_file_override
+        assert os.path.exists(infile),f'Error: {infile} not found.'
+        self.bonds_df=pd.read_csv(infile,sep='\s+',header=0)
+        self.bonds_file=os.path.abspath(infile)
 
-    def register_bonds(self,bonds,pairs,bonds_are='unrelaxed'):
+    def register_bonds(self,bonds,pairs,bonds_file,bonds_are='unrelaxed'):
         self.bonds_df=bonds
         self.pairs_df=pairs
         self.bonds_are=bonds_are
+        self._write_bonds_df(bonds_file)
+        self.bonds_file=os.path.abspath(bonds_file)
 
     def pfx(self):
         return f'{self.state.value}-{self.state}'
 
-    def do_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
+    def do_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,reentry=False):
         if self.state!=state.bondsearch: return
+        opfx=self.pfx()
         self.radius=self.dicts['cure']['search_radius']+self.current_radidx*self.dicts['cure']['radial_increment']
         logger.info(f'Bondsearch using radius {self.radius} nm initiated.')
         apply_probabilities=self.curr_conversion()<self.dicts['cure']['late_threshold']
         bond_limit=int(self.dicts['cure']['max_conversion_per_iteration']*self.max_nxlinkbonds)
-        bond_target=int((self.dicts['cure']['desired_conversion']-self.curr_conversion)*self.max_nxlinkbonds)
+        bond_target=int((self.dicts['cure']['desired_conversion']-self.curr_conversion())*self.max_nxlinkbonds)
         bond_limit=min([bond_limit,bond_target])
         logger.debug(f'Iteration limited to at most {bond_limit} new bonds')
         nbonds=0
         while nbonds==0 and self.current_radidx<self.max_radidx:
-            nbdf=self.searchbonds(TC,RL,MD,stage='cure',abs_max=bond_limit,apply_probabilities=apply_probabilities)
+            nbdf=self.searchbonds(TC,RL,MD,stage='cure',abs_max=bond_limit,apply_probabilities=apply_probabilities,reentry=reentry)
             nbonds=nbdf.shape[0]
             if nbonds==0:
                 self.current_radidx+=1
@@ -185,24 +193,29 @@ class CureController:
                 logger.info(f'Increasing cutoff radius to {self.radius} nm')
         if nbonds>0:
             ess='' if nbonds==1 else 's'
-            logger.info(f'CURE iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}.')
+            logger.info(f'Iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}.')
             pairs=pd.DataFrame() # empty placeholder
-            self.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
-            self.bonds_df['initial_distance']=TC.return_bond_lengths(self.bonds_df)
+            TC.add_length_attribute(nbdf,attr_name='initial_distance')
+            self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
             self.state=state.drag if self.dragging_enabled else state.update
         else:
-            self.state=state.equilibrate
+            self.search_failed=True
+            self.state=state.postcure_bondsearch
+        self.cum_nxlinkbonds+=nbonds
+        logger.debug(f'next: {self.state}')
 
-    def do_prebond_dragging(self,TC:TopoCoord):
+    def do_preupdate_dragging(self,TC:TopoCoord):
         if self.state!=state.drag: return
         nbdf=self.bonds_df
         d=self.dicts['drag']
         nogos=[nbdf.shape[0]==0,not self.dragging_enabled,nbdf['initial_distance'].max()<d['trigger_distance']]
+        logger.debug(f'{nogos} {any(nogos)}')
         if any(nogos):
-            self.state=state.update
-            return
-        self.distance_attenuation(TC,mode='drag')
+            logger.debug(f'no dragging')
+        else:
+            self.distance_attenuation(TC,mode='drag')
         self.state=state.update
+        logger.debug(f'next: {self.state}')
 
     def do_relax(self,TC:TopoCoord):
         if self.state!=state.relax: return
@@ -216,8 +229,8 @@ class CureController:
     def distance_attenuation(self,TC:TopoCoord,mode='drag'):
         assert mode in ['drag','relax']
         opfx=self.pfx()
-        nbdf=self.bonds_df
-        pdf=self.pairs_df
+        nbdf=self.bonds_df.copy()
+        pdf=self.pairs_df.copy()
         d=self.dicts[mode]
         nbdf['current_lengths']=nbdf['initial_distance'].copy()
         maxL,minL,meanL=nbdf['current_lengths'].max(),nbdf['current_lengths'].min(),nbdf['current_lengths'].mean()
@@ -229,59 +242,78 @@ class CureController:
             TC.add_restraints(nbdf,typ=6)
             logger.info('     Stage  Max-distance (nm)')
         else:
+            pdf['current_lengths']=pdf['initial_distance'].copy()
             pmaxL,pminL,pmeanL=pdf['current_lengths'].max(),pdf['current_lengths'].min(),pdf['current_lengths'].mean()
             logger.debug(f'1-4 distances lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
             roptions.append(pmaxL)
             logger.info('     Stage  Max-distance (nm)  Max-1-4-distance (nm)')
         rcommon=max(roptions)
-        mdp_mods_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon,'gen-temp':stg_dict['temperature'],'ref_t':stg_dict['temperature'],'gen-vel':'yes','nsteps':stg_dict['nsteps']}
-        if ensemble=='npt':
-            mdp_mods_dict['ref_p']=stg_dict['pressure']
         for stg_dict in d['equilibration']:
             ensemble=stg_dict['ensemble']
             impfx=f'{self.state}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
             pfs.checkout(f'mdp/{impfx}.mdp')
+            mdp_mods_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
+            if ensemble!='min':
+                mdp_mods_dict.update({'gen-temp':stg_dict['temperature'],'ref_t':stg_dict['temperature'],'gen-vel':'yes','nsteps':stg_dict['nsteps']})
+            if ensemble=='npt':
+                mdp_mods_dict['ref_p']=stg_dict['pressure']
             mdp_modify(f'{impfx}.mdp',mdp_mods_dict,add_if_missing=(ensemble!='min'))
         this_nstages=int(maxL/d['increment'])
         this_firststage=self.current_stage[mode]
+        logger.debug(f'{this_nstages} {this_firststage}')
         saveT=TC.copy_bond_parameters(self.bonds_df)
         for i in range(this_firststage,this_nstages):
-            TC.attenuate_bond_parameters(self.bonds_df,i,this_nstages,minimum_distance=d['limit'],init_colname='initial_distance')
+            if mode=='drag':
+                TC.attenuate_bond_parameters(self.bonds_df,i,this_nstages,minimum_distance=d['limit'],init_colname='initial_distance')
+            else:
+                TC.attenuate_bond_parameters(self.bonds_df,i,this_nstages,init_colname='initial_distance')
             stagepfx=f'{opfx}-stage-{i+1}'
+            TC.write_top(f'{stagepfx}.top')
             for stg_dict in d['equilibration']:
                 ensemble=stg_dict['ensemble']
                 TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{self.state}-{ensemble}')
                 logger.debug(f'{TC.files["gro"]}')
             TC.restore_bond_parameters(saveT)
-            self.bonds_df['current_lengths']=np.array(TC.return_bond_lengths(self.bonds_df))
-            maxL,minL,meanL=self.bonds_df['current_lengths'].max(),self.bonds_df['current_lengths'].min(),self.bonds_df['current_lengths'].mean()
+            TC.add_length_attribute(nbdf,attr_name='current_lengths')
+            maxL,minL,meanL=nbdf['current_lengths'].max(),nbdf['current_lengths'].min(),nbdf['current_lengths'].mean()
             logger.debug(f'Distances avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
             if mode=='drag':
                 logger.info(f'{i+1:>10d}  {maxL:>17.3f}')
             else:
+                TC.add_length_attribute(pdf,attr_name='current_lengths')
                 pmaxL,pminL,pmeanL=pdf['current_lengths'].max(),pdf['current_lengths'].min(),pdf['current_lengths'].mean()
                 logger.debug(f'1-4 distances lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 logger.info(f'{i+1:>10d}  {maxL:>17.3f}  {pmaxL:>21.3f}')
         if mode=='drag':
             TC.remove_restraints(self.bonds_df)
+        TC.write_top(f'{opfx}-complete.top')
+        self.register_bonds(nbdf,pdf,f'{opfx}-{mode}-bonds.csv',bonds_are=('relaxed' if mode=='relax' else 'dragged'))
 
     def do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
-        if self.state!=state.update or self.state!=state.postcure_update: return
         opfx=self.pfx()
-        logger.info(f'Topology update')
-        self.bonds_df,self.pairs_df=TC.update_topology_and_coordinates(self.bonds_df,template_dict=MD,write_mapper_to=f'{opfx}-idx-mapper.csv')
-        self.bonds_df['initial_distance']=TC.return_bond_lengths(self.bonds_df)
+        logger.debug('here')
+        if self.state!=state.update and self.state!=state.postcure_update: return
+        opfx=self.pfx()
+        logger.debug(f'Topology update')
+        # exit(-1)
+        bonds_df,pairs_df=TC.update_topology_and_coordinates(self.bonds_df,template_dict=MD,write_mapper_to=f'{opfx}-idx-mapper.csv')
+        TC.add_length_attribute(bonds_df,attr_name='initial_distance')
+        TC.add_length_attribute(pairs_df,attr_name='initial_distance')
+        self.register_bonds(bonds_df,pairs_df,f'{opfx}-bonds.csv',bonds_are='unrelaxed')
+        TC.write_gro(f'{opfx}.gro')
+        TC.write_top(f'{opfx}.top')
+        TC.write_grx_attributes(f'{opfx}.grx')
         if self.state==state.update:
             self.state=state.relax
         else:
             self.state=state.postcure_relax
 
     def do_equilibrate(self,TC:TopoCoord):
-        if self.state!=state.equilibrate or self.state!=state.postcure_equilibrate: return
+        if self.state!=state.equilibrate and self.state!=state.postcure_equilibrate: return
         d=self.dicts['equil']
         opfx=self.pfx()
         logger.info(f'Equilibration for {d["nsteps"]} steps at {d["temperature"]} K and {d["pressure"]} bar')
-        pfx=f'{self.state}-d["ensemble"]'
+        pfx=f'equilibrate-{d["ensemble"]}'
         pfs.checkout(f'mdp/{pfx}.mdp')
         mod_dict={'gen-temp':d['temperature'],'gen-vel':'yes','ref_t':d['temperature'],'ref_p':d['pressure'],'nsteps':d['nsteps']}
         mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
@@ -289,29 +321,30 @@ class CureController:
         average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
         logger.info(f'  -> average density {average_density:.3f} kg/m^3')
         if self.state==state.equilibrate:
-            self.next_iter()
+            self.state=state.bondsearch if not self.search_failed else state.postcure_bondsearch
         elif self.state==state.postcure_equilibrate:
             self.state=state.finished
 
     def do_postcure_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
         if self.state!=state.postcure_bondsearch: return
+        opfx=self.pfx()
         nbdf=self.searchbonds(TC,RL,MD,stage='post-cure')
         nbonds=nbdf.shape[0]
         if nbonds>0:
             ess='' if nbonds==1 else 's'
-            logger.info(f'CURE iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}.')
+            logger.info(f'Postcure will generate {nbdf.shape[0]} new bond{ess}.')
             pairs=pd.DataFrame() # empty placeholder
-            self.register_bonds(nbdf,pairs,bonds_are='unrelaxed')
-            self.bonds_df['initial_distance']=TC.return_bond_lengths(self.bonds_df)
+            nbdf['initial_distance']=nbdf['r'].copy()
+            self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
             self.state=state.postcure_update
         else:
             self.state=state.postcure_equilibrate
 
-    def searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage='cure',abs_max=0,apply_probabilities=False):
+    def searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage='cure',abs_max=0,apply_probabilities=False,reentry=False):
         adf=TC.gro_DataFrame('atoms')
         gro=TC.files['gro']
         if stage=='cure':
-            TC.linkcell_initialize(self.radius,ncpu=self.ncpu)
+            TC.linkcell_initialize(self.radius,ncpu=self.ncpu,force_repopulate=reentry)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         bdf=pd.DataFrame()
         Rlist=[x for x in RL if (x.stage==stage and x.probability>0.0)]
@@ -456,5 +489,8 @@ class CureController:
             logger.debug('Final bonds:')
             for ln in bdf.to_string().split('\n'):
                 logger.debug(ln)
+
+        if stage=='cure':
+            TC.linkcell_cleanup()
 
         return bdf

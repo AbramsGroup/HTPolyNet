@@ -29,13 +29,13 @@ logger=logging.getLogger(__name__)
 
 GRX_ATTRIBUTES=['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx']
 
-def _dfrotate(df,R):
+def _dfrotate(df:pd.DataFrame,R):
     for i,srow in df.iterrows():
         ri=srow[['posX','posY','posZ']].values
         newri=np.matmul(R,ri)
         df.loc[i,'posX':'posZ']=newri
 
-def _get_row_attribute(df,name,attributes):
+def _get_row_attribute(df:pd.DataFrame,name,attributes):
     """_get_row_attribute returns a scalar value of attribute "name" in row
         expected to be uniquely defined by attributes dict
 
@@ -340,28 +340,24 @@ class Coordinates:
     #                 yield R
 
     def unwrap(self,P,O,pbc):
-        ''' shift all points in P so that all are CPI* to point O
+        ''' shift point P to its CPI* to point O
             *CPI=closest periodic image (unwrapped) '''
-        ROp=self.mic(O-P,pbc)
-        pp=O-ROp
-        return pp
+        ROP=self.mic(O-P,pbc)
+        PCPI=O-ROP
+        return PCPI
 
-    # def pierces(self,Ri,Rj,iC,pbc):
-    #     C=iC[:,1:]
-    #     Rjp=self.unwrap(Rj,Ri,pbc)
-    #     sC=np.array([self.unwrap(c,Ri,pbc) for c in C])
-    #     S=Segment(np.array([Ri,Rjp]))
-    #     R=Ring(sC)
-    #     R.analyze()
-    #     do_it,point=R.segint(S)
-    #     return do_it
-
-    def pierces(self,Ri,Rj,C,pbc):
+    def pierces(self,B:pd.DataFrame,C:pd.DataFrame,pbc):
+        BC=np.array(B[['posX','posY','posZ']])
         CC=np.array(C[['posX','posY','posZ']])
-        Rjp=self.unwrap(Rj,Ri,pbc)
-        sC=np.array([self.unwrap(c,Ri,pbc) for c in CC])
-        S=Segment(np.array([Ri,Rjp]))
-        R=Ring(sC)
+        # get both atoms in bond into CPI
+        # get all atoms in ring into CPI (but not necessarily wrt bond)
+        CC[1:]=np.array([self.unwrap(c,CC[0],pbc) for c in CC[1:]])
+        BC[0]=self.unwrap(BC[0],CC[0],pbc)
+        BC[1]=self.unwrap(BC[1],BC[0],pbc)
+        B[['posX','posY','posZ']]=BC
+        C[['posX','posY','posZ']]=CC
+        S=Segment(BC)
+        R=Ring(CC)
         R.analyze()
         do_it,point=R.segint(S)
         return do_it
@@ -428,82 +424,82 @@ class Coordinates:
     #             return C
     #     return False
 
-    def ringpierce(self,Ri,Rj,pbc):
-        for C in self.linkcellrings(Ri,Rj):
-            if self.pierces(Ri,Rj,C,pbc):
-                # logger.debug(f'\n{C}')
-                return C
-        return False
+    # def ringpierce(self,Ri,Rj,pbc):
+    #     for C in self.linkcellrings(Ri,Rj):
+    #         if self.pierces(Ri,Rj,C,pbc):
+    #             # logger.debug(f'\n{C}')
+    #             return C
+    #     return False
 
-    def linkcellrings(self,Ri,Rj,discretization=0.2):
-        Rij=Ri-Rj
-        low=any(Rij<-0.5*self.box.diagonal())
-        high=any(Rij>0.5*self.box.diagonal())
-        if low or high:
-            logger.debug(f'linkcellrings: Ri {Ri} and Rj {Rj} are not nearest images')
-            Rij=self.mic(Rij,[1,1,1])
-            Rj=Ri-Rij
-        rij=np.sqrt(Rij.dot(Rij))
-        nip=int(rij/discretization)
-        if nip==1:
-            nip=2
-        bcids=[]
-        for p in np.linspace(Ri,Rj,nip):
-            cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
-            if not cpi in bcids:
-                bcids.append(cpi)
-        # logger.debug(f'bcids {bcids}')
-        nearby_rings=[]
-        adf=self.A
-        R=pd.DataFrame()
-        for bc in bcids:
-            # print(f'searching {len(self.linkcell.searchlist_of_ldx(bc))} cells')
-            for lc in self.linkcell.searchlist_of_ldx(bc):
-                r=adf[(adf['globalIdx'].isin(self.linkcell.memberlists[lc]))&(adf['cycle_idx']>0)][['resNum','cycle_idx']].copy()
-                R=pd.concat((R,r),ignore_index=True)
-        collisions=0
-        total_rings=0
-        # print(f'number of rings {len(self.ringlist)}')
-        for j,C in enumerate(self.ringlist):
-            total_rings+=1
-            # print(f'ring\n{C.to_string()}')
-            lcids=[]
-            for ci in C.itertuples():
-                idx=ci.globalIdx
-                # logger.debug(f'asking for linkcell_idx of atom {idx}')
-                try:
-                    rci=self.get_atom_attribute('linkcell_idx',{'globalIdx':idx})      
-                except:
-                    logger.debug(f'asking for linkcell_idx of atom {idx} failed!!')
-                    logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
-                    logger.debug(f'{len(self.ringlist)} rings; ring: {C.to_string()}\n')
-                    raise Exception(f'asking for linkcell_idx of atom {idx} failed!!')
-                lcids.append(rci)
-            # print(f'lcids {lcids}')
-            is_near=False
-            for cc in product(lcids,bcids):
-                lc,bc=cc
-                if self.linkcell.are_ldx_neighbors(lc,bc):
-                    is_near=True
-                    break
-            if is_near:
-                if len(nearby_rings)==0:
-                    nearby_rings=[j]
-                else:
-#                    is_in_list=C in nearby_rings #np.all(np.any(C==nearby_rings,axis=0))
-                    if not j in nearby_rings: #is_in_list:
-                        nearby_rings.append(j) #=np.append(nearby_rings,np.array([C]),axis=0)
-                    else:
-                        collisions+=1
-        # print(f'nearby_rings {nearby_rings}')
-        return [self.ringlist[i] for i in nearby_rings]
+#     def linkcellrings(self,Ri,Rj,discretization=0.2):
+#         Rij=Ri-Rj
+#         low=any(Rij<-0.5*self.box.diagonal())
+#         high=any(Rij>0.5*self.box.diagonal())
+#         if low or high:
+#             logger.debug(f'linkcellrings: Ri {Ri} and Rj {Rj} are not nearest images')
+#             Rij=self.mic(Rij,[1,1,1])
+#             Rj=Ri-Rij
+#         rij=np.sqrt(Rij.dot(Rij))
+#         nip=int(rij/discretization)
+#         if nip==1:
+#             nip=2
+#         bcids=[]
+#         for p in np.linspace(Ri,Rj,nip):
+#             cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
+#             if not cpi in bcids:
+#                 bcids.append(cpi)
+#         # logger.debug(f'bcids {bcids}')
+#         nearby_rings=[]
+#         adf=self.A
+#         R=pd.DataFrame()
+#         for bc in bcids:
+#             # print(f'searching {len(self.linkcell.searchlist_of_ldx(bc))} cells')
+#             for lc in self.linkcell.searchlist_of_ldx(bc):
+#                 r=adf[(adf['globalIdx'].isin(self.linkcell.memberlists[lc]))&(adf['cycle_idx']>0)][['resNum','cycle_idx']].copy()
+#                 R=pd.concat((R,r),ignore_index=True)
+#         collisions=0
+#         total_rings=0
+#         # print(f'number of rings {len(self.ringlist)}')
+#         for j,C in enumerate(self.ringlist):
+#             total_rings+=1
+#             # print(f'ring\n{C.to_string()}')
+#             lcids=[]
+#             for ci in C.itertuples():
+#                 idx=ci.globalIdx
+#                 # logger.debug(f'asking for linkcell_idx of atom {idx}')
+#                 try:
+#                     rci=self.get_atom_attribute('linkcell_idx',{'globalIdx':idx})      
+#                 except:
+#                     logger.debug(f'asking for linkcell_idx of atom {idx} failed!!')
+#                     logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
+#                     logger.debug(f'{len(self.ringlist)} rings; ring: {C.to_string()}\n')
+#                     raise Exception(f'asking for linkcell_idx of atom {idx} failed!!')
+#                 lcids.append(rci)
+#             # print(f'lcids {lcids}')
+#             is_near=False
+#             for cc in product(lcids,bcids):
+#                 lc,bc=cc
+#                 if self.linkcell.are_ldx_neighbors(lc,bc):
+#                     is_near=True
+#                     break
+#             if is_near:
+#                 if len(nearby_rings)==0:
+#                     nearby_rings=[j]
+#                 else:
+# #                    is_in_list=C in nearby_rings #np.all(np.any(C==nearby_rings,axis=0))
+#                     if not j in nearby_rings: #is_in_list:
+#                         nearby_rings.append(j) #=np.append(nearby_rings,np.array([C]),axis=0)
+#                     else:
+#                         collisions+=1
+#         # print(f'nearby_rings {nearby_rings}')
+#         return [self.ringlist[i] for i in nearby_rings]
 
-    def ringpierce_exhaustive(self,Ri,Rj,pbc):
-        for C in self.rings():
-            if self.pierces(Ri,Rj,C,pbc):
-            # logger.debug(f'\n{C}')
-                return C
-        return False
+    # def ringpierce_exhaustive(self,Ri,Rj,pbc):
+    #     for C in self.rings():
+    #         if self.pierces(Ri,Rj,C,pbc):
+    #         # logger.debug(f'\n{C}')
+    #             return C
+    #     return False
 
     def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False,save=True):
         logger.debug('Initializing link-cell structure')
@@ -512,7 +508,8 @@ class Coordinates:
             lc_file=f'linkcell-{cutoff:.2f}.grx'
             if os.path.exists(lc_file) and not force_repopulate:
                 logger.debug(f'Found {lc_file}; no need to populate.')
-                self.read_atomset_attributes(lc_file)
+                results=self.read_atomset_attributes(lc_file)
+                logger.debug(f'Read linkcell_idx from {lc_file} {("linkcell_idx" in self.A)} {results}')
                 self.linkcell.make_memberlists(self.A)
             else:
                 self.set_atomset_attribute('linkcell_idx',-1*np.ones(self.A.shape[0]).astype(int))
@@ -662,8 +659,8 @@ class Coordinates:
             df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
             attributes_read=attributes
         self.A=self.A.merge(df,how='outer',on='globalIdx')
-        return attributes_read
         # logger.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
+        return attributes_read
 
     def set_atomset_attribute(self,attribute,srs):
         """Set attribute of atoms to srs
@@ -725,6 +722,12 @@ class Coordinates:
         for b in bdf.itertuples():
             lengths.append(self.rij(b.ai,b.aj))
         return lengths
+
+    def add_length_attribute(self,bdf,attr_name='length'):
+        lengths=[]
+        for b in bdf.itertuples():
+            lengths.append(self.rij(b.ai,b.aj))
+        bdf[attr_name]=lengths
 
     # def return_pair_lengths(self,pdf):
     #     lengths=[]

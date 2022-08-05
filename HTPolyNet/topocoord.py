@@ -23,6 +23,7 @@ import numpy as np
 from enum import Enum
 import os
 import shutil
+from copy import deepcopy
 
 logger=logging.getLogger(__name__)
 
@@ -58,14 +59,14 @@ class TopoCoord:
         self.files['top']=topfilename
         self.files['grx']=grxfilename
         self.files['mol2']=mol2filename
-        self.gfxattr=[]
+        self.grxattr=[]
         self.idx_lists={}
         self.idx_lists['chain']=[]
         self.idx_lists['cycle']=[]
         if grofilename!='':
             self.read_gro(grofilename,wrap_coords=wrap_coords)
             if grxfilename!='':
-                self.gfxattr=self.read_gro_attributes(grxfilename)
+                self.grxattr=self.read_gro_attributes(grxfilename)
         else:
             self.Coordinates=Coordinates()  # empty
         if topfilename!='':
@@ -609,6 +610,9 @@ class TopoCoord:
         """
         return self.Coordinates.return_bond_lengths(bdf)
 
+    def add_length_attribute(self,bdf:pd.DataFrame,attr_name='length'):
+        self.Coordinates.add_length_attribute(bdf,attr_name=attr_name)
+
     # def return_pair_lengths(self):
     #     """Return the length of all 1-4 pairs in topology
 
@@ -844,6 +848,11 @@ class TopoCoord:
         """
         self.Coordinates.linkcell_initialize(cutoff,ncpu=ncpu,populate=True,force_repopulate=force_repopulate)
 
+    def linkcell_cleanup(self):
+        """linkcell_cleanup removes linkcell_idx attribute from Coordinate.A
+        """
+        self.Coordinates.A.drop(columns=['linkcell_idx'],inplace=True)
+
     def atom_count(self):
         """Check to be sure the Coordinate and Topology members contain the same number of
             atoms
@@ -1041,8 +1050,8 @@ class TopoCoord:
         :rtype: BTRC enum
         """
         i,j,rij=b
-        i=int(i)
-        j=int(j)
+        # i=int(i)
+        # j=int(j)
         if self.makes_shortcircuit(i,j):
             return BTRC.failed_short_circuit,0
         if self.makes_cycle(i,j):
@@ -1055,13 +1064,13 @@ class TopoCoord:
     def pierces_ring(self,i,j,pbc=[1,1,1],show_piercings=True):
         adf=self.Coordinates.A
         LC=self.Coordinates.linkcell
-        Ri=self.get_R(i)
-        Rj=self.get_R(j)
-        Rij=self.Coordinates.mic(Ri-Rj,pbc)
+        # Ri=self.get_R(i)
+        # Rj=self.get_R(j)
+        # Rij=self.Coordinates.mic(Ri-Rj,pbc)
         # chk_rij=np.sqrt(Rij.dot(Rij))
         # assert np.isclose(rij,chk_rij,atol=1.e-3),f'{i} {j} {rij} {chk_rij}'
         # generate the nearest periodic image of Rj to Ri
-        Rjp=Ri-Rij
+        # Rjp=Ri-Rij
         # at the current state, a linkcell is active under Coordinates
         # with spacing *greater* than the initial length of any bond.
         # so we can visit rings with one or more atom in a cell neighboring
@@ -1074,15 +1083,25 @@ class TopoCoord:
             if not idx in joint_idx:
                 joint_idx.append(idx)
         cycle_tags=list(set(adf[(adf['cycle']!=-1)&(adf['linkcell_idx'].isin(joint_idx))]['cycle'].to_list()))
+        B=adf.iloc[[i-1,j-1]].copy()
+        saveB=B.copy()
+        # logger.debug(f'bond {i} {j} subframe')
+        # for ln in B.to_string().split('\n'):
+        #     logger.debug(ln)
         for c in cycle_tags:
             C=adf[adf['cycle']==c].copy()
-            if self.Coordinates.pierces(Ri,Rjp,C,pbc=pbc):
+            # logging.debug(f'ring {c} has {C.shape[0]} members')
+            # assert 4<C.shape[0]<7
+            saveC=C.copy()
+            if self.Coordinates.pierces(B,C,pbc):
                 if show_piercings:
-                    idx=[i,j]
-                    idx.extend(C['globalIdx'].to_list()) # list of globalIdx's for this output
-                    sub=self.Coordinates.subcoords(self.Coordinates.A[self.Coordinates.A['globalIdx'].isin(idx)].copy())
+                    sub=self.Coordinates.subcoords(pd.concat([B,C]))
                     sub.write_gro(f'ring-{i}-{j}'+'.gro')
-                    logger.debug(f'Ring pierced by bond ({i}){Ri} --- ({j}){Rj}\n{C.to_string()}')
+                    sub=self.Coordinates.subcoords(pd.concat([saveB,saveC]))
+                    sub.write_gro(f'ring-orig-{i}-{j}'+'.gro')
+                    logger.debug(f'Cycle {c} pierced by bond candidate {i}-{j}')
+                    for ln in sub.A.to_string().split('\n'):
+                        logger.debug(ln)
                 return True
         return False
 
@@ -1162,34 +1181,34 @@ class TopoCoord:
                     self.idx_lists[list_name][i].append(tmp_dict[i][j])
         # logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
 
-    def remap_idx_list(self,list_name,mapper):
-        logger.debug(f'{list_name}')
-        remapped_groups=[]
-        for c in self.idx_lists[list_name]:
-            remapped_groups.append([mapper[x] for x in c])
-        self.idx_lists[list_name]=remapped_groups
-        self.reset_grx_attributes_from_idx_list(list_name)
-        logger.debug(f'finished.')
+    # def remap_idx_list(self,list_name,mapper):
+    #     logger.debug(f'{list_name}')
+    #     remapped_groups=[]
+    #     for c in self.idx_lists[list_name]:
+    #         remapped_groups.append([mapper[x] for x in c])
+    #     self.idx_lists[list_name]=remapped_groups
+    #     self.reset_grx_attributes_from_idx_list(list_name)
+    #     logger.debug(f'finished.')
 
     def chainlist_update(self,new_bond_recs,msg=''):
         chainlists=self.idx_lists['chain']
-        # logger.debug(f'pre {msg} chains')
-        # for i,c in enumerate(chainlists):
-        #     logger.debug(f'  {i} {c}')
+        logger.debug(f'pre {msg} chains')
+        for i,c in enumerate(chainlists):
+            logger.debug(f'  {i} {c}')
         for b in new_bond_recs:
             aidx,bidx=b[0],b[1]
-            # logger.debug(f'chainlist_update pair {aidx} {bidx}')
+            logger.debug(f'chainlist_update pair {aidx} {bidx}')
             ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
             bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
-            # logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
-            # logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
+            logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
             if ac==-1 or bc==-1:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
                 continue
             aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
             bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
-            # logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
+            logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
             # one must be a head and the other a tail
             if aci==0: # a is a head
                 assert len(chainlists[bc])-1==bci,f'incorrect tail'
@@ -1228,7 +1247,7 @@ class TopoCoord:
                 return True
         return False
 
-    def cycle_collective(self,bdf):
+    def cycle_collective(self,bdf:pd.DataFrame):
         """cycle_collective Check to see if, when considered as a collective, this
         set of bondrecs leads to one or more cyclic chain; if so, longest bonds that 
         break cycles are removed from bondrecs list and resulting list is returned
@@ -1262,7 +1281,8 @@ class TopoCoord:
         # logger.debug(f'checking set of {bdf.shape[0]} bonds for nascent cycles')
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
-        chains=self.idx_lists['chain'].copy()
+        chains=deepcopy(self.idx_lists['chain'])
+        assert id(chains) != id(self.idx_lists['chain'])
         if not chains:
             return new_bdf
         cyclized_chains={}
@@ -1372,4 +1392,15 @@ class TopoCoord:
         logger.debug(f'{os.getcwd()} {pfs.cwd()} {top}, {gro}, {mdp}')
         msg=grompp_and_mdrun(gro=gro,top=top,out=out,mdp=mdp,**kwargs)
         self.copy_coords(TopoCoord(grofilename=f'{out}.gro'))
+        logger.debug(f'after grommp_and_run: gro {self.files["gro"]}')
         return msg
+
+    def load_files(self):
+        if self.files['gro']:
+            self.read_gro(self.files['gro'])
+        if self.files['top']:
+            self.read_top(self.files['top'])
+        if self.files['grx']:
+            self.read_gro_attributes(self.files['grx'])
+        if self.files['mol2']:
+            self.read_mol2(self.files['mol2'])

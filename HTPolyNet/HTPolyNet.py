@@ -20,6 +20,7 @@ def info():
 def run():
     parser.add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     parser.add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+    parser.add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory\nAnything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
     parser.add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
     parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
@@ -38,15 +39,15 @@ def run():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    logger.info('HTPolyNet runtime begins.')
+    logger.info('{:*^67s}'.format(' HTPolyNet runtime begins. '))
     userlib=args.lib
     if not os.path.exists(args.lib):
         userlib=None
     software.sw_setup()
-    pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
-    a=Runtime(cfgfile=args.config,restart=args.restart)
+    pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,projdir=args.proj,reProject=args.restart,userlibrary=userlib)
+    a=Runtime(cfgfile=args.config,restart=args.restart,projdir=args.proj)
     a.build(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
-    logger.info('HTPolynet runtime ends.')
+    logger.info('{:*^67s}'.format(' HTPolyNet runtime ends. '))
 
 def parameterize():
     parser.add_argument('config',type=str,default=None,help='input configuration file in YAML format')
