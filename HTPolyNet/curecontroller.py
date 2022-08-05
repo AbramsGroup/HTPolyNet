@@ -122,6 +122,11 @@ class CureController:
         self.ncpu=basedict.get('ncpu',os.cpu_count())
         self.bonds_file=basedict.get('bonds_file','bonds.csv')
 
+    def write():
+        pass
+    def read():
+        pass
+
     def setup(self,max_nxlinkbonds=0,max_search_radius=0.0):
         self.max_nxlinkbonds=max_nxlinkbonds
         self.max_search_radius=max_search_radius
