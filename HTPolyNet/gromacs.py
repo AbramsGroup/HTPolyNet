@@ -346,18 +346,7 @@ def analyze_sea(deffnm,thresh=0.1):
         # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
 
-def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
-    """Modify a gromacs mdp file
-
-    :param mdp_filename: name of mdp file to modify; overwritten if new_filename==None
-    :type mdp_filename: str
-    :param opt_dict: keyword:value dictionary of mdp options
-    :type opt_dict: dict
-    :param new_filename: name of outputile, defaults to None
-    :type new_filename: str, optional
-    :param add_if_missing: Flag indicating whether to insert key:value into mdp file if not already there, defaults to True
-    :type add_if_missing: bool, optional
-    """
+def mdp_to_dict(mdp_filename):
     with open(mdp_filename,'r') as f:
         lines=f.read().split('\n')
     all_dict={}
@@ -370,6 +359,25 @@ def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
                 all_dict[k]=v
             else:
                 logger.debug(f'line {l} in {mdp_filename} skipped')
+    return all_dict
+
+def mdp_get(mdp_filename,key):
+    all_dict=mdp_to_dict(mdp_filename)
+    return all_dict.get(key,'NOT FOUND!')
+
+def mdp_modify(mdp_filename,opt_dict,new_filename=None,add_if_missing=True):
+    """Modify a gromacs mdp file
+
+    :param mdp_filename: name of mdp file to modify; overwritten if new_filename==None
+    :type mdp_filename: str
+    :param opt_dict: keyword:value dictionary of mdp options
+    :type opt_dict: dict
+    :param new_filename: name of outputile, defaults to None
+    :type new_filename: str, optional
+    :param add_if_missing: Flag indicating whether to insert key:value into mdp file if not already there, defaults to True
+    :type add_if_missing: bool, optional
+    """
+    all_dict=mdp_to_dict(mdp_filename)
     # logger.debug(f'mdp_modify: all_dict: {all_dict}')
     for k,v in opt_dict.items():
         if not k in all_dict:

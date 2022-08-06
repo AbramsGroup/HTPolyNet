@@ -7,97 +7,98 @@ logger=logging.getLogger(__name__)
 
 class Checkpoint:
     reqd_attr=['stepschecked','substepschecked','currentstepname']
-    reqd_files={'topology':'top','coordinates':'gro','extra_attributes':'grx'}
-    opt_files={'mol2_coordinates':'mol2'}
-    def __init__(self):
-        self.checkpoint_file=''
+    reqd_files=['top','gro','grx']
+    opt_files=['mol2']
+    default_filename='checkpoint_state.yaml'
+    def __init__(self,filename=default_filename):
         self.files={}
+        for v in self.reqd_files:
+            self.files[v]=''
+        for v in self.opt_files:
+            self.files[v]=''
         self.stepschecked=[]
         self.substepschecked=[]
-        self.currentstepname=None
- 
-    def read_checkpoint(self,TC:TopoCoord):
-        if os.path.exists(self.checkpoint_file):
-            with open(self.checkpoint_file,'r') as f:
-                basedict=yaml.safe_load(f)
-            all_there=all([x in basedict for x in self.reqd_attr+list(self.reqd_files.keys())])
-            assert all_there,f'{self.checkpoint_file} is missing one or more of {self.reqd_attr+list(self.reqd_files.keys())}'
-            all_abs=all([basedict[filetype]==os.path.abspath(basedict[filetype]) for filetype in self.reqd_files.keys()])
-            assert all_abs,f'{self.checkpoint_file} should contain absolute path names'
-            self.stepschecked=basedict['stepschecked']
-            self.substepschecked=basedict['substepschecked']
-            self.currentstepname=basedict['currentstepname']
-            for filetype,ext in self.reqd_files.items():
-                self.files[filetype]=basedict[filetype]
-                TC.files[ext]=basedict[filetype]
-            for filetype,ext in self.opt_files.items():
-                filename=basedict.get(filetype,None)
-                if filename:
-                    assert os.path.abspath(filename)==filename,f'{self.checkpoint_file} should contain absolute path names'
-                    self.files[filetype]=filename
-                    TC.files[ext]=basedict[filetype]
-            return True
-        return False
+        self.currentstepname='none'
+        self.my_filename=filename
+    
+    def to_yaml(self):
+        with open(self.my_filename,'w') as f:
+            f.write(yaml.dump(self))
 
-    def set_checkpoint(self,TC:TopoCoord,stepname):
-        logger.debug(f'{stepname} {TC.files}')
+    @classmethod
+    def from_yaml(cls,filename='checkpoint_state.yaml'):
+        with open(filename,'r') as f:
+            yaml_string=f.read()
+        inst=yaml.load(yaml_string,Loader=yaml.Loader)
+        return inst
+
+    @classmethod
+    def read(cls,TC:TopoCoord,filename):
+        inst=cls.from_yaml(filename)
+        inst.my_filename=os.path.abspath(filename)
+        for ext in cls.reqd_files:
+            TC.files[ext]=inst.files[ext]
+        for ext in cls.opt_files:
+            TC.files[ext]=inst.files[ext]
+        return inst
+
+    @classmethod
+    def setup(cls,TC:TopoCoord,filename='checkpoint_state.yaml'):
+        if not os.path.exists(filename):
+            logger.debug('New checkpoint; no file')
+            absfilename=os.path.join(os.getcwd(),filename)
+            assert not os.path.exists(absfilename)
+            return cls(filename=absfilename)
+        return cls.read(TC,filename)
+
+    def set(self,TC:TopoCoord,stepname):
+        # logger.debug(f'{stepname} {TC.files}')
         self.stepschecked.append(stepname)
         self.substepschecked=[]
         self.currentstepname='none'
-        self.write(TC)
+        self._filename_transfers(TC)
+        self.to_yaml()
 
-    def set_subcheckpoint(self,TC:TopoCoord,currentstepname,substepname):
+    def _filename_transfers(self,TC:TopoCoord):
+        for v in self.reqd_files:
+            self.files[v]=os.path.abspath(TC.files[v])
+        for v in self.opt_files:
+            if v in TC.files and TC.files[v]:
+                self.files[v]=os.path.abspath(TC.files[v])
+
+    def set_substep(self,TC:TopoCoord,currentstepname,substepname):
         self.currentstepname=currentstepname
         self.substepschecked.append(substepname)
-        self.write(TC)
+        self._filename_transfers(TC)
+        self.to_yaml()
 
-    def write(self,TC:TopoCoord):
-        for k,v in self.reqd_files.items():
-            self.files[k]=os.path.abspath(TC.files[v])
-        for k,v in self.opt_files.items():
-            if v in TC.files and TC.files[v]:
-                self.files[k]=os.path.abspath(TC.files[v])
-        with open(self.checkpoint_file,'w') as f:
-            f.write(f'stepschecked: {self.stepschecked}\n')
-            f.write(f'substepschecked: {self.substepschecked}\n')
-            f.write(f'currentstepname: {self.currentstepname}\n')
-            for k,v in self.reqd_files.items():
-                f.write(f'{k}: {self.files[k]}\n')
-            for k,v in self.opt_files.items():
-                if k in self.files:
-                    f.write(f'{k}: {self.files[k]}\n')
-            f.close()
+    def passed(self,stepname):
+        return stepname in self.stepschecked
     
+    def is_currentstepname(self,stepname):
+        return self.currentstepname==stepname
 
-_CP_=Checkpoint()
-def setup(TC:TopoCoord,checkpoint_file='checkpoint.yaml'):
+    def last_substep(self):
+        return self.substepschecked[-1]
+
+_CP_:Checkpoint=None
+def setup(TC:TopoCoord,filename='checkpoint_state.yaml'):
     global _CP_
-    if os.path.exists(checkpoint_file):
-        _CP_.checkpoint_file=os.path.abspath(checkpoint_file)
-        logger.debug(f'Reading existing checkpoint file {checkpoint_file}')
-        return _CP_.read_checkpoint(TC)
-    else:
-        logger.debug(f'Checkpoints to {_CP_.checkpoint_file}')
-        _CP_.checkpoint_file=os.path.join(os.getcwd(),checkpoint_file)
-        return False
+    _CP_=Checkpoint.setup(TC,filename)
 
 def set(TC:TopoCoord,stepname):#,state:CPstate):
     global _CP_
-    _CP_.set_checkpoint(TC,stepname)
+    _CP_.set(TC,stepname)
 
 def subset(TC:TopoCoord,currentstepname,substepname):
     global _CP_
-    _CP_.set_subcheckpoint(TC,currentstepname,substepname)
-
-# def read():
-#     global _CP_
-#     return _CP_.read_checkpoint()
+    _CP_.set_substep(TC,currentstepname,substepname)
 
 def passed(stepname):
-    return stepname in _CP_.stepschecked
+    return _CP_.passed(stepname)
 
 def is_currentstepname(testname):
-    return _CP_.currentstepname==testname
+    return _CP_.is_currentstepname(testname)
 
 def last_substep():
-    return _CP_.substepschecked[-1]
+    return _CP_.last_substep()

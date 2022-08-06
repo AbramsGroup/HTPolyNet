@@ -45,7 +45,7 @@ def run():
         userlib=None
     software.sw_setup()
     pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,projdir=args.proj,reProject=args.restart,userlibrary=userlib)
-    a=Runtime(cfgfile=args.config,restart=args.restart,projdir=args.proj)
+    a=Runtime(cfgfile=args.config,restart=args.restart)
     a.build(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
     logger.info('{:*^67s}'.format(' HTPolyNet runtime ends. '))
 

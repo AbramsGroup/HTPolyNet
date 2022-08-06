@@ -9,7 +9,7 @@ from HTPolyNet.topology import select_topology_type_option
 from HTPolyNet.topocoord import TopoCoord
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.gromacs import insert_molecules, gmx_energy_trace, mdp_modify
+from HTPolyNet.gromacs import insert_molecules, gmx_energy_trace, mdp_modify, mdp_get
 import HTPolyNet.checkpoint as cp
 from HTPolyNet.plot import trace
 from HTPolyNet.molecule import Molecule, MoleculeDict, is_reactant
@@ -27,7 +27,7 @@ def logrotate(filename):
 
 class Runtime:
     ''' Class for a single HTPolyNet runtime session '''
-    def __init__(self,cfgfile='',restart=False,projdir='next'):
+    def __init__(self,cfgfile='',restart=False):
         for ln in software.to_string().split('\n'):
             logger.info(ln)
         self.cfgfile=cfgfile
@@ -411,19 +411,23 @@ class Runtime:
     def do_cure(self):
         if cp.passed('cure'): return
         cc=self.cc
-        if cp.is_currentstepname('cure'):
-            cc.iter=cp.last_substep()
         TC=self.TopoCoord
         RL=self.cfg.reactions
         MD=self.molecules
-        cc.reset()
+        if cp.is_currentstepname('cure'):
+            cc.iter=cp.last_substep()
+        else:
+            cc.reset()
         cc.setup(max_nxlinkbonds=self.cfg.maxconv,max_search_radius=min(TC.Coordinates.box.diagonal()/2))
         cure_finished=cc.is_cured()
         if cure_finished: return
         logger.info('{:*^67}'.format(f' Connect-Update-Relax-Equilibrate (CURE) begins '))
         while not cure_finished:
-            logger.info('{:*^67}'.format(f' Iteration {cc.iter:>3d} begins '))
+            logger.info('{:*^67}'.format(f' Iteration {cc.iter} begins '))
             reentry=pfs.go_to(f'systems/iter-{cc.iter}')
+            if os.path.exists('cure_controller.state.yaml'):
+                self.cc=CureController.from_yaml('cure_controller_state.yaml')
+                cc=self.cc
             TC.grab_files() # copy files locally
             cc.do_bondsearch(TC,RL,MD,reentry=reentry)
             cc.do_preupdate_dragging(TC)
@@ -432,7 +436,7 @@ class Runtime:
             cc.do_equilibrate(TC)
             cp.subset(TC,'cure',cc.iter)
             logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f}')
-            logger.info('{:*^67}'.format(f' Iteration {cc.iter:>3d} ends '))
+            logger.info('{:*^67}'.format(f' Iteration {cc.iter} ends '))
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
@@ -448,40 +452,60 @@ class Runtime:
 
         '''
         postcure_anneal: {
-        cycles: 2,
-        cycle_segments: 
-            - { hold_at: 300, steps: 10000 }
-            - { go_to: 600, steps: 10000 }
-            - { hold_at: 600, steps: 10000 }
-            - { go_to: 300, steps: 10000 }
-            - { hold_at: 300, steps: 10000 }
+            ncycles: 2,
+            initial_temperature: 300, # do we need this
+            cycle_segments: 
+                - { T: 300, ps: 0 }
+                - { T: 600, ps: 5 }
+                - { T: 600, ps: 5 }
+                - { T: 300, ps: 5 }
+                - { T: 300, ps: 5 }
+            }
         }
         '''
+        ''' mdp: (assume 0.002 ps time step)
+        annealing-npoints 6
+        annealing-temp 300 600 600 300 300
+        annealing-time 0   5   10  15  20
+        '''
 
-    def do_postcure_anneal(self):
+    def do_postcure_anneal(self,deffnm='postcure_annealed'):
         if cp.passed('do_postcure_anneal'): return
         pca_dict=self.cfg.parameters.get('postcure_anneal',{})
         if not pca_dict: return 
+        logger.info('{:*^67}'.format(f' Postcure anneal '))
         cwd=pfs.go_to('systems/postcure')
         TC=self.TopoCoord
+        mdp_pfx='equilibrate-nvt'
+        pfs.checkout(f'mdp/{mdp_pfx}.mdp')
+        timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
         ncycles=pca_dict.get('ncycles',0)
         cycle_segments=pca_dict.get('cycle_segments',[])
+        temps=[str(r['T']) for r in cycle_segments]
+        durations=[r['ps'] for r in cycle_segments]
+        cycle_duration=sum(durations)
+        total_duration=cycle_duration*ncycles
+        nsteps=int(total_duration/timestep)
+        cum_time=durations.copy()
+        for i in range(1,len(cum_time)):
+            cum_time[i]+=cum_time[i-1]
+        mod_dict={
+            'ref_t':pca_dict.get('initial_temperature',300.0),
+            'gen-temp':pca_dict.get('initial_temperature',300.0),
+            'gen-vel':'yes',
+            'annealing-npoints':len(cycle_segments),
+            'annealing-temp':' '.join(temps),
+            'annealing-time':' '.join([f'{x:.2f}' for x in cum_time]),
+            'annealing':'periodic' if ncycles>1 else 'single',
+            'nsteps':nsteps
+            }
+        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
+        msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
+        logger.info(f'Annealed coordinates in {deffnm}.gro')
+        gmx_energy_trace(deffnm,['Density'],report_averages=True,**self.cfg.parameters)
+        trace('Temperature',[deffnm],outfile='../../plots/postcure-anneal-temperature.png')
         cp.set(TC,'do_postcure_anneal')
-        # pass
 
-        # T=pae_dict.get('temperature',300)
-        # P=pae_dict.get('pressure',1)
-        # logger.info(f'Postanneal equilibration for {pae_dict["nsteps"]} steps at {pae_dict["temperature"]} K and {pae_dict["pressure"]} bar')
-        # mdp_pfx='equilibrate-npt'
-        # pfs.checkout(f'mdp/{mdp_pfx}.mdp')
-        # mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}
-        # mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
-        # msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
-        # logger.info(f'Equilibrated coordinates in {deffnm}.gro')
-        # gmx_energy_trace(deffnm,['Density'],report_averages=True,**self.cfg.parameters)
-        # trace('Density',[deffnm],outfile=f'../../plots/{deffnm}_density.png')
-        # box=TC.Coordinates.box.diagonal()
-        # logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
     def do_postanneal_equilibration(self,deffnm='postannealed_equilibrated'):
         if cp.passed('do_postanneal_equilibration'): return
         pae_dict=self.cfg.parameters.get('postanneal_equilibration',{})
@@ -491,6 +515,7 @@ class Runtime:
         nsteps=pae_dict.get('nsteps',50000)
         T=pae_dict.get('temperature',300)
         P=pae_dict.get('pressure',1)
+        logger.info('{:*^67}'.format(f' Postanneal equilibration at {T} K and {P} bar for {nsteps} steps '))
         logger.info(f'Postanneal equilibration for {pae_dict["nsteps"]} steps at {pae_dict["temperature"]} K and {pae_dict["pressure"]} bar')
         mdp_pfx='equilibrate-npt'
         pfs.checkout(f'mdp/{mdp_pfx}.mdp')
@@ -499,7 +524,7 @@ class Runtime:
         msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
         logger.info(f'Equilibrated coordinates in {deffnm}.gro')
         gmx_energy_trace(deffnm,['Density'],report_averages=True,**self.cfg.parameters)
-        trace('Density',[deffnm],outfile=f'../../plots/{deffnm}_density.png')
+        trace('Density',[deffnm],outfile=f'../../plots/postanneal-equilibration-density.png')
         box=TC.Coordinates.box.diagonal()
         logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
         cp.set(TC,'do_postanneal_equilibration')
@@ -516,7 +541,7 @@ class Runtime:
     def build(self,**kwargs):
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
-        checkpoint_file=kwargs.get('checkpoint_file','checkpoint.yaml')
+        checkpoint_file=kwargs.get('checkpoint_file','checkpoint_state.yaml')
         TC=self.TopoCoord
 
         pfs.go_proj()
@@ -527,8 +552,8 @@ class Runtime:
         )
 
         pfs.go_proj()
-        if cp.setup(TC,checkpoint_file=checkpoint_file):
-            TC.load_files()
+        cp.setup(TC,filename=checkpoint_file)
+        TC.load_files()
         self.initialize_topology()
         self.initialize_coordinates()
         self.do_densification()

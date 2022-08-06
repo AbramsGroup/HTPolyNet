@@ -44,16 +44,16 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
         for seg in range(nseg):
             ax.plot(df.iloc[beg:chkpt[seg],0],df[c].iloc[beg:chkpt[seg]],label=(c if seg==0 else None),color=cmap(seg/nseg))
             beg=chkpt[seg]
-    if 'avgafter' in kwargs:
-        if avgafter>0:
-            pass
+        if 'avgafter' in kwargs:
+            if avgafter>0:
+                pass
+            else:
+                avgafter=df['time (ps)'].iloc[-1]/2
+            sdf=df[df['time (ps)']>avgafter]
+            avg=sdf[c].mean()
+            ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
         else:
-            avgafter=df['time (ps)'].iloc[-1]/2
-        sdf=df[df['time (ps)']>avgafter]
-        avg=sdf[c].mean()
-        ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
-    else:
-        avg=df[c].mean()
+            avg=df[c].mean()
     if not yunits:
         plt.ylabel(qty)
     else:
