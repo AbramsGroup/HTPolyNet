@@ -787,7 +787,8 @@ class Molecule:
                         MM.flip_stereocenter(f)
                     logger.debug(f'Writing {MM.name}.gro in {pfs.cwd()}')
                     MM.TopoCoord.write_gro(f'{MM.name}.gro')
-                self.stereoisomers.append(MM.name)
+                    si_name=MM.name
+                self.stereoisomers.append(si_name)
 
 
 MoleculeDict = dict[str,Molecule]

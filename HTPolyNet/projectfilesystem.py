@@ -81,7 +81,6 @@ class RuntimeLibrary:
                 if os.path.exists(fullfilename):
                     basefilename=os.path.basename(filename)
                     shutil.copyfile(fullfilename,basefilename)
-                    logger.debug(f'Checkout {fullfilename} to {pfs.cwd()}')
                     return True
             # logger.debug(f'Could not find {filename} anywhere in user library!')
             return False

@@ -33,10 +33,10 @@ class Software:
 
     def __str__(self):
         self.getVersions()
-        r='Ambertools commands available for HTPolyNet to use:\n'
+        r=['Ambertools:']
         for c in self.ambertools:
-            r+=f'{os.path.split(c)[1]:>12s} (ver. {self.versions["ambertools"]:>6s}) at {c:<50s}\n'
-        return r
+            r.append(f'{os.path.split(c)[1]:>12s} (ver. {self.versions["ambertools"]:>s}) at {c:<50s}')
+        return '\n'.join(r)
 
     def getVersions(self):
         self.versions={}

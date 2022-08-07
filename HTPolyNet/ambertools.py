@@ -13,7 +13,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kw
         chargemethod=ambertools_dict.get('charge_method','bcc')
     else:
         chargemethod=kwargs.get('charge_method','bcc')
-    logger.info(f'AmberTools is parameterizing {inputPrefix}.{input_structure_format} using charge method {chargemethod}')
+    logger.info(f'AmberTools> parameterizing {inputPrefix}.{input_structure_format}')
     structin=f'{inputPrefix}.{input_structure_format}'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
