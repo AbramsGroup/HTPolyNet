@@ -409,11 +409,13 @@ class Runtime:
         my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
         logger.info(f'Attempting to form {cc.max_nxlinkbonds} bonds')
         while not cure_finished:
-            logger.info('{:*^67}'.format(f' Iteration {cc.iter} begins '))
+            my_logger(f'Iteration {cc.iter} begins',logger.info)
             reentry=pfs.go_to(f'systems/iter-{cc.iter}')
-            if os.path.exists('cure_controller.state.yaml'):
+            if os.path.exists('cure_controller_state.yaml'):
+                logger.debug(f'Reading new cure controller in {pfs.cwd()}')
                 self.cc=CureController.from_yaml('cure_controller_state.yaml')
                 cc=self.cc
+                logger.info(f'Restarting at {cc.cum_nxlinkbonds} bonds')
             TC.grab_files() # copy files locally
             cc.do_bondsearch(TC,RL,MD,reentry=reentry)
             cc.do_preupdate_dragging(TC)
@@ -421,8 +423,8 @@ class Runtime:
             cc.do_relax(TC)
             cc.do_equilibrate(TC)
             cp.subset(TC,'cure',cc.iter)
-            logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f}')
-            my_logger('Iteration {cc.iter} ends',logger.info)
+            logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f} or {cc.cum_nxlinkbonds} bonds')
+            my_logger(f'Iteration {cc.iter} ends',logger.info)
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()

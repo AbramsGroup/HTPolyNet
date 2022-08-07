@@ -4,9 +4,13 @@ def banner(logf):
     HTPolyNet
     https://abramsgroup.github.io/HTPolyNet/
 
+    Ming Huang
+    mh3429@dragons.drexel.edu
+
     Cameron F. Abrams
     cfa22@drexel.edu
 
-    Supported in part by Grants W911NF-17-2-0227, W911NF-12-R-0011 
+    Supported in part by Grants W911NF-17-2-0227 
+    and W911NF-12-R-0011 from the US Army Research Lab
     """
-    my_logger(banner_message,logf,pad=' ',just='<')
+    my_logger(banner_message,logf,fill=' ',just='<')
