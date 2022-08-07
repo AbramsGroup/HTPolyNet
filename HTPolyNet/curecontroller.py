@@ -416,16 +416,8 @@ class CureController:
                         ess='' if idf.shape[0]!=1 else 's'
                         bondtestoutcomes={k:0 for k in BTRC}
                         gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
-                        # idf.info(buf=buffer)
-                        # logger.debug(f'after gromacs distance:\n{buffer.getvalue()}')
                         logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
                         idf=idf[idf['r']<self.current_radius].copy().reset_index(drop=True)
-                        # idf.info(buf=buffer)
-                        # logger.debug(f'after distance filter:\n{buffer.getvalue()}')
-                        
-                        # logger.debug('Filtered (by gromacs distance) bonds:')
-                        # for ln in bdf.to_string().split('\n'):
-                        #     logger.debug(ln)
                         ess='' if idf.shape[0]!=1 else 's'
                         logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {self.current_radius} nm')
                         p=Pool(processes=self.ncpu)
