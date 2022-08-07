@@ -2,8 +2,8 @@ import pandas as pd
 
 def my_logger(msg,logf,width=67,fill='*',sep=', ',just='^'):
     fmt=r'{'+r':'+fill+just+f'{width}'+r'}'
-    ll=' ' if just=='^' else ''
-    rr=' ' if just=='^' else ''
+    ll=' ' if just in ['^','>'] else ''
+    rr=' ' if just in ['^','<'] else ''
     if type(msg)==list:
         rr=' ' if ' ' not in sep else ''
         lnlst=[]
