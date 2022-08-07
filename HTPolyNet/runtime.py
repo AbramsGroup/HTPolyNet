@@ -503,7 +503,7 @@ class Runtime:
         nsteps=pae_dict.get('nsteps',50000)
         T=pae_dict.get('temperature',300)
         P=pae_dict.get('pressure',1)
-        my_logger('Postanneal equilibration at {T} K and {P} bar for {nsteps} steps',logger.info)
+        my_logger(f'Postanneal equilibration at {T} K and {P} bar for {nsteps} steps',logger.info)
         mdp_pfx='equilibrate-npt'
         pfs.checkout(f'mdp/{mdp_pfx}.mdp')
         mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}
