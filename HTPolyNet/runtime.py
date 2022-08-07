@@ -476,7 +476,7 @@ class Runtime:
         cum_time=durations.copy()
         for i in range(1,len(cum_time)):
             cum_time[i]+=cum_time[i-1]
-        my_logger('Postcure anneal for {nsteps} steps',logger.info)
+        my_logger(f'Postcure anneal for {nsteps} steps',logger.info)
         mod_dict={
             'ref_t':pca_dict.get('initial_temperature',300.0),
             'gen-temp':pca_dict.get('initial_temperature',300.0),
@@ -489,7 +489,7 @@ class Runtime:
             }
         mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
         msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
-        my_logger(f'Annealed coordinates in {deffnm}.gro',logger.info,just='<')
+        my_logger(f'Annealed coordinates in {deffnm}.gro',logger.info)
         gmx_energy_trace(deffnm,['Density'],report_averages=True,**self.cfg.parameters)
         trace('Temperature',[deffnm],outfile='../../plots/postcure-anneal-temperature.png')
         cp.set(TC,'do_postcure_anneal')
