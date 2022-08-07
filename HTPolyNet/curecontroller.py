@@ -190,7 +190,7 @@ class CureController:
         opfx=self.pfx()
         d=self.dicts['cure']
         self.current_radius=d['search_radius']+self.current_radidx*d['radial_increment']
-        logger.info(f'Bondsearch using radius {self.current_radius} nm initiated.')
+        logger.info(f'Bond search using radius {self.current_radius} nm initiated.')
         apply_probabilities=self.curr_conversion()<d['late_threshold']
         bond_limit=int(d['max_conversion_per_iteration']*self.max_nxlinkbonds)
         bond_target=int((d['desired_conversion']-self.curr_conversion())*self.max_nxlinkbonds)
@@ -203,7 +203,7 @@ class CureController:
             if nbonds==0:
                 self.current_radidx+=1
                 self.current_radius+=d['radial_increment']
-                logger.info(f'Increasing cutoff radius to {self.current_radius} nm')
+                logger.info(f'Radius increased to {self.current_radius} nm')
         if nbonds>0:
             ess='' if nbonds==1 else 's'
             logger.info(f'Iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}.')
