@@ -200,6 +200,10 @@ class CureController:
         bond_target=int((d['desired_conversion']-self.curr_conversion())*self.max_nxlinkbonds)
         bond_limit=min([bond_limit,bond_target])
         logger.debug(f'Iteration limited to at most {bond_limit} new bonds')
+        # TODO: new branch: multisearch:
+        # calc and store distances once outside this loop
+        # have a controller that runs loop until a select number
+        # of bonds has been formed, or we've maxed out the radius
         nbonds=0
         while nbonds==0 and self.current_radidx<self.max_radidx:
             nbdf=self.searchbonds(TC,RL,MD,stage='cure',abs_max=bond_limit,apply_probabilities=apply_probabilities,reentry=reentry)
