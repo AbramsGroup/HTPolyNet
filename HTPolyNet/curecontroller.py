@@ -94,6 +94,7 @@ class CureController:
         self.iter=0
         self.max_nxlinkbonds=0
         self.cum_nxlinkbonds=0
+        self.desired_nxlinkbonds=0
         self.max_search_radius=0.0
         self.max_radidx=0
         self.state=state.unknown
@@ -134,13 +135,16 @@ class CureController:
         return yaml.load(yaml_string,Loader=yaml.Loader)
     
 
-    def setup(self,max_nxlinkbonds=0,max_search_radius=0.0):
+    def setup(self,max_nxlinkbonds=0,desired_nxlinkbonds=0,max_search_radius=0.0):
         self.max_nxlinkbonds=max_nxlinkbonds
+        self.desired_nxlinkbonds=desired_nxlinkbonds
         self.max_search_radius=max_search_radius
         self.max_radidx=int((self.max_search_radius-self.dicts['cure']['search_radius'])/self.dicts['cure']['radial_increment'])
 
     def is_cured(self):
-        return self.search_failed or (self.cum_nxlinkbonds>=self.max_nxlinkbonds)
+        logger.debug(f'search_failed {self.search_failed}')
+        logger.debug(f'cumxlinks {self.cum_nxlinkbonds} maxxlinks {self.max_nxlinkbonds}: {(self.cum_nxlinkbonds>=self.max_nxlinkbonds)}')
+        return self.search_failed or (self.cum_nxlinkbonds>=self.desired_nxlinkbonds)
 
     def curr_conversion(self):
         if not self.max_nxlinkbonds: return 0

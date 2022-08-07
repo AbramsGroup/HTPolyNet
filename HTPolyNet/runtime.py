@@ -403,11 +403,11 @@ class Runtime:
             cc.iter=cp.last_substep()
         else:
             cc.reset()
-        cc.setup(max_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['cure']['desired_conversion']),max_search_radius=min(TC.Coordinates.box.diagonal()/2))
+        cc.setup(max_nxlinkbonds=self.cfg.maxconv,desired_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['cure']['desired_conversion']),max_search_radius=min(TC.Coordinates.box.diagonal()/2))
         cure_finished=cc.is_cured()
         if cure_finished: return
         my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
-        logger.info(f'Attempting to form {cc.max_nxlinkbonds} bonds')
+        logger.info(f'Attempting to form {cc.desired_nxlinkbonds} bonds')
         while not cure_finished:
             my_logger(f'Iteration {cc.iter} begins',logger.info)
             reentry=pfs.go_to(f'systems/iter-{cc.iter}')
