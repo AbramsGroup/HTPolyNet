@@ -93,10 +93,18 @@ class Runtime:
 
         ''' Generate all reactions and products that result from invoking symmetry '''
         symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
+        if not symmetry_relateds:
+            constituents=self.cfg.parameters.get('constituents',{})
+            if not constituents:
+                raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified.')
+            for cname,crec in constituents.items():
+                this_sr=crec.get('symmetry_equivalent_atoms',[])
+                if len(this_sr)>0:
+                    symmetry_relateds[cname]=this_sr
         if len(symmetry_relateds)>0:
             new_reactions,new_molecules=symmetry_expand_reactions(self.cfg.reactions,symmetry_relateds)
             ess='' if len(new_molecules)==1 else 's'
-            logger.info('{:^*67s}'.format(f' {len(new_molecules)} molecule{ess} implied by symmetry-equivalent atoms '))
+            logger.info('{:*^67s}'.format(f' {len(new_molecules)} molecule{ess} implied by symmetry-equivalent atoms '))
             ml=list(new_molecules.keys())
             for i in range(0,len(ml),4):
                 logger.info(4*'*'+' '+', '.join([m for m in ml[i:min(i+4,len(ml))]]))
@@ -473,7 +481,6 @@ class Runtime:
         if cp.passed('do_postcure_anneal'): return
         pca_dict=self.cfg.parameters.get('postcure_anneal',{})
         if not pca_dict: return 
-        logger.info('{:*^67}'.format(f' Postcure anneal '))
         cwd=pfs.go_to('systems/postcure')
         TC=self.TopoCoord
         mdp_pfx='equilibrate-nvt'
@@ -489,6 +496,7 @@ class Runtime:
         cum_time=durations.copy()
         for i in range(1,len(cum_time)):
             cum_time[i]+=cum_time[i-1]
+        logger.info('{:*^67}'.format(f' Postcure anneal for {nsteps} steps'))
         mod_dict={
             'ref_t':pca_dict.get('initial_temperature',300.0),
             'gen-temp':pca_dict.get('initial_temperature',300.0),
@@ -516,7 +524,6 @@ class Runtime:
         T=pae_dict.get('temperature',300)
         P=pae_dict.get('pressure',1)
         logger.info('{:*^67}'.format(f' Postanneal equilibration at {T} K and {P} bar for {nsteps} steps '))
-        logger.info(f'Postanneal equilibration for {pae_dict["nsteps"]} steps at {pae_dict["temperature"]} K and {pae_dict["pressure"]} bar')
         mdp_pfx='equilibrate-npt'
         pfs.checkout(f'mdp/{mdp_pfx}.mdp')
         mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}

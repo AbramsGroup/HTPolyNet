@@ -128,13 +128,14 @@ class Configuration:
             '''
             for rnum,rname in R.reactants.items():
                 zrecs=[]
-                # logger.debug(f'{R.name} rname {rname}')
+                logger.debug(f'{R.name} rname {rname}')
                 for atnum,atrec in R.atoms.items():
                     if atrec['reactant']==rnum:
                         cprec=atrec.copy()
                         del cprec['reactant']
                         # this atom is in this reactant
                         zrecs.append(cprec)
+                logger.debug(f'zrecs {zrecs}')
                 if not rname in self.molecules:
                     self.molecules[rname]=self.NewMolecule(rname)
                 ''' provide molecule with records of atoms that have z values '''

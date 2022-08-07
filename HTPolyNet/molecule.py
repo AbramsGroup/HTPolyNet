@@ -123,6 +123,7 @@ class Molecule:
         TC.reset_grx_attributes_from_idx_list('cycle')
 
     def initialize_monomer_grx_attributes(self):
+        logger.debug(f'{self.name}')
         TC=self.TopoCoord
         TC.set_gro_attribute('z',0)
         TC.set_gro_attribute('nreactions',0)
@@ -146,9 +147,13 @@ class Molecule:
             TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
             idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
             for sr in self.symmetry_relateds:
+                logger.debug(f'{self.name}: setting z for {an}, considering sr {sr}')
                 if an in sr:
-                    idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
-                    TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
+                    for bn in sr:
+                        if bn==an: continue
+                        logger.debug(f'{self.name}: setting z for {bn}')
+                        idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':bn,   'resNum':rnum}))
+                        TC.set_gro_attribute_by_attributes('z',z,{'atomName':bn,'resNum':rnum})
 
         # set chain, chain_idx
         TC.idx_lists['chain']=[]

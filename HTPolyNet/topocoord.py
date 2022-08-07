@@ -1161,7 +1161,7 @@ class TopoCoord:
 
     def reset_idx_list_from_grx_attributes(self,list_name):
         adf=self.Coordinates.A
-        # logger.debug(f'reset: columns {adf.columns}')
+        logger.debug(f'reset: columns {adf.columns}')
         tmp_dict={}
         for i,r in adf.iterrows():
             gix=r['globalIdx']
@@ -1171,15 +1171,18 @@ class TopoCoord:
                 if not cid in tmp_dict:
                     tmp_dict[cid]={}
                 tmp_dict[cid][cix]=gix
-        # logger.debug(f'{list_name} tmp_dict item count: {len(tmp_dict)}')
+        logger.debug(f'{list_name} tmp_dict item count: {len(tmp_dict)}')
+        logger.debug(f'{tmp_dict}')
         if tmp_dict:
-            assert all([a in tmp_dict for a in range(len(tmp_dict))]),f'{list_name} reset_idx_list for group attribute {list_name} has non-consecutive integer keys -- bug\n{[a in tmp_dict for a in range(len(tmp_dict))]}'
+            consec_test=[a in tmp_dict for a in range(len(tmp_dict))]
+            logger.debug(f'{consec_test}')
+            assert all(consec_test),f'{list_name} reset_idx_list for group attribute {list_name} has non-consecutive integer keys -- bug\n{[a in tmp_dict for a in range(len(tmp_dict))]}'
             ngroups=len(tmp_dict)
             self.idx_lists[list_name]=[[] for _ in range(ngroups)]
             for i in range(ngroups):
                 for j in range(len(tmp_dict[i])):
                     self.idx_lists[list_name][i].append(tmp_dict[i][j])
-        # logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
+        logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
 
     # def remap_idx_list(self,list_name,mapper):
     #     logger.debug(f'{list_name}')

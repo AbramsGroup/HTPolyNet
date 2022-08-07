@@ -85,7 +85,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
         thisR_extra_reactions=[]
         thisR_extra_molecules={}
         atom_options=[]
-        logger.debug(f'SYMMETRY EXPANSION OF REACTION {R.name} BEGINS')
+        logger.debug(f'Symmetry expansion of {R.name} begins')
         # logger.debug(f'  Product {R.product} resname sequence {prod_seq_resn}')
         atom_options=get_atom_options(R,symmetry_relateds)#,reactions)
         logger.debug(f'  atom options: {atom_options}')
@@ -144,7 +144,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 reactions.append(nooR)
                 thisR_extra_molecules[nooR.product]=Molecule(name=nooR.product,generator=nooR)
             idx+=1
-        logger.debug(f'SYMMETRY EXPANSION OF REACTION {R.name} ENDS')
+        logger.debug(f'Symmetry expansion of reaction {R.name} ends')
 
         # done with this reaction
         extra_reactions.extend(thisR_extra_reactions)
