@@ -406,7 +406,8 @@ class Runtime:
         cc.setup(max_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['cure']['desired_conversion']),max_search_radius=min(TC.Coordinates.box.diagonal()/2))
         cure_finished=cc.is_cured()
         if cure_finished: return
-        logger.info('{:*^67}'.format(f' Connect-Update-Relax-Equilibrate (CURE) begins '))
+        my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
+        logger.info(f'Attempting to form {cc.max_nxlinkbonds} bonds')
         while not cure_finished:
             logger.info('{:*^67}'.format(f' Iteration {cc.iter} begins '))
             reentry=pfs.go_to(f'systems/iter-{cc.iter}')
@@ -421,18 +422,18 @@ class Runtime:
             cc.do_equilibrate(TC)
             cp.subset(TC,'cure',cc.iter)
             logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f}')
-            logger.info('{:*^67}'.format(f' Iteration {cc.iter} ends '))
+            my_logger('Iteration {cc.iter} ends',logger.info)
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
             # exit(-1)
         cwd=pfs.go_to(f'systems/postcure')
-        logger.info('{:*^67}'.format(f' Postcure begins '))
+        my_logger('Postcure begins',logger.info)
         cc.do_postcure_bondsearch(TC,RL,MD)
         cc.do_topology_update(TC,MD)
         cc.do_relax(TC)
         cc.do_equilibrate(TC)
-        logger.info('{:*^67}'.format(f' Connect-Update-Relax-Equilibrate (CURE) ends '))
+        my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
         cp.set(TC,'cure')
 
         '''
@@ -473,7 +474,7 @@ class Runtime:
         cum_time=durations.copy()
         for i in range(1,len(cum_time)):
             cum_time[i]+=cum_time[i-1]
-        logger.info('{:*^67}'.format(f' Postcure anneal for {nsteps} steps'))
+        my_logger('Postcure anneal for {nsteps} steps',logger.info)
         mod_dict={
             'ref_t':pca_dict.get('initial_temperature',300.0),
             'gen-temp':pca_dict.get('initial_temperature',300.0),
@@ -486,7 +487,7 @@ class Runtime:
             }
         mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
         msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**self.cfg.parameters)
-        logger.info(f'Annealed coordinates in {deffnm}.gro')
+        my_logger(f'Annealed coordinates in {deffnm}.gro',logger.info,just='<')
         gmx_energy_trace(deffnm,['Density'],report_averages=True,**self.cfg.parameters)
         trace('Temperature',[deffnm],outfile='../../plots/postcure-anneal-temperature.png')
         cp.set(TC,'do_postcure_anneal')
@@ -500,7 +501,7 @@ class Runtime:
         nsteps=pae_dict.get('nsteps',50000)
         T=pae_dict.get('temperature',300)
         P=pae_dict.get('pressure',1)
-        logger.info('{:*^67}'.format(f' Postanneal equilibration at {T} K and {P} bar for {nsteps} steps '))
+        my_logger('Postanneal equilibration at {T} K and {P} bar for {nsteps} steps',logger.info)
         mdp_pfx='equilibrate-npt'
         pfs.checkout(f'mdp/{mdp_pfx}.mdp')
         mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}

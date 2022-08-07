@@ -3,6 +3,7 @@ import os
 import sys
 import argparse as ap
 
+from HTPolyNet.banner import banner
 from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
@@ -40,6 +41,7 @@ def run():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
+    banner(logger.info)
     my_logger('HTPolyNet runtime begins.',logger.info)
     userlib=args.lib
     if not os.path.exists(args.lib):
@@ -71,6 +73,7 @@ def parameterize():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
+    banner(logger.info)
     my_logger('HTPolyNet parameterization begins.',logger.info)
     userlib=args.lib
     if not os.path.exists(args.lib):
@@ -86,6 +89,7 @@ def htpolynet_cure_plots():
     parser.add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
     args=parser.parse_args(sys.argv[2:])
     logs=args.logs
+    banner(print)
     cure_graph(logs,args.plotfile)
     density_evolution()
 
