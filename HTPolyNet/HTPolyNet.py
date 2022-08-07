@@ -7,6 +7,7 @@ from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 from HTPolyNet.plot import cure_graph,density_evolution
+from HTPolyNet.stringthings import my_logger
 
 logger=logging.getLogger(__name__)
 parser=ap.ArgumentParser()
@@ -39,7 +40,7 @@ def run():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    logger.info('{:*^67s}'.format(' HTPolyNet runtime begins. '))
+    my_logger('HTPolyNet runtime begins.',logger.info)
     userlib=args.lib
     if not os.path.exists(args.lib):
         userlib=None
@@ -47,7 +48,7 @@ def run():
     pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,projdir=args.proj,reProject=args.restart,userlibrary=userlib)
     a=Runtime(cfgfile=args.config,restart=args.restart)
     a.build(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
-    logger.info('{:*^67s}'.format(' HTPolyNet runtime ends. '))
+    my_logger('HTPolyNet runtime ends.',logger.info)
 
 def parameterize():
     parser.add_argument('config',type=str,default=None,help='input configuration file in YAML format')
@@ -70,7 +71,7 @@ def parameterize():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    logger.info('HTPolyNet parameterization begins.')
+    my_logger('HTPolyNet parameterization begins.',logger.info)
     userlib=args.lib
     if not os.path.exists(args.lib):
         userlib=None
@@ -78,7 +79,7 @@ def parameterize():
     pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
     a=Runtime(cfgfile=args.config,restart=args.restart)
     a.generate_molecules(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
-    logger.info('HTPolynet parameterization ends.')
+    my_logger('HTPolynet parameterization ends.',logger.info)
 
 def htpolynet_cure_plots():
     parser.add_argument('logs',type=str,default='',nargs='+',help='names of diagnostic log files')

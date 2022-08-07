@@ -140,7 +140,7 @@ class CureController:
         self.max_radidx=int((self.max_search_radius-self.dicts['cure']['search_radius'])/self.dicts['cure']['radial_increment'])
 
     def is_cured(self):
-        return self.search_failed or (self.cum_nxlinkbonds==self.max_nxlinkbonds)
+        return self.search_failed or (self.cum_nxlinkbonds>=self.max_nxlinkbonds)
 
     def curr_conversion(self):
         if not self.max_nxlinkbonds: return 0

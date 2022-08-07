@@ -2,6 +2,7 @@
 import subprocess
 import logging
 import os
+from HTPolyNet.stringthings import my_logger
 logger=logging.getLogger(__name__)
 
 class Software:
@@ -45,7 +46,7 @@ class Software:
         self.versions['ambertools']=l
         
     def info(self):
-        print(str(self))
+        my_logger(str(self),logger.info)
 
 _SW_:Software=None
 def sw_setup():
