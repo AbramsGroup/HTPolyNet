@@ -1235,10 +1235,6 @@ class TopoCoord:
             bad_chain_idx=np.where(dec_us>c1)
             dec_us[bad_chain_idx]-=1
             self.Coordinates.A['chain']=dec_us
-            # for d in dec_us:
-            #     self.decrement_gro_attribute_by_attributes('chain',{'globalIdx':d})
-
-        # self.reset_grx_attributes_from_idx_list('chain') # should not be necessary due to in-loop bookkeeping
 
         cnms=[]
         for c in self.idx_lists['chain']:
