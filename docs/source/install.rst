@@ -82,7 +82,3 @@ Suggested approaches for obtaining these are below.
      This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of ``gmx distance`` that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.
 
 Finally, in the tutorials provided, we demonstrate the use of ``obabel`` from `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.
-
-
-
-hould be 

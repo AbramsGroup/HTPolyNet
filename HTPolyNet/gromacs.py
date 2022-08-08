@@ -209,8 +209,8 @@ def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=Fal
         logger.debug(f'packet {i} using fname {pfx}; dataframe size {idf.shape[0]}')
     npair=idf.shape[0]
     # logger.debug(f'idf dtype {idf["ai"].dtype}')
-    if 'r' in idf and not force_recalculate:
-        return None
+    if npair==0 or ('r' in idf and not force_recalculate):
+        return idf
     ''' create the index file '''
     with open(f'{pfx}.ndx','w') as f:
         f.write('[ bonds-1 ]\n')

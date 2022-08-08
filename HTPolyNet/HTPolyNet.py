@@ -105,6 +105,9 @@ def cli():
     parser=ap.ArgumentParser()
     parser.add_argument('command',type=str,default='',help='command ('+', '.join(list(commands.keys()))+')')
     args=parser.parse_args(sys.argv[1:2])
+
+    # TODO: use subparsers!
+
     if args.command in commands:
         commands[args.command]()
     else:
