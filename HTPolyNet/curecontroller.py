@@ -204,10 +204,15 @@ class CureController:
         # calc and store distances once outside this loop
         # have a controller that runs loop until a select number
         # of bonds has been formed, or we've maxed out the radius
+        # raw_bdf=self.make_candidates(TC,RL,MD,...)
         nbonds=0
         while nbonds==0 and self.current_radidx<self.max_radidx:
+            # test_bdf=raw_bdf[raw_bdf['r']<self.current_radius]
+            # result_bdf=self.apply_filters(TC,RL,MD,...)
             nbdf=self.searchbonds(TC,RL,MD,stage='cure',abs_max=bond_limit,apply_probabilities=apply_probabilities,reentry=reentry)
             nbonds=nbdf.shape[0]
+            # nbonds+=result_bdf.shape[0]
+            # if nbonds<PARAMETER:
             if nbonds==0:
                 self.current_radidx+=1
                 self.current_radius+=d['radial_increment']
@@ -357,6 +362,7 @@ class CureController:
     def do_postcure_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
         if self.state!=state.postcure_bondsearch: return
         opfx=self.pfx()
+        # multi: nbdf=self.make_cadidates(...,stage='post-cure')
         nbdf=self.searchbonds(TC,RL,MD,stage='post-cure')
         nbonds=nbdf.shape[0]
         if nbonds>0:
@@ -370,6 +376,7 @@ class CureController:
             self.state=state.postcure_equilibrate
         self.to_yaml()
 
+    # TODO: move to searchbonds.by; split into make_candidates() and apply_filters()
     def searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage='cure',abs_max=0,apply_probabilities=False,reentry=False):
         adf=TC.gro_DataFrame('atoms')
         gro=TC.files['gro']
