@@ -352,7 +352,7 @@ class CureController:
         mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
         TC.grompp_and_mdrun(out=f'{opfx}-post',mdp=f'{opfx}',quiet=False)
         average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
-        logger.info(f'  -> average density {average_density:.3f} kg/m^3')
+        logger.info(f'Density: {average_density:.3f} kg/m^3')
         if self.state==state.equilibrate:
             self.state=state.bondsearch if not self.search_failed else state.postcure_bondsearch
         elif self.state==state.postcure_equilibrate:
