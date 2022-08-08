@@ -1,9 +1,10 @@
 import logging
 import os
-import sys
+# import sys
 import argparse as ap
+import textwrap
 
-from HTPolyNet.banner import banner
+from HTPolyNet.banner import banner, banner_message
 from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
@@ -16,8 +17,9 @@ parser=ap.ArgumentParser()
 def info(args):
     print('This is some information on your installed version of HTPolyNet')
     l=pfs.lib_setup()
+    software.sw_setup()
     print(l.info())
-    software.info()
+    print(software.to_string())
 
 def run(args):
 
@@ -82,11 +84,17 @@ def cli():
     commands['info']=info
     commands['plots']=htpolynet_cure_plots
 
-    parser=ap.ArgumentParser()
+    helps={}
+    helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
+    helps['parameterize']='parameterize monomers and oligomer templates using instructinos in the config file'
+    helps['info']='print some information to the console'
+    helps['plots']='generate some plots that summarize aspects of the current completed build'
+
+    parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     subparsers=parser.add_subparsers()
     command_parsers={}
     for k in commands:
-        command_parsers[k]=subparsers.add_parser(k)
+        command_parsers[k]=subparsers.add_parser(k,help=helps[k])
         command_parsers[k].set_defaults(func=commands[k])
 
     command_parsers['run'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')

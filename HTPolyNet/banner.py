@@ -1,6 +1,6 @@
 from HTPolyNet.stringthings import my_logger
-def banner(logf):
-    banner_message="""
+
+banner_message="""
     HTPolyNet
     https://abramsgroup.github.io/HTPolyNet/
 
@@ -13,4 +13,5 @@ def banner(logf):
     Supported in part by Grants W911NF-17-2-0227 
     and W911NF-12-R-0011 from the US Army Research Lab
     """
+def banner(logf):
     my_logger(banner_message,logf,fill=' ',just='<')
