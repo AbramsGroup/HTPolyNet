@@ -1195,7 +1195,8 @@ class TopoCoord:
 
     def chainlist_update(self,new_bond_recs,msg=''):
         chainlists=self.idx_lists['chain']
-        logger.debug(f'pre {msg} chains')
+        if len(chainlists)==0: return
+        logger.debug(f'pre {msg} chainlists')
         for i,c in enumerate(chainlists):
             logger.debug(f'  {i} {c}')
         for b in new_bond_recs:
@@ -1203,14 +1204,13 @@ class TopoCoord:
             logger.debug(f'chainlist_update pair {aidx} {bidx}')
             ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
             bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
-            if ac in chainlists:
-                logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
-            if bc in chainlists:
-                logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            logger.debug(f'ac {ac} bc {bc}')
             if ac==-1 or bc==-1:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
                 continue
+            logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
             aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
             bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
             logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
