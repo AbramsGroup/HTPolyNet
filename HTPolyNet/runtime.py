@@ -33,7 +33,7 @@ class Runtime:
         self.cfgfile=cfgfile
         if cfgfile=='':
             logger.error('HTPolyNet requires a configuration file.\n')
-            raise RuntimeError('HTPolyNet requires a configuration file.')
+            raise RuntimeError('HTPolyNet requires a configuration file')
         logger.info(f'Configuration: {cfgfile}')
         self.cfg=Configuration.read(os.path.join(pfs.root(),cfgfile))
         software.set_gmx_preferences(self.cfg.parameters)
@@ -68,7 +68,7 @@ class Runtime:
                 if mname not in self.molecules:
                     if self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin):
                         self.molecules[mname]=M
-                        logger.debug(f'Generated {mname}.')
+                        logger.debug(f'Generated {mname}')
             all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
 
         ''' Generate all reactions and products that result from invoking symmetry '''
@@ -76,7 +76,7 @@ class Runtime:
         if not symmetry_relateds:
             constituents=self.cfg.parameters.get('constituents',{})
             if not constituents:
-                raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified.')
+                raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified')
             for cname,crec in constituents.items():
                 this_sr=crec.get('symmetry_equivalent_atoms',[])
                 if len(this_sr)>0:
@@ -94,9 +94,9 @@ class Runtime:
                     self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                     assert M.get_origin()!='unparameterized'
                     self.molecules[mname]=M
-                    logger.debug(f'Generated {mname}.')
+                    logger.debug(f'Generated {mname}')
                 else:
-                    logger.error(f'Symmetry-implied molecule {mname} already on list of molecules.')
+                    logger.error(f'Symmetry-implied molecule {mname} already on list of molecules')
             self.molecules.update(new_molecules)
 
         ''' Generate any required template products that result from reactions in which the bond generated creates
@@ -114,9 +114,9 @@ class Runtime:
                     self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                     assert M.get_origin()!='unparameterized'
                     self.molecules[mname]=M
-                    logger.debug(f'Generated {mname}.')
+                    logger.debug(f'Generated {mname}')
                 else:
-                    logger.error(f'Chaining-implied molecule {mname} already on list of molecules.')
+                    logger.error(f'Chaining-implied molecule {mname} already on list of molecules')
             self.molecules.update(new_molecules)
 
         for M in self.molecules:
@@ -133,7 +133,7 @@ class Runtime:
         my_logger(f'Generated {len(self.molecules)} molecule template{ess}',logger.info)
         my_logger(f'Initial composition is {", ".join([(x["molecule"]+" "+str(x["count"])) for x in self.cfg.initial_composition])}',logger.info)
         self.cfg.calculate_maximum_conversion()
-        my_logger(f'100% conversion is {self.cfg.maxconv} bonds.',logger.info)
+        my_logger(f'100% conversion is {self.cfg.maxconv} bonds',logger.info)
 
         logger.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():
@@ -169,7 +169,7 @@ class Runtime:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
                 M.set_origin('newly parameterized')
             else:
-                logger.debug(f'...no, did not generate {mname}.')
+                logger.debug(f'...no, did not generate {mname}')
                 logger.debug(f'not ({mname}.generator) {bool(not M.generator)}')
                 if M.generator:
                     logger.debug(f'reactants {list(M.generator.reactants.values())}')
@@ -191,7 +191,7 @@ class Runtime:
         return True
 
     def type_consistency_check(self,typename='dihedraltypes',funcidx=4,selection_rule='stiffest'):
-        logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested.')
+        logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested')
         mnames=list(self.molecules.keys())
         types_duplicated=[]
         for i in range(len(mnames)):
@@ -252,7 +252,7 @@ class Runtime:
             if not othermol in already_merged:
                 logger.debug(f'Merging types from {othermol}\'s topology into global topology')
                 TC.Topology.merge_types(M.TopoCoord.Topology)
-        my_logger(f'Generated {inpfnm}.top in {pfs.cwd()}.',logger.info)
+        my_logger(f'Generated {inpfnm}.top in {pfs.cwd()}',logger.info)
         TC.write_top(f'{inpfnm}.top')
         cp.set(self.TopoCoord,stepname='initialize_topology')
 
@@ -275,7 +275,7 @@ class Runtime:
                 densification_dict['initial_boxsize']=self.cfg.parameters['initial_boxsize']
         dspec=['initial_density' in densification_dict,'initial_boxsize' in densification_dict]
         # logger.debug(f'{dspec} {any(dspec)} {not all(dspec)}')
-        assert any(dspec),'Neither of "initial_boxsize" nor "initial_density" are specfied.'
+        assert any(dspec),'Neither of "initial_boxsize" nor "initial_density" are specfied'
         assert not all(dspec),'Cannot specify both "initial_boxsize" and "initial_density"'
         if 'initial_boxsize' in densification_dict:
             boxsize=densification_dict['initial_boxsize']
@@ -328,7 +328,7 @@ class Runtime:
             logger.debug(f'  {i} {c}')
         TC.make_resid_graph()
         TC.write_grx_attributes(f'{inpfnm}.grx')
-        logger.info(f'Generated {inpfnm}.gro and {inpfnm}.grx in {pfs.cwd()}.')
+        logger.info(f'Generated {inpfnm}.gro and {inpfnm}.grx in {pfs.cwd()}')
         cp.set(TC,stepname='initialize_coordinates')
 
     def do_densification(self,inpfnm='init',deffnm='densified'):
@@ -426,38 +426,18 @@ class Runtime:
             cc.do_equilibrate(TC)
             cp.subset(TC,'cure',cc.iter)
             logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f} or {cc.cum_nxlinkbonds} bonds')
-            my_logger(f'Iteration {cc.iter} ends',logger.info)
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
             # exit(-1)
         cwd=pfs.go_to(f'systems/postcure')
-        my_logger('Postcure',logger.info)
+        my_logger('Postcure begins',logger.info)
         cc.do_postcure_bondsearch(TC,RL,MD)
         cc.do_topology_update(TC,MD)
         cc.do_relax(TC)
         cc.do_equilibrate(TC)
         my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
         cp.set(TC,'cure')
-
-        '''
-        postcure_anneal: {
-            ncycles: 2,
-            initial_temperature: 300, # do we need this
-            cycle_segments: 
-                - { T: 300, ps: 0 }
-                - { T: 600, ps: 5 }
-                - { T: 600, ps: 5 }
-                - { T: 300, ps: 5 }
-                - { T: 300, ps: 5 }
-            }
-        }
-        '''
-        ''' mdp: (assume 0.002 ps time step)
-        annealing-npoints 6
-        annealing-temp 300 600 600 300 300
-        annealing-time 0   5   10  15  20
-        '''
 
     def do_postcure_anneal(self,deffnm='postcure_annealed'):
         if cp.passed('do_postcure_anneal'): return
@@ -523,7 +503,7 @@ class Runtime:
     def save_data(self,result_name='final'):
         TC=self.TopoCoord
         pfs.go_to(f'systems/{result_name}-results')
-        logger.info(f'Saving final data to {pfs.cwd()}.')
+        logger.info(f'Saving final data to {pfs.cwd()}')
         TC.write_grx_attributes(f'{result_name}.grx')
         TC.write_gro(f'{result_name}.gro')
         TC.write_top(f'{result_name}.top')

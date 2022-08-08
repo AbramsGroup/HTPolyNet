@@ -175,7 +175,7 @@ class CureController:
 
     def _read_bonds_df(self,bonds_file_override=''):
         infile=self.bonds_file if not bonds_file_override else bonds_file_override
-        assert os.path.exists(infile),f'Error: {infile} not found.'
+        assert os.path.exists(infile),f'Error: {infile} not found'
         self.bonds_df=pd.read_csv(infile,sep='\s+',header=0)
         self.bonds_file=os.path.abspath(infile)
 
@@ -194,7 +194,7 @@ class CureController:
         opfx=self.pfx()
         d=self.dicts['cure']
         self.current_radius=d['search_radius']+self.current_radidx*d['radial_increment']
-        logger.info(f'Bond search using radius {self.current_radius} nm initiated.')
+        logger.info(f'Bond search using radius {self.current_radius} nm initiated')
         apply_probabilities=self.curr_conversion()<d['late_threshold']
         bond_limit=int(d['max_conversion_per_iteration']*self.max_nxlinkbonds)
         bond_target=int((d['desired_conversion']-self.curr_conversion())*self.max_nxlinkbonds)
@@ -219,7 +219,7 @@ class CureController:
                 logger.info(f'Radius increased to {self.current_radius} nm')
         if nbonds>0:
             ess='' if nbonds==1 else 's'
-            logger.info(f'Iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}.')
+            logger.info(f'Iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}')
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
@@ -265,7 +265,7 @@ class CureController:
         maxL,minL,meanL=nbdf['current_lengths'].max(),nbdf['current_lengths'].min(),nbdf['current_lengths'].mean()
         logger.debug(f'Lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
         ess='' if nbdf.shape[0]==1 else 's'
-        logger.info(f'{self.state} initiated on {nbdf.shape[0]} distance{ess} (max {maxL:.3f} nm).')
+        logger.info(f'{str(self.state).capitalize()} initiated on {nbdf.shape[0]} distance{ess} (max {maxL:.3f} nm)')
         roptions=[self.dicts['gromacs']['rdefault'],maxL]
         if mode=='drag':
             TC.add_restraints(nbdf,typ=6)
@@ -367,7 +367,7 @@ class CureController:
         nbonds=nbdf.shape[0]
         if nbonds>0:
             ess='' if nbonds==1 else 's'
-            logger.info(f'Postcure will generate {nbdf.shape[0]} new bond{ess}.')
+            logger.info(f'Postcure will generate {nbdf.shape[0]} new bond{ess}')
             pairs=pd.DataFrame() # empty placeholder
             nbdf['initial_distance']=nbdf['r'].copy()
             self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
@@ -504,7 +504,7 @@ class CureController:
                     if x>r.prob:
                         bdf.loc[i,'lucky']=False
 
-            logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application.')
+            logger.debug(f'{bdf[bdf["lucky"]==True].shape[0]} bonds survive probability application')
             bdf=bdf[bdf['lucky']==True].copy().reset_index(drop=True)
             # logger.debug('Lucky bonds:')
             # for ln in bdf.to_string().split('\n'):
