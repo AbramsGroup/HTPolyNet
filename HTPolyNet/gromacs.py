@@ -78,6 +78,8 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     maxwarn=kwargs.get('maxwarn',4)
     rdd=kwargs.get('rdd',0)
     dds=kwargs.get('dds',0.8)
+    dlb=kwargs.get('dlb','yes')
+    tunepme=kwargs.get('tunepme','yes')
     if gro=='' or top=='' or out=='' or mdp=='':
         raise Exception('grompp_and_mdrun requires gro, top, out, and mdp filename prefixes.')
     infiles=[f'{gro}.gro',f'{top}.top',f'{mdp}.mdp']
@@ -89,7 +91,7 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     # nsteps=kwargs.get('nsteps',-2)
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run(quiet=quiet)
-    c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd,dds=dds)
+    c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd,dds=dds,dlb=dlb,tunepme=tunepme)
     c.run(quiet=quiet,ignore_codes=ignore_codes)
     if os.path.exists(f'{out}.gro'):
         pass
