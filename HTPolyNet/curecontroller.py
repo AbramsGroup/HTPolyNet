@@ -144,7 +144,10 @@ class CureController:
     def is_cured(self):
         logger.debug(f'search_failed {self.search_failed}')
         logger.debug(f'cumxlinks {self.cum_nxlinkbonds} maxxlinks {self.max_nxlinkbonds}: {(self.cum_nxlinkbonds>=self.max_nxlinkbonds)}')
-        return self.search_failed or (self.cum_nxlinkbonds>=self.desired_nxlinkbonds)
+        finished=self.search_failed or (self.cum_nxlinkbonds>=self.desired_nxlinkbonds)
+        if finished:
+            self.state=state.postcure_bondsearch
+        return finished
 
     def curr_conversion(self):
         if not self.max_nxlinkbonds: return 0
@@ -246,13 +249,16 @@ class CureController:
         logger.debug(f'next: {self.state}')
 
     def do_relax(self,TC:TopoCoord):
-        if self.state!=state.relax: return
+        if self.state!=state.relax and self.state!=state.postcure_relax: return
         nbdf=self.bonds_df
         if nbdf.shape[0]==0:
             self.state=state.equilibrate
             return
         self.distance_attenuation(TC,mode='relax')
-        self.state=state.equilibrate
+        if self.state==state.relax:
+            self.state=state.equilibrate
+        else:
+            self.state=state.postcure_equilibrate
         self.to_yaml()
 
     def distance_attenuation(self,TC:TopoCoord,mode='drag'):
@@ -279,7 +285,11 @@ class CureController:
         rcommon=max(roptions)
         for stg_dict in d['equilibration']:
             ensemble=stg_dict['ensemble']
-            impfx=f'{self.state}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
+            if 'postcure_' in str(self.state):
+                statename=str(self.state)[len('postcure_'):]
+            else:
+                statename=str(self.state)
+            impfx=f'{statename}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
             pfs.checkout(f'mdp/{impfx}.mdp')
             mdp_mods_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
             if ensemble!='min':
@@ -289,7 +299,13 @@ class CureController:
             mdp_modify(f'{impfx}.mdp',mdp_mods_dict,add_if_missing=(ensemble!='min'))
         this_nstages=int(maxL/d['increment'])
         this_firststage=self.current_stage[mode]
-        logger.debug(f'{this_nstages} {this_firststage}')
+        logger.debug(f'this_nstages {this_nstages} first {this_firststage}')
+        # if this_nstages==this_firststage+1 and mode=='relax':
+        #     logger.info('No relaxation necessary')
+        #     TC.add_length_attribute(nbdf,attr_name='current_lengths')
+        #     maxL,minL,meanL=nbdf['current_lengths'].max(),nbdf['current_lengths'].min(),nbdf['current_lengths'].mean()
+        #     logger.info(f'{this_firststage:>10d}  {maxL:>17.3f}')
+        logger.debug(f'{self.state} {this_nstages} {this_firststage}')
         saveT=TC.copy_bond_parameters(self.bonds_df)
         for i in range(this_firststage,this_nstages):
             self.current_stage[mode]=i
@@ -301,7 +317,7 @@ class CureController:
             TC.write_top(f'{stagepfx}.top')
             for stg_dict in d['equilibration']:
                 ensemble=stg_dict['ensemble']
-                TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{self.state}-{ensemble}')
+                TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{impfx}')
                 logger.debug(f'{TC.files["gro"]}')
             TC.restore_bond_parameters(saveT)
             TC.add_length_attribute(nbdf,attr_name='current_lengths')
@@ -319,15 +335,13 @@ class CureController:
             TC.remove_restraints(self.bonds_df)
         TC.write_top(f'{opfx}-complete.top')
         self.register_bonds(nbdf,pdf,f'{opfx}-{mode}-bonds.csv',bonds_are=('relaxed' if mode=='relax' else 'dragged'))
+        self.current_stage[mode]=0
         self.to_yaml()
 
     def do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
-        opfx=self.pfx()
-        logger.debug('here')
         if self.state!=state.update and self.state!=state.postcure_update: return
         opfx=self.pfx()
         logger.debug(f'Topology update')
-        # exit(-1)
         bonds_df,pairs_df=TC.update_topology_and_coordinates(self.bonds_df,template_dict=MD,write_mapper_to=f'{opfx}-idx-mapper.csv')
         TC.add_length_attribute(bonds_df,attr_name='initial_distance')
         TC.add_length_attribute(pairs_df,attr_name='initial_distance')
@@ -365,11 +379,11 @@ class CureController:
         # multi: nbdf=self.make_cadidates(...,stage='post-cure')
         nbdf=self.searchbonds(TC,RL,MD,stage='post-cure')
         nbonds=nbdf.shape[0]
+        ess='' if nbonds==1 else 's'
+        logger.info(f'Postcure will generate {nbdf.shape[0]} new bond{ess}')
         if nbonds>0:
-            ess='' if nbonds==1 else 's'
-            logger.info(f'Postcure will generate {nbdf.shape[0]} new bond{ess}')
             pairs=pd.DataFrame() # empty placeholder
-            nbdf['initial_distance']=nbdf['r'].copy()
+            TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
             self.state=state.postcure_update
         else:
@@ -385,6 +399,7 @@ class CureController:
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         bdf=pd.DataFrame()
         Rlist=[x for x in RL if (x.stage==stage and x.probability>0.0)]
+        logger.debug(f'reactioncount {len(Rlist)} atomscount {raset.shape[0]}')
         for R in Rlist:
             logger.debug(f'Reaction {R.name} with {len(R.bonds)} bond(s)')
             prob=R.probability
@@ -426,19 +441,29 @@ class CureController:
                     if idf.shape[0]>0:
                         ess='' if idf.shape[0]!=1 else 's'
                         bondtestoutcomes={k:0 for k in BTRC}
-                        gromacs_distance(idf,gro) # use "gmx distance" to very quickly get all lengths
+                        p=Pool(processes=self.ncpu)
+                        idf_split=np.array_split(idf,self.ncpu)
+                        packets=[(i,idf_split[i]) for i in range(self.ncpu)]
+                        logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
+                        results=p.map(partial(gromacs_distance,gro=gro,new_column_name='r'),packets)
+                        p.close()
+                        p.join()
+                        # reassemble final dataframe:
+                        # logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
+                        idf=pd.concat(results,ignore_index=True)
+                        # gromacs_distance(idf,gro,new_column_name='r') # use "gmx distance" to very quickly get all lengths
                         logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
                         idf=idf[idf['r']<self.current_radius].copy().reset_index(drop=True)
                         ess='' if idf.shape[0]!=1 else 's'
                         logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {self.current_radius} nm')
                         p=Pool(processes=self.ncpu)
                         idf_split=np.array_split(idf,self.ncpu)
-                        logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
+                        # logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
                         results=p.map(partial(TC.bondtest_df),idf_split)
                         p.close()
                         p.join()
                         # reassemble final dataframe:
-                        logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
+                        # logger.debug(f'Checking dataframe lengths: {", ".join([str(x.shape[0]) for x in results])}')
                         idf=pd.concat(results,ignore_index=True)
                         if not idf.empty:
                             logger.debug(f'Bond-candidate test outcomes:')

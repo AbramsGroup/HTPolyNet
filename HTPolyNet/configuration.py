@@ -110,8 +110,8 @@ class Configuration:
         if not self.initial_composition:
             for molecule,mrec in self.constituents.items():
                 self.initial_composition.append({'molecule':molecule,'count':mrec['count']})
-        logger.debug(f'{self.constituents}')
-        logger.debug(f'{self.initial_composition}')
+        # logger.debug(f'{self.constituents}')
+        # logger.debug(f'{self.initial_composition}')
         for item in self.initial_composition:
             m=item['molecule']
             if m not in self.molecules:
@@ -128,14 +128,14 @@ class Configuration:
             '''
             for rnum,rname in R.reactants.items():
                 zrecs=[]
-                logger.debug(f'{R.name} rname {rname}')
+                # logger.debug(f'{R.name} rname {rname}')
                 for atnum,atrec in R.atoms.items():
                     if atrec['reactant']==rnum:
                         cprec=atrec.copy()
                         del cprec['reactant']
                         # this atom is in this reactant
                         zrecs.append(cprec)
-                logger.debug(f'zrecs {zrecs}')
+                # logger.debug(f'zrecs {zrecs}')
                 if not rname in self.molecules:
                     self.molecules[rname]=self.NewMolecule(rname)
                 ''' provide molecule with records of atoms that have z values '''

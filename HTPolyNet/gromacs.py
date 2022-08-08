@@ -10,6 +10,7 @@ import logging
 import os
 import pandas as pd
 import numpy as np
+from itertools import product
 from collections import namedtuple
 
 from pytrr import GroTrrReader
@@ -185,7 +186,10 @@ def gmx_energy_trace(edr,names=[],**kwargs):
 #     for ln in density.iloc[-1].to_string().split('\n'):
 #         logger.info(f'{ln}')
 
-def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
+# make a bunch of 3-character filename prefixes so parallel invocations don't collide
+_abc='abcdefghijklmnopqrstuwxyz'
+_fnames=[''.join(i) for i in product(_abc,_abc,_abc)]
+def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=False):
     """Use 'gmx distance' to measure interatomic distances
 
     :param idf: dataframe of atom indexes in pairs ['ai','aj']
@@ -199,35 +203,39 @@ def gromacs_distance(idf,gro,new_column_name='r',force_recalculate=False):
     :return: list of distances parallel to idf columns
     :rtype: numpy.ndarray
     """
+    if type(idf)==tuple: # this is being called in parallel
+        i,idf=idf
+        pfx=_fnames[i]
+        logger.debug(f'packet {i} using fname {pfx}; dataframe size {idf.shape[0]}')
     npair=idf.shape[0]
     # logger.debug(f'idf dtype {idf["ai"].dtype}')
     if 'r' in idf and not force_recalculate:
         return None
     ''' create the index file '''
-    with open('tmp.ndx','w') as f:
+    with open(f'{pfx}.ndx','w') as f:
         f.write('[ bonds-1 ]\n')
         idf[['ai','aj']].to_csv(f,sep=' ',header=False,index=False)
         # logger.debug('wrote tmp.ndx')
     ''' create the user-input file '''
-    with open ('gmx.in','w') as f:
+    with open (f'{pfx}.in','w') as f:
         f.write('0\n\n')
-    c=Command(f'{sw.gmx} {sw.gmx_options} distance -f {gro} -n tmp.ndx -oall tmp.xvg -xvg none < gmx.in')
+    c=Command(f'{sw.gmx} {sw.gmx_options} distance -f {gro} -n {pfx}.ndx -oall {pfx}.xvg -xvg none < {pfx}.in')
     c.run()
     ''' read the xvg file that 'gmx distance' creates '''
-    with open ('tmp.xvg','r') as f:
+    with open (f'{pfx}.xvg','r') as f:
         datastr=f.read().split()
     datastr=datastr[1:]
     # logger.debug(f'0 {datastr[0]} - {len(datastr)-1} {datastr[-1]}')
     data=np.array([float(x) for x in datastr])
     nd=len(data)
     ''' clean up '''
-    os.remove('tmp.ndx')
-    os.remove('gmx.in')
-    os.remove('tmp.xvg')
+    os.remove(f'{pfx}.ndx')
+    os.remove(f'{pfx}.in')
+    os.remove(f'{pfx}.xvg')
     ''' add the lengths back to the input dataframe '''
     idf[new_column_name]=data
     assert npair==nd
-    return data
+    return idf
 
 def encluster(i,j,c):
     # NOT USED

@@ -255,8 +255,8 @@ class TopoCoord:
             for k,v in temp2inst.items():
                 check = check and (k == inst2temp[v])
             assert check,f'Error: bidirectional dicts are incompatible; bug\n{inst2temp}\b{temp2inst}'
-            logger.debug(f'inst2temp {inst2temp}')
-            logger.debug(f'temp2inst {temp2inst}')
+            # logger.debug(f'inst2temp {inst2temp}')
+            # logger.debug(f'temp2inst {temp2inst}')
             i_idx,j_idx=bb
             _temp_i_idx,_temp_j_idx=inst2temp[i_idx],inst2temp[j_idx]
             assert temp_i_idx==_temp_i_idx,f'mapping mismatch -- bug'
@@ -278,7 +278,7 @@ class TopoCoord:
                         # changed type of one or both of the bond atoms
                         need_new_bond_parameters=True
                 if inst_charge!=temp_charge:
-                    logger.debug(f'changing charge of inst atom {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_charge} to {temp_charge}')
+                    logger.debug(f'charge {inst_atom} ({inst_resn} {inst_rnam} {inst_name}) from {inst_charge} to {temp_charge}')
                     atdf.loc[atdf['nr']==inst_atom,'charge']=temp_charge
                     dcharge=temp_charge-inst_charge
                     total_dcharge+=dcharge
@@ -290,16 +290,16 @@ class TopoCoord:
             # temp_angles,temp_dihedrals,temp_pairs=T.get_angles_dihedrals((temp_i_idx,temp_j_idx))
             # logger.debug(f'Mapping {temp_angles.shape[0]} angles, {temp_dihedrals.shape[0]} dihedrals, and {temp_pairs.shape[0]} pairs from template {T.name}')
             # map from template atom indicies to system atom indicies in angles
-            logger.debug(f'Template angles:')
-            for ln in temp_angles.to_string().split('\n'):
-                logger.debug(ln)
+            # logger.debug(f'Template angles:')
+            # for ln in temp_angles.to_string().split('\n'):
+            #     logger.debug(ln)
             inst_angles=temp_angles.copy()
             inst_angles.ai=temp_angles.ai.map(temp2inst)
             inst_angles.aj=temp_angles.aj.map(temp2inst)
             inst_angles.ak=temp_angles.ak.map(temp2inst)
-            logger.debug(f'Mapped instance angles:')
-            for ln in inst_angles.to_string().split('\n'):
-                logger.debug(ln)
+            # logger.debug(f'Mapped instance angles:')
+            # for ln in inst_angles.to_string().split('\n'):
+            #     logger.debug(ln)
             # add new angles to the system topology
             d=self.Topology.D['angles']
             self.Topology.D['angles']=pd.concat((d,inst_angles),ignore_index=True)                            
@@ -312,18 +312,18 @@ class TopoCoord:
                 logger.error('NAN in angles')
                 raise Exception
 
-            logger.debug(f'Template dihedrals:')
-            for ln in temp_dihedrals.to_string().split('\n'):
-                logger.debug(ln)
+            # logger.debug(f'Template dihedrals:')
+            # for ln in temp_dihedrals.to_string().split('\n'):
+            #     logger.debug(ln)
             # map from template atom indicies to system atom indicies in dihedrals
             inst_dihedrals=temp_dihedrals.copy()
             inst_dihedrals.ai=temp_dihedrals.ai.map(temp2inst)
             inst_dihedrals.aj=temp_dihedrals.aj.map(temp2inst)
             inst_dihedrals.ak=temp_dihedrals.ak.map(temp2inst)
             inst_dihedrals.al=temp_dihedrals.al.map(temp2inst)
-            logger.debug(f'Mapped instance dihedrals:')
-            for ln in inst_dihedrals.to_string().split('\n'):
-                logger.debug(ln)
+            # logger.debug(f'Mapped instance dihedrals:')
+            # for ln in inst_dihedrals.to_string().split('\n'):
+            #     logger.debug(ln)
             d=inst_dihedrals
             check=False
             for a in ['ai','aj','ak','al']:
@@ -382,9 +382,9 @@ class TopoCoord:
                 logger.error('NAN in pairs aj')
                 raise Exception
             # add these pairs to the topology
-            logger.debug(f'Concatenating this pairs to global pairs')
-            for ln in temp_pairs.to_string().split('\n'):
-                logger.debug(ln)
+            # logger.debug(f'Concatenating this pairs to global pairs')
+            # for ln in temp_pairs.to_string().split('\n'):
+            #     logger.debug(ln)
             self.Topology.D['pairs']=pd.concat((d,temp_pairs),ignore_index=True)
             d=self.Topology.D['pairs']
             # check AGAIN for nans
@@ -420,7 +420,7 @@ class TopoCoord:
             idx_to_delete=self.make_bonds(at_idx)
             logger.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
-            logger.debug(f'null check')
+            # logger.debug(f'null check')
             self.Topology.null_check(msg='delete_atoms')
             # reindex all atoms in the list of bonds sent in, and write it out
             logger.debug(f'z-decrement, nreactions increment')
@@ -775,7 +775,7 @@ class TopoCoord:
     def interresidue_partners_of(self,i):
         result=[]
         bl=self.Topology.bondlist.partners_of(i)
-        logger.debug(f'{i} partners {bl}')
+        # logger.debug(f'{i} partners {bl}')
         myresid=self.Coordinates.A.iloc[i-1]['resNum']
         for j in bl:
             theirresid=self.Coordinates.A.iloc[j-1]['resNum']
@@ -816,7 +816,7 @@ class TopoCoord:
             return None
 
     def overwrite_coords(self,other):
-        logger.debug(f'Overwriting {other.Coordinates.A.shape[0]} coordinates')
+        # logger.debug(f'Overwriting {other.Coordinates.A.shape[0]} coordinates')
         C=self.Coordinates.A
         C=C.set_index('globalIdx')
         # logger.debug(f'before update:\n{C.to_string()}')
@@ -828,14 +828,14 @@ class TopoCoord:
         self.Coordinates.A=C.reset_index()
         # logger.debug(f'after update:\n{self.Coordinates.A.to_string()}')
 
-    def label_cycle_atoms(self):
-        adf=self.Coordinates.A
-        cycle_idx=list(sorted(list(set(adf['cycle'].to_list()))))
-        if -1 in cycle_idx:
-            cycle_idx.remove(-1)
-        for c in cycle_idx:
-            cnames=adf[adf['cycle']==c]['atomName'].to_list()
-            logger.debug(f'cycle {c}: {cnames}')
+    # def label_cycle_atoms(self):
+    #     adf=self.Coordinates.A
+    #     cycle_idx=list(sorted(list(set(adf['cycle'].to_list()))))
+    #     if -1 in cycle_idx:
+    #         cycle_idx.remove(-1)
+    #     for c in cycle_idx:
+    #         cnames=adf[adf['cycle']==c]['atomName'].to_list()
+    #         logger.debug(f'cycle {c}: {cnames}')
         # logger.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
 
     def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=False):
@@ -923,8 +923,8 @@ class TopoCoord:
             molecule=icdict['molecule']
             count=icdict['count']
             mol_adf=molecule_dict[molecule].TopoCoord.Coordinates.A
-            for ln in mol_adf.to_string().split('\n'):
-                logger.debug(ln)
+            # for ln in mol_adf.to_string().split('\n'):
+            #     logger.debug(ln)
             mol_attr_df=mol_adf[self.grxattr]
             for i in range(count):
                 for i,k in enumerate(self.grxattr):
@@ -1161,7 +1161,7 @@ class TopoCoord:
 
     def reset_idx_list_from_grx_attributes(self,list_name):
         adf=self.Coordinates.A
-        logger.debug(f'reset: columns {adf.columns}')
+        # logger.debug(f'reset: columns {adf.columns}')
         tmp_dict={}
         for i,r in adf.iterrows():
             gix=r['globalIdx']
@@ -1171,18 +1171,18 @@ class TopoCoord:
                 if not cid in tmp_dict:
                     tmp_dict[cid]={}
                 tmp_dict[cid][cix]=gix
-        logger.debug(f'{list_name} tmp_dict item count: {len(tmp_dict)}')
-        logger.debug(f'{tmp_dict}')
+        # logger.debug(f'{list_name} tmp_dict item count: {len(tmp_dict)}')
+        # logger.debug(f'{tmp_dict}')
         if tmp_dict:
             consec_test=[a in tmp_dict for a in range(len(tmp_dict))]
-            logger.debug(f'{consec_test}')
+            # logger.debug(f'{consec_test}')
             assert all(consec_test),f'{list_name} reset_idx_list for group attribute {list_name} has non-consecutive integer keys -- bug\n{[a in tmp_dict for a in range(len(tmp_dict))]}'
             ngroups=len(tmp_dict)
             self.idx_lists[list_name]=[[] for _ in range(ngroups)]
             for i in range(ngroups):
                 for j in range(len(tmp_dict[i])):
                     self.idx_lists[list_name][i].append(tmp_dict[i][j])
-        logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
+        # logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
 
     # def remap_idx_list(self,list_name,mapper):
     #     logger.debug(f'{list_name}')
@@ -1196,24 +1196,27 @@ class TopoCoord:
     def chainlist_update(self,new_bond_recs,msg=''):
         chainlists=self.idx_lists['chain']
         if len(chainlists)==0: return
-        logger.debug(f'pre {msg} chainlists')
-        for i,c in enumerate(chainlists):
-            logger.debug(f'  {i} {c}')
+        # logger.debug(f'pre {msg} chainlists')
+        # for i,c in enumerate(chainlists):
+        #     logger.debug(f'  {i} {c}')
         for b in new_bond_recs:
             aidx,bidx=b[0],b[1]
-            logger.debug(f'chainlist_update pair {aidx} {bidx}')
+            ar=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aidx})
+            br=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bidx})
+            if ar==br: continue # ignore intramolecular bonds
+            # logger.debug(f'chainlist_update pair {aidx} {bidx}')
             ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
             bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
-            logger.debug(f'ac {ac} bc {bc}')
+            # logger.debug(f'ac {ac} bc {bc}')
             if ac==-1 or bc==-1:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
                 continue
-            logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
-            logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
+            # logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            # logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
             aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
             bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
-            logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
+            # logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
             # one must be a head and the other a tail
             if aci==0: # a is a head
                 assert len(chainlists[bc])-1==bci,f'incorrect tail'
@@ -1229,12 +1232,16 @@ class TopoCoord:
             for aidx in chainlists[c1]:
                 self.set_gro_attribute_by_attributes('chain',c2,{'globalIdx':aidx})
                 self.set_gro_attribute_by_attributes('chain_idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
+            # logger.debug(f'removing chain {c1}')
             chainlists.remove(chainlists[c1])
             # since we remove c1, all indices greater than c1 must decrement
             dec_us=np.array(self.Coordinates.A['chain'])
             bad_chain_idx=np.where(dec_us>c1)
+            # logger.debug(f'bad_chain_idx: {bad_chain_idx}')
+            # logger.debug(f'{dec_us[bad_chain_idx]}')
             dec_us[bad_chain_idx]-=1
             self.Coordinates.A['chain']=dec_us
+
 
         cnms=[]
         for c in self.idx_lists['chain']:
@@ -1321,7 +1328,7 @@ class TopoCoord:
         return bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames
     
     def get_oneaways(self,atom_idx):
-        # resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
+        resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
         chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
         chain_idx=[self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':x}) for x in atom_idx]
         # logger.debug(f'chains {chains} chain_idx {chain_idx}')

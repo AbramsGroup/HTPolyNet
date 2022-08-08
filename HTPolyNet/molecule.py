@@ -133,9 +133,9 @@ class Molecule:
         sea_idx=1
         logger.debug(f'{self.name}: symmetry_relateds {self.symmetry_relateds}')
         for s in self.symmetry_relateds:
-            logger.debug(f'sea_idx {sea_idx} set for set {s}')
+            # logger.debug(f'sea_idx {sea_idx} set for set {s}')
             for atomName in s:
-                logger.debug(f'{atomName} {sea_idx}')
+                # logger.debug(f'{atomName} {sea_idx}')
                 TC.set_gro_attribute_by_attributes('sea_idx',sea_idx,{'atomName':atomName})
             sea_idx+=1
         # set z and nreactions
@@ -147,11 +147,11 @@ class Molecule:
             TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
             idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
             for sr in self.symmetry_relateds:
-                logger.debug(f'{self.name}: setting z for {an}, considering sr {sr}')
+                # logger.debug(f'{self.name}: setting z for {an}, considering sr {sr}')
                 if an in sr:
                     for bn in sr:
                         if bn==an: continue
-                        logger.debug(f'{self.name}: setting z for {bn}')
+                        # logger.debug(f'{self.name}: setting z for {bn}')
                         idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':bn,   'resNum':rnum}))
                         TC.set_gro_attribute_by_attributes('z',z,{'atomName':bn,'resNum':rnum})
 
@@ -205,8 +205,9 @@ class Molecule:
         self.center_coords(new_boxsize=boxsize)
         mdp_prefix='single-molecule-min'
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
+        gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.TopoCoord.grompp_and_mdrun(out=f'{outname}',
-                        mdp=mdp_prefix,boxSize=boxsize)
+                        mdp=mdp_prefix,boxSize=boxsize,**gromacs_dict)
 
     def relax(self,relax_dict):
         deffnm=relax_dict.get('deffnm',f'{self.name}-relax')
@@ -233,9 +234,9 @@ class Molecule:
         if type(new_boxsize)==np.ndarray:
             if new_boxsize.shape==(3,):
                 box_vectors=new_boxsize*np.identity(3,dtype=float)
-                logger.debug('Box vectors:')
-                for ln in str(box_vectors).split('\n'):
-                    logger.debug(ln)
+                # logger.debug('Box vectors:')
+                # for ln in str(box_vectors).split('\n'):
+                #     logger.debug(ln)
             elif new_boxsize.shape==(3,3):
                 box_vectors=new_boxsize
             self.TopoCoord.Coordinates.box=box_vectors
@@ -263,7 +264,7 @@ class Molecule:
             # logger.debug(f'{self.name}: resid_mapper {resid_mapper}')
             # logger.debug(f'{self.TopoCoord.idx_lists}')
             # logger.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
-            logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
+            # logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
             self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
             self.set_sequence()
             bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
@@ -280,7 +281,7 @@ class Molecule:
             isf=None
             for isf in input_structure_formats:
                 if pfs.exists(f'molecules/inputs/{self.name}.{isf}'):
-                    logger.debug(f'Using input molecules/inputs/{self.name}.{isf} as a generator.')
+                    logger.debug(f'Using input molecules/inputs/{self.name}.{isf} as a generator')
                     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
                     break
             assert isf,'Error: no valid input structure file found'
@@ -378,8 +379,8 @@ class Molecule:
             temp_iresname,temp_jresname=BT.resnames
             temp_bystander_resids=RB.bystander_resids
             temp_oneaway_resids=RB.oneaway_resids
-            logger.debug(f'temp_iresname {temp_iresname} temp_iname {temp_iname}')
-            logger.debug(f'temp_jresname {temp_jresname} temp_jname {temp_jname}')
+            # logger.debug(f'temp_iresname {temp_iresname} temp_iname {temp_iname}')
+            # logger.debug(f'temp_jresname {temp_jresname} temp_jname {temp_jname}')
             if (i_atomName,i_resName)==(temp_iname,temp_iresname):
                 ij=[0,1]
                 break # found it -- stop looking
@@ -458,8 +459,8 @@ class Molecule:
             raise Exception
         return ad,td,paird
 
-    def label_cycle_atoms(self):
-        self.TopoCoord.label_cycle_atoms()
+    # def label_cycle_atoms(self):
+    #     self.TopoCoord.label_cycle_atoms()
 
     def get_resname(self,internal_resid):
         # logger.debug(f'{self.name} sequence: {self.sequence}')
@@ -595,9 +596,9 @@ class Molecule:
         bresids.append(from_resid)
         BTC.Coordinates.A=C[C['resNum'].isin(bresids)].copy()
         NONROT=C[~C['resNum'].isin(bresids)].shape[0]
-        logger.debug(f'{self.TopoCoord.Coordinates.A.shape[0]} atoms')
-        logger.debug(f'holding {at_resid} ({NONROT})')
-        logger.debug(f'rotating/translating {bresids} ({BTC.Coordinates.A.shape[0]})')
+        # logger.debug(f'{self.TopoCoord.Coordinates.A.shape[0]} atoms')
+        # logger.debug(f'holding {at_resid} ({NONROT})')
+        # logger.debug(f'rotating/translating {bresids} ({BTC.Coordinates.A.shape[0]})')
         assert self.TopoCoord.Coordinates.A.shape[0]==(NONROT+BTC.Coordinates.A.shape[0])
         mypartners=TC.partners_of(at_idx)
         otpartners=TC.partners_of(from_idx)

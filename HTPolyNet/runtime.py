@@ -3,7 +3,8 @@ import os
 import shutil
 import numpy as np
 from copy import deepcopy
-
+from multiprocessing import Pool
+from functools import partial
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.topology import select_topology_type_option
 from HTPolyNet.topocoord import TopoCoord
@@ -18,6 +19,24 @@ from HTPolyNet.curecontroller import CureController
 from HTPolyNet.stringthings import my_logger
 
 logger=logging.getLogger(__name__)
+
+def my_dict_split(a_dict,N):
+    dict_size=len(a_dict)
+    use_list=list(zip(a_dict.keys(),a_dict.values()))
+    q,r=divmod(dict_size,N)
+    lens=[]
+    for i in range(q):
+        if r>0:
+            lens.append(N//2+1)
+            r-=1
+        else:
+            lens.append(N//2)
+    result=[]
+    j=0
+    for i in range(q):
+        result.append({k:v for k,v in use_list[j:j+lens[i]]})
+        j+=lens[i]
+    return result
 
 def logrotate(filename):
     if os.path.exists(filename):
@@ -43,6 +62,7 @@ class Runtime:
             logger.info(f'Restarting in {pfs.proj()}')
         self.molecules:MoleculeDict={}
         self.cc=CureController(self.cfg.basedict)
+        self.ncpu=self.cfg.parameters.get('ncpu',os.cpu_count())
 
     def generate_molecules(self,force_parameterization=False,force_checkin=False):
         GAFF_dict=self.cfg.parameters.get('GAFF',{})
@@ -88,16 +108,21 @@ class Runtime:
             ml=list(new_molecules.keys())
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
-            for mname,M in new_molecules.items():
-                if mname not in self.molecules:  # is this necessary?
-                    logger.debug(f'Generating {mname}:')
-                    self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
-                    assert M.get_origin()!='unparameterized'
-                    self.molecules[mname]=M
-                    logger.debug(f'Generated {mname}')
-                else:
-                    logger.error(f'Symmetry-implied molecule {mname} already on list of molecules')
-            self.molecules.update(new_molecules)
+            make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
+            packets=my_dict_split(make_molecules,self.ncpu)
+            for i,xx in enumerate(packets):
+                logger.debug(f'{i} {[x.name for x in xx.values()]}')
+            p=Pool(processes=self.ncpu)
+            p.map(partial(self.generate_molecule,force_parameterization=force_parameterization,force_checkin=force_checkin),[x.values() for x in packets])
+            p.close()
+            p.join()
+            for mname,M in make_molecules.items():
+                # logger.debug(f'Generating {mname}:')
+                # self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
+                assert M.get_origin()!='unparameterized'
+                # self.molecules[mname]=M
+                logger.debug(f'Generated {mname}')
+            self.molecules.update(make_molecules)
 
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
@@ -108,16 +133,21 @@ class Runtime:
             ml=list(new_molecules.keys())
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
-            for mname,M in new_molecules.items():
-                if mname not in self.molecules:
-                    logger.debug(f'Generating {mname}:')
-                    self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
-                    assert M.get_origin()!='unparameterized'
-                    self.molecules[mname]=M
-                    logger.debug(f'Generated {mname}')
-                else:
-                    logger.error(f'Chaining-implied molecule {mname} already on list of molecules')
-            self.molecules.update(new_molecules)
+            make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
+            packets=my_dict_split(make_molecules,self.ncpu)
+            for i,xx in enumerate(packets):
+                logger.debug(f'{i} {[x.name for x in xx.values()]}')
+            p=Pool(processes=self.ncpu)
+            p.map(partial(self.generate_molecule,force_parameterization=force_parameterization,force_checkin=force_checkin),[x.values() for x in packets])
+            p.close()
+            p.join()
+            for mname,M in make_molecules.items():
+                # logger.debug(f'Generating {mname}:')
+                self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
+                assert M.get_origin()!='unparameterized'
+                # self.molecules[mname]=M
+                logger.debug(f'Generated {mname}')
+            self.molecules.update(make_molecules)
 
         for M in self.molecules:
             self.molecules[M].is_reactant=is_reactant(M,self.cfg.reactions,stage='cure')
@@ -323,9 +353,9 @@ class Runtime:
         for list_name in ['cycle','chain']:
             TC.reset_idx_list_from_grx_attributes(list_name)
         chainlists=TC.idx_lists['chain']
-        logger.debug(f'virgin chains')
-        for i,c in enumerate(chainlists):
-            logger.debug(f'  {i} {c}')
+        # logger.debug(f'virgin chains')
+        # for i,c in enumerate(chainlists):
+        #     logger.debug(f'  {i} {c}')
         TC.make_resid_graph()
         TC.write_grx_attributes(f'{inpfnm}.grx')
         logger.info(f'Generated {inpfnm}.gro and {inpfnm}.grx in {pfs.cwd()}')
@@ -355,9 +385,7 @@ class Runtime:
             densification_dict['pressure']=self.cfg.parameters.get('densification_pressure',10)
         logger.info(f'Densification for {densification_dict["nsteps"]} steps at {densification_dict["temperature"]} K and {densification_dict["pressure"]} bar')
         pfs.checkout(f'mdp/min.mdp')
-        logger.debug(f'{TC.files}')
         msg=TC.grompp_and_mdrun(out=f'{inpfnm}-minimized',mdp='min',quiet=False,**gromacs_dict)
-        logger.debug(f'{TC.files}')
         pfs.checkout(f'mdp/liquid-densify-npt.mdp')
         mod_dict={'ref_t':densification_dict['temperature'],'gen-temp':densification_dict['temperature'],'gen-vel':'yes','ref_p':densification_dict['pressure'],'nsteps':densification_dict['nsteps']}
         mdp_modify(f'liquid-densify-npt.mdp',mod_dict)
@@ -431,7 +459,7 @@ class Runtime:
                 cure_finished=cc.next_iter()
             # exit(-1)
         cwd=pfs.go_to(f'systems/postcure')
-        my_logger('Postcure begins',logger.info)
+        my_logger(f'Postcure begins',logger.info)
         cc.do_postcure_bondsearch(TC,RL,MD)
         cc.do_topology_update(TC,MD)
         cc.do_relax(TC)
