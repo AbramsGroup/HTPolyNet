@@ -27,14 +27,12 @@ def my_dict_split(a_dict:dict,N):
     :type a_dict: dict
     :param N: number of dictionaries to split into
     :type N: int
-    :return: list of dictionaries
+    :return: length-N list of dictionaries
     :rtype: list
     """
     dict_size=len(a_dict)
     use_list=list(zip(a_dict.keys(),a_dict.values()))
     q,r=divmod(dict_size,N)
-    if q==0:
-        return [a_dict]
     lens=[]
     for i in range(N):
         if r>0:
@@ -120,6 +118,7 @@ class Runtime:
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
             make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
+            
             # packets=my_dict_split(make_molecules,self.ncpu)
             # logger.debug(f'{len(packets)} packets for deployment: {packets}')
             # for i,xx in enumerate(packets):
@@ -132,9 +131,9 @@ class Runtime:
                 # logger.debug(f'Generating {mname}:')
                 self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
-                # self.molecules[mname]=M
+                self.molecules[mname]=M
                 logger.debug(f'Generated {mname}')
-            self.molecules.update(make_molecules)
+            # self.molecules.update(make_molecules)
 
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
@@ -203,6 +202,7 @@ class Runtime:
     def generate_molecule(self,M:Molecule,**kwargs):
         mname=M.name
         checkin=pfs.checkin
+        # pfs.go_to(f'molecules/parameterized/work/{M.name}')
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         if force_parameterization or not M.previously_parameterized():
@@ -213,6 +213,8 @@ class Runtime:
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro','grx']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
+#                    checkin(f'molecules/parameterized/work/{mname}/{mname}.{ex}',overwrite=force_checkin)
+#                    shutil.copy(f'molecules/parameterized/{mname}.{ex}','../../')
                 M.set_origin('newly parameterized')
             else:
                 logger.debug(f'...no, did not generate {mname}')

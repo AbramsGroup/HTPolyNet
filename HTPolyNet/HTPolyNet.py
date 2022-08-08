@@ -13,22 +13,13 @@ from HTPolyNet.stringthings import my_logger
 logger=logging.getLogger(__name__)
 parser=ap.ArgumentParser()
 
-def info():
+def info(args):
     print('This is some information on your installed version of HTPolyNet')
     l=pfs.lib_setup()
     print(l.info())
     software.info()
 
-def run():
-    parser.add_argument('config',type=str,default=None,help='input configuration file in YAML format')
-    parser.add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
-    parser.add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory\nAnything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
-    parser.add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
-    parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
-    parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
-    parser.add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
-    parser.add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
-    args=parser.parse_args(sys.argv[2:])
+def run(args):
 
     logrotate(args.log)
 
@@ -52,15 +43,7 @@ def run():
     a.build(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
     my_logger('HTPolyNet runtime ends',logger.info)
 
-def parameterize():
-    parser.add_argument('config',type=str,default=None,help='input configuration file in YAML format')
-    parser.add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
-    parser.add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
-    parser.add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
-    parser.add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
-    parser.add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
-    parser.add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
-    args=parser.parse_args(sys.argv[2:])
+def parameterize(args):
 
     logrotate(args.log)
 
@@ -84,10 +67,7 @@ def parameterize():
     a.generate_molecules(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
     my_logger('HTPolynet parameterization ends',logger.info)
 
-def htpolynet_cure_plots():
-    parser.add_argument('logs',type=str,default='',nargs='+',help='names of diagnostic log files')
-    parser.add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
-    args=parser.parse_args(sys.argv[2:])
+def htpolynet_cure_plots(args):
     logs=args.logs
     banner(print)
     cure_graph(logs,args.plotfile)
@@ -103,13 +83,31 @@ def cli():
     commands['plots']=htpolynet_cure_plots
 
     parser=ap.ArgumentParser()
-    parser.add_argument('command',type=str,default='',help='command ('+', '.join(list(commands.keys()))+')')
-    args=parser.parse_args(sys.argv[1:2])
+    subparsers=parser.add_subparsers()
+    command_parsers={}
+    for k in commands:
+        command_parsers[k]=subparsers.add_parser(k)
+        command_parsers[k].set_defaults(func=commands[k])
 
-    # TODO: use subparsers!
+    command_parsers['run'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
+    command_parsers['run'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+    command_parsers['run'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory\nAnything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
+    command_parsers['run'].add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
+    command_parsers['run'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
+    command_parsers['run'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
+    command_parsers['run'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
+    command_parsers['run'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
 
-    if args.command in commands:
-        commands[args.command]()
-    else:
-        print(f'HTPolyNet command {args.command} not recognized')
+    command_parsers['parameterize'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
+    command_parsers['parameterize'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+    command_parsers['parameterize'].add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
+    command_parsers['parameterize'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
+    command_parsers['parameterize'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
+    command_parsers['parameterize'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
+    command_parsers['parameterize'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
 
+    command_parsers['plots'].add_argument('logs',type=str,default='',nargs='+',help='names of diagnostic log files')
+    command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
+
+    args=parser.parse_args()
+    args.func(args)
