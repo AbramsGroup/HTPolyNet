@@ -432,7 +432,7 @@ class Runtime:
                 cure_finished=cc.next_iter()
             # exit(-1)
         cwd=pfs.go_to(f'systems/postcure')
-        my_logger('Postcure begins',logger.info)
+        my_logger('Postcure',logger.info)
         cc.do_postcure_bondsearch(TC,RL,MD)
         cc.do_topology_update(TC,MD)
         cc.do_relax(TC)
