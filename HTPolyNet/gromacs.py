@@ -77,9 +77,11 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     quiet=kwargs.get('quiet',True)
     ignore_codes=kwargs.get('ignore_codes',[-11])
     maxwarn=kwargs.get('maxwarn',4)
-    rdd=kwargs.get('rdd',0)
-    dds=kwargs.get('dds',0.8)
-    dlb=kwargs.get('dlb','yes')
+    mdrun_dict={}
+    for option in ['rdd','dds','dlb','npme','nt','ntpmi','ntomp','ntomp_pme','nb','tunepme','pme','pmefft','bonded','update']:
+        if option in kwargs:
+            mdrun_dict[option]=kwargs[option]
+
     tunepme=kwargs.get('tunepme','yes')
     if gro=='' or top=='' or out=='' or mdp=='':
         raise Exception('grompp_and_mdrun requires gro, top, out, and mdp filename prefixes.')
@@ -92,7 +94,7 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     # nsteps=kwargs.get('nsteps',-2)
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run(quiet=quiet)
-    c=Command(f'{sw.mdrun}',deffnm=out,rdd=rdd,dds=dds,dlb=dlb,tunepme=tunepme)
+    c=Command(f'{sw.mdrun}',deffnm=out,**mdrun_dict)
     c.run(quiet=quiet,ignore_codes=ignore_codes)
     if os.path.exists(f'{out}.gro'):
         pass

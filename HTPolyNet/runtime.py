@@ -13,27 +13,38 @@ import HTPolyNet.software as software
 from HTPolyNet.gromacs import insert_molecules, gmx_energy_trace, mdp_modify, mdp_get
 import HTPolyNet.checkpoint as cp
 from HTPolyNet.plot import trace
-from HTPolyNet.molecule import Molecule, MoleculeDict, is_reactant
+from HTPolyNet.molecule import Molecule, MoleculeDict, MoleculeList, is_reactant
 from HTPolyNet.expandreactions import symmetry_expand_reactions, chain_expand_reactions
 from HTPolyNet.curecontroller import CureController
 from HTPolyNet.stringthings import my_logger
 
 logger=logging.getLogger(__name__)
 
-def my_dict_split(a_dict,N):
+def my_dict_split(a_dict:dict,N):
+    """my_dict_split Splits dictionary into N dictionaries of nearly equal size
+
+    :param a_dict: a dictionary
+    :type a_dict: dict
+    :param N: number of dictionaries to split into
+    :type N: int
+    :return: list of dictionaries
+    :rtype: list
+    """
     dict_size=len(a_dict)
     use_list=list(zip(a_dict.keys(),a_dict.values()))
     q,r=divmod(dict_size,N)
+    if q==0:
+        return [a_dict]
     lens=[]
-    for i in range(q):
+    for i in range(N):
         if r>0:
-            lens.append(N//2+1)
+            lens.append(q+1)
             r-=1
         else:
-            lens.append(N//2)
+            lens.append(q)
     result=[]
     j=0
-    for i in range(q):
+    for i in range(N):
         result.append({k:v for k,v in use_list[j:j+lens[i]]})
         j+=lens[i]
     return result
@@ -109,16 +120,17 @@ class Runtime:
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
             make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
-            packets=my_dict_split(make_molecules,self.ncpu)
-            for i,xx in enumerate(packets):
-                logger.debug(f'{i} {[x.name for x in xx.values()]}')
-            p=Pool(processes=self.ncpu)
-            p.map(partial(self.generate_molecule,force_parameterization=force_parameterization,force_checkin=force_checkin),[x.values() for x in packets])
-            p.close()
-            p.join()
+            # packets=my_dict_split(make_molecules,self.ncpu)
+            # logger.debug(f'{len(packets)} packets for deployment: {packets}')
+            # for i,xx in enumerate(packets):
+            #     logger.debug(f'{i} {xx}')
+            # p=Pool(processes=self.ncpu)
+            # p.map(partial(self.generate_molecule_par,force_parameterization=force_parameterization,force_checkin=force_checkin),[list(x.values()) for x in packets])
+            # p.close()
+            # p.join()
             for mname,M in make_molecules.items():
                 # logger.debug(f'Generating {mname}:')
-                # self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
+                self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
                 # self.molecules[mname]=M
                 logger.debug(f'Generated {mname}')
@@ -134,13 +146,13 @@ class Runtime:
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
             make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
-            packets=my_dict_split(make_molecules,self.ncpu)
-            for i,xx in enumerate(packets):
-                logger.debug(f'{i} {[x.name for x in xx.values()]}')
-            p=Pool(processes=self.ncpu)
-            p.map(partial(self.generate_molecule,force_parameterization=force_parameterization,force_checkin=force_checkin),[x.values() for x in packets])
-            p.close()
-            p.join()
+            # packets=my_dict_split(make_molecules,self.ncpu)
+            # for i,xx in enumerate(packets):
+            #     logger.debug(f'{i} {[x.name for x in xx.values()]}')
+            # p=Pool(processes=self.ncpu)
+            # p.map(partial(self.generate_molecule_par,force_parameterization=force_parameterization,force_checkin=force_checkin),[list(x.values()) for x in packets])
+            # p.close()
+            # p.join()
             for mname,M in make_molecules.items():
                 # logger.debug(f'Generating {mname}:')
                 self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
@@ -183,6 +195,10 @@ class Runtime:
             relaxdict=v.get('relax',{})
             if relaxdict:
                 self.molecules[k].relax(relaxdict)
+
+    def generate_molecule_par(self,ML:MoleculeList,**kwargs):
+        for M in ML:
+            self.generate_molecule(M,**kwargs)
 
     def generate_molecule(self,M:Molecule,**kwargs):
         mname=M.name
