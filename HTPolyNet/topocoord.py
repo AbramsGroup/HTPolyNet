@@ -1203,8 +1203,10 @@ class TopoCoord:
             logger.debug(f'chainlist_update pair {aidx} {bidx}')
             ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
             bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
-            logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
-            logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            if ac in chainlists:
+                logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
+            if bc in chainlists:
+                logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
             if ac==-1 or bc==-1:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
