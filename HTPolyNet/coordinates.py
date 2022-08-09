@@ -141,7 +141,7 @@ class Coordinates:
         '''
     gro_attributes = ['resNum', 'resName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
     mol2_atom_attributes = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
-    mol2_bond_attributes = ['bondIdx','ai','aj','type']
+    mol2_bond_attributes = ['bondIdx','ai','aj','order']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_attributes, [int, int, int, str])}
 
     def __init__(self,name=''):
@@ -1059,14 +1059,14 @@ class Coordinates:
                 f.write('\n')
                 f.write('@<TRIPOS>BOND\n')
                 if not bondsDF.empty:
-                    # logger.info(f'Mol2 bonds from outside')
-                    bdf=bondsDF[['bondIdx','ai','aj','type']]
+                    logger.debug(f'Mol2 bonds from outside')
+                    bdf=bondsDF[['bondIdx','ai','aj','order']].copy()
                     bdf['bondIdx']=bdf['bondIdx'].astype(int)
                     bdf['ai']=bdf['ai'].astype(int)
                     bdf['aj']=bdf['aj'].astype(int)
                     f.write(bdf.to_string(columns=self.mol2_bond_attributes,header=False,index=False,formatters=bondformatters))
                 elif not self.mol2_bonds.empty:
-                    # logger.info(f'write_mol2 ({filename}): Mol2 bonds from mol2_bonds attribute')
+                    logger.debug(f'write_mol2 ({filename}): Mol2 bonds from mol2_bonds attribute')
                     f.write(self.mol2_bonds.to_string(columns=self.mol2_bond_attributes,header=False,index=False,formatters=bondformatters))
                 f.write('\n')
                 ''' write substructure section '''

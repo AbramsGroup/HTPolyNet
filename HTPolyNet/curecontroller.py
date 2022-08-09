@@ -316,6 +316,11 @@ class CureController:
             TC.write_top(f'{stagepfx}.top')
             for stg_dict in d['equilibration']:
                 ensemble=stg_dict['ensemble']
+                if 'postcure_' in str(self.state):
+                    statename=str(self.state)[len('postcure_'):]
+                else:
+                    statename=str(self.state)
+                impfx=f'{statename}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
                 TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{impfx}')
                 logger.debug(f'{TC.files["gro"]}')
             TC.restore_bond_parameters(saveT)

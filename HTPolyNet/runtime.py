@@ -119,7 +119,8 @@ class Runtime:
         if not resolve_type_discrepancies:
             resolve_type_discrepancies=self.cfg.parameters.get('resolve_type_discrepancies',[])
         if resolve_type_discrepancies:
-            for resolve_directive in self.cfg.parameters['resolve_type_discrepancies']:
+            for resolve_directive in resolve_type_discrepancies:
+                logger.info(f'Resolving type discrepancies for directive {resolve_directive}')
                 self.type_consistency_check(typename=resolve_directive['typename'],funcidx=resolve_directive.get('funcidx',4),selection_rule=resolve_directive['rule'])
 
         ess='' if len(self.molecules)==1 else 's'
@@ -193,6 +194,7 @@ class Runtime:
     def type_consistency_check(self,typename='dihedraltypes',funcidx=4,selection_rule='stiffest'):
         logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested')
         mnames=list(self.molecules.keys())
+        checkin=pfs.checkin
         types_duplicated=[]
         for i in range(len(mnames)):
             logger.debug(f'{mnames[i]}...')
@@ -220,8 +222,11 @@ class Runtime:
             logger.debug(f'Under selection rule "{selection_rule}", preferred type is {selected_type}')
             for i in range(len(mnames)):
                 logger.debug(f'resetting {mnames[i]}')
-                moltopo=self.molecules[mnames[i]].TopoCoord.Topology
+                TC=self.molecules[mnames[i]].TopoCoord
+                moltopo=TC.Topology
                 moltopo.reset_type(typename,t,selected_type)
+                TC.write_top(f'{mnames[i]}.top')
+                checkin(f'molecules/parameterized/{mnames[i]}.top')
 
     def initialize_topology(self,inpfnm='init'):
         """Create a full gromacs topology that includes all directives necessary

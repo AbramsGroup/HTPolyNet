@@ -274,7 +274,15 @@ class Molecule:
             self.TopoCoord.set_gro_attribute('reactantName',R.product)
             self.TopoCoord.set_gro_attribute('sea_idx',-1) # turn off symmetry-equivalence for multimers
             self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{R.product}.grx')
+            # if pfs.exists(f'molecules/inputs/{self.name}.mol2'): # an override structure is present
+            #     logger.debug(f'Using override input molecules/inputs/{self.name}.{isf} as a generator')
+            #     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
+            # else:
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
+            # if pfs.exists(f'molecules/inputs/{self.name}.pdb'): # an override structure is present
+            #     isf='pdb'
+            #     logger.debug(f'Using override input molecules/inputs/{self.name}.{isf} as a generator')
+            #     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
         else:
             # this is a monomer; we need an input structure file to feed antechamber
             input_structure_formats=['mol2','pdb']

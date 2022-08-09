@@ -634,7 +634,7 @@ class Topology:
                 logger.debug(f'just added {bonddict}')
                 if 'mol2_bonds' in self.D:
                     data=[len(self.D['mol2_bonds']),ai,aj,1] # assume single bond
-                    bonddict={k:[v] for k,v in zip(['bondIdx','ai','aj','type'],data)}
+                    bonddict={k:[v] for k,v in zip(['bondIdx','ai','aj','order'],data)}
                     self.D['mol2_bonds']=pd.concat((self.D['mol2_bonds'],pd.DataFrame(bonddict)),ignore_index=True)
                 # remove this pair from pairs if it's in there (it won't be)
                 if idx in pmi:
@@ -653,7 +653,7 @@ class Topology:
                 if 'mol2_bonds' in self.D:
                     mb=self.D['mol2_bonds']
                     bi=(mb['ai']==ai)&(mb['aj']==aj)
-                    mb.loc[bi,'type']=order
+                    mb.loc[bi,'order']=order
         '''
         update the bondlist
         '''

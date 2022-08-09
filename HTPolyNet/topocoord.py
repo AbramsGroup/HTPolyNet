@@ -967,7 +967,7 @@ class TopoCoord:
     def checkbox(self):
         return self.Coordinates.checkbox()
 
-    def write_mol2(self,filename,molname=''):
+    def write_mol2(self,filename,molname='',element_names_as_types=False):
         """Writes a SYBYL MOL2-format file using Coordinates, with certain
            atom attributes borrowed from the Topology
 
@@ -979,7 +979,11 @@ class TopoCoord:
         if molname=='':
             molname='This Molecule has no name'
         other_attributes=pd.DataFrame()
-        other_attributes['type']=self.Topology.D['atoms']['type']
+        if element_names_as_types:
+            element_names=[x[0] for x in self.Topology.D['atoms']['atom']]
+            other_attributes['type']=element_names
+        else:
+            other_attributes['type']=self.Topology.D['atoms']['type']
         other_attributes['charge']=self.Topology.D['atoms']['charge']
         self.files['mol2']=os.path.abspath(filename)
         # logger.debug(f'write_mol2, other_attributes:\n{other_attributes.to_string()}')
@@ -1273,6 +1277,7 @@ class TopoCoord:
                     i_cidx=(cidx,c.index(i))
                 if j in c:
                     j_cidx=(cidx,c.index(j))
+            logger.debug(f'i {i_cidx} j {j_cidx}')
             if not (i_cidx==(-1,-1) or (j_cidx==(-1,-1))):
                 # logger.debug(f'cycle_collective: {i} is in chain {i_cidx[0]} at {i_cidx[1]}')
                 # logger.debug(f'cycle_collective: {j} is in chain {j_cidx[0]} at {j_cidx[1]}')
@@ -1285,6 +1290,9 @@ class TopoCoord:
                 # logger.debug(f'new chain {old_tail[0]} {chainlist[old_tail[0]]}')
                 chainlist.remove(chainlist[old_head[0]])
                 return old_tail[0],False
+            else: # this bond involves one atom in a chain and another that is not; no way this can be a cyclization, but we have to return somthing
+                return i_cidx[0] if i_cidx[0]!=-1 else j_cidx[0],False
+
         # kb=bondrecs.copy()
         # logger.debug(f'checking set of {bdf.shape[0]} bonds for nascent cycles')
         new_bdf=bdf.copy()

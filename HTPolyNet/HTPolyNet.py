@@ -21,11 +21,11 @@ def info(args):
 
 def run(args):
 
-    logrotate(args.log)
+    logrotate(args.diag)
 
     ''' set up logger with all debug+-level messages going to the diagnostic log file and info to console '''
     loglevel_numeric=getattr(logging, args.loglevel.upper())
-    logging.basicConfig(filename=args.log,filemode='w',format='%(asctime)s %(name)s.%(funcName)s %(levelname)s> %(message)s',level=loglevel_numeric)
+    logging.basicConfig(filename=args.diag,filemode='w',format='%(asctime)s %(name)s.%(funcName)s %(levelname)s> %(message)s',level=loglevel_numeric)
     console=logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter=logging.Formatter('%(levelname)s> %(message)s')
@@ -43,11 +43,11 @@ def run(args):
 
 def parameterize(args):
 
-    logrotate(args.log)
+    logrotate(args.diag)
 
     ''' set up logger with all debug+-level messages going to the diagnostic log file and info to console '''
     loglevel_numeric=getattr(logging, args.loglevel.upper())
-    logging.basicConfig(filename=args.log,filemode='w',format='%(asctime)s %(name)s.%(funcName)s %(levelname)s> %(message)s',level=loglevel_numeric)
+    logging.basicConfig(filename=args.diag,filemode='w',format='%(asctime)s %(name)s.%(funcName)s %(levelname)s> %(message)s',level=loglevel_numeric)
     console=logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter=logging.Formatter('%(levelname)s> %(message)s')
@@ -96,7 +96,7 @@ def cli():
     command_parsers['run'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['run'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
     command_parsers['run'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory\nAnything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
-    command_parsers['run'].add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
+    command_parsers['run'].add_argument('-diag',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
     command_parsers['run'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     command_parsers['run'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     command_parsers['run'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
@@ -104,7 +104,7 @@ def cli():
 
     command_parsers['parameterize'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['parameterize'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
-    command_parsers['parameterize'].add_argument('-log',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
+    command_parsers['parameterize'].add_argument('-diag',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
     command_parsers['parameterize'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     command_parsers['parameterize'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     command_parsers['parameterize'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
