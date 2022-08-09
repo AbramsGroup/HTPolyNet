@@ -29,7 +29,7 @@ logger=logging.getLogger(__name__)
 #                'relax-nvt':'relax-nvt',
 #                'relax-npt':'relax-npt'}
 
-def insert_molecules(composition,boxSize,outName,**kwargs):
+def insert_molecules(composition,boxSize,outName,inputs_dir='.',**kwargs):
     ''' launcher for `gmx insert-molecules`
         monomers:  dictionary of Molecule instances keyed on molecule name
         composition: dictionary keyed on molecule name with value molecule count
@@ -44,13 +44,14 @@ def insert_molecules(composition,boxSize,outName,**kwargs):
     box=' '.join([f'{x:.8f}' for x in boxSize])
     scale=kwargs.get('scale',0.4) # our default vdw radius scaling
     for name,num in composition.items():  # composition determines order
+        ci=os.path.join(inputs_dir,f'{name}.gro')
         if os.path.isfile(f'{outName}.gro'):
             logger.debug(f'gmx insert-molecules inserts into existing {outName}.gro')
             ''' final gro file exists; we must insert into it '''
-            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
+            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',f=f'{outName}.gro',ci=ci,nmol=num,o=outName,box=box,scale=scale)
         else:
             ''' no final gro file yet; make it '''
-            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=f'{name}.gro',nmol=num,o=outName,box=box,scale=scale)
+            c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=ci,nmol=num,o=outName,box=box,scale=scale)
         out,err=c.run()
         out+=err
         logger.debug(f'Output of "{sw.gmx} insert-molecules"')

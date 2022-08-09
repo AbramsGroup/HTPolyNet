@@ -11,6 +11,7 @@ from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import mdp_modify  #, gmx_traj_info
+from HTPolyNet.command import Command
 
 logger=logging.getLogger(__name__)
 
@@ -100,6 +101,8 @@ class Molecule:
         self.symmetry_relateds=[]
         self.stereocenters=[]
         self.stereoisomers=[]
+        self.nconformers=0
+        self.conformers=[]
         self.zrecs=[]
         self.is_reactant=False
 
@@ -200,14 +203,7 @@ class Molecule:
     def minimize(self,outname='',**kwargs):
         if outname=='':
             outname=f'{self.name}'
-        n=self.name
-        boxsize=np.array(self.TopoCoord.maxspan())+2*np.ones(3)
-        self.center_coords(new_boxsize=boxsize)
-        mdp_prefix='single-molecule-min'
-        pfs.checkout(f'mdp/{mdp_prefix}.mdp')
-        gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
-        self.TopoCoord.grompp_and_mdrun(out=f'{outname}',
-                        mdp=mdp_prefix,boxSize=boxsize,**gromacs_dict)
+        self.TopoCoord.minimize(outname,**kwargs)
 
     def relax(self,relax_dict):
         deffnm=relax_dict.get('deffnm',f'{self.name}-relax')
@@ -231,24 +227,16 @@ class Molecule:
     #     pass
 
     def center_coords(self,new_boxsize:np.ndarray=None):
-        if type(new_boxsize)==np.ndarray:
-            if new_boxsize.shape==(3,):
-                box_vectors=new_boxsize*np.identity(3,dtype=float)
-                # logger.debug('Box vectors:')
-                # for ln in str(box_vectors).split('\n'):
-                #     logger.debug(ln)
-            elif new_boxsize.shape==(3,3):
-                box_vectors=new_boxsize
-            self.TopoCoord.Coordinates.box=box_vectors
-        center=self.TopoCoord.Coordinates.box.diagonal()/2.0
-        gc=self.TopoCoord.Coordinates.geometric_center()
-        addme=center-gc
-        self.TopoCoord.Coordinates.translate(addme)
+        self.TopoCoord.center_coords(new_boxsize)
 
     def generate(self,outname='',available_molecules={},**kwargs):
         # logger.info(f'Generating {self.name}.mol2 for parameterization')
         if outname=='':
             outname=f'{self.name}'
+        do_minimization=True
+        GAFF_dict=kwargs.get('GAFF',{})
+        if GAFF_dict:
+            do_minimization=GAFF_dict.get('minimize_molecules',True)
         if self.generator:
             R=self.generator
             self.TopoCoord=TopoCoord()
@@ -296,7 +284,8 @@ class Molecule:
 
         reactantName=self.name
         self.parameterize(outname,input_structure_format=isf,**kwargs)
-        self.minimize(outname,**kwargs)
+        if do_minimization:
+            self.minimize(outname,**kwargs)
         self.set_sequence()
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
         if not self.generator:
@@ -784,7 +773,7 @@ class Molecule:
             P=product(*flip)
             next(P) # one with no flips is the original molecule, so skip it
             for p in P:
-                si_name=self.name+'-SC-'+'-'.join([str(_) for _ in p])
+                si_name=self.name+'-S'+''.join([str(_) for _ in p])
                 logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
                 if os.path.exists(f'{si_name}.gro'):
                     logger.debug(f'{si_name}.gro exists in {pfs.cwd()}')
@@ -799,6 +788,34 @@ class Molecule:
                     si_name=MM.name
                 self.stereoisomers.append(si_name)
 
+    def generate_conformers(self,minimize=True):
+        if self.nconformers==0: return
+        logger.info(f'Generating {self.nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
+        gronames=[f'{self.name}']
+        for si in self.stereoisomers:
+            gronames.append(f'{si}')
+        self.conformers=[]
+        for gro in gronames:
+            pfx=f'{gro}-C'
+            c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
+            out,err=c.run()
+            c=Command(f'wc -l {gro}-confs.gro')
+            out,err=c.run()
+            tok=out.split()
+            lpf=int(tok[0])//self.nconformers
+            c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
+            out,err=c.run()
+            os.remove(f'{gro}-confs.gro')
+            n=max(2,len(str(self.nconformers)))
+            fmt=r'{A}{B:0'+str(n)+r'd}'
+            cfnl=[fmt.format(A=pfx,B=x) for x in range(self.nconformers)]
+            logger.debug(f'{cfnl}')
+            self.conformers.extend(cfnl)
+        if minimize:
+            for gro in self.conformers:
+                self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{gro}.gro'))
+                logger.info(f'Minimizing conformer {gro}')
+                self.TopoCoord.minimize(outname=gro)
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]

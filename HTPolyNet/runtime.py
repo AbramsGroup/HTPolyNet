@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import numpy as np
+import random
 from copy import deepcopy
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.topology import select_topology_type_option
@@ -148,10 +149,6 @@ class Runtime:
             if relaxdict:
                 self.molecules[k].relax(relaxdict)
 
-    def generate_molecule_par(self,ML:MoleculeList,**kwargs):
-        for M in ML:
-            self.generate_molecule(M,**kwargs)
-
     def generate_molecule(self,M:Molecule,**kwargs):
         mname=M.name
         checkin=pfs.checkin
@@ -188,6 +185,7 @@ class Runtime:
             M.set_origin('previously parameterized')
 
         M.generate_stereoisomers()
+        M.generate_conformers(minimize=True)
 
         return True
 
@@ -303,22 +301,39 @@ class Runtime:
         for cc in clist:
             M=self.cfg.molecules[cc['molecule']]
             tc=cc['count']
-            ''' assuming racemic mixture of any stereoisomers '''
-            total_isomers=len(M.stereoisomers)+1
-            count_per_isomer=tc//total_isomers
-            leftovers=tc%total_isomers
-            c_togromacs[M.name]=count_per_isomer
-            if leftovers>0:
-                c_togromacs[M.name]+=1
-                leftovers-=1
-            pfs.checkout(f'molecules/parameterized/{M.name}.gro',altpath=[pfs.subpath('molecules')])
-            for isomer in M.stereoisomers:
-                c_togromacs[isomer]=count_per_isomer
+            if len(M.conformers)>0:
+                nconf=len(M.conformers)
+                if tc<nconf:
+                    c_togromacs.update({u:1 for u in random.sample(M.conformers,tc)})
+                else:
+                    q,r=divmod(tc,nconf)
+                    logger.debug(f'divmod({nconf},{tc}) gives {q}, {r}')
+                    c_togromacs.update({u:q for u in M.conformers})
+                    k=0
+                    while r:
+                        c_togromacs[M.conformers[k]]+=1
+                        k+=1
+                        r-=1
+                for gro in M.conformers:
+                    pfs.checkout(f'molecules/parameterized/{gro}.gro',altpath=[pfs.subpath('molecules')])        
+            else:
+                ''' assuming racemic mixture of any stereoisomers '''
+                total_isomers=len(M.stereoisomers)+1
+                count_per_isomer=tc//total_isomers
+                leftovers=tc%total_isomers
+                c_togromacs[M.name]=count_per_isomer
                 if leftovers>0:
-                    c_togromacs[isomer]+=1
+                    c_togromacs[M.name]+=1
                     leftovers-=1
-                pfs.checkout(f'molecules/parameterized/{isomer}.gro',altpath=[pfs.subpath('molecules')])
-        msg=insert_molecules(c_togromacs,boxsize,inpfnm,**self.cfg.parameters)
+                pfs.checkout(f'molecules/parameterized/{M.name}.gro',altpath=[pfs.subpath('molecules')])
+                for isomer in M.stereoisomers:
+                    c_togromacs[isomer]=count_per_isomer
+                    if leftovers>0:
+                        c_togromacs[isomer]+=1
+                        leftovers-=1
+                    pfs.checkout(f'molecules/parameterized/{isomer}.gro',altpath=[pfs.subpath('molecules')])
+        logger.debug(f'Sending to insert_molecules: {c_togromacs}')
+        msg=insert_molecules(c_togromacs,boxsize,inpfnm,inputs_dir='../../molecules/parameterized',**self.cfg.parameters)
         TC.read_gro(f'{inpfnm}.gro')
         TC.atom_count()
         TC.set_grx_attributes(['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'])

@@ -1420,3 +1420,24 @@ class TopoCoord:
             self.read_gro_attributes(self.files['grx'])
         if self.files['mol2']:
             self.read_mol2(self.files['mol2'])
+
+    def center_coords(self,new_boxsize:np.ndarray=None):
+        if type(new_boxsize)==np.ndarray:
+            if new_boxsize.shape==(3,):
+                box_vectors=new_boxsize*np.identity(3,dtype=float)
+            elif new_boxsize.shape==(3,3):
+                box_vectors=new_boxsize
+            self.Coordinates.box=box_vectors
+        center=self.Coordinates.box.diagonal()/2.0
+        gc=self.Coordinates.geometric_center()
+        addme=center-gc
+        self.Coordinates.translate(addme)
+
+    def minimize(self,outname='minimized',**kwargs):
+        boxsize=np.array(self.maxspan())+2*np.ones(3)
+        self.center_coords(new_boxsize=boxsize)
+        mdp_prefix='single-molecule-min'
+        pfs.checkout(f'mdp/{mdp_prefix}.mdp')
+        gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
+        self.grompp_and_mdrun(out=f'{outname}',
+            mdp=mdp_prefix,boxSize=boxsize,**gromacs_dict)
