@@ -35,21 +35,28 @@
             
   <section id="installation-and-prerequisites">
 <h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this headline">¶</a></h1>
-<section id="python">
-<h2>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h2>
-<p>If you use conda/anaconda, we recommended that you create a separate python environment running HTPolyNet:</p>
+<section id="software-prequisites">
+<h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
+<p>The following commands should be in your path:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code> (from <a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>, version 22 or higher)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (from <a class="reference external" href="https://manual.gromacs.org/documentation/current/index.html">Gromacs</a>, version 2022.1 or higher)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">obabel</span></code> (from <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a>)</p></li>
+</ol>
+<p>If you use conda/anaconda, we recommended that you create a separate Python environment running <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda create --name mol-env python
 <span class="gp">$ </span>conda activate mol-env
 </pre></div>
 </div>
-<p>Once this environment is created and activated, you can install some prequisites:</p>
+<p>Once this environment is created and activated, you can optionally install some prequisites:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda install numpy scipy pandas ambertools
 </pre></div>
 </div>
+<p>(<code class="docutils literal notranslate"><span class="pre">ambertools</span></code> is available from the <code class="docutils literal notranslate"><span class="pre">conda-forge</span></code> channel.)  If you don’t do this, <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> in <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will do it for you, which might take a bit.</p>
 </section>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet is under active development, we recommend installing from a freshly cloned Github repository:</p>
+<p>Because <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is under active development, we recommend installing from a freshly cloned Github repository:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone git@github.com:AbramsGroup/HTPolyNet.git
 <span class="gp">$ </span><span class="nb">cd</span> HTPolyNet
 <span class="gp">$ </span>pip install -e .
@@ -57,21 +64,9 @@
 </div>
 <p>If you created the recommended python environment, make sure it is activated before running <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>!</p>
 </section>
-<section id="software-prequisites">
-<h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
-<p>Because HTPolyNet uses the Generalized Amber Force Field (GAFF) and Gromacs, it expects the following executables are in your path:</p>
-<ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code> (from AmberTools)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code></p></li>
-</ol>
-<p>Suggested approaches for obtaining these are below.</p>
-<ul>
-<li><p><a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>. You have at least two options:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>conda:  <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">ambertools</span></code> installs precompiled executables into your active environment (note that if you created the separate environment as described above, you have already installed ambertools)</p></li>
-<li><p>compile from source (requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>):</p></li>
-</ul>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<p>You can compile AmberTools from source if you like.  It will require <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar jxf AmberTools21.tar.bz2
 <span class="gp">$ </span><span class="nb">cd</span> amber_src
 <span class="gp">$ </span>./configure --no-X11 --skip-python gnu
@@ -79,14 +74,7 @@
 <span class="gp">$ </span>make install
 </pre></div>
 </div>
-<p>Either of these approaches should provide access to <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code>.</p>
-</div></blockquote>
-</li>
-<li><p><a class="reference external" href="https://manual.gromacs.org/documentation/current/index.html">Gromacs</a>.  You likely have at least two options:</p>
-<blockquote>
-<div><ul>
-<li><p>your linux package manager</p></li>
-<li><p>compile from source.  This is a good option if you want to use GPUs and/or MPI.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):</p>
+<p>You can also compile Gromacs from source, if your Linux distibution doesn’t include it in its package management, or you are on a big supercomputer.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar xfz gromacs-2022.1.tar.gz
 <span class="gp">$ </span><span class="nb">cd</span> gromacs-2022.1
 <span class="gp">$ </span>mkdir build
@@ -102,13 +90,7 @@
 </pre></div>
 </div>
 <p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.</p>
-</li>
-</ul>
-</div></blockquote>
-</li>
-</ul>
-<p>Finally, in the tutorials provided, we demonstrate the use of <code class="docutils literal notranslate"><span class="pre">obabel</span></code> from <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.</p>
-<p>hould be</p>
+<p>Finally, in the tutorials provided, we demonstrate the use of <code class="docutils literal notranslate"><span class="pre">obabel</span></code> outside <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.  If you would like to generate conformers of monomers as part of an <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> build, this will also require <code class="docutils literal notranslate"><span class="pre">obabel</span></code>.</p>
 </section>
 </section>
 
@@ -132,9 +114,9 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and Prerequisites</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#python">Python</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#software-prequisites">Software Prequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="user-guide/index.html">User Guide</a></li>

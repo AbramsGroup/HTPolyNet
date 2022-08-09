@@ -34,7 +34,157 @@
           <div class="body" role="main">
             
   <section id="configuration-files">
-<h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects configuration files to be in <code class="docutils literal notranslate"><span class="pre">YAML</span></code> format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> execution.</p>
+<p>For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Title</span><span class="p">:</span> <span class="n">polystyrene</span>
+<span class="n">gromacs</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">gmx</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span><span class="p">,</span>
+    <span class="n">gmx_options</span><span class="p">:</span> <span class="s1">&#39;-quiet -nobackup&#39;</span><span class="p">,</span>
+    <span class="n">mdrun</span><span class="p">:</span> <span class="s1">&#39;gmx mdrun&#39;</span>
+<span class="p">}</span>
+<span class="n">ambertools</span><span class="p">:</span> <span class="p">{</span>
+   <span class="n">charge_method</span><span class="p">:</span> <span class="n">gas</span>
+<span class="p">}</span>
+<span class="n">constituents</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">STY</span><span class="p">:</span> <span class="p">{</span><span class="n">count</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="n">densification</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">initial_density</span><span class="p">:</span> <span class="mf">200.0</span><span class="p">,</span>  <span class="c1"># kg/m3</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># K</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>            <span class="c1"># bar</span>
+    <span class="n">nsteps</span><span class="p">:</span> <span class="mi">100000</span>
+<span class="p">}</span>
+<span class="n">precure_equilibration</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># K</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>             <span class="c1"># bar</span>
+    <span class="n">nsteps</span><span class="p">:</span> <span class="mi">50000</span>
+<span class="p">}</span>
+<span class="n">CURE</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">initial_search_radius</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="c1"># nm</span>
+    <span class="n">radial_increment</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>     <span class="c1"># nm</span>
+    <span class="n">max_iterations</span><span class="p">:</span> <span class="mi">150</span><span class="p">,</span>
+    <span class="n">desired_conversion</span><span class="p">:</span> <span class="mf">0.50</span><span class="p">,</span>
+    <span class="n">late_threshhold</span><span class="p">:</span> <span class="mf">0.85</span>
+<span class="p">}</span>
+<span class="n">drag</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">trigger_distance</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>   <span class="c1"># nm</span>
+    <span class="n">increment</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>         <span class="c1"># nm</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>              <span class="c1"># nm</span>
+    <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">2000</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+<span class="n">relax</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">increment</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>         <span class="c1"># nm</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>        <span class="c1"># K</span>
+    <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">2000</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+<span class="n">postcure_equilibration</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>       <span class="c1"># K</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>            <span class="c1"># bar</span>
+    <span class="n">nsteps</span><span class="p">:</span>  <span class="mi">50000</span>
+<span class="p">}</span>
+<span class="n">postcure_anneal</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">ncycles</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">initial_temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+    <span class="n">cycle_segments</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+<span class="n">postanneal_equilibration</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>       <span class="c1"># K</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>            <span class="c1"># bar</span>
+    <span class="n">nsteps</span><span class="p">:</span>  <span class="mi">50000</span>
+<span class="p">}</span>
+<span class="n">reactions</span><span class="p">:</span>
+<span class="o">-</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span>        <span class="s1">&#39;sty1_1&#39;</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span>       <span class="n">cure</span><span class="p">,</span>
+    <span class="n">reactants</span><span class="p">:</span>   <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">STY</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">STY</span><span class="p">},</span>
+    <span class="n">product</span><span class="p">:</span>     <span class="n">STY1_1</span><span class="p">,</span>
+    <span class="n">probability</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">atoms</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C1</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C2</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">bonds</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="n">atoms</span><span class="p">:</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">order</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="o">-</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span>         <span class="s1">&#39;styCC&#39;</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span>        <span class="n">post</span><span class="o">-</span><span class="n">cure</span><span class="p">,</span>
+    <span class="n">reactants</span><span class="p">:</span>    <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">STY</span><span class="p">},</span>
+    <span class="n">product</span><span class="p">:</span>      <span class="n">STYCC</span><span class="p">,</span>
+    <span class="n">probability</span><span class="p">:</span>  <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">atoms</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C1</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C2</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">bonds</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="n">atoms</span><span class="p">:</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">order</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>We refer to each of these sections (except for the <code class="docutils literal notranslate"><span class="pre">Title</span></code>) as a dictionary.  Let’s learn about these dictionaries:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code>:  This dictionary specifies parameters <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses when invoking the Gromacs executable.</p>
+<blockquote>
+<div><table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 13%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code></p></td>
+<td><p>str</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> command ( <code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> )</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gmx_options</span></code></p></td>
+<td><p>quoted string</p></td>
+<td><p>options to pass to all <code class="docutils literal notranslate"><span class="pre">gmx</span></code> calls ( <code class="docutils literal notranslate"><span class="pre">-quiet</span> <span class="pre">-nobackup</span></code> )</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gmx_mdrun</span></code></p></td>
+<td><p>quoted string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mdrun</span></code> command; defaults to <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">(options)</span> <span class="pre">mdrun</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ambertools</span></code>:  This dictionary specifies parameters <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses when working with the AmberTools suite.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">constituents</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">densification</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">precure_equilibration</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CURE</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">drag</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relax</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">postcure_equilibration</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">postcure_anneal</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">postanneal_equilibration</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reactions</span></code></p></li>
+</ul>
 <p>An HTPolyNet configuration file is a list of keyword:value pairs in <code class="docutils literal notranslate"><span class="pre">YAML</span></code> format.  The <code class="docutils literal notranslate"><span class="pre">Library</span></code> subpackage as a few example configuration files in the <code class="docutils literal notranslate"><span class="pre">cfg</span></code> directory.</p>
 <p>The items in a configuration file break down into two major classes:</p>
 <ol class="arabic simple">
@@ -452,6 +602,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#subcommands">Subcommands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Configuration Files</a></li>

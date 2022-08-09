@@ -3,8 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+#########
 HTPolyNet
-=========
+#########
 
 HTPolyNet is a tool for building atomic configurations of amorphous network polymers suitable for molecular dynamics simulations.
 It uses the Generalized Amber Force Field and produces output that can be simulated 

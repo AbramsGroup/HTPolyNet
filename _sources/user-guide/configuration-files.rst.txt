@@ -1,5 +1,137 @@
+.. _configuration_files:
+
 Configuration Files
 ~~~~~~~~~~~~~~~~~~~
+
+``HTPolyNet`` expects configuration files to be in ``YAML`` format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of ``HTPolyNet`` execution.
+
+For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like::
+
+    Title: polystyrene
+    gromacs: {
+        gmx: 'gmx',
+        gmx_options: '-quiet -nobackup',
+        mdrun: 'gmx mdrun'
+    }
+    ambertools: {
+       charge_method: gas
+    }
+    constituents: {
+        STY: {count: 100}
+    }
+    densification: {
+        initial_density: 200.0,  # kg/m3
+        temperature: 300,        # K
+        pressure: 10,            # bar
+        nsteps: 100000
+    }
+    precure_equilibration: {
+        temperature: 300,        # K
+        pressure: 1,             # bar
+        nsteps: 50000
+    }
+    CURE: {
+        initial_search_radius: 0.5, # nm
+        radial_increment: 0.25,     # nm
+        max_iterations: 150, 
+        desired_conversion: 0.50,
+        late_threshhold: 0.85
+    }
+    drag: {
+        trigger_distance: 0.6,   # nm
+        increment: 0.08,         # nm
+        limit: 0.3,              # nm
+        equilibration: [
+            { ensemble: min },
+            { ensemble: nvt, temperature: 600, nsteps: 1000 },
+            { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
+        ]
+    }
+    relax: {
+        increment: 0.08,         # nm
+        temperature: 600,        # K
+        equilibration: [
+            { ensemble: min },
+            { ensemble: nvt, temperature: 600, nsteps: 1000 },
+            { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
+        ]
+    }
+    postcure_equilibration: {
+        ensemble: npt,
+        temperature: 300,       # K
+        pressure: 1,            # bar
+        nsteps:  50000
+    }
+    postcure_anneal: {
+        ncycles: 2,
+        initial_temperature: 300,
+        cycle_segments: [
+            { T: 300, ps: 0 },
+            { T: 600, ps: 20 },
+            { T: 600, ps: 20 },
+            { T: 300, ps: 20 },
+            { T: 300, ps: 20 }
+        ]
+    }
+    postanneal_equilibration: {
+        ensemble: npt,
+        temperature: 300,       # K
+        pressure: 1,            # bar
+        nsteps:  50000
+    }
+    reactions:
+    - {
+        name:        'sty1_1',
+        stage:       cure,
+        reactants:   {1: STY, 2: STY},
+        product:     STY1_1,
+        probability: 1.0,
+        atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 2, resid: 1, atom: C2, z: 1}
+        },
+        bonds: [
+            {atoms: [A, B], order: 1}
+        ]
+      }
+    - {
+        name:         'styCC',
+        stage:        post-cure,
+        reactants:    {1: STY},
+        product:      STYCC,
+        probability:  1.0,
+        atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 1, resid: 1, atom: C2, z: 1}
+        },
+        bonds: [
+            {atoms: [A, B], order: 2}
+        ]
+      }
+
+We refer to each of these sections (except for the ``Title``) as a dictionary.  Let's learn about these dictionaries:
+
+* ``gromacs``:  This dictionary specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
+  
+    =====================================    ==============  =====================
+    Parameter                                Type            Description (default)
+    =====================================    ==============  =====================
+    ``gmx``                                  str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
+    ``gmx_options``                          quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
+    ``gmx_mdrun``                            quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
+    =====================================    ==============  =====================
+
+* ``ambertools``:  This dictionary specifies parameters ``HTPolyNet`` uses when working with the AmberTools suite.
+* ``constituents``
+* ``densification``
+* ``precure_equilibration``
+* ``CURE``
+* ``drag``
+* ``relax``
+* ``postcure_equilibration``
+* ``postcure_anneal``
+* ``postanneal_equilibration``
+* ``reactions``
 
 An HTPolyNet configuration file is a list of keyword:value pairs in ``YAML`` format.  The ``Library`` subpackage as a few example configuration files in the ``cfg`` directory.
 

@@ -35,49 +35,107 @@
             
   <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
-<p>Installation of the HTPolyNet package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command.  A typical run can be started like this:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet run &lt;my_config.yaml&gt;
+<p>Installation of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet --help
+<span class="go">usage: htpolynet [-h] {run,parameterize,info,plots} ...</span>
+
+<span class="go">HTPolyNet</span>
+<span class="go">https://abramsgroup.github.io/HTPolyNet/</span>
+
+<span class="go">Ming Huang</span>
+<span class="go">mh3429@dragons.drexel.edu</span>
+
+<span class="go">Cameron F. Abrams</span>
+<span class="go">cfa22@drexel.edu</span>
+
+<span class="go">Supported in part by Grants W911NF-17-2-0227</span>
+<span class="go">and W911NF-12-R-0011 from the US Army Research Lab</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  {run,parameterize,info,plots}</span>
+<span class="go">    run                 build a system using instructions in the config file and any required molecular structure inputs</span>
+<span class="go">    parameterize        parameterize monomers and oligomer templates using instructinos in the config file</span>
+<span class="go">    info                print some information to the console</span>
+<span class="go">    plots               generate some plots that summarize aspects of the current completed build</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
 </pre></div>
 </div>
-<p>where <code class="docutils literal notranslate"><span class="pre">&lt;my_config.yaml&gt;</span></code> is replaced by the name of your input configuration file.  A full listing of command-line parameters can be seen using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">-h</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">htpolynet</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">lib</span> <span class="n">LIB</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">log</span> <span class="n">LOG</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">restart</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">force</span><span class="o">-</span><span class="n">parameterization</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">force</span><span class="o">-</span><span class="n">checkin</span><span class="p">]</span>
-               <span class="p">[</span><span class="o">--</span><span class="n">loglevel</span> <span class="n">LOGLEVEL</span><span class="p">]</span>
-               <span class="n">command</span> <span class="n">config</span>
+</section>
+<section id="subcommands">
+<h1>Subcommands<a class="headerlink" href="#subcommands" title="Permalink to this headline">¶</a></h1>
+<section id="htpolynet-run">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code><a class="headerlink" href="#htpolynet-run" title="Permalink to this headline">¶</a></h2>
+<p>This subcommand is for building crosslinked systems:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet run --help
+<span class="go">usage: htpolynet run [-h] [-lib LIB] [-proj PROJ] [-diag DIAG] [-restart] [--force-parameterization] [--force-checkin] [--loglevel LOGLEVEL] config</span>
 
-<span class="n">positional</span> <span class="n">arguments</span><span class="p">:</span>
-  <span class="n">command</span>               <span class="n">command</span> <span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">parameterize</span><span class="p">,</span> <span class="n">run</span><span class="p">)</span>
-  <span class="n">config</span>                <span class="nb">input</span> <span class="n">configuration</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">YAML</span> <span class="nb">format</span>
+<span class="go">positional arguments:</span>
+<span class="go">  config                input configuration file in YAML format</span>
 
-<span class="n">options</span><span class="p">:</span>
-  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
-  <span class="o">-</span><span class="n">lib</span> <span class="n">LIB</span>              <span class="n">local</span> <span class="n">user</span> <span class="n">library</span> <span class="n">of</span> <span class="n">molecular</span> <span class="n">structures</span> <span class="ow">and</span> <span class="n">parameterizations</span>
-  <span class="o">-</span><span class="n">log</span> <span class="n">LOG</span>              <span class="n">diagnostic</span> <span class="n">log</span> <span class="n">file</span>
-  <span class="o">-</span><span class="n">restart</span>              <span class="n">restart</span> <span class="ow">in</span> <span class="n">latest</span> <span class="n">proj</span> <span class="nb">dir</span>
-  <span class="o">--</span><span class="n">force</span><span class="o">-</span><span class="n">parameterization</span>
-                        <span class="n">force</span> <span class="n">GAFF</span> <span class="n">parameterization</span> <span class="n">of</span> <span class="nb">any</span> <span class="nb">input</span> <span class="n">mol2</span> <span class="n">structures</span>
-  <span class="o">--</span><span class="n">force</span><span class="o">-</span><span class="n">checkin</span>       <span class="n">force</span> <span class="n">check</span><span class="o">-</span><span class="ow">in</span> <span class="n">of</span> <span class="nb">any</span> <span class="n">generated</span> <span class="n">parameter</span> <span class="n">files</span> <span class="n">to</span> <span class="n">the</span> <span class="n">system</span> <span class="n">library</span>
-  <span class="o">--</span><span class="n">loglevel</span> <span class="n">LOGLEVEL</span>   <span class="n">Log</span> <span class="n">level</span> <span class="k">for</span> <span class="n">messages</span> <span class="n">written</span> <span class="n">to</span> <span class="n">diagnostic</span> <span class="n">log</span> <span class="p">(</span><span class="n">debug</span><span class="o">|</span><span class="n">info</span><span class="p">)</span>
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -lib LIB              local user library of molecular structures and parameterizations</span>
+<span class="go">  -proj PROJ            project directory; &quot;next&quot; (default) generates next directory</span>
+<span class="go">                        Anything other than &quot;next&quot;:</span>
+<span class="go">                            if it exists, &quot;-restart&quot; must be included as a parameter;</span>
+<span class="go">                            if not, it is created as a new project</span>
+<span class="go">  -diag DIAG            diagnostic log file</span>
+<span class="go">  -restart              restart in latest proj dir</span>
+<span class="go">  --force-parameterization</span>
+<span class="go">                        force GAFF parameterization of any input mol2 structures</span>
+<span class="go">  --force-checkin       force check-in of any generated parameter files to the system library</span>
+<span class="go">  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)</span>
 </pre></div>
 </div>
-<section id="what-this-does">
-<h2>What this does<a class="headerlink" href="#what-this-does" title="Permalink to this headline">¶</a></h2>
-<p>Invoking <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> always generates a <code class="docutils literal notranslate"><span class="pre">proj-n</span></code> subdirectory, where <code class="docutils literal notranslate"><span class="pre">n</span></code> is replaced by <code class="docutils literal notranslate"><span class="pre">0</span></code> (if the current working directory is empty) or the next integer implied by existing <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, <code class="docutils literal notranslate"><span class="pre">proj-1</span></code>, etc.  This is referred to as a “project” directory.  (If the <code class="docutils literal notranslate"><span class="pre">-restart</span></code> flag is appending the the command, it drops into the latest project directory to pick up the most recent checkpoint.)  Under the project directory, it then immediately creates <code class="docutils literal notranslate"><span class="pre">systems</span></code>, <code class="docutils literal notranslate"><span class="pre">molecules</span></code>, and <code class="docutils literal notranslate"><span class="pre">plots</span></code> subdirectories:</p>
+<p>The arguments are explained in more detail below.</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">molecules/</span></code></p>
-<p>All molecular parameterization files are written to <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> if any are done; otherwise, this directory is populated with any molecule parameterizations (<code class="docutils literal notranslate"><span class="pre">*.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">*.top</span></code> / <code class="docutils literal notranslate"><span class="pre">*.itp</span></code>, and <code class="docutils literal notranslate"><span class="pre">*.grx</span></code> files) and miscellaneous outputs used in their parameterizations.</p>
-</li>
-<li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code>: This will eventually contain</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">config</span></code> refers to the name of the <a class="reference internal" href="configuration-files.html#configuration-files"><span class="std std-ref">configuration input file</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-lib</span></code> names a directory that is treated as a local library of molecular structures.  By default, this is assumed to be <code class="docutils literal notranslate"><span class="pre">./lib/</span></code>.  At the beginning of a new run, it should have one subdirectory <code class="docutils literal notranslate"><span class="pre">molecules</span></code>.  Under <code class="docutils literal notranslate"><span class="pre">molecules</span></code> should be the two directories <code class="docutils literal notranslate"><span class="pre">inputs</span></code> and <code class="docutils literal notranslate"><span class="pre">parameterized</span></code>.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will look for input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> files in <code class="docutils literal notranslate"><span class="pre">molecules/inputs</span></code>, and put the results of parameterized molecules (i.e., Gromacs format <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">itp</span></code>, and <code class="docutils literal notranslate"><span class="pre">top</span></code> files) in <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-proj</span></code> names the project directory.  If provided with the value <code class="docutils literal notranslate"><span class="pre">next</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will create the next autonamed project directory.  These are always named as <code class="docutils literal notranslate"><span class="pre">proj-``n,</span> <span class="pre">where</span> <span class="pre">n</span> <span class="pre">is</span> <span class="pre">replaced</span> <span class="pre">by</span> <span class="pre">an</span> <span class="pre">integer</span> <span class="pre">beginning</span> <span class="pre">with</span> <span class="pre">0;</span> <span class="pre">if</span> <span class="pre">no</span> <span class="pre">project</span> <span class="pre">directory</span> <span class="pre">exists</span> <span class="pre">and</span> <span class="pre">an</span> <span class="pre">explicit</span> <span class="pre">one</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">specified</span> <span class="pre">by</span> <span class="pre">``-proj</span></code>, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> creates the first one, <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>.  A project directory will automatically be given the following subdirectories:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">init/</span></code>: The initial liquid system is built and simulated here.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">iter-n</span></code>: The <code class="docutils literal notranslate"><span class="pre">n</span></code>-th CURE iteration system is simulated here.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">final</span></code>: The final output coordinate and topology files are here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> – all molecular parameterization results appear here</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">systems</span></code> – system initialization, CURE iterations, and post-cure all get their own subdirectories here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plots</span></code> – various plots generated on the fly.</p></li>
 </ul>
+<p>These will be explained more fully in the tutorials.</p>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code></p>
-<p>A variety of plots are put here.  One is a plot of the density as a function of time from the densification of the initial liquid.  Rudimentary “graph” representations of residue-level connectivity structures are also made after each CURE iteration.</p>
-</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-diag</span></code> names the diagnostic output file, and <code class="docutils literal notranslate"><span class="pre">--loglevel</span></code> specifies the logging level it uses.  The default level is <code class="docutils literal notranslate"><span class="pre">debug</span></code> (i.e., the most informative).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-restart</span></code> indicates that this is a restart (experimental!).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force-parameterization</span></code> signals that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> should perform all molecular parameterizations from scratch even if parameterizations exist in the library.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force-checkin</span></code> signals that any parameterizations <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> does should have their results “checked-in” to the library, even if previous parameterizations are there already.</p></li>
 </ul>
-<p>HTPolyNet reports on the progress of execution by messages to the terminal console.  It also generates a lot of diagnostic output, which by default is saved in the file <code class="docutils literal notranslate"><span class="pre">htpolynet_runtime_diagnostics.log</span></code>.  The diagnostic output is crucial for us to understand why an execution fails, so it is a good idea to keep it.  Examples of the console output and diagnostic logs are discussed in the <a class="reference internal" href="../example-tutorials/index.html#example-tutorials"><span class="std std-ref">Example Tutorials</span></a>.</p>
+</section>
+<section id="htpolynet-parameterize">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code><a class="headerlink" href="#htpolynet-parameterize" title="Permalink to this headline">¶</a></h2>
+<p>This is the command for only performing molecular parameterizations and checking the results into a library:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet parameterize --help
+<span class="go">usage: htpolynet parameterize [-h] [-lib LIB] [-diag DIAG] [-restart] [--force-parameterization] [--force-checkin] [--loglevel LOGLEVEL] config</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  config                input configuration file in YAML format</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -lib LIB              local user library of molecular structures and parameterizations</span>
+<span class="go">  -diag DIAG            diagnostic log file</span>
+<span class="go">  -restart              restart in latest proj dir</span>
+<span class="go">  --force-parameterization</span>
+<span class="go">                        force GAFF parameterization of any input mol2 structures</span>
+<span class="go">  --force-checkin       force check-in of any generated parameter files to the system library</span>
+<span class="go">  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)</span>
+</pre></div>
+</div>
+<p>The intention is that later invocations of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> can use these parameterizations without having to reperform them.  It is not required to parameterize outside of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> but sometimes it is useful to do so.</p>
+</section>
+<section id="htpolynet-info">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">info</span></code><a class="headerlink" href="#htpolynet-info" title="Permalink to this headline">¶</a></h2>
+<p>This simply outputs some information about <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.</p>
+</section>
+<section id="htpolynet-plots">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code><a class="headerlink" href="#htpolynet-plots" title="Permalink to this headline">¶</a></h2>
+<p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.  This feature is currently under development.</p>
 </section>
 </section>
 
@@ -103,6 +161,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#subcommands">Subcommands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
