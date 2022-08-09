@@ -194,7 +194,7 @@ class Runtime:
     def type_consistency_check(self,typename='dihedraltypes',funcidx=4,selection_rule='stiffest'):
         logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested')
         mnames=list(self.molecules.keys())
-        checkin=pfs.checkin
+        # checkin=pfs.checkin
         types_duplicated=[]
         for i in range(len(mnames)):
             logger.debug(f'{mnames[i]}...')
@@ -225,8 +225,8 @@ class Runtime:
                 TC=self.molecules[mnames[i]].TopoCoord
                 moltopo=TC.Topology
                 moltopo.reset_type(typename,t,selected_type)
-                TC.write_top(f'{mnames[i]}.top')
-                checkin(f'molecules/parameterized/{mnames[i]}.top')
+                # TC.write_top(f'{mnames[i]}.top')
+                # checkin(f'molecules/parameterized/{mnames[i]}.top')
 
     def initialize_topology(self,inpfnm='init'):
         """Create a full gromacs topology that includes all directives necessary
