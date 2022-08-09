@@ -1,7 +1,7 @@
 .. _configuration_files:
 
 Configuration Files
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 ``HTPolyNet`` expects configuration files to be in ``YAML`` format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of ``HTPolyNet`` execution.
 
@@ -122,6 +122,13 @@ We refer to each of these sections (except for the ``Title``) as a dictionary.  
     =====================================    ==============  =====================
 
 * ``ambertools``:  This dictionary specifies parameters ``HTPolyNet`` uses when working with the AmberTools suite.
+
+    =====================================    ==============  =====================
+    Parameter                                Type            Description (default)
+    =====================================    ==============  =====================
+    ``charge_method``                        string          "gas" for Gasteiger; "bcc" for bcc; (optional, "gas" by default)
+    =====================================    ==============  =====================
+
 * ``constituents``
 * ``densification``
 * ``precure_equilibration``
