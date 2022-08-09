@@ -1,6 +1,5 @@
 import logging
 import os
-# import sys
 import argparse as ap
 import textwrap
 
@@ -12,7 +11,6 @@ from HTPolyNet.plot import cure_graph,density_evolution
 from HTPolyNet.stringthings import my_logger
 
 logger=logging.getLogger(__name__)
-parser=ap.ArgumentParser()
 
 def info(args):
     print('This is some information on your installed version of HTPolyNet')
@@ -36,9 +34,7 @@ def run(args):
 
     banner(logger.info)
     my_logger('HTPolyNet runtime begins',logger.info)
-    userlib=args.lib
-    if not os.path.exists(args.lib):
-        userlib=None
+    userlib=args.lib if os.path.exists(args.lib) else None
     software.sw_setup()
     pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,projdir=args.proj,reProject=args.restart,userlibrary=userlib)
     a=Runtime(cfgfile=args.config,restart=args.restart)

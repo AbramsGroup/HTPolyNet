@@ -20,33 +20,6 @@ from HTPolyNet.stringthings import my_logger
 
 logger=logging.getLogger(__name__)
 
-def my_dict_split(a_dict:dict,N):
-    """my_dict_split Splits dictionary into N dictionaries of nearly equal size
-
-    :param a_dict: a dictionary
-    :type a_dict: dict
-    :param N: number of dictionaries to split into
-    :type N: int
-    :return: length-N list of dictionaries
-    :rtype: list
-    """
-    dict_size=len(a_dict)
-    use_list=list(zip(a_dict.keys(),a_dict.values()))
-    q,r=divmod(dict_size,N)
-    lens=[]
-    for i in range(N):
-        if r>0:
-            lens.append(q+1)
-            r-=1
-        else:
-            lens.append(q)
-    result=[]
-    j=0
-    for i in range(N):
-        result.append({k:v for k,v in use_list[j:j+lens[i]]})
-        j+=lens[i]
-    return result
-
 def logrotate(filename):
     if os.path.exists(filename):
         n=1
