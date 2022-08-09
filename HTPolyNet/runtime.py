@@ -3,8 +3,6 @@ import os
 import shutil
 import numpy as np
 from copy import deepcopy
-from multiprocessing import Pool
-from functools import partial
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.topology import select_topology_type_option
 from HTPolyNet.topocoord import TopoCoord
@@ -91,22 +89,11 @@ class Runtime:
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
             make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
-            
-            # packets=my_dict_split(make_molecules,self.ncpu)
-            # logger.debug(f'{len(packets)} packets for deployment: {packets}')
-            # for i,xx in enumerate(packets):
-            #     logger.debug(f'{i} {xx}')
-            # p=Pool(processes=self.ncpu)
-            # p.map(partial(self.generate_molecule_par,force_parameterization=force_parameterization,force_checkin=force_checkin),[list(x.values()) for x in packets])
-            # p.close()
-            # p.join()
             for mname,M in make_molecules.items():
-                # logger.debug(f'Generating {mname}:')
                 self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
                 self.molecules[mname]=M
                 logger.debug(f'Generated {mname}')
-            # self.molecules.update(make_molecules)
 
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
@@ -118,20 +105,12 @@ class Runtime:
             my_logger(ml,logger.info)
             self.cfg.reactions.extend(new_reactions)
             make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
-            # packets=my_dict_split(make_molecules,self.ncpu)
-            # for i,xx in enumerate(packets):
-            #     logger.debug(f'{i} {[x.name for x in xx.values()]}')
-            # p=Pool(processes=self.ncpu)
-            # p.map(partial(self.generate_molecule_par,force_parameterization=force_parameterization,force_checkin=force_checkin),[list(x.values()) for x in packets])
-            # p.close()
-            # p.join()
             for mname,M in make_molecules.items():
                 # logger.debug(f'Generating {mname}:')
                 self.generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
                 assert M.get_origin()!='unparameterized'
-                # self.molecules[mname]=M
+                self.molecules[mname]=M
                 logger.debug(f'Generated {mname}')
-            self.molecules.update(make_molecules)
 
         for M in self.molecules:
             self.molecules[M].is_reactant=is_reactant(M,self.cfg.reactions,stage='cure')
