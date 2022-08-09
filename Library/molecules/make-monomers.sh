@@ -7,7 +7,7 @@
 #
 # Cameron F. Abrams, cfa22@drexel.edu
 
-# STYRENE (ethylstyrene)
+# STYRENE (ethylbenzene)
 echo "C1=CC=CC=C1CC" | obabel -ismi --gen2d -opng -O pics/STY.png -xp 600 -xt
 echo "C1=CC=CC=C1CC" | obabel -ismi -omol2 -h --gen3d --title STY | \
      sed s/" 7 C "/" 7 C1"/ | \

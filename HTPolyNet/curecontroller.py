@@ -12,7 +12,6 @@ from HTPolyNet.molecule import MoleculeDict
 from multiprocessing import Pool
 from functools import partial
 import HTPolyNet.projectfilesystem as pfs
-# import HTPolyNet.checkpoint as cp
 
 import logging
 
