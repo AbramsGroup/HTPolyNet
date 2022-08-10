@@ -14,9 +14,9 @@ import pandas as pd
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topology import Topology
 from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
-from HTPolyNet.gromacs import grompp_and_mdrun
+from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 # from HTPolyNet.molecule import MoleculeDict,ReactionList
-#from HTPolyNet.plot import network_graph
+from HTPolyNet.plot import trace
 import HTPolyNet.projectfilesystem as pfs
 import logging
 import numpy as np
@@ -1433,7 +1433,7 @@ class TopoCoord:
         addme=center-gc
         self.Coordinates.translate(addme)
 
-    def minimize(self,outname='minimized',**kwargs):
+    def vacuum_minimize(self,outname='minimized',**kwargs):
         boxsize=np.array(self.maxspan())+2*np.ones(3)
         self.center_coords(new_boxsize=boxsize)
         mdp_prefix='single-molecule-min'
@@ -1441,3 +1441,38 @@ class TopoCoord:
         gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.grompp_and_mdrun(out=f'{outname}',
             mdp=mdp_prefix,boxSize=boxsize,**gromacs_dict)
+    
+    def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx='equilibrate'):
+        mod_dict={}
+        ens=edict['ensemble']
+        assert ens in ['min','npt','nvt'],f'Bad ensemble: {ens}'
+        pfs.checkout(f'mdp/{ens}.mdp') # plain jane?
+        if ens=='min':
+            msg='minimization'
+        else:
+            msg=f'{ens} ensemble'
+        if ens in ['nvt','npt']:
+            dt=float(mdp_get(f'{ens}.mdp','dt'))
+            mod_dict['ref_t']=edict['temperature']
+            mod_dict['gen-temp']=edict['temperature']
+            mod_dict['gen-vel']='yes'
+            nsteps=edict.get('nsteps',0)
+            if not nsteps:
+                ps=edict.get('ps',0.0)
+                if not ps: return
+                nsteps=int(ps/dt)
+            else:
+                ps=nsteps*dt
+            mod_dict['nsteps']=nsteps
+            msg+=f'; {ps:4.0f} ps, {edict["temperature"]} K'
+            if ens=='npt': 
+                mod_dict['ref_p']=edict['pressure']
+                msg+=f', {edict["pressure"]} bar'
+        mdp_modify(f'{ens}.mdp',mod_dict)
+        logger.info(f'Running Gromacs: {msg}')
+        self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=ens,quiet=False,**gromacs_dict)
+        if ens=='npt':
+            box=self.Coordinates.box.diagonal()
+            logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
+            gmx_energy_trace(f'{deffnm}-{ens}',['Density'],report_averages=True,**gromacs_dict)
+            trace('Density',[f'{deffnm}-{ens}'],outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))

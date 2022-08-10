@@ -203,7 +203,7 @@ class Molecule:
     def minimize(self,outname='',**kwargs):
         if outname=='':
             outname=f'{self.name}'
-        self.TopoCoord.minimize(outname,**kwargs)
+        self.TopoCoord.vacuum_minimize(outname,**kwargs)
 
     def relax(self,relax_dict):
         deffnm=relax_dict.get('deffnm',f'{self.name}-relax')
@@ -815,7 +815,7 @@ class Molecule:
             for gro in self.conformers:
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{gro}.gro'))
                 logger.info(f'Minimizing conformer {gro}')
-                self.TopoCoord.minimize(outname=gro)
+                self.TopoCoord.vacuum_minimize(outname=gro)
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]

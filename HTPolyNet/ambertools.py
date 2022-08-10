@@ -5,7 +5,7 @@ import parmed
 # import os
 from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
-from HTPolyNet.stringthings import my_logger
+# from HTPolyNet.stringthings import my_logger
 logger=logging.getLogger(__name__)
 
 def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kwargs):
@@ -14,7 +14,7 @@ def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kw
         chargemethod=ambertools_dict.get('charge_method','bcc')
     else:
         chargemethod=kwargs.get('charge_method','bcc')
-    my_logger(f'AmberTools> parameterizing {inputPrefix}.{input_structure_format}',logger.info, just='<')
+    logger.info(f'AmberTools> parameterizing {inputPrefix}.{input_structure_format}')
     structin=f'{inputPrefix}.{input_structure_format}'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'

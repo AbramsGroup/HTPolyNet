@@ -30,6 +30,23 @@ class RuntimeLibrary:
         logger.info(inst.info())
         return inst
 
+    def get_example_depot_location(self):
+        if any(['example_depot' in x for x in self.subdirs]):
+            depot=[x for x in self.subdirs if 'example_depot' in x][0]
+            return depot
+        return None
+
+    def get_example_names(self):
+        if any(['example_depot' in x for x in self.subdirs]):
+            depot=[x for x in self.subdirs if 'example_depot' in x][0]
+            owd=os.getcwd()
+            os.chdir(depot)
+            example_tarballs=os.listdir('.')
+            basenames=[x.replace('.tgz','') for x in example_tarballs]
+            os.chdir(owd)
+            return basenames
+        return []
+
     @classmethod
     def user(cls,pathname='.'):
         if not pathname:
@@ -98,6 +115,8 @@ def lib_setup():
     if _SYSTEM_LIBRARY_==None:
         _SYSTEM_LIBRARY_=RuntimeLibrary.system()
     return _SYSTEM_LIBRARY_
+def system():
+    return _SYSTEM_LIBRARY_
 
 class ProjectFileSystem:
     def __init__(self,root='.',topdirs=['molecules','systems','plots'],projdir='next',verbose=False,reProject=False,userlibrary=None,mock=False):
@@ -129,8 +148,12 @@ class ProjectFileSystem:
         if not projdir=='next':  # explicit project directory is named
             if os.path.exists(projdir) and not reProject:
                 raise Exception(f'Project directory {projdir} exists but you did not indicate you wanted to restart with the "-restart" flag')
-            self.projPath=os.path.join(self.rootPath,currentprojdir)
-            logger.info(f'Restarting build in {self.projPath}')
+            self.projPath=os.path.join(self.rootPath,projdir)
+            if os.path.exists(projdir):
+                logger.info(f'Restarting build in {self.projPath}')
+            else:
+                os.mkdir(projdir)
+                logger.info(f'New build in {self.projPath}')
         else:
             i=0
             lastprojdir=''

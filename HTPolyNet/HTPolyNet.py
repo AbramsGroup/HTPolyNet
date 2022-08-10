@@ -2,6 +2,7 @@ import logging
 import os
 import argparse as ap
 import textwrap
+import shutil
 
 from HTPolyNet.banner import banner, banner_message
 from HTPolyNet.runtime import Runtime,logrotate
@@ -71,20 +72,48 @@ def htpolynet_cure_plots(args):
     cure_graph(logs,args.plotfile)
     density_evolution()
 
+def fetch_example(args):
+    l=pfs.system()
+    nm=args.n
+    kp=args.k
+    possibles=l.get_example_names()
+    if nm.isdecimal():
+        fullname=[x for x in possibles if x.startswith(nm)][0]
+    else:
+        if nm in ['a','all']:
+            for fullname in possibles:
+                shutil.copy(os.path.join(l.get_example_depot_location(),f'{fullname}.tgz'),'.')
+                os.system(f'tar zxf {fullname}.tgz')
+                if not kp:
+                    os.remove(f'{fullname}.tgz')
+            return
+        fullname=nm
+    shutil.copy(os.path.join(l.get_example_depot_location(),f'{fullname}.tgz'),'.')
+    os.system(f'tar zxf {fullname}.tgz')
+    if not kp:
+        os.remove(f'{fullname}.tgz')
+
+
 def cli():
     """cli Command-line interface
     """
+
+    l=pfs.lib_setup()
+    example_names=l.get_example_names()
+    example_ids=[x.split('-')[0] for x in example_names]
     commands={}
     commands['run']=run
     commands['parameterize']=parameterize
     commands['info']=info
     commands['plots']=htpolynet_cure_plots
+    commands['fetch-example']=fetch_example
 
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
     helps['parameterize']='parameterize monomers and oligomer templates using instructinos in the config file'
     helps['info']='print some information to the console'
     helps['plots']='generate some plots that summarize aspects of the current completed build'
+    helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library\n'+'\n'.join(l.get_example_names())
 
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     subparsers=parser.add_subparsers()
@@ -112,6 +141,9 @@ def cli():
 
     command_parsers['plots'].add_argument('logs',type=str,default='',nargs='+',help='names of diagnostic log files')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
+
+    command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['a','all'],help='number of example tarball to unpack from '+', '.join(example_names))
+    command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
 
     args=parser.parse_args()
     args.func(args)
