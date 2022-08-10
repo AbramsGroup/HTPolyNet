@@ -260,10 +260,10 @@ class CureController:
 
     def do_equilibrate(self,TC:TopoCoord):
         if self.state!=state.cure_equilibrate and self.state!=state.postcure_equilibrate: return
-        d=self.dicts['equilibration']
+        d=self.dicts['equilibrate']
         opfx=self._pfx()
         logger.info(f'Equilibration for {d["nsteps"]} steps at {d["temperature"]} K and {d["pressure"]} bar')
-        pfx=f'equilibrate-{d["ensemble"]}'
+        pfx=d['ensemble']
         pfs.checkout(f'mdp/{pfx}.mdp')
         mod_dict={'gen-temp':d['temperature'],'gen-vel':'yes','ref_t':d['temperature'],'ref_p':d['pressure'],'nsteps':d['nsteps']}
         mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
