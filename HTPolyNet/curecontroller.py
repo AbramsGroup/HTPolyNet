@@ -25,18 +25,18 @@ class state(Enum):
     cure_update=2
     cure_relax=3
     cure_equilibrate=4
-    postcure_bondsearch=5
-    postcure_update=6  # dragging is not allowed in postcure since these are likely intramolecular bonds...
-    postcure_relax=7
-    postcure_equilibrate=8
+    cap_bondsearch=5
+    cap_update=6  # dragging is not needed/allowed in caping since these are likely intramolecular bonds...
+    cap_relax=7
+    cap_equilibrate=8
     finished=9
     unknown=99
     def __str__(self):
         return self.name
     def basename(self):
         name=str(self)
-        if 'postcure_' in name:
-            return name[len('postcure_'):]
+        if 'cap_' in name:
+            return name[len('cap_'):]
         if 'cure_' in name:
             return name[len('cure_'):]
 
@@ -140,7 +140,7 @@ class CureController:
         logger.debug(f'cumxlinks {self.cum_nxlinkbonds} maxxlinks {self.max_nxlinkbonds}: {(self.cum_nxlinkbonds>=self.max_nxlinkbonds)}')
         finished=self.search_failed or (self.cum_nxlinkbonds>=self.desired_nxlinkbonds)
         if finished:
-            self.state=state.postcure_bondsearch
+            self.state=state.cap_bondsearch
         return finished
 
     def curr_conversion(self):
@@ -204,7 +204,7 @@ class CureController:
             self.state=state.cure_drag if self.dragging_enabled else state.cure_update
         else:
             self.search_failed=True
-            self.state=state.postcure_bondsearch # proceed to postcure
+            self.state=state.cap_bondsearch # proceed to cap
         self.cum_nxlinkbonds+=nbonds
         self._to_yaml()
         logger.debug(f'next: {self.state}')
@@ -225,11 +225,11 @@ class CureController:
         logger.debug(f'next: {self.state}')
 
     def do_relax(self,TC:TopoCoord):
-        if self.state!=state.cure_relax and self.state!=state.postcure_relax: return
+        if self.state!=state.cure_relax and self.state!=state.cap_relax: return
         nbdf=self.bonds_df
         if nbdf.shape[0]==0: # no bonds identified
             if self.state==state.cure_relax:
-                self.state=state.postcure_bondsearch # drop out of CURE loop
+                self.state=state.cap_bondsearch # drop out of CURE loop
             else:
                 self.state=state.finished
             return
@@ -237,12 +237,12 @@ class CureController:
         if self.state==state.cure_relax:
             self.state=state.cure_equilibrate
         else:
-            self.state=state.postcure_equilibrate
+            self.state=state.cap_equilibrate
         self._to_yaml()
         logger.debug(f'next: {self.state}')
 
     def do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
-        if self.state!=state.cure_update and self.state!=state.postcure_update: return
+        if self.state!=state.cure_update and self.state!=state.cap_update: return
         opfx=self._pfx()
         logger.debug(f'Topology update')
         bonds_df,pairs_df=TC.update_topology_and_coordinates(self.bonds_df,template_dict=MD,write_mapper_to=f'{opfx}-idx-mapper.csv')
@@ -255,43 +255,36 @@ class CureController:
         if self.state==state.cure_update:
             self.state=state.cure_relax
         else:
-            self.state=state.postcure_relax
+            self.state=state.cap_relax
         self._to_yaml()
 
-    def do_equilibrate(self,TC:TopoCoord):
-        if self.state!=state.cure_equilibrate and self.state!=state.postcure_equilibrate: return
+    def do_equilibrate(self,TC:TopoCoord,gromacs_dict={}):
+        if self.state!=state.cure_equilibrate and self.state!=state.cap_equilibrate: return
         d=self.dicts['equilibrate']
         opfx=self._pfx()
-        logger.info(f'Equilibration for {d["nsteps"]} steps at {d["temperature"]} K and {d["pressure"]} bar')
-        pfx=d['ensemble']
-        pfs.checkout(f'mdp/{pfx}.mdp')
-        mod_dict={'gen-temp':d['temperature'],'gen-vel':'yes','ref_t':d['temperature'],'ref_p':d['pressure'],'nsteps':d['nsteps']}
-        mdp_modify(f'{pfx}.mdp',mod_dict,new_filename=f'{opfx}.mdp')
-        TC.grompp_and_mdrun(out=f'{opfx}-post',mdp=f'{opfx}',quiet=False)
-        average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
-        logger.info(f'Density: {average_density:.3f} kg/m^3')
+        TC.equilibrate(deffnm=f'{opfx}',edict=d,gromacs_dict=gromacs_dict,plot_pfx=f'iter-{self.iter}-{str(self.state)}')
         if self.state==state.cure_equilibrate:
             # go to next iteration -- this whole method is skipped if nbonds==0 in relax
-            self.state=state.cure_bondsearch # if not self.search_failed else state.postcure_bondsearch
-        elif self.state==state.postcure_equilibrate:
+            self.state=state.cure_bondsearch # if not self.search_failed else state.cap_bondsearch
+        elif self.state==state.cap_equilibrate:
             self.state=state.finished
         self._to_yaml()
 
-    def do_postcure_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
-        if self.state!=state.postcure_bondsearch: return
+    def do_cap_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
+        if self.state!=state.cap_bondsearch: return
         opfx=self._pfx()
-        # multi: nbdf=self.make_cadidates(...,stage='post-cure')
-        nbdf=self._searchbonds(TC,RL,MD,stage='post-cure')
+        # multi: nbdf=self.make_cadidates(...,stage='cap')
+        nbdf=self._searchbonds(TC,RL,MD,stage='cap')
         nbonds=nbdf.shape[0]
         ess='' if nbonds==1 else 's'
-        logger.info(f'Postcure will generate {nbdf.shape[0]} new bond{ess}')
+        logger.info(f'Capping will generate {nbdf.shape[0]} new bond{ess}')
         if nbonds>0:
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self._register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
-            self.state=state.postcure_update
+            self.state=state.cap_update
         else:
-            self.state=state.postcure_equilibrate
+            self.state=state.finished
         self._to_yaml()
 
     def _write_bonds_df(self,bondsfile='bonds.csv'):
@@ -411,9 +404,9 @@ class CureController:
                 bresid_template=B['resid']
                 bresname=MD[breactantname_template].get_resname(bresid_template)
                 bz=B['z']
-                if stage=='post-cure':
-                    assert areactantname_template==breactantname_template,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different reactants'
-                    assert aresname==bresname,f'Error: post-cure reaction {R.name} lists a bond whose atoms are in different residues'
+                if stage=='cap':
+                    assert areactantname_template==breactantname_template,f'Error: capping reaction {R.name} lists a bond whose atoms are in different reactants'
+                    assert aresname==bresname,f'Error: capping reaction {R.name} lists a bond whose atoms are in different residues'
 
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
@@ -465,7 +458,7 @@ class CureController:
                                 bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
                                 logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
                             idf=idf[idf['result']==BTRC.passed].copy()
-                elif stage=='post-cure':
+                elif stage=='cap':
                     idf=idf[idf['ri']==idf['rj']].copy()
                     logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
                 if not idf.empty:

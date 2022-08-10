@@ -129,8 +129,12 @@ class ProjectFileSystem:
         if not projdir=='next':  # explicit project directory is named
             if os.path.exists(projdir) and not reProject:
                 raise Exception(f'Project directory {projdir} exists but you did not indicate you wanted to restart with the "-restart" flag')
-            self.projPath=os.path.join(self.rootPath,currentprojdir)
-            logger.info(f'Restarting build in {self.projPath}')
+            self.projPath=os.path.join(self.rootPath,projdir)
+            if os.path.exists(projdir):
+                logger.info(f'Restarting build in {self.projPath}')
+            else:
+                os.mkdir(projdir)
+                logger.info(f'New build in {self.projPath}')
         else:
             i=0
             lastprojdir=''

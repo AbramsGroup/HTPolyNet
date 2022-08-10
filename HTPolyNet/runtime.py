@@ -61,7 +61,7 @@ class Runtime:
                 'ensemble': 'npt',
                 'temperature': 300,        # K
                 'pressure': 1,             # bar
-                'ps': 100
+                'ps': 100  # we should probably bring to a desired pressure after densification
             },
             'anneal': {
                 'ncycles': 0,  # default none
@@ -268,7 +268,9 @@ class Runtime:
         cp.set(TC,'do_densification')
 
     def do_precure(self):
+        if cp.passed('do_precure'): return
         self._do_pap(pfx='precure')
+        cp.set(self.TopoCoord,'do_precure')
 
     def do_cure(self):
         if not hasattr(self,'cc'): return  # no cure controller
@@ -277,6 +279,7 @@ class Runtime:
         TC=self.TopoCoord
         RL=self.cfg.reactions
         MD=self.molecules
+        gromacs_dict=self.cfg.parameters.get('gromacs',{})
         if cp.is_currentstepname('cure'):
             cc.iter=cp.last_substep()
         else:
@@ -299,29 +302,31 @@ class Runtime:
             cc.do_preupdate_dragging(TC)
             cc.do_topology_update(TC,MD)
             cc.do_relax(TC)
-            cc.do_equilibrate(TC)
+            cc.do_equilibrate(TC,gromacs_dict)
             cp.subset(TC,'cure',cc.iter)
             logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f} or {cc.cum_nxlinkbonds} bonds')
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
             # exit(-1)
-        cwd=pfs.go_to(f'systems/postcure')
-        my_logger(f'Postcure begins',logger.info)
-        cc.do_postcure_bondsearch(TC,RL,MD)
+        cwd=pfs.go_to(f'systems/capping')
+        my_logger(f'Capping begins',logger.info)
+        cc.do_cap_bondsearch(TC,RL,MD)
         cc.do_topology_update(TC,MD)
         cc.do_relax(TC)
-        cc.do_equilibrate(TC)
+        cc.do_equilibrate(TC,gromacs_dict)
         my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
         cp.set(TC,'cure')
 
     def do_postcure(self):
+        if cp.passed('do_postcure'): return
         self._do_pap(pfx='postcure')
+        cp.set(self.TopoCoord,'do_postcure')
         
     def save_data(self,result_name='final'):
         TC=self.TopoCoord
         pfs.go_to(f'systems/{result_name}-results')
-        logger.info(f'Saving final data to {pfs.cwd()}')
+        my_logger(f'Final data to {pfs.cwd()}',logger.info)
         TC.write_grx_attributes(f'{result_name}.grx')
         TC.write_gro(f'{result_name}.gro')
         TC.write_top(f'{result_name}.top')
@@ -554,39 +559,7 @@ class Runtime:
     def _do_equilibration(self,edict={},deffnm='equilibrate',plot_pfx=''):
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
         TC=self.TopoCoord
-        mod_dict={}
-        ens=edict['ensemble']
-        assert ens in ['min','npt','nvt'],f'Bad ensemble: {ens}'
-        pfs.checkout(f'mdp/{ens}.mdp') # plain jane?
-        if ens=='min':
-            msg='minimization'
-        else:
-            msg=f'{ens} ensemble'
-        if ens in ['nvt','npt']:
-            dt=float(mdp_get(f'{ens}.mdp','dt'))
-            mod_dict['ref_t']=edict['temperature']
-            mod_dict['gen-temp']=edict['temperature']
-            mod_dict['gen-vel']='yes'
-            nsteps=edict.get('nsteps',0)
-            if not nsteps:
-                ps=edict.get('ps',0.0)
-                if not ps: return
-                nsteps=int(ps/dt)
-            else:
-                ps=nsteps*dt
-            mod_dict['nsteps']=nsteps
-            msg+=f'; {ps:4.0f} ps, {edict["temperature"]} K'
-            if ens=='npt': 
-                mod_dict['ref_p']=edict['pressure']
-                msg+=f', {edict["pressure"]} bar'
-        mdp_modify(f'{ens}.mdp',mod_dict)
-        logger.info(f'Running Gromacs: {msg}')
-        msg=TC.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=ens,quiet=False,**gromacs_dict)
-        if ens=='npt':
-            box=TC.Coordinates.box.diagonal()
-            logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-            gmx_energy_trace(f'{deffnm}-{ens}',['Density'],report_averages=True,**gromacs_dict)
-            trace('Density',[f'{deffnm}-{ens}'],outfile=f'../../plots/{plot_pfx}-density.png')
+        TC.equilibrate(deffnm,edict,gromacs_dict,plot_pfx)
 
     def _do_equilibration_series(self,eq_dict={},deffnm='equilibrate',plot_pfx=''):
         if not eq_dict: return
@@ -607,9 +580,9 @@ class Runtime:
         cwd=pfs.go_to(f'systems/{pfx}')
         my_logger(f'{pfx.capitalize()} in {pfs.cwd()}',logger.info)
         if preequil: self._do_equilibration(preequil,deffnm='preequilibration',plot_pfx=f'{pfx}-preequilibration')
-        if anneal: 
+        if anneal and _nonempty_directives([anneal]): 
             self._do_anneal(anneal,deffnm='annealed')
-            trace('Temperature',['annealed'],outfile=f'../../plots/{pfx}-anneal-T.png')
+            trace('Temperature',['annealed'],outfile=os.path.join(pfs.proj(),f'plots/{pfx}-anneal-T.png'))
         if postequil: self._do_equilibration(postequil,deffnm='postequilibration',plot_pfx=f'{pfx}-postequilibration')
 
     def _do_anneal(self,anneal_dict={},deffnm='anneal'):
@@ -634,7 +607,7 @@ class Runtime:
         cum_time=durations.copy()
         for i in range(1,len(cum_time)):
             cum_time[i]+=cum_time[i-1]
-        logger.info(f'Annealing: {len(durations)} points for {len(cycle_segments)} cycles over {total_duration} ps')
+        logger.info(f'Annealing: {len(durations)} points for {ncycles} cycles over {total_duration} ps')
         mod_dict={
             'ref_t':anneal_dict.get('initial_temperature',300.0),
             'gen-temp':anneal_dict.get('initial_temperature',300.0),

@@ -203,7 +203,7 @@ class Molecule:
     def minimize(self,outname='',**kwargs):
         if outname=='':
             outname=f'{self.name}'
-        self.TopoCoord.minimize(outname,**kwargs)
+        self.TopoCoord.vacuum_minimize(outname,**kwargs)
 
     def relax(self,relax_dict):
         deffnm=relax_dict.get('deffnm',f'{self.name}-relax')
