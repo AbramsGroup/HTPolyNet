@@ -200,7 +200,7 @@ class CureController:
             logger.info(f'Iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}')
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
-            self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
+            self._register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
             self.state=state.cure_drag if self.dragging_enabled else state.cure_update
         else:
             self.search_failed=True
@@ -260,7 +260,7 @@ class CureController:
 
     def do_equilibrate(self,TC:TopoCoord):
         if self.state!=state.cure_equilibrate and self.state!=state.postcure_equilibrate: return
-        d=self.dicts['equil']
+        d=self.dicts['equilibration']
         opfx=self._pfx()
         logger.info(f'Equilibration for {d["nsteps"]} steps at {d["temperature"]} K and {d["pressure"]} bar')
         pfx=f'equilibrate-{d["ensemble"]}'
@@ -316,7 +316,7 @@ class CureController:
     def _distance_attenuation(self,TC:TopoCoord,mode='drag'):
         assert mode in ['drag','relax']
         statename=self.state.basename()
-        opfx=self.pfx()
+        opfx=self._pfx()
         nbdf=self.bonds_df.copy()
         pdf=self.pairs_df.copy()
         d=self.dicts[mode]
@@ -374,21 +374,22 @@ class CureController:
                 pmaxL,pminL,pmeanL=pdf['current_lengths'].max(),pdf['current_lengths'].min(),pdf['current_lengths'].mean()
                 logger.debug(f'1-4 distances lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 logger.info(f'{i+1:>10d}  {maxL:>17.3f}  {pmaxL:>21.3f}')
-            self.to_yaml()
+            self._to_yaml()
         if mode=='drag':
             TC.remove_restraints(self.bonds_df)
         TC.write_top(f'{opfx}-complete.top')
-        self.register_bonds(nbdf,pdf,f'{opfx}-{mode}-bonds.csv',bonds_are=('relaxed' if mode=='relax' else 'dragged'))
+        self._register_bonds(nbdf,pdf,f'{opfx}-{mode}-bonds.csv',bonds_are=('relaxed' if mode=='relax' else 'dragged'))
         self.current_stage[mode]=0
-        self.to_yaml()
+        self._to_yaml()
 
     # TODO: move to searchbonds.by; split into make_candidates() and apply_filters()
     def _searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage='cure',abs_max=0,apply_probabilities=False,reentry=False):
 
         adf=TC.gro_DataFrame('atoms')
         gro=TC.files['gro']
+        ncpu=self.dicts['controls']['ncpu']
         if stage=='cure':
-            TC.linkcell_initialize(self.current_radius,ncpu=self.ncpu,force_repopulate=reentry)
+            TC.linkcell_initialize(self.current_radius,ncpu=ncpu,force_repopulate=reentry)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         bdf=pd.DataFrame()
         Rlist=[x for x in RL if (x.stage==stage and x.probability>0.0)]
@@ -434,9 +435,9 @@ class CureController:
                     if idf.shape[0]>0:
                         ess='' if idf.shape[0]!=1 else 's'
                         bondtestoutcomes={k:0 for k in BTRC}
-                        p=Pool(processes=self.ncpu)
-                        idf_split=np.array_split(idf,self.ncpu)
-                        packets=[(i,idf_split[i]) for i in range(self.ncpu)]
+                        p=Pool(processes=ncpu)
+                        idf_split=np.array_split(idf,ncpu)
+                        packets=[(i,idf_split[i]) for i in range(ncpu)]
                         logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
                         results=p.map(partial(gromacs_distance,gro=gro,new_column_name='r'),packets)
                         p.close()
@@ -449,8 +450,8 @@ class CureController:
                         idf=idf[idf['r']<self.current_radius].copy().reset_index(drop=True)
                         ess='' if idf.shape[0]!=1 else 's'
                         logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {self.current_radius} nm')
-                        p=Pool(processes=self.ncpu)
-                        idf_split=np.array_split(idf,self.ncpu)
+                        p=Pool(processes=ncpu)
+                        idf_split=np.array_split(idf,ncpu)
                         # logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')
                         results=p.map(partial(TC.bondtest_df),idf_split)
                         p.close()
