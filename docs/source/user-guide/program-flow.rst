@@ -1,5 +1,16 @@
 Program Flow
-~~~~~~~~~~~~
+------------
+
+.. figure:: flow1.png
+   :scale: 80 %
+   :alt: outer program flow
+
+   Highest-level ``HTPolyNet`` workflow.
+
+``HTPolyNet``'s largest-scale workflow is shown in the figure above.  "MD" indicates steps that are *primarily* molecular dynamics.  The CURE algorithm (labelled "C-U-R-E") is shown as a single node 
+in this workflow.  The first node, "Make input monomer structures" is not performed by ``HTPolyNet`` but is instead the responsibility of the user; we provide some general guidance :ref:`here <molecular_structure_inputs>` and some specific example cases in the :ref:`tutorials <example_tutorials>`.
+
+Each of the major blocks in the workflow above have associated dictionaries of keyword:parameter values that can be provide in the :ref:`configuration file <configuration_files>`.
 
 HTPolyNet produces Gromacs topology and coordinate files for amorphous, crosslinked polymer systems following the basic steps below.
 
