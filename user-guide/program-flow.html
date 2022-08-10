@@ -35,6 +35,15 @@
             
   <section id="program-flow">
 <h1>Program Flow<a class="headerlink" href="#program-flow" title="Permalink to this headline">¶</a></h1>
+<figure class="align-default" id="id1">
+<a class="reference internal image-reference" href="../_images/flow1.png"><img alt="outer program flow" src="../_images/flow1.png" style="width: 698.4000000000001px; height: 456.0px;" /></a>
+<figcaption>
+<p><span class="caption-text">Highest-level <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> workflow.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>’s largest-scale workflow is shown in the figure above.  “MD” indicates steps that are <em>primarily</em> molecular dynamics.  The CURE algorithm (labelled “C-U-R-E”) is shown as a single node
+in this workflow.  The first node, “Make input monomer structures” is not performed by <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> but is instead the responsibility of the user; we provide some general guidance <a class="reference internal" href="molecular-structure-inputs.html#molecular-structure-inputs"><span class="std std-ref">here</span></a> and some specific example cases in the <a class="reference internal" href="../example-tutorials/index.html#example-tutorials"><span class="std std-ref">tutorials</span></a>.</p>
+<p>Each of the major blocks in the workflow above have associated dictionaries of keyword:parameter values that can be provide in the <a class="reference internal" href="configuration-files.html#configuration-files"><span class="std std-ref">configuration file</span></a>.</p>
 <p>HTPolyNet produces Gromacs topology and coordinate files for amorphous, crosslinked polymer systems following the basic steps below.</p>
 <ol class="arabic simple">
 <li><p><em>Read and parse</em> the configuration file and setup the project file system under the current working directory.</p></li>

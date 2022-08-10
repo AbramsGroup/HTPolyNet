@@ -1,5 +1,7 @@
+.. _molecular_structure_inputs:
+
 Molecular Structure Inputs
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 The intention of HTPolyNet is to generate amorphous, polymerized all-atom system models when provided 3D structure/topology information about any monomers and a description of the polymerization chemistry.  Any molecule you wish to use as a **monomer** must have a either a ``pdb``-format file or a ``mol2``-format file.  The basename of the file should be the name of the molecule.  For example, ``STY.mol2`` might be a styrene monomer.  This basename/monomer name is important; it is how the monomer is called forever inside HTPolyNet.  Input ``mol2`` and ``pdb`` files are all processed via antechamber as part of the parameterization algorithm.
 

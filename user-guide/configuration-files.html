@@ -35,7 +35,7 @@
             
   <section id="configuration-files">
 <span id="id1"></span><h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects configuration files to be in <code class="docutils literal notranslate"><span class="pre">YAML</span></code> format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> execution.</p>
+<p>The configuration file is how the user tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects configuration files to be in <code class="docutils literal notranslate"><span class="pre">YAML</span></code> format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> execution.</p>
 <p>For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Title</span><span class="p">:</span> <span class="n">polystyrene</span>
 <span class="n">gromacs</span><span class="p">:</span> <span class="p">{</span>
@@ -177,9 +177,9 @@
 <blockquote>
 <div><table class="docutils align-default">
 <colgroup>
-<col style="width: 32%" />
-<col style="width: 12%" />
-<col style="width: 56%" />
+<col style="width: 24%" />
+<col style="width: 9%" />
+<col style="width: 67%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Parameter</p></th>
@@ -190,7 +190,7 @@
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">charge_method</span></code></p></td>
 <td><p>string</p></td>
-<td><p>“gas” for Gasteiger; “bcc” for bcc; (optional, “gas” by default)</p></td>
+<td><p>“gas” for Gasteiger; “bcc” for bcc; (optional, “gas” by default); charge model used by <code class="docutils literal notranslate"><span class="pre">antechamber</span></code></p></td>
 </tr>
 </tbody>
 </table>
