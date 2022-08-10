@@ -3,7 +3,7 @@
 Configuration Files
 -------------------
 
-``HTPolyNet`` expects configuration files to be in ``YAML`` format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of ``HTPolyNet`` execution.
+The configuration file is how the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects configuration files to be in ``YAML`` format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of ``HTPolyNet`` execution.
 
 For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like::
 
@@ -126,7 +126,7 @@ We refer to each of these sections (except for the ``Title``) as a dictionary.  
     =====================================    ==============  =====================
     Parameter                                Type            Description (default)
     =====================================    ==============  =====================
-    ``charge_method``                        string          "gas" for Gasteiger; "bcc" for bcc; (optional, "gas" by default)
+    ``charge_method``                        string          "gas" for Gasteiger; "bcc" for bcc; (optional, "gas" by default); charge model used by ``antechamber``
     =====================================    ==============  =====================
 
 * ``constituents``
