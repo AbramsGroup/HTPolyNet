@@ -815,7 +815,7 @@ class Molecule:
             for gro in self.conformers:
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{gro}.gro'))
                 logger.info(f'Minimizing conformer {gro}')
-                self.TopoCoord.minimize(outname=gro)
+                self.TopoCoord.vacuum_minimize(outname=gro)
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]
