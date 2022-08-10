@@ -364,6 +364,7 @@ class Runtime:
         if cp.passed('do_densification'): return
         cwd=pfs.go_to('systems/init')
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
+        densification_dict=self.cfg.parameters.get('densification',{})
         TC=self.TopoCoord
         infiles=[f'{inpfnm}.top',f'{inpfnm}.gro']
         outfiles=[f'{deffnm}.gro',f'{deffnm}.trr',f'{deffnm}.edr']
@@ -384,34 +385,9 @@ class Runtime:
         logger.info(f'Densified coordinates in {pfs.cwd()}/{deffnm}.gro')
         gmx_energy_trace(deffnm,['Density'],report_averages=True,**gromacs_dict)
         trace('Density',[deffnm],outfile='../../plots/init-densification.png')
-        # update coordinates; will wrap upon reading in
-        # TC.copy_coords(TopoCoord(grofilename=f'{deffnm}.gro'))
         box=TC.Coordinates.box.diagonal()
         logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
         cp.set(TC,'do_densification')
-
-    def do_precure_equilibration(self,deffnm='precure_equilibrated'):
-        if cp.passed('do_precure_equilibration'): return
-        pe_dict=self.cfg.parameters.get('precure_equilibration',{})
-        gromacs_dict=self.cfg.parameters.get('gromacs',{})
-        if not pe_dict: return # pre-cure equilibration is done only if the precure_equilibration dictionary is present
-        cwd=pfs.go_to('systems/init')
-        TC=self.TopoCoord
-        nsteps=pe_dict.get('nsteps',50000)
-        T=pe_dict.get('temperature',300)
-        P=pe_dict.get('pressure',1)
-        logger.info(f'Precure equilibration for {pe_dict["nsteps"]} steps at {pe_dict["temperature"]} K and {pe_dict["pressure"]} bar')
-        mdp_pfx='equilibrate-npt'
-        pfs.checkout(f'mdp/{mdp_pfx}.mdp')
-        mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}
-        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
-        msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**gromacs_dict)
-        logger.info(f'Equilibrated coordinates in {deffnm}.gro')
-        gmx_energy_trace(deffnm,['Density'],report_averages=True,**gromacs_dict)
-        trace('Density',[deffnm],outfile='../../plots/init-equil-density.png')
-        box=TC.Coordinates.box.diagonal()
-        logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-        cp.set(TC,'do_precure_equilibration')
 
     def do_cure(self):
         if cp.passed('cure'): return
@@ -457,18 +433,14 @@ class Runtime:
         my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
         cp.set(TC,'cure')
 
-    def do_postcure_anneal(self,deffnm='postcure_annealed'):
-        if cp.passed('do_postcure_anneal'): return
-        pca_dict=self.cfg.parameters.get('postcure_anneal',{})
-        gromacs_dict=self.cfg.parameters.get('gromacs',{})
-        if not pca_dict: return 
-        cwd=pfs.go_to('systems/postcure')
+    def do_anneal(self,anneal_dict={},deffnm='anneal'):
         TC=self.TopoCoord
+        gromacs_dict=self.cfg.parameters.get('gromacs',{})
         mdp_pfx='equilibrate-nvt'
         pfs.checkout(f'mdp/{mdp_pfx}.mdp')
         timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
-        ncycles=pca_dict.get('ncycles',0)
-        cycle_segments=pca_dict.get('cycle_segments',[])
+        ncycles=anneal_dict.get('ncycles',0)
+        cycle_segments=anneal_dict.get('cycle_segments',[])
         temps=[str(r['T']) for r in cycle_segments]
         durations=[r['ps'] for r in cycle_segments]
         cycle_duration=sum(durations)
@@ -477,10 +449,10 @@ class Runtime:
         cum_time=durations.copy()
         for i in range(1,len(cum_time)):
             cum_time[i]+=cum_time[i-1]
-        my_logger(f'Postcure anneal for {nsteps} steps',logger.info)
+        my_logger(f'Anneal for {nsteps} steps',logger.info)
         mod_dict={
-            'ref_t':pca_dict.get('initial_temperature',300.0),
-            'gen-temp':pca_dict.get('initial_temperature',300.0),
+            'ref_t':anneal_dict.get('initial_temperature',300.0),
+            'gen-temp':anneal_dict.get('initial_temperature',300.0),
             'gen-vel':'yes',
             'annealing-npoints':len(cycle_segments),
             'annealing-temp':' '.join(temps),
@@ -491,9 +463,65 @@ class Runtime:
         mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
         msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**gromacs_dict)
         my_logger(f'Annealed coordinates in {deffnm}.gro',logger.info)
+
+    def do_precure_anneal(self,deffnm='precure_annealed'):
+        if cp.passed('do_precure_anneal'): return
+        pca_dict=self.cfg.parameters.get('precure_anneal',{})
+        if not pca_dict: return 
+        cwd=pfs.go_to('systems/precure')
+        self.do_anneal(pca_dict,deffnm)
+        gmx_energy_trace(deffnm,['Density'],report_averages=True,**gromacs_dict)
+        trace('Temperature',[deffnm],outfile='../../plots/precure-anneal-temperature.png')
+        cp.set(self.TopoCoord,'do_precure_anneal')
+
+    def do_postcure_anneal(self,deffnm='postcure_annealed'):
+        if cp.passed('do_postcure_anneal'): return
+        pca_dict=self.cfg.parameters.get('postcure_anneal',{})
+        gromacs_dict=self.cfg.parameters.get('gromacs',{})
+        if not pca_dict: return 
+        cwd=pfs.go_to('systems/postcure')
+        self.do_anneal(pca_dict,deffnm)
         gmx_energy_trace(deffnm,['Density'],report_averages=True,**gromacs_dict)
         trace('Temperature',[deffnm],outfile='../../plots/postcure-anneal-temperature.png')
-        cp.set(TC,'do_postcure_anneal')
+        cp.set(self.TopoCoord,'do_postcure_anneal')
+
+    def do_equilibration(self,eq_dict={},deffnm='equilibrated'):
+        gromacs_dict=self.cfg.parameters.get('gromacs',{})
+        TC=self.TopoCoord
+        ens=eq_dict.get('ensemble','npt')
+        ps=eq_dict.get('ps',0)
+        nsteps=eq_dict.get('nsteps',50000)
+        T=eq_dict.get('temperature',300)
+        P=eq_dict.get('pressure',-1)
+        if P==-1:
+            ens='nvt'
+            logger.info(f'NPT equilibration requested but no pressure specified')
+            logger.info(f'Reverting to NVT')
+        mdp_pfx=f'equilibrate-{ens}'
+        pfs.checkout(f'mdp/{mdp_pfx}.mdp')
+        if ps>0: # override any 'nsteps' value
+            dt=mdp_get(f'{mdp_pfx}.mdp','dt')
+            nsteps=int(ps/dt)
+        else:
+            ps=dt*nsteps
+        mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}
+        my_logger(f'Equilibration at {T} K and {P} bar for {nsteps} steps',logger.info)
+        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
+        msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**gromacs_dict)
+        my_logger(f'Equilibrated coordinates in {deffnm}.gro',logger.info)
+        box=TC.Coordinates.box.diagonal()
+        logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
+
+    def do_precure_equilibration(self,deffnm='precure_equilibrated'):
+        if cp.passed('do_precure_equilibration'): return
+        pce_dict=self.cfg.parameters.get('precure_equilibration',{})
+        gromacs_dict=self.cfg.parameters.get('gromacs',{})
+        if not pce_dict: return
+        cwd=pfs.go_to('systems/precure')
+        self.do_equilibration(pce_dict,deffnm)
+        gmx_energy_trace(deffnm,['Density'],report_averages=True,**gromacs_dict)
+        trace('Density',[deffnm],outfile='../../plots/precure-equil-density.png')
+        cp.set(self.TopoCoord,'do_precure_equilibration')
 
     def do_postanneal_equilibration(self,deffnm='postannealed_equilibrated'):
         if cp.passed('do_postanneal_equilibration'): return
@@ -501,22 +529,10 @@ class Runtime:
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
         if not pae_dict: return
         cwd=pfs.go_to('systems/postcure')
-        TC=self.TopoCoord
-        nsteps=pae_dict.get('nsteps',50000)
-        T=pae_dict.get('temperature',300)
-        P=pae_dict.get('pressure',1)
-        my_logger(f'Postanneal equilibration at {T} K and {P} bar for {nsteps} steps',logger.info)
-        mdp_pfx='equilibrate-npt'
-        pfs.checkout(f'mdp/{mdp_pfx}.mdp')
-        mod_dict={'ref_t':T,'gen-temp':T,'gen-vel':'yes','ref_p':P,'nsteps':nsteps}
-        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
-        msg=TC.grompp_and_mdrun(out=deffnm,mdp=mdp_pfx,quiet=False,**gromacs_dict)
-        logger.info(f'Equilibrated coordinates in {deffnm}.gro')
+        self.do_equilibration(pae_dict,deffnm)
         gmx_energy_trace(deffnm,['Density'],report_averages=True,**gromacs_dict)
         trace('Density',[deffnm],outfile=f'../../plots/postanneal-equilibration-density.png')
-        box=TC.Coordinates.box.diagonal()
-        logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-        cp.set(TC,'do_postanneal_equilibration')
+        cp.set(self.TopoCoord,'do_postanneal_equilibration')
 
     def save_data(self,result_name='final'):
         TC=self.TopoCoord
@@ -547,6 +563,8 @@ class Runtime:
         self.initialize_coordinates()
         self.do_densification()
         self.do_precure_equilibration()
+        self.do_precure_anneal()
+        self.do_postprecure_equilibration()
         self.do_cure()
         self.do_postcure_anneal()
         self.do_postanneal_equilibration()

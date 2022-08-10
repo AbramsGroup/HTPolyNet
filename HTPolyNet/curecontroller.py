@@ -20,11 +20,11 @@ logger=logging.getLogger(__name__)
 class state(Enum):
     """Enumerated CURE state
     """
-    bondsearch=0
-    drag=1
-    update=2
-    relax=3
-    equilibrate=4
+    cure_bondsearch=0
+    cure_drag=1
+    cure_update=2
+    cure_relax=3
+    cure_equilibrate=4
     postcure_bondsearch=5
     postcure_update=6
     postcure_relax=7
@@ -33,6 +33,12 @@ class state(Enum):
     unknown=99
     def __str__(self):
         return self.name
+    def basename(self):
+        name=str(self)
+        if 'postcure_' in name:
+            return name[len('postcure_'):]
+        if 'cure_' in name:
+            return name[len('cure_'):]
 
 class CureController:
     default_equilibration_sequence = [ { 'ensemble': 'min' }, 
@@ -40,17 +46,21 @@ class CureController:
         { 'ensemble': 'npt', 'temperature': 600, 'pressure': 1, 'nsteps': 2000 }
     ]
     # internal name : name in cfg
-    parameter_dicts={'cure':'CURE','drag':'drag','relax':'relax',
-                    'equil':'equilibration','gromacs':'gromacs','pc_equil':'postcure_equilibration',
-                    'anneal':'postcure_anneal','pa_equil':'postanneal_equilibration'}
-    parameter_defaults={
-        'cure': { 
+    # parameter_dicts={'cure':'CURE','drag':'drag','relax':'relax',
+    #                 'equil':'equilibration','gromacs':'gromacs','pc_equil':'postcure_equilibration',
+    #                 'anneal':'postcure_anneal','pa_equil':'postanneal_equilibration'}
+    curedict_defaults={
+        'output': {
+            'bonds_file': 'bonds.csv'
+        },
+        'controls': {
             'max_conversion_per_iteration': 1.0,
             'search_radius': 0.5,
             'radial_increment': 0.05,
             'late_threshold': 0.85,
             'max_iterations': 100,
-            'desired_conversion': 0.5
+            'desired_conversion': 0.5,
+            'ncpu' : os.cpu_count()
         },
         'drag': {
             'limit': 0.0,
@@ -67,7 +77,7 @@ class CureController:
             'cutoff_pad': 0.2,
             'equilibration': default_equilibration_sequence
         },
-        'equil': {
+        'equilibrate': {
             'temperature': 300,
             'pressure': 1,
             'nsteps': 50000,
@@ -75,21 +85,22 @@ class CureController:
         },
         'gromacs': {
             'rdefault': 0.9
-        },
-        'pc_equil': {
-            'temperature': 300,
-            'pressure': 1,
-            'nsteps': 50000,
-            'ensemble': 'npt'
-        },
-        'anneal': {
-            'ncycles': 0 # default behavior is no annealing
-        },
-        'pa_equil': {
-            'nsteps': 0 # default behavior is no post-anneal equilibration
         }
     }
-    def __init__(self,basedict):
+        # ,
+        # 'pc_equil': {
+        #     'temperature': 300,
+        #     'pressure': 1,
+        #     'nsteps': 50000,
+        #     'ensemble': 'npt'
+        # },
+        # 'anneal': {
+        #     'ncycles': 0 # default behavior is no annealing
+        # },
+        # 'pa_equil': {
+        #     'nsteps': 0 # default behavior is no post-anneal equilibration
+        # }
+    def __init__(self,curedict={}):
         self.iter=0
         self.max_nxlinkbonds=0
         self.cum_nxlinkbonds=0
@@ -108,20 +119,21 @@ class CureController:
 
         self.bonds_df:pd.DataFrame=None
         self.bonds_are='nonexistent!'
-        self.bonds_file=basedict.get('bonds_file','bonds.csv')
+        # self.bonds_file=curedict.get('bonds_file','bonds.csv')
 
         self.search_failed=False
         self.dicts={}
-        for k,v in self.parameter_dicts.items():
-            self.dicts[k]=basedict.get(v,{})
-            for p,val in self.parameter_defaults[k].items():
-                if not p in self.dicts[k]:
-                    self.dicts[k][p]=basedict.get(f'{v}_{p}',val)
+        for k,v in self.curedict_defaults.items():
+            self.dicts[k]=curedict.get(k,v)  # loads entire default if dict is just missing
+            if type(v)==dict: # assign subitem defaults if their keys are missing
+                for kk,vv in v.items():
+                    if not kk in self.dicts[k]:
+                        self.dicts[k][kk]=vv
+
         self.dragging_enabled=False
         d=self.dicts['drag']
         if (d['nstages']>0 or d['increment']>0.0) and d['limit']>0.0:
             self.dragging_enabled=True
-        self.ncpu=basedict.get('ncpu',os.cpu_count())
 
     def to_yaml(self,filename='cure_controller_state.yaml'):
         with open(filename,'w') as f:
@@ -132,13 +144,13 @@ class CureController:
         with open(filename,'r') as f:
             yaml_string=f.read()
         return yaml.load(yaml_string,Loader=yaml.Loader)
-    
 
     def setup(self,max_nxlinkbonds=0,desired_nxlinkbonds=0,max_search_radius=0.0):
         self.max_nxlinkbonds=max_nxlinkbonds
         self.desired_nxlinkbonds=desired_nxlinkbonds
         self.max_search_radius=max_search_radius
-        self.max_radidx=int((self.max_search_radius-self.dicts['cure']['search_radius'])/self.dicts['cure']['radial_increment'])
+        d=self.dicts['controls']
+        self.max_radidx=int((self.max_search_radius-d['search_radius'])/d['radial_increment'])
 
     def is_cured(self):
         logger.debug(f'search_failed {self.search_failed}')
@@ -154,13 +166,12 @@ class CureController:
 
     def reset(self):
         self.iter=1
-        self.state=state.bondsearch
+        self.state=state.cure_bondsearch
         self.curr_nxlinkbonds=0
         self.current_stage['drag']=0
         self.current_stage['relax']=0
         self.current_radidx=0
         self.current_radius=0.0
-        self.bonds_file=None
         self.bonds_df=pd.DataFrame()
         self.bonds_are='nonexistent!'
         self.search_failed=False
@@ -170,31 +181,31 @@ class CureController:
         self.reset()
         self.iter=i
         logger.debug(f'{self.iter}')
-        return self.iter>=self.dicts['cure']['max_iterations']
+        return self.iter>=self.dicts['controls']['max_iterations']
 
     def _write_bonds_df(self,bondsfile='bonds.csv'):
         self.bonds_df.to_csv(bondsfile,sep=' ',mode='w',index=False,header=True,doublequote=False)
 
     def _read_bonds_df(self,bonds_file_override=''):
-        infile=self.bonds_file if not bonds_file_override else bonds_file_override
+        infile=self.dicts['output']['bonds_file'] if not bonds_file_override else bonds_file_override
         assert os.path.exists(infile),f'Error: {infile} not found'
         self.bonds_df=pd.read_csv(infile,sep='\s+',header=0)
-        self.bonds_file=os.path.abspath(infile)
+        self.dicts['output']['bonds_file']=os.path.abspath(infile)
 
     def register_bonds(self,bonds,pairs,bonds_file,bonds_are='unrelaxed'):
         self.bonds_df=bonds
         self.pairs_df=pairs
         self.bonds_are=bonds_are
         self._write_bonds_df(bonds_file)
-        self.bonds_file=os.path.abspath(bonds_file)
+        self.dicts['output']['bonds_file']=os.path.abspath(bonds_file)
 
     def pfx(self):
         return f'{self.state.value}-{self.state}'
 
     def do_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,reentry=False):
-        if self.state!=state.bondsearch: return
+        if self.state!=state.cure_bondsearch: return
         opfx=self.pfx()
-        d=self.dicts['cure']
+        d=self.dicts['controls']
         self.current_radius=d['search_radius']+self.current_radidx*d['radial_increment']
         logger.info(f'Bond search using radius {self.current_radius} nm initiated')
         apply_probabilities=self.curr_conversion()<d['late_threshold']
@@ -225,43 +236,49 @@ class CureController:
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self.register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
-            self.state=state.drag if self.dragging_enabled else state.update
+            self.state=state.cure_drag if self.dragging_enabled else state.cure_update
         else:
             self.search_failed=True
-            self.state=state.postcure_bondsearch
+            self.state=state.postcure_bondsearch # proceed to postcure
         self.cum_nxlinkbonds+=nbonds
         self.to_yaml()
         logger.debug(f'next: {self.state}')
 
     def do_preupdate_dragging(self,TC:TopoCoord):
-        if self.state!=state.drag: return
+        if self.state!=state.cure_drag: return
         nbdf=self.bonds_df
+        assert nbdf.shape[0]>0
         d=self.dicts['drag']
-        nogos=[nbdf.shape[0]==0,not self.dragging_enabled,nbdf['initial_distance'].max()<d['trigger_distance']]
+        nogos=[not self.dragging_enabled,nbdf['initial_distance'].max()<d['trigger_distance']]
         logger.debug(f'{nogos} {any(nogos)}')
         if any(nogos):
-            logger.debug(f'no dragging')
+            logger.debug(f'No dragging is necessary')
         else:
             self.distance_attenuation(TC,mode='drag')
-        self.state=state.update
+        self.state=state.cure_update
         self.to_yaml()
         logger.debug(f'next: {self.state}')
 
     def do_relax(self,TC:TopoCoord):
-        if self.state!=state.relax and self.state!=state.postcure_relax: return
+        if self.state!=state.cure_relax and self.state!=state.postcure_relax: return
         nbdf=self.bonds_df
-        if nbdf.shape[0]==0:
-            self.state=state.equilibrate
+        if nbdf.shape[0]==0: # no bonds identified
+            if self.state==state.cure_relax:
+                self.state=state.postcure_bondsearch # drop out of CURE loop
+            else:
+                self.state=state.finished
             return
         self.distance_attenuation(TC,mode='relax')
-        if self.state==state.relax:
-            self.state=state.equilibrate
+        if self.state==state.cure_relax:
+            self.state=state.cure_equilibrate
         else:
             self.state=state.postcure_equilibrate
         self.to_yaml()
+        logger.debug(f'next: {self.state}')
 
     def distance_attenuation(self,TC:TopoCoord,mode='drag'):
         assert mode in ['drag','relax']
+        statename=self.state.basename()
         opfx=self.pfx()
         nbdf=self.bonds_df.copy()
         pdf=self.pairs_df.copy()
@@ -284,10 +301,6 @@ class CureController:
         rcommon=max(roptions)
         for stg_dict in d['equilibration']:
             ensemble=stg_dict['ensemble']
-            if 'postcure_' in str(self.state):
-                statename=str(self.state)[len('postcure_'):]
-            else:
-                statename=str(self.state)
             impfx=f'{statename}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
             pfs.checkout(f'mdp/{impfx}.mdp')
             mdp_mods_dict={'rvdw':rcommon,'rcoulomb':rcommon,'rlist':rcommon}
@@ -316,10 +329,6 @@ class CureController:
             TC.write_top(f'{stagepfx}.top')
             for stg_dict in d['equilibration']:
                 ensemble=stg_dict['ensemble']
-                if 'postcure_' in str(self.state):
-                    statename=str(self.state)[len('postcure_'):]
-                else:
-                    statename=str(self.state)
                 impfx=f'{statename}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
                 TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{impfx}')
                 logger.debug(f'{TC.files["gro"]}')
@@ -343,7 +352,7 @@ class CureController:
         self.to_yaml()
 
     def do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
-        if self.state!=state.update and self.state!=state.postcure_update: return
+        if self.state!=state.cure_update and self.state!=state.postcure_update: return
         opfx=self.pfx()
         logger.debug(f'Topology update')
         bonds_df,pairs_df=TC.update_topology_and_coordinates(self.bonds_df,template_dict=MD,write_mapper_to=f'{opfx}-idx-mapper.csv')
@@ -353,14 +362,14 @@ class CureController:
         TC.write_gro(f'{opfx}.gro')
         TC.write_top(f'{opfx}.top')
         TC.write_grx_attributes(f'{opfx}.grx')
-        if self.state==state.update:
-            self.state=state.relax
+        if self.state==state.cure_update:
+            self.state=state.cure_relax
         else:
             self.state=state.postcure_relax
         self.to_yaml()
 
     def do_equilibrate(self,TC:TopoCoord):
-        if self.state!=state.equilibrate and self.state!=state.postcure_equilibrate: return
+        if self.state!=state.cure_equilibrate and self.state!=state.postcure_equilibrate: return
         d=self.dicts['equil']
         opfx=self.pfx()
         logger.info(f'Equilibration for {d["nsteps"]} steps at {d["temperature"]} K and {d["pressure"]} bar')
@@ -371,8 +380,9 @@ class CureController:
         TC.grompp_and_mdrun(out=f'{opfx}-post',mdp=f'{opfx}',quiet=False)
         average_density=trace('Density',[f'{opfx}-post'],outfile='density.png')
         logger.info(f'Density: {average_density:.3f} kg/m^3')
-        if self.state==state.equilibrate:
-            self.state=state.bondsearch if not self.search_failed else state.postcure_bondsearch
+        if self.state==state.cure_equilibrate:
+            # go to next iteration -- this whole method is skipped if nbonds==0 in relax
+            self.state=state.cure_bondsearch # if not self.search_failed else state.postcure_bondsearch
         elif self.state==state.postcure_equilibrate:
             self.state=state.finished
         self.to_yaml()
