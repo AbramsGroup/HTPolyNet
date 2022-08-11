@@ -14,77 +14,105 @@ For example, a simple configuration file that describes building a system of pol
         mdrun: 'gmx mdrun'
     }
     ambertools: {
-       charge_method: gas
+        charge_method: gas
     }
     constituents: {
         STY: {count: 100}
     }
     densification: {
-        initial_density: 200.0,  # kg/m3
-        temperature: 300,        # K
-        pressure: 10,            # bar
-        nsteps: 100000
+        initial_density: 300.0,  # kg/m3
+        equilibration: [
+            { ensemble: min },
+            { ensemble: nvt, temperature: 300, ps: 10 },
+            { ensemble: npt, temperature: 300, pressure: 10, ps: 200 }
+        ]
     }
-    precure_equilibration: {
-        temperature: 300,        # K
-        pressure: 1,             # bar
-        nsteps: 50000
+    precure: {
+        preequilibration: {
+            ensemble: npt,
+            temperature: 300,        # K
+            pressure: 1,             # bar
+            ps: 200
+        },
+        anneal: {
+            ncycles: 2,
+            initial_temperature: 300,
+            cycle_segments: [
+                { T: 300, ps: 0 },
+                { T: 600, ps: 20 },
+                { T: 600, ps: 20 },
+                { T: 300, ps: 20 },
+                { T: 300, ps: 20 }
+            ]
+        },
+        postequilibration: {
+            ensemble: npt,
+            temperature: 300,        # K
+            pressure: 1,             # bar
+            ps: 100
+        }
     }
     CURE: {
-        initial_search_radius: 0.5, # nm
-        radial_increment: 0.25,     # nm
-        max_iterations: 150, 
-        desired_conversion: 0.50,
-        late_threshhold: 0.85
+        controls: {
+            initial_search_radius: 0.5, # nm
+            radial_increment: 0.25,     # nm
+            max_iterations: 150, 
+            desired_conversion: 0.95,
+            late_threshhold: 0.85
+        },
+        drag: {
+            trigger_distance: 0.6,   # nm
+            increment: 0.08,         # nm
+            limit: 0.3,              # nm
+            equilibration: [
+                { ensemble: min },
+                { ensemble: nvt, temperature: 600, nsteps: 1000 },
+                { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
+            ]
+        },
+        relax: {
+            increment: 0.08,         # nm
+            equilibration: [
+                { ensemble: min },
+                { ensemble: nvt, temperature: 600, nsteps: 1000 },
+                { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
+            ]
+        },
+        equilibrate: {
+            ensemble: npt,
+            temperature: 300,       # K
+            pressure: 1,            # bar
+            ps: 100
+        },
+        gromacs: {
+            rdefault: 0.9 # nm
+        }
     }
-    drag: {
-        trigger_distance: 0.6,   # nm
-        increment: 0.08,         # nm
-        limit: 0.3,              # nm
-        equilibration: [
-            { ensemble: min },
-            { ensemble: nvt, temperature: 600, nsteps: 1000 },
-            { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
-        ]
-    }
-    relax: {
-        increment: 0.08,         # nm
-        temperature: 600,        # K
-        equilibration: [
-            { ensemble: min },
-            { ensemble: nvt, temperature: 600, nsteps: 1000 },
-            { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
-        ]
-    }
-    postcure_equilibration: {
-        ensemble: npt,
-        temperature: 300,       # K
-        pressure: 1,            # bar
-        nsteps:  50000
-    }
-    postcure_anneal: {
-        ncycles: 2,
-        initial_temperature: 300,
-        cycle_segments: [
-            { T: 300, ps: 0 },
-            { T: 600, ps: 20 },
-            { T: 600, ps: 20 },
-            { T: 300, ps: 20 },
-            { T: 300, ps: 20 }
-        ]
-    }
-    postanneal_equilibration: {
-        ensemble: npt,
-        temperature: 300,       # K
-        pressure: 1,            # bar
-        nsteps:  50000
+    postcure: {
+        anneal: {
+            ncycles: 2,
+            initial_temperature: 300,
+            cycle_segments: [
+                { T: 300, ps: 0 },
+                { T: 600, ps: 20 },
+                { T: 600, ps: 20 },
+                { T: 300, ps: 20 },
+                { T: 300, ps: 20 }
+            ]
+        },
+        postequilibration: {
+            ensemble: npt,
+            temperature: 300,       # K
+            pressure: 1,            # bar
+            ps:  100
+        }
     }
     reactions:
     - {
         name:        'sty1_1',
         stage:       cure,
         reactants:   {1: STY, 2: STY},
-        product:     STY1_1,
+        product:     STY~C1-C2~STY,
         probability: 1.0,
         atoms: {
             A: {reactant: 1, resid: 1, atom: C1, z: 1},
@@ -96,7 +124,7 @@ For example, a simple configuration file that describes building a system of pol
       }
     - {
         name:         'styCC',
-        stage:        post-cure,
+        stage:        cap,
         reactants:    {1: STY},
         product:      STYCC,
         probability:  1.0,
@@ -109,220 +137,203 @@ For example, a simple configuration file that describes building a system of pol
         ]
       }
 
-We refer to each of these sections (except for the ``Title``) as a dictionary.  Let's learn about these dictionaries:
+This example file contains nine distinct **directives**.  
 
-* ``gromacs``:  This dictionary specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
+* ``gromacs``:  This directive specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
   
     =====================================    ==============  =====================
-    Parameter                                Type            Description (default)
+    ``gromacs`` subdirective                 Type            Description (default)
     =====================================    ==============  =====================
-    ``gmx``                                  str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
-    ``gmx_options``                          quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
-    ``gmx_mdrun``                            quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
+    ``gmx``                                  str             ``gmx`` command (default ``gmx``)
+    ``gmx_options``                          quoted string   options to pass to all ``gmx`` calls (default ``-quiet -nobackup``)
+    ``gmx_mdrun``                            quoted string   ``mdrun`` command (default ``gmx (options) mdrun``)
     =====================================    ==============  =====================
 
-* ``ambertools``:  This dictionary specifies parameters ``HTPolyNet`` uses when working with the AmberTools suite.
+    If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter ``gmx`` to the fully resolved pathname of ``gmx_mpi`` (or load the appropriate module), and use the ``gmx_mdrun`` parameters to specify the ``mpirun`` or ``mpiexec`` syntax needed to launch ``gmx_mpi mdrun``.
+
+    The ``gromacs`` directive is optional; if none is specified the default values are used.
+
+* ``ambertools``:  This directive specifies parameters ``HTPolyNet`` uses when working with the AmberTools suite.
 
     =====================================    ==============  =====================
-    Parameter                                Type            Description (default)
+    ``ambertools`` subdirective              Type            Description (default)
     =====================================    ==============  =====================
-    ``charge_method``                        string          "gas" for Gasteiger; "bcc" for bcc; (optional, "gas" by default); charge model used by ``antechamber``
+    ``charge_method``                        string          charge model used by ``antechamber`` (default ``gas``)
     =====================================    ==============  =====================
+
+    For now, you can choose any charging method compatible with ``antechamber``.  The ``antechamber`` directive is optional.
 
 * ``constituents``
+  
+    This **required** directive is a set of one or more "key":"record" pairs in which each key is the name of a molecule (here, "STY") and the record is a dictionary of keyword:value pairs.  The allowable keywords in a ``constituent`` record are as follows.
+
+    =====================================    ==============  =====================
+    ``constituents`` record keyword          Type            Description (default)
+    =====================================    ==============  =====================
+    ``count``                                int             (required) number of these molecules in the system
+    ``stereocenters``                        list            (optional) list of names of chiral carbon atoms if any
+    ``symmetry_equivalent_atoms``            list            (optional) list of sets of symmetry equivalent atom names, if any
+    ``nconformers``                          int             (optional) number of conformers to generate for this molecule, to give a little variety to the initial condition
+    =====================================    ==============  =====================
+
+    In the example above, we are requesting a system of 100 styrene molecules.  The key ``STY`` signals to ``HTPolyNet`` that it should look for either ``STY.mol2`` or ``STY.pdb`` in ``./lib/molecules/inputs`` **or** it should look for ``STY.gro``, ``STY.itp``, ``STY.top``, and ``STY.grx`` in ``./lib/molecules/parameterized``.  The latter is the case if either ``htpolynet run`` or ``htpolynet parameterized`` has already been run with ``STY.mol2`` or ``STY.pdb``.  Multiple records in ``constituents`` should all have the "key":"record" syntax and be separated by commas.
+
 * ``densification``
-* ``precure_equilibration``
+
+    This directive instructs ``HTPolyNet`` how to run the initial densification of the fresh simulation system.  It has two subdirectives:
+
+    =====================================    ==============  =====================
+    ``densification`` subdirective           Type            Description (default)
+    =====================================    ==============  =====================
+    ``initial_density``                      float           density in kg/m^3 at which molecules are placed randomly into a box to make the initial coordinates (default 300.0)
+    ``equilibration``                        list            list of **MD records** 
+    =====================================    ==============  =====================
+
+    The ``equilibration`` subdirective should contain one or more *MD records*. An MD record is a dictionary of keyword:value pairs:
+
+    =====================================    ==============  =====================
+    MD record keyword                        Type            Description
+    =====================================    ==============  =====================
+    ``ensemble``                             string          (required) min (minimization), npt, or nvt
+    ``temperature``                          float           (required if ``ensemble`` is nvt or npt) Temperature in K assigned to ``ref_t`` in Gromacs ``mdp`` file
+    ``pressure``                             float           (required if ``ensemble`` is npt) Pressure in bar assigned to ``ref_p`` in Gromacs ``mdp`` file
+    ``nsteps``                               int             (optional; required if ``ps`` not provided) Duration of MD simulation in number of time steps
+    ``ps``                                   float           (optional; required if ``nsteps`` not set) Duration of MD simulation in picoseconds
+    =====================================    ==============  =====================
+
+* ``precure``
+    
+    The ``precure`` directive instructs ``HTPolyNet`` on running a series of MD simulations after densification but before the cure.  There are three allowable subdirectives for ``precure``: 
+
+    =====================================    =================    =====================
+    ``precure`` subdirective                 Type                 Description (default)
+    =====================================    =================    =====================
+    ``preequilibration``                     MD record            optional MD simulation
+    ``anneal``                               **Anneal record**    Description of an annealing simulation after the optional ``preequilibration``
+    ``postequilibration``                    MD record            optional MD simulation         
+    =====================================    =================    =====================
+
+    Both the ``preequilibration`` and ``postequilibration`` directives contain MD records described above.  The *Anneal record* has the following subdirectives:
+
+    =====================================    =================    =====================
+    Anneal record subdirective               Type                 Description (default)
+    =====================================    =================    =====================
+    ``ncycles``                              int                  number of annealing cycles
+    ``initial_temperature``                  float                (optional) Initial temperaure in K, really only sets the ``gen-temp`` ``mdp`` parameter 
+    ``cycle_segments``                       list                 list of **cycle records**
+    =====================================    =================    =====================
+
+    A **cycle record** corresponds to an "annealing-point" in the Gromacs ``mdp`` file.  
+
+    =====================================    =================    =====================
+    Cycle record subdirective                Type                 Description (default)
+    =====================================    =================    =====================
+    ``T``                                    float                Targe temperature in K 
+    ``ps``                                   float                cycle duration; if prior ``T`` is different, simulation is *brought to* this ``T`` in this amount of time; if prior ``T`` is the same, simulation is *held at* this ``T`` for this amount of time.
+    =====================================    =================    =====================
+
+    Each cycle consists of one pass through the cycle segments.  In the example here, one cycle consists of Gromacs taking the system from 300 to 600 K in the first 20 ps, then holding at 600 for 20 pm, then reducing to 300 K over 20 ps and holding it there for 20 ps.
+
 * ``CURE``
-* ``drag``
-* ``relax``
-* ``postcure_equilibration``
-* ``postcure_anneal``
-* ``postanneal_equilibration``
+   
+    This directive contains all instructions governing the :ref:`CURE algorithm <cure_section>`.  There are five possible subdirectives:
+
+    =====================================    =================    =====================
+    ``CURE`` subdirective                    Type                 Description (default)
+    =====================================    =================    =====================
+    ``controls``                             list                 Control parameter values
+    ``drag``                                 list                 Dragging parameter values
+    ``relax``                                list                 Bond relaxation parameter values
+    ``equilibrate``                          MD record            CURE iteration equilibration parameters
+    ``gromacs``                              list                 any ``mdp`` keyword:value pairs to include in all ``mdp`` files in the ``CURE`` sequence
+    =====================================    =================    =====================
+
+    * ``CURE.controls`` parameters
+
+        =================================    =================   ======================
+        ``CURE.controls`` parameter          Type                Description (default)
+        =================================    =================   ======================
+        ``initial_search_radius``            float               initial search radius in nm (default 0.5)
+        ``radial_increment``                 float               increment by which search radius is increased if no bonds are found at current radius (default 0.25 nm)
+        ``max_iterations``                   int                 absolute maximum number of allowed iterations (default 150), 
+        ``desired_conversion``               float [0-1]         target conversion between 0 and 1.0 (default 0.95)
+        ``late_threshhold``                  float [0-1]         conversion above which bond probabilities are ignored
+        =================================    =================   ======================
+
+.. _cure.drag:
+
+    * ``CURE.drag`` parameters:  Dragging refers to a series of MD simulations (called "stages") in which harmonic restraints are applied to each pair of atoms assigned to form a bond, but **before** the bonds actually form.  Dragging is useful to reduce 1-4 distances that ultimately arise when bonds form.  Each stage in the series uses a specially modified topology file in which "new" bonds of type 6 are added, one for each pair of to-be-bonded atoms. Each of these bonds has a parameter ``kb``, the spring constant, and ``b0``, the equilibrium length.  The ``drag`` directive governs how those ``b0`` parameters are linearly decreased through the set of stages to slowly bring the atoms closer together.   The ``limit`` parameter is the target distance of dragging, and ``increment`` determines the number of stages it will take to get there.
+
+        =================================    =================   ======================
+        ``CURE.drag`` parameter              Type                Description (default)
+        =================================    =================   ======================
+        ``increment``                        float               minimum amount by which target ``drag`` distance is decreased in steps (default 0.08)
+        ``limit``                            float               distance in nm to which all bonds are dragged (default 0.3)
+        ``equilibration``                    MD record           describes the MD simulations used to equilibrate at each stage 
+        =================================    =================   ======================
+
+.. _cure.relax:
+
+    * ``CURE.relax`` parameters:  Relaxation refers to a series of MD simulations (also called "stages") in which the ``kb`` and ``b0`` parameters of each new bond are "attenuated" from a weak (low ``kb``), long (large ``b0``) state to the state dictated by the force field.  The ``increment`` determines the number of stages are performed.
+
+        =================================    =================   ======================
+        ``CURE.relax`` parameter             Type                Description (default)
+        =================================    =================   ======================
+        ``increment``                        float               minimum amount by which ``b0`` parameters are decreased in steps (default 0.08)
+        ``equilibration``                    MD record           describes the MD simulations used to equilibrate at each stage 
+        =================================    =================   ======================
+
+    * ``gromacs`` parameters:  These parameters govern modification to ``mdp`` files used in the dragging and relaxation MD simulations.  ``HTPolyNet`` adjusts the cutoff distances to conform to the longest unrelaxed bond in the system, and the ``rdefault`` parameter provides the floor below which it will not go any lower.
+
+        =================================    =================   ======================
+        ``CURE.gromacs`` parameter           Type                Description (default)
+        =================================    =================   ======================
+        ``rdefault``                         float               minimum cutoff radius (default 0.9)
+        =================================    =================   ======================
+
+
+* ``postcure`` 
+
+    The ``postcure`` directive instructs ``HTPolyNet`` on running a series of MD simulations after cure.  Its form is identical to that of ``precure``, namely with optional ``preequilibration``, ``anneal``, and ``postequilibration`` subdirectives.
+
+.. _reactions:
+
 * ``reactions``
 
-An HTPolyNet configuration file is a list of keyword:value pairs in ``YAML`` format.  The ``Library`` subpackage as a few example configuration files in the ``cfg`` directory.
+    The ``reactions`` directive contains a list of **reaction records**.  HTPolyNet expects one or more reaction templates to be defined in the configuration file.  A reaction is defined by the precise pairs of atoms that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.
 
-The items in a configuration file break down into two major classes:
+    ==============================  ==========  =================
+    ``reaction`` record directives  Type        Description
+    ==============================  ==========  =================
+    ``name``                        str         descriptive name
+    ``stage``                       str         "cure" or "cap"
+    ``probability``                 float       probability that bond will form in one iteration if identified (1.0)
+    ``reactants``                   dict        keyword: reactant key, value: reactant molecule name
+    ``product``                     str         name of product molecule
+    ``atoms``                       dict        keyword: atom key, value: **atom record**
+    ``bonds``                       list        list of **bond records**, one item per bond formed in reaction
+    ==============================  ==========  =================
 
-1. Items that specify run-time *parameters*.
-2. Items that specify the system *chemistry*.
+    The ``atoms`` directive is a dictionary of atom records where the key is an atom "key", which is referenced in bond record.
 
-HTPolyNet parameters
-''''''''''''''''''''
+    * Atom records uniquely identify atoms in reactants, assigning them a shorthand key that is used in subsequent bond records.
+        
+        ======================== ============== =================
+        Atom record subdirective type           Description
+        ======================== ============== =================
+        ``reactant``             arb.           Reactant key that references the ``reactants`` directive of the reaction
+        ``resid``                int            Residue number in the reactant containing this atom
+        ``atom``                 str            Atom name (originates in monomer ``mol2`` or ``pdb`` file)
+        ``z``                    int            Number of possible bonds atom can participate in
+        ======================== ============== =================
 
-Below is a table of parameter keywords and descriptions for parameters that govern the overall execution of HTPolyNet.
+    * Bond records specify the bond(s) that form during this reaction.
 
-General parameters
-^^^^^^^^^^^^^^^^^^
+        ======================== ============== =================
+        Bond record subdirective type           Description
+        ======================== ============== =================
+        ``atoms``                list           The two atom keys that define the atoms that form the bond
+        ``order``                int            Order (1=single, 2=double) of resulting bond
+        ======================== ============== =================
 
-=====================================    ==============  =====================
-Parameter                                Type            Description (default)
-=====================================    ==============  =====================
-``Title``                                str             Descriptive title
-``gmx``                                  str             ``gmx`` command ( ``gmx`` or ``gmx_mpi`` )
-``gmx_options``                          quoted string   options to pass to all ``gmx`` calls ( ``-quiet -nobackup`` )
-``gmx_mdrun``                            quoted string   ``mdrun`` command; defaults to ``gmx (options) mdrun``
-``CURE_initial_search_radius``           float           initial capture radius in nm (0.5)
-``CURE_radial_increment``                float           capture radius increment (0.25)
-``CURE_desired_conversion``              float           desired fraction of possible crosslink bonds to form
-``CURE_max_conversion_per_iteration``    float           maximum conversion per iteration (1.0; no limit)
-``CURE_max_iterations``                  int             maximum number of CURE iterations to run prior to reaching desired conversion
-``CURE_late_threshold``                  float           conversion above which reactions are all treated with probability 1.0
-``initial_density``                      float           initial system density in kg/m3 for box packing (300.0)
-``densification_temperature``            float           Temperature in K of initial densification simulation (300)
-``densification_pressure``               float           Pressure in bar of initial densification simulation (10)
-``densification_steps``                  int             Number of time-steps initial densification simulation (-2)
-``equilibration_temperature``            float           Temperature in K of postcure equilibration simulation (300)
-``equilibration_pressure``               float           Pressure in bar of postcure equilibration simulation (1)
-``equilibration_steps``                  int             Number of time-steps postcure equilibration simulation (-2)
-``gromacs_rdefault``                     float           Default cutoff radius (``rvdw``, ``rcoulomb``, ``rlist``) for Gromacs
-=====================================    ==============  =====================
-
-Parameters associated with parameterization of molecules
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-=================================    ==============  =====================
-Parameter                            Type            Description (default)
-=================================    ==============  =====================
-``charge_method``                    string          "gas" for Gasteiger; "bcc" for bcc; (optional, "gas" by default)
-``symmetry_equivalent_atoms``        dict            lists of symmetry-sets for each monomer key (optional)
-``stereocenters``                    dict            keys: monomer names; values: list of names of chiral carbons (optional)
-=================================    ==============  =====================
-
-The ``charge_method`` parameters is passed straight to antechamber as the value of its `-c` flag.
-
-The ``symmetry_equivalent_atoms`` dict allows you to specify sets of atoms that are symmetry-equivalent in each molecule.  These sets should be considered when enumerating all reactions and stereocenters (See :ref:`symmetry_equivalence`).  For any atom name explicitly specified in a reaction or identified as a stereocenter in the input configuration, HTPolyNet will idenfity all symmetry-equivalent atoms and build out the full set of unique reactions and stereocenters from this information.  If any molecule does not have an entry in the ``symmetry_equivalent_atoms`` dict (or if the dict does not exist in the configuration file), HTPolyNet assumes no such molecular symmetry exists, and only those reactions explicitly listed in the configuration file are considered.  So, if you have a diepoxy monomer but only reference one of the two reactive carbons in a reaction, no reactions involving the second carbon will take place UNLESS that second carbon is symmetry-equivalent to the one named AND the monomer appears in the ``symmetry_equivalent_atoms`` dict; e.g.,
-
-.. code-block:: yaml
-
-    symmetry_equivalent_atoms: { EPOX: [C1,C2] }
-
-The ``stereocenters`` dictionary is keyed by molecule name, and each entry is a list of one or more atom names which are declared as chiral centers. (See :ref:`stereocenters`)  By default, HTPolyNet will use this declaration to generate a racemic mixture of stereoisomers of any monomer in this list for the initial liquid simulation.  In an input mol2 file generated by, say, obabel, the atoms typically are not uniquely named.  **This means that you the user must edit any input mol2 file to give a unique name to any atom you will declare a stereocenter.**
-
-Other control parameters govern detailed aspects of the CURE algorithm.  These involve MD simulations performed immediately prior to and immediately after new bond addition to the topology, in order to relax those bonds.
-
-Dragging parameters
-^^^^^^^^^^^^^^^^^^^
-
-Prior to introducing new bonds, one has the option of *"dragging"* atoms destined to be bonded to each other closer together in a series of dragging simulations.  The series is composed of stages, each of which involves three ``gmx mdrun`` calls: (1) a minimization; (2) an NVT relaxation; and (3) an NPT relaxation.  Soon-to-be-bonded atoms are connected by fictitious (type-6) harmonic bonds with equilibrium distances set at the current separation distances and relatively weak spring constants.  With each successive stage, the bond lengths are reduced and the spring constants increased until the desired separation distance and spring constant are achieved.  Dragging is optional, but it is recommended when initial bond lengths are large relative to the force-field cutoff.
-
-===============================    ==============  =====================
-Parameter                          Type            Description (default)
-===============================    ==============  =====================
-``drag_nstages``                   int             number of drag stages to perform
-``drag_increment``                 float           maximum change in drag target parameters during dragging (0.0; if set above 0.0, overrides ``drag_nstages``
-``drag_trigger_distance``          float           bond length beyond which dragging is triggered
-``drag_limit``                     float           minimum distance each separation should achieve (nm); 0.0 turns off dragging (0.0)
-``drag_temperature``               float           Temperature in K for dragging MD simulations (300)
-``drag_nvt_steps``                 int             number of MD steps for NVT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
-``drag_npt_steps``                 int             number of MD steps for NPT relaxation during dragging (-2, signals ``gmx mdrun`` to use the value in the mdp file)
-``drag_cutoff_pad``                float           extra cutoff (nm); 0.2 nm by default
-===============================    ==============  =====================
-
-The recommended usage of dragging is to enable it using the ``drag_trigger_distance`` parameter.  Immediately after new potential bonds are identified, HTPolyNet measures all their initial separation distances.  If there is at least one distance longer than 90% of the VdW or Coulomb cutoff (``rvdw`` or ``rcoulomb`` in the ``*.mdp`` file), ``grompp`` will fail with an error, because the bond would imply 1-4 exclusions with distances likely larger than the cutoff.  Increasing the cutoff drastically reduces the performance of the MD simulations, so instead of doing that, simply using type-6 bonds to drag atoms closer together **before** introducing bonds (and therefore new 1-4 interactions) avoids this.  Note, however, that even this will fail if there is an initial bond length strictly greater than the cutoff.  In this case, HTPolyNet modifies the ``*.mdp`` file to increase the cutoffs in the staged dragging simulations so that it is always longer (by an amount dictated by ``drag_cutoff_pad``) than the longest bond.  
-
-Bond relaxation parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-*After* new bonds are formed and all other bonded interactions, atom types, and charges are mapped from each bond's appropriate template, a series of *bond relaxation* MD simulations are performed.  These are in all ways similar to the optional *dragging* simulations except for the fact that here, the actual chemical bond parameters are progressively brought to their correct values as specified in the GAFF.  Bond relaxation is *required* because most new bonds are much longer than they should be at equilibrium.
-
-=================================    ==============  =====================
-Parameter                            Type            Description (default)
-=================================    ==============  =====================
-``relax_nstages``                    int             number of bond relaxation stages to perform
-``relax_increment``                  float           maximum change in bond length parameters during relaxation (0.0; if set above 0.0, overrides ``relax_nstages``)
-``relax_temperature``                float           Temperature in K for relaxation MD simulations (300)
-``relax_nvt_steps``                  int             number of MD steps for NVT relaxation 
-``relax_npt_steps``                  int             number of MD steps for NPT relaxation
-``relax_cutoff_pad``                 float           extra cutoff distance (nm); 0.2 nm by default
-=================================    ==============  =====================
-
-When new bonds are formed, interatomic distances associated with the bonds include the bond lengths themselves in addition to any 1-4 interaction distances.  ``grompp`` demands that the cutoff used in ``mdrun`` be longer than the largest of these distances.  ``HTPolyNet`` determines this maximum, and if it larger than the default, updates the ``mdp`` file to reflect this.  The ``relax_cutoff_pad`` is *always* added to the cutoff before modifying the ``mdp`` file.
-
-Chemistry parameters
-''''''''''''''''''''
-
-The system chemistries and initial composition are specified by a set of inter-referential YAML entries.
-
-Top-level chemistry parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-================================= =====         ===========
-Parameter                         Type          Description
-================================= =====         ===========
-``initial_composition``           dict          keys: monomer names, values: numbers of molecules in system
-``reactions``                     list          reaction dicts, one per reaction
-================================= =====         ===========
-
-The ``initial_composition`` dictionary is how the initial extensive composition of the system is specified.  For example,
-
-.. code-block:: yaml
-
-    initial_composition: { MONA: 100, MONB: 200 }
-
-specifies that the initial liquid should be composed of 100 ``MONA`` monomers and 200 ``MONB`` monomers.
-
-
-Reaction dicts
-^^^^^^^^^^^^^^
-
-HTPolyNet expects one or more reaction templates to be defined in the configuration file.  A reaction is defined by the precise pairs of atoms that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.
-
-=================== =====  ===========
-Keyword             Type   Description
-=================== =====  ===========
-``name``            str    descriptive name
-``stage``           str    "cure" or "post-cure"
-``probability``     float  probability that bond will form in one iteration if identified (1.0)
-``reactants``       dict   keyword: reactant key, value: reactant molecule name
-``product``         str    name of product molecule
-``atoms``           dict   keyword: atom key, value: atom dict
-``bonds``           list   list of bond dicts, one item per bond formed in reaction
-=================== =====  ===========
-
-Atom dicts and bond dicts are explained below.
-
-Atom dicts
-^^^^^^^^^^
-
-An atom dict uniquely identifies an atom in a molecule by virtue of the molecule's name, the atom's residue number inside the molecule (starts at 1), the unique name of the atom in that residue, and its number of available sacrificial hydrogens (that is, the number of crosslink bonds it can participate in).  In an input mol2 file generated by, say, obabel, the atoms typically are not uniquely named.  **This means that you the user must edit any input mol2 file to give a unique name to any atom you will declare a reactive atom.**
-
-=================== ====  ===========
-Keyword             Type  Description
-=================== ====  ===========
-``reactant``        key   key to reactant in reactant dict to which this atom max_bond_relaxation_stages
-``resid``           int   residue index in reactant molecular sequence to which this atom belongs (begins at 1)
-``atom``            str   name of atom within that residue
-``z``               int   number of available crosslink bonds for this atom
-=================== ====  ===========
-
-Bond dicts
-^^^^^^^^^^
-
-============= ======= ===========
-Keyword       Type    Description
-============= ======= ===========
-``atoms``     list    list with the two atom keys the comprise the bond
-``order``     float   bond order (currently not used; we let antechamber decide)
-============= ======= ===========
-
-An example reaction-dict is shown below:
-
-.. code-block:: yaml
-
-    name:     Primary-to-secondary-amine
-    stage:    cure
-    reactants: { 1: DFA, 2: FDE }
-    product:   DFAFDE
-    probability: 1.0
-    atoms:
-         A: { reactant: 1, resid: 1, atom: N1, z: 2 }
-         B: { reactant: 2, resid: 1, atom: C1, z: 1 }
-    bonds:
-        - { atoms: [A, B], order: 1 }
-    
-This reaction-dict defines the reaction between an amine-containing molecule (DFA) and an epoxy-containing molecule (FDE) to produce an oligomer (DFAFDE).   It is instructive to read this YAML from bottom up.  There is one bond in the list of bonds; this one bond is declared to be between atoms "A" and "B".  These atom designations are keys in the atoms dict right above the bonds list.  "A" is decleared as the N1 atom of resid 1 of reactant 1, and "B" is declared as the the C1 atom of resid 1 of reactant 2.  The reactant keys are associated with molecule names in the reactants dict.  We see here that reactant 1 is DFA and reactant 2 is FDE.  
-
-The values of the ``atom:`` keys in the atoms dict entries are atom names **as they appear in the mol2 file of the associated resid**.  In **this** case, both DFA and FDE are **monomers**: they are molecules with a single resid in their sequence. (Reactant and product molecules need not be monomers, but HTPolyNet must be able to trace any molecule back to its monomeric constituents by recursively traversing all reactions.) That is, this implies there is a unique atom named ``N1`` in the file ``DFA.mol2``, and a unique atom ``C1`` in the file ``FDE.mol2``.
-
-If either reactant in any reaction is tagged as having more than one other atom symmetry-equivalent to any reactive atom, the original reaction is "symmetry-expanded" into as many new reactions as necessary to fully enumerate all possible reactions.  For instance, if N1 is symmetry equivalent to N2 in FDA, and C1 is symmetry equivalent to C2 in FDE (this is actually the case), then the "N1-C1" reaction above is automatically expanded into four symmetry-equivalent reactions: "N1-C1", "N2-C1", "N1-C2", and "N2-C2".  Each will generate a unique product: "DFAFDE", "DFAFDE-1", "DFAFDE-2", and "DFAFDE-3".  All products are necessary symmetry-equivalent, meaning all have the same set of atom-to-atomtype, bond-to-bondtype, etc., mappings, even though the particular atom indices are unique in each.
+    In the example here, we define two unique reactions.  One is the C1-C2 bond that links two styrene monomers, and the other is the *intramolecular* C1-C2 double bond that "reverts" the active form of a monomer back to its "proper" form.  Since that reaction's ``stage`` is ``cap``, this signifies that it is formed only **after** CURE has finished.

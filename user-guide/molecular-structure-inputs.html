@@ -15,8 +15,8 @@
     <script src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reference Guide" href="../reference-guide/index.html" />
-    <link rel="prev" title="Configuration Files" href="configuration-files.html" />
+    <link rel="next" title="Configuration Files" href="configuration-files.html" />
+    <link rel="prev" title="Program Flow" href="program-flow.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -35,8 +35,26 @@
             
   <section id="molecular-structure-inputs">
 <span id="id1"></span><h1>Molecular Structure Inputs<a class="headerlink" href="#molecular-structure-inputs" title="Permalink to this headline">¶</a></h1>
-<p>The intention of HTPolyNet is to generate amorphous, polymerized all-atom system models when provided 3D structure/topology information about any monomers and a description of the polymerization chemistry.  Any molecule you wish to use as a <strong>monomer</strong> must have a either a <code class="docutils literal notranslate"><span class="pre">pdb</span></code>-format file or a <code class="docutils literal notranslate"><span class="pre">mol2</span></code>-format file.  The basename of the file should be the name of the molecule.  For example, <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> might be a styrene monomer.  This basename/monomer name is important; it is how the monomer is called forever inside HTPolyNet.  Input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and <code class="docutils literal notranslate"><span class="pre">pdb</span></code> files are all processed via antechamber as part of the parameterization algorithm.</p>
-<p>Sample mol2 files for a few monomers are provided in the Library subpackage: <code class="docutils literal notranslate"><span class="pre">Library/molecules/sample-inputs</span></code>.  You will likely want to create your own.  Most chemical structure drawing programs will output mol2 files.  OpenBabel can also generate them from SMILES strings.  The mol2 format HTPolyNet requires for a monomer is minimal and requires only three sections: <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;MOLECULE</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;ATOM</span></code> and <code class="docutils literal notranslate"><span class="pre">&#64;&lt;TRIPOS&gt;BOND</span></code>.  No matter how you generate a mol2 file, if it corresponds to a molecule that can react, you must edit the mol2 file to give <strong>unique atom names</strong> to any reactive atoms or chiral carbons.  You will then use those unique names to refer specifically to those atoms.  The best way to identify these atoms is by inspecting the 3d structure of the molecule.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> requires molecular structures in order to generate systems.  It recognizes <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and <code class="docutils literal notranslate"><span class="pre">pdb</span></code> format files, and it is up to you to make these for your system.  Any <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> file you wish to use as a monomer template should be in the <cite>./lib/molecules/inputs/</cite> relative to the current directory in which you issue <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code>.  There are several ways to make such files from other (e.g., 2-dimensional) structural information, and we will cover two here.  There are also two <strong>very important</strong> things to keep in mind when generating your molecular structure files.</p>
+<p>The first <strong>very important</strong> thing is this:  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> requires <strong>valence-conservation</strong> when polymerizing.  This means that when two atoms are identified as bonding partners (each of which is on a separate molecule, most likely), they each must own at least one <strong>sacrificial hydrogen</strong> atom that is deleted when the bond is formed, thus keeping the valence of each atom constant.  We refer to the <strong>valence-conserving</strong> form of a monomer as its <strong>active</strong> form.</p>
+<p>To illustrate how to handle this, let’s consider the simple monomer styrene.  The “inactive” form of styrene is its “actual” structure:</p>
+<img alt="../_images/STYCC.png" src="../_images/STYCC.png" />
+<p>However, for <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>, styrene’s <strong>active</strong> form is actually ethylbenzene:</p>
+<img alt="../_images/STY1.png" src="../_images/STY1.png" />
+<p>So we need to generate a <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and/or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> file for an ethylbenzene to use styrene as a monomer in <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.</p>
+<p>One way to generate <code class="docutils literal notranslate"><span class="pre">mol2</span></code> files is with any one of a number of chemical “sketching” tools.  For example, the <a class="reference external" href="https://web.chemdoodle.com/demos/2d-sketcher">ChemDoodle 2D sketcher</a>:</p>
+<figure class="align-default" id="id2">
+<img alt="../_images/chemdoodle-2dsketcher-emb.png" src="../_images/chemdoodle-2dsketcher-emb.png" />
+<figcaption>
+<p><span class="caption-text">Example of a Chemdoodle 2d-sketcher session for creating an input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for styrene (ahem, actually ethylbenzene).</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Another way is to use <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a>’s <code class="docutils literal notranslate"><span class="pre">obabel</span></code> command.  For example, we can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system">SMILES string</a> for ethylbenzene to tell <code class="docutils literal notranslate"><span class="pre">openbabel</span></code> to generate 3-D coordinates and save to a <code class="docutils literal notranslate"><span class="pre">mol2</span></code> (or, alternatively, a <code class="docutils literal notranslate"><span class="pre">pdb</span></code>) file:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>obabel -:<span class="s2">&quot;C1=CC=CC=C1CC&quot;</span> -ismi --gen-3d -h -omol2 -O STY.mol2
+</pre></div>
+</div>
+<p>SMILES is a really great way to describe molecular structures, and it makes monomer structure generation simply a matter of expressing it as a string and using <code class="docutils literal notranslate"><span class="pre">obabel</span></code> to generate coordinates.</p>
+<p>The second <strong>very important</strong> thing is that you must <strong>edit</strong> the <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> files for your monomers.  This is because <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects atoms that it must reference must have <strong>unique names</strong> in each type of monomer.  It doesn’t matter so much what the names are, only that they are unique.  And not <strong>all</strong> atoms need to be uniquely named, only the ones that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> needs in order to make bonds happen.  We will provide several examples of atom naming conventions in the <a class="reference internal" href="../example-tutorials/index.html#example-tutorials"><span class="std std-ref">tutorials</span></a>.</p>
 </section>
 
 
@@ -63,9 +81,10 @@
 <li class="toctree-l2"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#subcommands">Subcommands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html#connect-update-relax-equilibrate-cure-algorithm">Connect-Update-Relax-Equilibrate (CURE) algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html#bondsearch-filters">Bondsearch filters</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Molecular Structure Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../reference-guide/index.html">Reference Guide</a></li>
@@ -77,8 +96,8 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="index.html">User Guide</a><ul>
-      <li>Previous: <a href="configuration-files.html" title="previous chapter">Configuration Files</a></li>
-      <li>Next: <a href="../reference-guide/index.html" title="next chapter">Reference Guide</a></li>
+      <li>Previous: <a href="program-flow.html" title="previous chapter">Program Flow</a></li>
+      <li>Next: <a href="configuration-files.html" title="next chapter">Configuration Files</a></li>
   </ul></li>
   </ul></li>
 </ul>

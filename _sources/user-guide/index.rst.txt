@@ -8,9 +8,9 @@ User Guide
 
    usage
    program-flow
-   things-to-know
-   configuration-files
    molecular-structure-inputs
+   configuration-files
+
 
 
 

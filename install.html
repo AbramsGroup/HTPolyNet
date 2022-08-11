@@ -92,6 +92,17 @@
 <p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.</p>
 <p>Finally, in the tutorials provided, we demonstrate the use of <code class="docutils literal notranslate"><span class="pre">obabel</span></code> outside <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.  If you would like to generate conformers of monomers as part of an <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> build, this will also require <code class="docutils literal notranslate"><span class="pre">obabel</span></code>.</p>
 </section>
+<section id="other-prequisites">
+<h2>Other Prequisites<a class="headerlink" href="#other-prequisites" title="Permalink to this headline">¶</a></h2>
+<p>In order to use <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> effectively, it is recommended that you have good working knowledge of the following:</p>
+<ol class="arabic simple">
+<li><p>MD simulation in general and Gromacs specifically;</p></li>
+<li><p>the General Amber Force Field (GAFF), including in particular
+a. how to use <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">tleap</span></code>, and <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code> to generate GAFF parameterizations; and
+b. how to use these parameterizations inside Gromacs; and</p></li>
+<li><p>Polymer chemistry, at least for the systems you are interested in simulating.</p></li>
+</ol>
+</section>
 </section>
 
 
@@ -117,6 +128,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#software-prequisites">Software Prequisites</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#other-prequisites">Other Prequisites</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="user-guide/index.html">User Guide</a></li>

@@ -35,11 +35,11 @@
             
   <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
-<p>Installation of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command:</p>
+<p>Installation of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command.  Invoking <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">--help</span></code> shows basic usage of the command, which always involves providing a <em>subcommand</em>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet --help
-<span class="go">usage: htpolynet [-h] {run,parameterize,info,plots} ...</span>
+<span class="go">usage: htpolynet [-h] {run,parameterize,info,plots,fetch-example} ...</span>
 
-<span class="go">HTPolyNet</span>
+<span class="go">HTPolyNet 1.0.0</span>
 <span class="go">https://abramsgroup.github.io/HTPolyNet/</span>
 
 <span class="go">Ming Huang</span>
@@ -52,11 +52,14 @@
 <span class="go">and W911NF-12-R-0011 from the US Army Research Lab</span>
 
 <span class="go">positional arguments:</span>
-<span class="go">  {run,parameterize,info,plots}</span>
+<span class="go">  {run,parameterize,info,plots,fetch-example}</span>
 <span class="go">    run                 build a system using instructions in the config file and any required molecular structure inputs</span>
-<span class="go">    parameterize        parameterize monomers and oligomer templates using instructinos in the config file</span>
+<span class="go">    parameterize        parameterize monomers and oligomer templates using instructions in the config file</span>
 <span class="go">    info                print some information to the console</span>
 <span class="go">    plots               generate some plots that summarize aspects of the current completed build</span>
+<span class="go">    fetch-example       fetch and unpack example(s) from the HTPolyNet.Library: &quot;0-liquid-styrene&quot;,</span>
+<span class="go">                        &quot;1-polystyrene&quot;, &quot;2-polymethylstyrene&quot;, &quot;3-bisgma-styrene-thermoset&quot;,</span>
+<span class="go">                        &quot;4-pacm-dgeba-epoxy-thermoset&quot;,&quot;5-dfda-fde-epoxy-thermoset&quot;, &quot;6-htpb-ipdi&quot;</span>
 
 <span class="go">options:</span>
 <span class="go">  -h, --help            show this help message and exit</span>
@@ -92,11 +95,11 @@
 <p>The arguments are explained in more detail below.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">config</span></code> refers to the name of the <a class="reference internal" href="configuration-files.html#configuration-files"><span class="std std-ref">configuration input file</span></a>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">-lib</span></code> names a directory that is treated as a local library of molecular structures.  By default, this is assumed to be <code class="docutils literal notranslate"><span class="pre">./lib/</span></code>.  At the beginning of a new run, it should have one subdirectory <code class="docutils literal notranslate"><span class="pre">molecules</span></code>.  Under <code class="docutils literal notranslate"><span class="pre">molecules</span></code> should be the two directories <code class="docutils literal notranslate"><span class="pre">inputs</span></code> and <code class="docutils literal notranslate"><span class="pre">parameterized</span></code>.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will look for input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> files in <code class="docutils literal notranslate"><span class="pre">molecules/inputs</span></code>, and put the results of parameterized molecules (i.e., Gromacs format <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">itp</span></code>, and <code class="docutils literal notranslate"><span class="pre">top</span></code> files) in <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-lib</span></code> names a directory that is treated as a local library of molecular structures.  By default, this is assumed to be <code class="docutils literal notranslate"><span class="pre">./lib/</span></code> (that is, the directory you are in when you issue <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> is expected by default to have a <code class="docutils literal notranslate"><span class="pre">lib/</span></code> directory; if not, the Library subpackage of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package will be queried for any data).  At the beginning of a new run, <code class="docutils literal notranslate"><span class="pre">lib/</span></code> should have one subdirectory called <code class="docutils literal notranslate"><span class="pre">molecules</span></code>.  Under <code class="docutils literal notranslate"><span class="pre">molecules</span></code> should be the two directories <code class="docutils literal notranslate"><span class="pre">inputs</span></code> and <code class="docutils literal notranslate"><span class="pre">parameterized</span></code>.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will look for input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> files in <code class="docutils literal notranslate"><span class="pre">lib/molecules/inputs</span></code>, and “check-in” the results of parameterized molecules (i.e., Gromacs format <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">itp</span></code>, and <code class="docutils literal notranslate"><span class="pre">top</span></code> files) in <code class="docutils literal notranslate"><span class="pre">lib/molecules/parameterized</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-proj</span></code> names the project directory.  If provided with the value <code class="docutils literal notranslate"><span class="pre">next</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will create the next autonamed project directory.  These are always named as <code class="docutils literal notranslate"><span class="pre">proj-``n,</span> <span class="pre">where</span> <span class="pre">n</span> <span class="pre">is</span> <span class="pre">replaced</span> <span class="pre">by</span> <span class="pre">an</span> <span class="pre">integer</span> <span class="pre">beginning</span> <span class="pre">with</span> <span class="pre">0;</span> <span class="pre">if</span> <span class="pre">no</span> <span class="pre">project</span> <span class="pre">directory</span> <span class="pre">exists</span> <span class="pre">and</span> <span class="pre">an</span> <span class="pre">explicit</span> <span class="pre">one</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">specified</span> <span class="pre">by</span> <span class="pre">``-proj</span></code>, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> creates the first one, <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>.  A project directory will automatically be given the following subdirectories:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> – all molecular parameterization results appear here</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">systems</span></code> – system initialization, CURE iterations, and post-cure all get their own subdirectories here.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> – all molecular parameterization results appear here (in addition to being checked in to the library)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">systems</span></code> – system initializations, equilibrations, CURE iterations, and postcure equilibrations all get their own subdirectories here.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">plots</span></code> – various plots generated on the fly.</p></li>
 </ul>
 <p>These will be explained more fully in the tutorials.</p>
@@ -127,15 +130,53 @@
 <span class="go">  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)</span>
 </pre></div>
 </div>
-<p>The intention is that later invocations of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> can use these parameterizations without having to reperform them.  It is not required to parameterize outside of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> but sometimes it is useful to do so.</p>
+<p>The command-line options of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code> have all the same meanings as they do for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code>.  The only difference is that <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code> <strong>only</strong> performs the parameterization of all monomers and oligomer templates.  The intention is that later invocations of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> can use these parameterizations without having to reperform them.  Of course, since a first invocation of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> also peforms parameterizations and saves their results, it is strictly <strong>never</strong> necessary to use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code>.  However, if your parameterizations have issues, it is cleaner to use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code> to try to fix them.</p>
 </section>
 <section id="htpolynet-info">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">info</span></code><a class="headerlink" href="#htpolynet-info" title="Permalink to this headline">¶</a></h2>
 <p>This simply outputs some information about <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet info
+<span class="go">This is some information on your installed version of HTPolyNet</span>
+<span class="go">System library is /home/cfa/Git/HTPolyNet/Library</span>
+<span class="go">Ambertools:</span>
+<span class="go"> antechamber (ver. 22.0) at antechamber</span>
+<span class="go">       tleap (ver. 22.0) at tleap</span>
+<span class="go">    parmchk2 (ver. 22.0) at parmchk2</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">info</span></code> only reports the absolute pathname of the <code class="docutils literal notranslate"><span class="pre">Library</span></code> subpackage for your reference, and the fully resolved command names for the three required Ambertools executables <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">tleap</span></code> and <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, along with their versions.  If they are already in your path, the results appear as above.</p>
 </section>
 <section id="htpolynet-plots">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code><a class="headerlink" href="#htpolynet-plots" title="Permalink to this headline">¶</a></h2>
 <p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.  This feature is currently under development.</p>
+</section>
+<section id="htpolynet-fetch-example">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code><a class="headerlink" href="#htpolynet-fetch-example" title="Permalink to this headline">¶</a></h2>
+<p>This will fetch one or more examples from the <code class="docutils literal notranslate"><span class="pre">example_depot</span></code> of the system <code class="docutils literal notranslate"><span class="pre">Library</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet fetch-example --help
+<span class="go">usage: htpolynet fetch-example [-h] [-n {0,1,2,3,4,5,6,all}] [-k]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -n {0,1,2,3,4,5,6,all}</span>
+<span class="go">                        number of example tarball to unpack from 0-liquid-styrene, 1-polystyrene,</span>
+<span class="go">                        2-polymethylstyrene, 3-bisgma-styrene-thermoset, 4-pacm-dgeba-epoxy-thermoset,</span>
+<span class="go">                        5-dfda-fde-epoxy-thermoset,</span>
+<span class="go">                        6-htpb-ipdi</span>
+<span class="go">  -k                    keep tarballs</span>
+</pre></div>
+</div>
+<p>Fetching will copy the tarball for the requested system to the current directory and then untar it and remove it, leaving behind the directory.  For example to fetch the PACM-DGEBA epoxy thermoset example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet fetch-example -n <span class="m">4</span>
+<span class="gp">$ </span>ls
+<span class="go">4-pacm-dgeba-epoxy-thermoset/</span>
+<span class="gp">$ </span><span class="nb">cd</span> <span class="m">4</span>-pacm-dgeba-epoxy-thermoset
+<span class="gp">$ </span>ls
+<span class="go">DGE-PAC-hi.yaml  DGE-PAC-lo.yaml  lib/  run.sh</span>
+</pre></div>
+</div>
+<p>This folder (like all example folders) comes with two configuration files that differ only the the requested degree of cure.  “hi” refers to 95% cure, and “lo” to 50%.  Also provided is the <code class="docutils literal notranslate"><span class="pre">./lib/molecules</span></code> folders with the <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> and <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code> empty subfolders.  Finally, the bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> can just be invoked to build the input monomers and run the two builds in series.  This will be described in much more detail in the tutorials.</p>
+<p><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span> <span class="pre">-n</span> <span class="pre">all</span></code> just grabs all seven examples.</p>
 </section>
 </section>
 
@@ -163,9 +204,10 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#subcommands">Subcommands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="things-to-know.html">Important Things to Know</a></li>
-<li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html#connect-update-relax-equilibrate-cure-algorithm">Connect-Update-Relax-Equilibrate (CURE) algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html#bondsearch-filters">Bondsearch filters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="molecular-structure-inputs.html">Molecular Structure Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../reference-guide/index.html">Reference Guide</a></li>
