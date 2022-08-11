@@ -75,3 +75,14 @@ And add to your ``~/.bashrc``:
 This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of ``gmx distance`` that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.
 
 Finally, in the tutorials provided, we demonstrate the use of ``obabel`` outside ``HTPolyNet`` to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.  If you would like to generate conformers of monomers as part of an ``HTPolyNet`` build, this will also require ``obabel``.
+
+Other Prequisites
+-----------------
+
+In order to use ``HTPolyNet`` effectively, it is recommended that you have good working knowledge of the following:
+
+1. MD simulation in general and Gromacs specifically;
+2. the General Amber Force Field (GAFF), including in particular
+   a. how to use ``antechamber``, ``tleap``, and ``parmchk2`` to generate GAFF parameterizations; and
+   b. how to use these parameterizations inside Gromacs; and
+3. Polymer chemistry, at least for the systems you are interested in simulating.

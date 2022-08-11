@@ -9,10 +9,10 @@ from HTPolyNet.topology import select_topology_type_option
 from HTPolyNet.topocoord import TopoCoord
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.gromacs import insert_molecules, gmx_energy_trace, mdp_modify, mdp_get
+from HTPolyNet.gromacs import insert_molecules, mdp_modify, mdp_get
 import HTPolyNet.checkpoint as cp
 from HTPolyNet.plot import trace
-from HTPolyNet.molecule import Molecule, MoleculeDict, MoleculeList, is_reactant
+from HTPolyNet.molecule import Molecule, MoleculeDict, is_reactant
 from HTPolyNet.expandreactions import symmetry_expand_reactions, chain_expand_reactions
 from HTPolyNet.curecontroller import CureController
 from HTPolyNet.stringthings import my_logger
