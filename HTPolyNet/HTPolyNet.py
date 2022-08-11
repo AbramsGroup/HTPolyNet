@@ -80,7 +80,7 @@ def fetch_example(args):
     if nm.isdecimal():
         fullname=[x for x in possibles if x.startswith(nm)][0]
     else:
-        if nm in ['a','all']:
+        if nm=='all':
             for fullname in possibles:
                 shutil.copy(os.path.join(l.get_example_depot_location(),f'{fullname}.tgz'),'.')
                 os.system(f'tar zxf {fullname}.tgz')
@@ -113,7 +113,7 @@ def cli():
     helps['parameterize']='parameterize monomers and oligomer templates using instructinos in the config file'
     helps['info']='print some information to the console'
     helps['plots']='generate some plots that summarize aspects of the current completed build'
-    helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library\n'+'\n'.join(l.get_example_names())
+    helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
 
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     subparsers=parser.add_subparsers()
@@ -142,7 +142,7 @@ def cli():
     command_parsers['plots'].add_argument('logs',type=str,default='',nargs='+',help='names of diagnostic log files')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
 
-    command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['a','all'],help='number of example tarball to unpack from '+', '.join(example_names))
+    command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
 
     args=parser.parse_args()
