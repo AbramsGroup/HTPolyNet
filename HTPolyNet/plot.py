@@ -1,4 +1,5 @@
 from HTPolyNet.gromacs import *
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
@@ -12,6 +13,7 @@ logger=logging.getLogger(__name__)
 
 # prevents "RuntimeError: main thread is not in main loop" tk bug
 plt.switch_backend('agg')
+#matplotlib.use('agg')
 
 def trace(qty,edrs,outfile='plot.png',**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
@@ -26,17 +28,13 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     chkpt=[]
     for edr in edrs:
         if not df.empty:
-#            print(df.tail(1).to_string())
             xshift=df.tail(1).iloc[0,0]
-#        print(f'xshift {xshift}')
         data=gmx_energy_trace(edr,[qty],xshift=xshift)
-        # print(data.columns)
         lastchkpt=0
         if len(chkpt)>0:
             lastchkpt=chkpt[-1]
         chkpt.append(data.shape[0]+lastchkpt)
         df=pd.concat((df,data),ignore_index=True)
-    # print(df.columns)
     fig,ax=plt.subplots(1,1,figsize=size)
     nseg=len(chkpt)
     beg=0
