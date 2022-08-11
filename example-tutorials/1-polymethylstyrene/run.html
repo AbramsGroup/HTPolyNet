@@ -35,384 +35,150 @@
             
   <section id="running-the-build">
 <span id="pms-run"></span><h1>Running the Build<a class="headerlink" href="#running-the-build" title="Permalink to this headline">¶</a></h1>
-<p>Now, in our working directory <code class="docutils literal notranslate"><span class="pre">my_pms_build</span></code>, we are ready to launch HTPolyNet:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> my_pms_build
-<span class="gp">$ </span>ls
-<span class="go">pMSTY.yaml  lib/</span>
-<span class="gp">$ </span>htpolynet run pMSTY.yaml <span class="p">&amp;</span>&gt; info.log <span class="p">&amp;</span>
-<span class="go">[1]</span>
-<span class="gp">$</span>
+<p>Now, in our working directory <code class="docutils literal notranslate"><span class="pre">my_pms</span></code>, if you haven’t already, go ahead and launch via <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./run.sh
 </pre></div>
 </div>
-<p>HTPolyNet by default uses the local <code class="docutils literal notranslate"><span class="pre">./lib/</span></code> as the molecule library; not including a value for <code class="docutils literal notranslate"><span class="pre">-lib</span></code> forces HTPolyNet to use the system library in the <code class="docutils literal notranslate"><span class="pre">Library</span></code> subpackage, and if you are making new molecules, they won’t be there.  It is also instructive to write console messages to <code class="docutils literal notranslate"><span class="pre">info.log</span></code>.  Detailed diagnostic messages appear in <code class="docutils literal notranslate"><span class="pre">./htpolynet_runtime_diagnostics.log</span></code>.  The build can take several minutes, so we are running it in the background.  All the action is happening in <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> (and of course being reported on in <code class="docutils literal notranslate"><span class="pre">info.log</span></code>), so let’s look in there.</p>
+<p>As the two <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> commands indicate, standard output is being redirected from the console to the file <code class="docutils literal notranslate"><span class="pre">lo.log</span></code> for the low-cure run and <code class="docutils literal notranslate"><span class="pre">hi.log</span></code> for the high-cure run.  Let’s consider the contents of <code class="docutils literal notranslate"><span class="pre">lo.log</span></code> and then examine the project directory that was created.</p>
 <section id="console-output">
 <h2>Console output<a class="headerlink" href="#console-output" title="Permalink to this headline">¶</a></h2>
-<p>While the build is running, you can monitor its progress using <code class="docutils literal notranslate"><span class="pre">tail</span> <span class="pre">-f</span></code> on the <code class="docutils literal notranslate"><span class="pre">info.log</span></code> file.  A sample of its contents are shown below for an example build, where I show messages related to startup, template parameterization, liquid simulation, the first CURE iteration and the last CURE iteration, and finalization:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>more info.log
-<span class="go">INFO&gt; HTPolyNet runtime begins.</span>
-<span class="go">INFO&gt; System library is /home/cfa/Git/HTPolyNet/Library</span>
-<span class="go">INFO&gt; User library is /home/cfa/htpolynet-tests/styrene/my_pms_build/lib</span>
-<span class="go">INFO&gt; Ambertools commands available for HTPolyNet to use:</span>
-<span class="go">INFO&gt;  antechamber (ver.   22.0) at antechamber</span>
-<span class="go">INFO&gt;        tleap (ver.   22.0) at tleap</span>
-<span class="go">INFO&gt;     parmchk2 (ver.   22.0) at parmchk2</span>
+<p>In this section, let’s go section by section through the console log to understand what <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is doing.  The first section just shows a banner and indicates where the library is and where the project directory is, then reports on the available Ambertools software, finally ending by stating the name of the configuration file.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt;</span>
+<span class="go">INFO&gt;     HTPolyNet 1.0.0</span>
+<span class="go">INFO&gt;     https://abramsgroup.github.io/HTPolyNet/</span>
 <span class="go">INFO&gt;</span>
-<span class="go">INFO&gt; Configuration: pMSTY.yaml</span>
-<span class="go">INFO&gt; ********** Generating molecular templates **********</span>
-<span class="go">INFO&gt; ********** 3 molecules explicit in pMSTY.yaml **********</span>
-<span class="go">INFO&gt; EMB, EMB1_1, EMBCC</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB.mol2</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB1_1.mol2</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMBCC.mol2</span>
-<span class="go">INFO&gt; ********** 3 molecules implied by chaining **********</span>
-<span class="go">INFO&gt; EMB~C1=C2~EMB1_1, EMB1_1~C1=C2~EMB, EMB1_1~C1=C2~EMB1_1</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB~C1=C2~EMB1_1.mol2</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB1_1~C1=C2~EMB.mol2</span>
-<span class="go">INFO&gt; AmberTools is parameterizing EMB1_1~C1=C2~EMB1_1.mol2</span>
-<span class="go">INFO&gt; ********** Generated 6 molecule templates **********</span>
-<span class="go">INFO&gt; System initial composition is EMB 100</span>
-<span class="go">INFO&gt; Maximum conversion is 100 bonds.</span>
-<span class="go">INFO&gt; System has 2100 atoms.</span>
+<span class="go">INFO&gt;     Ming Huang</span>
+<span class="go">INFO&gt;     mh3429@dragons.drexel.edu</span>
+<span class="go">INFO&gt;</span>
+<span class="go">INFO&gt;     Cameron F. Abrams</span>
+<span class="go">INFO&gt;     cfa22@drexel.edu</span>
+<span class="go">INFO&gt;</span>
+<span class="go">INFO&gt;     Supported in part by Grants W911NF-17-2-0227</span>
+<span class="go">INFO&gt;     and W911NF-12-R-0011 from the US Army Research Lab</span>
+<span class="go">INFO&gt;</span>
+<span class="go">INFO&gt; ******************** HTPolyNet runtime begins *********************</span>
+<span class="go">INFO&gt; User library is /home/cfa/htpolynet-tests/test-2/2-polymethylstyrene/lib</span>
+<span class="go">INFO&gt; Starting new build in /home/cfa/htpolynet-tests/test-2/2-polymethylstyrene/proj-0</span>
+<span class="go">INFO&gt; *************************** Ambertools: ***************************</span>
+<span class="go">INFO&gt;   antechamber (ver. 22.0) at antechamber</span>
+<span class="go">INFO&gt;         tleap (ver. 22.0) at tleap</span>
+<span class="go">INFO&gt;      parmchk2 (ver. 22.0) at parmchk2</span>
+<span class="go">INFO&gt; Configuration: pMSTY-lo.yaml</span>
+</pre></div>
+</div>
+<p>Next comes the monomer and oligomer template parameterizations.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> first handles the molecules that are explicitly named in the configuration.  Only <code class="docutils literal notranslate"><span class="pre">EMB.mol2</span></code> exists; the other two are generated automatically using their respective <code class="docutils literal notranslate"><span class="pre">reaction</span></code> directives.  The three molecules implied by the concept of “chaining” are also generated and parameterized.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; *********** Templates in proj-0/molecules/parameterized ***********</span>
+<span class="go">INFO&gt; 3 molecules explicit in pMSTY-lo.yaml</span>
+<span class="go">INFO&gt; AmberTools&gt; parameterizing EMB.mol2</span>
+<span class="go">INFO&gt; AmberTools&gt; parameterizing EMB~C1-C2~EMB.mol2</span>
+<span class="go">INFO&gt; AmberTools&gt; parameterizing EMBCC.mol2</span>
+<span class="go">INFO&gt; 3 molecules implied by chaining</span>
+<span class="go">INFO&gt; [&#39;EMB~C1=C2~EMB~C1-C2~EMB&#39;, &#39;EMB~C1-C2~EMB~C1=C2~EMB&#39;, &#39;EMB~C1-C2~EMB~C1=C2~EMB~C1-C2~EMB&#39;]</span>
+<span class="go">INFO&gt; AmberTools&gt; parameterizing EMB~C1=C2~EMB~C1-C2~EMB.mol2</span>
+<span class="go">INFO&gt; AmberTools&gt; parameterizing EMB~C1-C2~EMB~C1=C2~EMB.mol2</span>
+<span class="go">INFO&gt; AmberTools&gt; parameterizing EMB~C1-C2~EMB~C1=C2~EMB~C1-C2~EMB.mol2</span>
+<span class="go">INFO&gt; Generated 6 molecule templates</span>
+<span class="go">INFO&gt; Initial composition is EMB 100</span>
+<span class="go">INFO&gt; 100% conversion is 100 bonds</span>
+</pre></div>
+</div>
+<p>If we look in <code class="docutils literal notranslate"><span class="pre">proj-0/molecules/parameterized</span></code> we’ll see a LOT of files.  What’s important are the <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">itp</span></code>, <code class="docutils literal notranslate"><span class="pre">top</span></code> and <code class="docutils literal notranslate"><span class="pre">grx</span></code> files for each molecule.  The first three are Gromacs-specific.  The <code class="docutils literal notranslate"><span class="pre">grx</span></code> file contains “extended attributes” of each atom that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses internally and are NOT needed for Gromacs.</p>
+<p>Next comes initialization of the system topology and coordinates.  Here, using the <code class="docutils literal notranslate"><span class="pre">constituents</span></code> directive, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> generates a full system topology and simulation box. The box is filled according to the <code class="docutils literal notranslate"><span class="pre">initial_density</span></code> subdirective of the <code class="docutils literal notranslate"><span class="pre">densification</span></code> directive.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; ************** Initialization in proj-0/systems/init **************</span>
+<span class="go">INFO&gt; Topology &quot;init.top&quot; in proj-0/systems/init</span>
 <span class="go">INFO&gt; Initial density: 300.0 kg/m^3</span>
 <span class="go">INFO&gt; Total mass: 1.996e-23 kg</span>
-<span class="go">INFO&gt; Box aspect ratio: 1 x 1 x 1</span>
-<span class="go">INFO&gt; -&gt; Resulting initial box side lengths: 4.052 nm x 4.052 nm x 4.052 nm</span>
-<span class="go">INFO&gt; Generated init.top and init.gro.</span>
-<span class="go">INFO&gt; Conducting initial NPT MD densification simulation of liquid</span>
-<span class="go">INFO&gt; Densified coordinates in npt-1.gro</span>
-<span class="go">INFO&gt; time(ps)                   300.000000</span>
-<span class="go">INFO&gt; density(kg/m^3)            824.783875</span>
-<span class="go">INFO&gt; Running-average-density    772.877910</span>
-<span class="go">INFO&gt; Rolling-average-10         821.042603</span>
-<span class="go">INFO&gt; ********** Connect-Update-Relax-Equilibrate (CURE) begins **********</span>
-<span class="go">INFO&gt; CURE iteration 1 begins in proj-0/systems/iter-1.</span>
-<span class="go">INFO&gt; Bondsearch using radius 0.5 nm initiated.</span>
-<span class="go">INFO&gt; CURE iteration 1 will generate 23 new bonds.</span>
-<span class="go">INFO&gt; Topology update</span>
-<span class="go">INFO&gt; Relaxation of 23 bonds; max distance 0.476 nm, max 1-4 distance 0.699 nm</span>
+<span class="go">INFO&gt; Box aspect ratio: 1.0 x 1.0 x 1.0</span>
+<span class="go">INFO&gt; Initial box side lengths: 4.052 nm x 4.052 nm x 4.052 nm</span>
+<span class="go">INFO&gt; Coordinates &quot;init.gro&quot; in proj-0/systems/init</span>
+<span class="go">INFO&gt; Extended attributes &quot;init.grx&quot; in proj-0/systems/init</span>
+</pre></div>
+</div>
+<p>Next comes a report of the densification of the system.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; ********** Densification in proj-0/systems/densification **********</span>
+<span class="go">INFO&gt; Running Gromacs: minimization</span>
+<span class="go">INFO&gt; Running Gromacs: nvt ensemble;   10 ps, 300 K</span>
+<span class="go">INFO&gt; Running Gromacs: npt ensemble;  200 ps, 300 K, 10 bar</span>
+<span class="go">INFO&gt; Current box side lengths: 2.890 nm x 2.890 nm x 2.890 nm</span>
+<span class="go">INFO&gt; Density                       826.996948</span>
+<span class="go">INFO&gt; Running-average-Density       728.728314</span>
+<span class="go">INFO&gt; Rolling-10-average-Density    828.510007</span>
+<span class="go">INFO&gt; Densified coordinates in proj-0/systems/densification/densified-npt.gro</span>
+</pre></div>
+</div>
+<p>Next comes a report of the precure:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; **************** Precure in proj-0/systems/precure ****************</span>
+<span class="go">INFO&gt; Running Gromacs: npt ensemble;  200 ps, 300 K, 1 bar</span>
+<span class="go">INFO&gt; Current box side lengths: 2.887 nm x 2.887 nm x 2.887 nm</span>
+<span class="go">INFO&gt; Density                       829.116699</span>
+<span class="go">INFO&gt; Running-average-Density       828.608087</span>
+<span class="go">INFO&gt; Rolling-10-average-Density    831.531906</span>
+<span class="go">INFO&gt; Annealing: 5 points for 2 cycles over 160 ps</span>
+<span class="go">INFO&gt; Annealed coordinates in annealed.gro</span>
+<span class="go">INFO&gt; Running Gromacs: npt ensemble;  100 ps, 300 K, 1 bar</span>
+<span class="go">INFO&gt; Current box side lengths: 2.885 nm x 2.885 nm x 2.885 nm</span>
+<span class="go">INFO&gt; Density                       830.845398</span>
+<span class="go">INFO&gt; Running-average-Density       833.242340</span>
+<span class="go">INFO&gt; Rolling-10-average-Density    831.299469</span>
+</pre></div>
+</div>
+<p>Next we begin the CURE iterations:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; ********* Connect-Update-Relax-Equilibrate (CURE) begins **********</span>
+<span class="go">INFO&gt; Attempting to form 50 bonds</span>
+<span class="go">INFO&gt; ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 1 begins ~~~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="go">INFO&gt; Bond search using radius 0.5 nm initiated</span>
+<span class="go">INFO&gt; Iteration 1 will generate 31 new bonds</span>
+<span class="go">INFO&gt; Cure_relax initiated on 31 distances (max 0.485 nm)</span>
 <span class="go">INFO&gt;      Stage  Max-distance (nm)  Max-1-4-distance (nm)</span>
-<span class="go">INFO&gt;          1              0.442                  0.656</span>
-<span class="go">INFO&gt;          2              0.417                  0.632</span>
-<span class="go">INFO&gt;          3              0.376                  0.603</span>
-<span class="go">INFO&gt;          4              0.340                  0.572</span>
-<span class="go">INFO&gt;          5              0.290                  0.514</span>
-<span class="go">INFO&gt;          6              0.259                  0.486</span>
-<span class="go">INFO&gt;          7              0.230                  0.465</span>
-<span class="go">INFO&gt;          8              0.197                  0.447</span>
-<span class="go">INFO&gt;          9              0.167                  0.422</span>
-<span class="go">INFO&gt; Equilibration for 50000 steps at 300 K and 1.0 bar</span>
-<span class="go">INFO&gt;   -&gt; average density 766.016 kg/m^3</span>
-<span class="go">INFO&gt; Current conversion: 0.23 (23/100)</span>
-<span class="go">... (skipping)</span>
-<span class="go">INFO&gt; CURE iteration 11 begins in proj-0/systems/iter-11.</span>
-<span class="go">INFO&gt; Bondsearch using radius 0.5 nm initiated.</span>
-<span class="go">INFO&gt; Increasing cutoff radius to 0.75 nm</span>
-<span class="go">INFO&gt; CURE iteration 11 will generate 2 new bonds.</span>
-<span class="go">INFO&gt; Prebond dragging initiated on 2 new bonds (max distance 0.617 nm).</span>
-<span class="go">INFO&gt;      Stage  Max-distance (nm)</span>
-<span class="go">INFO&gt;          1              0.602</span>
-<span class="go">INFO&gt;          2              0.591</span>
-<span class="go">INFO&gt;          3              0.541</span>
-<span class="go">INFO&gt;          4              0.525</span>
-<span class="go">INFO&gt;          5              0.486</span>
-<span class="go">INFO&gt;          6              0.456</span>
-<span class="go">INFO&gt;          7              0.443</span>
-<span class="go">INFO&gt;          8              0.406</span>
-<span class="go">INFO&gt;          9              0.376</span>
-<span class="go">INFO&gt;         10              0.354</span>
-<span class="go">INFO&gt;         11              0.329</span>
-<span class="go">INFO&gt;         12              0.302</span>
-<span class="go">INFO&gt; Topology update</span>
-<span class="go">INFO&gt; Relaxation of 2 bonds; max distance 0.302 nm, max 1-4 distance 0.562 nm</span>
+<span class="go">INFO&gt;          1              0.428                  0.639</span>
+<span class="go">INFO&gt;          2              0.397                  0.620</span>
+<span class="go">INFO&gt;          3              0.314                  0.538</span>
+<span class="go">INFO&gt;          4              0.263                  0.509</span>
+<span class="go">INFO&gt;          5              0.212                  0.444</span>
+<span class="go">INFO&gt;          6              0.163                  0.420</span>
+<span class="go">INFO&gt; Running Gromacs: npt ensemble;  100 ps, 300 K, 1 bar</span>
+<span class="go">INFO&gt; Current box side lengths: 2.814 nm x 2.814 nm x 2.814 nm</span>
+<span class="go">INFO&gt; Density                       891.040100</span>
+<span class="go">INFO&gt; Running-average-Density       837.843547</span>
+<span class="go">INFO&gt; Rolling-10-average-Density    887.186151</span>
+<span class="go">INFO&gt; Iteration 1 current conversion 0.310 or 31 bonds</span>
+</pre></div>
+</div>
+<p>This first iteration shows that, with a search radius of 0.5 nm, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> identified 31 allowable bonds that could form.  It then forms them and progresses through the relaxation stages until they are at their correct lenghts.  Finally it runs the post-iteration NPT MD equilibration, reporting the resulting box dimensions and density.</p>
+<p>Next we proceed through a second CURE iteration:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 2 begins ~~~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="go">INFO&gt; Bond search using radius 0.5 nm initiated</span>
+<span class="go">INFO&gt; Iteration 2 will generate 20 new bonds</span>
+<span class="go">INFO&gt; Cure_relax initiated on 20 distances (max 0.444 nm)</span>
 <span class="go">INFO&gt;      Stage  Max-distance (nm)  Max-1-4-distance (nm)</span>
-<span class="go">INFO&gt;          1              0.289                  0.547</span>
-<span class="go">INFO&gt;          2              0.261                  0.493</span>
-<span class="go">INFO&gt;          3              0.241                  0.466</span>
-<span class="go">INFO&gt;          4              0.217                  0.459</span>
-<span class="go">INFO&gt;          5              0.184                  0.440</span>
-<span class="go">INFO&gt;          6              0.165                  0.413</span>
-<span class="go">INFO&gt; Equilibration for 50000 steps at 300 K and 1.0 bar</span>
-<span class="go">INFO&gt;   -&gt; average density 812.544 kg/m^3</span>
-<span class="go">INFO&gt; Current conversion: 0.96 (96/100)</span>
-<span class="go">INFO&gt; Current conversion 0.96 exceeds desired conversion 0.95</span>
-<span class="go">INFO&gt; Postcure equilibration.</span>
-<span class="go">INFO&gt; CURE finished.</span>
-<span class="go">INFO&gt; HTPolynet runtime ends.</span>
+<span class="go">INFO&gt;          1              0.388                  0.624</span>
+<span class="go">INFO&gt;          2              0.340                  0.574</span>
+<span class="go">INFO&gt;          3              0.271                  0.511</span>
+<span class="go">INFO&gt;          4              0.221                  0.464</span>
+<span class="go">INFO&gt;          5              0.163                  0.412</span>
+<span class="go">INFO&gt; Running Gromacs: npt ensemble;  100 ps, 300 K, 1 bar</span>
+<span class="go">INFO&gt; Current box side lengths: 2.770 nm x 2.770 nm x 2.770 nm</span>
+<span class="go">INFO&gt; Density                       931.056519</span>
+<span class="go">INFO&gt; Running-average-Density       890.387364</span>
+<span class="go">INFO&gt; Rolling-10-average-Density    929.248755</span>
+<span class="go">INFO&gt; Iteration 2 current conversion 0.510 or 51 bonds</span>
+<span class="go">INFO&gt; ************************* Capping begins **************************</span>
+<span class="go">INFO&gt; Capping will generate 0 new bonds</span>
+<span class="go">INFO&gt; ********** Connect-Update-Relax-Equilibrate (CURE) ends ***********</span>
 </pre></div>
 </div>
-<p>This output should give you some idea of the flow of HTPolyNet.  The first major task is generating molecular templates; in this case, that means the molecules that are named explicitly in the configuration file (either as part of <code class="docutils literal notranslate"><span class="pre">initial_composition</span></code> or as a reactant or product of any reaction).  It then builds the simulation box and runs a “densification” MD simulation.  Then, CURE iterations start.  I show here the output from the first iteration and the last iteration only.  Note in the last iteration that the search radius was increased by one increment (0.25 nm), and the new bonds had to be pre-dragged before being formed and relaxed.  The conversion at that point is 96%, so the algorithm terminates.  Let’s look inside the project directory structure to find more results.</p>
-</section>
-<section id="parameterization-results">
-<h2>Parameterization results<a class="headerlink" href="#parameterization-results" title="Permalink to this headline">¶</a></h2>
-<p>The first major block of calculations involves parameterizing all required molecular templates.  So after a few minutes, we can inspect the parameterization results while the build continues:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> proj-0
-<span class="gp">$ </span>ls
-<span class="go">molecules/  plots/  systems/</span>
-<span class="gp">$ </span><span class="nb">cd</span> molecules/parameterized
-<span class="gp">$ </span>ls EMB.*
-<span class="go">EMB.edr  EMB.frcmod  EMB.gro  EMB.grx  EMB.itp  EMB.log  EMB.mol2  EMB.top  EMB.tpr  EMB.trr</span>
-<span class="gp">$</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; *************** Postcure in proj-0/systems/postcure ***************</span>
+<span class="go">INFO&gt; Annealing: 5 points for 2 cycles over 160 ps</span>
+<span class="go">INFO&gt; Annealed coordinates in annealed.gro</span>
+<span class="go">INFO&gt; Running Gromacs: npt ensemble;  100 ps, 300 K, 1 bar</span>
+<span class="go">INFO&gt; Current box side lengths: 2.763 nm x 2.763 nm x 2.763 nm</span>
+<span class="go">INFO&gt; Density                       937.608765</span>
+<span class="go">INFO&gt; Running-average-Density       937.181557</span>
+<span class="go">INFO&gt; Rolling-10-average-Density    929.233405</span>
+<span class="go">INFO&gt; *********** Final data to proj-0/systems/final-results ************</span>
+<span class="go">INFO&gt; ********************* HTPolyNet runtime ends **********************</span>
 </pre></div>
 </div>
-<p>What are we seeing here?  These are all the output files for generated by parameterization of the <code class="docutils literal notranslate"><span class="pre">EMB</span></code> residue defined in <code class="docutils literal notranslate"><span class="pre">lib/molecules/inputs/EMB.mol2</span></code>.  six distinct template molecules, along with the EMB monomer.  Each set comprises four files:</p>
-<ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">mol2</span></code> – output of <code class="docutils literal notranslate"><span class="pre">antechamber</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">frcmod</span></code> – output of <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">gro/top/itp</span></code> – output of <code class="docutils literal notranslate"><span class="pre">parmed</span></code> (<code class="docutils literal notranslate"><span class="pre">gro</span></code> is also output of Gromacs minimization)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">grx</span></code> – custom output of HTPolyNet with “extra” atom parameters</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">tpr/trr/edr</span></code> – files associated with a Gromacs-based energy minimization that produces an coordinate-optimized <code class="docutils literal notranslate"><span class="pre">gro</span></code> file.</p></li>
-</ol>
-<p>We can see how many molecules have been parameterized (each will have its own <code class="docutils literal notranslate"><span class="pre">gro</span></code> file):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls *.gro
-<span class="go">&#39;EMB1_1~C1=C2~EMB1_1.gro&#39;  &#39;EMB1_1~C1=C2~EMB.gro&#39;   EMB1_1.gro  &#39;EMB~C1=C2~EMB1_1.gro&#39;   EMBCC.gro   EMB.gro</span>
-</pre></div>
-</div>
-<p>The filesname in single-quotes are the ones corresponding to the automatically “chain-expanded” reactions. So we have parameterized every reaction product, and this is a sufficient set of templates.</p>
-</section>
-<section id="liquid-generation-and-densification">
-<h2>Liquid generation and densification<a class="headerlink" href="#liquid-generation-and-densification" title="Permalink to this headline">¶</a></h2>
-<p>Let’s back out of the <code class="docutils literal notranslate"><span class="pre">molecules/parameterized/</span></code> subdirectory and drop into <code class="docutils literal notranslate"><span class="pre">systems/init/</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ../../systems/init
-<span class="gp">$ </span>ls
-<span class="go">EMB.gro                 mdout.mdp</span>
-<span class="go">gmx.in                  minimize.mdp</span>
-<span class="go">init.gro                npt-1.cpt</span>
-<span class="go">init.grx                npt-1-density.xvg</span>
-<span class="go">init-minimized.edr      npt-1.edr</span>
-<span class="go">init-minimized.gro      npt-1.gro</span>
-<span class="go">init-minimized.log      npt-1.log</span>
-<span class="go">init-minimized.tpr      npt-1-out.xvg</span>
-<span class="go">init-minimized.trr      npt-1.tpr</span>
-<span class="go">init.top                npt-1.trr</span>
-<span class="go">liquid-densify-npt.mdp</span>
-<span class="gp">$</span>
-</pre></div>
-</div>
-<p>HTPolyNet creates <code class="docutils literal notranslate"><span class="pre">init.top</span></code> by merging 100 EMB topologies together and writes it.  <code class="docutils literal notranslate"><span class="pre">init.gro</span></code> is created using <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">insert-molecules</span></code> using <code class="docutils literal notranslate"><span class="pre">EMB.gro</span></code> as input.  <code class="docutils literal notranslate"><span class="pre">init.grx</span></code> is created by HTPolyNet to store auxiliary atom attributes.  We can see the results of two <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> invocations:</p>
-<ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">minimize.mdp</span></code> and <code class="docutils literal notranslate"><span class="pre">init-minimized.*</span></code> – this is just an initial energy minimization of the system; and</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">liquid-densify-npt.mdp</span></code> and <code class="docutils literal notranslate"><span class="pre">npt-1.*</span></code> – this is the densification MD simulation that runs until the density is equilibrated at the temperature and pressure specified in the <code class="docutils literal notranslate"><span class="pre">mdp</span></code> file.</p></li>
-<li><p>Some <code class="docutils literal notranslate"><span class="pre">xvg</span></code> files are created by <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">energy</span></code>, which is controlled non-interactively using <code class="docutils literal notranslate"><span class="pre">gmx.in</span></code>.  A plot of density vs. time is generated.</p></li>
-</ol>
-<p>Let’s go up out of <code class="docutils literal notranslate"><span class="pre">systems/init</span></code> and into <code class="docutils literal notranslate"><span class="pre">plots/</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ../../plots
-<span class="gp">$ </span>ls
-<span class="go">init-density.png</span>
-</pre></div>
-</div>
-<p>HTPolyNet automatically generates a plot of density vs. time for the densification simulation:</p>
-<img alt="../../_images/init-density.png" src="../../_images/init-density.png" />
-<p>We can see that we’ve successfully arrived at the liquid-like density of about 810 kg/m<sup>3</sup>. (The actual density is 860, so we are a bit low.)</p>
-</section>
-<section id="the-first-cure-iteration">
-<h2>The first CURE iteration<a class="headerlink" href="#the-first-cure-iteration" title="Permalink to this headline">¶</a></h2>
-<p>The next major part of the build is the first CURE iteration, which is the most expensive because the pair searching is most demanding when the number of reactive atoms is maximal.  So let’s back out of <code class="docutils literal notranslate"><span class="pre">plots</span></code> and drop into <code class="docutils literal notranslate"><span class="pre">systems/iter-1</span></code>.  When the iteration completes, there are a _lot_ of files generated.  They can be divided into five “phases” for each CURE iteration:</p>
-<ol class="arabic simple" start="0">
-<li><p>Bond search</p></li>
-<li><p>Dragging</p></li>
-<li><p>Topology update</p></li>
-<li><p>Relaxation</p></li>
-<li><p>Equilibration</p></li>
-</ol>
-<p>Names of files corresponding to phases 0-4 all begin with their respective digits.  Names of files that do not begin with a digit are “auxiliary”.  Let’s consider the files in the seven states.</p>
-<section id="bondsearch-files">
-<h3>Bondsearch files<a class="headerlink" href="#bondsearch-files" title="Permalink to this headline">¶</a></h3>
-<p>Files associated with the bondsearch begin with <code class="docutils literal notranslate"><span class="pre">0</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls -1 <span class="m">0</span>-*
-<span class="go">0-bondsearch-bonds.csv</span>
-<span class="go">0-bondsearch.gro</span>
-<span class="go">0-bondsearch.grx</span>
-<span class="go">0-bondsearch-input.gro</span>
-<span class="go">0-bondsearch.top</span>
-</pre></div>
-</div>
-<p>The <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> files are sufficient Gromacs input.  The <code class="docutils literal notranslate"><span class="pre">grx</span></code> file contains values of four extra attributes for each atom:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>head <span class="m">0</span>-bondsearch.grx
-<span class="go">globalIdx  z  nreactions reactantName  cycle  cycle_idx  chain  chain_idx</span>
-<span class="go">        1  0           0          EMB      0          0     -1         -1</span>
-<span class="go">        2  0           0          EMB      0          5     -1         -1</span>
-<span class="go">        3  0           0          EMB      0          4     -1         -1</span>
-<span class="go">        4  0           0          EMB     -1         -1     -1         -1</span>
-<span class="go">        5  0           0          EMB      0          3     -1         -1</span>
-<span class="go">        6  0           0          EMB      0          2     -1         -1</span>
-<span class="go">        7  0           0          EMB      0          1     -1         -1</span>
-<span class="go">        8  1           0          EMB     -1         -1      0          0</span>
-<span class="go">        9  1           0          EMB     -1         -1      0          1</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">globalIdx</span></code> corresponds to the <code class="docutils literal notranslate"><span class="pre">nr</span></code> attribute in the <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">atoms</span> <span class="pre">]</span></code> directive of a <code class="docutils literal notranslate"><span class="pre">top</span></code> file, or the <code class="docutils literal notranslate"><span class="pre">atomNum</span></code> attribute of a <code class="docutils literal notranslate"><span class="pre">gro</span></code> file; it is just the global atom index.  <code class="docutils literal notranslate"><span class="pre">z</span></code> is the current value of the number of available crosslink bonds for that atom.  <code class="docutils literal notranslate"><span class="pre">nreactions</span></code> is the number of times the atom has reacted; by default the sum of <code class="docutils literal notranslate"><span class="pre">z</span></code> and <code class="docutils literal notranslate"><span class="pre">nreactions</span></code> must be a constant.  <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> is initialized as the residue name the atom belongs to.  However, as we will see, this attribute is key for communicating which product template maps onto a set of particular residues that react.  <code class="docutils literal notranslate"><span class="pre">cycle</span></code> indicates the index of the particular cyclic functional group the atom belongs to, with <code class="docutils literal notranslate"><span class="pre">-1</span></code> indicating “none”; here, atoms 1, 2, 3, 5, 6, and 7 all belong to cycle 0.  <code class="docutils literal notranslate"><span class="pre">cycle_idx</span></code> is the local index of that atom inside its cycle.  Similarly, <code class="docutils literal notranslate"><span class="pre">chain</span></code> indicates the index of the individual chain the atom belongs to; here, atoms 8 and 9 belong to chain 0.  <code class="docutils literal notranslate"><span class="pre">chain_idx</span></code> is the local index of that atom inside its chain.  Both <code class="docutils literal notranslate"><span class="pre">cycle</span></code> and <code class="docutils literal notranslate"><span class="pre">chain</span></code> are maintained as globally unique over the whole system.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">csv</span></code> file is a dump of the bonds “DataFrame” showing all the bonds that have been identified and that HTPolyNet intends to implement. If you must, it’s good to examine it using <code class="docutils literal notranslate"><span class="pre">pandas</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python
-<span class="go">Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux</span>
-<span class="go">Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.</span>
-<span class="go">&gt;&gt;&gt; import pandas as pd</span>
-<span class="go">&gt;&gt;&gt; a=pd.read_csv(&#39;0-bondsearch-bonds.csv&#39;,sep=&#39; &#39;,header=0,index_col=None)</span>
-<span class="go">&gt;&gt;&gt; a.head()</span>
-<span class="go">     ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance</span>
-<span class="go">0  1184  57  1584  76   1.0       EMB1_1      1  0.352  BTRC.passed     True                False   True          0.352211</span>
-<span class="go">1   260  13   933  45   1.0       EMB1_1      1  0.354  BTRC.passed     True                False   True          0.353531</span>
-<span class="go">2   491  24  1290  62   1.0       EMB1_1      1  0.363  BTRC.passed     True                False   True          0.363341</span>
-<span class="go">3  1499  72   996  48   1.0       EMB1_1      1  0.369  BTRC.passed     True                False   True          0.368711</span>
-<span class="go">4  2003  96   681  33   1.0       EMB1_1      1  0.371  BTRC.passed     True                False   True          0.371210</span>
-<span class="go">&gt;&gt;&gt;</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">ai</span></code> and <code class="docutils literal notranslate"><span class="pre">aj</span></code> are the global atom indices for each bond-designate; <code class="docutils literal notranslate"><span class="pre">ri</span></code> and <code class="docutils literal notranslate"><span class="pre">rj</span></code> are their respective residue indices.  For example, the first bond will join residue 57 to 76.  <code class="docutils literal notranslate"><span class="pre">prob</span></code> is the a priori probability that the bond was permitted, and it is just whatever is in the <code class="docutils literal notranslate"><span class="pre">probability</span></code> field of the reaction that defines this bond in the input file.  <code class="docutils literal notranslate"><span class="pre">reactantName</span></code> indicates the the product template of the bond.  <code class="docutils literal notranslate"><span class="pre">order</span></code> is the bond order, again just from the reaction input.  <code class="docutils literal notranslate"><span class="pre">r</span></code> is the instantaneous interatomic distance in nm.  <code class="docutils literal notranslate"><span class="pre">result</span></code> is a code indicating whether or not it passed the bond filters (all bonds that are saved to this file survived, so they will all have <code class="docutils literal notranslate"><span class="pre">BTRC.passed</span></code> as a <code class="docutils literal notranslate"><span class="pre">result</span></code>.)  <code class="docutils literal notranslate"><span class="pre">allowed</span></code>, <code class="docutils literal notranslate"><span class="pre">remove-to-uncyclize</span></code>, and <code class="docutils literal notranslate"><span class="pre">lucky</span></code> are Booleans used in the bond filtering process, and their particular meanings are not crucial to understand here.  <code class="docutils literal notranslate"><span class="pre">initial_distance</span></code> is the same as <code class="docutils literal notranslate"><span class="pre">r</span></code> but it is the result of computing distances by a different module and is retained for consistency-checking.</p>
-</section>
-<section id="dragging-files">
-<h3>Dragging files<a class="headerlink" href="#dragging-files" title="Permalink to this headline">¶</a></h3>
-<p>Files associated with prebond dragging begin with <code class="docutils literal notranslate"><span class="pre">1</span></code>.  However, because no bond-designate length exceeded 0.5 nm, no dragging is triggered.  So the build proceeds to the topology update.</p>
-</section>
-<section id="topology-update-files">
-<h3>Topology update files<a class="headerlink" href="#topology-update-files" title="Permalink to this headline">¶</a></h3>
-<p>Files associated with the topology update process begin with a <code class="docutils literal notranslate"><span class="pre">2</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls -1 <span class="m">2</span>*
-<span class="go">2-update-complete-bonds.csv</span>
-<span class="go">2-update-complete.gro</span>
-<span class="go">2-update-complete.grx</span>
-<span class="go">2-update-complete.top</span>
-<span class="go">2-update-idx-mapper.dat</span>
-<span class="go">2-update-resid-graph.json</span>
-</pre></div>
-</div>
-<p>All files here represent <strong>outputs</strong> of the topology update.  Let’s look at the <code class="docutils literal notranslate"><span class="pre">2-update-idx-mapper.dat</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tail <span class="m">2</span>-update-idx-mapper.dat
-<span class="go">2089 1977</span>
-<span class="go">2090 1978</span>
-<span class="go">2091 1979</span>
-<span class="go">2092 1980</span>
-<span class="go">2093 1981</span>
-<span class="go">2094 1982</span>
-<span class="go">2095 1983</span>
-<span class="go">2096 1984</span>
-<span class="go">2098 1985</span>
-<span class="go">2099 1986</span>
-</pre></div>
-</div>
-<p>The purpose of this file is very simple:  The first column are atom indices <strong>before</strong> topology update, and the second column are indices <strong>after</strong> topology update.  Remember that topology updating deletes sacrificial hydrogens, which means atoms are reindexed (since Gromacs requires sequential atom indexes).  This file allows us to match any atoms in pre-update <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> files to those that exist downstream of a topology update.  Note that I’ve chosen to show a <code class="docutils literal notranslate"><span class="pre">tail</span></code> of this file to highlight the largest index differences.  The post-update indexes also appear in the <code class="docutils literal notranslate"><span class="pre">csv</span></code> file showing all bonds.</p>
-<p>The file <code class="docutils literal notranslate"><span class="pre">2-update-complete-bonds.csv</span></code> is just the initial <code class="docutils literal notranslate"><span class="pre">0-bondsearch-bonds.csv</span></code>, except all the atom indexes have been updated according to the index mapper described above.  The last line in this file reports the new bond with the longest initial length:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>python
-<span class="go">Python 3.10.5 | packaged by conda-forge | (main, Jun 14 2022, 07:04:59) [GCC 10.3.0] on linux</span>
-<span class="go">Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.</span>
-<span class="go">&gt;&gt;&gt; import pandas as pd</span>
-<span class="go">&gt;&gt;&gt; a=pd.read_csv(&#39;2-update-complete-bonds.csv&#39;,sep=&#39; &#39;,header=0,index_col=None)</span>
-<span class="go">&gt;&gt;&gt; a.head()</span>
-<span class="go">     ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance</span>
-<span class="go">0  1157  57  1547  76   1.0       EMB1_1      1  0.352  BTRC.passed     True                False   True          0.351936</span>
-<span class="go">1   254  13   911  45   1.0       EMB1_1      1  0.354  BTRC.passed     True                False   True          0.353531</span>
-<span class="go">2   478  24  1258  62   1.0       EMB1_1      1  0.363  BTRC.passed     True                False   True          0.363341</span>
-<span class="go">3  1464  72   972  48   1.0       EMB1_1      1  0.369  BTRC.passed     True                False   True          0.368711</span>
-<span class="go">4  1959  96   665  33   1.0       EMB1_1      1  0.371  BTRC.passed     True                False   True          0.371199</span>
-<span class="go">&gt;&gt;&gt; a.tail()</span>
-<span class="go">      ai  ri    aj  rj  prob reactantName  order      r       result  allowed  remove-to-uncyclize  lucky  initial_distance</span>
-<span class="go">18  1298  64  1238  61   1.0       EMB1_1      1  0.429  BTRC.passed     True                False   True          0.428661</span>
-<span class="go">19   334  17   645  32   1.0       EMB1_1      1  0.439  BTRC.passed     True                False   True          0.438782</span>
-<span class="go">20   991  49   768  38   1.0       EMB1_1      1  0.440  BTRC.passed     True                False   True          0.439869</span>
-<span class="go">21   294  15  1117  55   1.0       EMB1_1      1  0.470  BTRC.passed     True                False   True          0.470325</span>
-<span class="go">22   747  37   275  14   1.0       EMB1_1      1  0.476  BTRC.passed     True                False   True          0.475644</span>
-<span class="go">&gt;&gt;&gt;</span>
-</pre></div>
-</div>
-<p>The bonds in <code class="docutils literal notranslate"><span class="pre">2-update-complete-bonds.csv</span></code> are the same as those in <code class="docutils literal notranslate"><span class="pre">0-bondsearch-bonds.csv</span></code> except with updated atom indices.  Note for instance that the first bond still indicates a linkage between residues 57 and 76.</p>
-<p>Again, the <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> are proper Gromacs inputs, and the <code class="docutils literal notranslate"><span class="pre">grx</span></code> file tabulates all the “extended” attributes first presented when describing <code class="docutils literal notranslate"><span class="pre">0-bondsearch.grx</span></code>.  The <code class="docutils literal notranslate"><span class="pre">json</span></code> file represents the graph structure of the network on a resid basis in JSON format.</p>
-</section>
-<section id="relaxation-files">
-<h3>Relaxation files<a class="headerlink" href="#relaxation-files" title="Permalink to this headline">¶</a></h3>
-<p>Files that begin with a <code class="docutils literal notranslate"><span class="pre">3</span></code> correspond to bond relaxation stages.  In this example, six stages are run by virture of the bond-designate with the longest bond length (0.499 nm) and the <code class="docutils literal notranslate"><span class="pre">relax_increment</span></code> of 0.075 nm.  Each stage produces 22 output files: the bonds <code class="docutils literal notranslate"><span class="pre">csv</span></code>, the <code class="docutils literal notranslate"><span class="pre">gro</span></code> / <code class="docutils literal notranslate"><span class="pre">grx</span></code> / <code class="docutils literal notranslate"><span class="pre">top</span></code> that initializes the first stage, and then the 17 <strong>outputs</strong> from the minimization (5), nvt (6), and npt (6) sub-stages:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls <span class="m">3</span>-*
-<span class="go">3-relax-stage-1-bonds.csv</span>
-<span class="go">3-relax-stage-1.gro</span>
-<span class="go">3-relax-stage-1.grx</span>
-<span class="go">3-relax-stage-1-min.edr</span>
-<span class="go">3-relax-stage-1-min.gro</span>
-<span class="go">3-relax-stage-1-min.log</span>
-<span class="go">3-relax-stage-1-min.tpr</span>
-<span class="go">3-relax-stage-1-min.trr</span>
-<span class="go">3-relax-stage-1-npt.cpt</span>
-<span class="go">3-relax-stage-1-npt.edr</span>
-<span class="go">3-relax-stage-1-npt.gro</span>
-<span class="go">3-relax-stage-1-npt.log</span>
-<span class="go">3-relax-stage-1-npt.tpr</span>
-<span class="go">3-relax-stage-1-npt.trr</span>
-<span class="go">3-relax-stage-1-nvt.cpt</span>
-<span class="go">3-relax-stage-1-nvt.edr</span>
-<span class="go">3-relax-stage-1-nvt.gro</span>
-<span class="go">3-relax-stage-1-nvt.log</span>
-<span class="go">3-relax-stage-1-nvt.tpr</span>
-<span class="go">3-relax-stage-1-nvt.trr</span>
-<span class="go">3-relax-stage-1.top</span>
-<span class="go">...</span>
-<span class="go">3-relax-stage-6-bonds.csv</span>
-<span class="go">3-relax-stage-6.gro</span>
-<span class="go">3-relax-stage-6.grx</span>
-<span class="go">3-relax-stage-6-min.edr</span>
-<span class="go">3-relax-stage-6-min.gro</span>
-<span class="go">3-relax-stage-6-min.log</span>
-<span class="go">3-relax-stage-6-min.tpr</span>
-<span class="go">3-relax-stage-6-min.trr</span>
-<span class="go">3-relax-stage-6-npt.cpt</span>
-<span class="go">3-relax-stage-6-npt.edr</span>
-<span class="go">3-relax-stage-6-npt.gro</span>
-<span class="go">3-relax-stage-6-npt.log</span>
-<span class="go">3-relax-stage-6-npt.tpr</span>
-<span class="go">3-relax-stage-6-npt.trr</span>
-<span class="go">3-relax-stage-6-nvt.cpt</span>
-<span class="go">3-relax-stage-6-nvt.edr</span>
-<span class="go">3-relax-stage-6-nvt.gro</span>
-<span class="go">3-relax-stage-6-nvt.log</span>
-<span class="go">3-relax-stage-6-nvt.tpr</span>
-<span class="go">3-relax-stage-6-nvt.trr</span>
-<span class="go">3-relax-stage-6.top</span>
-</pre></div>
-</div>
-<p>The attenuation is managed by the sequential <code class="docutils literal notranslate"><span class="pre">top</span></code> files.  Let’s look at the entry for a particular bond (between atoms 581 and 1033) in each stage’s <code class="docutils literal notranslate"><span class="pre">top</span></code> file’s <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> directive:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>grep <span class="s2">&quot;^275 747&quot;</span> <span class="m">3</span>-relax-stage-?.top<span class="p">|</span>awk <span class="s1">&#39;{if ($3==1) print $0}&#39;</span>
-<span class="go">3-relax-stage-1.top:275 747 1 0.4398777993494193 27977.013333333332</span>
-<span class="go">3-relax-stage-2.top:275 747 1 0.4041118244307419 55954.026666666665</span>
-<span class="go">3-relax-stage-3.top:275 747 1 0.36834584951206445 83931.04</span>
-<span class="go">3-relax-stage-4.top:275 747 1 0.33257987459338706 111908.05333333333</span>
-<span class="go">3-relax-stage-5.top:275 747 1 0.2968138996747096 139885.06666666668</span>
-<span class="go">3-relax-stage-6.top:275 747 1 0.2610479247560322 167862.08</span>
-<span class="go">3-relax-stage-7.top:275 747 1 0.22528194983735483 195839.09333333332</span>
-<span class="go">3-relax-stage-8.top:275 747 1 0.18951597491867744 223816.10666666666</span>
-<span class="go">3-relax-stage-9.top:275 747 1 0.15375 251793.12</span>
-<span class="gp">$</span>
-</pre></div>
-</div>
-<p>In a <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">bonds</span> <span class="pre">]</span></code> topology directive, the 4th and 5th columns are THE <code class="docutils literal notranslate"><span class="pre">b0</span></code> and <code class="docutils literal notranslate"><span class="pre">kt</span></code> harmonic bond parameters.  In the stage-9 <code class="docutils literal notranslate"><span class="pre">top</span></code>, we see these parameters at their proper force-field values for a C-C single bond.  Notice how the value of the distance parameter <code class="docutils literal notranslate"><span class="pre">b0</span></code> begins at a large initial value and linearly decreases toward the target (but never by <em>more</em> than an increment of 0.075 nm), while the spring constant <code class="docutils literal notranslate"><span class="pre">kt</span></code> starts low and increases linearly toward its target.</p>
-</section>
-<section id="equilibration-files">
-<h3>Equilibration files<a class="headerlink" href="#equilibration-files" title="Permalink to this headline">¶</a></h3>
-<p>Files associated with final equilibration of the bonded system at the end of one CURE iteration begin with a <code class="docutils literal notranslate"><span class="pre">4</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls <span class="m">4</span>-*
-<span class="go">4-equilibrate-bonds.csv</span>
-<span class="go">4-equilibrate-complete-bonds.csv</span>
-<span class="go">4-equilibrate-complete.gro</span>
-<span class="go">4-equilibrate-complete.grx</span>
-<span class="go">4-equilibrate-complete.top</span>
-<span class="go">4-equilibrate.gro</span>
-<span class="go">4-equilibrate.grx</span>
-<span class="go">4-equilibrate.mdp</span>
-<span class="go">4-equilibrate-post.cpt</span>
-<span class="go">4-equilibrate-post.edr</span>
-<span class="go">4-equilibrate-post.gro</span>
-<span class="go">4-equilibrate-post.log</span>
-<span class="go">4-equilibrate-post.tpr</span>
-<span class="go">4-equilibrate-post.trr</span>
-<span class="go">4-equilibrate.top</span>
-</pre></div>
-</div>
-<p>Files with the simple prefix <code class="docutils literal notranslate"><span class="pre">4-equilibrate</span></code> represent inputs to the Gromacs run.  Files with the prefixs <code class="docutils literal notranslate"><span class="pre">4-equilibrate-post</span></code> are the raw Gromacs mdrun outputs, and the files with the prefix <code class="docutils literal notranslate"><span class="pre">4-equilibrate-complete</span></code> represent the Gromacs outputs read back in to HTPolyNet and processed.  This set of <code class="docutils literal notranslate"><span class="pre">complete</span></code> files are copied to the next CURE iteration directory as the set of <code class="docutils literal notranslate"><span class="pre">0-connect</span></code> files.</p>
-</section>
-</section>
-<section id="subsequent-cure-iterations">
-<h2>Subsequent CURE iterations<a class="headerlink" href="#subsequent-cure-iterations" title="Permalink to this headline">¶</a></h2>
-<p>The primary result of a CURE iteration is the calculated conversion, or the fraction of the maximum number of crosslink bonds possible, based on the initial composition and reaction stoichiometries, that have formed up to that point. If this fraction is below the value associated with the <code class="docutils literal notranslate"><span class="pre">CURE_desired_conversion</span></code> option, then a new iteration is begun.  This involves creating the next <code class="docutils literal notranslate"><span class="pre">iter-n/</span></code> directory under <code class="docutils literal notranslate"><span class="pre">systems/</span></code>, and copying over the prior iteration’s <code class="docutils literal notranslate"><span class="pre">4-equilibrate-complete.top/gro/grx</span></code> files onto the new <code class="docutils literal notranslate"><span class="pre">0-bondsearch.top/gro/grx</span></code> files.  At the beginning of any CURE iterations, the maximum number of new bonds required to reach the desired conversion is calculated and used as a limit in creating new bonds, so that the desired conversion is hit exactly.</p>
-<p>The number of CURE iterations needed to reach a specified conversion is never deterministic because of the randomness inherent in the inter-stage and post-bonding MD simulations.  In this particular instance, a total of 9 CURE iterations were required to reach 0.95 conversion.  Files for each iteration’s directory follow the same naming convention explained for the first iteration.</p>
-</section>
-<section id="post-cure-reactions-equilibration-and-finalization">
-<h2>Post-cure reactions, equilibration, and finalization<a class="headerlink" href="#post-cure-reactions-equilibration-and-finalization" title="Permalink to this headline">¶</a></h2>
-<p>After iteration 9, when the conversion specification is satisfied, HTPolyNet progresses to the post-cure stage.  The directory <code class="docutils literal notranslate"><span class="pre">systems/postcure</span></code> is created and the final outputs from the last CURE iterations are copied here.  If there were any monomers that had not yet reacted (here there are not), then the EMBCC reaction would be used to revert them back to double bonds, followed by an equilibration. After the equilibration, HTPolyNet generates the final files <code class="docutils literal notranslate"><span class="pre">7-final.top/gro/grx</span></code>.</p>
 </section>
 <section id="overall-behavior">
 <h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this headline">¶</a></h2>
@@ -456,13 +222,13 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Example Tutorials</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Poly(4-methyl styrene)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../3-VE-STY/index.html">BisGMA-Styrene Thermoset</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
 </ul>
 
 <div class="relations">

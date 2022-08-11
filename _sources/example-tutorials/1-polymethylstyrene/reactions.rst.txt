@@ -11,7 +11,7 @@ In this system, the only *actual* reaction is between  a ``C1`` of one 4-methyls
       name:        'EMB1_1',
       stage:       cure,
       reactants:   {1: EMB, 2: EMB},
-      product:     EMB1_1,
+      product:     EMB~C1-C2~EMB,
       probability: 1.0,
       atoms: {
         A: {reactant: 1, resid: 1, atom: C1, z: 1},
@@ -45,40 +45,39 @@ Each of these reactions generates a unique template molecule; the first two gene
 Examining detailed debugging logs, we can see HTPolyNet in action generating these three new reactions::
 
   monomer atom EMB_C1 will attack dimer atom EMB1_1[EMB1_C2] -> EMB~C1=C2~EMB1_1:
-  Reaction "emb~c1=c2~emb1_1"
+  Reaction "emb~c1=c2~emb~c1-c2~emb"
   reactant 1: EMB
   reactant 2: EMB1_1
-  product EMB~C1=C2~EMB1_1
+  product EMB~C1=C2~EMB~C1-C2~EMB
   atom A: {'reactant': 1, 'resid': 1, 'atom': 'C1', 'z': 1}
   atom B: {'reactant': 2, 'resid': 1, 'atom': 'C2', 'z': 1}
   bond {'atoms': ['A', 'B'], 'order': 1}
 
-  dimer atom EMB1_1[EMB2_C1] will attack monomer atom EMB_C2-> EMB1_1~C1=C2~EMB:
+  dimer atom EMB~C1-C2~EMB[EMB2_C1] will attack monomer atom EMB_C2-> EMB~C1-C2~EMB~C1=C2~EMB:
   Reaction "emb1_1~c1=c2~emb"
-  reactant 1: EMB1_1
+  reactant 1: EMB~C1-C2~EMB
   reactant 2: EMB
-  product EMB1_1~C1=C2~EMB
+  product EMB~C1-C2~EMB~C1=C2~EMB
   atom A: {'reactant': 1, 'resid': 2, 'atom': 'C1', 'z': 1}
   atom B: {'reactant': 2, 'resid': 1, 'atom': 'C2', 'z': 1}
   bond {'atoms': ['A', 'B'], 'order': 1}
 
-  dimer atom EMB1_1-EMB2_C1 will attack dimer atom EMB1_1-EMB1_C2 -> EMB1_1~C1=C2~EMB1_1:
+  dimer atom EMB~C1-C2~EMB[EMB2_C1] will attack dimer atom EMB~C1-C2~EMB[EMB1_C2] -> EMB~C1-C2~EMB~C1=C2~EMB~C1-C2~EMB:
   Reaction "emb1_1~c1=c2~emb1_1"
-  reactant 1: EMB1_1
-  reactant 2: EMB1_1
-  product EMB1_1~C1=C2~EMB1_1
+  reactant 1: EMB~C1-C2~EMB
+  reactant 2: EMB~C1-C2~EMB
+  product EMB~C1-C2~EMB~C1=C2~EMB~C1-C2~EMB
   atom A: {'reactant': 1, 'resid': 2, 'atom': 'C1', 'z': 1}
   atom B: {'reactant': 2, 'resid': 1, 'atom': 'C2', 'z': 1}
   bond {'atoms': ['A', 'B'], 'order': 1}
 
-
-Finally, we can choose to revert any fully unreacted monomers back to true double bonds:
+Finally, we can choose to revert any fully unreacted monomers back to true double bonds (i.e., "cap" the bonds):
 
 .. code-block:: yaml
 
  - {
       name:         'EMBCC',
-      stage:        post-cure,
+      stage:        cap,
       reactants:    {1: EMB},
       product:      EMBCC,
       probability:  1.0,
@@ -91,4 +90,4 @@ Finally, we can choose to revert any fully unreacted monomers back to true doubl
       ]
     }
 
-The next thing we consider is the :ref:`configuration file <pms_configuration_file>` necessary to describe the polymerization chemistry and determine the system build.
+The next thing we consider is the :ref:`configuration file <pms_configuration_file>` necessary to direct the build.

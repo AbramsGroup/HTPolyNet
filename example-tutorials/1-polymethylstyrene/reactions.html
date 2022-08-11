@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="The Configuration File" href="configuration.html" />
-    <link rel="prev" title="Monomer" href="monomer.html" />
+    <link rel="prev" title="Monomer: 4-methylstyrene" href="monomer.html" />
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   
@@ -40,7 +40,7 @@
 <span class="nt">     name</span><span class="p">:</span><span class="w">        </span><span class="s">&#39;EMB1_1&#39;</span><span class="p p-Indicator">,</span><span class="w"></span>
 <span class="nt">     stage</span><span class="p">:</span><span class="w">       </span><span class="nv">cure</span><span class="p p-Indicator">,</span><span class="w"></span>
 <span class="nt">     reactants</span><span class="p">:</span><span class="w">   </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">EMB</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">EMB</span><span class="p p-Indicator">},</span><span class="w"></span>
-<span class="nt">     product</span><span class="p">:</span><span class="w">     </span><span class="nv">EMB1_1</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="nt">     product</span><span class="p">:</span><span class="w">     </span><span class="nv">EMB~C1-C2~EMB</span><span class="p p-Indicator">,</span><span class="w"></span>
 <span class="nt">     probability</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"></span>
 <span class="nt">     atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
 <span class="nt">       A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span><span class="w"></span>
@@ -67,37 +67,37 @@
 <p>Each of these reactions generates a unique template molecule; the first two generate EMB trimers and the third generates an EMB quadrimer.  Although the two trimers are identical molecules, the particular bond that forms to generate each trimer is different for each one, and for now, HTPolyNet treats them as different molecules (this is admittedly inefficient but it works).</p>
 <p>Examining detailed debugging logs, we can see HTPolyNet in action generating these three new reactions:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">monomer</span> <span class="n">atom</span> <span class="n">EMB_C1</span> <span class="n">will</span> <span class="n">attack</span> <span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB1_1</span><span class="p">[</span><span class="n">EMB1_C2</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB1_1</span><span class="p">:</span>
-<span class="n">Reaction</span> <span class="s2">&quot;emb~c1=c2~emb1_1&quot;</span>
+<span class="n">Reaction</span> <span class="s2">&quot;emb~c1=c2~emb~c1-c2~emb&quot;</span>
 <span class="n">reactant</span> <span class="mi">1</span><span class="p">:</span> <span class="n">EMB</span>
 <span class="n">reactant</span> <span class="mi">2</span><span class="p">:</span> <span class="n">EMB1_1</span>
-<span class="n">product</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB1_1</span>
+<span class="n">product</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
 <span class="n">atom</span> <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reactant&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;atom&#39;</span><span class="p">:</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 <span class="n">atom</span> <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reactant&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;atom&#39;</span><span class="p">:</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 <span class="n">bond</span> <span class="p">{</span><span class="s1">&#39;atoms&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span> <span class="s1">&#39;order&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
-<span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB1_1</span><span class="p">[</span><span class="n">EMB2_C1</span><span class="p">]</span> <span class="n">will</span> <span class="n">attack</span> <span class="n">monomer</span> <span class="n">atom</span> <span class="n">EMB_C2</span><span class="o">-&gt;</span> <span class="n">EMB1_1</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="p">:</span>
+<span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="p">[</span><span class="n">EMB2_C1</span><span class="p">]</span> <span class="n">will</span> <span class="n">attack</span> <span class="n">monomer</span> <span class="n">atom</span> <span class="n">EMB_C2</span><span class="o">-&gt;</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="p">:</span>
 <span class="n">Reaction</span> <span class="s2">&quot;emb1_1~c1=c2~emb&quot;</span>
-<span class="n">reactant</span> <span class="mi">1</span><span class="p">:</span> <span class="n">EMB1_1</span>
+<span class="n">reactant</span> <span class="mi">1</span><span class="p">:</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
 <span class="n">reactant</span> <span class="mi">2</span><span class="p">:</span> <span class="n">EMB</span>
-<span class="n">product</span> <span class="n">EMB1_1</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
+<span class="n">product</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
 <span class="n">atom</span> <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reactant&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;atom&#39;</span><span class="p">:</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 <span class="n">atom</span> <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reactant&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;atom&#39;</span><span class="p">:</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 <span class="n">bond</span> <span class="p">{</span><span class="s1">&#39;atoms&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span> <span class="s1">&#39;order&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
-<span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB1_1</span><span class="o">-</span><span class="n">EMB2_C1</span> <span class="n">will</span> <span class="n">attack</span> <span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB1_1</span><span class="o">-</span><span class="n">EMB1_C2</span> <span class="o">-&gt;</span> <span class="n">EMB1_1</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB1_1</span><span class="p">:</span>
+<span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="p">[</span><span class="n">EMB2_C1</span><span class="p">]</span> <span class="n">will</span> <span class="n">attack</span> <span class="n">dimer</span> <span class="n">atom</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="p">[</span><span class="n">EMB1_C2</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="p">:</span>
 <span class="n">Reaction</span> <span class="s2">&quot;emb1_1~c1=c2~emb1_1&quot;</span>
-<span class="n">reactant</span> <span class="mi">1</span><span class="p">:</span> <span class="n">EMB1_1</span>
-<span class="n">reactant</span> <span class="mi">2</span><span class="p">:</span> <span class="n">EMB1_1</span>
-<span class="n">product</span> <span class="n">EMB1_1</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB1_1</span>
+<span class="n">reactant</span> <span class="mi">1</span><span class="p">:</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
+<span class="n">reactant</span> <span class="mi">2</span><span class="p">:</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
+<span class="n">product</span> <span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">=</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">EMB</span>
 <span class="n">atom</span> <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reactant&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;atom&#39;</span><span class="p">:</span> <span class="s1">&#39;C1&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 <span class="n">atom</span> <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;reactant&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;resid&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;atom&#39;</span><span class="p">:</span> <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 <span class="n">bond</span> <span class="p">{</span><span class="s1">&#39;atoms&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">],</span> <span class="s1">&#39;order&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 </pre></div>
 </div>
-<p>Finally, we can choose to revert any fully unreacted monomers back to true double bonds:</p>
+<p>Finally, we can choose to revert any fully unreacted monomers back to true double bonds (i.e., “cap” the bonds):</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
 <span class="nt">     name</span><span class="p">:</span><span class="w">         </span><span class="s">&#39;EMBCC&#39;</span><span class="p p-Indicator">,</span><span class="w"></span>
-<span class="nt">     stage</span><span class="p">:</span><span class="w">        </span><span class="nv">post-cure</span><span class="p p-Indicator">,</span><span class="w"></span>
+<span class="nt">     stage</span><span class="p">:</span><span class="w">        </span><span class="nv">cap</span><span class="p p-Indicator">,</span><span class="w"></span>
 <span class="nt">     reactants</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">EMB</span><span class="p p-Indicator">},</span><span class="w"></span>
 <span class="nt">     product</span><span class="p">:</span><span class="w">      </span><span class="nv">EMBCC</span><span class="p p-Indicator">,</span><span class="w"></span>
 <span class="nt">     probability</span><span class="p">:</span><span class="w">  </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"></span>
@@ -111,7 +111,7 @@
 <span class="w">   </span><span class="p p-Indicator">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>The next thing we consider is the <a class="reference internal" href="configuration.html#pms-configuration-file"><span class="std std-ref">configuration file</span></a> necessary to describe the polymerization chemistry and determine the system build.</p>
+<p>The next thing we consider is the <a class="reference internal" href="configuration.html#pms-configuration-file"><span class="std std-ref">configuration file</span></a> necessary to direct the build.</p>
 </section>
 
 
@@ -135,13 +135,13 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Example Tutorials</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Poly(4-methyl styrene)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../3-VE-STY/index.html">BisGMA-Styrene Thermoset</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
 </ul>
 
 <div class="relations">
@@ -150,7 +150,7 @@
   <li><a href="../../index.html">Documentation overview</a><ul>
   <li><a href="../index.html">Example Tutorials</a><ul>
   <li><a href="index.html">Poly(4-methyl styrene)</a><ul>
-      <li>Previous: <a href="monomer.html" title="previous chapter">Monomer</a></li>
+      <li>Previous: <a href="monomer.html" title="previous chapter">Monomer: 4-methylstyrene</a></li>
       <li>Next: <a href="configuration.html" title="next chapter">The Configuration File</a></li>
   </ul></li>
   </ul></li>

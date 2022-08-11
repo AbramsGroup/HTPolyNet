@@ -15,7 +15,7 @@
     <script src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Monomer" href="monomer.html" />
+    <link rel="next" title="Monomer: 4-methylstyrene" href="monomer.html" />
     <link rel="prev" title="Example Tutorials" href="../index.html" />
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -35,23 +35,46 @@
             
   <section id="poly-4-methyl-styrene">
 <span id="pms-tutorial"></span><h1>Poly(4-methyl styrene)<a class="headerlink" href="#poly-4-methyl-styrene" title="Permalink to this headline">¶</a></h1>
-<p>This tutorial illustrates how to build an all-atom model of a poly(methyl styrene) using HTPolyNet.</p>
+<p>This tutorial illustrates how to build an all-atom model of a poly(methyl styrene) sytems using HTPolyNet.</p>
+<p>The first step is to get to a clean working directory, and then use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> to setup this example.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir my_pms
+<span class="gp">$ </span><span class="nb">cd</span> my_pms
+<span class="gp">$ </span>htpolynet fetch-example -n <span class="m">2</span>
+<span class="gp">$ </span>ls
+<span class="go">2-polymethylstyrene/</span>
+<span class="gp">$ </span><span class="nb">cd</span> <span class="m">2</span>-polymethylstyrene
+<span class="gp">$ </span>ls
+<span class="go">lib/  pMSTY-hi.yaml  pMSTY-lo.yaml  run.sh</span>
+</pre></div>
+</div>
+<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run both a low-cure and high-cure build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated methylstyrene (i.e., ethylmethylbenzene, or “EMB”).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
+<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;pMSTY&quot;</span>
+conda activate mol-env
+<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/inputs&#39;</span>
+rm -rf proj-* *log lib/molecules/parameterized/*
+<span class="nb">echo</span> <span class="s2">&quot;C1=CC(C)=CC=C1CC&quot;</span> <span class="p">|</span> obabel -ismi --gen2d -opng -O <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/EMB.png
+<span class="nb">echo</span> <span class="s2">&quot;C1=CC(C)=CC=C1CC&quot;</span> <span class="p">|</span> obabel -ismi --gen3d -h -omol2 --title <span class="s2">&quot;EMB&quot;</span> <span class="p">|</span> <span class="se">\</span>
+      sed s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+      sed s/<span class="s2">&quot; 9 C &quot;</span>/<span class="s2">&quot; 9 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+      sed s/<span class="s2">&quot;UNL1&quot;</span>/<span class="s2">&quot;EMB &quot;</span>/ &gt; <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/EMB.mol2
+htpolynet run -diag diagnostics-lo.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>-lo.yaml <span class="p">&amp;</span>&gt; lo.log
+htpolynet run -diag diagnostics-hi.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>-hi.yaml <span class="p">&amp;</span>&gt; hi.log
+</pre></div>
+</div>
+<p>So, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="monomer.html">Monomer</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="monomer.html#methylstyrene">4-methylstyrene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monomer.html">Monomer: 4-methylstyrene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reactions.html">Reactions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">The Configuration File</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#constituents-directives">Constituents Directives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#reactions-directives">Reactions Directives</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="reactions.html">Reactions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">The Configuration File</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run.html">Running the Build</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="run.html#console-output">Console output</a></li>
-<li class="toctree-l2"><a class="reference internal" href="run.html#parameterization-results">Parameterization results</a></li>
-<li class="toctree-l2"><a class="reference internal" href="run.html#liquid-generation-and-densification">Liquid generation and densification</a></li>
-<li class="toctree-l2"><a class="reference internal" href="run.html#the-first-cure-iteration">The first CURE iteration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="run.html#subsequent-cure-iterations">Subsequent CURE iterations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="run.html#post-cure-reactions-equilibration-and-finalization">Post-cure reactions, equilibration, and finalization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="run.html#overall-behavior">Overall behavior</a></li>
 </ul>
 </li>
@@ -80,13 +103,13 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Example Tutorials</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Poly(4-methyl styrene)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../3-VE-STY/index.html">BisGMA-Styrene Thermoset</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>
 </ul>
 
 <div class="relations">
@@ -95,7 +118,7 @@
   <li><a href="../../index.html">Documentation overview</a><ul>
   <li><a href="../index.html">Example Tutorials</a><ul>
       <li>Previous: <a href="../index.html" title="previous chapter">Example Tutorials</a></li>
-      <li>Next: <a href="monomer.html" title="next chapter">Monomer</a></li>
+      <li>Next: <a href="monomer.html" title="next chapter">Monomer: 4-methylstyrene</a></li>
   </ul></li>
   </ul></li>
 </ul>

@@ -1,23 +1,7 @@
 .. _tutorial_pms_monomer:
 
-Monomer
-=======
-
-In this section, we describe how the input :download:`EMB.mol2 <EMB.mol2>` that specifies the 4-methylstyrene monomer is generated.  ("EMB" stands for "ethylmethylbenzene" for reasons that will become clear.) Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":
-
-.. code-block:: console
-
-    $ mkdir my_pms_build
-    $ cd my_pms_build
-    $ mkdir lib
-    $ mkdir lib/inputs
-    $ mkdir lib/parameterized
-    $ cd lib/inputs
-
-Now we can generate the required ``*.mol2`` file.
-
-4-methylstyrene
-^^^^^^^^^^^^^^^
+Monomer: 4-methylstyrene
+------------------------
 
 .. image:: mst-vinyl.png
 
@@ -159,6 +143,6 @@ Let's look at the file :download:`EMB.mol2 <EMB.mol2>` that results from the com
          20     9    20    1
          21     9    21    1
 
-You can see how atoms 8 and 9 (``mol2`` indexes) are now named ``C1`` and ``C2``, respectively.
+You can see how atoms 8 and 9 (``mol2`` indexes) are now named ``C1`` and ``C2``, respectively.  The command above is embedded in the ``run.sh`` script that comes with this example.
 
 The next thing we consider is how to create the :ref:`reaction dictionaries <pms_reaction_dictionaries>` necessary to describe the polymerization chemistry.
