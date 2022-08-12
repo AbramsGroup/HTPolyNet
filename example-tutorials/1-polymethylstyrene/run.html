@@ -44,7 +44,7 @@
 <h2>Console output<a class="headerlink" href="#console-output" title="Permalink to this headline">¶</a></h2>
 <p>In this section, let’s go section by section through the console log to understand what <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is doing.  The first section just shows a banner and indicates where the library is and where the project directory is, then reports on the available Ambertools software, finally ending by stating the name of the configuration file.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt;</span>
-<span class="go">INFO&gt;     HTPolyNet 1.0.0</span>
+<span class="go">INFO&gt;     HTPolyNet 0.0.1</span>
 <span class="go">INFO&gt;     https://abramsgroup.github.io/HTPolyNet/</span>
 <span class="go">INFO&gt;</span>
 <span class="go">INFO&gt;     Ming Huang</span>
@@ -167,6 +167,7 @@
 <span class="go">INFO&gt; ********** Connect-Update-Relax-Equilibrate (CURE) ends ***********</span>
 </pre></div>
 </div>
+<p>Since the conversion exceeds the specified desired conversion of 50%, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> proceeds to capping.  Here, it found no unreacted styrenes that needed capping, so no new bonds were generated here.  Next, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> proceeds to postcure:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt; *************** Postcure in proj-0/systems/postcure ***************</span>
 <span class="go">INFO&gt; Annealing: 5 points for 2 cycles over 160 ps</span>
 <span class="go">INFO&gt; Annealed coordinates in annealed.gro</span>
@@ -179,25 +180,27 @@
 <span class="go">INFO&gt; ********************* HTPolyNet runtime ends **********************</span>
 </pre></div>
 </div>
+<p>This just tells us the final density and where the final results are found.  If we look there, we see:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls -l proj-0/systems/final-results
+<span class="go">final.gro  final.grx  final.top</span>
+</pre></div>
+</div>
+<p>Now, with the <code class="docutils literal notranslate"><span class="pre">gro</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code> file, you can run whatever Gromacs simulation you like with this system.</p>
 </section>
 <section id="overall-behavior">
 <h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this headline">¶</a></h2>
-<p>If the build is run with <code class="docutils literal notranslate"><span class="pre">--loglevel</span> <span class="pre">debug</span></code> indicated on the command-line, the log file will contain a lot of information that can be used to characterize the efficiency of the build process.  The <code class="docutils literal notranslate"><span class="pre">HTPolyNet.plot</span></code> module has a method <code class="docutils literal notranslate"><span class="pre">cure_graph</span></code> that can be used to generate plots showing the conversion vs. run time in hours, and the iteration number vs. run time in hours.  Generating this plot from the directory the log file is in can be done using an interactive python session:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">HTPolyNet.plot</span> <span class="kn">import</span> <span class="n">cure_graph</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">cure_graph</span><span class="p">([</span><span class="s1">&#39;my_build.log&#39;</span><span class="p">],</span><span class="n">xmax</span><span class="o">=</span><span class="mf">20.</span><span class="p">)</span>
+<p>Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a low-cure build under <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> and a high-cure build under <code class="docutils literal notranslate"><span class="pre">proj-1</span></code>.  Diagnostic output for each run is in <code class="docutils literal notranslate"><span class="pre">diagnostics-lo.log</span></code> and <code class="docutils literal notranslate"><span class="pre">diagnostics-hi.log</span></code>, respectively.</p>
+<p>First, we can make plots of the conversion vs. run time and the cure iteration vs. run time:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -logs diagnostics-*.log
 </pre></div>
 </div>
-<p>We ran 10 independent system builds of 100 monomers each using the provided <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and <code class="docutils literal notranslate"><span class="pre">yaml</span></code> input files; they generated the logs <code class="docutils literal notranslate"><span class="pre">0.log</span></code>, <code class="docutils literal notranslate"><span class="pre">1.log</span></code>, …, <code class="docutils literal notranslate"><span class="pre">9.log</span></code>.  The plot below was made using:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">glob</span> <span class="kn">import</span> <span class="n">glob</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">HTPolyNet.plot</span> <span class="kn">import</span> <span class="n">cure_graph</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">cure_graph</span><span class="p">([</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;[0-9].log&#39;</span><span class="p">)],</span><span class="n">xmax</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<p>This generates <code class="docutils literal notranslate"><span class="pre">cure-info.png</span></code>:</p>
+<img alt="../../_images/cure-info.png" src="../../_images/cure-info.png" />
+<p>We can see here that the 95% cure took about 8 and a half minutes of run time (which is not really impressive since this is a <strong>very</strong> small system).  Fully two-thirds of the run time is consumed realizing the final 15% of the cure.</p>
+<p>Second, we can make plots that track the temperature and density throughout the entire build process:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -proj proj-0
 </pre></div>
 </div>
-<img alt="../../_images/iter-graph.png" src="../../_images/iter-graph.png" />
-<p>In this case, on a moderately slow workstation, these builds took 10-15 minutes to reach 0.95 conversion, usually in 9 iterations.</p>
-<p>Below is a trace of the density vs time as a concatenation of the sequence of all NPT MD simulations, beginning with the initial densification, passing through all drag/relaxationg/equilibrations in each iteration, and concluding with the final equilibration:</p>
-<img alt="../../_images/all-density.png" src="../../_images/all-density.png" />
-<p>It is clear that during the post-bond relaxations, density drops to 700 kg/m3, but this is because the post-bond relaxations are all run at 600 K.  The equilibrations at 300 K all bring the system back to approx. 900 kg/m3.</p>
 </section>
 </section>
 

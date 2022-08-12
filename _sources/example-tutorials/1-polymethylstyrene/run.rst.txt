@@ -19,7 +19,7 @@ In this section, let's go section by section through the console log to understa
 .. code-block:: console
 
     INFO>                                                                    
-    INFO>     HTPolyNet 1.0.0                                   
+    INFO>     HTPolyNet 0.0.1                                   
     INFO>     https://abramsgroup.github.io/HTPolyNet/                       
     INFO>                                                                    
     INFO>     Ming Huang                                                     
@@ -155,6 +155,8 @@ Next we proceed through a second CURE iteration:
     INFO> Capping will generate 0 new bonds
     INFO> ********** Connect-Update-Relax-Equilibrate (CURE) ends ***********
 
+Since the conversion exceeds the specified desired conversion of 50\%, ``HTPolyNet`` proceeds to capping.  Here, it found no unreacted styrenes that needed capping, so no new bonds were generated here.  Next, ``HTPolyNet`` proceeds to postcure:
+
 .. code-block:: console
 
     INFO> *************** Postcure in proj-0/systems/postcure ***************
@@ -168,33 +170,35 @@ Next we proceed through a second CURE iteration:
     INFO> *********** Final data to proj-0/systems/final-results ************
     INFO> ********************* HTPolyNet runtime ends **********************
 
+This just tells us the final density and where the final results are found.  If we look there, we see:
 
-    
+.. code-block:: console
+
+    $ ls -l proj-0/systems/final-results
+    final.gro  final.grx  final.top
+
+Now, with the ``gro`` and ``top`` file, you can run whatever Gromacs simulation you like with this system.
+
 Overall behavior
 ^^^^^^^^^^^^^^^^
 
-If the build is run with ``--loglevel debug`` indicated on the command-line, the log file will contain a lot of information that can be used to characterize the efficiency of the build process.  The ``HTPolyNet.plot`` module has a method ``cure_graph`` that can be used to generate plots showing the conversion vs. run time in hours, and the iteration number vs. run time in hours.  Generating this plot from the directory the log file is in can be done using an interactive python session:
+Using ``htpolynet plots`` we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a low-cure build under ``proj-0`` and a high-cure build under ``proj-1``.  Diagnostic output for each run is in ``diagnostics-lo.log`` and ``diagnostics-hi.log``, respectively.
 
-.. code-block:: python
+First, we can make plots of the conversion vs. run time and the cure iteration vs. run time:
 
-    >>> from HTPolyNet.plot import cure_graph
-    >>> cure_graph(['my_build.log'],xmax=20.)
+.. code-block:: console
 
-We ran 10 independent system builds of 100 monomers each using the provided ``mol2`` and ``yaml`` input files; they generated the logs ``0.log``, ``1.log``, ..., ``9.log``.  The plot below was made using:
+    $ htpolynet plots -logs diagnostics-*.log
 
-.. code-block:: python
+This generates ``cure-info.png``: 
 
-    >>> from glob import glob
-    >>> from HTPolyNet.plot import cure_graph
-    >>> cure_graph([glob('[0-9].log')],xmax=0.3)
+.. image:: cure-info.png 
 
-.. image:: iter-graph.png
+We can see here that the 95\% cure took about 8 and a half minutes of run time (which is not really impressive since this is a **very** small system).  Fully two-thirds of the run time is consumed realizing the final 15\% of the cure.
 
-In this case, on a moderately slow workstation, these builds took 10-15 minutes to reach 0.95 conversion, usually in 9 iterations.
+Second, we can make plots that track the temperature and density throughout the entire build process:
 
-Below is a trace of the density vs time as a concatenation of the sequence of all NPT MD simulations, beginning with the initial densification, passing through all drag/relaxationg/equilibrations in each iteration, and concluding with the final equilibration:
+.. code-block:: console
 
-.. image:: all-density.png
-
-It is clear that during the post-bond relaxations, density drops to 700 kg/m3, but this is because the post-bond relaxations are all run at 600 K.  The equilibrations at 300 K all bring the system back to approx. 900 kg/m3.
+    $ htpolynet plots -proj proj-0
 

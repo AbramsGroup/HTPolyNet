@@ -83,6 +83,8 @@ In order to use ``HTPolyNet`` effectively, it is recommended that you have good 
 
 1. MD simulation in general and Gromacs specifically;
 2. the General Amber Force Field (GAFF), including in particular
+
    a. how to use ``antechamber``, ``tleap``, and ``parmchk2`` to generate GAFF parameterizations; and
    b. how to use these parameterizations inside Gromacs; and
+
 3. Polymer chemistry, at least for the systems you are interested in simulating.
