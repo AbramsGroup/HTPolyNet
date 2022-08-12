@@ -202,3 +202,6 @@ Second, we can make plots that track the temperature and density throughout the 
 
     $ htpolynet plots -proj proj-0
 
+.. image:: global_traces.png 
+
+From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top two plots show temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I'm showing one transition for each drag/relax stage.  The bottom two plots show density in kg/m^3 vs time in ps.  The second and fourth plots "zoom in" on just the CURE iterations (though the zoom is not quite so big).

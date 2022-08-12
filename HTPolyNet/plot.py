@@ -68,6 +68,7 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
     size=kwargs.get('size',(16,4*len(names)))
     legend=kwargs.get('legend',False)
     fig,ax=plt.subplots(len(names),1,figsize=size)
+    plt.xlabel('time (ps)')
     cmapname=kwargs.get('colormap','plasma')
     # yunits=kwargs.get('yunits',None)
     cmap=cm.get_cmap(cmapname)
@@ -91,10 +92,12 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
             in_ax=ax[1] if len(names)==1 else ax[i*2+1]
             out_ax.plot(df['time (ps)'],df[colname],label=colname)
             out_ax.set_ylabel(colname)
+            out_ax.set_xlabel('time (ps)')
             if len(y2names)>i:
                 out_ax2=out_ax.twinx()
                 out_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
                 out_ax2.set_ylabel(y2names[i])
+                out_ax2.set_xlabel('time (ps)')
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=out_ax.get_ylim()
@@ -103,10 +106,12 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
                 #     out_ax.text(x,0.9*ylim[1],l,fontsize=8)
             in_ax.plot(marked_df['time (ps)'],marked_df[colname],label=colname)
             in_ax.set_ylabel(colname)
+            in_ax.set_xlabel('time (ps)')
             if len(y2names)>i:
                 in_ax2=in_ax.twinx()
                 in_ax2.plot(marked_df['time (ps)'],marked_df[y2names[i]],label=y2names[i],color='black')
                 in_ax2.set_ylabel(y2names[i])
+                in_ax2.set_xlabel('time (ps)')
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=in_ax.get_ylim()
