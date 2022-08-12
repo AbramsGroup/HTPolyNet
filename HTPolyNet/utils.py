@@ -68,6 +68,7 @@ def density_evolution(proj_dir):
     df=pd.DataFrame()
     xshift=0.0
     transition_times=[xshift]
+    interval_labels=[]
     markers=[]
     for subd in _system_dirs:
         # print(f'subd {subd}')
@@ -99,6 +100,7 @@ def density_evolution(proj_dir):
                                             # print(f'density from gro {density}')
                                     df,xshift=_concat_from_edr(df,edr_pfx,qtys,add_if_missing=[('Density',density)])
                                     transition_times.append(xshift)
+                                    interval_labels.append([edr_pfx])
                             stg+=1
                             stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,ens=x))) for x in _md_ensembles])
                     if r'equil' in pfx:
@@ -110,6 +112,7 @@ def density_evolution(proj_dir):
                                 if os.path.exists(edr_pfx+r'.edr'):
                                     df,xshift=_concat_from_edr(df,edr_pfx,qtys)
                                     transition_times.append(xshift)
+                                    interval_labels.append([edr_pfx])
                 iter+=1        
                 iter_subd=os.path.join(sysd,subd.format(iter=iter)) if r'iter' in subd else 'I_BET_THIS_FILE_DNE'
             markers.append(df.iloc[-1]['time (ps)'])
@@ -128,6 +131,7 @@ def density_evolution(proj_dir):
                                 density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
                             df,xshift=_concat_from_edr(df,edr_pfx,qtys,add_if_missing=[('Density',density)])
                             transition_times.append(xshift)
+                            interval_labels.append([edr_pfx])
                 else:
                     edr_pfx=os.path.join(this_subd,pfx.format(ens=ens))
                     gro=edr_pfx+r'.gro'
@@ -138,4 +142,5 @@ def density_evolution(proj_dir):
                             density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
                         df,xshift=_concat_from_edr(df,edr_pfx,['Temperature'],add_if_missing=[('Density',density)])
                         transition_times.append(xshift)
-    return df,transition_times,markers
+                        interval_labels.append([edr_pfx])
+    return df,transition_times,markers,interval_labels

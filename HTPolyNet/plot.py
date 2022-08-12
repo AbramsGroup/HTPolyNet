@@ -62,7 +62,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     logging.disable(logging.NOTSET)
     return avg
 
-def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],**kwargs):
+def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],interval_labels=[],**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
     logging.disable(logging.DEBUG)
     size=kwargs.get('size',(12,4*len(names)))
@@ -73,6 +73,11 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],**kw
     cmap=cm.get_cmap(cmapname)
     # print(f'in global_trace:\n{df.head().to_string()}')
 
+    interval_times=[]
+    if interval_labels:
+        for i in range(1,len(transition_times)):
+            interval_times.append((transition_times[i]+transition_times[i-1])/2)
+    assert len(interval_labels)==len(interval_times)
     L,R=-1,-1
     if len(markers)>1:
         L,R=markers[0],markers[-1]
@@ -88,12 +93,17 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],**kw
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=out_ax.get_ylim()
                 out_ax.vlines(transition_times,ylim[0],ylim[1],color=colors)
+                for x,l in zip(interval_times,interval_labels):
+                    out_ax.text(x,0.9*ylim,l,fontsize=8)
             in_ax.plot(marked_df['time (ps)'],marked_df[colname],label=colname)
             in_ax.set_ylabel(colname)
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=in_ax.get_ylim()
-                in_ax.vlines(in_tt,ylim[0],ylim[1],color=colors)
+                in_ax.vlines(in_tt,ylim[0],ylim[1],color=colors,linewidth=0.5,alpha=0.5)
+                for x,l in zip(interval_times,interval_labels):
+                    if L<x<R:
+                        out_ax.text(x,0.9*ylim,l,fontsize=8)
     else:
         fig,ax=plt.subplots(len(names),1,figsize=size)
         for i,colname in enumerate(names):

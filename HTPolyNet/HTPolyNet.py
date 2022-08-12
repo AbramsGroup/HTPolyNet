@@ -72,8 +72,9 @@ def htpolynet_cure_plots(args):
     banner(print)
     if len(logs)>0:
         diagnostics_graphs(logs,args.plotfile)
-    df,transition_times,markers=density_evolution(args.proj)
-    global_trace(df,['Temperature','Density'],'global_traces.png',transition_times=transition_times,markers=markers)
+    if args.proj:
+        df,transition_times,markers=density_evolution(args.proj)
+        global_trace(df,['Temperature','Density'],'global_traces.png',transition_times=transition_times,markers=markers)
 
 def fetch_example(args):
     l=pfs.system()
