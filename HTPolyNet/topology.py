@@ -251,6 +251,7 @@ class Topology:
         assert os.path.exists(filename), f'Error: {filename} not found.'
         inst=cls()
         inst.filename=filename
+        dirname=os.path.dirname(filename)
         inst.includes=[]
         with open(filename,'r') as f:
             data=f.read().split('[')
@@ -336,7 +337,7 @@ class Topology:
                 # print(f'    -> post sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
             for f in inst.includes:
                 # print(f'reading included topology {f}')
-                inst.merge(Topology.read_gro(f))
+                inst.merge(Topology.read_gro(os.path.join(dirname,f)))
             inst.empty=False
             return inst
 

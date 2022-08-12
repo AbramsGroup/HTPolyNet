@@ -147,18 +147,21 @@ def gmx_energy_trace(edr,names=[],**kwargs):
     xshift=kwargs.get('xshift',0)
     report_averages=kwargs.get('report_averages',False)
     menu=get_energy_menu(edr)
-    with open('gmx.in','w') as f:
+    # print(f'{menu}')
+    with open(f'{edr}-gmx.in','w') as f:
         for i in names:
             if i in menu:
                 f.write(f'{menu[i]}\n')
-            f.write('\n')
+        f.write('\n')
     if any([i in menu for i in names]):
-        c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < gmx.in')
+        c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < {edr}-gmx.in')
         c.run()
-        os.remove('gmx.in')
-        colnames=names
+        # os.remove('gmx.in')
+        colnames=names.copy()
         colnames.insert(0,'time (ps)')
+        # print(f'in gmx {edr}.edr {names}:')
         data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
+        # print(f'{data.head().to_string()}')
         data.iloc[:,0]+=xshift
         ndata=data.shape[0]
         if report_averages:

@@ -8,8 +8,9 @@ from HTPolyNet.banner import banner, banner_message
 from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.plot import cure_graph,density_evolution
+from HTPolyNet.plot import diagnostics_graphs,global_trace
 from HTPolyNet.stringthings import my_logger
+from HTPolyNet.utils import density_evolution
 
 logger=logging.getLogger(__name__)
 
@@ -69,8 +70,10 @@ def parameterize(args):
 def htpolynet_cure_plots(args):
     logs=args.logs
     banner(print)
-    cure_graph(logs,args.plotfile)
-    density_evolution()
+    if len(logs)>0:
+        diagnostics_graphs(logs,args.plotfile)
+    df,transition_times,markers=density_evolution(args.proj)
+    global_trace(df,['Temperature','Density'],'global_traces.png',transition_times=transition_times,markers=markers)
 
 def fetch_example(args):
     l=pfs.system()
@@ -139,7 +142,8 @@ def cli():
     command_parsers['parameterize'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
     command_parsers['parameterize'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
 
-    command_parsers['plots'].add_argument('logs',type=str,default='',nargs='+',help='names of diagnostic log files')
+    command_parsers['plots'].add_argument('-logs',type=str,default='',nargs='+',help='names of diagnostic log files (1 or more)')
+    command_parsers['plots'].add_argument('-proj',type=str,default='',help='name of project directory')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))

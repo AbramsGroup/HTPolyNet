@@ -1,19 +1,17 @@
 from HTPolyNet.gromacs import *
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
 import logging
 import networkx as nx
 from datetime import datetime
-from glob import glob
-# import argparse as ap
+#from glob import glob
+
 
 logger=logging.getLogger(__name__)
 
 # prevents "RuntimeError: main thread is not in main loop" tk bug
 plt.switch_backend('agg')
-#matplotlib.use('agg')
 
 def trace(qty,edrs,outfile='plot.png',**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
@@ -64,6 +62,57 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     logging.disable(logging.NOTSET)
     return avg
 
+def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],**kwargs):
+    # disable debug-level logging and above since matplotlib has a lot of debug statements
+    logging.disable(logging.DEBUG)
+    size=kwargs.get('size',(12,4*len(names)))
+    legend=kwargs.get('legend',False)
+    fig,ax=plt.subplots(len(names),1,figsize=size)
+    cmapname=kwargs.get('colormap','plasma')
+    # yunits=kwargs.get('yunits',None)
+    cmap=cm.get_cmap(cmapname)
+    # print(f'in global_trace:\n{df.head().to_string()}')
+
+    L,R=-1,-1
+    if len(markers)>1:
+        L,R=markers[0],markers[-1]
+        in_tt=[x for x in transition_times if L<x<R]
+        marked_df=df[(df['time (ps)']>L)&(df['time (ps)']<R)]
+        fig,ax=plt.subplots(len(names)*2,1,figsize=size)
+        for i,colname in enumerate(names):
+            out_ax=ax[0] if len(names)==1 else ax[i*2]
+            in_ax=ax[1] if len(names)==1 else ax[i*2+1]
+            out_ax.plot(df['time (ps)'],df[colname],label=colname)
+            out_ax.set_ylabel(colname)
+            if len(transition_times)>0:
+                colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
+                ylim=out_ax.get_ylim()
+                out_ax.vlines(transition_times,ylim[0],ylim[1],color=colors)
+            in_ax.plot(marked_df['time (ps)'],marked_df[colname],label=colname)
+            in_ax.set_ylabel(colname)
+            if len(transition_times)>0:
+                colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
+                ylim=in_ax.get_ylim()
+                in_ax.vlines(in_tt,ylim[0],ylim[1],color=colors)
+    else:
+        fig,ax=plt.subplots(len(names),1,figsize=size)
+        for i,colname in enumerate(names):
+            the_ax=ax if len(names)==1 else ax[i]
+            the_ax.plot(df['time (ps)'],df[colname],label=colname)
+            the_ax.set_ylabel(colname)
+            if len(transition_times)>0:
+                colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
+                ylim=the_ax.get_ylim()
+                the_ax.vlines(transition_times,ylim[0],ylim[1],color=colors)
+
+    plt.xlabel('time (ps)')
+    if legend:
+        plt.legend()
+    plt.savefig(outfile)
+    plt.close(fig)
+    # re-establish previous logging level
+    logging.disable(logging.NOTSET)
+
 def network_graph(G,filename,**kwargs):
     logging.disable(logging.DEBUG)
     fig,ax=plt.subplots(1,1,figsize=(8,8))
@@ -71,39 +120,54 @@ def network_graph(G,filename,**kwargs):
     plt.savefig(filename)
     plt.close(fig)
     logging.disable(logging.NOTSET)
-    
-def cure_graph(logfiles,filename,**kwargs):
+
+_template_1='2022-08-11 17:40:36,969 HTPolyNet.runtime.my_logger INFO> ********* Connect-Update-Relax-Equilibrate (CURE) begins **********'
+_template_1_token_idx=[2,3,5,7]
+_template_2='2022-08-11 17:43:35,512 HTPolyNet.runtime.do_cure INFO> Iteration 1 current conversion 0.210 or 63 bonds'
+_template_2_token_idx=[2,3,6,7]
+_template_2_data_idx={'iter':(int,5),'conv':(float,8),'nbonds':(int,10)}
+def _token_match(l,template,pat_idx):
+    if len(l.split())!=len(template.split()): return
+    return all([l.split()[t]==template.split()[t] for t in pat_idx])
+def _parse_data(dat,l,idx_dict):
+    tok=l.split()
+    for k,v in idx_dict.items():
+        conv,s=v
+        dat[k].append(conv(tok[s]))
+
+def diagnostics_graphs(logfiles,filename,**kwargs):
     xmax=kwargs.get('xmax',-1)
+    figsize=kwargs.get('figsize',(12,6))
     logging.disable(logging.DEBUG)
     df:dict[pd.DataFrame]={}
     for logfile in logfiles:
         with open(logfile,'r') as f:
             lines=f.read().split('\n')
         print(f'read {len(lines)} lines from {logfile}')
-        # extracting lines of these formats:
-        # 2022-07-28 13:28:52,379 HTPolyNet.HTPolyNet.CURE INFO> ********** Connect-Update-Relax-Equilibrate (CURE) begins
-        # 2022-07-28 13:13:37,328 HTPolyNet.HTPolyNet.CURE INFO> Current conversion: 0.26 (26/100)
         data={}
         data['time']=[]
+        data['iter']=[]
         data['conv']=[]
+        data['nbonds']=[]
+        counter=0
         for l in lines:
-            tok=l.split()
-            ntoks=len(tok)
-            if ntoks<8:
-                continue
-            if tok[2]!='HTPolyNet.runtime.CURE' and tok[2]!='HTPolyNet.HTPolyNet.CURE':
-                continue
-            if tok[3]!='INFO>':
-                continue
-            if tok[4]=='**********' and tok[5]=='Connect-Update-Relax-Equilibrate' and tok[7]=='begins':
-                data['time'].append(datetime.strptime(' '.join(tok[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
+            if _token_match(l,_template_1,_template_1_token_idx):
+                # print('you should only see this once')
+                counter+=1
+                assert not counter>1
+                data['time'].append(datetime.strptime(' '.join(l.split()[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
+                data['iter'].append(0)
                 data['conv'].append(0.0)
-            if tok[4]=='Current' and tok[5]=='conversion:':
-                data['time'].append(datetime.strptime(' '.join(tok[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
-                data['conv'].append(float(tok[6]))
+                data['nbonds'].append(0)
+            elif _token_match(l,_template_2,_template_2_token_idx):
+                data['time'].append(datetime.strptime(' '.join(l.split()[0:2]),'%Y-%m-%d %H:%M:%S,%f'))
+                # print('data tok',f'{l.split()}')
+                _parse_data(data,l,_template_2_data_idx)
+        # print('data',f'{data}')
         df[logfile]=pd.DataFrame(data)
-        df[logfile]['elapsed']=(df[logfile]['time']-df[logfile].loc[0]['time']).astype(int)/1.e9/3600.0
-    fig,ax=plt.subplots(1,2,sharex=True,figsize=(10,6))
+        time_idx=list(df[logfile].columns).index('time')
+        df[logfile]['elapsed']=(df[logfile]['time']-df[logfile].iloc[0,time_idx]).astype(int)/1.e9/3600.0
+    fig,ax=plt.subplots(1,2,sharex=True,figsize=figsize)
     ax[0].set_ylim([0,1])
     ax[0].set_xlabel('runtime (h)')
     ax[0].set_ylabel('conversion')
@@ -118,40 +182,3 @@ def cure_graph(logfiles,filename,**kwargs):
     plt.close(fig)
     logging.disable(logging.NOTSET)
 
-def density_evolution():
-    D=glob('proj-[0-9]') + glob('proj-[1-9][0-9]')
-    for e in D:
-        d=os.path.join(e,'systems')
-        edrs=[os.path.join(d,'init/npt-1')]
-        iter=1
-        while os.path.exists(os.path.join(d,f'iter-{iter}')):
-            print(iter)
-            this_stgs=[]
-            dstg=1
-            while os.path.exists(os.path.join(d,f'iter-{iter}/1-drag-stage-{dstg}-npt.edr')):
-                this_stgs.append(os.path.join(d,f'iter-{iter}/1-drag-stage-{dstg}-npt'))
-                edrs.append(os.path.join(d,f'iter-{iter}/1-drag-stage-{dstg}-npt'))
-                dstg+=1
-            rstg=1
-            while os.path.exists(os.path.join(d,f'iter-{iter}/3-relax-stage-{rstg}-npt.edr')):
-                this_stgs.append(os.path.join(d,f'iter-{iter}/3-relax-stage-{rstg}-npt'))
-                edrs.append(os.path.join(d,f'iter-{iter}/3-relax-stage-{rstg}-npt'))
-                rstg+=1
-            this_stgs.append(os.path.join(d,f'iter-{iter}/4-equilibrate-post'))
-            edrs.append(os.path.join(d,f'iter-{iter}/4-equilibrate-post'))
-            trace('Density',this_stgs,outfile=os.path.join(d,f'iter-{iter}/density-trace.png'),size=(16,4),yunits='kg/m3')
-            iter+=1
-
-        rstg=1
-        this_stgs=[]
-        while os.path.exists(os.path.join(d,f'postcure/5-relax-stage-{rstg}-npt.edr')):
-            this_stgs.append(os.path.join(d,f'postcure/5-relax-stage-{rstg}-npt'))
-            edrs.append(os.path.join(d,f'postcure/5-relax-stage-{rstg}-npt'))
-            rstg+=1
-        this_stgs.append(os.path.join(d,f'postcure/6-equilibrate-post'))
-        edrs.append(os.path.join(d,f'postcure/6-equilibrate-post'))
-        print(this_stgs)
-        trace('Density',this_stgs,outfile=os.path.join(d,f'postcure/density-trace.png'),size=(16,4),yunits='kg/m3')
-        #print(edrs)    
-        trace('Density',edrs,outfile=f'{e}-density.png',size=(16,4),yunits='kg/m3')
-    

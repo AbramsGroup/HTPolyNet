@@ -281,6 +281,18 @@ class Coordinates:
         elif box.shape==(3,3):
             self.box=np.copy(box)
 
+    def total_volume(self,units='gromacs'):
+        """Returns total volume of box.
+
+        :param units: unit system designation; if 'SI' returns m^3, defaults to 'gromacs'
+        :type units: str, optional
+        :return: volume (in nm^3 if units is 'gromacs' or m^3 if units is 'SI')
+        :rtype: float
+        """
+        nm_per_m=1.e9
+        vol=np.prod(self.box.diagonal())  # nm^3
+        return vol if units!='SI' else vol/(nm_per_m**3)
+
     def copy_coords(self,other):
         """copy_coords copy_coords copy the posX, posY, and posZ atom attributes, and the box size, 
         from other.A to self.A

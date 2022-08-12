@@ -78,6 +78,11 @@ class TopoCoord:
         if grxfilename!='':
             self.read_gro_attributes(grxfilename)
 
+    @classmethod
+    def from_top_gro(cls,top,gro):
+        X=cls(topfilename=top,grofilename=gro)
+        return X
+
     def make_bonds(self,pairs,skip_H=[]):
         """Adds new bonds to the global topology
 
@@ -872,6 +877,12 @@ class TopoCoord:
         :rtype: float
         """
         return self.Topology.total_mass(units=units)
+
+    def total_volume(self,units='SI'):
+        return self.Coordinates.box_volume(units=units)
+
+    def density(self,units='SI'):
+        return self.total_mass(units)/self.total_volume(units)
 
     def wrap_coords(self):
         self.Coordinates.wrap_coords()
