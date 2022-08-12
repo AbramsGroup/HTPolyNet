@@ -42,23 +42,26 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
     return fac*mass/volume
 
 _system_dirs=['densification','precure',r'iter-{iter:d}','capping','postcure']
-_md_ensembles={'min':[],'nvt':['Temperature'],'npt':['Temperature','Density']}
+_md_ensembles={'nvt':['Temperature'],'npt':['Temperature','Density']}
 _indir_pfx={}
 _indir_pfx['densification']=[r'densified-{ens:s}']
 _indir_pfx['precure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
 _indir_pfx['iter-n']=[r'1-cure_drag-stage-{stage:d}-{ens:s}',r'3-cure_relax-stage-{stage:d}-{ens:s}',r'4-cure_equilibrate-{ens:s}']
 _indir_pfx['capping']=[r'7-cap_relax-stage-{stage:d}-{ens:s}',r'8-cap_equilibrate-{ens:s}']
 _indir_pfx['postcure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
-def _concat_from_edr(df,edr,names,add_if_missing=[('Density',0.0)]):
+def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
     xshift=0.0
     if not df.empty: xshift=df.iloc[-1]['time (ps)']
     if len(names)==0: return df,xshift
     # print(f'{add_if_missing}')
     this_df=gmx_energy_trace(edr,names,xshift=xshift)
+    for m in add:
+        nm,val=m
+        this_df[nm]=np.ones(this_df.shape[0],dtype=type(val))*val
     for m in add_if_missing:
         nm,val=m
         if not nm in this_df:
-            this_df[nm]=np.ones(this_df.shape[0],dtype=float)*val
+            this_df[nm]=np.ones(this_df.shape[0],dtype=type(val))*val
     df=pd.concat((df,this_df),ignore_index=True)
     return df,xshift
 
@@ -70,6 +73,7 @@ def density_evolution(proj_dir):
     transition_times=[xshift]
     interval_labels=[]
     markers=[]
+    nbonds=0
     for subd in _system_dirs:
         # print(f'subd {subd}')
         if subd==r'iter-{iter:d}' or subd=='capping':
@@ -78,15 +82,24 @@ def density_evolution(proj_dir):
             # print(iter_mark0)
             iter=1
             iter_subd=os.path.join(sysd,subd if subd=='capping' else subd.format(iter=iter))
+
             while os.path.exists(iter_subd):
                 dirkey='iter-n' if subd==r'iter-{iter:d}' else 'capping'
+                if subd==r'iter-{iter:d}':
+                    if os.path.exists(os.path.join(iter_subd,'2-cure_update-bonds.csv')):
+                        bdf=pd.read_csv(os.path.join(iter_subd,'2-cure_update-bonds.csv'),sep='\s+',header=0,index_col=None)
+                        nbonds+=bdf.shape[0]
+                    else:
+                        if os.path.exists(os.path.join(iter_subd,'6-cap_update-bonds.csv')):
+                            bdf=pd.read_csv(os.path.join(iter_subd,'6-cap_update-bonds.csv'),sep='\s+',header=0,index_col=None)
+                            nbonds+=bdf.shape[0]
                 # print(f'iter_subd {iter_subd} dirkey {dirkey}')
                 for pfx in _indir_pfx[dirkey]:
                     # print(f'pfx {pfx}')
                     if r'stage' in pfx:
                         stg=1
                         stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,ens=x))+r'.edr') for x in _md_ensembles])
-                        # print(f'stg_present {stg_present}')
+                        # print(f'{iter_subd} {stg} {pfx} stg_present {stg_present}')
                         while stg_present:
                             for ens,qtys in _md_ensembles.items():
                                 edr_pfx=os.path.join(iter_subd,pfx.format(stage=stg,ens=ens))
@@ -98,19 +111,21 @@ def density_evolution(proj_dir):
                                         if os.path.exists(gro):
                                             density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
                                             # print(f'density from gro {density}')
-                                    df,xshift=_concat_from_edr(df,edr_pfx,qtys,add_if_missing=[('Density',density)])
+                                    df,xshift=_concat_from_edr(df,edr_pfx,qtys,add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
                                     transition_times.append(xshift)
                                     interval_labels.append([edr_pfx])
                             stg+=1
-                            stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,ens=x))) for x in _md_ensembles])
-                    if r'equil' in pfx:
+                            stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,ens=x))+r'.edr') for x in _md_ensembles])
+                            # print(f'->{iter_subd} {stg} {pfx} stg_present {stg_present}')
+                    elif r'equil' in pfx:
                         eq_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(ens=x))+r'.edr') for x in _md_ensembles])
+                        # print(f'{iter_subd} eq_present? {eq_present}')
                         if eq_present:
                             for ens,qtys in _md_ensembles.items():
-                                edr_pfx=os.path.join(this_subd,pfx.format(ens=ens))
-                                # print(edr_pfx,os.path.exists(edr_pfx+r'.edr'))
+                                edr_pfx=os.path.join(iter_subd,pfx.format(ens=ens))
+                                # print(edr_pfx,os.path.exists(edr_pfx+r'.edr'),ens,qtys)
                                 if os.path.exists(edr_pfx+r'.edr'):
-                                    df,xshift=_concat_from_edr(df,edr_pfx,qtys)
+                                    df,xshift=_concat_from_edr(df,edr_pfx,qtys,add=[('nbonds',nbonds)])
                                     transition_times.append(xshift)
                                     interval_labels.append([edr_pfx])
                 iter+=1        
@@ -129,7 +144,7 @@ def density_evolution(proj_dir):
                             density=0.0
                             if ens=='nvt' and os.path.exists(gro):
                                 density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
-                            df,xshift=_concat_from_edr(df,edr_pfx,qtys,add_if_missing=[('Density',density)])
+                            df,xshift=_concat_from_edr(df,edr_pfx,qtys,add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
                             transition_times.append(xshift)
                             interval_labels.append([edr_pfx])
                 else:
@@ -140,7 +155,7 @@ def density_evolution(proj_dir):
                         density=0.0
                         if os.path.exists(gro):
                             density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
-                        df,xshift=_concat_from_edr(df,edr_pfx,['Temperature'],add_if_missing=[('Density',density)])
+                        df,xshift=_concat_from_edr(df,edr_pfx,['Temperature'],add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
                         transition_times.append(xshift)
                         interval_labels.append([edr_pfx])
     return df,transition_times,markers,interval_labels

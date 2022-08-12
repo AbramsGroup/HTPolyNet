@@ -279,6 +279,7 @@ class CureController:
         ess='' if nbonds==1 else 's'
         logger.info(f'Capping will generate {nbdf.shape[0]} new bond{ess}')
         if nbonds>0:
+            cwd=pfs.go_to(f'systems/capping')
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self._register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')

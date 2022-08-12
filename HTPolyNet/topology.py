@@ -345,13 +345,13 @@ class Topology:
         """bond_source_check Checks to ensure the 'bonds' dataframe and 'mol2_bonds' dataframe contain the same bonds.  A mol2 dataframe is only created when a mol2 file is read by the Coordinates module.
         """
         if 'bonds' in self.D and 'mol2_bonds' in self.D:
-            logger.debug(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
+            # logger.debug(f'Consistency check between gromacs-top bonds and mol2-bonds requested.')
             grobonds=self.D['bonds'].sort_values(by=['ai','aj'])
             bmi=grobonds.set_index(['ai','aj']).index
             mol2bonds=self.D['mol2_bonds'].sort_values(by=['ai','aj'])
             mbmi=mol2bonds.set_index(['ai','aj']).index
             check=all([x==y for x,y in zip(bmi,mbmi)])
-            logger.debug(f'Result: {check}')
+            # logger.debug(f'Result: {check}')
             if not check:
                 logger.error(f'Gromacs/Mol2 bond inconsistency detected')
                 logger.debug(f'GROMACS:')

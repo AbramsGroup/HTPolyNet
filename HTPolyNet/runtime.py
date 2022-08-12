@@ -308,8 +308,6 @@ class Runtime:
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
-            # exit(-1)
-        cwd=pfs.go_to(f'systems/capping')
         my_logger(f'Capping begins',logger.info)
         cc.do_cap_bondsearch(TC,RL,MD)
         cc.do_topology_update(TC,MD)

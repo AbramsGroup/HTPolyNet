@@ -73,8 +73,12 @@ def htpolynet_cure_plots(args):
     if len(logs)>0:
         diagnostics_graphs(logs,args.plotfile)
     if args.proj:
-        df,transition_times,markers=density_evolution(args.proj)
-        global_trace(df,['Temperature','Density'],'global_traces.png',transition_times=transition_times,markers=markers)
+        df,transition_times,markers,interval_labels=density_evolution(args.proj)
+        global_trace(df,['Temperature','Density'],'global_traces.png',transition_times=transition_times,markers=markers,interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
+        if args.o:
+            print(f'All data to {args.o}')
+            with open(args.o,'w') as f:
+                f.write(df.to_string(header=['time(ps)','Temperature','nbonds','Density'],index=False,float_format='{:.3f}'.format)+'\n')
 
 def fetch_example(args):
     l=pfs.system()
@@ -145,6 +149,7 @@ def cli():
 
     command_parsers['plots'].add_argument('-logs',type=str,default='',nargs='+',help='names of diagnostic log files (1 or more)')
     command_parsers['plots'].add_argument('-proj',type=str,default='',help='name of project directory')
+    command_parsers['plots'].add_argument('-o',type=str,default='',help='name of global trace output data file')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))

@@ -334,7 +334,7 @@ class Molecule:
             # logger.debug(f'in_product_resids {in_product_resids}')
             in_product_resnames=[product_sequence[in_product_resids[x]-1] for x in [0,1]]
             atom_idx=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
-            logger.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
+            # logger.debug(f'{R.name} names {atom_names} in_product_resids {in_product_resids} idx {atom_idx}')
             bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=TC.get_bystanders(atom_idx)
             oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames=TC.get_oneaways(atom_idx)
             # logger.debug(f'{self.name} bystanders {bystander_resids} {bystander_resnames} {bystander_atomidx} {bystander_atomnames}')

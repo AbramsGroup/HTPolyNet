@@ -62,10 +62,10 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     logging.disable(logging.NOTSET)
     return avg
 
-def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],interval_labels=[],**kwargs):
+def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],interval_labels=[],y2names=[],**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
     logging.disable(logging.DEBUG)
-    size=kwargs.get('size',(12,4*len(names)))
+    size=kwargs.get('size',(16,4*len(names)))
     legend=kwargs.get('legend',False)
     fig,ax=plt.subplots(len(names),1,figsize=size)
     cmapname=kwargs.get('colormap','plasma')
@@ -77,6 +77,8 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
     if interval_labels:
         for i in range(1,len(transition_times)):
             interval_times.append((transition_times[i]+transition_times[i-1])/2)
+    for l,t in zip(interval_labels,interval_times):
+        print(f'{t} {l}')
     assert len(interval_labels)==len(interval_times)
     L,R=-1,-1
     if len(markers)>1:
@@ -89,31 +91,43 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
             in_ax=ax[1] if len(names)==1 else ax[i*2+1]
             out_ax.plot(df['time (ps)'],df[colname],label=colname)
             out_ax.set_ylabel(colname)
+            if len(y2names)>i:
+                out_ax2=out_ax.twinx()
+                out_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
+                out_ax2.set_ylabel(y2names[i])
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=out_ax.get_ylim()
-                out_ax.vlines(transition_times,ylim[0],ylim[1],color=colors)
-                for x,l in zip(interval_times,interval_labels):
-                    out_ax.text(x,0.9*ylim,l,fontsize=8)
+                out_ax.vlines(transition_times,ylim[0],ylim[1],color=colors,linewidth=0.75,alpha=0.5)
+                # for x,l in zip(interval_times,interval_labels):
+                #     out_ax.text(x,0.9*ylim[1],l,fontsize=8)
             in_ax.plot(marked_df['time (ps)'],marked_df[colname],label=colname)
             in_ax.set_ylabel(colname)
+            if len(y2names)>i:
+                in_ax2=in_ax.twinx()
+                in_ax2.plot(marked_df['time (ps)'],marked_df[y2names[i]],label=y2names[i],color='black')
+                in_ax2.set_ylabel(y2names[i])
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=in_ax.get_ylim()
-                in_ax.vlines(in_tt,ylim[0],ylim[1],color=colors,linewidth=0.5,alpha=0.5)
-                for x,l in zip(interval_times,interval_labels):
-                    if L<x<R:
-                        out_ax.text(x,0.9*ylim,l,fontsize=8)
+                in_ax.vlines(in_tt,ylim[0],ylim[1],color=colors,linewidth=0.75,alpha=0.5)
+                # for x,l in zip(interval_times,interval_labels):
+                #     if L<x<R:
+                #         out_ax.text(x,0.9*ylim[1],l,fontsize=8)
     else:
         fig,ax=plt.subplots(len(names),1,figsize=size)
         for i,colname in enumerate(names):
             the_ax=ax if len(names)==1 else ax[i]
             the_ax.plot(df['time (ps)'],df[colname],label=colname)
             the_ax.set_ylabel(colname)
+            if len(y2names)>i:
+                the_ax2=the_ax.twinx()
+                the_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
+                the_ax2.set_ylabel(y2names[i])
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=the_ax.get_ylim()
-                the_ax.vlines(transition_times,ylim[0],ylim[1],color=colors)
+                the_ax.vlines(transition_times,ylim[0],ylim[1],color=colors,linewidth=0.75,alpha=0.5)
 
     plt.xlabel('time (ps)')
     if legend:
@@ -186,9 +200,11 @@ def diagnostics_graphs(logfiles,filename,**kwargs):
     if xmax>-1:
         ax[0].set_xlim([0,xmax])
     for logfile in logfiles:
-        ax[0].plot(df[logfile]['elapsed'],df[logfile]['conv'])
-        ax[1].plot(df[logfile]['elapsed'],df[logfile].index+1)
+        ax[0].plot(df[logfile]['elapsed'],df[logfile]['conv'],label=logfile)
+        ax[1].plot(df[logfile]['elapsed'],df[logfile].index+1,label=logfile)
+    plt.legend()
     plt.savefig(filename)
     plt.close(fig)
+
     logging.disable(logging.NOTSET)
 

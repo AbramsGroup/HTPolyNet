@@ -160,7 +160,9 @@ class ProjectFileSystem:
             currentprojdir=''
             while(os.path.isdir(os.path.join(self.rootPath,f'{prefix}{i}'))):
                 lastprojdir=f'{prefix}{i}'
+                logger.debug(f'{lastprojdir} exists')
                 i+=1
+            assert not os.path.exists(f'{prefix}{i}')
             if not reProject or lastprojdir=='': # this is a fresh project
                 if lastprojdir=='':
                     currentprojdir=f'{prefix}0'

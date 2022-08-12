@@ -54,9 +54,9 @@ def insert_molecules(composition,boxSize,outName,inputs_dir='.',**kwargs):
             c=Command(f'{sw.gmx} {sw.gmx_options} insert-molecules',ci=ci,nmol=num,o=outName,box=box,scale=scale)
         out,err=c.run()
         out+=err
-        logger.debug(f'Output of "{sw.gmx} insert-molecules"')
-        for ln in out.split('\n'):
-            logger.debug(ln)
+        # logger.debug(f'Output of "{sw.gmx} insert-molecules"')
+        # for ln in out.split('\n'):
+        #     logger.debug(ln)
         if 'Added' in out:
             outlines=out.split('\n')
             for ol in outlines:
@@ -65,7 +65,9 @@ def insert_molecules(composition,boxSize,outName,inputs_dir='.',**kwargs):
                     numadded=int(tokens[1])
                     break
             if numadded!=num:
-                logger.error(f'{sw.gmx} insert molecules did not add enough {name}; only {numadded} out of {num} were placed.  Increase your initial boxsize or lower your initial density.')
+                msg=f'{sw.gmx} insert-molecules did not add enough {name}.\nOnly {numadded} out of {num} were placed.\nIncrease your initial boxsize or lower your initial density.'
+                for l in msg.split('\n'):
+                    logger.debug(l)
                 raise Exception('need bigger box')
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
@@ -132,7 +134,7 @@ def get_energy_menu(edr,**kwargs):
     os.remove('_menugetter_')
     return menu
 
-def gmx_energy_trace(edr,names=[],**kwargs):
+def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
     """Generate traces of data in edr file
 
     :param edr: name of edr file
@@ -145,8 +147,8 @@ def gmx_energy_trace(edr,names=[],**kwargs):
     assert os.path.exists(edr+'.edr'),f'Error: {edr}.edr not found'
     assert len(names)>0,f'Nothing to plot'
     xshift=kwargs.get('xshift',0)
-    report_averages=kwargs.get('report_averages',False)
     menu=get_energy_menu(edr)
+    logger.debug(f'report_averages? {report_averages} {names}')
     # print(f'{menu}')
     with open(f'{edr}-gmx.in','w') as f:
         for i in names:
@@ -165,10 +167,10 @@ def gmx_energy_trace(edr,names=[],**kwargs):
         data.iloc[:,0]+=xshift
         ndata=data.shape[0]
         if report_averages:
-            for i in names[1:]:
+            for i in names:
                 data[f'Running-average-{i}']=data[i].expanding(1).mean()
                 data[f'Rolling-10-average-{i}']=data[i].rolling(window=ndata//10).mean()
-                for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string().split('\n'):
+                for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string(float_format='{:.2f}'.format).split('\n'):
                     logger.info(f'{ln}')
         return data
     else:

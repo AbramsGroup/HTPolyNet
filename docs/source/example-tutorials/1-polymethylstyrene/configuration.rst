@@ -3,7 +3,7 @@
 The Configuration File
 ======================
 
-The example you fetched has two configuration files that are essentially identical, except one sets the desired cure to 95\% (hi) and the other only to 50\% (lo).  We previously described an example `configuration file for making a system of polystyrene <configuration_files>`, where all the directives were explained in detail.  Here we will only highlight *excerpts* from ``pMSTY-hi.yaml``.
+The example you fetched has two configuration files that are essentially identical, except one sets the desired cure to 95\% (hi) and the other only to 50\% (lo).  We previously described an example :ref:`configuration file for making a system of polystyrene <configuration_files>`, where all the directives were explained in detail.  Here we will only highlight *excerpts* from ``pMSTY-hi.yaml``.
 
 Constituents Directives
 ~~~~~~~~~~~~~~~~~~~~~~~
