@@ -1,3 +1,4 @@
+from http.cookiejar import CookiePolicy
 import logging
 import os
 import argparse as ap
@@ -11,6 +12,9 @@ import HTPolyNet.software as software
 from HTPolyNet.plot import diagnostics_graphs,global_trace
 from HTPolyNet.stringthings import my_logger
 from HTPolyNet.utils import density_evolution
+from HTPolyNet.configuration import Configuration
+from HTPolyNet.coordinates import Coordinates
+from HTPolyNet.command import Command
 
 logger=logging.getLogger(__name__)
 
@@ -101,6 +105,26 @@ def fetch_example(args):
     if not kp:
         os.remove(f'{fullname}.tgz')
 
+def input_check(args):
+    lib='./lib/molecules/inputs'
+    C=Configuration.read(args.config)
+    icdict={x['molecule']:x['count'] for x in C.initial_composition}
+    natoms=0
+    for mname,M in C.molecules.items():
+        if os.path.exists(os.path.join(lib,f'{mname}.mol2')):
+            c=Coordinates.read_mol2(os.path.join(lib,f'{mname}.mol2'))
+            matoms=c.A.shape[0]*int(icdict[mname])
+        elif os.path.exists(os.path.join(lib,f'{mname}.pdb')):
+            # print(os.path.join(lib,f"{mname}.{fmt}"))
+            out,err=Command(f'grep -c ^ATOM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
+            matoms=int(out)
+            out,err=Command(f'grep -c ^HETATM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
+            matoms+=int(out)
+        if mname in icdict:
+            natoms+=icdict[mname]*matoms
+            print(f'Molecule {mname}: {matoms} atoms, {icdict[mname]} molecules')
+    print(f'{args.config}: {natoms} atoms in initial system.')
+
 
 def cli():
     """cli Command-line interface
@@ -115,6 +139,7 @@ def cli():
     commands['info']=info
     commands['plots']=htpolynet_cure_plots
     commands['fetch-example']=fetch_example
+    commands['input-check']=input_check
 
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
@@ -122,6 +147,7 @@ def cli():
     helps['info']='print some information to the console'
     helps['plots']='generate some plots that summarize aspects of the current completed build'
     helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
+    helps['input-check']='reports number of atoms that would be in initial system based on config'
 
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     subparsers=parser.add_subparsers()
@@ -154,6 +180,9 @@ def cli():
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
+
+    command_parsers['input-check'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
+    command_parsers['input-check'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
 
     args=parser.parse_args()
     args.func(args)
