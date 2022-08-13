@@ -60,7 +60,13 @@
 </section>
 <section id="bondsearch-filters">
 <span id="id1"></span><h1>Bondsearch filters<a class="headerlink" href="#bondsearch-filters" title="Permalink to this headline">¶</a></h1>
-<p>under construction</p>
+<p>A key task of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is identifying potential bonds between reactive atoms.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> organizes its “bondsearch” in any one CURE iteration along reactions.  Each reaction specified in the configuration file usually defines one bond by the identies of each reactant and the name of each atom in each reactant.  The bondsearch algorithm begins considering each reaction, and for each one, filtering the set of <em>possible</em> bonds using a series of rules, depicted below.</p>
+<figure class="align-default" id="id4">
+<img alt="../_images/bond_filter.png" src="../_images/bond_filter.png" />
+<figcaption>
+<p><span class="caption-text">Bond filtering in one CURE iteration.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 </section>
 
 
