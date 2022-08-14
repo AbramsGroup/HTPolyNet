@@ -9,7 +9,7 @@ Now, in our working directory ``my_pms/2-polymethylstyrene/``, if you haven't al
 
     $ ./run.sh
 
-As the two ``htpolynet run`` commands indicate, standard output is being redirected from the console to the file ``lo.log`` for the low-cure run and ``hi.log`` for the high-cure run.  Let's consider the contents of ``lo.log`` and then examine the project directory that was created.
+As the two ``htpolynet run`` commands indicate, standard output is being redirected from the console to the file ``lo.log`` for the low-cure run and ``hi.log`` for the high-cure run.  Let's consider the contents of ``lo.log`` and then examine the project directory ``proj-0`` that was created.
 
 Console output
 ^^^^^^^^^^^^^^

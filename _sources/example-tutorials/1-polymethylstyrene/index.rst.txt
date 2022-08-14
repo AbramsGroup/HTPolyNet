@@ -45,3 +45,4 @@ So, if you have a ``mol-env`` conda enviroment, just issue ``./run.sh`` to start
    reactions
    configuration
    run
+   results

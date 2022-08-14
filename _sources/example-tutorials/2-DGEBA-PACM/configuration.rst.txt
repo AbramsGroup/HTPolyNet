@@ -9,8 +9,8 @@ We'll use a very small, stoichiometric system of only 200 DGEBA's and 100 PACM's
 
 .. code-block:: yaml
 
-  constituents:{  
-    DGE: { count: 200, symmetry_equivalent_atoms: [[C1,C2],[C3,C4],[O1,O2]], stereocenters: [C3], nconformers: 2},                                       
+  constituents: {  
+    DGE: { count: 200, symmetry_equivalent_atoms: [[C1,C2],[C3,C4],[O1,O2]], stereocenters: [C3], nconformers: 2 },                                       
     PAC: { count: 100, symmetry_equivalent_atoms: [[N1,N2],[C1,C2]], stereocenters: [C1], nconformers: 2 }                                               
   }
 
