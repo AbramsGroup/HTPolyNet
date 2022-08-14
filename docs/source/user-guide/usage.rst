@@ -101,7 +101,22 @@ This simply outputs some information about ``HTPolyNet``.
 ``htpolynet plots``
 ^^^^^^^^^^^^^^^^^^^
 
-If invoked inside of a directory containing one or more project directories, this instructs ``HTPolyNet`` to generate some plots.  This feature is currently under development.
+If invoked inside of a directory containing one or more project directories, this instructs ``HTPolyNet`` to generate some plots.
+
+.. code-block:: console
+
+  $ htpolynet plots --help
+  usage: htpolynet plots [-h] [-logs LOGS [LOGS ...]] [-proj PROJ] [-o O] [--plotfile PLOTFILE]
+
+  options:
+    -h, --help            show this help message and exit
+    -logs LOGS [LOGS ...]
+                          names of diagnostic log files (1 or more)
+    -proj PROJ            name of project directory
+    -o O                  name of global trace output data file
+    --plotfile PLOTFILE   name of plot file to generate
+
+We explain detailed usage of ``htpolynet plots`` in the tutorials.  Briefly, if a project directory is name via the ``-proj`` option, ``HTPolyNet`` will generate a set of plots tracing the system temperature, density, and number of polymerization bonds vs simulation time.  If one or more diagnostic log files is named in the ``-logs`` option, ``HTPolyNet`` will generate a pair of plots of conversion vs. wall-clock time and iteration vs wall-clock time, with each diagnostic log getting its own curve on each plot.
 
 ``htpolynet fetch-example``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -145,3 +160,6 @@ The purpose of this subcommand is to report the size of the initial system that 
 .. code-block:: console
 
   $ htpolynet input-check DGE-PAC-hi.yaml
+  Molecule DGE: 53 atoms, 200 molecules
+  Molecule PAC: 41 atoms, 100 molecules
+  DGE-PAC-hi.yaml: 14700 atoms in initial system
