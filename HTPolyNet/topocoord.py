@@ -1453,9 +1453,10 @@ class TopoCoord:
         self.grompp_and_mdrun(out=f'{outname}',
             mdp=mdp_prefix,boxSize=boxsize,**gromacs_dict)
     
-    def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx='equilibrate'):
+    def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx=''):
         mod_dict={}
         ens=edict['ensemble']
+        repeat=edict.get('repeat',0)
         assert ens in ['min','npt','nvt'],f'Bad ensemble: {ens}'
         pfs.checkout(f'mdp/{ens}.mdp') # plain jane?
         if ens=='min':
@@ -1483,7 +1484,18 @@ class TopoCoord:
         logger.info(f'Running Gromacs: {msg}')
         self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=ens,quiet=False,**gromacs_dict)
         if ens=='npt':
+            edr_list=[f'{deffnm}-{ens}']
             box=self.Coordinates.box.diagonal()
             logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
             gmx_energy_trace(f'{deffnm}-{ens}',['Density'],report_averages=True,**gromacs_dict)
-            trace('Density',[f'{deffnm}-{ens}'],outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
+        for rep in range(repeat):
+            logger.info(f'Repeat {rep+1} out of {repeat}')
+            self.grompp_and_mdrun(out=f'{deffnm}-{ens}-r{rep+1}',mdp=ens,quiet=False,**gromacs_dict)
+            if ens=='npt':
+                box=self.Coordinates.box.diagonal()
+                logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
+                edr_list.append(f'{deffnm}-{ens}-r{rep+1}')
+            gmx_energy_trace(f'{deffnm}-{ens}-r{rep+1}',['Density'],report_averages=True,**gromacs_dict)
+        if ens=='npt':
+            if plot_pfx!='':
+                trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
