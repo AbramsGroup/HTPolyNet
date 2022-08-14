@@ -4,14 +4,14 @@ import os
 import argparse as ap
 import textwrap
 import shutil
-
+import networkx as nx
 from HTPolyNet.banner import banner, banner_message
 from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 from HTPolyNet.plot import diagnostics_graphs,global_trace, network_graph
 from HTPolyNet.stringthings import my_logger
-from HTPolyNet.utils import density_evolution, graph_from_bondsfiles
+from HTPolyNet.utils import density_evolution, graph_from_bondsfiles, graph_from_bondfile
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.command import Command
@@ -85,8 +85,17 @@ def htpolynet_cure_plots(args):
                 with open(args.o,'w') as f:
                     f.write(df.to_string(header=['time(ps)','Temperature','nbonds','Density'],index=False,float_format='{:.3f}'.format)+'\n')
         if args.g:
-            G,cx=graph_from_bondsfiles(args.proj)
-            network_graph(G,args.g,c=cx)
+            if args.byiter:
+                n=1
+                G=nx.DiGraph()
+                while os.path.exists(os.path.join(args.proj,f'iter-{n}/2-cure_update-bonds.csv')):
+                    g,cx=graph_from_bondfile(os.path.join(args.proj,f'iter-{n}/2-cure_update-bonds.csv'))
+                    G=nx.compose(G,g)
+                    network_graph(G,f'iter-{n}-{args.g}',c=cx)
+                    n+=1
+            else:
+                G,cx=graph_from_bondsfiles(args.proj)
+                network_graph(G,args.g,c=cx)
 
 def fetch_example(args):
     l=pfs.system()
@@ -182,6 +191,7 @@ def cli():
     command_parsers['plots'].add_argument('-t',type=str,default='',help='Plot density and temperature traces for entire build in specified project directory to this file')
     command_parsers['plots'].add_argument('-o',type=str,default='',help='dump density/temperature trace data to this file')
     command_parsers['plots'].add_argument('-g',type=str,default='',help='Plot graph network of resids and save to this file name')
+    command_parsers['plots'].add_argument('-byiter',default=False,action='store_true',help='Plot graph network of resids for each iter separately')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
