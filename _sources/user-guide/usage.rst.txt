@@ -39,7 +39,14 @@ Installation of the ``HTPolyNet`` package gives access to the ``htpolynet`` comm
     options:
       -h, --help            show this help message and exit
 
-The arguments are explained in more detail below.
+
+``htpolynet run``
+^^^^^^^^^^^^^^^^^
+
+This subcommand is used to build a polymerized system given directives in the configuration file and any required input monomer structures.
+
+
+The arguments for ``htpolynet run`` are explained in more detail below.
 
 * ``config`` refers to the name of the :ref:`configuration input file <configuration_files>`.
 * ``-lib`` names a directory that is treated as a local library of molecular structures.  By default, this is assumed to be ``./lib/`` (that is, the directory you are in when you issue ``htpolynet run`` is expected by default to have a ``lib/`` directory; if not, the Library subpackage of the ``HTPolyNet`` package will be queried for any data).  At the beginning of a new run, ``lib/`` should have one subdirectory called ``molecules``.  Under ``molecules`` should be the two directories ``inputs`` and ``parameterized``.  ``HTPolyNet`` will look for input ``mol2`` or ``pdb`` files in ``lib/molecules/inputs``, and "check-in" the results of parameterized molecules (i.e., Gromacs format ``gro``, ``itp``, and ``top`` files) in ``lib/molecules/parameterized``.
