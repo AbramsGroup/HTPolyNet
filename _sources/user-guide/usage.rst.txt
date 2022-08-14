@@ -6,9 +6,9 @@ Installation of the ``HTPolyNet`` package gives access to the ``htpolynet`` comm
 .. code-block:: console
 
     $ htpolynet --help
-    usage: htpolynet [-h] {run,parameterize,info,plots,fetch-example} ...
+    usage: htpolynet [-h] {run,parameterize,info,plots,fetch-example,input-check} ...
 
-    HTPolyNet 1.0.0
+    HTPolyNet 0.0.1
     https://abramsgroup.github.io/HTPolyNet/
 
     Ming Huang
@@ -21,47 +21,23 @@ Installation of the ``HTPolyNet`` package gives access to the ``htpolynet`` comm
     and W911NF-12-R-0011 from the US Army Research Lab
 
     positional arguments:
-      {run,parameterize,info,plots,fetch-example}
-        run                 build a system using instructions in the config file and any required molecular structure inputs
-        parameterize        parameterize monomers and oligomer templates using instructions in the config file
+      {run,parameterize,info,plots,fetch-example,input-check}
+        run                 build a system using instructions in the config file and any 
+                            required molecular structure inputs
+        parameterize        parameterize monomers and oligomer templates using instructinos 
+                            in the config file
         info                print some information to the console
-        plots               generate some plots that summarize aspects of the current completed build
-        fetch-example       fetch and unpack example(s) from the HTPolyNet.Library: "0-liquid-styrene",
-                            "1-polystyrene", "2-polymethylstyrene", "3-bisgma-styrene-thermoset", 
-                            "4-pacm-dgeba-epoxy-thermoset","5-dfda-fde-epoxy-thermoset", "6-htpb-ipdi"
+        plots               generate some plots that summarize aspects of the current 
+                            completed build
+        fetch-example       fetch and unpack example(s) from the HTPolyNet.Library:
+                           "0-liquid-styrene", "1-polystyrene", "2-polymethylstyrene",
+                            "3-bisgma-styrene-thermoset", "4-pacm-dgeba-epoxy-thermoset", 
+                            "5-dfda-fde-epoxy-thermoset", "6-htpb-ipdi"
+        input-check         reports number of atoms that would be in initial system based 
+                            on config
 
     options:
       -h, --help            show this help message and exit
-
-Subcommands
------------
-
-``htpolynet run``
-^^^^^^^^^^^^^^^^^
-
-This subcommand is for building crosslinked systems:
-
-.. code-block:: console
-
-  $ htpolynet run --help
-  usage: htpolynet run [-h] [-lib LIB] [-proj PROJ] [-diag DIAG] [-restart] [--force-parameterization] [--force-checkin] [--loglevel LOGLEVEL] config
-
-  positional arguments:
-    config                input configuration file in YAML format
-
-  options:
-    -h, --help            show this help message and exit
-    -lib LIB              local user library of molecular structures and parameterizations
-    -proj PROJ            project directory; "next" (default) generates next directory 
-                          Anything other than "next": 
-                              if it exists, "-restart" must be included as a parameter; 
-                              if not, it is created as a new project
-    -diag DIAG            diagnostic log file
-    -restart              restart in latest proj dir
-    --force-parameterization
-                          force GAFF parameterization of any input mol2 structures
-    --force-checkin       force check-in of any generated parameter files to the system library
-    --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)
 
 The arguments are explained in more detail below.
 
@@ -160,3 +136,12 @@ Fetching will copy the tarball for the requested system to the current directory
 This folder (like all example folders) comes with two configuration files that differ only the the requested degree of cure.  "hi" refers to 95\% cure, and "lo" to 50\%.  Also provided is the ``./lib/molecules`` folders with the ``./lib/molecules/inputs`` and ``./lib/molecules/parameterized`` empty subfolders.  Finally, the bash script ``run.sh`` can just be invoked to build the input monomers and run the two builds in series.  This will be described in much more detail in the tutorials.
 
 ``htpolynet fetch-example -n all`` just grabs all seven examples.
+
+``htpolynet input-check``
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The purpose of this subcommand is to report the size of the initial system that *would* be created by the provided configuration file and monomer input structures.
+
+.. code-block:: console
+
+  $ htpolynet input-check DGE-PAC-hi.yaml

@@ -37,9 +37,9 @@
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h1>
 <p>Installation of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command.  Invoking <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">--help</span></code> shows basic usage of the command, which always involves providing a <em>subcommand</em>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet --help
-<span class="go">usage: htpolynet [-h] {run,parameterize,info,plots,fetch-example} ...</span>
+<span class="go">usage: htpolynet [-h] {run,parameterize,info,plots,fetch-example,input-check} ...</span>
 
-<span class="go">HTPolyNet 1.0.0</span>
+<span class="go">HTPolyNet 0.0.1</span>
 <span class="go">https://abramsgroup.github.io/HTPolyNet/</span>
 
 <span class="go">Ming Huang</span>
@@ -52,44 +52,23 @@
 <span class="go">and W911NF-12-R-0011 from the US Army Research Lab</span>
 
 <span class="go">positional arguments:</span>
-<span class="go">  {run,parameterize,info,plots,fetch-example}</span>
-<span class="go">    run                 build a system using instructions in the config file and any required molecular structure inputs</span>
-<span class="go">    parameterize        parameterize monomers and oligomer templates using instructions in the config file</span>
+<span class="go">  {run,parameterize,info,plots,fetch-example,input-check}</span>
+<span class="go">    run                 build a system using instructions in the config file and any</span>
+<span class="go">                        required molecular structure inputs</span>
+<span class="go">    parameterize        parameterize monomers and oligomer templates using instructinos</span>
+<span class="go">                        in the config file</span>
 <span class="go">    info                print some information to the console</span>
-<span class="go">    plots               generate some plots that summarize aspects of the current completed build</span>
-<span class="go">    fetch-example       fetch and unpack example(s) from the HTPolyNet.Library: &quot;0-liquid-styrene&quot;,</span>
-<span class="go">                        &quot;1-polystyrene&quot;, &quot;2-polymethylstyrene&quot;, &quot;3-bisgma-styrene-thermoset&quot;,</span>
-<span class="go">                        &quot;4-pacm-dgeba-epoxy-thermoset&quot;,&quot;5-dfda-fde-epoxy-thermoset&quot;, &quot;6-htpb-ipdi&quot;</span>
+<span class="go">    plots               generate some plots that summarize aspects of the current</span>
+<span class="go">                        completed build</span>
+<span class="go">    fetch-example       fetch and unpack example(s) from the HTPolyNet.Library:</span>
+<span class="go">                       &quot;0-liquid-styrene&quot;, &quot;1-polystyrene&quot;, &quot;2-polymethylstyrene&quot;,</span>
+<span class="go">                        &quot;3-bisgma-styrene-thermoset&quot;, &quot;4-pacm-dgeba-epoxy-thermoset&quot;,</span>
+<span class="go">                        &quot;5-dfda-fde-epoxy-thermoset&quot;, &quot;6-htpb-ipdi&quot;</span>
+<span class="go">    input-check         reports number of atoms that would be in initial system based</span>
+<span class="go">                        on config</span>
 
 <span class="go">options:</span>
 <span class="go">  -h, --help            show this help message and exit</span>
-</pre></div>
-</div>
-</section>
-<section id="subcommands">
-<h1>Subcommands<a class="headerlink" href="#subcommands" title="Permalink to this headline">¶</a></h1>
-<section id="htpolynet-run">
-<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code><a class="headerlink" href="#htpolynet-run" title="Permalink to this headline">¶</a></h2>
-<p>This subcommand is for building crosslinked systems:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet run --help
-<span class="go">usage: htpolynet run [-h] [-lib LIB] [-proj PROJ] [-diag DIAG] [-restart] [--force-parameterization] [--force-checkin] [--loglevel LOGLEVEL] config</span>
-
-<span class="go">positional arguments:</span>
-<span class="go">  config                input configuration file in YAML format</span>
-
-<span class="go">options:</span>
-<span class="go">  -h, --help            show this help message and exit</span>
-<span class="go">  -lib LIB              local user library of molecular structures and parameterizations</span>
-<span class="go">  -proj PROJ            project directory; &quot;next&quot; (default) generates next directory</span>
-<span class="go">                        Anything other than &quot;next&quot;:</span>
-<span class="go">                            if it exists, &quot;-restart&quot; must be included as a parameter;</span>
-<span class="go">                            if not, it is created as a new project</span>
-<span class="go">  -diag DIAG            diagnostic log file</span>
-<span class="go">  -restart              restart in latest proj dir</span>
-<span class="go">  --force-parameterization</span>
-<span class="go">                        force GAFF parameterization of any input mol2 structures</span>
-<span class="go">  --force-checkin       force check-in of any generated parameter files to the system library</span>
-<span class="go">  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)</span>
 </pre></div>
 </div>
 <p>The arguments are explained in more detail below.</p>
@@ -109,7 +88,6 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">--force-parameterization</span></code> signals that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> should perform all molecular parameterizations from scratch even if parameterizations exist in the library.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--force-checkin</span></code> signals that any parameterizations <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> does should have their results “checked-in” to the library, even if previous parameterizations are there already.</p></li>
 </ul>
-</section>
 <section id="htpolynet-parameterize">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code><a class="headerlink" href="#htpolynet-parameterize" title="Permalink to this headline">¶</a></h2>
 <p>This is the command for only performing molecular parameterizations and checking the results into a library:</p>
@@ -178,6 +156,13 @@
 <p>This folder (like all example folders) comes with two configuration files that differ only the the requested degree of cure.  “hi” refers to 95% cure, and “lo” to 50%.  Also provided is the <code class="docutils literal notranslate"><span class="pre">./lib/molecules</span></code> folders with the <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> and <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code> empty subfolders.  Finally, the bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> can just be invoked to build the input monomers and run the two builds in series.  This will be described in much more detail in the tutorials.</p>
 <p><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span> <span class="pre">-n</span> <span class="pre">all</span></code> just grabs all seven examples.</p>
 </section>
+<section id="htpolynet-input-check">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">input-check</span></code><a class="headerlink" href="#htpolynet-input-check" title="Permalink to this headline">¶</a></h2>
+<p>The purpose of this subcommand is to report the size of the initial system that <em>would</em> be created by the provided configuration file and monomer input structures.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet input-check DGE-PAC-hi.yaml
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -202,10 +187,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">User Guide</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Usage</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#subcommands">Subcommands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="program-flow.html">Program Flow</a></li>
 <li class="toctree-l2"><a class="reference internal" href="program-flow.html#connect-update-relax-equilibrate-cure-algorithm">Connect-Update-Relax-Equilibrate (CURE) algorithm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="program-flow.html#bondsearch-filters">Bondsearch filters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="program-flow.html#bondsearch-filters">Identifying allowable bonds:  Bonsearch filters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="molecular-structure-inputs.html">Molecular Structure Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration-files.html">Configuration Files</a></li>
 </ul>
