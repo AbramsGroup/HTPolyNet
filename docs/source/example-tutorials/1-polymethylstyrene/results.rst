@@ -33,3 +33,25 @@ The ``init/`` directory is where the initial topology and coordinates are genera
 
 ``proj-0/plots``
 ^^^^^^^^^^^^^^^^
+
+``HTPolyNet`` generates several plots on the fly during a system build.  
+
+.. code-block:: console
+
+    $ cd ../plots
+    $ ls -1
+    densification-density.png
+    iter-1-cure_equilibrate-density.png
+    iter-2-cap_equilibrate-density.png
+    iter-2-cure_equilibrate-density.png
+    postcure-anneal-T.png
+    postcure-postequilibration-density.png
+    precure-anneal-T.png
+    precure-postequilibration-density.png
+    precure-preequilibration-density.png
+    
+For example, ``densification-density.png`` indicates that the densification simulation was in fact able to densify the system:
+
+.. image:: pics/densification-density.png
+
+    
