@@ -113,7 +113,7 @@ def input_check(args):
     for mname,M in C.molecules.items():
         if os.path.exists(os.path.join(lib,f'{mname}.mol2')):
             c=Coordinates.read_mol2(os.path.join(lib,f'{mname}.mol2'))
-            matoms=c.A.shape[0]*int(icdict[mname])
+            matoms=c.A.shape[0]
         elif os.path.exists(os.path.join(lib,f'{mname}.pdb')):
             # print(os.path.join(lib,f"{mname}.{fmt}"))
             out,err=Command(f'grep -c ^ATOM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
