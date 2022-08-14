@@ -15,7 +15,7 @@
     <script src="../../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Monomers" href="monomers.html" />
+    <link rel="next" title="Reactions" href="reactions.html" />
     <link rel="prev" title="Running the Build" href="../1-polymethylstyrene/run.html" />
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -35,15 +35,52 @@
             
   <section id="dgeba-pacm-thermoset">
 <span id="dgeba-pacm-tutorial"></span><h1>DGEBA-PACM Thermoset<a class="headerlink" href="#dgeba-pacm-thermoset" title="Permalink to this headline">¶</a></h1>
-<p>This tutorial illustrates how to build an all-atom model of a DGEBA-PACM thermoset using HTPolyNet.</p>
+<p>The first step is to get to a clean working directory, and then use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> to setup this example.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir my_dgeba_pacm
+<span class="gp">$ </span><span class="nb">cd</span> my_dgeba_pacm
+<span class="gp">$ </span>htpolynet fetch-example -n <span class="m">4</span>
+<span class="gp">$ </span>ls
+<span class="go">4-pacm-dgeba-epoxy-thermoset/</span>
+<span class="gp">$ </span><span class="nb">cd</span> <span class="m">4</span>-pacm-dgeba-epoxy-thermoset
+<span class="gp">$ </span>ls
+<span class="go">DGE-PAC-hi.yaml  DGE-PAC-lo.yaml  lib/  run.sh</span>
+</pre></div>
+</div>
+<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run both a low-cure and high-cure build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated DGEBA and PACM.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
+<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;DGE-PAC&quot;</span>
+conda activate mol-env
+<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/inputs&#39;</span>
+<span class="c1"># DGEBA</span>
+<span class="nb">echo</span> <span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span> <span class="p">|</span> <span class="se">\</span>
+            obabel -ismi --gen2d -opng -O <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/DGE.png
+<span class="nb">echo</span> <span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span> <span class="p">|</span> <span class="se">\</span>
+            obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;DGE&quot;</span> <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;DGE    &quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;14 C &quot;</span>/<span class="s2">&quot;14 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;25 C &quot;</span>/<span class="s2">&quot;25 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;12 C &quot;</span>/<span class="s2">&quot;12 C3&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;23 C &quot;</span>/<span class="s2">&quot;23 C4&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;13 O &quot;</span>/<span class="s2">&quot;13 O1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;24 O &quot;</span>/<span class="s2">&quot;24 O2&quot;</span>/ &gt; <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/DGE.mol2
+<span class="c1"># PACM</span>
+<span class="nb">echo</span> <span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span> <span class="p">|</span> <span class="se">\</span>
+            obabel -ismi --gen2d -opng -O <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/PAC.png
+<span class="nb">echo</span> <span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span> <span class="p">|</span> obabel -ismi -h --gen3d -omol2 --title <span class="s2">&quot;PAC&quot;</span> <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;PAC    &quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;14 N &quot;</span>/<span class="s2">&quot;14 N1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;15 N &quot;</span>/<span class="s2">&quot;15 N1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;3 C &quot;</span>/<span class="s2">&quot;3 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
+            sed s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/ &gt; <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/PAC.mol2
+rm -rf proj-* *log lib/molecules/parameterized/*
+htpolynet run -diag diagnostics-lo.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>-lo.yaml <span class="p">&amp;</span>&gt; lo.log
+htpolynet run -diag diagnostics-hi.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>-hi.yaml <span class="p">&amp;</span>&gt; hi.log
+</pre></div>
+</div>
+<p>So, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="monomers.html">Monomers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="monomers.html#dgeba">DGEBA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="monomers.html#pacm">PACM</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="reactions.html">Reactions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">The Configuration File</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run.html">Running the Build</a><ul>
@@ -95,7 +132,7 @@
   <li><a href="../../index.html">Documentation overview</a><ul>
   <li><a href="../index.html">Example Tutorials</a><ul>
       <li>Previous: <a href="../1-polymethylstyrene/run.html" title="previous chapter">Running the Build</a></li>
-      <li>Next: <a href="monomers.html" title="next chapter">Monomers</a></li>
+      <li>Next: <a href="reactions.html" title="next chapter">Reactions</a></li>
   </ul></li>
   </ul></li>
 </ul>

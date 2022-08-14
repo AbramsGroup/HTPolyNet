@@ -3,21 +3,6 @@
 Monomers
 ========
 
-In this section, we describe how the inputs :download:`DGE.mol2 <DGE.mol2>` and :download:`PAC.mol2 <PAC.mol2>` are generated for the DGEBA and PACM monomers, respectively.  Since this represents an instance where a new system is being generated, let's begin by creating an empty directory and then populating with a "molecule library":abbr:
-
-.. code-block:: console
-
-    $ cd 
-    $ mkdir my_dgeba_pacm_build
-    $ cd my_dgeba_pacm_build
-    $ mkdir lib
-    $ mkdir lib/molecules
-    $ mkdir lib/molecules/inputs
-    $ mkdir lib/molecules/parameterized
-    $ cd lib/molecules/inputs
-
-Now we can generate the two required ``*.mol2`` files.
-
 DGEBA
 ^^^^^
 

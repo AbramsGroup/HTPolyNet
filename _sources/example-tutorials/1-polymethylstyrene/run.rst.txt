@@ -3,7 +3,7 @@
 Running the Build
 =================
 
-Now, in our working directory ``my_pms``, if you haven't already, go ahead and launch via ``./run.sh``.
+Now, in our working directory ``my_pms/2-polymethylstyrene/``, if you haven't already, go ahead and launch via ``./run.sh``.
 
 .. code-block:: console
 

@@ -126,7 +126,20 @@
 </section>
 <section id="htpolynet-plots">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code><a class="headerlink" href="#htpolynet-plots" title="Permalink to this headline">¶</a></h2>
-<p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.  This feature is currently under development.</p>
+<p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots --help
+<span class="go">usage: htpolynet plots [-h] [-logs LOGS [LOGS ...]] [-proj PROJ] [-o O] [--plotfile PLOTFILE]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -logs LOGS [LOGS ...]</span>
+<span class="go">                        names of diagnostic log files (1 or more)</span>
+<span class="go">  -proj PROJ            name of project directory</span>
+<span class="go">  -o O                  name of global trace output data file</span>
+<span class="go">  --plotfile PLOTFILE   name of plot file to generate</span>
+</pre></div>
+</div>
+<p>We explain detailed usage of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> in the tutorials.  Briefly, if a project directory is name via the <code class="docutils literal notranslate"><span class="pre">-proj</span></code> option, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will generate a set of plots tracing the system temperature, density, and number of polymerization bonds vs simulation time.  If one or more diagnostic log files is named in the <code class="docutils literal notranslate"><span class="pre">-logs</span></code> option, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will generate a pair of plots of conversion vs. wall-clock time and iteration vs wall-clock time, with each diagnostic log getting its own curve on each plot.</p>
 </section>
 <section id="htpolynet-fetch-example">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code><a class="headerlink" href="#htpolynet-fetch-example" title="Permalink to this headline">¶</a></h2>
@@ -160,6 +173,9 @@
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">input-check</span></code><a class="headerlink" href="#htpolynet-input-check" title="Permalink to this headline">¶</a></h2>
 <p>The purpose of this subcommand is to report the size of the initial system that <em>would</em> be created by the provided configuration file and monomer input structures.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet input-check DGE-PAC-hi.yaml
+<span class="go">Molecule DGE: 53 atoms, 200 molecules</span>
+<span class="go">Molecule PAC: 41 atoms, 100 molecules</span>
+<span class="go">DGE-PAC-hi.yaml: 14700 atoms in initial system</span>
 </pre></div>
 </div>
 </section>
