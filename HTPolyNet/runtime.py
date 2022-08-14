@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+from termios import N_SLIP
 import numpy as np
 import random
 from copy import deepcopy
@@ -262,6 +263,7 @@ class Runtime:
         infiles=[TC.files[x] for x in ['gro','top','grx']]
         assert all([os.path.exists(x) for x in infiles]),f'One or more of {infiles} not found'
         for i in range(n_dstages):
+            logger.debug(f'Densification stage {i+1} out of {n_dstages}')
             self._do_equilibration_series(equilibration,deffnm=f'{deffnm}-stg{i}',plot_pfx='densification')
         gro_res=os.path.basename(TC.files["gro"])
         deffnm_res=gro_res.replace('.gro','')
