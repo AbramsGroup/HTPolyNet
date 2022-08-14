@@ -254,14 +254,15 @@ class Runtime:
         my_logger(f'Densification in {pfs.cwd()}',logger.info)
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
         densification_dict=self.cfg.parameters.get('densification',{})
-        TC=self.TopoCoord
-        infiles=[TC.files[x] for x in ['gro','top','grx']]
-        assert all([os.path.exists(x) for x in infiles]),f'One or more of {infiles} not found'
-        densification_dict=self.cfg.parameters.get('densification',{})
         assert len(densification_dict)>0,'"densification" directives missing'
         equilibration=densification_dict.get('equilibration',{})
         assert len(equilibration)>0,'equilibration directives missing'
-        self._do_equilibration_series(equilibration,deffnm=deffnm,plot_pfx='densification')
+        n_dstages=densification_dict.get('nstages',1)
+        TC=self.TopoCoord
+        infiles=[TC.files[x] for x in ['gro','top','grx']]
+        assert all([os.path.exists(x) for x in infiles]),f'One or more of {infiles} not found'
+        for i in range(n_dstages):
+            self._do_equilibration_series(equilibration,deffnm=f'{deffnm}-stg{i}',plot_pfx='densification')
         gro_res=os.path.basename(TC.files["gro"])
         deffnm_res=gro_res.replace('.gro','')
         logger.info(f'Densified coordinates in {pfs.cwd()}/{gro_res}')
