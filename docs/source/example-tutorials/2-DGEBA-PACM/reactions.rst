@@ -53,7 +53,7 @@ Now, let's consider the reaction directive for the conversion of a secondary ami
 
 Notice carefully the new reactant 1 here is PACDGE, and atom A is the N1 of residue 1 of reactant 1 with a ``z`` of 1.  This reaction generates the product PACDGE2.  We also set its probability to 0.5, which is approximately the same as saying these reactions intrisically happen with half the frequency of the secondary-amine-formation reactions.  This allows a way to specify the "relative reactivity" of the two types of reactions. (Typically, secondary-to-tertiary amine reactions are slower than analogous primary-to-secondary amine reactions.)
 
-Finally, post-cure reactions that get rid of "extra" sacrificial hydrogens can be defined.  Consider:
+Finally, "capping" reactions that get rid of "extra" sacrificial hydrogens can be defined.  Consider:
 
 .. image:: r3.png
 
@@ -62,7 +62,7 @@ This reaction removes the two sacrificial H's used to "open" the oxirane and ref
 .. code-block:: yaml
 
     name:     'Oxirane-formation'
-    stage:     post-cure
+    stage:     cap
     reactants: { 1: DGE }
     product:   DGEC
     probability: 1.0
