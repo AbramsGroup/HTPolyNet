@@ -199,7 +199,10 @@ This example file contains nine distinct **directives**.
     ``pressure``                             float           (required if ``ensemble`` is npt) Pressure in bar assigned to ``ref_p`` in Gromacs ``mdp`` file
     ``nsteps``                               int             (optional; required if ``ps`` not provided) Duration of MD simulation in number of time steps
     ``ps``                                   float           (optional; required if ``nsteps`` not set) Duration of MD simulation in picoseconds
+    ``repeat``                               int             (optional) number of times to repeat this simulation in series; default is 0 (i.e., run once)
     =====================================    ==============  =====================
+
+    The ``repeat`` subdirective is especially useful for densifications that start at very low initial densities.  It is better to run several short NPT simulations than a single long one so that the box size shrinkage doesn't overwhelm Gromacs' domain decomposition algorithm.
 
 * ``precure``
     
