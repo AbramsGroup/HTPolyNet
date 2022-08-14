@@ -324,8 +324,13 @@
 <td><p>float</p></td>
 <td><p>(optional; required if <code class="docutils literal notranslate"><span class="pre">nsteps</span></code> not set) Duration of MD simulation in picoseconds</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">repeat</span></code></p></td>
+<td><p>int</p></td>
+<td><p>(optional) number of times to repeat this simulation in series; default is 0 (i.e., run once)</p></td>
+</tr>
 </tbody>
 </table>
+<p>The <code class="docutils literal notranslate"><span class="pre">repeat</span></code> subdirective is especially useful for densifications that start at very low initial densities.  It is better to run several short NPT simulations than a single long one so that the box size shrinkage doesn’t overwhelm Gromacs’ domain decomposition algorithm.</p>
 </div></blockquote>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">precure</span></code></p>
