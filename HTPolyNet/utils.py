@@ -6,6 +6,7 @@ import pandas as pd
 from scipy.constants import physical_constants
 import os
 import numpy as np
+import networkx as nx
 
 def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
     C=Coordinates.read_gro(gro)
@@ -159,3 +160,59 @@ def density_evolution(proj_dir):
                         transition_times.append(xshift)
                         interval_labels.append([edr_pfx])
     return df,transition_times,markers,interval_labels
+
+def _encluster(i,j,c):
+    if c[i]==c[j]:
+        return c,True
+    cj,ci=c[j],c[i]
+    lower,higher=list(sorted([ci,cj]))
+    return np.array([(x if x!=higher else lower) for x in c]),False 
+
+def graph_from_bondsfiles(proj_dir):
+    G=nx.DiGraph()
+    n=1
+    while os.path.exists(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv')):
+        df=pd.read_csv(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv'),header=0,index_col=None,sep='\s+')
+        for i,r in df.iterrows():
+            G.add_edge(r['ri'],r['rj'])
+        n+=1
+    nnodes=G.number_of_nodes()
+    cluster_ids=np.arange(nnodes+1)
+    cluster_ids[0]=-1
+    finished=False
+    cpass=1
+    while not finished:
+        finished=True
+        for i,j in G.edges():
+            # print(i,j)
+            cluster_ids,unchanged=_encluster(i,j,cluster_ids)
+            # print(id(cluster_ids))
+            finished=finished and unchanged
+            assert cluster_ids[i]==cluster_ids[j],f'{i} {j} {cluster_ids[i]} {cluster_ids[j]}'
+        cpass+=1
+    lastid=0
+    mapping={}
+    for c in cluster_ids:
+        if not c in mapping:
+            mapping[c]=lastid
+            lastid+=1
+    print(mapping)
+    nclu=lastid
+    mcid=[mapping[x] for x in cluster_ids] #{i:mapping[x] for i,x in zip(G,cluster_ids)}
+    members={}
+    for i in G:
+        if not mcid[i] in members:
+            members[mcid[i]]=[]
+        members[mcid[i]].append(i)
+
+    for c,m in members.items():
+        print(f'covalent-group {c} members {m}')
+
+    scid=[]
+    for n in G:
+        scid.append(mcid[n])
+
+    n_cid=[float(x)/nclu for x in scid]
+    assert len(n_cid)==len(G)
+    # print(n_cid)
+    return G,n_cid

@@ -9,9 +9,9 @@ from HTPolyNet.banner import banner, banner_message
 from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.plot import diagnostics_graphs,global_trace
+from HTPolyNet.plot import diagnostics_graphs,global_trace, network_graph
 from HTPolyNet.stringthings import my_logger
-from HTPolyNet.utils import density_evolution
+from HTPolyNet.utils import density_evolution, graph_from_bondsfiles
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.command import Command
@@ -77,12 +77,16 @@ def htpolynet_cure_plots(args):
     if len(logs)>0:
         diagnostics_graphs(logs,args.plotfile)
     if args.proj:
-        df,transition_times,markers,interval_labels=density_evolution(args.proj)
-        global_trace(df,['Temperature','Density'],'global_traces.png',transition_times=transition_times,markers=markers,interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
-        if args.o:
-            print(f'All data to {args.o}')
-            with open(args.o,'w') as f:
-                f.write(df.to_string(header=['time(ps)','Temperature','nbonds','Density'],index=False,float_format='{:.3f}'.format)+'\n')
+        if args.t:
+            df,transition_times,markers,interval_labels=density_evolution(args.proj)
+            global_trace(df,['Temperature','Density'],args.t,transition_times=transition_times,markers=markers,interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
+            if args.o:
+                print(f'All data to {args.o}')
+                with open(args.o,'w') as f:
+                    f.write(df.to_string(header=['time(ps)','Temperature','nbonds','Density'],index=False,float_format='{:.3f}'.format)+'\n')
+        if args.g:
+            G,cx=graph_from_bondsfiles(args.proj)
+            network_graph(G,args.g,c=cx)
 
 def fetch_example(args):
     l=pfs.system()
@@ -175,7 +179,9 @@ def cli():
 
     command_parsers['plots'].add_argument('-logs',type=str,default='',nargs='+',help='names of diagnostic log files (1 or more)')
     command_parsers['plots'].add_argument('-proj',type=str,default='',help='name of project directory')
-    command_parsers['plots'].add_argument('-o',type=str,default='',help='name of global trace output data file')
+    command_parsers['plots'].add_argument('-t',type=str,default='',help='Plot density and temperature traces for entire build in specified project directory to this file')
+    command_parsers['plots'].add_argument('-o',type=str,default='',help='dump density/temperature trace data to this file')
+    command_parsers['plots'].add_argument('-g',type=str,default='',help='Plot graph network of resids and save to this file name')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))

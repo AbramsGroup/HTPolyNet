@@ -68,4 +68,4 @@ Finally, we can take a look at the density after the postcure-anneal in ``postcu
 
     ``postcure-postequilibration-density.png``
 
-Note that the final equilibrated density is ..., quite a bit higher than the density of liquid styrene at 10 bar from the densification simulations.
+Note that the final equilibrated density is about 940 kg/m^3, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.
