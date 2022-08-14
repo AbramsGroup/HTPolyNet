@@ -52,6 +52,20 @@ The ``init/`` directory is where the initial topology and coordinates are genera
     
 For example, ``densification-density.png`` indicates that the densification simulation was in fact able to densify the system:
 
-.. image:: pics/densification-density.png
+.. figure:: pics/densification-density.png
 
-    
+    ``densification-density.png`` for the low-cure build of polymethylstyrene.
+
+We can check that the annealing cycles were correctly performed from either ``precure-anneal-T.png`` or ``postcure-anneal-T.png``:
+
+.. figure:: pics/postcure-anneal-T.png 
+
+    ``postcure-anneal-T.png``
+
+Finally, we can take a look at the density after the postcure-anneal in ``postcure-postequilibration-density.png``:
+
+.. figure:: pics/postcure-postequilibration-density.png 
+
+    ``postcure-postequilibration-density.png``
+
+Note that the final equilibrated density is ..., quite a bit higher than the density of liquid styrene at 10 bar from the densification simulations.
