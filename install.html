@@ -39,9 +39,9 @@
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this headline">¶</a></h2>
 <p>The following commands should be in your path:</p>
 <ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code> (from <a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>, version 22 or higher)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (from <a class="reference external" href="https://manual.gromacs.org/documentation/current/index.html">Gromacs</a>, version 2022.1 or higher)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">obabel</span></code> (from <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code> (<a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>, version 22 or higher); preferred installation via <code class="docutils literal notranslate"><span class="pre">conda</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (<a class="reference external" href="https://manual.gromacs.org/documentation/current/index.html">Gromacs</a>, version 2022.1 or higher); preferred installation via compiling from source.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">obabel</span></code> (<a class="reference external" href="https://github.com/openbabel/openbabel">OpenBabel</a>); preferred installation via Linux distribution package.</p></li>
 </ol>
 <p>If you use conda/anaconda, we recommended that you create a separate Python environment running <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda create --name mol-env python
@@ -66,10 +66,10 @@
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
-<p>If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  It is recommended that you deactivate any conda environment before executing any of these compilations.</p>
+<p>If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  <strong>It is recommended that you deactivate any conda environment before performing any of these compilations.</strong></p>
 <section id="compilation-of-ambertools">
 <h3>Compilation of AmberTools<a class="headerlink" href="#compilation-of-ambertools" title="Permalink to this headline">¶</a></h3>
-<p>You can compile AmberTools from source if you like.  It will require <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>:</p>
+<p>Compilation of AmberTools requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar jxf AmberTools21.tar.bz2
 <span class="gp">$ </span><span class="nb">cd</span> amber_src
 <span class="gp">$ </span>./configure --no-X11 --skip-python gnu
@@ -99,9 +99,9 @@
 </section>
 <section id="compilation-of-obabel">
 <h3>Compilation of <code class="docutils literal notranslate"><span class="pre">obabel</span></code><a class="headerlink" href="#compilation-of-obabel" title="Permalink to this headline">¶</a></h3>
-<p>If your system does not have <code class="docutils literal notranslate"><span class="pre">obabel</span></code> installed and your Linux distribution doesn’t offer a package for it, you can compile it from source.  Be sure to install <a class="reference external" href="https://eigen.tuxfamily.org/index.php?title=Main_Page">Eigen</a> first so that the <code class="docutils literal notranslate"><span class="pre">conformer</span></code> plug-in for <code class="docutils literal notranslate"><span class="pre">obabel</span></code> will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to <cite>~/Downloads</cite> and are unpacked in the directory <cite>~/build/</cite>, and the OpenBabel installation directory is <cite>~/opt/obabel</cite>.</p>
+<p>If your system does not have <code class="docutils literal notranslate"><span class="pre">obabel</span></code> installed and your Linux distribution doesn’t offer a package for it (or you are not root!), you can compile it from source.  Be sure to unpack <a class="reference external" href="https://eigen.tuxfamily.org/index.php?title=Main_Page">Eigen</a> first so that the <code class="docutils literal notranslate"><span class="pre">conformer</span></code> plug-in for <code class="docutils literal notranslate"><span class="pre">obabel</span></code> will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to <code class="docutils literal notranslate"><span class="pre">~/Downloads</span></code> and are unpacked in the directory <code class="docutils literal notranslate"><span class="pre">~/build/</span></code>, and the OpenBabel installation directory is <code class="docutils literal notranslate"><span class="pre">~/opt/obabel</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ~/build
-<span class="gp">$ </span>tar jxf ~/Downloads/eigen-3.4.0.tar.bz2
+<span class="gp">$ </span>tar jxf ~/Downloads/eigen-3.4.0.tar.bz2  <span class="c1"># unpack only -- no need to compile</span>
 <span class="gp">$ </span>tar jxf ~/Downloads/openbabel-3.1.1.tar.bz2
 <span class="gp">$ </span><span class="nb">cd</span> openbabel-3.1.1
 <span class="gp">$ </span>mkdir build

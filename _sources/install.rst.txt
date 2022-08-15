@@ -7,9 +7,9 @@ Software Prequisites
 
 The following commands should be in your path:
 
-1. ``antechamber``, ``parmchk2``, and ``tleap`` (from `AmberTools <https://ambermd.org/GetAmber.php#ambertools>`_, version 22 or higher)
-2. ``gmx`` or ``gmx_mpi`` (from `Gromacs <https://manual.gromacs.org/documentation/current/index.html>`_, version 2022.1 or higher)
-3. ``obabel`` (from `OpenBabel <https://openbabel.org/wiki/Main_Page>`_)
+1. ``antechamber``, ``parmchk2``, and ``tleap`` (`AmberTools <https://ambermd.org/GetAmber.php#ambertools>`_, version 22 or higher); preferred installation via ``conda``.
+2. ``gmx`` or ``gmx_mpi`` (`Gromacs <https://manual.gromacs.org/documentation/current/index.html>`_, version 2022.1 or higher); preferred installation via compiling from source.
+3. ``obabel`` (`OpenBabel <https://github.com/openbabel/openbabel>`_); preferred installation via Linux distribution package.
 
 If you use conda/anaconda, we recommended that you create a separate Python environment running ``HTPolyNet``:
 
@@ -43,12 +43,12 @@ If you created the recommended python environment, make sure it is activated bef
 Notes
 -----
 
-If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  It is recommended that you deactivate any conda environment before executing any of these compilations.
+If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  **It is recommended that you deactivate any conda environment before performing any of these compilations.**
 
 Compilation of AmberTools
 #########################
 
-You can compile AmberTools from source if you like.  It will require ``csh``, ``flex``, and ``bison``:
+Compilation of AmberTools requires ``csh``, ``flex``, and ``bison``:
 
 .. code-block:: console
 
@@ -85,12 +85,12 @@ This should provide access to the ``gmx`` command.  If you additionally compiled
 Compilation of ``obabel``
 #########################
 
-If your system does not have ``obabel`` installed and your Linux distribution doesn't offer a package for it, you can compile it from source.  Be sure to install `Eigen <https://eigen.tuxfamily.org/index.php?title=Main_Page>`_ first so that the ``conformer`` plug-in for ``obabel`` will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to `~/Downloads` and are unpacked in the directory `~/build/`, and the OpenBabel installation directory is `~/opt/obabel`.
+If your system does not have ``obabel`` installed and your Linux distribution doesn't offer a package for it (or you are not root!), you can compile it from source.  Be sure to unpack `Eigen <https://eigen.tuxfamily.org/index.php?title=Main_Page>`_ first so that the ``conformer`` plug-in for ``obabel`` will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to ``~/Downloads`` and are unpacked in the directory ``~/build/``, and the OpenBabel installation directory is ``~/opt/obabel``.
 
 .. code-block:: console
 
     $ cd ~/build
-    $ tar jxf ~/Downloads/eigen-3.4.0.tar.bz2
+    $ tar jxf ~/Downloads/eigen-3.4.0.tar.bz2  # unpack only -- no need to compile
     $ tar jxf ~/Downloads/openbabel-3.1.1.tar.bz2
     $ cd openbabel-3.1.1
     $ mkdir build
