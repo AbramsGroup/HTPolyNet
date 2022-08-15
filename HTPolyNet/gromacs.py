@@ -70,7 +70,7 @@ def insert_molecules(composition,boxSize,outName,inputs_dir='.',**kwargs):
                     logger.debug(l)
                 raise Exception('need bigger box')
 
-def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
+def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=False,**kwargs):
     ''' launcher for grompp and mdrun
         gro: prefix for input coordinate file
         top: prefix for input topology
@@ -97,7 +97,10 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],**kwargs):
     # nsteps=kwargs.get('nsteps',-2)
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run(quiet=quiet)
-    c=Command(f'{sw.mdrun}',deffnm=out,**mdrun_dict)
+    if single_molecule:
+        c=Command(f'{sw.mdrun_single_molecule}',deffnm=out,**mdrun_dict)
+    else:
+        c=Command(f'{sw.mdrun}',deffnm=out,**mdrun_dict)
     c.run(quiet=quiet,ignore_codes=ignore_codes)
     if os.path.exists(f'{out}.gro'):
         pass

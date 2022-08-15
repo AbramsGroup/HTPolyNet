@@ -19,16 +19,18 @@ class Software:
 
     def set_gmx_preferences(self,parameters):
         gromacs_dict=parameters.get('gromacs',{})
-        logger.debug(f'gromacs_dict {gromacs_dict}')
+        # logger.debug(f'gromacs_dict {gromacs_dict}')
         if gromacs_dict:
             self.gmx=gromacs_dict.get('gmx','gmx')
             self.gmx_options=gromacs_dict.get('gmx_options','-quiet')
-            self.mdrun=gromacs_dict.get('mdrun','gmx mdrun')
+            self.mdrun=gromacs_dict.get('mdrun',f'{self.gmx} {self.gmx_options} mdrun')
+            self.mdrun_single_molecule=gromacs_dict.get('mdrun_single_molecule',f'{self.gmx} {self.gmx_options}  mdrun')
             logger.debug(f'{self.gmx}, {self.gmx_options}, {self.mdrun}')
         else:
             self.gmx_options=parameters.get('gmx_options','')
             self.gmx=parameters.get('gmx','gmx')
             self.mdrun=parameters.get('gmx_mdrun',f'{self.gmx} {self.gmx_options} mdrun')
+            self.mdrun_single_molecule=parameters.get('mdrun_single_molecule',f'{self.gmx} {self.gmx_options}  mdrun')
         CP=subprocess.run(['which',self.gmx],capture_output=True,text=True)
         assert CP.returncode==0,f'{self.gmx} not found'
 
