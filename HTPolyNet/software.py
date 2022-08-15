@@ -19,7 +19,7 @@ class Software:
 
     def set_gmx_preferences(self,parameters):
         gromacs_dict=parameters.get('gromacs',{})
-        # logger.debug(f'gromacs_dict {gromacs_dict}')
+        logger.debug(f'gromacs_dict {gromacs_dict}')
         if gromacs_dict:
             self.gmx=gromacs_dict.get('gmx','gmx')
             self.gmx_options=gromacs_dict.get('gmx_options','-quiet')
@@ -64,12 +64,12 @@ def to_string():
 gmx='gmx'
 gmx_options='-quiet'
 mdrun=f'{gmx} mdrun'
+mdrun_single_molecule=f'{gmx} mdrun'
 def set_gmx_preferences(parmdict):
-    global gmx
-    global gmx_options
-    global mdrun
-    global _SW_
+    global _SW_, gmx, gmx_options, mdrun, mdrun_single_molecule
     _SW_.set_gmx_preferences(parmdict)
     gmx=_SW_.gmx
     gmx_options=_SW_.gmx_options
     mdrun=_SW_.mdrun
+    mdrun_single_molecule=_SW_.mdrun_single_molecule
+
