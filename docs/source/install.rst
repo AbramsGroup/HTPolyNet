@@ -43,6 +43,11 @@ If you created the recommended python environment, make sure it is activated bef
 Notes
 -----
 
+If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  It is recommended that you deactivate any conda environment before executing any of these compilations.
+
+Compilation of AmberTools
+#########################
+
 You can compile AmberTools from source if you like.  It will require ``csh``, ``flex``, and ``bison``:
 
 .. code-block:: console
@@ -52,6 +57,9 @@ You can compile AmberTools from source if you like.  It will require ``csh``, ``
     $ ./configure --no-X11 --skip-python gnu
     $ source amber.sh
     $ make install
+
+Compilation of Gromacs
+######################
 
 You can also compile Gromacs from source, if your Linux distibution doesn't include it in its package management, or you are on a big supercomputer.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):
 
@@ -74,7 +82,25 @@ And add to your ``~/.bashrc``:
 
 This should provide access to the ``gmx`` command.  If you additionally compiled an MPI version (using ``-DGMX_MPI=on`` in the ``cmake`` command), you will also have access to ``gmx_mpi``; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of ``gmx distance`` that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.
 
-Finally, in the tutorials provided, we demonstrate the use of ``obabel`` outside ``HTPolyNet`` to generate initial molecular structure files in Sybyl MOL2 format from SMILES strings; though it is not strictly necessary, it is fairly convenient to use for this purpose.  If you would like to generate conformers of monomers as part of an ``HTPolyNet`` build, this will also require ``obabel``.
+Compilation of ``obabel``
+#########################
+
+If your system does not have ``obabel`` installed and your Linux distribution doesn't offer a package for it, you can compile it from source.  Be sure to install `Eigen <https://eigen.tuxfamily.org/index.php?title=Main_Page>`_ first so that the ``conformer`` plug-in for ``obabel`` will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to `~/Downloads` and are unpacked in the directory `~/build/`, and the OpenBabel installation directory is `~/opt/obabel`.
+
+.. code-block:: console
+
+    $ cd ~/build
+    $ tar jxf ~/Downloads/eigen-3.4.0.tar.bz2
+    $ tar jxf ~/Downloads/openbabel-3.1.1.tar.bz2
+    $ cd openbabel-3.1.1
+    $ mkdir build
+    $ cd build
+    $ cmake .. -DEIGEN3_INCLUDE_DIR=${HOME}/build/eigen-3.4.0/ -DCMAKE_INSTALL_PREFIX=${HOME}/opt/obabel
+    $ make
+    $ make test
+    $ make install
+
+You will need to ensure that ``${HOME}/opt/babel/bin`` is in your ``PATH``, ``${HOME}/opt/babel/lib`` is in your ``LD_LIBRARY_PATH``, and that the environment variable ``BABEL_LIBDIR`` is set to ``${HOME}/opt/babel/lib``.
 
 Other Prequisites
 -----------------

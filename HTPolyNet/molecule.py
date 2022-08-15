@@ -805,7 +805,7 @@ class Molecule:
             lpf=int(tok[0])//self.nconformers
             c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
             out,err=c.run()
-            os.remove(f'{gro}-confs.gro')
+            # os.remove(f'{gro}-confs.gro')
             n=max(2,len(str(self.nconformers)))
             fmt=r'{A}{B:0'+str(n)+r'd}'
             cfnl=[fmt.format(A=pfx,B=x) for x in range(self.nconformers)]

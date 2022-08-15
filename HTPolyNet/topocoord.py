@@ -1449,9 +1449,9 @@ class TopoCoord:
         self.center_coords(new_boxsize=boxsize)
         mdp_prefix='single-molecule-min'
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
-        gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
+        # gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.grompp_and_mdrun(out=f'{outname}',
-            mdp=mdp_prefix,boxSize=boxsize,**gromacs_dict)
+            mdp=mdp_prefix,boxSize=boxsize) #,**gromacs_dict)
     
     def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx=''):
         mod_dict={}
