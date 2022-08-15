@@ -35,8 +35,8 @@
             
   <section id="results">
 <span id="pms-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h1>
-<p>The first <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> invocation in <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> runs the low-cure build (50% conversion) in the <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> subdirectory.  Let’s look at the results in this directory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> proj-0
+<p>The first <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> invocation in <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> runs the high-cure build (95% conversion) in the <code class="docutils literal notranslate"><span class="pre">proj-1</span></code> subdirectory.  Let’s look at the results in this directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> proj-1
 <span class="gp">$ </span>ls
 <span class="go">checkpoint_state.yaml  molecules/  plots/  systems/</span>
 <span class="gp">$</span>
@@ -48,8 +48,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code>:  This directory contains all directories where Gromacs runs are conducted.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code>: This directory contains some plots generated on the fly.</p></li>
 </ul>
-<section id="proj-0-systems">
-<h2><code class="docutils literal notranslate"><span class="pre">proj-0/systems</span></code><a class="headerlink" href="#proj-0-systems" title="Permalink to this headline">¶</a></h2>
+<section id="proj-1-systems">
+<h2><code class="docutils literal notranslate"><span class="pre">proj-1/systems</span></code><a class="headerlink" href="#proj-1-systems" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> systems
 <span class="gp">$ </span>ls
 <span class="go">capping/  densification/  final-results/  init/  iter-1/  iter-2/  postcure/  precure/</span>
@@ -64,8 +64,14 @@
 <span class="gp">$ </span>ls -1
 <span class="go">densification-density.png</span>
 <span class="go">iter-1-cure_equilibrate-density.png</span>
-<span class="go">iter-2-cap_equilibrate-density.png</span>
 <span class="go">iter-2-cure_equilibrate-density.png</span>
+<span class="go">iter-3-cure_equilibrate-density.png</span>
+<span class="go">iter-4-cure_equilibrate-density.png</span>
+<span class="go">iter-5-cure_equilibrate-density.png</span>
+<span class="go">iter-6-cure_equilibrate-density.png</span>
+<span class="go">iter-7-cure_equilibrate-density.png</span>
+<span class="go">iter-8-cure_equilibrate-density.png</span>
+<span class="go">iter-9-cure_equilibrate-density.png</span>
 <span class="go">postcure-anneal-T.png</span>
 <span class="go">postcure-postequilibration-density.png</span>
 <span class="go">precure-anneal-T.png</span>
@@ -77,7 +83,7 @@
 <figure class="align-default" id="id1">
 <img alt="../../_images/densification-density.png" src="../../_images/densification-density.png" />
 <figcaption>
-<p><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the low-cure build of polymethylstyrene.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>We can check that the annealing cycles were correctly performed from either <code class="docutils literal notranslate"><span class="pre">precure-anneal-T.png</span></code> or <code class="docutils literal notranslate"><span class="pre">postcure-anneal-T.png</span></code>:</p>
@@ -94,7 +100,7 @@
 <p><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<p>Note that the final equilibrated density is about 940 kg/m^3, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.</p>
+<p>Note that the final equilibrated density is about 950 kg/m^3 at 300 K and 1 bar, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.  This result is outside the range expected for <a class="reference external" href="https://polymerdatabase.com/polymers/poly4-methylstyrene.html">poly(4-methyl styrene)</a> of about 1.01 g/cc, but it’s not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated.</p>
 </section>
 </section>
 

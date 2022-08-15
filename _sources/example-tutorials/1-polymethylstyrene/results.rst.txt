@@ -3,11 +3,11 @@
 Results
 -------
 
-The first ``htpolynet run`` invocation in ``run.sh`` runs the low-cure build (50\% conversion) in the ``proj-0`` subdirectory.  Let's look at the results in this directory:
+The first ``htpolynet run`` invocation in ``run.sh`` runs the high-cure build (95\% conversion) in the ``proj-1`` subdirectory.  Let's look at the results in this directory:
 
 .. code-block:: console
 
-    $ cd proj-0
+    $ cd proj-1
     $ ls
     checkpoint_state.yaml  molecules/  plots/  systems/
     $
@@ -20,7 +20,7 @@ The ``yaml`` file is just a checkpoint.  We will consider how to use checkpoints
 
 * ``plots/``: This directory contains some plots generated on the fly.
 
-``proj-0/systems``
+``proj-1/systems``
 ^^^^^^^^^^^^^^^^^^
 
 .. code-block:: console
@@ -42,19 +42,25 @@ The ``init/`` directory is where the initial topology and coordinates are genera
     $ ls -1
     densification-density.png
     iter-1-cure_equilibrate-density.png
-    iter-2-cap_equilibrate-density.png
     iter-2-cure_equilibrate-density.png
+    iter-3-cure_equilibrate-density.png
+    iter-4-cure_equilibrate-density.png
+    iter-5-cure_equilibrate-density.png
+    iter-6-cure_equilibrate-density.png
+    iter-7-cure_equilibrate-density.png
+    iter-8-cure_equilibrate-density.png
+    iter-9-cure_equilibrate-density.png
     postcure-anneal-T.png
     postcure-postequilibration-density.png
     precure-anneal-T.png
     precure-postequilibration-density.png
     precure-preequilibration-density.png
-    
+
 For example, ``densification-density.png`` indicates that the densification simulation was in fact able to densify the system:
 
 .. figure:: pics/densification-density.png
 
-    ``densification-density.png`` for the low-cure build of polymethylstyrene.
+    ``densification-density.png`` for the high-cure build of polymethylstyrene.
 
 We can check that the annealing cycles were correctly performed from either ``precure-anneal-T.png`` or ``postcure-anneal-T.png``:
 
@@ -68,4 +74,4 @@ Finally, we can take a look at the density after the postcure-anneal in ``postcu
 
     ``postcure-postequilibration-density.png``
 
-Note that the final equilibrated density is about 940 kg/m^3, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.
+Note that the final equilibrated density is about 950 kg/m^3 at 300 K and 1 bar, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.  This result is outside the range expected for `poly(4-methyl styrene) <https://polymerdatabase.com/polymers/poly4-methylstyrene.html>`_ of about 1.01 g/cc, but it's not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated. 

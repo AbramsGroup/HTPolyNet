@@ -193,13 +193,17 @@
 <td><p>quoted string</p></td>
 <td><p>options to pass to all <code class="docutils literal notranslate"><span class="pre">gmx</span></code> calls (default <code class="docutils literal notranslate"><span class="pre">-quiet</span> <span class="pre">-nobackup</span></code>)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gmx_mdrun</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mdrun</span></code></p></td>
 <td><p>quoted string</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mdrun</span></code> command (default <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">(options)</span> <span class="pre">mdrun</span></code>)</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mdrun_single_molecule</span></code></p></td>
+<td><p>quoted string</p></td>
+<td><p>version of <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> to use for any single-molecule Gromacs runs</p></td>
+</tr>
 </tbody>
 </table>
-<p>If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter <code class="docutils literal notranslate"><span class="pre">gmx</span></code> to the fully resolved pathname of <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (or load the appropriate module), and use the <code class="docutils literal notranslate"><span class="pre">gmx_mdrun</span></code> parameters to specify the <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code> syntax needed to launch <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span> <span class="pre">mdrun</span></code>.</p>
+<p>If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter <code class="docutils literal notranslate"><span class="pre">gmx</span></code> to the fully resolved pathname of <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (or load the appropriate module), and use the <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> parameters to specify the <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code> syntax needed to launch <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span> <span class="pre">mdrun</span></code>.  The <code class="docutils literal notranslate"><span class="pre">gromacs_single_molecule</span></code> subdirective allows you to specify a particular form of <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> appropriate for single-molecule simulations.  These are most often used as part of parameterization or conformer generation.  Typically, it’s best to run these on a single processor without domain decomposition.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> directive is optional; if none is specified the default values are used.</p>
 </div></blockquote>
 </li>

@@ -146,10 +146,11 @@ This example file contains nine distinct **directives**.
     =====================================    ==============  =====================
     ``gmx``                                  str             ``gmx`` command (default ``gmx``)
     ``gmx_options``                          quoted string   options to pass to all ``gmx`` calls (default ``-quiet -nobackup``)
-    ``gmx_mdrun``                            quoted string   ``mdrun`` command (default ``gmx (options) mdrun``)
+    ``mdrun``                                quoted string   ``mdrun`` command (default ``gmx (options) mdrun``)
+    ``mdrun_single_molecule``                quoted string   version of ``mdrun`` to use for any single-molecule Gromacs runs
     =====================================    ==============  =====================
 
-    If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter ``gmx`` to the fully resolved pathname of ``gmx_mpi`` (or load the appropriate module), and use the ``gmx_mdrun`` parameters to specify the ``mpirun`` or ``mpiexec`` syntax needed to launch ``gmx_mpi mdrun``.
+    If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter ``gmx`` to the fully resolved pathname of ``gmx_mpi`` (or load the appropriate module), and use the ``mdrun`` parameters to specify the ``mpirun`` or ``mpiexec`` syntax needed to launch ``gmx_mpi mdrun``.  The ``gromacs_single_molecule`` subdirective allows you to specify a particular form of ``mdrun`` appropriate for single-molecule simulations.  These are most often used as part of parameterization or conformer generation.  Typically, it's best to run these on a single processor without domain decomposition.
 
     The ``gromacs`` directive is optional; if none is specified the default values are used.
 
