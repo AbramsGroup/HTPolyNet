@@ -436,3 +436,12 @@ def gmx_traj_info(trr):
     result=Result(nframes,(nframes-1)*ts_ps)
     return result
     
+def gro_from_trr(pfx,nzero=2,b=0,outpfx=''):
+    if not outpfx:
+        outpfx=pfx
+    with open('tmp.in','w') as f:
+        f.write('0\n')
+    c=Command(f'{sw.gmx} {sw.gmx_options} trjconv -f {pfx}.trr -s {pfx}.tpr -o {outpfx}.gro -sep -nzero {nzero} -b {b} < tmp.in')
+    out,err=c.run()
+    os.remove('tmp.in')
+    out+=err

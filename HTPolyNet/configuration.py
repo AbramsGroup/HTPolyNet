@@ -89,6 +89,7 @@ class Configuration:
                         extra_stereocenters.extend(sc_copy)
         M.stereocenters.extend(extra_stereocenters)
         M.nconformers=molrec.get('nconformers',0)
+        M.conformer_generator=molrec.get('conformer_generator','gromacs')
         return M
 
     def parse(self):
@@ -104,7 +105,7 @@ class Configuration:
         '''
         self.constituents=self.basedict.get('constituents',{})
         self.initial_composition=self.basedict.get('initial_composition',[])
-        assert self.constituents or self.initial_composition,'Must specify initial composition in config file'
+        # assert self.constituents or self.initial_composition,'Must specify initial composition in config file'
         if not self.constituents:
             for crec in self.initial_composition:
                 self.constituents[crec['molecule']]['count']=crec['count']

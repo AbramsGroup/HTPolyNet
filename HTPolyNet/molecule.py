@@ -10,7 +10,7 @@ from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,Re
 from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
-from HTPolyNet.gromacs import mdp_modify  #, gmx_traj_info
+from HTPolyNet.gromacs import mdp_modify,gro_from_trr  #, gmx_traj_info
 from HTPolyNet.command import Command
 
 logger=logging.getLogger(__name__)
@@ -102,6 +102,7 @@ class Molecule:
         self.stereocenters=[]
         self.stereoisomers=[]
         self.nconformers=0
+        self.conformer_generator=''
         self.conformers=[]
         self.zrecs=[]
         self.is_reactant=False
@@ -245,7 +246,6 @@ class Molecule:
             resid_mapper=[]
             for ri in R.reactants.values():
                 new_reactant=deepcopy(available_molecules[ri])
-                new_reactant.TopoCoord.write_mol2(filename=f'{self.name}-reactant{ri}-prebonding.mol2',molname=self.name)
                 rnr=len(new_reactant.sequence)
                 shifts=self.TopoCoord.merge(new_reactant.TopoCoord)
                 resid_mapper.append({k:v for k,v in zip(range(1,rnr+1),range(1+shifts[2],1+rnr+shifts[2]))})
@@ -775,8 +775,10 @@ class Molecule:
             for p in P:
                 si_name=self.name+'-S'+''.join([str(_) for _ in p])
                 logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
-                if os.path.exists(f'{si_name}.gro'):
-                    logger.debug(f'{si_name}.gro exists in {pfs.cwd()}')
+                #if os.path.exists(f'{si_name}.gro'):
+                if pfs.exists(f'molecules/parameterized/{si_name}.gro'):
+                    pfs.checkout(f'molecules/parameterized/{si_name}.gro')
+                    logger.debug(f'{si_name}.gro found.')
                 else:
                     MM=deepcopy(self)
                     MM.name=si_name
@@ -797,18 +799,25 @@ class Molecule:
         self.conformers=[]
         for gro in gronames:
             pfx=f'{gro}-C'
-            c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
-            out,err=c.run()
-            c=Command(f'wc -l {gro}-confs.gro')
-            out,err=c.run()
-            tok=out.split()
-            lpf=int(tok[0])//self.nconformers
-            c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
-            out,err=c.run()
-            # os.remove(f'{gro}-confs.gro')
             n=max(2,len(str(self.nconformers)))
             fmt=r'{A}{B:0'+str(n)+r'd}'
             cfnl=[fmt.format(A=pfx,B=x) for x in range(self.nconformers)]
+            if self.conformer_generator=='obabel':
+                c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
+                out,err=c.run()
+                c=Command(f'wc -l {gro}-confs.gro')
+                out,err=c.run()
+                tok=out.split()
+                lpf=int(tok[0])//self.nconformers
+                c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
+                out,err=c.run()
+            elif self.conformer_generator=='gromacs':
+                self.TopoCoord.write_gro(f'{gro}-save.gro')
+                self.TopoCoord.vacuum_minimize(outname=gro)
+                self.TopoCoord.vacuum_simulate(outname=f'{gro}-confs',nsamples=2*self.nconformers,sample_int=500)
+                gro_from_trr(f'{gro}-confs',nzero=n,b=self.nconformers*0.25,outpfx=pfx) # assumes 2 fs timestep
+
+            os.remove(f'{gro}-confs.gro')
             logger.debug(f'{cfnl}')
             self.conformers.extend(cfnl)
         if minimize:

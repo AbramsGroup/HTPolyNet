@@ -1452,7 +1452,22 @@ class TopoCoord:
         # gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.grompp_and_mdrun(out=f'{outname}',
             mdp=mdp_prefix,boxSize=boxsize,single_molecule=True) #,**gromacs_dict)
-    
+
+    def vacuum_simulate(self,outname='simulated',**kwargs):
+        boxsize=np.array(self.maxspan())+2*np.ones(3)
+        self.center_coords(new_boxsize=boxsize)
+        mdp_prefix='single-molecule-nvt'
+        pfs.checkout(f'mdp/{mdp_prefix}.mdp')
+        nsamples=kwargs.get('nsamples',10)
+        sample_interval=kwargs.get('sample_interval',500)
+        nsteps=nsamples*(sample_interval+1)
+        # nsteps=mdp_get(f'{mdp_prefix}.mdp','nsteps')
+        # nstxout=mdp_get(f'{mdp_prefix}.mdp','nstxout')
+        mdp_modify(f'{mdp_prefix}.mdp',{'nsteps':nsteps,'nstxout':sample_interval})
+        # gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
+        self.grompp_and_mdrun(out=f'{outname}',
+            mdp=mdp_prefix,boxSize=boxsize,single_molecule=True) #,**gromacs_dict)
+
     def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx=''):
         mod_dict={}
         ens=edict['ensemble']
