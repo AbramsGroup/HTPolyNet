@@ -1,6 +1,7 @@
 import json
 import yaml
 import os
+from copy import deepcopy
 import logging
 from collections import namedtuple
 from HTPolyNet.molecule import Molecule, MoleculeDict, Reaction, ReactionList
@@ -124,6 +125,48 @@ class Configuration:
         '''
         rlist=self.basedict.get('reactions',[])
         self.reactions=[Reaction(r) for r in rlist]
+        '''
+        check for an processive reactions
+        '''
+        processives=[]
+        for i,R in enumerate(self.reactions):
+            if R.procession:
+                nReactions=[]
+                logger.debug(f'Reaction {R.name} is processive: {R.procession}')
+                final_product_name=R.product
+                R.product=f'{final_product_name}_I0'
+                original_name=R.name
+                R.name=f'{R.name}-i0'
+                base_reactant_key=R.procession['increment_resid']
+                for c in range(R.procession['count']):
+                    nR=deepcopy(R)
+                    nR.name=f'{original_name}-i{c+1}'
+                    nR.product=f'{final_product_name}_I{c+1}' if c<(R.procession['count']-1) else final_product_name
+                    nR.reactants[base_reactant_key]=f'{final_product_name}_I{c}'
+                    for ak,arec in nR.atoms.items():
+                        if arec['reactant']==base_reactant_key: arec['resid']+=(c+1)
+                    nR.procession={}
+                    nReactions.append(nR)
+                processives.append((i,nReactions))
+        lasti=0
+        for rec in processives:
+            atidx,sublist=rec
+            atidx+=lasti
+            self.reactions=self.reactions[0:atidx+1]+sublist+self.reactions[atidx+1:]
+            lasti+=len(sublist)
+
+        for r in self.reactions:
+            logger.debug(f'{str(r)}')
+
+        for R in self.reactions:
+            '''
+            add product of this reaction or update generator if product is already in the list of molecules
+            '''
+            r=R.product
+            if not r in self.molecules:
+                self.molecules[r]=self.NewMolecule(r)
+            self.molecules[r].generator=R
+
         for R in self.reactions:
             '''
             add every reactant in this reaction to the list of molecules
@@ -142,14 +185,6 @@ class Configuration:
                     self.molecules[rname]=self.NewMolecule(rname)
                 ''' provide molecule with records of atoms that have z values '''
                 self.molecules[rname].update_zrecs(zrecs)
-        for R in self.reactions:
-            '''
-            add product of this reaction or update generator if product is already in the list of molecules
-            '''
-            r=R.product
-            if not r in self.molecules:
-                self.molecules[r]=self.NewMolecule(r)
-            self.molecules[r].generator=R
 
     def calculate_maximum_conversion(self):
         Atom=namedtuple('Atom',['name','resid','reactantKey','reactantName','z'])

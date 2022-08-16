@@ -69,14 +69,14 @@ class RuntimeLibrary:
         system library.  We expect that the basename is in the current working directory'''
         basefilename=os.path.basename(filename)
         if not os.path.exists(basefilename):
-            logger.info(f'{basefilename} not found in {os.getcwd()}. No check-in performed.')
+            logger.debug(f'{basefilename} not found in {os.getcwd()}. No check-in performed.')
             return False
         fullfilename=os.path.join(self.root,filename)
         if os.path.exists(fullfilename):
             if overwrite:
                 shutil.copyfile(basefilename,fullfilename)
             else:
-                logger.info(f'{filename} already exists in system library. No check-in performed.')
+                logger.debug(f'{filename} already exists in system library. No check-in performed.')
         else:
             shutil.copyfile(basefilename,fullfilename)
         return True

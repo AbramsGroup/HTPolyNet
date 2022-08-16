@@ -161,8 +161,8 @@ class Runtime:
         symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
         if not symmetry_relateds:
             constituents=self.cfg.parameters.get('constituents',{})
-            if not constituents:
-                raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified')
+            # if not constituents:
+            #     raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified')
             for cname,crec in constituents.items():
                 this_sr=crec.get('symmetry_equivalent_atoms',[])
                 if len(this_sr)>0:
@@ -211,9 +211,10 @@ class Runtime:
 
         ess='' if len(self.molecules)==1 else 's'
         logger.info(f'Generated {len(self.molecules)} molecule template{ess}')
-        logger.info(f'Initial composition is {", ".join([(x["molecule"]+" "+str(x["count"])) for x in self.cfg.initial_composition])}')
-        self.cfg.calculate_maximum_conversion()
-        logger.info(f'100% conversion is {self.cfg.maxconv} bonds')
+        if self.cfg.initial_composition: 
+            logger.info(f'Initial composition is {", ".join([(x["molecule"]+" "+str(x["count"])) for x in self.cfg.initial_composition])}')
+            self.cfg.calculate_maximum_conversion()
+            logger.info(f'100% conversion is {self.cfg.maxconv} bonds')
 
         logger.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():

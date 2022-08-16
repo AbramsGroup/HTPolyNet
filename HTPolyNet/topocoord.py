@@ -185,19 +185,21 @@ class TopoCoord:
             order=b.order
             names=[self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in bb]
             resnames=[self.get_gro_attribute_by_attributes('resName',{'globalIdx':x}) for x in bb]
+            logger.debug(f'{resnames}')
             resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in bb]
             # this is the product name of the reaction used to identify this bond
             product_name=b.reactantName
-            P=moldict[product_name]
-            if P.is_reactant:
-                logger.debug(f'{P.name} is a reactant; updating \"reactantName\" attributes of {bb}')
-                # if the product of this reaction is also a reactant in a cure reaction, we should
-                # change the reactantName attribute of the two atoms to match this so either of
-                # these atoms can be found in a later bond search
-                for j in bb:
-                    self.set_gro_attribute_by_attributes('reactantName',product_name,{'globalIdx':j})
-            else:
-                logger.debug(f'{P.name} is not a reactant; no update of \"reactantName\" attributes')
+            if product_name in moldict:
+                P=moldict[product_name]
+                if P.is_reactant:
+                    logger.debug(f'{P.name} is a reactant; updating \"reactantName\" attributes of {bb}')
+                    # if the product of this reaction is also a reactant in a cure reaction, we should
+                    # change the reactantName attribute of the two atoms to match this so either of
+                    # these atoms can be found in a later bond search
+                    for j in bb:
+                        self.set_gro_attribute_by_attributes('reactantName',product_name,{'globalIdx':j})
+                else:
+                    logger.debug(f'{P.name} is not a reactant; no update of \"reactantName\" attributes')
             bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=self.get_bystanders(bb)
             oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames=self.get_oneaways(bb)
             intraresidue=resids[0]==resids[1]
@@ -205,34 +207,8 @@ class TopoCoord:
             RB=ReactionBond(bb,resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx)
             logger.debug(f'apparent bond template {str(BT)}')
             logger.debug(f'apparent bond instance {str(RB)}')
-            use_T=None
-            b_idx=-1
-            for template_name,T in moldict.items():
-                # if BT in T.bond_templates:
-                #     use_T=T
-                #     break
-                use_T=None
-                for b_idx in range(len(T.bond_templates)):
-                    bt=T.bond_templates[b_idx]
-                    # logger.debug(f'comparing to {T.name} {str(bt)}')
-                    if bt==BT:
-                        # logger.debug(f'TRUE')
-                        use_T=T
-                        break
-                    if bt.is_reverse_of(BT):
-                        # logger.debug(f'TRUE, but...')
-                        use_T=T
-                        RB.reverse()
-                        # logger.debug(f'reversed bond instance {str(RB)}')
-                if use_T!=None:
-                    break
-            else:
-                logger.error(f'No template is found for {bb}: {str(BT)}')
-                raise Exception('you have a bond for which I cannot find a template')
-            
-            T=use_T
-            logger.debug(f'Using template {T.name} and bond index {b_idx}')
-            rb=T.reaction_bonds[b_idx]
+            T,rb,reverse_bond=find_template(BT,moldict)
+            if reverse_bond: RB.reverse()
             temp_i_idx,temp_j_idx=rb.idx
             d=T.TopoCoord.Topology.D['bonds']
             # copy all bond records matching these two bonds; should be only one!!
@@ -404,6 +380,52 @@ class TopoCoord:
         logger.debug(f'System overcharge after mapping: {self.Topology.total_charge():.4f}')
         self.adjust_charges(atoms=mapped_inst_atoms,overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
 
+    def enumerate_1_4_pairs(self,at_idx):
+        pdf=self.Topology.D['pairs']
+        # each of these bonds results in 1-4 pair interactions
+        bl=self.Topology.bondlist
+        pai=[]
+        paj=[]
+        pri=[]
+        prj=[]
+        prsource=[]
+        for p in at_idx:
+            j,k=p
+            # jresnum,jresname,jname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':j})
+            # kresnum,kresname,kname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':k})
+            nj=bl.partners_of(j)
+            nj.remove(k)
+            nk=bl.partners_of(k)
+            nk.remove(j)
+            this_pairs=list(product(nj,nk))
+            pai.extend([x[0] for x in this_pairs])
+            paj.extend([x[1] for x in this_pairs])
+            pri.extend([j for x in this_pairs])
+            prj.extend([k for x in this_pairs])
+            prsource.extend(['c' for x in this_pairs])
+            jpdf=pdf[(pdf['ai']==j)|(pdf['aj']==j)].copy()
+            # logger.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}')
+            # for ln in jpdf.to_string().split('\n'):
+            #     logger.debug(ln)
+            pai.extend(jpdf['ai'].to_list())
+            paj.extend(jpdf['aj'].to_list())
+            pri.extend([j for x in jpdf['ai'].to_list()])
+            prj.extend([k for x in jpdf['aj'].to_list()])
+            prsource.extend(['l' for _ in range(jpdf.shape[0])])
+            kpdf=pdf[(pdf['ai']==k)|(pdf['aj']==k)].copy()
+            # logger.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}')
+            # for ln in kpdf.to_string().split('\n'):
+            #     logger.debug(ln)
+            pai.extend(kpdf['ai'].to_list())
+            paj.extend(kpdf['aj'].to_list())
+            pri.extend([j for x in kpdf['ai'].to_list()])
+            prj.extend([k for x in kpdf['aj'].to_list()])
+            prsource.extend(['r' for _ in range(kpdf.shape[0])])
+        pi_df=pd.DataFrame({'ai':pai,'aj':paj,'source':prsource,'bi':pri,'bj':prj})
+        pi_df.drop_duplicates(inplace=True,ignore_index=True)
+        return pi_df
+
+
     def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,**kwargs):
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
 
@@ -440,49 +462,8 @@ class TopoCoord:
             logger.debug(f'calling map_from_templates')
             self.map_from_templates(ri_bdf,template_dict,overcharge_threshhold=overcharge_threshhold)
             logger.debug(f'1-4 pair update')
+            pi_df=self.enumerate_1_4_pairs(at_idx)
             # enumerate ALL pairs involving either or both of the bonded atoms
-            pdf=self.Topology.D['pairs']
-            # each of these bonds results in 1-4 pair interactions
-            bl=self.Topology.bondlist
-            pai=[]
-            paj=[]
-            pri=[]
-            prj=[]
-            prsource=[]
-            for p in at_idx:
-                j,k=p
-                # jresnum,jresname,jname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':j})
-                # kresnum,kresname,kname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':k})
-                nj=bl.partners_of(j)
-                nj.remove(k)
-                nk=bl.partners_of(k)
-                nk.remove(j)
-                this_pairs=list(product(nj,nk))
-                pai.extend([x[0] for x in this_pairs])
-                paj.extend([x[1] for x in this_pairs])
-                pri.extend([j for x in this_pairs])
-                prj.extend([k for x in this_pairs])
-                prsource.extend(['c' for x in this_pairs])
-                jpdf=pdf[(pdf['ai']==j)|(pdf['aj']==j)].copy()
-                # logger.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}')
-                # for ln in jpdf.to_string().split('\n'):
-                #     logger.debug(ln)
-                pai.extend(jpdf['ai'].to_list())
-                paj.extend(jpdf['aj'].to_list())
-                pri.extend([j for x in jpdf['ai'].to_list()])
-                prj.extend([k for x in jpdf['aj'].to_list()])
-                prsource.extend(['l' for _ in range(jpdf.shape[0])])
-                kpdf=pdf[(pdf['ai']==k)|(pdf['aj']==k)].copy()
-                # logger.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}')
-                # for ln in kpdf.to_string().split('\n'):
-                #     logger.debug(ln)
-                pai.extend(kpdf['ai'].to_list())
-                paj.extend(kpdf['aj'].to_list())
-                pri.extend([j for x in kpdf['ai'].to_list()])
-                prj.extend([k for x in kpdf['aj'].to_list()])
-                prsource.extend(['r' for _ in range(kpdf.shape[0])])
-            pi_df=pd.DataFrame({'ai':pai,'aj':paj,'source':prsource,'bi':pri,'bj':prj})
-            pi_df.drop_duplicates(inplace=True,ignore_index=True)
             self.Topology.null_check(msg='update_topology_and_coordinates')
             if write_mapper_to:
                 tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
@@ -721,6 +702,7 @@ class TopoCoord:
         :type attribute_list: list, optional
         """
         self.files['grx']=os.path.abspath(grxfilename)
+        logger.debug(f'Reading {grxfilename}')
         attributes_read=self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
         if 'chain' in attributes_read and 'chain_idx' in attributes_read:
             self.reset_idx_list_from_grx_attributes('chain')
@@ -1514,3 +1496,33 @@ class TopoCoord:
         if ens=='npt':
             if plot_pfx!='':
                 trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
+
+def find_template(BT:BondTemplate,moldict):
+    use_T=None
+    b_idx=-1
+    reverse_bond=False
+    for template_name,T in moldict.items():
+        # if BT in T.bond_templates:
+        #     use_T=T
+        #     break
+        use_T=None
+        for b_idx in range(len(T.bond_templates)):
+            bt=T.bond_templates[b_idx]
+            # logger.debug(f'comparing to {T.name} {str(bt)}')
+            if bt==BT:
+                # logger.debug(f'TRUE')
+                use_T=T
+                break
+            if bt.is_reverse_of(BT):
+                # logger.debug(f'TRUE, but...')
+                use_T=T
+                reverse_bond=True
+                # logger.debug(f'reversed bond instance {str(RB)}')
+        if use_T!=None:
+            break
+    else:
+        logger.error(f'No template is found for {str(BT)}')
+        raise Exception('you have a bond for which I cannot find a template')
+    logger.debug(f'Using template {use_T.name} and bond index {b_idx}')
+    rb=use_T.reaction_bonds[b_idx]
+    return use_T,rb,reverse_bond

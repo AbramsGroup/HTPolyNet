@@ -670,8 +670,10 @@ class Coordinates:
         else:
             df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
             attributes_read=attributes
+            logger.debug(f'Read from {filename}\n{df.head().to_string()}')
+        logger.debug(f'Merge:\n{self.A.head().to_string()}\nand\n{df.head().to_string()}')
         self.A=self.A.merge(df,how='outer',on='globalIdx')
-        # logger.debug(f'Atomset attributes read from {filename}; new Coords\n'+self.A.to_string())
+        logger.debug(f'Result:\n{self.A.head().to_string()}')
         return attributes_read
 
     def set_atomset_attribute(self,attribute,srs):
@@ -979,7 +981,7 @@ class Coordinates:
                 else:
                     f.write(''.join([atomformatters[i](v) for i,v in enumerate(list(r[self.gro_attributes[:-3]]))])+'\n')
             if not np.any(self.box):
-                logger.warning('Writing Gromacs coordinates file but boxsize is not set.')
+                logger.debug('Writing Gromacs coordinates file but boxsize is not set.')
             f.write(f'{self.box[0][0]:10.5f}{self.box[1][1]:10.5f}{self.box[2][2]:10.5f}')
             # output off-diagonals only if at least one of them is non-zero
             x,y=self.box.nonzero()

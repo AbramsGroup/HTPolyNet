@@ -18,6 +18,7 @@ import numpy as np
 import networkx as nx
 from networkx.readwrite import json_graph
 import json
+from itertools import product
 from HTPolyNet.plot import network_graph
 
 logger=logging.getLogger(__name__)
@@ -1208,6 +1209,35 @@ class Topology:
         """
 #        logger.debug(f'Asking get_atomtype for type of atom with index {idx}')
         return self.D['atoms'].iloc[idx-1].type
+
+    def build_interresidue_graph(self,G,ri):
+        if ri in G:
+            return
+        adf=self.D['atoms']
+        ri_at_idx=adf[adf['resnr']==ri]['nr'].to_list()
+        residues=adf['resnr'].unique()
+        ri_partners=[]
+        for rn in residues:
+            skip=False
+            rj_at_idx=adf[adf['resnr']==rn]['nr'].to_list()
+            for i,j in product(ri_at_idx,rj_at_idx):
+                # logger.debug(f'### {i} in {self.bondlist.partners_of(j)}?')
+                if i in self.bondlist.partners_of(j):
+                    if not rn in ri_partners:
+                        ri_partners.append(rn)
+                        skip=True
+                        continue
+                if skip: continue
+        # logger.debug(f'rn partners {ri_partners}')
+        G.add_node(ri)
+        for rj in ri_partners:
+            self.build_interresidue_graph(G,rj)
+
+    def local_resid_cluster(self,ri):
+        G=nx.DiGraph()
+        # logger.debug(str(self.bondlist))
+        self.build_interresidue_graph(G,ri)
+        return [x for x in G]
 
     def make_resid_graph(self,json_file=None,draw=None):
         adf=self.D['atoms']
