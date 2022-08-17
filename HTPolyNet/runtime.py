@@ -506,7 +506,7 @@ class Runtime:
             logger.info(f'Box aspect ratio: {" x ".join([str(x) for x in ar])}')
         logger.info(f'Initial box side lengths: {boxsize[0]:.3f} nm x {boxsize[1]:.3f} nm x {boxsize[2]:.3f} nm')
 
-        clist=self.cfg.initial_composition
+        clist=[cc for cc in self.cfg.initial_composition if 'count' in cc]
         c_togromacs={}
         for cc in clist:
             M=self.cfg.molecules[cc['molecule']]
@@ -546,10 +546,11 @@ class Runtime:
         msg=insert_molecules(c_togromacs,boxsize,inpfnm,inputs_dir='../../molecules/parameterized',**self.cfg.parameters)
         TC.read_gro(f'{inpfnm}.gro')
         TC.atom_count()
-        TC.set_grx_attributes(['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'])
+        # TC.set_grx_attributes(['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'])
+        TC.set_grx_attributes()
         TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition,
-            globally_unique=[False,False,False,True,False,True,False],
-            unset_defaults=[0,0,'UNSET',-1,-1,-1,-1])
+            globally_unique=[False,False,False,True,False,True,False,True,True],
+            unset_defaults=[0,0,'UNSET',-1,-1,-1,-1,-1,'UNSET'])
         for list_name in ['cycle','chain']:
             TC.reset_idx_list_from_grx_attributes(list_name)
         chainlists=TC.idx_lists['chain']

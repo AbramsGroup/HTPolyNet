@@ -11,7 +11,7 @@
 #  class for methods that need to work with both Topology and Coordinates
 from itertools import product
 import pandas as pd
-from HTPolyNet.coordinates import Coordinates
+from HTPolyNet.coordinates import Coordinates, GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
 from HTPolyNet.topology import Topology
 from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
 from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
@@ -676,7 +676,9 @@ class TopoCoord:
         """
         self.Topology.restore_bond_parameters(saved)
 
-    def set_grx_attributes(self,attributes):
+    def set_grx_attributes(self,attributes=[]):
+        if not attributes:
+            self.grxattr=GRX_ATTRIBUTES
         self.grxattr=attributes
     
     def write_gro_attributes(self,attributes_list,grxfilename):
@@ -869,7 +871,7 @@ class TopoCoord:
     def wrap_coords(self):
         self.Coordinates.wrap_coords()
 
-    def inherit_grx_attributes_from_molecules(self,molecule_dict,initial_composition,globally_unique=[],unset_defaults=[],overall_default=0):
+    def inherit_grx_attributes_from_molecules(self,molecule_dict,initial_composition,globally_unique=GRX_GLOBALLY_UNIQUE,unset_defaults=GRX_UNSET_DEFAULTS,overall_default=0):
         """inherit_grx_attributes_from_molecules Copy non-Gromacs-standard atom attributes in list "attributes" from molecule templates in molecule_dict according to molecule counts in dict initial_composition.
 
         :param attributes: list of labels of attributes to copy
@@ -912,7 +914,7 @@ class TopoCoord:
 
         attribute_lists={k:[] for k in self.grxattr}
         value_counts={k:0 for k in self.grxattr}
-        for icdict in initial_composition:
+        for icdict in [cc for cc in initial_composition if 'count' in cc]:
             molecule=icdict['molecule']
             count=icdict['count']
             mol_adf=molecule_dict[molecule].TopoCoord.Coordinates.A
@@ -937,9 +939,6 @@ class TopoCoord:
         for k,L in attribute_lists.items():
             self.Coordinates.A[k]=L
         # logger.debug(f'postinherit adf columns {self.Coordinates.A.columns}')
-
-    # def make_ringlist(self):
-    #     self.Coordinates.make_ringlist()
 
     def make_resid_graph(self,json_file=None,draw=None):
         self.Topology.make_resid_graph(json_file=json_file,draw=draw)
@@ -1483,7 +1482,7 @@ class TopoCoord:
             if not nsteps:
                 ps=edict.get('ps',0.0)
                 if not ps: return
-                nsteps=int(ps/dt)
+                nsteps=int(float(ps)/dt)
             else:
                 ps=nsteps*dt
             mod_dict['nsteps']=nsteps

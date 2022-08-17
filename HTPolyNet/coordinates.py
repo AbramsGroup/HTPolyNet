@@ -27,7 +27,9 @@ logger=logging.getLogger(__name__)
 #             return True
 #     return False
 
-GRX_ATTRIBUTES=['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx']
+GRX_ATTRIBUTES=['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name']
+GRX_GLOBALLY_UNIQUE=[False,False,False,True,False,True,False,True,True],
+GRX_UNSET_DEFAULTS=[0,0,'UNSET',-1,-1,-1,-1,-1,'UNSET']
 
 def _dfrotate(df:pd.DataFrame,R):
     for i,srow in df.iterrows():
@@ -320,37 +322,6 @@ class Coordinates:
             lc_idx=r[jdx]
             self.A.loc[idx-1,attr]=lc_idx
 
-    def inherit_grx_attributes_from_molecules(self,attributes=[],molecules={},globally_unique=[],unset_defaults=[],overall_default=0):
-        pass
-    # def make_ringlist(self):
-    #     self.ringlist=list(self.rings())
-
-    # def make_ringdflist(self):
-    #     self.ringlist=list(self.ringdfs())
-
-    # def reindex_ringlist(self,idx_mapper):
-    #     pass
-
-    # def rings(self):
-    #     a=self.A
-    #     for resid in a['resNum'].unique():
-    #         mr=a[(a['resNum']==resid)&(a['cycle_idx']>0)]
-    #         if not mr.empty:
-    #             for ri in mr['cycle_idx'].unique():
-    #                 R=mr[mr['cycle_idx']==ri][['globalIdx','posX','posY','posZ']]
-    #                 yield R
-
-    # def rings(self): # an iterator over all rings
-    #     a=self.A
-    #     for resid in a['resNum'].unique():
-    #         mr=a[(a['resNum']==resid)&(a['cycle_idx']>0)]
-    #         if not mr.empty:
-    #             for ri in mr['cycle_idx'].unique():
-    #                 R=mr[mr['cycle_idx']==ri][['globalIdx','posX','posY','posZ']].values
-    #                 # TODO: cast R as a pandas DataFrame to preserve int type of globalIdx
-    #                 # logger.debug(f'visiting a ring ({resid}:{ri}) of length {R.shape[0]}')
-    #                 yield R
-
     def unwrap(self,P,O,pbc):
         ''' shift point P to its CPI* to point O
             *CPI=closest periodic image (unwrapped) '''
@@ -373,145 +344,6 @@ class Coordinates:
         R.analyze()
         do_it,point=R.segint(S)
         return do_it
-
-    # def linkcellrings(self,Ri,Rj,discretization=0.2):
-    #     ''' 
-    #     Ri and Rj are locations such that Rj is a CPI to Ri
-    #     '''
-    #     nearby_rings=np.array([])
-    #     Rij=Ri-Rj
-    #     rij=np.sqrt(Rij.dot(Rij))
-    #     nip=int(rij/discretization)
-    #     if nip==1:
-    #         nip=2
-    #     collisions=0
-    #     total_rings=0
-    #     for C in self.ringlist:
-    #         total_rings+=1
-    #         # logger.debug(f'ring\n{C}')
-    #         lcids=[]
-    #         for ci in C:
-    #             idx=int(ci[0])
-    #             # logger.debug(f'asking for linkcell_idx of atom {idx}')
-    #             try:
-    #                 rci=self.get_atom_attribute('linkcell_idx',{'globalIdx':idx})      
-    #             except:
-    #                 logger.debug(f'asking for linkcell_idx of atom {idx} failed!!')
-    #                 logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
-    #                 logger.debug(f'{len(self.ringlist)} rings; ring: {C}\n')
-    #                 raise Exception(f'asking for linkcell_idx of atom {idx} failed!!')
-    #             lcids.append(rci)
-    #         for p in np.linspace(Ri,Rj,nip):  # make a series of points along the bond
-    #             cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
-    #             # logger.debug(f'intermediate point {p} in cell {cpi}...')
-    #             nears=[]
-    #             for rci in lcids:
-    #                 nears.append(self.linkcell.are_ldx_neighbors(cpi,rci))
-    #                 # logger.debug(f'ringc {rci} acpi {cpi} neighbors {self.linkcell.are_ldx_neighbors(cpi,rci)}')
-    #             # logger.debug(f'any(nears) {any(nears)}')
-    #             if any(nears):
-    #                 # logger.debug(f'adding C(shape={C.shape}) to nearby_rings:\n{C}')
-    #                 # logger.debug(f'nearby rings {nearby_rings.shape}\n{nearby_rings}')
-    #                 if nearby_rings.size==0:
-    #                     nearby_rings=np.array([C])
-    #                 else:
-    #                     # logger.debug(f'{np.any(C==nearby_rings,axis=0)} {np.all(np.any(C==nearby_rings,axis=0))}')
-    #                     #is_in_list=my_check(nearby_rings,C)
-    #                     is_in_list=np.all(np.any(C==nearby_rings,axis=0))
-    #                     # logger.debug(f'not C in nearby_rings {not is_in_list}')
-    #                     if not is_in_list:
-    #                         nearby_rings=np.append(nearby_rings,np.array([C]),axis=0)
-    #                     else:
-    #                         collisions+=1
-    #                 # logger.debug(f'after: nearby rings {nearby_rings.shape}\n{nearby_rings}')
-    #     # logger.debug(f'linkcellrings(): {nearby_rings.shape[0]}/{total_rings} rings to be tested.')
-    #     # logger.debug(f'Discretization of {discretization} of bond length {rij:.3f}')
-    #     # logger.debug(f'into {nip} points resulted in {collisions} overcounts.')
-    #     return nearby_rings
-
-    # def ringpierce(self,Ri,Rj,pbc):
-    #     for C in self.linkcellrings(Ri,Rj):
-    #         if self.pierces(Ri,Rj,C,pbc):
-    #             # logger.debug(f'\n{C}')
-    #             return C
-    #     return False
-
-    # def ringpierce(self,Ri,Rj,pbc):
-    #     for C in self.linkcellrings(Ri,Rj):
-    #         if self.pierces(Ri,Rj,C,pbc):
-    #             # logger.debug(f'\n{C}')
-    #             return C
-    #     return False
-
-#     def linkcellrings(self,Ri,Rj,discretization=0.2):
-#         Rij=Ri-Rj
-#         low=any(Rij<-0.5*self.box.diagonal())
-#         high=any(Rij>0.5*self.box.diagonal())
-#         if low or high:
-#             logger.debug(f'linkcellrings: Ri {Ri} and Rj {Rj} are not nearest images')
-#             Rij=self.mic(Rij,[1,1,1])
-#             Rj=Ri-Rij
-#         rij=np.sqrt(Rij.dot(Rij))
-#         nip=int(rij/discretization)
-#         if nip==1:
-#             nip=2
-#         bcids=[]
-#         for p in np.linspace(Ri,Rj,nip):
-#             cpi=self.linkcell.ldx_of_cellndx(self.linkcell.cellndx_of_point(self.wrap_point(p)))
-#             if not cpi in bcids:
-#                 bcids.append(cpi)
-#         # logger.debug(f'bcids {bcids}')
-#         nearby_rings=[]
-#         adf=self.A
-#         R=pd.DataFrame()
-#         for bc in bcids:
-#             # print(f'searching {len(self.linkcell.searchlist_of_ldx(bc))} cells')
-#             for lc in self.linkcell.searchlist_of_ldx(bc):
-#                 r=adf[(adf['globalIdx'].isin(self.linkcell.memberlists[lc]))&(adf['cycle_idx']>0)][['resNum','cycle_idx']].copy()
-#                 R=pd.concat((R,r),ignore_index=True)
-#         collisions=0
-#         total_rings=0
-#         # print(f'number of rings {len(self.ringlist)}')
-#         for j,C in enumerate(self.ringlist):
-#             total_rings+=1
-#             # print(f'ring\n{C.to_string()}')
-#             lcids=[]
-#             for ci in C.itertuples():
-#                 idx=ci.globalIdx
-#                 # logger.debug(f'asking for linkcell_idx of atom {idx}')
-#                 try:
-#                     rci=self.get_atom_attribute('linkcell_idx',{'globalIdx':idx})      
-#                 except:
-#                     logger.debug(f'asking for linkcell_idx of atom {idx} failed!!')
-#                     logger.debug(f'{self.spew_atom({"globalIdx":idx})}')
-#                     logger.debug(f'{len(self.ringlist)} rings; ring: {C.to_string()}\n')
-#                     raise Exception(f'asking for linkcell_idx of atom {idx} failed!!')
-#                 lcids.append(rci)
-#             # print(f'lcids {lcids}')
-#             is_near=False
-#             for cc in product(lcids,bcids):
-#                 lc,bc=cc
-#                 if self.linkcell.are_ldx_neighbors(lc,bc):
-#                     is_near=True
-#                     break
-#             if is_near:
-#                 if len(nearby_rings)==0:
-#                     nearby_rings=[j]
-#                 else:
-# #                    is_in_list=C in nearby_rings #np.all(np.any(C==nearby_rings,axis=0))
-#                     if not j in nearby_rings: #is_in_list:
-#                         nearby_rings.append(j) #=np.append(nearby_rings,np.array([C]),axis=0)
-#                     else:
-#                         collisions+=1
-#         # print(f'nearby_rings {nearby_rings}')
-#         return [self.ringlist[i] for i in nearby_rings]
-
-    # def ringpierce_exhaustive(self,Ri,Rj,pbc):
-    #     for C in self.rings():
-    #         if self.pierces(Ri,Rj,C,pbc):
-    #         # logger.debug(f'\n{C}')
-    #             return C
-    #     return False
 
     def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False,save=True):
         logger.debug('Initializing link-cell structure')
