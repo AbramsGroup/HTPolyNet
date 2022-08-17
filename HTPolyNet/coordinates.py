@@ -670,10 +670,10 @@ class Coordinates:
         else:
             df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
             attributes_read=attributes
-            logger.debug(f'Read from {filename}\n{df.head().to_string()}')
-        logger.debug(f'Merge:\n{self.A.head().to_string()}\nand\n{df.head().to_string()}')
+            # logger.debug(f'Read from {filename}\n{df.head().to_string()}')
+        # logger.debug(f'Merge:\n{self.A.head().to_string()}\nand\n{df.head().to_string()}')
         self.A=self.A.merge(df,how='outer',on='globalIdx')
-        logger.debug(f'Result:\n{self.A.head().to_string()}')
+        # logger.debug(f'Result:\n{self.A.head().to_string()}')
         return attributes_read
 
     def set_atomset_attribute(self,attribute,srs):

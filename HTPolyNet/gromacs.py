@@ -77,6 +77,7 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
         out: prefix for desired output files
         boxsize: (optional) desired box size; triggers editconf before grompp
     '''
+    logger.debug(kwargs)
     quiet=kwargs.get('quiet',True)
     ignore_codes=kwargs.get('ignore_codes',[-11])
     maxwarn=kwargs.get('maxwarn',4)
@@ -91,6 +92,7 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
     infiles=[f'{gro}.gro',f'{top}.top',f'{mdp}.mdp']
     assert all([os.path.exists(x) for x in infiles])
     if len(boxSize)>0:
+        logger.debug(f'Resizing to {boxSize}')
         c=Command(f'{sw.gmx} {sw.gmx_options} editconf',f=f'{gro}.gro',o=gro,
                      box=' '.join([f'{x:.8f}' for x in boxSize]))
         c.run(quiet=quiet)

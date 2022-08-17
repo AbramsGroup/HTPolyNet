@@ -216,6 +216,10 @@ class Runtime:
             self.cfg.calculate_maximum_conversion()
             logger.info(f'100% conversion is {self.cfg.maxconv} bonds')
 
+        # for mname,M in self.molecules.items():
+        #     if M.generator:
+        #         M.prepare_new_bonds(available_molecules=self.molecules)
+
         logger.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():
             if len(M.reaction_bonds)>0:
@@ -379,14 +383,17 @@ class Runtime:
                 return False
         else:
             logger.debug(f'Fetching parameterized {mname}')
-            for ex in ['mol2','top','itp','gro','grx']:
-                pfs.checkout(f'molecules/parameterized/{mname}.{ex}')
-            M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename=f'{mname}.mol2',wrap_coords=False)
+            exts=pfs.fetch_molecule_files(mname)
+            logger.debug(f'fetched {mname} exts {exts}')
+            # for ex in ['mol2','top','itp','gro','grx']:
+            #     pfs.checkout(f'molecules/parameterized/{mname}.{ex}')
+            mol2=f'{mname}.mol2' if 'mol2' in exts else ''
+            M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename='',wrap_coords=False)
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             # logger.debug(f'{M.name} box {M.TopoCoord.Coordinates.box}')
             M.set_sequence()
-            if M.generator:
-                M.prepare_new_bonds(available_molecules=self.molecules)
+            # if M.generator:
+            #     M.prepare_new_bonds(available_molecules=self.molecules)
             M.set_origin('previously parameterized')
 
         M.generate_stereoisomers()

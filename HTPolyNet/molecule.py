@@ -125,8 +125,7 @@ class Molecule:
         self.symmetry_relateds=[]
         self.stereocenters=[]
         self.stereoisomers=[]
-        self.nconformers=0
-        self.conformer_generator=''
+        self.conformers_dict={}
         self.conformers=[]
         self.zrecs=[]
         self.is_reactant=False
@@ -214,7 +213,8 @@ class Molecule:
 
     def previously_parameterized(self):
         rval=True
-        for ext in ['mol2','top','itp','gro']:
+#        for ext in ['mol2','top','itp','gro']:
+        for ext in ['top','gro']:
             rval=rval and pfs.exists(os.path.join('molecules/parameterized',f'{self.name}.{ext}'))
         return rval
 
@@ -826,34 +826,42 @@ class Molecule:
                     si_name=MM.name
                 self.stereoisomers.append(si_name)
 
-    def generate_conformers(self,minimize=True):
-        if self.nconformers==0: return
-        logger.info(f'Generating {self.nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
+    def generate_conformers(self,minimize=False):
+        if not self.conformers_dict: return
+        nconformers=self.conformers_dict.get('count',0)
+        generator_dict=self.conformers_dict.get('generator',{})
+        gen_name=generator_dict.get('name','')
+        if gen_name=='obabel' and not minimize:
+            logger.debug(f'Setting "minimize" to True since conformer generator is obabel.')
+            minimize=True
+        gen_params=generator_dict.get('params',{'temperature': 300.0, 'ps': 1.0})
+
+        logger.info(f'Generating {nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
         gronames=[f'{self.name}']
         for si in self.stereoisomers:
             gronames.append(f'{si}')
         self.conformers=[]
         for gro in gronames:
             pfx=f'{gro}-C'
-            n=max(2,len(str(self.nconformers)))
+            n=max(2,len(str(nconformers)))
             fmt=r'{A}{B:0'+str(n)+r'd}'
-            cfnl=[fmt.format(A=pfx,B=x) for x in range(self.nconformers)]
-            if self.conformer_generator=='obabel':
-                c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
+            cfnl=[fmt.format(A=pfx,B=x) for x in range(nconformers)]
+            if gen_name=='obabel':
+                c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {nconformers} --writeconformers')
                 out,err=c.run()
                 c=Command(f'wc -l {gro}-confs.gro')
                 out,err=c.run()
                 tok=out.split()
-                lpf=int(tok[0])//self.nconformers
+                lpf=int(tok[0])//nconformers
                 c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
                 out,err=c.run()
-            elif self.conformer_generator=='gromacs':
+            elif gen_name=='gromacs':
                 self.TopoCoord.write_gro(f'{gro}-save.gro')
                 self.TopoCoord.vacuum_minimize(outname=gro)
-                self.TopoCoord.vacuum_simulate(outname=f'{gro}-confs',nsamples=2*self.nconformers,sample_int=500)
-                gro_from_trr(f'{gro}-confs',nzero=n,b=self.nconformers*0.25,outpfx=pfx) # assumes 2 fs timestep
+                self.TopoCoord.vacuum_simulate(outname=f'{gro}-confs',nsamples=2*nconformers,params=gen_params)
+                gro_from_trr(f'{gro}-confs',nzero=n,b=0.5*gen_params['ps'],outpfx=pfx)
 
-            os.remove(f'{gro}-confs.gro')
+            # os.remove(f'{gro}-confs.gro')
             logger.debug(f'{cfnl}')
             self.conformers.extend(cfnl)
         if minimize:

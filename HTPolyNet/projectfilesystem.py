@@ -150,10 +150,10 @@ class ProjectFileSystem:
                 raise Exception(f'Project directory {projdir} exists but you did not indicate you wanted to restart with the "-restart" flag')
             self.projPath=os.path.join(self.rootPath,projdir)
             if os.path.exists(projdir):
-                logger.info(f'Restarting build in {self.projPath}')
+                logger.info(f'Restarting project in {self.projPath}')
             else:
                 os.mkdir(projdir)
-                logger.info(f'New build in {self.projPath}')
+                logger.info(f'New project in {self.projPath}')
         else:
             i=0
             lastprojdir=''
@@ -169,11 +169,11 @@ class ProjectFileSystem:
                 else:
                     currentprojdir=f'{prefix}{i}'
                 self.projPath=os.path.join(self.rootPath,currentprojdir)
-                logger.info(f'Starting new build in {self.projPath}')
+                logger.info(f'New project in {self.projPath}')
                 os.mkdir(currentprojdir)
             else:
                 self.projPath=os.path.join(self.rootPath,lastprojdir)
-                logger.info(f'Restarting build in {self.projPath} (latest project)')
+                logger.info(f'Restarting project in {self.projPath} (latest project)')
 
     def _setup_project_dir(self,topdirs=['molecules','systems','plots']):
         os.chdir(self.projPath)
@@ -195,9 +195,21 @@ def checkout(filename,altpath=[]):
         return True
     return _PFS_.library.checkout(filename)
 
+def fetch_molecule_files(mname):
+    ret_exts=[]
+    dirname='molecules/parameterized'
+    for e in ['mol2','pdb','gro','top','itp','grx']:
+        prob_filename=os.path.join(dirname,f'{mname}.{e}')
+        if exists(prob_filename):
+            ret_exts.append(e)
+            checkout(prob_filename)
+    return ret_exts
+
 def exists(filename):
+    # check user library first
     if _PFS_.userlibrary and _PFS_.userlibrary.exists(filename):
         return True
+    # check system library
     return _PFS_.library.exists(filename)
 
 def checkin(filename,overwrite=False,priority='user'):

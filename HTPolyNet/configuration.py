@@ -89,8 +89,8 @@ class Configuration:
                     if not sc_copy in extra_stereocenters:
                         extra_stereocenters.extend(sc_copy)
         M.stereocenters.extend(extra_stereocenters)
-        M.nconformers=molrec.get('nconformers',0)
-        M.conformer_generator=molrec.get('conformer_generator','gromacs')
+        M.conformers_dict=molrec.get('conformers',{})
+        # M.conformer_generator=molrec.get('conformer_generator','gromacs')
         return M
 
     def parse(self):

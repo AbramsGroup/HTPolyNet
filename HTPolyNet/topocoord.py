@@ -1427,7 +1427,9 @@ class TopoCoord:
         self.Coordinates.translate(addme)
 
     def vacuum_minimize(self,outname='minimized',**kwargs):
-        boxsize=np.array(self.maxspan())+2*np.ones(3)
+        pad=kwargs.get('pad',5)
+        boxsize=np.array(self.maxspan())+pad*np.ones(3)
+        logger.debug(f'{self.maxspan()} -> {boxsize}')
         self.center_coords(new_boxsize=boxsize)
         mdp_prefix='single-molecule-min'
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
@@ -1436,16 +1438,28 @@ class TopoCoord:
             mdp=mdp_prefix,boxSize=boxsize,single_molecule=True) #,**gromacs_dict)
 
     def vacuum_simulate(self,outname='simulated',**kwargs):
-        boxsize=np.array(self.maxspan())+2*np.ones(3)
+        pad=kwargs.get('pad',5)
+        boxsize=np.array(self.maxspan())+pad*np.ones(3)
+        logger.debug(f'{self.maxspan()} -> {boxsize}')
         self.center_coords(new_boxsize=boxsize)
         mdp_prefix='single-molecule-nvt'
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
         nsamples=kwargs.get('nsamples',10)
-        sample_interval=kwargs.get('sample_interval',500)
+        params=kwargs.get('params',{})
+        T=params.get('temperature',300.0)
+        ps=params.get('ps',0.0)
+        nsteps=params.get('nsteps',-1)
+        assert ps!=0.0 or nsteps!=-1
+        dt=float(mdp_get(f'{mdp_prefix}.mdp','dt'))
+        if ps!=0.0:
+            nsteps=int(float(ps)/dt)
+        else:
+            ps=nsteps*dt
+        sample_interval=nsteps//nsamples
         nsteps=nsamples*(sample_interval+1)
         # nsteps=mdp_get(f'{mdp_prefix}.mdp','nsteps')
         # nstxout=mdp_get(f'{mdp_prefix}.mdp','nstxout')
-        mdp_modify(f'{mdp_prefix}.mdp',{'nsteps':nsteps,'nstxout':sample_interval})
+        mdp_modify(f'{mdp_prefix}.mdp',{'nsteps':nsteps,'nstxout':sample_interval,'ref_t':T})
         # gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.grompp_and_mdrun(out=f'{outname}',
             mdp=mdp_prefix,boxSize=boxsize,single_molecule=True) #,**gromacs_dict)
