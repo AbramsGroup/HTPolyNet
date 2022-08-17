@@ -1,5 +1,6 @@
 from itertools import chain, product
 import os
+import random
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -62,6 +63,25 @@ class Reaction:
         return retstr
 
 ReactionList = list[Reaction]
+
+def get_r(mname,RL:ReactionList):
+    if not RL: return None
+    i=0
+    while RL[i].product!=mname: 
+        i+=1
+        if i==len(RL):
+            return None
+    return RL[i]
+
+class ReactionTree:
+    def __init__(self,molname,RL:ReactionList):
+        self.p=molname
+        self.R=get_r(self.p,RL)
+        if self.R:
+            self.r=[ReactionTree(x,RL) for x in self.R.reactants]
+
+
+        
 
 def is_reactant(name:str,reaction_list:ReactionList,stage='cure'):
     reactants=[]
@@ -221,16 +241,12 @@ class Molecule:
         logger.info(f'In vacuo equilibration of {self.name}.gro for {nsteps} steps at {temperature} K')
         self.TopoCoord.grompp_and_mdrun(out=deffnm,mdp=mdp_prefix,boxSize=boxsize)
 
-    # def generate_samples(self,trr=None,nsamples=-1):
-    #     if not trr:
-    #         return
-    #     trjinfo=gmx_traj_info(trr)
-    #     skip,extra=divmod(trjinfo.nframes,nsamples)
-
-    #     pass
-
     def center_coords(self,new_boxsize:np.ndarray=None):
         self.TopoCoord.center_coords(new_boxsize)
+
+    def get_random_isomer(self):
+        pick_from=[self.name]+self.stereoisomers+self.conformers
+        return random.choice(pick_from)
 
     def generate(self,outname='',available_molecules={},**kwargs):
         # logger.info(f'Generating {self.name}.mol2 for parameterization')
