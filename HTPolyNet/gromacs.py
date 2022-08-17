@@ -106,8 +106,8 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
         pass
         # logger.info(f'grompp_and_mdrun completed.  Check {gro}.gro.')
     else:
-        logger.error(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
-        raise Exception(f'{sw.mdrun} ended prematurely; {gro}.gro not found.')
+        logger.error(f'{sw.mdrun} ended prematurely; {out}.gro not found.')
+        raise Exception(f'{sw.mdrun} ended prematurely; {out}.gro not found.')
 
 def get_energy_menu(edr,**kwargs):
     """Get then menu provided by 'gmx energy' when applied to a particular edr file

@@ -1419,7 +1419,7 @@ class TopoCoord:
         logger.debug(f'{os.getcwd()} {pfs.cwd()} {top}, {gro}, {mdp}')
         msg=grompp_and_mdrun(gro=gro,top=top,out=out,mdp=mdp,**kwargs)
         self.copy_coords(TopoCoord(grofilename=f'{out}.gro'))
-        logger.debug(f'after grommp_and_run: gro {self.files["gro"]}')
+        logger.debug(f'after grompp_and_run: gro {self.files["gro"]}')
         return msg
 
     def load_files(self):
