@@ -10,7 +10,7 @@ from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,Re
 from HTPolyNet.coordinates import _dfrotate
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
-from HTPolyNet.gromacs import mdp_modify,gro_from_trr  #, gmx_traj_info
+from HTPolyNet.gromacs import mdp_modify  #, gmx_traj_info
 from HTPolyNet.command import Command
 
 logger=logging.getLogger(__name__)
@@ -46,8 +46,8 @@ class Reaction:
         self.product=jsondict.get('product','')
         self.restrictions=jsondict.get('restrictions',{})
         self.stage=jsondict.get('stage','')
-        self.probability=jsondict.get('probability',1.0)
         self.procession=jsondict.get('procession',{})
+        self.probability=jsondict.get('probability',1.0)
         self.symmetry_versions=[]
         
     def __str__(self):
@@ -72,17 +72,15 @@ def is_reactant(name:str,reaction_list:ReactionList,stage='cure'):
                     reactants.append(v)
     return name in reactants
 
-def yield_ReactionBonds(R:Reaction,TC:TopoCoord,resid_mapper):
+def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
     nreactants=len(R.reactants)
     for bondrec in R.bonds:
         atom_keys=bondrec['atoms']
         order=bondrec['order']
         assert len(atom_keys)==2
         atomrecs=[R.atoms[x] for x in atom_keys]
-        reactant_keys=[x['reactant'] for x in atomrecs]
         atom_names=[x['atom'] for x in atomrecs]
         in_reactant_resids=[x['resid'] for x in atomrecs]
-        logger.debug(f'in_reactant_resids {in_reactant_resids}')
         if nreactants==1:
             in_product_resids=[resid_mapper[0][in_reactant_resids[x]] for x in [0,1]]
         else:
@@ -91,27 +89,6 @@ def yield_ReactionBonds(R:Reaction,TC:TopoCoord,resid_mapper):
         bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=TC.get_bystanders(atom_idx)
         oneaway_resids,oneaway_resnames,oneaway_atomidx,onewaway_atomnames=TC.get_oneaways(atom_idx)
         yield ReactionBond(atom_idx,in_product_resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx)
-
-def yield_bondDataFrame(R:Reaction,TC:TopoCoord,resid_mapper):
-    nreactants=len(R.reactants)
-    df=pd.DataFrame()
-    for bondrec in R.bonds:
-        atom_keys=bondrec['atoms']
-        order=bondrec['order']
-        assert len(atom_keys)==2
-        atomrecs=[R.atoms[x] for x in atom_keys]
-        reactant_keys=[x['reactant'] for x in atomrecs]
-        atom_names=[x['atom'] for x in atomrecs]
-        in_reactant_resids=[x['resid'] for x in atomrecs]
-        if nreactants==1:
-            in_product_resids=[resid_mapper[0][in_reactant_resids[x]] for x in [0,1]]
-        else:
-            in_product_resids=[resid_mapper[x][in_reactant_resids[x]] for x in [0,1]]
-        ai,aj=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
-        ri,rj=in_product_resids
-        rowdict={'ai':[ai],'ri':[ri],'aj':[aj],'rj':[rj],'order':[order],'reactantName':['UNSET']}
-        df=pd.concat((df,pd.DataFrame(rowdict)),ignore_index=True)
-    return df
 
 class Molecule:
     def __init__(self,name='',generator:Reaction=None):
@@ -125,7 +102,7 @@ class Molecule:
         self.symmetry_relateds=[]
         self.stereocenters=[]
         self.stereoisomers=[]
-        self.conformers_dict={}
+        self.nconformers=0
         self.conformers=[]
         self.zrecs=[]
         self.is_reactant=False
@@ -154,6 +131,8 @@ class Molecule:
         TC=self.TopoCoord
         TC.set_gro_attribute('z',0)
         TC.set_gro_attribute('nreactions',0)
+        TC.set_gro_attribute('molecule',1)
+        TC.set_gro_attribute('molecule_name',self.name)
         for att in ['sea_idx','chain','chain_idx','cycle','cycle_idx']:
             TC.set_gro_attribute(att,-1)
         # set symmetry class indices
@@ -213,8 +192,7 @@ class Molecule:
 
     def previously_parameterized(self):
         rval=True
-#        for ext in ['mol2','top','itp','gro']:
-        for ext in ['top','gro']:
+        for ext in ['mol2','top','itp','gro']:
             rval=rval and pfs.exists(os.path.join('molecules/parameterized',f'{self.name}.{ext}'))
         return rval
 
@@ -262,43 +240,38 @@ class Molecule:
         GAFF_dict=kwargs.get('GAFF',{})
         if GAFF_dict:
             do_minimization=GAFF_dict.get('minimize_molecules',True)
-        parameterize=False
-        if self.generator: # this is a multimer
+        if self.generator:
             R=self.generator
             self.TopoCoord=TopoCoord()
-            logger.info(f'Using reaction "{R.name} ({R.stage})" to generate {self.name}')
+            logger.debug(f'Using reaction {R.name} to generate {self.name}.mol2.')
             isf='mol2'
             resid_mapper=[]
-            for rk,ri in R.reactants.items():
+            for ri in R.reactants.values():
                 new_reactant=deepcopy(available_molecules[ri])
+                new_reactant.TopoCoord.write_mol2(filename=f'{self.name}-reactant{ri}-prebonding.mol2',molname=self.name)
                 rnr=len(new_reactant.sequence)
                 shifts=self.TopoCoord.merge(new_reactant.TopoCoord)
                 resid_mapper.append({k:v for k,v in zip(range(1,rnr+1),range(1+shifts[2],1+rnr+shifts[2]))})
-            logger.debug(f'Raw {self.name} has {self.TopoCoord.Coordinates.A.shape[0]} atoms and {len(self.TopoCoord.Coordinates.A["resNum"].unique())} resids')
-            logger.debug(f'resid mapper {resid_mapper}')
             # logger.debug(f'{self.name}: resid_mapper {resid_mapper}')
             # logger.debug(f'{self.TopoCoord.idx_lists}')
             # logger.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
             # logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
             self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
             self.set_sequence()
-            bonds_to_make=list(yield_ReactionBonds(R,self.TopoCoord,resid_mapper))
-            logger.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
+            bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
+            # logger.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logger.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds(bonds_to_make)
             self.TopoCoord.set_gro_attribute('reactantName',R.product)
             self.TopoCoord.set_gro_attribute('sea_idx',-1) # turn off symmetry-equivalence for multimers
-            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{R.product}.grx')
-            if R.stage=='build':
-                # this is a molecule that will not be used as a template
-                DF=yield_bondDataFrame(R,self.TopoCoord,resid_mapper)
-                self.TopoCoord.map_from_templates(DF,available_molecules)
-                parameterize=False
-                self.TopoCoord.write_top_gro(f'{self.name}.top',f'{self.name}.gro')
-            elif R.stage in ['param','cure']:
-                parameterize=True
-                # this is a template
-                self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
+            self.TopoCoord.set_gro_attribute('molecule',1)
+            self.TopoCoord.set_gro_attribute('molecule_name',self.name)
+            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name'],f'{R.product}.grx')
+            # if pfs.exists(f'molecules/inputs/{self.name}.mol2'): # an override structure is present
+            #     logger.debug(f'Using override input molecules/inputs/{self.name}.{isf} as a generator')
+            #     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
+            # else:
+            self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
             # if pfs.exists(f'molecules/inputs/{self.name}.pdb'): # an override structure is present
             #     isf='pdb'
             #     logger.debug(f'Using override input molecules/inputs/{self.name}.{isf} as a generator')
@@ -313,23 +286,20 @@ class Molecule:
                     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
                     break
             assert isf,'Error: no valid input structure file found'
-            parameterize=True
 
         reactantName=self.name
-        if parameterize:
-            self.parameterize(outname,input_structure_format=isf,**kwargs)
+        self.parameterize(outname,input_structure_format=isf,**kwargs)
         if do_minimization:
             self.minimize(outname,**kwargs)
         self.set_sequence()
         self.TopoCoord.set_gro_attribute('reactantName',reactantName)
-        if not self.generator: # this is a monomer
+        if not self.generator:
             self.initialize_monomer_grx_attributes()
-            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx'],f'{reactantName}.grx')
+            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name'],f'{reactantName}.grx')
         else:
-            if parameterize:
-                grx=f'{reactantName}.grx'
-                if (os.path.exists(grx)):
-                    self.TopoCoord.read_gro_attributes(grx)
+            grx=f'{reactantName}.grx'
+            if (os.path.exists(grx)):
+                self.TopoCoord.read_gro_attributes(grx)
                 #self.reset_chains_from_attributes()
         # logger.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
         self.prepare_new_bonds(available_molecules=available_molecules)
@@ -339,7 +309,8 @@ class Molecule:
     def prepare_new_bonds(self,available_molecules={}):
         # logger.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
         R=self.generator
-        if not R: return
+        if not R:
+            return
         self.reaction_bonds=[]
         self.bond_templates=[]
         TC=self.TopoCoord
@@ -389,7 +360,7 @@ class Molecule:
             if ri!=current_resid:
                 current_resid=ri
                 self.sequence.append(rn)
-        logger.debug(f'{self.name} sequence: {self.sequence}')
+        # logger.debug(f'{self.name} sequence: {self.sequence}')
 
     def idx_mappers(self,otherTC:TopoCoord,other_bond,bystanders,oneaways,uniq_atom_idx:set):
         assert len(other_bond)==2
@@ -581,15 +552,12 @@ class Molecule:
                 # transrot identifies the two sacrificial H's
                 cresids=[]
                 if len(oneaways)==2 and oneaways[1]!=None:
-                    cresids=[oneaways[1]]  # only from C-C chains
+                    cresids=[oneaways[1]]
                 if len(bystanders)==2 and any(bystanders[1]):
-                    cresids.extend(bystanders[1])  # only if also bonded to one of two atoms
-                lrc=self.TopoCoord.Topology.local_resid_cluster(bresid)
-                for lr in lrc:
-                    if not lr in cresids and lr!=bresid: cresids.append(lr)
+                    cresids.extend(bystanders[1])
                 # cresids=[x for x in oneaways if x]
                 # cresids.extend([x for x in bystanders if x])
-                logger.debug(f'cresids {cresids}')
+                # logger.debug(f'cresids {cresids}')
                 hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=cresids)
                 skip_H.append(i)
                 hs_from_tr.append(hxi)
@@ -601,6 +569,7 @@ class Molecule:
         # must be deleted
         idx_scratch.extend(hs_from_tr)
         idx_mapper=TC.delete_atoms(idx_scratch)
+        #TC.remap_idx_list('chain',idx_mapper)
         for B in bondrecs:
 #        for i,B in enumerate(self.reaction_bonds):
             aidx,bidx=B.idx
@@ -811,10 +780,8 @@ class Molecule:
             for p in P:
                 si_name=self.name+'-S'+''.join([str(_) for _ in p])
                 logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
-                #if os.path.exists(f'{si_name}.gro'):
-                if pfs.exists(f'molecules/parameterized/{si_name}.gro'):
-                    pfs.checkout(f'molecules/parameterized/{si_name}.gro')
-                    logger.debug(f'{si_name}.gro found.')
+                if os.path.exists(f'{si_name}.gro'):
+                    logger.debug(f'{si_name}.gro exists in {pfs.cwd()}')
                 else:
                     MM=deepcopy(self)
                     MM.name=si_name
@@ -826,42 +793,27 @@ class Molecule:
                     si_name=MM.name
                 self.stereoisomers.append(si_name)
 
-    def generate_conformers(self,minimize=False):
-        if not self.conformers_dict: return
-        nconformers=self.conformers_dict.get('count',0)
-        generator_dict=self.conformers_dict.get('generator',{})
-        gen_name=generator_dict.get('name','')
-        if gen_name=='obabel' and not minimize:
-            logger.debug(f'Setting "minimize" to True since conformer generator is obabel.')
-            minimize=True
-        gen_params=generator_dict.get('params',{'temperature': 300.0, 'ps': 1.0})
-
-        logger.info(f'Generating {nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
+    def generate_conformers(self,minimize=True):
+        if self.nconformers==0: return
+        logger.info(f'Generating {self.nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
         gronames=[f'{self.name}']
         for si in self.stereoisomers:
             gronames.append(f'{si}')
         self.conformers=[]
         for gro in gronames:
             pfx=f'{gro}-C'
-            n=max(2,len(str(nconformers)))
-            fmt=r'{A}{B:0'+str(n)+r'd}'
-            cfnl=[fmt.format(A=pfx,B=x) for x in range(nconformers)]
-            if gen_name=='obabel':
-                c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {nconformers} --writeconformers')
-                out,err=c.run()
-                c=Command(f'wc -l {gro}-confs.gro')
-                out,err=c.run()
-                tok=out.split()
-                lpf=int(tok[0])//nconformers
-                c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
-                out,err=c.run()
-            elif gen_name=='gromacs':
-                self.TopoCoord.write_gro(f'{gro}-save.gro')
-                self.TopoCoord.vacuum_minimize(outname=gro)
-                self.TopoCoord.vacuum_simulate(outname=f'{gro}-confs',nsamples=2*nconformers,params=gen_params)
-                gro_from_trr(f'{gro}-confs',nzero=n,b=0.5*gen_params['ps'],outpfx=pfx)
-
+            c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
+            out,err=c.run()
+            c=Command(f'wc -l {gro}-confs.gro')
+            out,err=c.run()
+            tok=out.split()
+            lpf=int(tok[0])//self.nconformers
+            c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
+            out,err=c.run()
             # os.remove(f'{gro}-confs.gro')
+            n=max(2,len(str(self.nconformers)))
+            fmt=r'{A}{B:0'+str(n)+r'd}'
+            cfnl=[fmt.format(A=pfx,B=x) for x in range(self.nconformers)]
             logger.debug(f'{cfnl}')
             self.conformers.extend(cfnl)
         if minimize:
@@ -872,4 +824,3 @@ class Molecule:
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]
-

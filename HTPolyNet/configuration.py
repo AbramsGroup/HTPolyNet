@@ -109,10 +109,10 @@ class Configuration:
         # assert self.constituents or self.initial_composition,'Must specify initial composition in config file'
         if not self.constituents:
             for crec in self.initial_composition:
-                self.constituents[crec['molecule']]['count']=crec['count']
+                self.constituents[crec['molecule']]['count']=crec.get('count',0)
         if not self.initial_composition:
             for molecule,mrec in self.constituents.items():
-                self.initial_composition.append({'molecule':molecule,'count':mrec['count']})
+                self.initial_composition.append({'molecule':molecule,'count':mrec.get('count',0)})
         # logger.debug(f'{self.constituents}')
         # logger.debug(f'{self.initial_composition}')
         for item in self.initial_composition:
