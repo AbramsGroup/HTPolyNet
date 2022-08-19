@@ -1492,10 +1492,10 @@ class TopoCoord:
             else:
                 ps=nsteps*dt
             mod_dict['nsteps']=nsteps
-            msg+=f'; {ps:4.0f} ps, {edict["temperature"]} K'
+            msg+=f'; {ps:6.2f} ps, {float(edict["temperature"]):7.2f} K'
             if ens=='npt': 
                 mod_dict['ref_p']=edict['pressure']
-                msg+=f', {edict["pressure"]} bar'
+                msg+=f', {float(edict["pressure"]):6.2f} bar'
         mdp_modify(f'{ens}.mdp',mod_dict)
         logger.info(f'Running Gromacs: {msg}')
         self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=ens,quiet=False,**gromacs_dict)
