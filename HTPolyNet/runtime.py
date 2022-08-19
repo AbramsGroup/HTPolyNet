@@ -13,8 +13,10 @@ import HTPolyNet.software as software
 from HTPolyNet.gromacs import insert_molecules, mdp_modify, mdp_get
 import HTPolyNet.checkpoint as cp
 from HTPolyNet.plot import trace
-from HTPolyNet.molecule import Molecule, MoleculeDict, is_reactant
+from HTPolyNet.molecule import Molecule, MoleculeDict
+from HTPolyNet.reaction import is_reactant
 from HTPolyNet.expandreactions import symmetry_expand_reactions, chain_expand_reactions
+from HTPolyNet.reaction import reaction_stage
 from HTPolyNet.curecontroller import CureController
 from HTPolyNet.stringthings import my_logger
 
@@ -39,6 +41,7 @@ def _nonempty_directives(dirlist):
     return any(amts)
 
 class Runtime:
+    default_edict={ 'ensemble': 'npt', 'temperature': 300, 'pressure': 10, 'ps': 200, 'nsteps': -2, 'repeat': 0 }
     runtime_defaults={
         'gromacs': {
             'gmx': 'gmx',
@@ -146,16 +149,22 @@ class Runtime:
             `generator` attribute will be a Reaction instance '''
         ess='' if len(self.cfg.molecules)==1 else 's'
         logger.info(f'{len(self.cfg.molecules)} molecule{ess} explicit in {self.cfgfile}')
-        # ml=list(self.cfg.molecules.keys())
+        ml=list(self.cfg.molecules.keys())
+        logger.debug(f'Generating: {ml}')
         # my_logger(ml,logger.info)
-        all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
-        while not all_made:
-            for mname,M in self.cfg.molecules.items():
-                if mname not in self.molecules:
-                    if self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin):
-                        self.molecules[mname]=M
-                        logger.debug(f'Generated {mname}')
-            all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
+        # all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
+        # while not all_made:
+        #     for mname,M in self.cfg.molecules.items():
+        #         if mname not in self.molecules:
+        #             if self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin):
+        #                 self.molecules[mname]=M
+        #                 logger.debug(f'Generated {mname}')
+        #     all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
+        for mname,M in self.cfg.molecules.items():
+            self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
+            self.molecules[mname]=M
+            for SI in M.stereoisomers:
+                
 
         ''' Generate all reactions and products that result from invoking symmetry '''
         symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
@@ -199,7 +208,7 @@ class Runtime:
                 logger.debug(f'Generated {mname}')
 
         for M in self.molecules:
-            self.molecules[M].is_reactant=is_reactant(M,self.cfg.reactions,stage='cure')
+            self.molecules[M].is_reactant=is_reactant(M,self.cfg.reactions,stage=reaction_stage.cure)
 
         resolve_type_discrepancies=GAFF_dict.get('resolve_type_discrepancies',[])
         if not resolve_type_discrepancies:
@@ -261,7 +270,7 @@ class Runtime:
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
         densification_dict=self.cfg.parameters.get('densification',{})
         assert len(densification_dict)>0,'"densification" directives missing'
-        equilibration=densification_dict.get('equilibration',{})
+        equilibration=densification_dict.get('equilibration',[])
         assert len(equilibration)>0,'equilibration directives missing'
         TC=self.TopoCoord
         infiles=[TC.files[x] for x in ['gro','top','grx']]
@@ -299,7 +308,7 @@ class Runtime:
             reentry=pfs.go_to(f'systems/iter-{cc.iter}')
             if os.path.exists('cure_controller_state.yaml'):
                 logger.debug(f'Reading new cure controller in {pfs.cwd()}')
-                self.cc=CureController.from_yaml('cure_controller_state.yaml')
+                self.cc=CureController._from_yaml('cure_controller_state.yaml')
                 cc=self.cc
                 logger.info(f'Restarting at {cc.cum_nxlinkbonds} bonds')
             TC.grab_files() # copy files locally
@@ -335,7 +344,7 @@ class Runtime:
         TC.write_top(f'{result_name}.top')
         cp.set(TC,'final')
 
-    def build(self,**kwargs):
+    def do_workflow(self,**kwargs):
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         checkpoint_file=kwargs.get('checkpoint_file','checkpoint_state.yaml')
@@ -376,11 +385,11 @@ class Runtime:
 #                    shutil.copy(f'molecules/parameterized/{mname}.{ex}','../../')
                 M.set_origin('newly parameterized')
             else:
-                logger.debug(f'...no, did not generate {mname}')
-                logger.debug(f'not ({mname}.generator) {bool(not M.generator)}')
+                logger.debug(f'Error: could not generate {mname}')
+                logger.debug(f'not ({mname}.generator) = {bool(not M.generator)}')
                 if M.generator:
                     logger.debug(f'reactants {list(M.generator.reactants.values())}')
-                return False
+                return
         else:
             logger.debug(f'Fetching parameterized {mname}')
             exts=pfs.fetch_molecule_files(mname)
@@ -391,7 +400,7 @@ class Runtime:
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename='',wrap_coords=False)
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             # logger.debug(f'{M.name} box {M.TopoCoord.Coordinates.box}')
-            M.set_sequence()
+            M.set_sequence_from_coordinates()
             # if M.generator:
             #     M.prepare_new_bonds(available_molecules=self.molecules)
             M.set_origin('previously parameterized')
@@ -399,7 +408,9 @@ class Runtime:
         M.generate_stereoisomers()
         M.generate_conformers(minimize=True)
 
-        return True
+        # for ln in M.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
+        logger.debug(f'Done.')
+        return
 
     def _type_consistency_check(self,typename='dihedraltypes',funcidx=4,selection_rule='stiffest'):
         logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested')
@@ -455,6 +466,7 @@ class Runtime:
         for item in self.cfg.initial_composition:
             M=self.molecules[item['molecule']]
             N=item['count']
+            if not N: continue
             t=deepcopy(M.TopoCoord.Topology)
             logger.debug(f'Merging {N} copies of {M.name}\'s topology into global topology')
             t.adjust_charges(atoms=t.D['atoms']['nr'].to_list(),desired_charge=0.0,overcharge_threshhold=0.1,msg='')
@@ -511,6 +523,7 @@ class Runtime:
         for cc in clist:
             M=self.cfg.molecules[cc['molecule']]
             tc=cc['count']
+            if not tc: continue
             if len(M.conformers)>0:
                 nconf=len(M.conformers)
                 if tc<nconf:
@@ -548,12 +561,10 @@ class Runtime:
         TC.atom_count()
         # TC.set_grx_attributes(['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'])
         TC.set_grx_attributes()
-        TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition,
-            globally_unique=[False,False,False,True,False,True,False,True,True],
-            unset_defaults=[0,0,'UNSET',-1,-1,-1,-1,-1,'UNSET'])
+        TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition)
         for list_name in ['cycle','chain']:
             TC.reset_idx_list_from_grx_attributes(list_name)
-        chainlists=TC.idx_lists['chain']
+        # chainlists=TC.idx_lists['chain']
         # logger.debug(f'virgin chains')
         # for i,c in enumerate(chainlists):
         #     logger.debug(f'  {i} {c}')
@@ -566,11 +577,14 @@ class Runtime:
     def _do_equilibration(self,edict={},deffnm='equilibrate',plot_pfx=''):
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
         TC=self.TopoCoord
+        for k in edict.keys():
+            if not k in self.default_edict:
+                logger.debug(f'ignoring unknown equilibration directive "{k}"')
         TC.equilibrate(deffnm,edict,gromacs_dict,plot_pfx)
 
-    def _do_equilibration_series(self,eq_dict={},deffnm='equilibrate',plot_pfx=''):
-        if not eq_dict: return
-        for stg in eq_dict:
+    def _do_equilibration_series(self,eq_stgs=[],deffnm='equilibrate',plot_pfx=''):
+        if not eq_stgs: return
+        for stg in eq_stgs:
             self._do_equilibration(stg,deffnm,plot_pfx)
                 
     def _do_pap(self,pfx=''):
