@@ -1,80 +1,10 @@
 from itertools import product
 from copy import deepcopy
 import logging
-from HTPolyNet.molecule import Molecule, Reaction, MoleculeList, MoleculeDict, ReactionList
+from HTPolyNet.molecule import Molecule, MoleculeList, MoleculeDict
+from HTPolyNet.reaction import reaction_stage, Reaction, ReactionList, get_atom_options, generate_product_name, reactant_resid_to_presid
+
 logger=logging.getLogger(__name__)
-
-def product_sequence_resnames(R:Reaction,reactions:ReactionList):
-    result=[]
-    allProducts=[x.product for x in reactions]
-    for rKey,rName in R.reactants.items():
-        if rName in allProducts:
-            result.extend(product_sequence_resnames(reactions[allProducts.index(rName)],reactions))
-        else:
-            result.extend([rName])
-    return result
-
-def molname_sequence_resnames(molname:str,reactions:ReactionList):
-    prodnames=[x.product for x in reactions]
-    if molname in prodnames:
-        R=reactions[prodnames.index(molname)]
-        return product_sequence_resnames(R,reactions)
-    else:
-        return [molname]  # not a product in the reaction list?  must be a monomer
-
-def reactant_resid_to_presid(R:Reaction,reactantName:str,resid:int,reactions:ReactionList):
-    reactants=[x for x in R.reactants.values()]
-    if reactantName in reactants:
-        ridx=reactants.index(reactantName)
-        logger.debug(f'reactantName {reactantName} {ridx} in {reactants} of {R.name}')
-        S=0
-        for i in range(ridx):
-            seq=molname_sequence_resnames(reactants[i],reactions)
-            logger.debug(f'{i} {seq} {S}')
-            S+=len(seq)
-        return S+resid
-    else:
-        return -1
-
-def generate_product_name(R:Reaction):
-    pname=''
-    for b in R.bonds:
-        i,j=b['atoms']
-        i_arec=R.atoms[i]
-        j_arec=R.atoms[j]
-        i_reKey=i_arec['reactant']
-        i_reNm=R.reactants[i_reKey]
-        i_aNm=i_arec['atom']
-        j_reKey=j_arec['reactant']
-        j_reNm=R.reactants[j_reKey]
-        j_aNm=j_arec['atom']
-        tbNm=f'{i_reNm}~{i_aNm}-{j_aNm}~{j_reNm}'
-        if len(R.reactants)>1:
-            if len(pname)==0:
-                pname=tbNm
-            else:
-                pname+='---'+tbNm
-    return pname
-
-def get_atom_options(R:Reaction,symmetry_relateds:dict): #,reactions:ReactionList):
-    # prod_seq_resn=product_sequence_resnames(R,reactions)
-    atom_options=[]
-    for atomKey,atomRec in R.atoms.items():
-        reactantKey=atomRec['reactant']
-        reactantName=R.reactants[reactantKey]
-        resid=atomRec['resid']
-        # resName=prod_seq_resn[resid-1]
-        atomName=atomRec['atom']
-        # logger.debug(f'resName {resName} atomName {atomName}')
-        symm_sets=symmetry_relateds.get(reactantName,[])
-        # logger.debug(f'symm_set {symm_sets}')
-        if symm_sets:
-            for symm_set in symm_sets:
-                # logger.debug(f'symm_set {symm_set}')
-                if atomName in symm_set:
-                    atom_options.append([[atomKey,c] for c in symm_set])
-    return atom_options
-
 
 def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
     extra_reactions=[]
@@ -142,7 +72,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                     logger.debug(ln)
                 jdx+=1
                 reactions.append(nooR)
-                thisR_extra_molecules[nooR.product]=Molecule(name=nooR.product,generator=nooR)
+                thisR_extra_molecules[nooR.product]=Molecule.New(nooR.product,nooR)
             idx+=1
         logger.debug(f'Symmetry expansion of reaction {R.name} ends')
 
@@ -155,6 +85,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
 
 
 def chain_expand_reactions(molecules:MoleculeDict):
+    ''' must be called after all grx attributes are set for all molecules '''
     extra_reactions:ReactionList=[]
     extra_molecules:MoleculeDict={}
     monomers:MoleculeList=[]
@@ -210,10 +141,10 @@ def chain_expand_reactions(molecules:MoleculeDict):
                 R.atoms={'A':{'reactant':1,'resid':1,'atom':h_name,'z':1},
                         'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                 R.bonds=[{'atoms':['A','B'],'order':1}]
-                R.stage='template-only'
+                R.stage=reaction_stage.param
                 R.name=new_mname.lower()
                 R.product=new_mname
-                newP=Molecule(name=R.product,generator=R)
+                newP=Molecule.New(R.product,R).set_sequence_from_moldict(molecules)
                 extra_molecules[R.product]=newP
                 logger.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {new_mname}:')
                 for ln in str(R).split('\n'):
@@ -240,11 +171,11 @@ def chain_expand_reactions(molecules:MoleculeDict):
                 R.atoms={'A':{'reactant':1,'resid':2,'atom':h_name,'z':1},
                         'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                 R.bonds=[{'atoms':['A','B'],'order':1}]
-                R.stage='template-only'
+                R.stage=reaction_stage.param
                 new_rxnname=new_mname.lower()
                 R.name=new_rxnname
                 R.product=new_mname
-                newP=Molecule(name=R.product,generator=R)
+                newP=Molecule.New(R.product,R).set_sequence_from_moldict(molecules)
                 extra_molecules[R.product]=newP
                 logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attack monomer atom {m.name}_{t_name}-> {new_mname}:')
                 for ln in str(R).split('\n'):
@@ -267,10 +198,11 @@ def chain_expand_reactions(molecules:MoleculeDict):
                 R.atoms={'A':{'reactant':1,'resid':2,'atom':h_name,'z':1},
                             'B':{'reactant':2,'resid':1,'atom':t_name,'z':1}}
                 R.bonds=[{'atoms':['A','B'],'order':1}]
-                R.stage='template-only'
+                R.stage=reaction_stage.param
                 R.product=new_mname
                 R.name=R.product.lower()
-                newP=Molecule(name=R.product,generator=R)
+                # newP=Molecule(name=R.product,generator=R)
+                newP=Molecule.New(R.product,R).set_sequence_from_moldict(molecules)
                 extra_molecules[R.product]=newP
                 logger.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {new_mname}:')
                 for ln in str(R).split('\n'):

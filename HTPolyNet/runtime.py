@@ -164,7 +164,7 @@ class Runtime:
             self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
             self.molecules[mname]=M
             for SI in M.stereoisomers:
-                
+                pass
 
         ''' Generate all reactions and products that result from invoking symmetry '''
         symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})

@@ -27,9 +27,9 @@ logger=logging.getLogger(__name__)
 #             return True
 #     return False
 
-GRX_ATTRIBUTES=['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name']
-GRX_GLOBALLY_UNIQUE=[False,False,False,True,False,True,False,True,True],
-GRX_UNSET_DEFAULTS=[0,0,'UNSET',-1,-1,-1,-1,-1,'UNSET']
+GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name']
+GRX_GLOBALLY_UNIQUE=[False,       False,         False,     True,  True,       False,   True,      False,      True,          False]
+GRX_UNSET_DEFAULTS =[    0,           0,       'UNSET',       -1,    -1,          -1,     -1,          -1,       -1,        'UNSET']
 
 def _dfrotate(df:pd.DataFrame,R):
     for i,srow in df.iterrows():

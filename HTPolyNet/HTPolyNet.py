@@ -38,13 +38,13 @@ def run(args):
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    banner(logger.info)
+    if not args.no_banner: banner(logger.info)
     my_logger('HTPolyNet runtime begins',logger.info)
     userlib=args.lib if os.path.exists(args.lib) else None
     software.sw_setup()
     pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,projdir=args.proj,reProject=args.restart,userlibrary=userlib)
     a=Runtime(cfgfile=args.config,restart=args.restart)
-    a.build(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
+    a.do_workflow(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
     my_logger('HTPolyNet runtime ends',logger.info)
 
 def parameterize(args):
@@ -60,7 +60,8 @@ def parameterize(args):
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    banner(logger.info)
+    if not args.no_banner: banner(logger.info)
+    # banner(logger.info)
     my_logger('HTPolyNet parameterization begins',logger.info)
     userlib=args.lib
     if not os.path.exists(args.lib):
@@ -73,6 +74,7 @@ def parameterize(args):
 
 def htpolynet_cure_plots(args):
     logs=args.logs
+    if not args.no_banner: banner(logger.info)
     banner(print)
     if len(logs)>0:
         diagnostics_graphs(logs,args.plotfile)
@@ -174,6 +176,7 @@ def cli():
     command_parsers['run'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory\nAnything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
     command_parsers['run'].add_argument('-diag',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
     command_parsers['run'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
+    command_parsers['run'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['run'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     command_parsers['run'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
     command_parsers['run'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
@@ -184,6 +187,7 @@ def cli():
     command_parsers['parameterize'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     command_parsers['parameterize'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     command_parsers['parameterize'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
+    command_parsers['parameterize'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['parameterize'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
 
     command_parsers['plots'].add_argument('-logs',type=str,default='',nargs='+',help='names of diagnostic log files (1 or more)')

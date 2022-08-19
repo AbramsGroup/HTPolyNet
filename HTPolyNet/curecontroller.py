@@ -9,6 +9,7 @@ from HTPolyNet.plot import trace
 from HTPolyNet.gromacs import gromacs_distance, mdp_modify
 from HTPolyNet.configuration import ReactionList
 from HTPolyNet.molecule import MoleculeDict
+from HTPolyNet.reaction import reaction_stage
 from multiprocessing import Pool
 from functools import partial
 import HTPolyNet.projectfilesystem as pfs
@@ -187,7 +188,7 @@ class CureController:
         while nbonds==0 and self.current_radidx<self.max_radidx:
             # test_bdf=raw_bdf[raw_bdf['r']<self.current_radius]
             # result_bdf=self.apply_filters(TC,RL,MD,...)
-            nbdf=self._searchbonds(TC,RL,MD,stage='cure',abs_max=bond_limit,apply_probabilities=apply_probabilities,reentry=reentry)
+            nbdf=self._searchbonds(TC,RL,MD,stage=reaction_stage.cure,abs_max=bond_limit,apply_probabilities=apply_probabilities,reentry=reentry)
             nbonds=nbdf.shape[0]
             # nbonds+=result_bdf.shape[0]
             # if nbonds<PARAMETER:
@@ -274,7 +275,7 @@ class CureController:
         if self.state!=state.cap_bondsearch: return
         opfx=self._pfx()
         # multi: nbdf=self.make_cadidates(...,stage='cap')
-        nbdf=self._searchbonds(TC,RL,MD,stage='cap')
+        nbdf=self._searchbonds(TC,RL,MD,stage=reaction_stage.cap)
         nbonds=nbdf.shape[0]
         ess='' if nbonds==1 else 's'
         logger.info(f'Capping will generate {nbdf.shape[0]} new bond{ess}')
@@ -377,12 +378,12 @@ class CureController:
         self._to_yaml()
 
     # TODO: move to searchbonds.by; split into make_candidates() and apply_filters()
-    def _searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage='cure',abs_max=0,apply_probabilities=False,reentry=False):
+    def _searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage=reaction_stage.cure,abs_max=0,apply_probabilities=False,reentry=False):
 
         adf=TC.gro_DataFrame('atoms')
         gro=TC.files['gro']
         ncpu=self.dicts['controls']['ncpu']
-        if stage=='cure':
+        if stage==reaction_stage.cure:
             TC.linkcell_initialize(self.current_radius,ncpu=ncpu,force_repopulate=reentry)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         bdf=pd.DataFrame()
@@ -405,26 +406,28 @@ class CureController:
                 bresid_template=B['resid']
                 bresname=MD[breactantname_template].get_resname(bresid_template)
                 bz=B['z']
-                if stage=='cap':
+                if stage==reaction_stage.cap:
                     assert areactantname_template==breactantname_template,f'Error: capping reaction {R.name} lists a bond whose atoms are in different reactants'
                     assert aresname==bresname,f'Error: capping reaction {R.name} lists a bond whose atoms are in different residues'
 
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
-                alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list()))
-                blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list()))
+                alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list(),Aset['molecule'].to_list()))
+                blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list(),Bset['molecule'].to_list()))
                 all_possible_pairs=list(product(alist,blist))
 
                 idf=pd.DataFrame({'ai':           [int(x[0][0]) for x in all_possible_pairs],
                                   'ri':           [int(x[0][1]) for x in all_possible_pairs],
+                                  'mi':           [int(x[0][2]) for x in all_possible_pairs],
                                   'aj':           [int(x[1][0]) for x in all_possible_pairs],
                                   'rj':           [int(x[1][1]) for x in all_possible_pairs],
+                                  'mj':           [int(x[1][2]) for x in all_possible_pairs],
                                   'prob':         [prob for _ in all_possible_pairs],
                                   'reactantName': [R.product for _ in  all_possible_pairs],
                                   'order':        [order for _ in all_possible_pairs]})
-                if stage=='cure':
-                    # exclude atom pairs that have same resid
-                    idf=idf[idf['ri']!=idf['rj']].copy()
+                if stage==reaction_stage.cure:
+                    # exclude atom pairs that have same resid or molid
+                    idf=idf[(idf['ri']!=idf['rj'])|(idf['mi']!=idf['mj'])].copy()
                     logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
                     if idf.shape[0]>0:
                         ess='' if idf.shape[0]!=1 else 's'
@@ -459,7 +462,7 @@ class CureController:
                                 bondtestoutcomes[k]=idf[idf['result']==k].shape[0]
                                 logger.debug(f'   {str(k)}: {bondtestoutcomes[k]}')
                             idf=idf[idf['result']==BTRC.passed].copy()
-                elif stage=='cap':
+                elif stage==reaction_stage.cap:
                     idf=idf[idf['ri']==idf['rj']].copy()
                     logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
                 if not idf.empty:
@@ -468,7 +471,7 @@ class CureController:
         # for ln in bdf.to_string().split('\n'):
         #     logger.debug(ln)
 
-        if stage=='cure' and bdf.shape[0]>0:
+        if stage==reaction_stage.cure and bdf.shape[0]>0:
             bdf=bdf.sort_values('r',axis=0,ignore_index=True).reset_index(drop=True)
             bdf['allowed']=[True for x in range(bdf.shape[0])]
             unique_atomidx=set(bdf.ai.to_list()).union(set(bdf.aj.to_list()))
@@ -532,7 +535,7 @@ class CureController:
             for ln in bdf.to_string().split('\n'):
                 logger.debug(ln)
 
-        if stage=='cure':
+        if stage==reaction_stage.cure:
             TC.linkcell_cleanup()
 
         return bdf

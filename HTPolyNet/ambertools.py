@@ -2,10 +2,8 @@ import logging
 import hashlib
 import shutil
 import parmed
-# import os
 from HTPolyNet.command import Command
 from HTPolyNet.coordinates import Coordinates
-# from HTPolyNet.stringthings import my_logger
 logger=logging.getLogger(__name__)
 
 def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kwargs):
@@ -14,21 +12,21 @@ def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kw
         chargemethod=ambertools_dict.get('charge_method','bcc')
     else:
         chargemethod=kwargs.get('charge_method','bcc')
-    logger.info(f'AmberTools> parameterizing {inputPrefix}.{input_structure_format}')
+    logger.info(f'AmberTools> generating GAFF parameters from {inputPrefix}.{input_structure_format}')
     structin=f'{inputPrefix}.{input_structure_format}'
     mol2out=f'{outputPrefix}.mol2'
     frcmodout=f'{outputPrefix}.frcmod'
     new_structin=structin
     if structin==mol2out:
         new_structin=inputPrefix+f'-input.{input_structure_format}'
-        logger.debug(f'Antechamber overwrites input {structin}; backing up to {new_structin}')
+        logger.debug(f'AmberTools> Antechamber overwrites input {structin}; backing up to {new_structin}')
         shutil.copy(structin,new_structin)
     groOut=f'{outputPrefix}.gro'
     topOut=f'{outputPrefix}.top'
     itpOut=f'{outputPrefix}.itp'
     c=Command('antechamber',j=4,fi=input_structure_format,fo='mol2',c=chargemethod,at='gaff',i=new_structin,o=mol2out,pf='Y',nc=0,eq=1,pl=10)
     c.run(quiet=False)
-    logger.debug(f'Antechamber generated {mol2out}')
+    logger.debug(f'AmberTools> Antechamber generated {mol2out}')
     c=Command('parmchk2',i=mol2out,o=frcmodout,f='mol2',s='gaff')
     c.run(quiet=False)
     # Antechamber ignores SUBSTRUCTURES but we would like tleap to 

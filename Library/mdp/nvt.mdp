@@ -25,4 +25,4 @@ nstcomm         = 10
 comm-mode       = Linear
 comm-grps       = System 
 table-extension	= 1
-periodic-molecules = yes
+

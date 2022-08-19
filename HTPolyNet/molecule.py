@@ -1,6 +1,6 @@
 from itertools import chain, product
 import os
-import random
+from typing import TypeVar
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -8,11 +8,12 @@ import logging
 
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
-from HTPolyNet.coordinates import _dfrotate
+from HTPolyNet.coordinates import _dfrotate, GRX_ATTRIBUTES
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import mdp_modify  #, gmx_traj_info
 from HTPolyNet.command import Command
+from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage
 
 logger=logging.getLogger(__name__)
 
@@ -37,60 +38,7 @@ def _rotmat(axis,radians):
         R[2][2]=cr
     return R
 
-class Reaction:
-    def __init__(self,jsondict={}):
-        self.jsondict=jsondict
-        self.name=jsondict.get('name','')
-        self.atoms=jsondict.get('atoms',{})
-        self.bonds=jsondict.get('bonds',{})
-        self.reactants=jsondict.get('reactants',{})
-        self.product=jsondict.get('product','')
-        self.restrictions=jsondict.get('restrictions',{})
-        self.stage=jsondict.get('stage','')
-        self.procession=jsondict.get('procession',{})
-        self.probability=jsondict.get('probability',1.0)
-        self.symmetry_versions=[]
-        
-    def __str__(self):
-        retstr=f'Reaction "{self.name}"\n'
-        for i,r in self.reactants.items():
-            retstr+=f'reactant {i}: {r}\n'
-        retstr+=f'product {self.product}\n'
-        for i,a in self.atoms.items():
-            retstr+=f'atom {i}: {a}\n'
-        for b in self.bonds:
-            retstr+=f'bond {b}\n'
-        return retstr
 
-ReactionList = list[Reaction]
-
-def get_r(mname,RL:ReactionList):
-    if not RL: return None
-    i=0
-    while RL[i].product!=mname: 
-        i+=1
-        if i==len(RL):
-            return None
-    return RL[i]
-
-class ReactionTree:
-    def __init__(self,molname,RL:ReactionList):
-        self.p=molname
-        self.R=get_r(self.p,RL)
-        if self.R:
-            self.r=[ReactionTree(x,RL) for x in self.R.reactants]
-
-
-        
-
-def is_reactant(name:str,reaction_list:ReactionList,stage='cure'):
-    reactants=[]
-    for r in reaction_list:
-        if r.stage==stage:
-            for v in r.reactants.values():
-                if not v in reactants:
-                    reactants.append(v)
-    return name in reactants
 
 def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
     nreactants=len(R.reactants)
@@ -120,12 +68,48 @@ class Molecule:
         self.reaction_bonds:ReactionBondList=[]
         self.bond_templates:BondTemplateList=[]
         self.symmetry_relateds=[]
-        self.stereocenters=[]
-        self.stereoisomers=[]
+        self.stereocenters=[] # list of atomnames names (TODO: (resid,atomname))
+        self.stereoisomers:dict(str,Molecule)={}
         self.nconformers=0
-        self.conformers=[]
+        self.conformers_dict={}
+        self.conformers:dict(str,Molecule)={}
         self.zrecs=[]
         self.is_reactant=False
+
+    @classmethod
+    def New(cls,mol_name,generator:Reaction,molrec={}):
+        M=cls(name=mol_name)
+        M.generator=generator
+        M.symmetry_relateds=molrec.get('symmetry_equivalent_atoms',[])
+        M.stereocenters=molrec.get('stereocenters',[]) #TODO: (resid,atomname)
+        extra_stereocenters=[]
+        for stc in M.stereocenters:
+            for sc in M.symmetry_relateds:
+                if stc in sc:
+                    sc_copy=sc.copy()
+                    sc_copy.remove(stc)
+                    if not sc_copy in extra_stereocenters:
+                        extra_stereocenters.extend(sc_copy)
+        M.stereocenters.extend(extra_stereocenters)
+        logger.debug(f'{M.name} stereocenters: {M.stereocenters}')
+        M.name_stereoisomers()
+        logger.debug(f'{M.name} stereoisomers: {M.stereoisomers}')
+        M.conformers_dict=molrec.get('conformers',{})
+        M.name_conformers()
+        logger.debug(f'{M.name} conformers: {M.conformers}')
+        return M
+
+    @classmethod
+    def NewCopy(cls,source,new_name):
+        M=cls.New(name=new_name)
+        M.generator='placeholder'
+        M.symmetry_related=source.symmetry_related.copy()
+        return M
+
+    def set_generator(self,generator:Reaction=None):
+        self.generator=generator
+        if generator:
+            self.sequence=None
 
     def set_origin(self,value):
         self.origin=value
@@ -133,10 +117,67 @@ class Molecule:
     def get_origin(self):
         return self.origin
 
-    def update_zrecs(self,zrecs):
+    def update_zrecs(self,zrecs,moldict):
+        seq=self.sequence
         for zr in zrecs:
-            if not zr in self.zrecs:
-                self.zrecs.append(zr)
+            resid=zr['resid']-1
+            rname=seq[resid]
+            target=moldict[rname]
+            if not zr in target.zrecs:
+                target.zrecs.append(zr)
+
+    def determine_sequence(self,moldict):
+        if not self.generator: return [self.name]
+        R:Reaction=self.generator
+        thisseq=[]
+        for rid,rname in R.reactants.items():
+            thisseq.extend(moldict[rname].determine_sequence(moldict))
+            logger.debug(thisseq)
+        return thisseq
+    
+    def set_sequence_from_moldict(self,moldict):
+        self.sequence=self.determine_sequence(moldict)
+        return self
+
+    def set_sequence_from_coordinates(self):
+        """set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list
+        """
+        adf=self.TopoCoord.gro_DataFrame('atoms')
+        trial_sequence=[]
+        current_resid=0
+        for i,r in adf.iterrows():
+            ri=r['resNum']
+            rn=r['resName']
+            if ri!=current_resid:
+                current_resid=ri
+                trial_sequence.append(rn)
+        assert trial_sequence==self.sequence,f'trial {trial_sequence} seq {self.sequence}'
+        return self
+        # logger.debug(f'{self.name} sequence: {self.sequence}')
+
+    def name_stereoisomers(self):
+        if not self.stereocenters: return
+        basename=self.name+'-S'
+        b=[[0,1] for _ in range(len(self.stereocenters))]
+        sseq=product(*b)
+        next(sseq) # skip the unmodified; its the base molecule
+        for x in sseq:
+            s=''.join([str(_) for _ in x])
+            mname=f'{basename}-{s}'
+            self.stereoisomers[mname]=Molecule.NewCopy(self,mname)
+
+    def name_conformers(self):
+        N=self.conformers_dict.get('count',0)
+        if not N: return
+        self.nconformers=N*(1+len(self.stereoisomers))
+        ndig=min(2,len(str(self.nconformers)))
+        fmt=r'-C{i:0'+ndig+r'd}'
+        self.conformers_dict['nzero']=ndig
+        basenames=[self.name]+list(self.stereoisomers.keys())
+        for basename in basenames:
+            for i in range(N):
+                mname=basename+fmt.format(i=i)
+                self.conformers[mname]=Molecule.NewCopy(self,mname)
 
     def initialize_molecule_cycles(self):
         TC=self.TopoCoord
@@ -144,7 +185,9 @@ class Molecule:
         cycle_dict=TC.Topology.detect_cycles()
         for l,cs_of_l in cycle_dict.items():
             TC.idx_lists['cycle'].extend(cs_of_l)
+        logger.debug('Resetting cycle and cycle_idx')
         TC.reset_grx_attributes_from_idx_list('cycle')
+        logger.debug('Done')
 
     def initialize_monomer_grx_attributes(self):
         logger.debug(f'{self.name}')
@@ -202,7 +245,7 @@ class Molecule:
                         # j is the tail
                         entry=[i,j]
                     else:
-                        logger.warning(f'In molecule {self.name}, cannot identify head and tail atoms in reactive double bond\nAssuming {j} is head and {i} is tail')
+                        logger.warning(f'In molecule {self.name}, cannot identify bonded reactive head and tail atoms\nAssuming {j} is head and {i} is tail')
                         entry=[j,i]
                     # logger.debug(f'Adding {entry} to chainlist of {self.name}')
                     TC.idx_lists['chain'].append(entry)
@@ -244,9 +287,9 @@ class Molecule:
     def center_coords(self,new_boxsize:np.ndarray=None):
         self.TopoCoord.center_coords(new_boxsize)
 
-    def get_random_isomer(self):
-        pick_from=[self.name]+self.stereoisomers+self.conformers
-        return random.choice(pick_from)
+    # def get_random_isomer(self):
+    #     pick_from=[self.name]+self.stereoisomers+self.conformers
+    #     return random.choice(pick_from)
 
     def generate(self,outname='',available_molecules={},**kwargs):
         # logger.info(f'Generating {self.name}.mol2 for parameterization')
@@ -259,30 +302,32 @@ class Molecule:
         if self.generator:
             R=self.generator
             self.TopoCoord=TopoCoord()
-            logger.debug(f'Using reaction {R.name} to generate {self.name}.mol2.')
+            logger.debug(f'Using reaction {R.name} to generate {self.name}')
             isf='mol2'
             resid_mapper=[]
             for ri in R.reactants.values():
+                logger.debug(f'Adding {ri}')
                 new_reactant=deepcopy(available_molecules[ri])
                 new_reactant.TopoCoord.write_mol2(filename=f'{self.name}-reactant{ri}-prebonding.mol2',molname=self.name)
                 rnr=len(new_reactant.sequence)
                 shifts=self.TopoCoord.merge(new_reactant.TopoCoord)
+                # for ln in self.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
                 resid_mapper.append({k:v for k,v in zip(range(1,rnr+1),range(1+shifts[2],1+rnr+shifts[2]))})
             # logger.debug(f'{self.name}: resid_mapper {resid_mapper}')
             # logger.debug(f'{self.TopoCoord.idx_lists}')
             # logger.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
             # logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
             self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
-            self.set_sequence()
+            self.set_sequence_from_coordinates()
             bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
             # logger.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logger.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
             idx_mapper=self.make_bonds(bonds_to_make)
-            self.TopoCoord.set_gro_attribute('reactantName',R.product)
+            # self.TopoCoord.set_gro_attribute('reactantName',R.product)
             self.TopoCoord.set_gro_attribute('sea_idx',-1) # turn off symmetry-equivalence for multimers
             self.TopoCoord.set_gro_attribute('molecule',1)
             self.TopoCoord.set_gro_attribute('molecule_name',self.name)
-            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name'],f'{R.product}.grx')
+            self.write_gro_attributes(GRX_ATTRIBUTES,f'{R.product}.grx')
             # if pfs.exists(f'molecules/inputs/{self.name}.mol2'): # an override structure is present
             #     logger.debug(f'Using override input molecules/inputs/{self.name}.{isf} as a generator')
             #     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
@@ -307,11 +352,11 @@ class Molecule:
         self.parameterize(outname,input_structure_format=isf,**kwargs)
         if do_minimization:
             self.minimize(outname,**kwargs)
-        self.set_sequence()
-        self.TopoCoord.set_gro_attribute('reactantName',reactantName)
+        self.set_sequence_from_coordinates()
         if not self.generator:
+            self.TopoCoord.set_gro_attribute('reactantName',reactantName)
             self.initialize_monomer_grx_attributes()
-            self.write_gro_attributes(['z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name'],f'{reactantName}.grx')
+            self.write_gro_attributes(GRX_ATTRIBUTES,f'{reactantName}.grx')
         else:
             grx=f'{reactantName}.grx'
             if (os.path.exists(grx)):
@@ -319,7 +364,8 @@ class Molecule:
                 #self.reset_chains_from_attributes()
         # logger.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
         self.prepare_new_bonds(available_molecules=available_molecules)
-
+        for ln in self.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
+        logger.debug('Done.')
 
     # def set_reaction_bonds(self,available_molecules={}):
     def prepare_new_bonds(self,available_molecules={}):
@@ -364,19 +410,6 @@ class Molecule:
             intraresidue=in_product_resids[0]==in_product_resids[1]
             self.bond_templates.append(BondTemplate(atom_names,in_product_resnames,intraresidue,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames))
 
-    def set_sequence(self):
-        """set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list
-        """
-        adf=self.TopoCoord.gro_DataFrame('atoms')
-        self.sequence=[]
-        current_resid=0
-        for i,r in adf.iterrows():
-            ri=r['resNum']
-            rn=r['resName']
-            if ri!=current_resid:
-                current_resid=ri
-                self.sequence.append(rn)
-        # logger.debug(f'{self.name} sequence: {self.sequence}')
 
     def idx_mappers(self,otherTC:TopoCoord,other_bond,bystanders,oneaways,uniq_atom_idx:set):
         assert len(other_bond)==2
@@ -477,9 +510,6 @@ class Molecule:
             raise Exception
         return ad,td,paird
 
-    # def label_cycle_atoms(self):
-    #     self.TopoCoord.label_cycle_atoms()
-
     def get_resname(self,internal_resid):
         # logger.debug(f'{self.name} sequence: {self.sequence}')
         return self.sequence[internal_resid-1]
@@ -536,12 +566,6 @@ class Molecule:
 
     def write_gro_attributes(self,attribute_list,grxfilename):
         self.TopoCoord.write_gro_attributes(attribute_list,grxfilename)
-
-    # def update_topology(self,t):
-    #     self.Topology.merge(t)
-
-    # def update_coords(self,c):
-    #     self.Coords.copy_coords(c)
 
     def make_bonds(self,bondrecs:ReactionBondList):
         bonds=[]
@@ -786,52 +810,53 @@ class Molecule:
         return list(clu)
 
     def generate_stereoisomers(self):
-        if len(self.stereocenters)>0:
-            self.stereoisomers=[]
-            # logger.debug(f'{self.name} stereocenters {self.stereocenters}; each needs a gro file')
-            st_idx=[self.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}) for n in self.stereocenters]
-            flip=[[0,1] for _ in range(len(self.stereocenters))]
-            P=product(*flip)
-            next(P) # one with no flips is the original molecule, so skip it
-            for p in P:
-                si_name=self.name+'-S'+''.join([str(_) for _ in p])
-                logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
-                if os.path.exists(f'{si_name}.gro'):
-                    logger.debug(f'{si_name}.gro exists in {pfs.cwd()}')
-                else:
-                    MM=deepcopy(self)
-                    MM.name=si_name
-                    fsc=[st_idx[i] for i in range(len(self.stereocenters)) if p[i]]
-                    for f in fsc:
-                        MM.flip_stereocenter(f)
-                    logger.debug(f'Writing {MM.name}.gro in {pfs.cwd()}')
-                    MM.TopoCoord.write_gro(f'{MM.name}.gro')
-                    si_name=MM.name
-                self.stereoisomers.append(si_name)
+        if self.TopoCoord.Topology.D['atoms'].shape[0]==0: return  # self has not yet acquired topology/coordinates
+        if len(self.stereoisomers)==0: return
+        flip=[[0,1] for _ in range(len(self.stereocenters))]
+        st_idx=[self.TopoCoord.get_gro_attribute_by_attributes('globalIdx',{'atomName':n}) for n in self.stereocenters]
+        P=product(*flip)
+        next(P) # one with no flips is the original molecule, so skip it
+        for p in P:
+            si_name=self.name+'-S'+''.join([str(_) for _ in p])
+            if not si_name in self.stereoisomers:
+                logger.debug(f'{si_name} not found in dict of stereoisomers of {self.name}')
+            logger.debug(f'Stereocenter sequence {p} generates stereoisomer {si_name}')
+            M=self.stereoisomers[si_name]
+            M.TopoCoord=deepcopy(self.TopoCoord)
+            fsc=[st_idx[i] for i in range(len(self.stereocenters)) if p[i]]
+            for f in fsc:
+                M.flip_stereocenter(f)
+            
 
     def generate_conformers(self,minimize=True):
         if self.nconformers==0: return
+        cd=self.conformers_dict
         logger.info(f'Generating {self.nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
         gronames=[f'{self.name}']
         for si in self.stereoisomers:
             gronames.append(f'{si}')
-        self.conformers=[]
         for gro in gronames:
             pfx=f'{gro}-C'
-            c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
-            out,err=c.run()
-            c=Command(f'wc -l {gro}-confs.gro')
-            out,err=c.run()
-            tok=out.split()
-            lpf=int(tok[0])//self.nconformers
-            c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
-            out,err=c.run()
+            if c['generator']=='obabel':
+                c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
+                out,err=c.run()
+                c=Command(f'wc -l {gro}-confs.gro')
+                out,err=c.run()
+                tok=out.split()
+                lpf=int(tok[0])//self.nconformers
+                c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
+                out,err=c.run()
+            elif c['generator']=='gromacs':
+                pass
             # os.remove(f'{gro}-confs.gro')
             n=max(2,len(str(self.nconformers)))
             fmt=r'{A}{B:0'+str(n)+r'd}'
-            cfnl=[fmt.format(A=pfx,B=x) for x in range(self.nconformers)]
+            cfnl={fmt.format(A=pfx,B=x):Molecule.NewCopy(self,fmt.format(A=pfx,B=x)) for x in range(self.nconformers)}
+            for mname,newm in cfnl:
+                newm.TopoCoord=deepcopy(self.TopoCoord)
+                newm.TopoCoord.read_gro(f'{mname}.gro')
             logger.debug(f'{cfnl}')
-            self.conformers.extend(cfnl)
+            self.conformers.update(cfnl)
         if minimize:
             for gro in self.conformers:
                 self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{gro}.gro'))
@@ -840,3 +865,32 @@ class Molecule:
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]
+
+def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
+    # any reaction with one or more reactant with one or more stereoisomers 
+    # generates new "build" reactions using the stereoisomer as a reactant
+    # in place
+    for R in [_ for _ in RL if (_.stage==reaction_stage.param or _.stage==reaction_stage.build)]:
+        logger.debug(f'Stereos for {R.name}')
+        reactant_stereoisomers={k:[r]+list(MD[r].stereoisomers.keys()) for k,r in R.reactants.items()}
+        logger.debug(reactant_stereoisomers)
+        reactant_keys=list(R.reactants.keys())
+        isomer_lists=list(reactant_stereoisomers.values())
+        combos=product(*isomer_lists)
+        next(combos)
+        # new_reactions=[]
+        sidx=1
+        for c in combos:
+            nR=deepcopy(R)
+            nR.name=R.name+f'S-{sidx}'
+            nR.product=R.product+f'S-{sidx}'
+            nR.stage=reaction_stage.build
+            nR.reactants={k:v for k,v in zip(reactant_keys,c)}
+            # MD[R.product].stereoisomers[nR.product]=Molecule.NewCopy(MD[R.product],nR.product)
+            # add resulting product to global molecule dict so that it will be generated
+            MD[nR.product]=Molecule.New(nR.product,nR)
+            logger.debug(c)                
+            # new_reactions.append(nR)
+            sidx+=1
+            RL.append(nR)
+    # return new_reactions

@@ -677,9 +677,11 @@ class TopoCoord:
         self.Topology.restore_bond_parameters(saved)
 
     def set_grx_attributes(self,attributes=[]):
-        if not attributes:
+        if len(attributes)==0:
             self.grxattr=GRX_ATTRIBUTES
-        self.grxattr=attributes
+        else:
+            self.grxattr=attributes
+        logger.debug(f'grxattr set to {self.grxattr}')
     
     def write_gro_attributes(self,attributes_list,grxfilename):
         """Writes atomic attributes to a file
@@ -914,31 +916,37 @@ class TopoCoord:
 
         attribute_lists={k:[] for k in self.grxattr}
         value_counts={k:0 for k in self.grxattr}
+        mol_idx_counter=0
         for icdict in [cc for cc in initial_composition if 'count' in cc]:
             molecule=icdict['molecule']
             count=icdict['count']
             mol_adf=molecule_dict[molecule].TopoCoord.Coordinates.A
-            # for ln in mol_adf.to_string().split('\n'):
-            #     logger.debug(ln)
+            logger.debug(f'Inheriting from {molecule}')
+            for ln in mol_adf.head().to_string().split('\n'):
+                 logger.debug(ln)
             mol_attr_df=mol_adf[self.grxattr]
-            for i in range(count):
+            for molecule_number in range(count):
                 for i,k in enumerate(self.grxattr):
                     tra=mol_attr_df[k].to_list()
+                    if k=='molecule': 
+                        utra=[mol_idx_counter for _ in tra]
+                        mol_idx_counter+=1
+                    else:
                     # nv=len(tra)-tra.count(unset_defaults[i])
-                    nuv=len(list(set([x for x in tra if x != unset_defaults[i]])))
-                    utra=[]
-                    for x in tra:
-                        if globally_unique[i] and (type(x)==int or type(x)==float):
-                            xx=x+value_counts[k] if x!=unset_defaults[i] else unset_defaults[i]
-                        else:
-                            xx=x
-                        utra.append(xx)
+                        nuv=len(list(set([x for x in tra if x != unset_defaults[i]])))
+                        utra=[]
+                        for x in tra:
+                            if globally_unique[i] and (type(x)==int or type(x)==float):
+                                xx=x+value_counts[k] if x!=unset_defaults[i] else unset_defaults[i]
+                            else:
+                                xx=x
+                            utra.append(xx)
+                        value_counts[k]+=nuv
                     attribute_lists[k].extend(utra)
-                    value_counts[k]+=nuv
 
         for k,L in attribute_lists.items():
             self.Coordinates.A[k]=L
-        # logger.debug(f'postinherit adf columns {self.Coordinates.A.columns}')
+        logger.debug(f'postinherit adf columns {self.Coordinates.A.columns}')
 
     def make_resid_graph(self,json_file=None,draw=None):
         self.Topology.make_resid_graph(json_file=json_file,draw=draw)
@@ -1113,8 +1121,8 @@ class TopoCoord:
         :return: True if a short circuit would happen, False otherwise
         :rtype: bool
         """
-        i_resName,i_resNum,i_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':i})
-        j_resName,j_resNum,j_atomName=self.get_gro_attribute_by_attributes(['resName','resNum','atomName'],{'globalIdx':j})
+        i_resName,i_resNum,i_atomName,i_molNum=self.get_gro_attribute_by_attributes(['resName','resNum','atomName','molecule'],{'globalIdx':i})
+        j_resName,j_resNum,j_atomName,j_molNum=self.get_gro_attribute_by_attributes(['resName','resNum','atomName','molecule'],{'globalIdx':j})
         '''
         In a cure reaction, atoms that react should be in different residues
         '''
@@ -1130,17 +1138,17 @@ class TopoCoord:
         assert not j in i_neighbors
         assert not i in j_neighbors
         '''
-        Set up a DataFrame for heavy atoms in each residue
+        Set up a DataFrame for heavy atoms in each molecule
         '''
         ADF=self.Coordinates.A
-        R1DF=ADF[ADF['resNum']==i_resNum]
+        R1DF=ADF[ADF['resNum']==i_molNum]
         R1DF=R1DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R1DF['atomName']]]
-        R2DF=ADF[ADF['resNum']==j_resNum]
+        R2DF=ADF[ADF['resNum']==j_molNum]
         R2DF=R2DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R2DF['atomName']]]
         assert R1DF.shape[0]>0
         assert R2DF.shape[0]>0
         '''
-        Test to see if there exists any bond between these two residues
+        Test to see if there exists any bond between these two molecules
         '''
         for i,j in product(R1DF['globalIdx'].to_list(),R2DF['globalIdx'].to_list()):
             if self.are_bonded(i,j):
@@ -1192,27 +1200,27 @@ class TopoCoord:
     def chainlist_update(self,new_bond_recs,msg=''):
         chainlists=self.idx_lists['chain']
         if len(chainlists)==0: return
-        # logger.debug(f'pre {msg} chainlists')
-        # for i,c in enumerate(chainlists):
-        #     logger.debug(f'  {i} {c}')
+        logger.debug(f'pre {msg} chainlists')
+        for i,c in enumerate(chainlists):
+            logger.debug(f'  {i} {c}')
         for b in new_bond_recs:
             aidx,bidx=b[0],b[1]
             ar=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aidx})
             br=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bidx})
             if ar==br: continue # ignore intramolecular bonds
-            # logger.debug(f'chainlist_update pair {aidx} {bidx}')
+            logger.debug(f'chainlist_update pair {aidx} {bidx}')
             ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
             bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
-            # logger.debug(f'ac {ac} bc {bc}')
+            logger.debug(f'ac {ac} bc {bc}')
             if ac==-1 or bc==-1:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
                 continue
-            # logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
-            # logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
+            logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
             aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
             bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
-            # logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
+            logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
             # one must be a head and the other a tail
             if aci==0: # a is a head
                 assert len(chainlists[bc])-1==bci,f'incorrect tail'
@@ -1228,21 +1236,19 @@ class TopoCoord:
             for aidx in chainlists[c1]:
                 self.set_gro_attribute_by_attributes('chain',c2,{'globalIdx':aidx})
                 self.set_gro_attribute_by_attributes('chain_idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
-            # logger.debug(f'removing chain {c1}')
+            logger.debug(f'removing chain {c1}')
             chainlists.remove(chainlists[c1])
             # since we remove c1, all indices greater than c1 must decrement
             dec_us=np.array(self.Coordinates.A['chain'])
             bad_chain_idx=np.where(dec_us>c1)
-            # logger.debug(f'bad_chain_idx: {bad_chain_idx}')
-            # logger.debug(f'{dec_us[bad_chain_idx]}')
+            logger.debug(f'bad_chain_idx: {bad_chain_idx}')
+            logger.debug(f'{dec_us[bad_chain_idx]}')
             dec_us[bad_chain_idx]-=1
             self.Coordinates.A['chain']=dec_us
-
-
         cnms=[]
         for c in self.idx_lists['chain']:
             cnms.append([self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
-        # logger.debug(f'post {msg} chains {self.idx_lists["chain"]} {cnms}')
+        logger.debug(f'post {msg} chains {self.idx_lists["chain"]} {cnms}')
 
     def makes_cycle(self,aidx,bidx):
         # is there a chain with aidx as head and bidx as tail, or vice versa?
