@@ -5,6 +5,7 @@ from copy import deepcopy
 import pandas as pd
 import numpy as np
 import logging
+import shutil
 
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
@@ -13,7 +14,7 @@ from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import mdp_modify,gro_from_trr
 from HTPolyNet.command import Command
-from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage
+from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage, generate_product_name, reactant_resid_to_presid
 
 logger=logging.getLogger(__name__)
 
@@ -252,7 +253,7 @@ class Molecule:
 
     def previously_parameterized(self):
         rval=True
-        for ext in ['mol2','top','itp','gro']:
+        for ext in ['gro']:
             rval=rval and pfs.exists(os.path.join('molecules/parameterized',f'{self.name}.{ext}'))
         return rval
 
@@ -299,7 +300,7 @@ class Molecule:
         do_parameterization=False
         if self.generator:
             R=self.generator
-            if R.stage in [reaction_stage.cure,reaction_stage.param]: do_parameterization=True
+            if R.stage in [reaction_stage.cure,reaction_stage.param,reaction_stage.cap]: do_parameterization=True
             self.TopoCoord=TopoCoord()
             logger.debug(f'Using reaction {R.name} ({str(R.stage)}) to generate {self.name} parent {self.parentname}')
             isf='mol2'
@@ -355,9 +356,10 @@ class Molecule:
             self.parameterize(outname,input_structure_format=isf,**kwargs)
         else:
             inname=self.parentname
-            assert self.name!=inname
-            logger.info(f'Built {self.name} using topology of {inname}')
+            # assert self.name!=inname
+            logger.info(f'Built {self.name} using topology of {inname}; copying {inname}.top to {self.name}.top')
             self.load_top_gro(f'{inname}.top',f'{self.name}.gro',wrap_coords=False)
+            shutil.copy(f'{inname}.top',f'{self.name}.top')
 
         if do_minimization:
             self.minimize(outname,**kwargs)
@@ -891,7 +893,7 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
     # generates new "build" reactions using the stereoisomer as a reactant
     # in place
     for R in RL: #[_ for _ in RL if (_.stage==reaction_stage.param or _.stage==reaction_stage.build)]:
-        if R.stage not in [reaction_stage.param or reaction_stage.build]: continue
+        if R.stage not in [reaction_stage.param,reaction_stage.build]: continue
         Prod=MD[R.product]
         logger.debug(f'Stereos for {R.name} ({str(R.stage)})')
         reactant_stereoisomers={k:[r]+list(MD[r].stereoisomers.keys()) for k,r in R.reactants.items()}
@@ -921,3 +923,83 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
             sidx+=1
             RL.append(nR)
     # return new_reactions
+def generate_symmetry_reactions(RL:ReactionList,MD:MoleculeDict):
+    jdx=1
+    for R in RL:
+        if R.stage not in [reaction_stage.param,reaction_stage.cure,reaction_stage.cap]: continue
+        Prod=MD[R.product]
+        logger.debug(f'Symmetry versions for {R.name} ({str(R.stage)})')
+        # thisR_extra_reactions=[]
+        # thisR_extra_molecules={}
+        # logger.debug(f'  Product {R.product} resname sequence {prod_seq_resn}')
+        sra_by_reactant={k:MD[rname].symmetry_relateds for k,rname in R.reactants.items()}
+        logger.debug(f'  sra_by_reactant: {sra_by_reactant}')
+        if len(R.reactants)>1:
+            olist=list(product(*sra_by_reactant))
+        else:
+            olist=list(zip(*sra_by_reactant))
+        idx=1
+        R.symmetry_versions=olist
+        if len(olist)==1: continue
+        # base_atom_names=P[0]
+        # TODO: figure out how to get atom key for each atom option
+        for P in olist[1:]:
+            newR=deepcopy(R)
+            newR.name=R.name+f'-S{idx}'
+            logger.debug(f'Permutation {P}:')
+            for pp in P:
+                atomKey,atomName=pp
+                newR.atoms[atomKey]['atom']=atomName
+            pname=generate_product_name(newR)
+            if len(pname)==0:
+                pname=R.product+f'-{idx}'
+            newR.product=pname 
+            newR.stage=R.stage
+            logger.debug(f'Primary:')
+            for ln in str(newR).split('\n'):
+                logger.debug(ln)
+            RL.append(newR)
+            MD[newR.product]=Molecule(name=newR.product,generator=newR)
+            MD[newR.product].set_origin('symmetry_product')
+            MD[newR.product].set_sequence_from_moldict(MD)
+            for rR in [x for x in RL if R.product in x.reactants.values()]:
+                reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
+                logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
+                nooR=deepcopy(rR)
+                nooR.stage=rR.stage
+                nooR.name=rR.name+f'-{reactantKey}:S{jdx}'
+                nooR.reactants[reactantKey]=newR.product
+                # update any atom names to reflect origin of this reactant
+                for naK,naRec in {k:v for k,v in nooR.atoms.items() if v['reactant']==reactantKey}.items():
+                    na_resid=naRec['resid'] # resid of reactant atom in target reactant
+                    na_name=naRec['atom']
+                    for p in P:
+                        oaK,oa_name=p 
+                        oaRec=R.atoms[oaK]
+                        oa_reactatnName=R.reactants[oaRec['reactant']]
+                        oa_resid=oaRec['resid']
+                        oa_resid_in_o_product=reactant_resid_to_presid(R,oa_reactatnName,oa_resid,RL)
+                        # this atom is an atom in the permutation the resid in product matches
+                        if na_resid == oa_resid_in_o_product:
+                            nooR.atoms[naK]['resid']=oa_resid_in_o_product
+                            nooR.atoms[naK]['atom']=oa_name
+                noor_pname=generate_product_name(nooR)
+                if len(noor_pname)==0:
+                    noor_pname=rR.product+f'-{jdx}'
+                nooR.product=noor_pname
+                logger.debug(f'Secondary:')
+                for ln in str(nooR).split('\n'):
+                    logger.debug(ln)
+                jdx+=1
+                RL.append(nooR)
+                MD[nooR.product]=Molecule.New(nooR.product,nooR)
+                MD[nooR.product].set_origin('symmetry_product')
+                MD[newR.product].set_sequence_from_moldict(MD)
+            idx+=1
+        logger.debug(f'Symmetry expansion of reaction {R.name} ends')
+
+        # done with this reaction
+    # done with all reactions
+
+    # return extra_reactions,extra_molecules        
+    pass

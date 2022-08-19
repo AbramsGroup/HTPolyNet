@@ -4,7 +4,7 @@ import os
 from copy import deepcopy
 import logging
 from collections import namedtuple
-from HTPolyNet.molecule import Molecule, MoleculeDict, generate_stereo_reactions
+from HTPolyNet.molecule import Molecule, MoleculeDict, generate_stereo_reactions, generate_symmetry_reactions
 from HTPolyNet.reaction import Reaction, ReactionList, parse_reaction_list, extract_molecule_reactions, reaction_stage
 
 logger=logging.getLogger(__name__)
@@ -93,6 +93,7 @@ class Configuration:
             self.molecules[mname]=Molecule.New(mname,gen,self.constituents.get(mname,{}))
             for si,S in self.molecules[mname].stereoisomers.items():
                 self.molecules[si]=S
+        
         for mname,M in self.molecules.items():
             M.set_sequence_from_moldict(self.molecules)
             logging.debug(f'{mname} seq: {M.sequence}')
@@ -107,6 +108,7 @@ class Configuration:
                 self.molecules[rname].update_zrecs(zrecs,self.molecules)
 
         generate_stereo_reactions(self.reactions,self.molecules)
+        generate_symmetry_reactions(self.reactions,self.molecules)
         # self.reactions.extend(new_reactions)
 
         for r in self.reactions:
@@ -138,6 +140,7 @@ class Configuration:
                     if not res in N:
                         N[res]=0
                     N[res]+=molecule_count
+        logger.debug(f'Base residue counts: {N}')
         Bonds=[]
         Atoms=[]
         for R in [x for x in self.reactions if x.stage==reaction_stage.cure]:
@@ -159,13 +162,13 @@ class Configuration:
                     Atoms.append(ib)
                 if b not in Bonds and arn in N and brn in N:
                     Bonds.append(b)
-        # logger.debug(f'atomset: {Atoms}')
+        logger.debug(f'atomset: {Atoms}')
         Z=[]
         for a in Atoms:
             Z.append(a.z*N[a.reactantName])
             # Z.append(a[4]*N[a[3]])
-        # logger.debug(f'Z: {Z}')
-        # logger.debug(f'bondset: {Bonds}')
+        logger.debug(f'Z: {Z}')
+        logger.debug(f'bondset: {Bonds}')
         MaxB=[]
         for B in Bonds:
             # a,b=B
@@ -174,6 +177,6 @@ class Configuration:
             MaxB.append(min(az,bz))
             Z[Atoms.index(B.ai)]-=MaxB[-1]
             Z[Atoms.index(B.aj)]-=MaxB[-1]
-        # logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
+        logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         self.maxconv=sum(MaxB)
         # return sum(MaxB)

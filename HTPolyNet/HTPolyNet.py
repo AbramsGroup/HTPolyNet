@@ -197,6 +197,7 @@ def cli():
     command_parsers['plots'].add_argument('-g',type=str,default='',help='Plot graph network of resids and save to this file name')
     command_parsers['plots'].add_argument('-byiter',default=False,action='store_true',help='Plot graph network of resids for each iter separately')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
+    command_parsers['plots'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')

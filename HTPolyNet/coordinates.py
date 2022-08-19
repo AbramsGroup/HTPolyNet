@@ -840,6 +840,7 @@ class Coordinates:
         """
         # logger.debug(f'write_mol2 {filename}')
         acopy=self.A.copy()
+        bdf=pd.DataFrame()
         if bondsDF.empty and self.mol2_bonds.empty:
             logger.warning(f'Cannot write any bonds to MOL2 file {filename}')
         elif (not self.mol2_bonds.empty) and bondsDF.empty:

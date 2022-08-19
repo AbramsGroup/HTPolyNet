@@ -6,7 +6,7 @@ from HTPolyNet.reaction import reaction_stage, Reaction, ReactionList, get_atom_
 
 logger=logging.getLogger(__name__)
 
-def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
+def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict,MD:MoleculeDict):
     extra_reactions=[]
     extra_molecules={}
     logger.debug(f'begins: symmetry_relateds: {symmetry_relateds}')
@@ -43,6 +43,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
             thisR_extra_reactions.append(newR)
             thisR_extra_molecules[newR.product]=Molecule(name=newR.product,generator=newR)
             thisR_extra_molecules[newR.product].set_origin('symmetry_product')
+            thisR_extra_molecules[newR.product].set_sequence_from_moldict(MD)
             for rR in [x for x in reactions if R.product in x.reactants.values()]:
                 reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
                 logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
@@ -75,6 +76,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 reactions.append(nooR)
                 thisR_extra_molecules[nooR.product]=Molecule.New(nooR.product,nooR)
                 thisR_extra_molecules[nooR.product].set_origin('symmetry_product')
+                thisR_extra_molecules[newR.product].set_sequence_from_moldict(MD)
             idx+=1
         logger.debug(f'Symmetry expansion of reaction {R.name} ends')
 

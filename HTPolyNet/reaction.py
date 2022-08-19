@@ -172,22 +172,22 @@ def generate_product_name(R:Reaction):
                 pname+='---'+tbNm
     return pname
 
-def get_atom_options(R:Reaction,symmetry_relateds:dict): #,reactions:ReactionList):
-    # prod_seq_resn=product_sequence_resnames(R,reactions)
-    atom_options=[]
-    for atomKey,atomRec in R.atoms.items():
-        reactantKey=atomRec['reactant']
-        reactantName=R.reactants[reactantKey]
-        resid=atomRec['resid']
-        # resName=prod_seq_resn[resid-1]
-        atomName=atomRec['atom']
-        # logger.debug(f'resName {resName} atomName {atomName}')
-        symm_sets=symmetry_relateds.get(reactantName,[])
-        # logger.debug(f'symm_set {symm_sets}')
-        if symm_sets:
-            for symm_set in symm_sets:
-                # logger.debug(f'symm_set {symm_set}')
-                if atomName in symm_set:
-                    atom_options.append([[atomKey,c] for c in symm_set])
-    return atom_options
+# def get_atom_options(R:Reaction,symmetry_relateds:dict): #,reactions:ReactionList):
+#     # prod_seq_resn=product_sequence_resnames(R,reactions)
+#     atom_options=[]
+#     for atomKey,atomRec in R.atoms.items():
+#         reactantKey=atomRec['reactant']
+#         reactantName=R.reactants[reactantKey]
+#         resid=atomRec['resid']
+#         # resName=prod_seq_resn[resid-1]
+#         atomName=atomRec['atom']
+#         # logger.debug(f'resName {resName} atomName {atomName}')
+#         symm_sets=symmetry_relateds.get(reactantName,[])
+#         # logger.debug(f'symm_set {symm_sets}')
+#         if symm_sets:
+#             for symm_set in symm_sets:
+#                 # logger.debug(f'symm_set {symm_set}')
+#                 if atomName in symm_set:
+#                     atom_options.append([[atomKey,c] for c in symm_set])
+#     return atom_options
 

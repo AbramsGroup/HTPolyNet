@@ -427,7 +427,7 @@ class CureController:
                                   'order':        [order for _ in all_possible_pairs]})
                 if stage==reaction_stage.cure:
                     # exclude atom pairs that have same resid or molid
-                    idf=idf[(idf['ri']!=idf['rj'])|(idf['mi']!=idf['mj'])].copy()
+                    idf=idf[(idf['ri']!=idf['rj'])&(idf['mi']!=idf['mj'])].copy()
                     logger.debug(f'Examining {idf.shape[0]} bond-candidates of order {order}')
                     if idf.shape[0]>0:
                         ess='' if idf.shape[0]!=1 else 's'

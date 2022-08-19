@@ -1138,9 +1138,9 @@ class TopoCoord:
         Set up a DataFrame for heavy atoms in each molecule
         '''
         ADF=self.Coordinates.A
-        R1DF=ADF[ADF['resNum']==i_molNum]
+        R1DF=ADF[ADF['molecule']==i_molNum]
         R1DF=R1DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R1DF['atomName']]]
-        R2DF=ADF[ADF['resNum']==j_molNum]
+        R2DF=ADF[ADF['molecule']==j_molNum]
         R2DF=R2DF[[(not (b.startswith('H') or b.startswith('h'))) for b in R2DF['atomName']]]
         assert R1DF.shape[0]>0
         assert R2DF.shape[0]>0

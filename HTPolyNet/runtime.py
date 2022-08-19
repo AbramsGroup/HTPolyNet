@@ -165,28 +165,29 @@ class Runtime:
             self.molecules[mname]=M
 
         ''' Generate all reactions and products that result from invoking symmetry '''
-        symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
-        if not symmetry_relateds:
-            constituents=self.cfg.parameters.get('constituents',{})
-            # if not constituents:
-            #     raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified')
-            for cname,crec in constituents.items():
-                this_sr=crec.get('symmetry_equivalent_atoms',[])
-                if len(this_sr)>0:
-                    symmetry_relateds[cname]=this_sr
-        if len(symmetry_relateds)>0:
-            new_reactions,new_molecules=symmetry_expand_reactions(self.cfg.reactions,symmetry_relateds)
-            ess='' if len(new_molecules)==1 else 's'
-            logger.info(f'{len(new_molecules)} molecule{ess} implied by symmetry-equivalent atoms')
-            ml=list(new_molecules.keys())
-            logger.info(ml)
-            self.cfg.reactions.extend(new_reactions)
-            make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
-            for mname,M in make_molecules.items():
-                self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
-                assert M.get_origin()!='unparameterized'
-                self.molecules[mname]=M
-                logger.debug(f'Generated {mname}')
+        # symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
+        # if not symmetry_relateds:
+        #     constituents=self.cfg.parameters.get('constituents',{})
+        #     # if not constituents:
+        #     #     raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified')
+        #     for cname,crec in constituents.items():
+        #         this_sr=crec.get('symmetry_equivalent_atoms',[])
+        #         if len(this_sr)>0:
+        #             symmetry_relateds[cname]=this_sr
+        # if len(symmetry_relateds)>0:
+        #     new_reactions,new_molecules=symmetry_expand_reactions(self.cfg.reactions,symmetry_relateds,self.cfg.molecules)
+        #     ess='' if len(new_molecules)==1 else 's'
+        #     logger.info(f'{len(new_molecules)} molecule{ess} implied by symmetry-equivalent atoms')
+        #     ml=list(new_molecules.keys())
+        #     logger.info(ml)
+        #     self.cfg.reactions.extend(new_reactions)
+        #     make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
+        #     logger.debug(f'make_molecules {make_molecules}')
+        #     for mname,M in make_molecules.items():
+        #         self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
+        #         assert M.get_origin()!='unparameterized'
+        #         self.molecules[mname]=M
+        #         logger.debug(f'Generated {mname}')
 
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
@@ -195,7 +196,7 @@ class Runtime:
             ess='' if len(new_molecules)==1 else 's'
             logger.info(f'{len(new_molecules)} molecule{ess} implied by chaining')
             ml=list(new_molecules.keys())
-            logger.info(ml)
+            # logger.info(ml)
             self.cfg.reactions.extend(new_reactions)
             make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
             for mname,M in make_molecules.items():
@@ -366,7 +367,7 @@ class Runtime:
         self.save_data()
 
     def _generate_molecule(self,M:Molecule,**kwargs):
-        if M.origin!='unparameterized': return
+        if M.origin!='unparameterized' and M.origin!='symmetry_product': return
         mname=M.name
         checkin=pfs.checkin
         # pfs.go_to(f'molecules/parameterized/work/{M.name}')
@@ -400,8 +401,8 @@ class Runtime:
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             # logger.debug(f'{M.name} box {M.TopoCoord.Coordinates.box}')
             M.set_sequence_from_coordinates()
-            # if M.generator:
-            #     M.prepare_new_bonds(available_molecules=self.molecules)
+            if M.generator:
+                M.prepare_new_bonds(available_molecules=self.molecules)
             M.set_origin('previously parameterized')
 
         logger.debug(f'M {mname} {M.origin}')
