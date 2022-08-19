@@ -1454,14 +1454,17 @@ class TopoCoord:
         T=params.get('temperature',300.0)
         ps=params.get('ps',0.0)
         nsteps=params.get('nsteps',-1)
+        begin_at=params.get('begin_at',0.0)
         assert ps!=0.0 or nsteps!=-1
         dt=float(mdp_get(f'{mdp_prefix}.mdp','dt'))
         if ps!=0.0:
             nsteps=int(float(ps)/dt)
         else:
             ps=nsteps*dt
-        sample_interval=nsteps//nsamples
-        nsteps=nsamples*(sample_interval+1)
+        sampling_duration_ps=ps-begin_at
+        sampling_duration_nsteps=int(sampling_duration_ps/dt)
+        sample_interval=sampling_duration_nsteps//nsamples
+        # nsteps=nsamples*(sample_interval+1)
         # nsteps=mdp_get(f'{mdp_prefix}.mdp','nsteps')
         # nstxout=mdp_get(f'{mdp_prefix}.mdp','nstxout')
         mdp_modify(f'{mdp_prefix}.mdp',{'nsteps':nsteps,'nstxout':sample_interval,'ref_t':T})

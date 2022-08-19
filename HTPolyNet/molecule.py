@@ -11,7 +11,7 @@ from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,Re
 from HTPolyNet.coordinates import _dfrotate, GRX_ATTRIBUTES
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
-from HTPolyNet.gromacs import mdp_modify  #, gmx_traj_info
+from HTPolyNet.gromacs import mdp_modify,gro_from_trr
 from HTPolyNet.command import Command
 from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage
 
@@ -829,39 +829,49 @@ class Molecule:
             
 
     def generate_conformers(self,minimize=True):
+        default_gromacs_params={'ensemble': 'nvt', 'temperature': 600, 'ps': 100, 'begin_at': 50}
         if self.nconformers==0: return
         cd=self.conformers_dict
+        generator=cd.get('generator',{})
+        if not generator: return
         logger.info(f'Generating {self.nconformers*(1+len(self.stereoisomers))} conformers for {self.name}')
         gronames=[f'{self.name}']
+        nd=cd.get('nzeros',2)
         for si in self.stereoisomers:
             gronames.append(f'{si}')
         for gro in gronames:
             pfx=f'{gro}-C'
-            if c['generator']=='obabel':
-                c=Command(f'obabel -igro {gro}.gro -O {gro}-confs.gro --conformer --nconf {self.nconformers} --writeconformers')
+            if generator['name']=='obabel':
+                compfile=f'{gro}-obabel-confs.gro'
+                c=Command(f'obabel -igro {gro}.gro -O {compfile} --conformer --nconf {self.nconformers} --writeconformers')
                 out,err=c.run()
-                c=Command(f'wc -l {gro}-confs.gro')
+                c=Command(f'wc -l {compfile}')
                 out,err=c.run()
                 tok=out.split()
                 lpf=int(tok[0])//self.nconformers
-                c=Command(f'split -d -l {lpf} {gro}-confs.gro {pfx} --additional-suffix=".gro"')
+                c=Command(f'split -d -n {nd} -l {lpf} {compfile} {pfx} --additional-suffix=".gro"')
                 out,err=c.run()
-            elif c['generator']=='gromacs':
-                pass
+            elif generator['name']=='gromacs':
+                params=generator.get('params',default_gromacs_params)
+                compfile=f'{gro}-gromacs-confs.gro'
+                if gro==self.name:
+                    self.TopoCoord.vacuum_simulate(outname=f'{compfile}',nsamples=cd['count'],params=params)
+                else:
+                    self.conformers[gro].vacuum_simulate(outname=f'{compfile}',nsamples=cd['count'],params=params)
+                gro_from_trr(compfile,nzero=nd,outpfx=pfx,b=0.5*params['ps'])
             # os.remove(f'{gro}-confs.gro')
-            n=max(2,len(str(self.nconformers)))
-            fmt=r'{A}{B:0'+str(n)+r'd}'
+            fmt=r'{A}{B:0'+str(nd)+r'd}'
             cfnl={fmt.format(A=pfx,B=x):Molecule.NewCopy(self,fmt.format(A=pfx,B=x)) for x in range(self.nconformers)}
             for mname,newm in cfnl:
+                assert os.path.exists(f'{mname}.gro'),f'Error: Conformer coordinates file {mname}.gro not found'
                 newm.TopoCoord=deepcopy(self.TopoCoord)
                 newm.TopoCoord.read_gro(f'{mname}.gro')
             logger.debug(f'{cfnl}')
             self.conformers.update(cfnl)
         if minimize:
-            for gro in self.conformers:
-                self.TopoCoord.copy_coords(TopoCoord(grofilename=f'{gro}.gro'))
-                logger.info(f'Minimizing conformer {gro}')
-                self.TopoCoord.vacuum_minimize(outname=gro)
+            for mname,C in self.conformers.items():
+                logger.info(f'Minimizing conformer {mname}')
+                C.vacuum_minimize(outname=mname)
 
 MoleculeDict = dict[str,Molecule]
 MoleculeList = list[Molecule]
