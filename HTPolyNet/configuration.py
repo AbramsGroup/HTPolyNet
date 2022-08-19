@@ -91,6 +91,8 @@ class Configuration:
         mol_reac_detected=extract_molecule_reactions(self.reactions)
         for mname,gen in mol_reac_detected:
             self.molecules[mname]=Molecule.New(mname,gen,self.constituents.get(mname,{}))
+            for si,S in self.molecules[mname].stereoisomers.items():
+                self.molecules[si]=S
         for mname,M in self.molecules.items():
             M.set_sequence_from_moldict(self.molecules)
             logging.debug(f'{mname} seq: {M.sequence}')

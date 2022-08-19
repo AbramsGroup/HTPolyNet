@@ -790,15 +790,16 @@ class Coordinates:
                 self.metadat['nBonds']=len(self.mol2_bonds)
             self.bondlist=Bondlist.fromDataFrame(self.mol2_bonds)
 
-    def write_gro(self,filename):
+    def write_gro(self,filename,grotitle=''):
         """write_gro Write coordinates and if present, velocities, to a Gromacs-format coordinate file
 
         :param filename: name of file to write
         :type filename: str
         """
+        title=self.name if not grotitle else grotitle
         has_vel='velX' in self.A.columns
         with open(filename,'w') as f:
-            f.write(self.name+'\n')
+            f.write(title+'\n')
             f.write(f'{self.N:>5d}\n')
             # C-format: “%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f”
             atomformatters = [
@@ -841,9 +842,9 @@ class Coordinates:
         acopy=self.A.copy()
         if bondsDF.empty and self.mol2_bonds.empty:
             logger.warning(f'Cannot write any bonds to MOL2 file {filename}')
-        if not self.mol2_bonds.empty and bondsDF.empty:
+        elif (not self.mol2_bonds.empty) and bondsDF.empty:
             bdf=self.mol2_bonds
-        elif not bondsDF.empty and self.mol2_bonds.empty:
+        elif (not bondsDF.empty) and self.mol2_bonds.empty:
             bdf=bondsDF
         else:
             logger.info('Coordinates.write_mol2 provided with both a bondsDF parameter and a mol2_bonds attribute')

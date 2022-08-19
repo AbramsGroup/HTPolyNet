@@ -163,8 +163,6 @@ class Runtime:
         for mname,M in self.cfg.molecules.items():
             self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
             self.molecules[mname]=M
-            for SI in M.stereoisomers:
-                pass
 
         ''' Generate all reactions and products that result from invoking symmetry '''
         symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
@@ -368,6 +366,7 @@ class Runtime:
         self.save_data()
 
     def _generate_molecule(self,M:Molecule,**kwargs):
+        if M.origin!='unparameterized': return
         mname=M.name
         checkin=pfs.checkin
         # pfs.go_to(f'molecules/parameterized/work/{M.name}')
@@ -405,7 +404,10 @@ class Runtime:
             #     M.prepare_new_bonds(available_molecules=self.molecules)
             M.set_origin('previously parameterized')
 
+        logger.debug(f'M {mname} {M.origin}')
         M.generate_stereoisomers()
+        for s,SI in M.stereoisomers.items():
+            logger.debug(f'SI {s}: {SI.origin}')
         M.generate_conformers(minimize=True)
 
         # for ln in M.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)

@@ -42,7 +42,7 @@ class Reaction:
         self.symmetry_versions=[]
     
     def __str__(self):
-        retstr=f'Reaction "{self.name}"\n'
+        retstr=f'Reaction "{self.name}" ({str(self.stage)})\n'
         for i,r in self.reactants.items():
             retstr+=f'reactant {i}: {r}\n'
         retstr+=f'product {self.product}\n'
@@ -89,7 +89,6 @@ def parse_reaction_list(baselist:ReactionList):
 
 def extract_molecule_reactions(rlist:ReactionList):
     if not rlist: return []
-    l_molnames=[]
     reactants=[]
     products=[]
     for R in rlist:

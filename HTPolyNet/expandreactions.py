@@ -42,6 +42,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 logger.debug(ln)
             thisR_extra_reactions.append(newR)
             thisR_extra_molecules[newR.product]=Molecule(name=newR.product,generator=newR)
+            thisR_extra_molecules[newR.product].set_origin('symmetry_product')
             for rR in [x for x in reactions if R.product in x.reactants.values()]:
                 reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
                 logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
@@ -73,6 +74,7 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
                 jdx+=1
                 reactions.append(nooR)
                 thisR_extra_molecules[nooR.product]=Molecule.New(nooR.product,nooR)
+                thisR_extra_molecules[nooR.product].set_origin('symmetry_product')
             idx+=1
         logger.debug(f'Symmetry expansion of reaction {R.name} ends')
 
@@ -83,7 +85,6 @@ def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict):
 
     return extra_reactions,extra_molecules
 
-
 def chain_expand_reactions(molecules:MoleculeDict):
     ''' must be called after all grx attributes are set for all molecules '''
     extra_reactions:ReactionList=[]
@@ -92,7 +93,7 @@ def chain_expand_reactions(molecules:MoleculeDict):
     dimer_lefts:MoleculeList=[]
     dimer_rights:MoleculeList=[]
     for mname,M in molecules.items():
-        if len(M.sequence)==1 and len(M.TopoCoord.idx_lists['chain'])>0 and M.generator==None:
+        if len(M.sequence)==1 and len(M.TopoCoord.idx_lists['chain'])>0 and M.generator==None and M.parentname==M.name:
             monomers.append(M)
         elif len(M.sequence)==2:
             A=molecules[M.sequence[0]]
@@ -145,6 +146,7 @@ def chain_expand_reactions(molecules:MoleculeDict):
                 R.name=new_mname.lower()
                 R.product=new_mname
                 newP=Molecule.New(R.product,R).set_sequence_from_moldict(molecules)
+                newP.set_origin('unparameterized')
                 extra_molecules[R.product]=newP
                 logger.debug(f'monomer atom {m.name}_{h_name} will attack dimer atom {d.name}[{d.sequence[0]}1_{t_name}] -> {new_mname}:')
                 for ln in str(R).split('\n'):
@@ -176,6 +178,7 @@ def chain_expand_reactions(molecules:MoleculeDict):
                 R.name=new_rxnname
                 R.product=new_mname
                 newP=Molecule.New(R.product,R).set_sequence_from_moldict(molecules)
+                newP.set_origin('unparameterized')
                 extra_molecules[R.product]=newP
                 logger.debug(f'dimer atom {d.name}[{d.sequence[1]}2_{h_name}] will attack monomer atom {m.name}_{t_name}-> {new_mname}:')
                 for ln in str(R).split('\n'):
@@ -203,6 +206,7 @@ def chain_expand_reactions(molecules:MoleculeDict):
                 R.name=R.product.lower()
                 # newP=Molecule(name=R.product,generator=R)
                 newP=Molecule.New(R.product,R).set_sequence_from_moldict(molecules)
+                newP.set_origin('unparameterized')
                 extra_molecules[R.product]=newP
                 logger.debug(f'dimer atom {dr.name}-{dr.sequence[1]}2_{h_name} will attack dimer atom {dl.name}-{dl.sequence[0]}1_{t_name} -> {new_mname}:')
                 for ln in str(R).split('\n'):

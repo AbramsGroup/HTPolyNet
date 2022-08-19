@@ -65,8 +65,6 @@ class TopoCoord:
         self.idx_lists['cycle']=[]
         if grofilename!='':
             self.read_gro(grofilename,wrap_coords=wrap_coords)
-            if grxfilename!='':
-                self.grxattr=self.read_gro_attributes(grxfilename)
         else:
             self.Coordinates=Coordinates()  # empty
         if topfilename!='':
@@ -74,7 +72,7 @@ class TopoCoord:
         else:
             self.Topology=Topology(system_name=system_name) # empty
         if mol2filename!='':
-            self.read_mol2(mol2filename)
+            self.read_mol2(mol2filename,**kwargs)
         if grxfilename!='':
             self.read_gro_attributes(grxfilename)
 
@@ -496,7 +494,7 @@ class TopoCoord:
             self.Coordinates.box=savebox
         # logger.debug(f'box: {self.Coordinates.box}')
 
-    def read_mol2(self,mol2filename,ignore_bonds=False,overwrite_coordinates=False):
+    def read_mol2(self,mol2filename,**kwargs):
         """Creates a new Coordinates member by reading from a SYBYL-style MOL2 file.
             A wrapper for read_mol2 from Coordinates, but also sets the 'mol2_bonds'
             dataframe in the Topology if the parameter ignore_bonds is False.  If
@@ -504,10 +502,9 @@ class TopoCoord:
 
         :param mol2filename: name of mol2 file
         :type mol2filename: str
-        :param ignore_bonds: flag indicating bond records in the mol2 file should be
-            ignored, defaults to False
-        :type ignore_bonds: bool, optional
         """
+        ignore_bonds=kwargs.get('ignore_bonds',False)
+        overwrite_coordinates=kwargs.get('overwrite_coordinates',False)
         self.files['mol2']=os.path.abspath(mol2filename)
         temp_coords=Coordinates.read_mol2(mol2filename)
         if self.Coordinates.empty or overwrite_coordinates:
@@ -566,13 +563,13 @@ class TopoCoord:
         self.Topology.to_file(topfilename)
         self.files['top']=os.path.abspath(topfilename)
 
-    def write_gro(self,grofilename):
+    def write_gro(self,grofilename,grotitle=''):
         """Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()
 
         :param grofilename: name of file to write
         :type grofilename: str
         """
-        self.Coordinates.write_gro(grofilename)
+        self.Coordinates.write_gro(grofilename,grotitle=grotitle)
         self.files['gro']=os.path.abspath(grofilename)
 
     def write_top_gro(self,topfilename,grofilename):
