@@ -112,13 +112,29 @@ class Molecule:
         return self.origin
 
     def update_zrecs(self,zrecs,moldict):
+        def replace_if_greater(rec,D,matchattr=[],maxattr=[]):
+            if not matchattr or not maxattr: return
+            for r in D:
+                matched=all([r[a]==rec[a] for a in matchattr])
+                if matched:
+                    replace=all([r[a]<rec[a] for a in maxattr])
+                    if replace:
+                        D.remove(r)
+                        D.append(rec)
+                    return True
+            return False
+        logger.debug(f'Update zrecs in {self.name} from {zrecs}')
         seq=self.sequence
         for zr in zrecs:
             resid=zr['resid']-1
             rname=seq[resid]
             target=moldict[rname]
-            if not zr in target.zrecs:
-                target.zrecs.append(zr)
+            expired=[]
+            add_these=[]
+            logger.debug(f'{target.name} {target.zrecs} ->')
+            found=replace_if_greater(zr,target.zrecs,matchattr=['resid','atom'],maxattr=['z'])
+            if not found: target.zrecs.append(zr)
+            logger.debug(f'-> {target.name} {target.zrecs}')
 
     def determine_sequence(self,moldict):
         if not self.generator: return [self.parentname]
@@ -211,6 +227,7 @@ class Molecule:
             an=zr['atom']
             rnum=zr['resid']
             z=zr['z']
+            logger.debug(f'{self.name} setting z for {an} {rnum} {z}')
             TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
             idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':an,'resNum':rnum}))
             for sr in self.symmetry_relateds:
@@ -219,7 +236,7 @@ class Molecule:
                     for bn in sr:
                         if bn==an: continue
                         # logger.debug(f'{self.name}: setting z for {bn}')
-                        idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':bn,   'resNum':rnum}))
+                        idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':bn,'resNum':rnum}))
                         TC.set_gro_attribute_by_attributes('z',z,{'atomName':bn,'resNum':rnum})
 
         # set chain, chain_idx
@@ -892,6 +909,7 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
     # any reaction with one or more reactant with one or more stereoisomers 
     # generates new "build" reactions using the stereoisomer as a reactant
     # in place
+    adds=0
     for R in RL: #[_ for _ in RL if (_.stage==reaction_stage.param or _.stage==reaction_stage.build)]:
         if R.stage not in [reaction_stage.param,reaction_stage.build]: continue
         Prod=MD[R.product]
@@ -915,6 +933,7 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
             # MD[R.product].stereoisomers[nR.product]=Molecule.NewCopy(MD[R.product],nR.product)
             # add resulting product to global molecule dict so that it will be generated
             MD[nR.product]=Molecule.New(nR.product,nR)
+            adds+=1
             MD[nR.product].sequence=MD[R.product].sequence
             MD[nR.product].parentname=R.product
             Prod.stereoisomers[nR.product]=MD[nR.product]
@@ -922,27 +941,43 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
             # new_reactions.append(nR)
             sidx+=1
             RL.append(nR)
-    # return new_reactions
+    return adds
+
 def generate_symmetry_reactions(RL:ReactionList,MD:MoleculeDict):
     jdx=1
+    terminal_reactions=[]
+    tail_adds=0
     for R in RL:
         if R.stage not in [reaction_stage.param,reaction_stage.cure,reaction_stage.cap]: continue
         Prod=MD[R.product]
-        logger.debug(f'Symmetry versions for {R.name} ({str(R.stage)})')
+        logger.debug(f'Symmetry versions for {R.name} ({str(R.stage)})\n{str(R)}')
         # thisR_extra_reactions=[]
         # thisR_extra_molecules={}
         # logger.debug(f'  Product {R.product} resname sequence {prod_seq_resn}')
         sra_by_reactant={k:MD[rname].symmetry_relateds for k,rname in R.reactants.items()}
         logger.debug(f'  sra_by_reactant: {sra_by_reactant}')
+        atom_options=[]
+        for atom_key,atom_rec in R.atoms.items():
+            this_atom_options=[]
+            art=atom_rec['reactant']
+            target_atom_name=atom_rec['atom']
+            if art in sra_by_reactant:
+                logger.debug(f'art {art} {sra_by_reactant[art]}')
+                if len(sra_by_reactant[art])==0: sra_by_reactant[art]=[[target_atom_name]]
+                for symm_set in sra_by_reactant[art]:
+                    if target_atom_name in symm_set:
+                        for atom_name in symm_set:
+                            this_atom_options.append([atom_key,atom_name])
+            atom_options.append(this_atom_options)
+        logger.debug(f'  atom options: {atom_options}')
         if len(R.reactants)>1:
-            olist=list(product(*sra_by_reactant))
+            olist=list(product(*atom_options))
         else:
-            olist=list(zip(*sra_by_reactant))
+            olist=list(zip(*atom_options))
         idx=1
         R.symmetry_versions=olist
+        logger.debug(f'olist {olist}')
         if len(olist)==1: continue
-        # base_atom_names=P[0]
-        # TODO: figure out how to get atom key for each atom option
         for P in olist[1:]:
             newR=deepcopy(R)
             newR.name=R.name+f'-S{idx}'
@@ -956,15 +991,14 @@ def generate_symmetry_reactions(RL:ReactionList,MD:MoleculeDict):
             newR.product=pname 
             newR.stage=R.stage
             logger.debug(f'Primary:')
-            for ln in str(newR).split('\n'):
-                logger.debug(ln)
-            RL.append(newR)
+            for ln in str(newR).split('\n'): logger.debug(ln)
+            terminal_reactions.append(newR)
             MD[newR.product]=Molecule(name=newR.product,generator=newR)
             MD[newR.product].set_origin('symmetry_product')
             MD[newR.product].set_sequence_from_moldict(MD)
             for rR in [x for x in RL if R.product in x.reactants.values()]:
                 reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
-                logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
+                logger.debug(f'  New product {newR.product} must replace reactant {reactantKey}:{R.product} in {rR.name}')
                 nooR=deepcopy(rR)
                 nooR.stage=rR.stage
                 nooR.name=rR.name+f'-{reactantKey}:S{jdx}'
@@ -984,22 +1018,24 @@ def generate_symmetry_reactions(RL:ReactionList,MD:MoleculeDict):
                             nooR.atoms[naK]['resid']=oa_resid_in_o_product
                             nooR.atoms[naK]['atom']=oa_name
                 noor_pname=generate_product_name(nooR)
+                if noor_pname in MD: continue
                 if len(noor_pname)==0:
                     noor_pname=rR.product+f'-{jdx}'
                 nooR.product=noor_pname
                 logger.debug(f'Secondary:')
-                for ln in str(nooR).split('\n'):
-                    logger.debug(ln)
+                for ln in str(nooR).split('\n'): logger.debug(ln)
                 jdx+=1
                 RL.append(nooR)
+                tail_adds+=1
                 MD[nooR.product]=Molecule.New(nooR.product,nooR)
                 MD[nooR.product].set_origin('symmetry_product')
-                MD[newR.product].set_sequence_from_moldict(MD)
+                MD[nooR.product].set_sequence_from_moldict(MD)
             idx+=1
         logger.debug(f'Symmetry expansion of reaction {R.name} ends')
 
+    RL.extend(terminal_reactions)
         # done with this reaction
     # done with all reactions
 
     # return extra_reactions,extra_molecules        
-    pass
+    return len(terminal_reactions)+tail_adds

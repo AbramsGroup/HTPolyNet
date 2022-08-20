@@ -33,6 +33,8 @@ class Configuration:
         ''' all other parameters in cfg file '''
         self.parameters = {}
 
+        self.molecule_report={}
+
         self.initial_composition = []
         ''' raw dict read from JSON/YAML '''
         self.basedict = {}
@@ -89,14 +91,21 @@ class Configuration:
         base_reaction_list=[Reaction(r) for r in rlist]
         self.reactions=parse_reaction_list(base_reaction_list)
         mol_reac_detected=extract_molecule_reactions(self.reactions)
+        self.molecule_report['explicit']=len(mol_reac_detected)
+        self.molecule_report['implied by stereochemistry']=0
+        self.molecule_report['implied by symmetry']=0
         for mname,gen in mol_reac_detected:
             self.molecules[mname]=Molecule.New(mname,gen,self.constituents.get(mname,{}))
             for si,S in self.molecules[mname].stereoisomers.items():
                 self.molecules[si]=S
+                self.molecule_report['implied by stereochemistry']+=1
         
         for mname,M in self.molecules.items():
             M.set_sequence_from_moldict(self.molecules)
             logging.debug(f'{mname} seq: {M.sequence}')
+
+        self.molecule_report['implied by stereochemistry']+=generate_stereo_reactions(self.reactions,self.molecules)
+        self.molecule_report['implied by symmetry']+=generate_symmetry_reactions(self.reactions,self.molecules)
         for R in self.reactions:
             for rnum,rname in R.reactants.items():
                 zrecs=[]
@@ -106,9 +115,6 @@ class Configuration:
                         del cprec['reactant']
                         zrecs.append(cprec)
                 self.molecules[rname].update_zrecs(zrecs,self.molecules)
-
-        generate_stereo_reactions(self.reactions,self.molecules)
-        generate_symmetry_reactions(self.reactions,self.molecules)
         # self.reactions.extend(new_reactions)
 
         for r in self.reactions:

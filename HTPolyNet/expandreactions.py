@@ -2,90 +2,90 @@ from itertools import product
 from copy import deepcopy
 import logging
 from HTPolyNet.molecule import Molecule, MoleculeList, MoleculeDict
-from HTPolyNet.reaction import reaction_stage, Reaction, ReactionList, get_atom_options, generate_product_name, reactant_resid_to_presid
+from HTPolyNet.reaction import reaction_stage, Reaction, ReactionList #, get_atom_options, generate_product_name, reactant_resid_to_presid
 
 logger=logging.getLogger(__name__)
 
-def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict,MD:MoleculeDict):
-    extra_reactions=[]
-    extra_molecules={}
-    logger.debug(f'begins: symmetry_relateds: {symmetry_relateds}')
-    jdx=1
-    for R in reactions:
-        thisR_extra_reactions=[]
-        thisR_extra_molecules={}
-        atom_options=[]
-        logger.debug(f'Symmetry expansion of {R.name} begins')
-        # logger.debug(f'  Product {R.product} resname sequence {prod_seq_resn}')
-        atom_options=get_atom_options(R,symmetry_relateds)#,reactions)
-        logger.debug(f'  atom options: {atom_options}')
-        if len(R.reactants)>1:
-            olist=list(product(*atom_options))
-        else:
-            olist=list(zip(*atom_options))
-        idx=1
-        R.symmetry_versions=olist
-        for P in olist[1:]:
-            newR=deepcopy(R)
-            newR.name=R.name+f'-S{idx}'
-            logger.debug(f'Permutation {P}:')
-            for pp in P:
-                atomKey,atomName=pp
-                newR.atoms[atomKey]['atom']=atomName
-            pname=generate_product_name(newR)
-            if len(pname)==0:
-                pname=R.product+f'-{idx}'
-            newR.product=pname 
-            newR.stage=R.stage
-            logger.debug(f'Primary:')
-            for ln in str(newR).split('\n'):
-                logger.debug(ln)
-            thisR_extra_reactions.append(newR)
-            thisR_extra_molecules[newR.product]=Molecule(name=newR.product,generator=newR)
-            thisR_extra_molecules[newR.product].set_origin('symmetry_product')
-            thisR_extra_molecules[newR.product].set_sequence_from_moldict(MD)
-            for rR in [x for x in reactions if R.product in x.reactants.values()]:
-                reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
-                logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
-                nooR=deepcopy(rR)
-                nooR.stage=rR.stage
-                nooR.name=rR.name+f'-{reactantKey}:S{jdx}'
-                nooR.reactants[reactantKey]=newR.product
-                # update any atom names to reflect origin of this reactant
-                for naK,naRec in {k:v for k,v in nooR.atoms.items() if v['reactant']==reactantKey}.items():
-                    na_resid=naRec['resid'] # resid of reactant atom in target reactant
-                    na_name=naRec['atom']
-                    for p in P:
-                        oaK,oa_name=p 
-                        oaRec=R.atoms[oaK]
-                        oa_reactatnName=R.reactants[oaRec['reactant']]
-                        oa_resid=oaRec['resid']
-                        oa_resid_in_o_product=reactant_resid_to_presid(R,oa_reactatnName,oa_resid,reactions)
-                        # this atom is an atom in the permutation the resid in product matches
-                        if na_resid == oa_resid_in_o_product:
-                            nooR.atoms[naK]['resid']=oa_resid_in_o_product
-                            nooR.atoms[naK]['atom']=oa_name
-                noor_pname=generate_product_name(nooR)
-                if len(noor_pname)==0:
-                    noor_pname=rR.product+f'-{jdx}'
-                nooR.product=noor_pname
-                logger.debug(f'Secondary:')
-                for ln in str(nooR).split('\n'):
-                    logger.debug(ln)
-                jdx+=1
-                reactions.append(nooR)
-                thisR_extra_molecules[nooR.product]=Molecule.New(nooR.product,nooR)
-                thisR_extra_molecules[nooR.product].set_origin('symmetry_product')
-                thisR_extra_molecules[newR.product].set_sequence_from_moldict(MD)
-            idx+=1
-        logger.debug(f'Symmetry expansion of reaction {R.name} ends')
+# def symmetry_expand_reactions(reactions:ReactionList,symmetry_relateds:dict,MD:MoleculeDict):
+#     extra_reactions=[]
+#     extra_molecules={}
+#     logger.debug(f'begins: symmetry_relateds: {symmetry_relateds}')
+#     jdx=1
+#     for R in reactions:
+#         thisR_extra_reactions=[]
+#         thisR_extra_molecules={}
+#         atom_options=[]
+#         logger.debug(f'Symmetry expansion of {R.name} begins')
+#         # logger.debug(f'  Product {R.product} resname sequence {prod_seq_resn}')
+#         atom_options=get_atom_options(R,symmetry_relateds)#,reactions)
+#         logger.debug(f'  atom options: {atom_options}')
+#         if len(R.reactants)>1:
+#             olist=list(product(*atom_options))
+#         else:
+#             olist=list(zip(*atom_options))
+#         idx=1
+#         R.symmetry_versions=olist
+#         for P in olist[1:]:
+#             newR=deepcopy(R)
+#             newR.name=R.name+f'-S{idx}'
+#             logger.debug(f'Permutation {P}:')
+#             for pp in P:
+#                 atomKey,atomName=pp
+#                 newR.atoms[atomKey]['atom']=atomName
+#             pname=generate_product_name(newR)
+#             if len(pname)==0:
+#                 pname=R.product+f'-{idx}'
+#             newR.product=pname 
+#             newR.stage=R.stage
+#             logger.debug(f'Primary:')
+#             for ln in str(newR).split('\n'):
+#                 logger.debug(ln)
+#             thisR_extra_reactions.append(newR)
+#             thisR_extra_molecules[newR.product]=Molecule(name=newR.product,generator=newR)
+#             thisR_extra_molecules[newR.product].set_origin('symmetry_product')
+#             thisR_extra_molecules[newR.product].set_sequence_from_moldict(MD)
+#             for rR in [x for x in reactions if R.product in x.reactants.values()]:
+#                 reactantKey=list(rR.reactants.keys())[list(rR.reactants.values()).index(R.product)]
+#                 logger.debug(f'  product {newR.product} must replace reactantKey {reactantKey} in {rR.name}')
+#                 nooR=deepcopy(rR)
+#                 nooR.stage=rR.stage
+#                 nooR.name=rR.name+f'-{reactantKey}:S{jdx}'
+#                 nooR.reactants[reactantKey]=newR.product
+#                 # update any atom names to reflect origin of this reactant
+#                 for naK,naRec in {k:v for k,v in nooR.atoms.items() if v['reactant']==reactantKey}.items():
+#                     na_resid=naRec['resid'] # resid of reactant atom in target reactant
+#                     na_name=naRec['atom']
+#                     for p in P:
+#                         oaK,oa_name=p 
+#                         oaRec=R.atoms[oaK]
+#                         oa_reactatnName=R.reactants[oaRec['reactant']]
+#                         oa_resid=oaRec['resid']
+#                         oa_resid_in_o_product=reactant_resid_to_presid(R,oa_reactatnName,oa_resid,reactions)
+#                         # this atom is an atom in the permutation the resid in product matches
+#                         if na_resid == oa_resid_in_o_product:
+#                             nooR.atoms[naK]['resid']=oa_resid_in_o_product
+#                             nooR.atoms[naK]['atom']=oa_name
+#                 noor_pname=generate_product_name(nooR)
+#                 if len(noor_pname)==0:
+#                     noor_pname=rR.product+f'-{jdx}'
+#                 nooR.product=noor_pname
+#                 logger.debug(f'Secondary:')
+#                 for ln in str(nooR).split('\n'):
+#                     logger.debug(ln)
+#                 jdx+=1
+#                 reactions.append(nooR)
+#                 thisR_extra_molecules[nooR.product]=Molecule.New(nooR.product,nooR)
+#                 thisR_extra_molecules[nooR.product].set_origin('symmetry_product')
+#                 thisR_extra_molecules[newR.product].set_sequence_from_moldict(MD)
+#             idx+=1
+#         logger.debug(f'Symmetry expansion of reaction {R.name} ends')
 
-        # done with this reaction
-        extra_reactions.extend(thisR_extra_reactions)
-        extra_molecules.update(thisR_extra_molecules)
-    # done with all reactions
+#         # done with this reaction
+#         extra_reactions.extend(thisR_extra_reactions)
+#         extra_molecules.update(thisR_extra_molecules)
+#     # done with all reactions
 
-    return extra_reactions,extra_molecules
+#     return extra_reactions,extra_molecules
 
 def chain_expand_reactions(molecules:MoleculeDict):
     ''' must be called after all grx attributes are set for all molecules '''

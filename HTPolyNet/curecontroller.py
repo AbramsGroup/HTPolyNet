@@ -412,6 +412,8 @@ class CureController:
 
                 Aset=raset[(raset['atomName']==aname)&(raset['resName']==aresname)&(raset['z']==az)&(raset['reactantName']==areactantname_template)]
                 Bset=raset[(raset['atomName']==bname)&(raset['resName']==bresname)&(raset['z']==bz)&(raset['reactantName']==breactantname_template)]
+                logger.debug(f'Aset {Aset.shape[0]} atoms')
+                logger.debug(f'Bset {Bset.shape[0]} atoms')
                 alist=list(zip(Aset['globalIdx'].to_list(),Aset['resNum'].to_list(),Aset['molecule'].to_list()))
                 blist=list(zip(Bset['globalIdx'].to_list(),Bset['resNum'].to_list(),Bset['molecule'].to_list()))
                 all_possible_pairs=list(product(alist,blist))
