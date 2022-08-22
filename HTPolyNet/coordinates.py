@@ -685,12 +685,14 @@ class Coordinates:
         df=self.A
         return all([name in df for name in attributes])
 
-    def find_sacrificial_H(self,pairs,T,rename=False,skip_pairs=[]):
+    def find_sacrificial_H(self,pairs,T,rename=False,explicit_sacH={}):
         idx_to_delete=[]
         for i,b in enumerate(pairs):
-            if not i in skip_pairs:
+            if not i in explicit_sacH:
                 ai,aj,o=b
                 idx_to_delete.extend(self.sacH(ai,aj,T,rename=rename))
+            else:
+                idx_to_delete.extend(explicit_sacH[i])
         return idx_to_delete
 
     def sacH(self,ai,aj,T,rename=False):

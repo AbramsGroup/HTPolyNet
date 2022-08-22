@@ -1,6 +1,8 @@
 import logging
 from copy import deepcopy
 from enum import Enum
+import networkx as nx
+from HTPolyNet.plot import network_graph
 logger=logging.getLogger(__name__)
 
 class reaction_stage(Enum):
@@ -88,19 +90,42 @@ def parse_reaction_list(baselist:ReactionList):
     return ret_reactions
 
 def extract_molecule_reactions(rlist:ReactionList):
+    working_rlist=rlist.copy()
+    G=nx.DiGraph()
+    # Given an unsorted list of reactions (list of reactants +  one product), order a list of 
+    # of molecules so that no product comes before any of its reactants
     if not rlist: return []
-    reactants=[]
-    products=[]
-    for R in rlist:
+    molecule_react_order=[]
+    reactants=set()
+    products=set()
+    # first molecules to generate are the input reactants
+    for R in working_rlist:
         for r in R.reactants.values():
-            if not (r,None) in reactants: reactants.append((r,None))
+            reactants.add(r)
+            G.add_edge(r,R.product)
+        products.add(R.product)
+    network_graph(G,'plots/reaction_network.png',arrows=True)
+    input_reactants=reactants.intersection(reactants.symmetric_difference(products))
+    logger.debug(f'Input reactants: {input_reactants}')
+    for i in input_reactants:
+        molecule_react_order.append((i,None))
+    # once inputs are generated, any moleculed constructed only from inputs can be generated
     for R in rlist:
-        if R.product in [rec[0] for rec in reactants]:
-            ri=[rec[0] for rec in reactants].index(R.product)
-            reactants[ri]=(R.product,R)
-        else:
-            if not R.product in [rec[0] for rec in products]: products.append((R.product,R))
-    return [x for x in reactants if x[1]==None]+[x for x in reactants if x[1]!=None] + products
+        if all([x in input_reactants for x in R.reactants.values()]):
+            molecule_react_order.append((R.product,R))
+            working_rlist.remove(R)
+    
+    while len(working_rlist)>0:
+        molecules=[x[0] for x in molecule_react_order]
+        for R in working_rlist:
+            if all([x in molecules for x in R.reactants.values()]):
+                molecule_react_order.append((R.product,R))
+                molecules.append(R.product)
+                working_rlist.remove(R)
+            else:
+                logger.debug(f'Cannot place {R.product} since not all of {R.reactants.values()} are in the list yet')
+
+    return molecule_react_order
 
 def get_r(mname,RL:ReactionList):
     if not RL: return None

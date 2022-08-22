@@ -144,15 +144,16 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
 
 def network_graph(G,filename,**kwargs):
     logging.disable(logging.DEBUG)
+    arrows=kwargs.get('arrows',False)
     figsize=kwargs.get('figsize',(16,16))
     node_size=kwargs.get('node_size',200)
     cx=kwargs.get('c',[])
     cmap=cm.get_cmap('plasma')
-    fig,ax=plt.subplots(1,1,figsize=(8,8))
+    fig,ax=plt.subplots(1,1,figsize=figsize)
     if cx:
-        nx.draw(G, pos=nx.spring_layout(G),labels={i:str(i) for i in G},ax=ax,arrows=False,node_size=node_size,node_color=cx,cmap=cmap)
+        nx.draw(G, pos=nx.spring_layout(G),labels={i:str(i) for i in G},ax=ax,arrows=arrows,node_size=node_size,node_color=cx,cmap=cmap)
     else:
-        nx.draw_networkx(G,ax=ax,arrows=False,node_size=node_size)
+        nx.draw_networkx(G,ax=ax,arrows=arrows,node_size=node_size)
 
     plt.savefig(filename)
     plt.close(fig)

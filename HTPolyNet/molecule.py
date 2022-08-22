@@ -58,6 +58,26 @@ def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
         oneaway_resids,oneaway_resnames,oneaway_atomidx,onewaway_atomnames=TC.get_oneaways(atom_idx)
         yield ReactionBond(atom_idx,in_product_resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx)
 
+def yield_bonds_as_df(R:Reaction,TC:TopoCoord,resid_mapper):
+    bdf=pd.DataFrame()
+    nreactants=len(R.reactants)
+    for bondrec in R.bonds:
+        atom_keys=bondrec['atoms']
+        order=bondrec['order']
+        assert len(atom_keys)==2
+        atomrecs=[R.atoms[x] for x in atom_keys]
+        atom_names=[x['atom'] for x in atomrecs]
+        in_reactant_resids=[x['resid'] for x in atomrecs]
+        if nreactants==1:
+            in_product_resids=[resid_mapper[0][in_reactant_resids[x]] for x in [0,1]]
+        else:
+            in_product_resids=[resid_mapper[x][in_reactant_resids[x]] for x in [0,1]]
+        ai,aj=[TC.get_gro_attribute_by_attributes('globalIdx',{'resNum':in_product_resids[x],'atomName':atom_names[x]}) for x in [0,1]]
+        ri,rj=in_product_resids
+        row_dict={'ai':[ai],'aj':[aj],'ri':[ri],'rj':[rj],'order':[order],'reactantName':[R.product]}
+        bdf=pd.concat((bdf,pd.DataFrame(row_dict)),ignore_index=True)
+    return bdf
+
 class Molecule:
     def __init__(self,name='',generator:Reaction=None,origin:str=None):
         self.name=name
@@ -309,13 +329,11 @@ class Molecule:
     #     return random.choice(pick_from)
 
     def generate(self,outname='',available_molecules={},**kwargs):
-        # logger.info(f'Generating {self.name}.mol2 for parameterization')
-        if outname=='':
-            outname=f'{self.name}'
+        logger.debug(f'{self.name}.generate() begins')
+        if outname=='': outname=f'{self.name}'
         do_minimization=True
         GAFF_dict=kwargs.get('GAFF',{})
-        if GAFF_dict:
-            do_minimization=GAFF_dict.get('minimize_molecules',True)
+        if GAFF_dict: do_minimization=GAFF_dict.get('minimize_molecules',True)
         do_parameterization=False
         if self.generator:
             R=self.generator
@@ -338,10 +356,11 @@ class Molecule:
             # logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
             self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
             self.set_sequence_from_coordinates()
-            bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
+            # bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
+            bdf=yield_bonds_as_df(R,self.TopoCoord,resid_mapper)
             # logger.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logger.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
-            self.make_bonds(bonds_to_make)
+            self.make_bonds(bdf,available_molecules,R.stage)
             # self.TopoCoord.set_gro_attribute('reactantName',R.product)
             self.TopoCoord.set_gro_attribute('sea_idx',-1) # turn off symmetry-equivalence for multimers
             self.TopoCoord.set_gro_attribute('molecule',1)
@@ -600,63 +619,52 @@ class Molecule:
     def write_gro_attributes(self,attribute_list,grxfilename):
         self.TopoCoord.write_gro_attributes(attribute_list,grxfilename)
 
-    def make_bonds(self,bondrecs:ReactionBondList):
-        bonds=[]
+    def make_bonds(self,bdf:pd.DataFrame,moldict,stage):
         hs_from_tr=[]
-        skip_H=[]
+        skip_this_bonds_H=[]
         TC=self.TopoCoord
-        # logger.debug(f'{self.name} make_bonds: chainlists: {TC.idx_lists["chain"]}')
-        # for cl in TC.idx_lists['chain']:
-        #     nl=[self.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
-        #     logger.debug(f'{nl}')
-        for i,B in enumerate(bondrecs):
-            # logger.debug(f'{self.name} reaction bond {i}: {str(B)} ')
-            aidx,bidx=B.idx
-            aname,bname=[TC.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in [aidx,bidx]]
-            aresid,bresid=B.resids
-            bystanders=B.bystander_resids
-            oneaways=B.oneaway_resids
-            order=B.order
-            logger.debug(f'generating {self.name} bond {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
-            logger.debug(f'bystander resids {bystanders}')
-            logger.debug(f'oneaway resids {oneaways}')
-            bonds.append((aidx,bidx,order))
-            if aresid!=bresid:
-                # transrot identifies the two sacrificial H's
+        explicit_sacrificial_Hs={}
+        for i,r in bdf.iterrows():
+            aname,bname=[TC.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in [r.ai,r.rj]]
+            # aresid,bresid=B.resids
+            bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=TC.get_bystanders([r.ai,r.aj])
+            oneaway_resids,oneaway_resnames,oneaway_atomidx,onewaway_atomnames=TC.get_oneaways([r.ai,r.aj])
+            logger.debug(f'generating {self.name} bond {r.ri}:{aname}:{r.ai}-{r.rj}:{bname}:{r.aj} order {r.order}')
+            logger.debug(f'bystander resids {bystander_resids}')
+            logger.debug(f'oneaway resids {oneaway_resids}')
+            # bonds.append((aidx,bidx,order))
+            if r.ai!=r.aj:
                 cresids=[]
-                if len(oneaways)==2 and oneaways[1]!=None:
-                    cresids=[oneaways[1]]
-                if len(bystanders)==2 and any(bystanders[1]):
-                    cresids.extend(bystanders[1])
-                # cresids=[x for x in oneaways if x]
-                # cresids.extend([x for x in bystanders if x])
+                if len(oneaway_resids)==2 and oneaway_resids[1]!=None:
+                    cresids=[oneaway_resids[1]]
+                if len(bystander_resids)==2 and any(bystander_resids[1]):
+                    cresids.extend(bystander_resids[1])
                 logger.debug(f'cresids {cresids}')
-                hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=cresids)
-                skip_H.append(i)
-                hs_from_tr.append(hxi)
-                hs_from_tr.append(hxj)
-        # make_bonds returns list of sacrificial H idx's derived
-        # from bonds whose indices are not in skip_H
-        idx_scratch=TC.make_bonds(bonds,skip_H=skip_H)
-        # the H's identified in transrot plus those identified by make_bonds
-        # must be deleted
-        idx_scratch.extend(hs_from_tr)
-        idx_mapper=TC.delete_atoms(idx_scratch)
-        #TC.remap_idx_list('chain',idx_mapper)
-        for B in bondrecs:
-#        for i,B in enumerate(self.reaction_bonds):
-            aidx,bidx=B.idx
-            # (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
-            aidx=idx_mapper[aidx]
-            bidx=idx_mapper[bidx]
-            TC.decrement_gro_attribute_by_attributes('z',{'globalIdx':aidx})
-            TC.decrement_gro_attribute_by_attributes('z',{'globalIdx':bidx})
-            TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':aidx})
-            TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':bidx})
+                hxi,hxj=self.transrot(r.ai,r.ri,r.aj,r.rj,connected_resids=cresids)
+                explicit_sacrificial_Hs[i]=[hxi,hxj]
+        parameterization_override=stage in [reaction_stage.cure, reaction_stage.param]
+        TC.update_topology_and_coordinates(bdf,moldict,explicit_sacH=explicit_sacrificial_Hs,parameterization_override=parameterization_override)
+#         # from bonds whose indices are not in skip_H
+#         idx_scratch=TC.make_bonds(bonds,skip_H=skip_H)
+#         # the H's identified in transrot plus those identified by make_bonds
+#         # must be deleted
+#         idx_scratch.extend(hs_from_tr)
+#         idx_mapper=TC.delete_atoms(idx_scratch)
+#         #TC.remap_idx_list('chain',idx_mapper)
+#         for B in bondrecs:
+# #        for i,B in enumerate(self.reaction_bonds):
+#             aidx,bidx=B.idx
+#             # (aidx,bidx),(aresid,bresid),(aoresids,boresids),(aname,bname),order=B
+#             aidx=idx_mapper[aidx]
+#             bidx=idx_mapper[bidx]
+#             TC.decrement_gro_attribute_by_attributes('z',{'globalIdx':aidx})
+#             TC.decrement_gro_attribute_by_attributes('z',{'globalIdx':bidx})
+#             TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':aidx})
+#             TC.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':bidx})
         self.initialize_molecule_cycles()
         # cb=self.TopoCoord.checkbox()
         # logger.debug(f'checkbox: {cb}')
-        return idx_mapper
+
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):
         # Rotate and translate

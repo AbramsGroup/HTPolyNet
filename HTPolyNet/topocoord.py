@@ -14,6 +14,7 @@ import pandas as pd
 from HTPolyNet.coordinates import Coordinates, GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
 from HTPolyNet.topology import Topology
 from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
+from HTPolyNet.reaction import reaction_stage
 from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 # from HTPolyNet.molecule import MoleculeDict,ReactionList
 from HTPolyNet.plot import trace
@@ -81,7 +82,7 @@ class TopoCoord:
         X=cls(topfilename=top,grofilename=gro)
         return X
 
-    def make_bonds(self,pairs,skip_H=[]):
+    def make_bonds(self,pairs,explicit_sacH={}):
         """Adds new bonds to the global topology
 
         :param pairs: list of pairs of atom global indices indicating each new bond
@@ -94,13 +95,13 @@ class TopoCoord:
         :return: list of indexes of atoms that must now be deleted (sacrifical H's)
         :rtype: list
         """
-        idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H)
-        # logger.debug(f'idx_to_ignore {idx_to_ignore}')
+        idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,explicit_sacH=explicit_sacH)
+        logger.debug(f'idx_to_ignore {idx_to_ignore}')
         self.Topology.add_bonds(pairs)
         self.chainlist_update(pairs,msg='TopoCoord.make_bonds')
         self.Topology.null_check(msg='add_bonds')
-        rename=True if len(skip_H)>0 else False
-        idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,skip_pairs=skip_H,rename=rename)
+        rename=False if len(explicit_sacH)>0 else False
+        idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,explicit_sacH=explicit_sacH,rename=rename)
         assert type(idx_to_delete)==list
         return idx_to_delete
 
@@ -434,6 +435,9 @@ class TopoCoord:
         :return: 3-tuple: new topology file name, new coordinate file name, list of bonds with atom indices updated to reflect any atom deletions
         :rtype: 3-tuple
         """
+        explicit_sacH=kwargs.get('explicit_sacH',{})
+        stage=kwargs.get('stage',reaction_stage.cure)
+        parameterization_override=kwargs.get('parameterization_override',False)
         overcharge_threshhold=kwargs.get('overcharge_threshhold',0.1)
         logger.debug(f'begins.')
         if bdf.shape[0]>0:
@@ -442,7 +446,7 @@ class TopoCoord:
             # pull out just the atom index pairs (first element of each tuple)
             at_idx=[(int(x.ai),int(x.aj),x.order) for x in bdf.itertuples()]
             logger.debug(f'Making {len(at_idx)} bonds.')
-            idx_to_delete=self.make_bonds(at_idx)
+            idx_to_delete=self.make_bonds(at_idx,explicit_sacH=explicit_sacH)
             logger.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             # logger.debug(f'null check')
@@ -457,11 +461,11 @@ class TopoCoord:
                 for idx in idx_pair:
                     self.decrement_gro_attribute_by_attributes('z',{'globalIdx':idx})
                     self.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':idx})
-            logger.debug(f'calling map_from_templates')
-            self.map_from_templates(ri_bdf,template_dict,overcharge_threshhold=overcharge_threshhold)
+            if stage in [reaction_stage.cure,reaction_stage.build] and not parameterization_override:
+                logger.debug(f'calling map_from_templates')
+                self.map_from_templates(ri_bdf,template_dict,overcharge_threshhold=overcharge_threshhold)
             logger.debug(f'1-4 pair update')
             pi_df=self.enumerate_1_4_pairs(at_idx)
-            # enumerate ALL pairs involving either or both of the bonded atoms
             self.Topology.null_check(msg='update_topology_and_coordinates')
             if write_mapper_to:
                 tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
