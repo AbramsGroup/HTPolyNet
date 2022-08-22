@@ -631,7 +631,7 @@ class Molecule:
             logger.debug(f'generating {self.name} bond {r.ri}:{aname}:{r.ai}-{r.rj}:{bname}:{r.aj} order {r.order}')
             logger.debug(f'bystander resids {bystander_resids}')
             logger.debug(f'oneaway resids {oneaway_resids}')
-            if r.ai!=r.aj:
+            if r.ri!=r.rj:
                 cresids=[]
                 if len(oneaway_resids)==2 and oneaway_resids[1]!=None:
                     cresids=[oneaway_resids[1]]
@@ -641,7 +641,7 @@ class Molecule:
                 hxi,hxj=self.transrot(r.ai,r.ri,r.aj,r.rj,connected_resids=cresids)
                 explicit_sacrificial_Hs[i]=[hxi,hxj]
         # alert update_topology that this molecule may be a parameterization override
-        if stage in [reaction_stage.cure, reaction_stage.param]:
+        if stage in [reaction_stage.cure, reaction_stage.param, reaction_stage.cap]:
             template_source='ambertools'
         else:
             template_source='internal'

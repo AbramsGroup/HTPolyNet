@@ -80,8 +80,8 @@ def htpolynet_cure_plots(args):
         diagnostics_graphs(logs,args.plotfile)
     if args.proj:
         if args.t:
-            df,transition_times,markers,interval_labels=density_evolution(args.proj)
-            global_trace(df,['Temperature','Density'],args.t,transition_times=transition_times,markers=markers,interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
+            df,transition_times,cure_markers,interval_labels=density_evolution(args.proj)
+            global_trace(df,['Temperature','Density'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
             if args.o:
                 print(f'All data to {args.o}')
                 with open(args.o,'w') as f:

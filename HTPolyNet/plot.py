@@ -64,6 +64,8 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
 
 def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],interval_labels=[],y2names=[],**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
+    default_units={'Temperature':'K','Pressure':'bar','Density':'kg/m^3'}
+    units=kwargs.get('units',default_units)
     logging.disable(logging.DEBUG)
     size=kwargs.get('size',(16,4*len(names)))
     legend=kwargs.get('legend',False)
@@ -91,12 +93,16 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
             out_ax=ax[0] if len(names)==1 else ax[i*2]
             in_ax=ax[1] if len(names)==1 else ax[i*2+1]
             out_ax.plot(df['time (ps)'],df[colname],label=colname)
-            out_ax.set_ylabel(colname)
+            ylabel=colname
+            if ylabel in units: ylabel+=f' ({units[ylabel]})'
+            out_ax.set_ylabel(ylabel)
             out_ax.set_xlabel('time (ps)')
             if len(y2names)>i:
                 out_ax2=out_ax.twinx()
                 out_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
-                out_ax2.set_ylabel(y2names[i])
+                ylabel=y2names[i]
+                if ylabel in units: ylabel+=f' ({units[ylabel]})'
+                out_ax2.set_ylabel(ylabel)
                 out_ax2.set_xlabel('time (ps)')
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
@@ -105,12 +111,16 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
                 # for x,l in zip(interval_times,interval_labels):
                 #     out_ax.text(x,0.9*ylim[1],l,fontsize=8)
             in_ax.plot(marked_df['time (ps)'],marked_df[colname],label=colname)
-            in_ax.set_ylabel(colname)
+            ylabel=colname
+            if ylabel in units: ylabel+=f' ({units[ylabel]})'
             in_ax.set_xlabel('time (ps)')
+            in_ax.set_yabel(ylabel)
             if len(y2names)>i:
                 in_ax2=in_ax.twinx()
                 in_ax2.plot(marked_df['time (ps)'],marked_df[y2names[i]],label=y2names[i],color='black')
-                in_ax2.set_ylabel(y2names[i])
+                ylabel=y2names[i]
+                if ylabel in units: ylabel+=f' ({units[ylabel]})'
+                in_ax2.set_ylabel(ylabel)
                 in_ax2.set_xlabel('time (ps)')
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
@@ -124,17 +134,22 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
         for i,colname in enumerate(names):
             the_ax=ax if len(names)==1 else ax[i]
             the_ax.plot(df['time (ps)'],df[colname],label=colname)
-            the_ax.set_ylabel(colname)
+            ylabel=colname
+            if ylabel in units: ylabel+=f' ({units[ylabel]})'
+            the_ax.set_ylabel(ylabel)
+            the_ax.set_xlabel('time (ps)')
             if len(y2names)>i:
                 the_ax2=the_ax.twinx()
                 the_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
-                the_ax2.set_ylabel(y2names[i])
+                ylabel=y2names[i]
+                if ylabel in units: ylabel+=f' ({units[ylabel]})'
+                the_ax2.set_ylabel(ylabel)
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=the_ax.get_ylim()
-                the_ax.vlines(transition_times,ylim[0],ylim[1],color=colors,linewidth=0.75,alpha=0.5)
+                the_ax.vlines(transition_times,ylim[0],ylim[1],color=colors,linewidth=0.5,alpha=0.5)
 
-    plt.xlabel('time (ps)')
+    # plt.xlabel('time (ps)')
     if legend:
         plt.legend()
     plt.savefig(outfile)

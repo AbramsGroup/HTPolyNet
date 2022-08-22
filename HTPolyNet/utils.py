@@ -77,15 +77,16 @@ def density_evolution(proj_dir):
     nbonds=0
     for subd in _system_dirs:
         # print(f'subd {subd}')
-        if subd==r'iter-{iter:d}' or subd=='capping':
+        if subd==r'iter-{iter:d}' or subd=='capping' or subd=='densification':
             # loooking for iterations
-            markers.append(df.iloc[-1]['time (ps)'])
             # print(iter_mark0)
             iter=1
-            iter_subd=os.path.join(sysd,subd if subd=='capping' else subd.format(iter=iter))
+            iter_subd=os.path.join(sysd,subd if subd in ['capping','densification'] else subd.format(iter=iter))
 
             while os.path.exists(iter_subd):
-                dirkey='iter-n' if subd==r'iter-{iter:d}' else 'capping'
+                if r'iter' in subd:
+                    markers.append(df.iloc[-1]['time (ps)'])
+                dirkey='iter-n' if subd==r'iter-{iter:d}' else subd
                 if subd==r'iter-{iter:d}':
                     if os.path.exists(os.path.join(iter_subd,'2-cure_update-bonds.csv')):
                         bdf=pd.read_csv(os.path.join(iter_subd,'2-cure_update-bonds.csv'),sep='\s+',header=0,index_col=None)
@@ -118,7 +119,7 @@ def density_evolution(proj_dir):
                             stg+=1
                             stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,repeat=stg,ens=x))+r'.edr') for x in _md_ensembles])
                             # print(f'->{iter_subd} {stg} {pfx} stg_present {stg_present}')
-                    elif r'equil' in pfx:
+                    elif r'equil' in pfx or r'densif' in pfx:
                         eq_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(ens=x))+r'.edr') for x in _md_ensembles])
                         # print(f'{iter_subd} eq_present? {eq_present}')
                         if eq_present:
@@ -131,7 +132,7 @@ def density_evolution(proj_dir):
                                     interval_labels.append([edr_pfx])
                 iter+=1        
                 iter_subd=os.path.join(sysd,subd.format(iter=iter)) if r'iter' in subd else 'I_BET_THIS_FILE_DNE'
-            markers.append(df.iloc[-1]['time (ps)'])
+            # if r'iter' in subd: markers.append(df.iloc[-1]['time (ps)'])
         else:
             this_subd=os.path.join(sysd,subd)
             for pfx in _indir_pfx[subd]:
