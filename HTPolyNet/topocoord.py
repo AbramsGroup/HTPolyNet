@@ -1162,7 +1162,7 @@ class TopoCoord:
 
     def reset_idx_list_from_grx_attributes(self,list_name):
         adf=self.Coordinates.A
-        # logger.debug(f'reset: columns {adf.columns}')
+        logger.debug(f'reset: columns {adf.columns}')
         tmp_dict={}
         for i,r in adf.iterrows():
             gix=r['globalIdx']
@@ -1361,6 +1361,7 @@ class TopoCoord:
             # logger.debug(f'chainlists_atomnames: {chainlists_atomnames}')
             # logger.debug(f'chainlists_resids: {chainlists_resids}')
             # logger.debug(f'chainlists_resnames: {chainlists_resnames}')
+            oa_chain_idx=[]
             if chain_idx[0]==0 or chain_idx[0]>chain_idx[1]:
                 oa_chain_idx=[chain_idx[0]+2,chain_idx[1]-2]
             elif chain_idx[1]==0 or chain_idx[1]>chain_idx[0]:
@@ -1506,12 +1507,13 @@ class TopoCoord:
             gmx_energy_trace(f'{deffnm}-{ens}',['Density'],report_averages=True,**gromacs_dict)
         for rep in range(repeat):
             logger.info(f'Repeat {rep+1} out of {repeat}')
-            self.grompp_and_mdrun(out=f'{deffnm}-{ens}-r{rep+1}',mdp=ens,quiet=False,**gromacs_dict)
+            this_deffnm=f'{deffnm}-repeat-{rep+1}-{ens}'
+            self.grompp_and_mdrun(out=this_deffnm,mdp=ens,quiet=False,**gromacs_dict)
             if ens=='npt':
                 box=self.Coordinates.box.diagonal()
                 logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
                 edr_list.append(f'{deffnm}-{ens}-r{rep+1}')
-            gmx_energy_trace(f'{deffnm}-{ens}-r{rep+1}',['Density'],report_averages=True,**gromacs_dict)
+            gmx_energy_trace(this_deffnm,['Density'],report_averages=True,**gromacs_dict)
         if ens=='npt':
             if plot_pfx!='':
                 trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))

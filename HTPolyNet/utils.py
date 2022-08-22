@@ -45,7 +45,7 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
 _system_dirs=['densification','precure',r'iter-{iter:d}','capping','postcure']
 _md_ensembles={'nvt':['Temperature'],'npt':['Temperature','Density']}
 _indir_pfx={}
-_indir_pfx['densification']=[r'densified-{ens:s}']
+_indir_pfx['densification']=[r'densified-{ens:s}',r'densified-repeat-{repeat:d}-{ens:s}']
 _indir_pfx['precure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
 _indir_pfx['iter-n']=[r'1-cure_drag-stage-{stage:d}-{ens:s}',r'3-cure_relax-stage-{stage:d}-{ens:s}',r'4-cure_equilibrate-{ens:s}']
 _indir_pfx['capping']=[r'7-cap_relax-stage-{stage:d}-{ens:s}',r'8-cap_equilibrate-{ens:s}']
@@ -97,13 +97,13 @@ def density_evolution(proj_dir):
                 # print(f'iter_subd {iter_subd} dirkey {dirkey}')
                 for pfx in _indir_pfx[dirkey]:
                     # print(f'pfx {pfx}')
-                    if r'stage' in pfx:
+                    if r'stage' in pfx or r'repeat' in pfx:
                         stg=1
-                        stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,ens=x))+r'.edr') for x in _md_ensembles])
+                        stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,repeat=stg,ens=x))+r'.edr') for x in _md_ensembles])
                         # print(f'{iter_subd} {stg} {pfx} stg_present {stg_present}')
                         while stg_present:
                             for ens,qtys in _md_ensembles.items():
-                                edr_pfx=os.path.join(iter_subd,pfx.format(stage=stg,ens=ens))
+                                edr_pfx=os.path.join(iter_subd,pfx.format(stage=stg,repeat=stg,ens=ens))
                                 gro=edr_pfx+r'.gro'
                                 # print(edr_pfx,os.path.exists(edr_pfx+r'.edr'))
                                 if os.path.exists(edr_pfx+r'.edr'):
@@ -116,7 +116,7 @@ def density_evolution(proj_dir):
                                     transition_times.append(xshift)
                                     interval_labels.append([edr_pfx])
                             stg+=1
-                            stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,ens=x))+r'.edr') for x in _md_ensembles])
+                            stg_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(stage=stg,repeat=stg,ens=x))+r'.edr') for x in _md_ensembles])
                             # print(f'->{iter_subd} {stg} {pfx} stg_present {stg_present}')
                     elif r'equil' in pfx:
                         eq_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(ens=x))+r'.edr') for x in _md_ensembles])

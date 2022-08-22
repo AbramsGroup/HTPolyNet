@@ -1,5 +1,6 @@
 from itertools import chain, product
 import os
+from sqlite3 import connect
 from typing import TypeVar
 from copy import deepcopy
 import pandas as pd
@@ -129,8 +130,6 @@ class Molecule:
             resid=zr['resid']-1
             rname=seq[resid]
             target=moldict[rname]
-            expired=[]
-            add_these=[]
             logger.debug(f'{target.name} {target.zrecs} ->')
             found=replace_if_greater(zr,target.zrecs,matchattr=['resid','atom'],maxattr=['z'])
             if not found: target.zrecs.append(zr)
@@ -143,7 +142,7 @@ class Molecule:
         for rid,rname in R.reactants.items():
             parentname=moldict[rname].parentname
             thisseq.extend(moldict[parentname].determine_sequence(moldict))
-            logger.debug(thisseq)
+            # logger.debug(thisseq)
         return thisseq
     
     def set_sequence_from_moldict(self,moldict):
@@ -226,6 +225,7 @@ class Molecule:
         for zr in self.zrecs:
             an=zr['atom']
             rnum=zr['resid']
+            if rnum!=1: continue
             z=zr['z']
             logger.debug(f'{self.name} setting z for {an} {rnum} {z}')
             TC.set_gro_attribute_by_attributes('z',z,{'atomName':an,'resNum':rnum})
@@ -244,8 +244,10 @@ class Molecule:
         pairs=product(idx,idx)
         for i,j in pairs:
             if i<j:
-                if TC.are_bonded(i,j):
-                    # this monomer has two atoms capable of reacting
+                iname=TC.get_gro_attribute_by_attributes('atomName',{'globalIdx':i})
+                jname=TC.get_gro_attribute_by_attributes('atomName',{'globalIdx':j})
+                if TC.are_bonded(i,j) and iname.startswith('C') and jname.startswith('C'):
+                    # this monomer has two carbon atoms capable of reacting
                     # that are bound to each other -- this means that
                     # the two originated as a double-bond.
                     # *If* there is one with three hydrogens
@@ -325,7 +327,7 @@ class Molecule:
             for ri in R.reactants.values():
                 logger.debug(f'Adding {ri}')
                 new_reactant=deepcopy(available_molecules[ri])
-                # new_reactant.TopoCoord.write_mol2(filename=f'{self.name}-reactant{ri}-prebonding.mol2',molname=self.name)
+                new_reactant.TopoCoord.write_mol2(filename=f'{self.name}-reactant{ri}-prebonding.mol2',molname=self.name)
                 rnr=len(new_reactant.sequence)
                 shifts=self.TopoCoord.merge(new_reactant.TopoCoord)
                 # for ln in self.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
@@ -334,12 +336,12 @@ class Molecule:
             # logger.debug(f'{self.TopoCoord.idx_lists}')
             # logger.debug(f'\n{self.TopoCoord.Coordinates.A.to_string()}')
             # logger.debug(f'composite prebonded molecule in box {self.TopoCoord.Coordinates.box}')
-            # self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
+            self.TopoCoord.write_mol2(filename=f'{self.name}-prebonding.mol2',molname=self.name)
             self.set_sequence_from_coordinates()
             bonds_to_make=list(yield_bonds(R,self.TopoCoord,resid_mapper))
             # logger.debug(f'Generation of {self.name}: composite molecule has {len(self.sequence)} resids')
             # logger.debug(f'generation of {self.name}: composite molecule:\n{composite_mol.TopoCoord.Coordinates.A.to_string()}')
-            idx_mapper=self.make_bonds(bonds_to_make)
+            self.make_bonds(bonds_to_make)
             # self.TopoCoord.set_gro_attribute('reactantName',R.product)
             self.TopoCoord.set_gro_attribute('sea_idx',-1) # turn off symmetry-equivalence for multimers
             self.TopoCoord.set_gro_attribute('molecule',1)
@@ -352,12 +354,13 @@ class Molecule:
             self.TopoCoord.write_mol2(filename=f'{self.name}.mol2',molname=self.name)
             if not do_parameterization:
                 self.TopoCoord.write_gro(f'{self.name}.gro',grotitle=self.name)
+                self.TopoCoord.write_top(f'{self.name}.top')
             # if pfs.exists(f'molecules/inputs/{self.name}.pdb'): # an override structure is present
             #     isf='pdb'
             #     logger.debug(f'Using override input molecules/inputs/{self.name}.{isf} as a generator')
             #     pfs.checkout(f'molecules/inputs/{self.name}.{isf}')
         else:
-            # this is a monomer; we need an input structure file to feed antechamber
+            # this molecule was not assigned a generator: implies it is a monomer and must have a parameterization
             input_structure_formats=['mol2','pdb']
             isf=None
             for isf in input_structure_formats:
@@ -372,23 +375,25 @@ class Molecule:
         if do_parameterization:
             self.parameterize(outname,input_structure_format=isf,**kwargs)
         else:
-            inname=self.parentname
-            # assert self.name!=inname
-            logger.info(f'Built {self.name} using topology of {inname}; copying {inname}.top to {self.name}.top')
-            self.load_top_gro(f'{inname}.top',f'{self.name}.gro',wrap_coords=False)
-            shutil.copy(f'{inname}.top',f'{self.name}.top')
+            if self.name!=self.parentname:
+                logger.info(f'Built {self.name} using topology of {self.parentname}; copying {self.parentname}.top to {self.name}.top')
+                self.load_top_gro(f'{self.parentname}.top',f'{self.name}.gro',wrap_coords=False)
+                shutil.copy(f'{self.parentname}.top',f'{self.name}.top')
 
         if do_minimization:
+            self.TopoCoord.write_mol2(filename=f'{self.name}-preminimize.mol2',molname=self.name)
             self.minimize(outname,**kwargs)
+            self.TopoCoord.write_mol2(filename=f'{self.name}-postminimize.mol2',molname=self.name)
         self.set_sequence_from_coordinates()
         if not self.generator:
             self.TopoCoord.set_gro_attribute('reactantName',reactantName)
             self.initialize_monomer_grx_attributes()
             self.write_gro_attributes(GRX_ATTRIBUTES,f'{reactantName}.grx')
         else:
-            grx=f'{reactantName}.grx'
-            if (os.path.exists(grx)):
-                self.TopoCoord.read_gro_attributes(grx)
+            if do_parameterization:
+                grx=f'{reactantName}.grx'
+                if (os.path.exists(grx)):
+                    self.TopoCoord.read_gro_attributes(grx)
                 #self.reset_chains_from_attributes()
         # logger.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
         self.prepare_new_bonds(available_molecules=available_molecules)
@@ -613,8 +618,8 @@ class Molecule:
             oneaways=B.oneaway_resids
             order=B.order
             logger.debug(f'generating {self.name} bond {aresid}:{aname}:{aidx}-{bresid}:{bname}:{bidx} order {order}')
-            # logger.debug(f'bystander resids {bystanders}')
-            # logger.debug(f'oneaway resids {oneaways}')
+            logger.debug(f'bystander resids {bystanders}')
+            logger.debug(f'oneaway resids {oneaways}')
             bonds.append((aidx,bidx,order))
             if aresid!=bresid:
                 # transrot identifies the two sacrificial H's
@@ -625,7 +630,7 @@ class Molecule:
                     cresids.extend(bystanders[1])
                 # cresids=[x for x in oneaways if x]
                 # cresids.extend([x for x in bystanders if x])
-                # logger.debug(f'cresids {cresids}')
+                logger.debug(f'cresids {cresids}')
                 hxi,hxj=self.transrot(aidx,aresid,bidx,bresid,connected_resids=cresids)
                 skip_H.append(i)
                 hs_from_tr.append(hxi)
@@ -657,6 +662,7 @@ class Molecule:
         # Rotate and translate
         if at_resid==from_resid:
             return
+        logger.debug(f'{self.name} connected resids {connected_resids}')
         TC=self.TopoCoord
         ATC=TopoCoord()
         BTC=TopoCoord()
@@ -665,23 +671,24 @@ class Molecule:
         bresids=connected_resids.copy()
         bresids.append(from_resid)
         BTC.Coordinates.A=C[C['resNum'].isin(bresids)].copy()
+        for ln in BTC.Coordinates.A.to_string().split('\n'): logger.debug(ln)
         NONROT=C[~C['resNum'].isin(bresids)].shape[0]
-        # logger.debug(f'{self.TopoCoord.Coordinates.A.shape[0]} atoms')
-        # logger.debug(f'holding {at_resid} ({NONROT})')
-        # logger.debug(f'rotating/translating {bresids} ({BTC.Coordinates.A.shape[0]})')
+        logger.debug(f'{self.TopoCoord.Coordinates.A.shape[0]} atoms')
+        logger.debug(f'holding {at_resid} ({NONROT})')
+        logger.debug(f'rotating/translating {bresids} ({BTC.Coordinates.A.shape[0]})')
         assert self.TopoCoord.Coordinates.A.shape[0]==(NONROT+BTC.Coordinates.A.shape[0])
         mypartners=TC.partners_of(at_idx)
         otpartners=TC.partners_of(from_idx)
-        # logger.debug(f'Partners of {at_idx} {mypartners}')
-        # logger.debug(f'Partners of {from_idx} {otpartners}')
+        logger.debug(f'Partners of {at_idx} {mypartners}')
+        logger.debug(f'Partners of {from_idx} {otpartners}')
         myHpartners={k:v for k,v in zip(mypartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in mypartners]) if v.startswith('H')}
         otHpartners={k:v for k,v in zip(otpartners,[C[C['globalIdx']==i]['atomName'].values[0] for i in otpartners]) if v.startswith('H')}
         myHighestH={k:v for k,v in myHpartners.items() if v==max([k for k in myHpartners.values()],key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0'))}
         otHighestH={k:v for k,v in otHpartners.items() if v==max([k for k in otHpartners.values()],key=lambda x: int(x.split('H')[1] if x.split('H')[1]!='' else '0'))}
         assert len(myHighestH)==1
         assert len(otHighestH)==1
-        # logger.debug(f'Highest-named H partner of {at_idx} is {myHighestH}')
-        # logger.debug(f'Highest-named H partner of {from_idx} is {otHighestH}')
+        logger.debug(f'Highest-named H partner of {at_idx} is {myHighestH}')
+        logger.debug(f'Highest-named H partner of {from_idx} is {otHighestH}')
         assert len(myHpartners)>0,f'Error: atom {at_idx} does not have a deletable H atom!'
         assert len(otHpartners)>0,f'Error: atom {from_idx} does not have a deletable H atom!'
 
@@ -719,10 +726,10 @@ class Molecule:
                 Rik=Rh-Rk
                 coord_trials[myH][otH].translate(Rik)
                 minD=TC.minimum_distance(coord_trials[myH][otH],self_excludes=[myH],other_excludes=[otH])
-                # logger.debug(f'{self.name}: minD {minD}')
+                logger.debug(f'{self.name}: minD {minD}')
                 if minD>overall_maximum[0]:
                     overall_maximum=(minD,myH,otH)
-        # logger.debug(f'{self.name}: overall_maximum {overall_maximum}')
+        logger.debug(f'{self.name}: overall_maximum {overall_maximum}')
         minD,myH,otH=overall_maximum
         BTC=coord_trials[myH][otH]
         TC.overwrite_coords(BTC)

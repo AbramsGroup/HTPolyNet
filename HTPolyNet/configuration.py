@@ -1,3 +1,4 @@
+from imp import init_builtin
 import json
 import yaml
 import os
@@ -131,6 +132,13 @@ class Configuration:
         self.initial_composition=[]
         for molecule,mrec in self.constituents.items():
             self.initial_composition.append({'molecule':molecule,'count':mrec.get('count',0)})
+        
+        for molec in self.initial_composition:
+            mname=molec['molecule']
+            if not mname in self.molecules:
+                self.molecules[mname]=Molecule.New(mname,None,self.constituents.get(mname,{}))
+                self.molecules[mname].set_sequence_from_moldict(self.molecules)
+                logging.debug(f'{mname} seq: {self.molecules[mname].sequence}')
 
 
     def calculate_maximum_conversion(self):
