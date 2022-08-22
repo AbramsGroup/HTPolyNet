@@ -436,8 +436,7 @@ class TopoCoord:
         :rtype: 3-tuple
         """
         explicit_sacH=kwargs.get('explicit_sacH',{})
-        stage=kwargs.get('stage',reaction_stage.cure)
-        parameterization_override=kwargs.get('parameterization_override',False)
+        template_source=kwargs.get('template_source','internal')
         overcharge_threshhold=kwargs.get('overcharge_threshhold',0.1)
         logger.debug(f'begins.')
         if bdf.shape[0]>0:
@@ -461,7 +460,7 @@ class TopoCoord:
                 for idx in idx_pair:
                     self.decrement_gro_attribute_by_attributes('z',{'globalIdx':idx})
                     self.increment_gro_attribute_by_attributes('nreactions',{'globalIdx':idx})
-            if stage in [reaction_stage.cure,reaction_stage.build] and not parameterization_override:
+            if template_source=='internal':
                 logger.debug(f'calling map_from_templates')
                 self.map_from_templates(ri_bdf,template_dict,overcharge_threshhold=overcharge_threshhold)
             logger.debug(f'1-4 pair update')
@@ -1466,6 +1465,7 @@ class TopoCoord:
         sampling_duration_ps=ps-begin_at
         sampling_duration_nsteps=int(sampling_duration_ps/dt)
         sample_interval=sampling_duration_nsteps//nsamples
+        logger.debug(f'nsteps {nsteps} begin_at {begin_at} ps {ps} sampling_duration_ps {sampling_duration_ps} ({sampling_duration_nsteps} steps) sample_interval {sample_interval}')
         # nsteps=nsamples*(sample_interval+1)
         # nsteps=mdp_get(f'{mdp_prefix}.mdp','nsteps')
         # nstxout=mdp_get(f'{mdp_prefix}.mdp','nstxout')

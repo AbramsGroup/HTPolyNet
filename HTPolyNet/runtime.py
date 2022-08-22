@@ -167,31 +167,6 @@ class Runtime:
             self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
             self.molecules[mname]=M
 
-        ''' Generate all reactions and products that result from invoking symmetry '''
-        # symmetry_relateds=self.cfg.parameters.get('symmetry_equivalent_atoms',{})
-        # if not symmetry_relateds:
-        #     constituents=self.cfg.parameters.get('constituents',{})
-        #     # if not constituents:
-        #     #     raise Exception(f'Config file must have a "symmetry_equivalent_atoms" key if no "constituents" key is specified')
-        #     for cname,crec in constituents.items():
-        #         this_sr=crec.get('symmetry_equivalent_atoms',[])
-        #         if len(this_sr)>0:
-        #             symmetry_relateds[cname]=this_sr
-        # if len(symmetry_relateds)>0:
-        #     new_reactions,new_molecules=symmetry_expand_reactions(self.cfg.reactions,symmetry_relateds,self.cfg.molecules)
-        #     ess='' if len(new_molecules)==1 else 's'
-        #     logger.info(f'{len(new_molecules)} molecule{ess} implied by symmetry-equivalent atoms')
-        #     ml=list(new_molecules.keys())
-        #     logger.info(ml)
-        #     self.cfg.reactions.extend(new_reactions)
-        #     make_molecules={k:v for k,v in new_molecules.items() if k not in self.molecules}
-        #     logger.debug(f'make_molecules {make_molecules}')
-        #     for mname,M in make_molecules.items():
-        #         self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
-        #         assert M.get_origin()!='unparameterized'
-        #         self.molecules[mname]=M
-        #         logger.debug(f'Generated {mname}')
-
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
         new_reactions,new_molecules=chain_expand_reactions(self.molecules)
@@ -412,7 +387,7 @@ class Runtime:
         M.generate_stereoisomers()
         for s,SI in M.stereoisomers.items():
             logger.debug(f'SI {s}: {SI.origin}')
-        M.generate_conformers(minimize=True)
+        M.generate_conformers()
 
         # for ln in M.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
         logger.debug(f'Done.')

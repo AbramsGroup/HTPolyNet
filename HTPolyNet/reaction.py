@@ -122,8 +122,8 @@ def extract_molecule_reactions(rlist:ReactionList):
                 molecule_react_order.append((R.product,R))
                 molecules.append(R.product)
                 working_rlist.remove(R)
-            else:
-                logger.debug(f'Cannot place {R.product} since not all of {R.reactants.values()} are in the list yet')
+            # else:
+            #     logger.debug(f'Cannot place {R.product} since not all of {R.reactants.values()} are in the list yet')
 
     return molecule_react_order
 
