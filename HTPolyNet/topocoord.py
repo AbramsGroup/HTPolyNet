@@ -1231,7 +1231,10 @@ class TopoCoord:
                 c1=bc
                 c2=ac
             else:
-                raise Exception(f'chain parse error')
+                logger.debug(f'Neither of {aidx} or {bidx} are heads of their respective chains.')
+                logger.debug(f'This is most likely happening because of branching, which is permitted but')
+                logger.debug(f'does not allow for merging of 1-D chains.')
+                continue
             chainlists[c2].extend(chainlists[c1])
             for aidx in chainlists[c1]:
                 self.set_gro_attribute_by_attributes('chain',c2,{'globalIdx':aidx})
