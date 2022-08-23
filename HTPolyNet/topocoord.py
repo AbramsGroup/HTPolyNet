@@ -389,37 +389,48 @@ class TopoCoord:
         prj=[]
         prsource=[]
         for p in at_idx:
+            # determine all nj--nk pairs from j-k bond, where nj are neighbors of j not including k, and nk are neighbors of k not including j
+            # and all nnj--k pairs from all nj-j bonds, where nnj are next-nearest neighbors of j excluding j
+            # and all j--nnk pairs from all k-nk bonds, where nnk are next-nearest neighbors of k excluding k
             j,k=p
-            # jresnum,jresname,jname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':j})
-            # kresnum,kresname,kname=self.get_gro_attribute_by_attributes(['resNum','resName','atomName'],{'globalIdx':k})
             nj=bl.partners_of(j)
             nj.remove(k)
+            nnj=[]
+            for nn in nj:
+                t=bl.partners_of(nn)
+                t.remove(j)
+                nnj.append(t)
             nk=bl.partners_of(k)
             nk.remove(j)
-            this_pairs=list(product(nj,nk))
-            pai.extend([x[0] for x in this_pairs])
-            paj.extend([x[1] for x in this_pairs])
-            pri.extend([j for x in this_pairs])
-            prj.extend([k for x in this_pairs])
-            prsource.extend(['c' for x in this_pairs])
-            jpdf=pdf[(pdf['ai']==j)|(pdf['aj']==j)].copy()
-            # logger.debug(f'j: pairs with member {j} {jresnum} {jresname} {jname}')
-            # for ln in jpdf.to_string().split('\n'):
-            #     logger.debug(ln)
-            pai.extend(jpdf['ai'].to_list())
-            paj.extend(jpdf['aj'].to_list())
-            pri.extend([j for x in jpdf['ai'].to_list()])
-            prj.extend([k for x in jpdf['aj'].to_list()])
-            prsource.extend(['l' for _ in range(jpdf.shape[0])])
-            kpdf=pdf[(pdf['ai']==k)|(pdf['aj']==k)].copy()
-            # logger.debug(f'k: pairs with member {k} {kresnum} {kresname} {kname}')
-            # for ln in kpdf.to_string().split('\n'):
-            #     logger.debug(ln)
-            pai.extend(kpdf['ai'].to_list())
-            paj.extend(kpdf['aj'].to_list())
-            pri.extend([j for x in kpdf['ai'].to_list()])
-            prj.extend([k for x in kpdf['aj'].to_list()])
-            prsource.extend(['r' for _ in range(kpdf.shape[0])])
+            nnk=[]
+            for nn in nk:
+                t=bl.partners_of(nn)
+                t.remove(k)
+                nnk.append(t)
+            logger.debug(f'{j} {nj} {k} {nk}')
+            logger.debug(f'{nnj} {nnk}')
+            for pp in product(nj,nk):
+                jj,kk=pp
+                pai.append(jj)
+                paj.append(kk)
+                pri.append(j)
+                prj.append(k)
+                prsource.append('c')
+                for nn in nnj:
+                    for ii in nn:
+                        pai.append(ii)
+                        paj.append(k)
+                        pri.append(j)
+                        prj.append(k)
+                        prsource.append('l')
+                for nn in nnk:
+                    for ll in nn:
+                        pai.append(j)
+                        paj.append(ll)
+                        pri.append(j)
+                        prj.append(k)
+                        prsource.append('r')
+
         pi_df=pd.DataFrame({'ai':pai,'aj':paj,'source':prsource,'bi':pri,'bj':prj})
         pi_df.drop_duplicates(inplace=True,ignore_index=True)
         return pi_df
