@@ -1516,7 +1516,7 @@ class TopoCoord:
             if ens=='npt':
                 box=self.Coordinates.box.diagonal()
                 logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-                edr_list.append(f'{deffnm}-{ens}-r{rep+1}')
+                edr_list.append(this_deffnm)
             gmx_energy_trace(this_deffnm,['Density'],report_averages=True,**gromacs_dict)
         if ens=='npt':
             if plot_pfx!='':

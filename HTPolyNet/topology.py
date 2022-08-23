@@ -531,6 +531,7 @@ class Topology:
             fac=physical_constants['atomic mass constant'][0]
         if 'atoms' in self.D:
             M_amu=self.D['atoms']['mass'].sum()
+            logger.debug(f'mass {M_amu} fac {fac}')
             return M_amu*fac
         return 0.0
 

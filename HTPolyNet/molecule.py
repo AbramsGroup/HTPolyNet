@@ -399,6 +399,7 @@ class Molecule:
                 logger.info(f'Built {self.name} using topology of {self.parentname}; copying {self.parentname}.top to {self.name}.top')
                 self.load_top_gro(f'{self.parentname}.top',f'{self.name}.gro',wrap_coords=False)
                 shutil.copy(f'{self.parentname}.top',f'{self.name}.top')
+                shutil.copy(f'{self.parentname}.grx',f'{self.name}.grx')
 
         if do_minimization:
             self.TopoCoord.write_mol2(filename=f'{self.name}-preminimize.mol2',molname=self.name)
@@ -410,7 +411,7 @@ class Molecule:
             self.initialize_monomer_grx_attributes()
             self.write_gro_attributes(GRX_ATTRIBUTES,f'{reactantName}.grx')
         else:
-            if do_parameterization:
+            if do_parameterization or self.name!=self.parentname:
                 grx=f'{reactantName}.grx'
                 if (os.path.exists(grx)):
                     self.TopoCoord.read_gro_attributes(grx)
@@ -418,10 +419,13 @@ class Molecule:
         # logger.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
         self.prepare_new_bonds(available_molecules=available_molecules)
         # for ln in self.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
-        logger.info(f'{self.name}')
+        logger.info(f'{self.name}: {self.get_molecular_weight():.2f} g/mol')
         logger.debug('Done.')
 
-    # def set_reaction_bonds(self,available_molecules={}):
+    def get_molecular_weight(self):
+        mass=self.TopoCoord.total_mass(units='gromacs') # g
+        return mass
+
     def prepare_new_bonds(self,available_molecules={}):
         # logger.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
         R=self.generator
@@ -640,11 +644,10 @@ class Molecule:
                 logger.debug(f'cresids {cresids}')
                 hxi,hxj=self.transrot(r.ai,r.ri,r.aj,r.rj,connected_resids=cresids)
                 explicit_sacrificial_Hs[i]=[hxi,hxj]
-        # alert update_topology that this molecule may be a parameterization override
         if stage in [reaction_stage.cure, reaction_stage.param, reaction_stage.cap]:
             template_source='ambertools'
         else:
-            template_source='internal'
+            template_source='internal'  # signals that a template molecule should be identified to parameterize this bond
         TC.update_topology_and_coordinates(bdf,moldict,explicit_sacH=explicit_sacrificial_Hs,template_source=template_source)
         self.initialize_molecule_cycles()
 
@@ -916,7 +919,8 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
     # generates new "build" reactions using the stereoisomer as a reactant
     # in place
     adds=0
-    for R in RL: #[_ for _ in RL if (_.stage==reaction_stage.param or _.stage==reaction_stage.build)]:
+    terminal_reactions=[]
+    for R in RL:
         if R.stage not in [reaction_stage.param,reaction_stage.build]: continue
         Prod=MD[R.product]
         logger.debug(f'Stereos for {R.name} ({str(R.stage)})')
@@ -946,7 +950,8 @@ def generate_stereo_reactions(RL:ReactionList,MD:MoleculeDict):
             logger.debug(c)                
             # new_reactions.append(nR)
             sidx+=1
-            RL.append(nR)
+            terminal_reactions.append(nR)
+    RL.extend(terminal_reactions)
     return adds
 
 def generate_symmetry_reactions(RL:ReactionList,MD:MoleculeDict):
