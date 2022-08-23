@@ -199,7 +199,7 @@ class Runtime:
         ess='' if len(self.molecules)==1 else 's'
         logger.info(f'Generated {len(self.molecules)} molecule template{ess}')
         if self.cfg.initial_composition: 
-            logger.info(f'Initial composition is {", ".join([(x["molecule"]+" "+str(x["count"])) for x in self.cfg.initial_composition])}')
+            logger.info(f'Initial composition is {", ".join([(x["molecule"]+" "+str(x["count"])) for x in self.cfg.initial_composition if x["count"]>0]])}')
             self.cfg.calculate_maximum_conversion()
             logger.info(f'100% conversion is {self.cfg.maxconv} bonds')
 
