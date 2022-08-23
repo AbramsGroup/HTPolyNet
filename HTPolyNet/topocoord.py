@@ -54,7 +54,7 @@ class TopoCoord:
         :param mol2filename: name of SYBYL MOL2-format coordinate/bonds file, defaults to ''
         :type mol2filename: str, optional
         """
-        wrap_coords=kwargs.get('wrap_coords',True)
+        wrap_coords=kwargs.get('wrap_coords',False)
         self.files={}
         self.files['gro']=grofilename
         self.files['top']=topfilename
@@ -482,7 +482,7 @@ class TopoCoord:
         self.files['top']=os.path.abspath(topfilename)
         self.Topology=Topology.read_gro(topfilename)
 
-    def read_gro(self,grofilename,preserve_box=False,wrap_coords=True):
+    def read_gro(self,grofilename,preserve_box=False,wrap_coords=False):
         """Creates a new Coordinates member by reading from a Gromacs-style coordinates
             file.  Just a wrapper for the read_gro method of Coordinates
 
@@ -1401,6 +1401,7 @@ class TopoCoord:
             self.files[ext]=os.path.abspath(os.path.basename(filename))
 
     def grompp_and_mdrun(self,out,mdp,**kwargs):
+        wrap_coords=kwargs.get('wrap_coords',False)
         self.grab_files()
         top=os.path.basename(self.files['top']).replace('.top','')
         gro=os.path.basename(self.files['gro']).replace('.gro','')
@@ -1409,7 +1410,7 @@ class TopoCoord:
         assert os.path.exists(f'{mdp}.mdp')
         logger.debug(f'{os.getcwd()} {pfs.cwd()} {top}, {gro}, {mdp}')
         msg=grompp_and_mdrun(gro=gro,top=top,out=out,mdp=mdp,**kwargs)
-        self.copy_coords(TopoCoord(grofilename=f'{out}.gro'))
+        self.copy_coords(TopoCoord(grofilename=f'{out}.gro',wrap_coords=wrap_coords))
         logger.debug(f'after grompp_and_run: gro {self.files["gro"]}')
         return msg
 
@@ -1444,7 +1445,7 @@ class TopoCoord:
         pfs.checkout(f'mdp/{mdp_prefix}.mdp')
         # gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.grompp_and_mdrun(out=f'{outname}',
-            mdp=mdp_prefix,boxSize=boxsize,single_molecule=True) #,**gromacs_dict)
+            mdp=mdp_prefix,boxSize=boxsize,single_molecule=True,wrap_coords=False) #,**gromacs_dict)
 
     def vacuum_simulate(self,outname='simulated',**kwargs):
         pad=kwargs.get('pad',5)
@@ -1475,7 +1476,7 @@ class TopoCoord:
         mdp_modify(f'{mdp_prefix}.mdp',{'nsteps':nsteps,'nstxout':sample_interval,'ref_t':T})
         # gromacs_dict={'nt':1,'nb':'cpu','pme':'cpu','pmefft':'cpu','bonded':'cpu','update':'cpu'}
         self.grompp_and_mdrun(out=f'{outname}',
-            mdp=mdp_prefix,boxSize=boxsize,single_molecule=True) #,**gromacs_dict)
+            mdp=mdp_prefix,boxSize=boxsize,single_molecule=True,wrap_coords=False) #,**gromacs_dict)
 
     def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx=''):
         mod_dict={}

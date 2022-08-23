@@ -131,6 +131,7 @@ class Runtime:
         self.molecules:MoleculeDict={}
         cure_dict=self.cfg.parameters.get('CURE',{})
         if cure_dict:
+            logger.debug('Setting up cure controller')
             self.cc=CureController(cure_dict)
         self.ncpu=self.cfg.parameters.get('ncpu',os.cpu_count())
 
@@ -264,8 +265,12 @@ class Runtime:
         cp.set(self.TopoCoord,'do_precure')
 
     def do_cure(self):
-        if not hasattr(self,'cc'): return  # no cure controller
-        if cp.passed('cure'): return
+        if not hasattr(self,'cc'): 
+            logger.debug(f'no cure controller')
+            return  # no cure controller
+        if cp.passed('cure'): 
+            logger.debug(f'checkpoint already done')
+            return
         cc=self.cc
         TC=self.TopoCoord
         RL=self.cfg.reactions
@@ -277,7 +282,9 @@ class Runtime:
             cc.reset()
         cc.setup(max_nxlinkbonds=self.cfg.maxconv,desired_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['controls']['desired_conversion']),max_search_radius=min(TC.Coordinates.box.diagonal()/2))
         cure_finished=cc.is_cured()
-        if cure_finished: return
+        if cure_finished: 
+            logger.debug('cure finished even before loop')
+            return
         my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
         logger.info(f'Attempting to form {cc.desired_nxlinkbonds} bonds')
         while not cure_finished:

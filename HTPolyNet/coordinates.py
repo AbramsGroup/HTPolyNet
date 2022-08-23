@@ -271,6 +271,33 @@ class Coordinates:
         inst.empty=False
         return inst
 
+    @classmethod
+    def fcc(cls,a,nc=[1,1,1]):
+        inst=cls()
+        basis=np.identity(3)*a
+        base_atoms=np.array([[0.0,0.0,0.0],[0.5,0.5,0.0],[0.5,0.0,0.5],[0.0,0.5,0.5]])*a
+        n=0
+        p=[]
+        x=[list(range(n)) for n in nc]
+        for i,j,k in product(*x):
+            ll=np.dot(basis,np.array([i,j,k]))
+            for m in range(len(base_atoms)):
+                p.append(ll+base_atoms[m])
+        # print(p)
+        posn=np.array(p)
+        # print(posn)
+        N=len(posn)
+        adf=inst.A
+        adf['globalIdx']=list(range(1,N+1))
+        adf['atomName']='AL'
+        adf['resNum']=list(range(1,N+1))
+        adf['posX']=posn[:,0]
+        adf['posY']=posn[:,1]
+        adf['posZ']=posn[:,2]
+        adf['resName']='MET'
+        inst.N=N
+        return inst
+
     def set_box(self,box:np.ndarray):
         """set_box Set the box size from box
 
@@ -388,35 +415,42 @@ class Coordinates:
         return np.sqrt(Rij.dot(Rij))
 
     def mic(self,r,pbc):
+        ''' minimum image convention '''
         for c in range(0,3):
             if pbc[c]:
                 hbx=self.box[c][c]/2
-                if r[c]<-hbx:
+                while r[c]<-hbx:
                     r[c]+=self.box[c][c]
-                elif r[c]>hbx:
+                while r[c]>hbx:
                     r[c]-=self.box[c][c]
         return r
 
-    _nwrap=0
     def wrap_point(self,ri):
         R=ri.copy()
+        box_lengths=np.array([0,0,0],dtype=int)
         for i in range(3):
-            if R[i]<0 or R[i]>=self.box[i][i]:
-                self._nwrap+=1
             while R[i]<0:
                 R[i]+=self.box[i][i]
+                box_lengths[i]+=1
             while R[i]>=self.box[i][i]:
                 R[i]-=self.box[i][i]
-        return R
+                box_lengths[i]-=1
+        return R,box_lengths
 
     def wrap_coords(self):
         """wrap_coords Wraps all atomic coordinates into box
         """
         assert np.any(self.box),f'Cannot wrap if boxsize is not set: {self.box}'
-        self._nwrap=0
         sp=self.A[['posX','posY','posZ']]
+        boxL=[]
         for i,srow in sp.iterrows():
-            self.A.loc[i,'posX':'posZ']=self.wrap_point(srow.values)
+            p,box_lengths=self.wrap_point(srow.values)
+            self.A.loc[i,'posX':'posZ']=p
+            boxL.append(box_lengths)
+        boxL=np.array(boxL)
+        self.A['boxLx']=boxL[:,0]
+        self.A['boxLy']=boxL[:,1]
+        self.A['boxLz']=boxL[:,2]
         # logger.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
 
     def calc_distance_matrix(self):
