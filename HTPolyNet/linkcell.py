@@ -10,7 +10,7 @@ class Linkcell:
     """ Handles the link-cell algorithm for searching for bonding partners within a
         cutoff distance from each other
     """
-    def __init__(self,box=[],cutoff=None):
+    def __init__(self,box=[],cutoff=None,pbc_wrapper=None):
         """__init__ Constructor for an empy instance
 
         :param box: system box size, defaults to []
@@ -20,6 +20,7 @@ class Linkcell:
         """
         self.box=box
         self.cutoff=cutoff
+        self.pbc_wrapper=pbc_wrapper
 
     def create(self,cutoff,box,origin=np.array([0.,0.,0.])):
         """create Creates the link-cell structure in a previously initialized instance
@@ -61,7 +62,8 @@ class Linkcell:
         :return: (i,j,k) index of cell
         :rtype: (int,int,int)
         """
-        C=np.floor(R*np.reciprocal(self.celldim)).astype(int)
+        wrapR,bl=self.pbc_wrapper(R)
+        C=np.floor(wrapR*np.reciprocal(self.celldim)).astype(int)
         lowdim=(C<np.zeros(3).astype(int)).astype(int) # will never happen if R is wrapped
         hidim=(C>=self.ncells).astype(int) # could happen if exactly there
         if (any(lowdim) or any(hidim)):
@@ -84,7 +86,8 @@ class Linkcell:
         :rtype: boolean
         """
         LL,UU=self.corners_of_cellndx(C)
-        return all(R<UU) and all(R>=LL)
+        wrapR,bl=self.pbc_wrapper(R)
+        return all(wrapR<UU) and all(wrapR>=LL)
 
     def corners_of_cellndx(self,C):
         """corners_of_cellndx returns the lower-left and upper-right corners of cell with (i,j,k) index C, as an array of 3-space points

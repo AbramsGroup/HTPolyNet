@@ -153,7 +153,7 @@ class Coordinates:
         self.A=pd.DataFrame()
         self.mol2_bonds=pd.DataFrame()
         self.mol2_bondlist=Bondlist()
-        self.linkcell=Linkcell()
+        self.linkcell=Linkcell(pbc_wrapper=self.wrap_point)
         self.empty=True
         self.box=np.zeros((3,3))
         self.grx_attributes=GRX_ATTRIBUTES
