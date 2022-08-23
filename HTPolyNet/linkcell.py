@@ -17,6 +17,7 @@ class Linkcell:
         :type box: list, optional
         :param cutoff: cutoff distance, defaults to None
         :type cutoff: float, optional
+        :param pbc_wrapper: function used on any 3-D point to wrap it into the central image (provided by HTPolyNet.configuration)
         """
         self.box=box
         self.cutoff=cutoff
