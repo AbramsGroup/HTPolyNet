@@ -630,19 +630,20 @@ class Molecule:
         explicit_sacrificial_Hs={}
         for i,r in bdf.iterrows():
             aname,bname=[TC.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in [r.ai,r.rj]]
-            bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=TC.get_bystanders([r.ai,r.aj])
-            oneaway_resids,oneaway_resnames,oneaway_atomidx,onewaway_atomnames=TC.get_oneaways([r.ai,r.aj])
+            # bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames=TC.get_bystanders([r.ai,r.aj])
+            # oneaway_resids,oneaway_resnames,oneaway_atomidx,onewaway_atomnames=TC.get_oneaways([r.ai,r.aj])
             logger.debug(f'generating {self.name} bond {r.ri}:{aname}:{r.ai}-{r.rj}:{bname}:{r.aj} order {r.order}')
-            logger.debug(f'bystander resids {bystander_resids}')
-            logger.debug(f'oneaway resids {oneaway_resids}')
+            # logger.debug(f'bystander resids {bystander_resids}')
+            # logger.debug(f'oneaway resids {oneaway_resids}')
             if r.ri!=r.rj:
-                cresids=[]
-                if len(oneaway_resids)==2 and oneaway_resids[1]!=None:
-                    cresids=[oneaway_resids[1]]
-                if len(bystander_resids)==2 and any(bystander_resids[1]):
-                    cresids.extend(bystander_resids[1])
-                logger.debug(f'cresids {cresids}')
-                hxi,hxj=self.transrot(r.ai,r.ri,r.aj,r.rj,connected_resids=cresids)
+                resid_sets=TC.get_resid_sets([r.ai,r.aj])
+                # cresids=[]
+                # if len(oneaway_resids)==2 and oneaway_resids[1]!=None:
+                #     cresids=[oneaway_resids[1]]
+                # if len(bystander_resids)==2 and any(bystander_resids[1]):
+                #     cresids.extend(bystander_resids[1])
+                # logger.debug(f'cresids {cresids}')
+                hxi,hxj=self.transrot(r.ai,r.ri,r.aj,r.rj,connected_resids=resid_sets[1])
                 explicit_sacrificial_Hs[i]=[hxi,hxj]
         if stage in [reaction_stage.cure, reaction_stage.param, reaction_stage.cap]:
             template_source='ambertools'

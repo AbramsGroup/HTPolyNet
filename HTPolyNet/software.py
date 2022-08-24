@@ -3,6 +3,7 @@ import subprocess
 import logging
 import os
 from HTPolyNet.stringthings import my_logger
+from GPUtil import getGPUs
 logger=logging.getLogger(__name__)
 
 class Software:
@@ -71,5 +72,9 @@ def set_gmx_preferences(parmdict):
     gmx=_SW_.gmx
     gmx_options=_SW_.gmx_options
     mdrun=_SW_.mdrun
+    ngpu=parmdict.get('ngpu',-1)
+    gpus=getGPUs()
+    if len(gpus)>0 and ngpu!=-1:
+        _SW_.mdrun+=' -gpu_id '+','.join([f'{gpus[x]:d}' for x in range(len(gpus))])
     mdrun_single_molecule=_SW_.mdrun_single_molecule
 

@@ -1538,6 +1538,18 @@ class TopoCoord:
             if plot_pfx!='':
                 trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
 
+    def get_resid_sets(self,atom_pair):
+        # assertion: i and j are not bonded and they represent two separate sets of residues in this topocoord.
+        i,j=atom_pair
+        ri=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
+        rj=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':j})
+        ci=self.Topology.local_resid_cluster(ri)
+        cj=self.Topology.local_resid_cluster(rj)
+        if set(ci)==set(cj):
+            logger.debug(f'resid sets overlap: {i} {ri} : {ci} and {j} {rj} : {cj}')
+            return []
+        return [ci,cj]
+
     def check_your_topology(self):
         T=self.Topology
         C=self.Coordinates
