@@ -10,4 +10,5 @@ coulombtype	= PME;
 rcoulomb	= 1.0;
 rvdw		= 1.0;
 pbc		= xyz;
+periodic-molecules = yes
 

@@ -956,11 +956,20 @@ class Topology:
             d=self.D['pairs']
             d.ai=d.ai.map(mapper)
             d.aj=d.aj.map(mapper)
-        if len(return_idx_of)>0:
-            return new_idx
+            tp=[]
+            pdrops=[]
+            for i,r in d.iterrows():
+                ai,aj=min([r.ai,r.aj]),max([r.ai,r.aj])
+                if not [ai,aj] in tp:
+                    tp.append([ai,aj])
+                else:
+                    pdrops.append(i)
+            logger.debug(f'Deleting {len(pdrops)} duplicate 1-4 pair descriptors -- this is likely due to a bug somewhere')
+            self.D['pairs']=d.drop(pdrops).reset_index(drop=True)
         self.null_check(msg='end of delete atoms')
         logger.debug('finished.')
-        # self.to_file('tmp.top')
+        if len(return_idx_of)>0:
+            return new_idx
         return mapper
         
     def _myconcat(self,other,directive='',idxlabel=[],idxshift=0,drop_duplicates=False):

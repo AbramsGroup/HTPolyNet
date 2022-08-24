@@ -1419,7 +1419,7 @@ class TopoCoord:
         assert os.path.exists(f'{top}.top')
         assert os.path.exists(f'{gro}.gro')
         assert os.path.exists(f'{mdp}.mdp')
-        logger.debug(f'{os.getcwd()} {pfs.cwd()} {top}, {gro}, {mdp}')
+        logger.debug(f'TopoCoord: running Gromacs {pfs.cwd()} {top}, {gro}, {mdp}')
         msg=grompp_and_mdrun(gro=gro,top=top,out=out,mdp=mdp,**kwargs)
         self.copy_coords(TopoCoord(grofilename=f'{out}.gro',wrap_coords=wrap_coords))
         logger.debug(f'after grompp_and_run: gro {self.files["gro"]}')
@@ -1516,9 +1516,10 @@ class TopoCoord:
             if ens=='npt': 
                 mod_dict['ref_p']=edict['pressure']
                 msg+=f', {float(edict["pressure"]):6.2f} bar'
-        mdp_modify(f'{ens}.mdp',mod_dict)
+        new_mdp=f'{deffnm}-{ens}'
+        mdp_modify(f'{ens}.mdp',mod_dict,new_filename=f'{new_mdp}.mdp')
         logger.info(f'Running Gromacs: {msg}')
-        self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=ens,quiet=False,**gromacs_dict)
+        self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=new_mdp,quiet=False,**gromacs_dict)
         if ens=='npt':
             edr_list=[f'{deffnm}-{ens}']
             box=self.Coordinates.box.diagonal()
@@ -1536,6 +1537,38 @@ class TopoCoord:
         if ens=='npt':
             if plot_pfx!='':
                 trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
+
+    def check_your_topology(self):
+        T=self.Topology
+        C=self.Coordinates
+        aT={}
+        pdf=T.D['pairs']
+        aT['dx']=[]
+        aT['dy']=[]
+        aT['dz']=[]
+        checked=[]
+        drops=[]
+        for i,r in pdf.iterrows():
+            ai,aj=min([r.ai,r.aj]),max([r.ai,r.aj])
+            assert ai!=aj
+            if not (ai,aj) in checked: 
+                checked.append((ai,aj))
+            else:
+                # print(f'repeated pair {ai} {aj}')
+                drops.append(i)
+            ri=self.get_R(ai)
+            rj=self.get_R(aj)
+            D=C.mic(ri-rj,pbc=[1,1,1])
+            aT['dx'],aT['dy'],aT['dz']=D
+        print(f'{len(drops)} duplicate pairs detected')
+        T.D['pairs']=pdf.drop(drops)
+        pdf['dx']=aT['dx']
+        pdf['dy']=aT['dy']
+        pdf['dz']=aT['dz']
+        print(pdf.sort_values(by='dx').head(3).to_string())
+        print(pdf.sort_values(by='dy').head(3).to_string())
+        print(pdf.sort_values(by='dz').head(3).to_string())
+        self.write_top('checked.top')
 
 def find_template(BT:BondTemplate,moldict):
     use_T=None
@@ -1566,3 +1599,4 @@ def find_template(BT:BondTemplate,moldict):
     logger.debug(f'Using template {use_T.name} and bond index {b_idx}')
     rb=use_T.reaction_bonds[b_idx]
     return use_T,rb,reverse_bond
+
