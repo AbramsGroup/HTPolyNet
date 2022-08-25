@@ -153,33 +153,37 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
     assert len(names)>0,f'Nothing to plot'
     xshift=kwargs.get('xshift',0)
     menu=get_energy_menu(edr)
+    if not any([i in menu for i in names]):
+        logger.debug(f'None of {names} in menu {menu}')
+        return pd.DataFrame()
     logger.debug(f'report_averages? {report_averages} {names}')
     # print(f'{menu}')
+    namvals=[]
     with open(f'{edr}-gmx.in','w') as f:
         for i in names:
             if i in menu:
                 f.write(f'{menu[i]}\n')
+                namvals.append((i,menu[i]))
         f.write('\n')
-    if any([i in menu for i in names]):
-        c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < {edr}-gmx.in')
-        c.run()
-        # os.remove('gmx.in')
-        colnames=names.copy()
-        colnames.insert(0,'time (ps)')
-        # print(f'in gmx {edr}.edr {names}:')
-        data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
-        print(f'{data.head().to_string()}')
-        data.iloc[:,0]+=xshift
-        ndata=data.shape[0]
-        if report_averages:
-            for i in names:
-                data[f'Running-average-{i}']=data[i].expanding(1).mean()
-                data[f'Rolling-10-average-{i}']=data[i].rolling(window=ndata//10).mean()
-                for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string(float_format='{:.2f}'.format).split('\n'):
-                    logger.info(f'{ln}')
-        return data
-    else:
-        return pd.DataFrame()
+    namvals.sort(key=lambda x: x[1])
+
+    c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < {edr}-gmx.in')
+    c.run()
+    # os.remove('gmx.in')
+    colnames=[x[0] for x in namvals]
+    colnames.insert(0,'time (ps)')
+    # print(f'in gmx {edr}.edr {names}:')
+    data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
+    print(f'{data.head().to_string()}')
+    data.iloc[:,0]+=xshift
+    ndata=data.shape[0]
+    if report_averages:
+        for i in names:
+            data[f'Running-average-{i}']=data[i].expanding(1).mean()
+            data[f'Rolling-10-average-{i}']=data[i].rolling(window=ndata//10).mean()
+            for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string(float_format='{:.2f}'.format).split('\n'):
+                logger.info(f'{ln}')
+    return data       
         
 # def density_trace(edr,**kwargs):
 #     """Report density trace from edr file
