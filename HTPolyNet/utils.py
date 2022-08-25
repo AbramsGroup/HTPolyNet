@@ -7,6 +7,9 @@ from scipy.constants import physical_constants
 import os
 import numpy as np
 import networkx as nx
+import logging
+
+logger=logging.getLogger(__name__)
 
 def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
     C=Coordinates.read_gro(gro)
@@ -81,9 +84,10 @@ def density_evolution(proj_dir):
             # loooking for iterations
             # print(iter_mark0)
             iter=1
-            iter_subd=os.path.join(sysd,subd if subd in ['capping','densification'] else subd.format(iter=iter))
-
+            iter_subd_rel=subd if subd in ['capping','densification'] else subd.format(iter=iter)
+            iter_subd=os.path.join(sysd,iter_subd_rel)
             while os.path.exists(iter_subd):
+                logger.info(f'Reading edrs in {iter_subd_rel}...')
                 if r'iter' in subd:
                     markers.append(df.iloc[-1]['time (ps)'])
                 dirkey='iter-n' if subd==r'iter-{iter:d}' else subd
@@ -140,6 +144,8 @@ def density_evolution(proj_dir):
             # if r'iter' in subd: markers.append(df.iloc[-1]['time (ps)'])
         else:
             this_subd=os.path.join(sysd,subd)
+            logger.info(f'Reading edrs in {subd}...')
+
             for pfx in _indir_pfx[subd]:
                 # print(f'this_subd {this_subd} pfx {pfx}')
                 if 'ens' in pfx:
