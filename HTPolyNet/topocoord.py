@@ -1211,15 +1211,15 @@ class TopoCoord:
     def chainlist_update(self,new_bond_recs,msg=''):
         chainlists=self.idx_lists['chain']
         if len(chainlists)==0: return
-        logger.debug(f'pre {msg} chainlists')
-        for i,c in enumerate(chainlists):
-            logger.debug(f'  {i} {c}')
+        # logger.debug(f'pre {msg} chainlists')
+        # for i,c in enumerate(chainlists):
+        #     logger.debug(f'  {i} {c}')
         for b in new_bond_recs:
             aidx,bidx=b[0],b[1]
             ar=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aidx})
             br=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bidx})
             if ar==br: continue # ignore intramolecular bonds
-            logger.debug(f'chainlist_update pair {aidx} {bidx}')
+            # logger.debug(f'chainlist_update pair {aidx} {bidx}')
             ac=self.get_gro_attribute_by_attributes('chain',{'globalIdx':aidx})
             bc=self.get_gro_attribute_by_attributes('chain',{'globalIdx':bidx})
             logger.debug(f'ac {ac} bc {bc}')
@@ -1227,8 +1227,8 @@ class TopoCoord:
                 # neither of these newly bonded atoms is already in a chain, so
                 # there is no possibility that this new bond can join two chains.
                 continue
-            logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
-            logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
+            # logger.debug(f'chain of bidx {bidx}: {chainlists[bc]}')
+            # logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
             aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
             bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
             logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
@@ -1250,19 +1250,19 @@ class TopoCoord:
             for aidx in chainlists[c1]:
                 self.set_gro_attribute_by_attributes('chain',c2,{'globalIdx':aidx})
                 self.set_gro_attribute_by_attributes('chain_idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
-            logger.debug(f'removing chain {c1}')
+            # logger.debug(f'removing chain {c1}')
             chainlists.remove(chainlists[c1])
             # since we remove c1, all indices greater than c1 must decrement
             dec_us=np.array(self.Coordinates.A['chain'])
             bad_chain_idx=np.where(dec_us>c1)
-            logger.debug(f'bad_chain_idx: {bad_chain_idx}')
-            logger.debug(f'{dec_us[bad_chain_idx]}')
+            # logger.debug(f'bad_chain_idx: {bad_chain_idx}')
+            # logger.debug(f'{dec_us[bad_chain_idx]}')
             dec_us[bad_chain_idx]-=1
             self.Coordinates.A['chain']=dec_us
         cnms=[]
         for c in self.idx_lists['chain']:
             cnms.append([self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
-        logger.debug(f'post {msg} chains {self.idx_lists["chain"]} {cnms}')
+        # logger.debug(f'post {msg} chains {self.idx_lists["chain"]} {cnms}')
 
     def makes_cycle(self,aidx,bidx):
         # is there a chain with aidx as head and bidx as tail, or vice versa?
