@@ -74,8 +74,11 @@ def parameterize(args):
 
 def htpolynet_cure_plots(args):
     logs=args.logs
+    loglevel_numeric=getattr(logging, args.loglevel.upper())
+    logging.basicConfig(format='%(levelname)s> %(message)s',level=loglevel_numeric)
+
     if not args.no_banner: banner(logger.info)
-    banner(print)
+    # banner(print)
     if len(logs)>0:
         diagnostics_graphs(logs,args.plotfile)
     if args.proj:
@@ -83,7 +86,7 @@ def htpolynet_cure_plots(args):
             df,transition_times,cure_markers,interval_labels=density_evolution(args.proj)
             global_trace(df,['Temperature','Density','Potential'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
             if args.o:
-                print(f'All data to {args.o}')
+                logger.info(f'All data to {args.o}')
                 with open(args.o,'w') as f:
                     f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
         if args.g:
@@ -198,6 +201,7 @@ def cli():
     command_parsers['plots'].add_argument('-byiter',default=False,action='store_true',help='Plot graph network of resids for each iter separately')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
     command_parsers['plots'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
+    command_parsers['plots'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
 
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
