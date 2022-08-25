@@ -298,9 +298,9 @@ class Runtime:
                 logger.info(f'Restarting at {cc.cum_nxlinkbonds} bonds')
             TC.grab_files() # copy files locally
             cc.do_bondsearch(TC,RL,MD,reentry=reentry)
-            cc.do_preupdate_dragging(TC)
+            cc.do_preupdate_dragging(TC,gromacs_dict)
             cc.do_topology_update(TC,MD)
-            cc.do_relax(TC)
+            cc.do_relax(TC,gromacs_dict)
             cc.do_equilibrate(TC,gromacs_dict)
             cp.subset(TC,'cure',cc.iter)
             logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f} or {cc.cum_nxlinkbonds} bonds')

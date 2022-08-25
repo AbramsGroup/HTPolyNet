@@ -210,7 +210,7 @@ class CureController:
         self._to_yaml()
         logger.debug(f'next: {self.state}')
 
-    def do_preupdate_dragging(self,TC:TopoCoord):
+    def do_preupdate_dragging(self,TC:TopoCoord,gromacs_dict={}):
         if self.state!=state.cure_drag: return
         nbdf=self.bonds_df
         assert nbdf.shape[0]>0
@@ -220,12 +220,12 @@ class CureController:
         if any(nogos):
             logger.debug(f'No dragging is necessary')
         else:
-            self._distance_attenuation(TC,mode='drag')
+            self._distance_attenuation(TC,mode='drag',gromacs_dict=gromacs_dict)
         self.state=state.cure_update
         self._to_yaml()
         logger.debug(f'next: {self.state}')
 
-    def do_relax(self,TC:TopoCoord):
+    def do_relax(self,TC:TopoCoord,gromacs_dict={}):
         if self.state!=state.cure_relax and self.state!=state.cap_relax: return
         nbdf=self.bonds_df
         if nbdf.shape[0]==0: # no bonds identified
@@ -234,7 +234,7 @@ class CureController:
             else:
                 self.state=state.finished
             return
-        self._distance_attenuation(TC,mode='relax')
+        self._distance_attenuation(TC,mode='relax',gromacs_dict=gromacs_dict)
         if self.state==state.cure_relax:
             self.state=state.cure_equilibrate
         else:
@@ -308,7 +308,7 @@ class CureController:
     def _pfx(self):
         return f'{self.state.value}-{self.state}'
 
-    def _distance_attenuation(self,TC:TopoCoord,mode='drag'):
+    def _distance_attenuation(self,TC:TopoCoord,mode='drag',gromacs_dict={}):
         assert mode in ['drag','relax']
         statename=self.state.basename()
         opfx=self._pfx()
@@ -356,7 +356,7 @@ class CureController:
             for stg_dict in d['equilibration']:
                 ensemble=stg_dict['ensemble']
                 impfx=f'{statename}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
-                TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{impfx}')
+                TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{impfx}',**gromacs_dict)
                 # logger.debug(f'{TC.files["gro"]}')
             TC.restore_bond_parameters(saveT)
             TC.add_length_attribute(nbdf,attr_name='current_lengths')
