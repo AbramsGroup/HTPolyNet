@@ -166,7 +166,6 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
                 namvals.append((i,int(menu[i])))
         f.write('\n')
     namvals.sort(key=lambda x: x[1])
-    print(namvals)
 
     c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < {edr}-gmx.in')
     c.run()
@@ -175,7 +174,7 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
     colnames.insert(0,'time (ps)')
     # print(f'in gmx {edr}.edr {names}:')
     data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
-    print(f'{data.head().to_string()}')
+    # print(f'{data.head().to_string()}')
     data.iloc[:,0]+=xshift
     ndata=data.shape[0]
     if report_averages:

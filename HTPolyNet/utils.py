@@ -121,18 +121,18 @@ def density_evolution(proj_dir):
                             # print(f'->{iter_subd} {stg} {pfx} stg_present {stg_present}')
                     elif r'equil' in pfx or r'densif' in pfx:
                         eq_present=any([os.path.exists(os.path.join(iter_subd,pfx.format(ens=x))+r'.edr') for x in _md_ensembles])
-                        # print(f'{iter_subd} eq_present? {eq_present}')
+                        print(f'{iter_subd} eq_present? {eq_present}')
                         if eq_present:
                             for ens,qtys in _md_ensembles.items():
                                 edr_pfx=os.path.join(iter_subd,pfx.format(ens=ens))
                                 gro=edr_pfx+r'.gro'
-                                # print(edr_pfx,os.path.exists(edr_pfx+r'.edr'),ens,qtys)
+                                print(edr_pfx,os.path.exists(edr_pfx+r'.edr'),ens,qtys)
                                 if os.path.exists(edr_pfx+r'.edr'):
                                     density=0.0
                                     if ens!='npt':
                                         if os.path.exists(gro):
                                             density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
-                                    df,xshift=_concat_from_edr(df,edr_pfx,qtys,add=[('nbonds',nbonds)])
+                                    df,xshift=_concat_from_edr(df,edr_pfx,qtys,add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
                                     transition_times.append(xshift)
                                     interval_labels.append([edr_pfx])
                 iter+=1        
