@@ -139,8 +139,9 @@ def density_evolution(proj_dir):
                                     df,xshift=_concat_from_edr(df,edr_pfx,qtys,add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
                                     transition_times.append(xshift)
                                     interval_labels.append([edr_pfx])
-                iter+=1        
-                iter_subd=os.path.join(sysd,subd.format(iter=iter)) if r'iter' in subd else 'I_BET_THIS_FILE_DNE'
+                iter+=1       
+                iter_subd_rel=subd.format(iter=iter)
+                iter_subd=os.path.join(sysd,iter_subd_rel) if r'iter' in subd else 'I_BET_THIS_FILE_DNE'
             # if r'iter' in subd: markers.append(df.iloc[-1]['time (ps)'])
         else:
             this_subd=os.path.join(sysd,subd)
