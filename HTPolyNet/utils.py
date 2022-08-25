@@ -50,7 +50,7 @@ _indir_pfx['precure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibrati
 _indir_pfx['iter-n']=[r'1-cure_drag-stage-{stage:d}-{ens:s}',r'3-cure_relax-stage-{stage:d}-{ens:s}',r'4-cure_equilibrate-{ens:s}']
 _indir_pfx['capping']=[r'7-cap_relax-stage-{stage:d}-{ens:s}',r'8-cap_equilibrate-{ens:s}']
 _indir_pfx['postcure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
-def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0),('Temperature',0.0)]):
+def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
     xshift=0.0
     if not df.empty: xshift=df.iloc[-1]['time (ps)']
     if len(names)==0: return df,xshift
@@ -141,7 +141,8 @@ def density_evolution(proj_dir):
                     for ens,qtys in _md_ensembles.items():
                         edr_pfx=os.path.join(this_subd,pfx.format(ens=ens))
                         gro=edr_pfx+r'.gro'
-                        # print(edr_pfx,os.path.exists(edr_pfx+r'.edr'))
+                        print(edr_pfx,os.path.exists(edr_pfx+r'.edr'))
+                        print(gro,os.path.exists(gro))
                         if os.path.exists(edr_pfx+r'.edr'):
                             density=0.0
                             if ens=='nvt' and os.path.exists(gro):
