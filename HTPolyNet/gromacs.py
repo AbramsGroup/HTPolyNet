@@ -166,6 +166,7 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
                 namvals.append((i,menu[i]))
         f.write('\n')
     namvals.sort(key=lambda x: x[1])
+    print(namvals)
 
     c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < {edr}-gmx.in')
     c.run()
