@@ -81,10 +81,10 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
     quiet=kwargs.get('quiet',True)
     ignore_codes=kwargs.get('ignore_codes',[-11])
     maxwarn=kwargs.get('maxwarn',4)
-    mdrun_dict={}
+    mdrun_options=kwargs.get('mdrun_options',{})
     for option in ['rdd','dds','dlb','npme','nt','ntpmi','ntomp','ntomp_pme','nb','tunepme','pme','pmefft','bonded','update']:
-        if option in kwargs:
-            mdrun_dict[option]=kwargs[option]
+        if option in kwargs and not option in mdrun_options:
+            mdrun_options[option]=kwargs[option]
 
     tunepme=kwargs.get('tunepme','yes')
     if gro=='' or top=='' or out=='' or mdp=='':
@@ -100,9 +100,9 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
     c=Command(f'{sw.gmx} {sw.gmx_options} grompp',f=f'{mdp}.mdp',c=f'{gro}.gro',p=f'{top}.top',o=f'{out}.tpr',maxwarn=maxwarn)
     c.run(quiet=quiet)
     if single_molecule:
-        c=Command(f'{sw.mdrun_single_molecule}',deffnm=out,**mdrun_dict)
+        c=Command(f'{sw.mdrun_single_molecule}',deffnm=out,**mdrun_options)
     else:
-        c=Command(f'{sw.mdrun}',deffnm=out,**mdrun_dict)
+        c=Command(f'{sw.mdrun}',deffnm=out,**mdrun_options)
     c.run(quiet=quiet,ignore_codes=ignore_codes)
     if os.path.exists(f'{out}.gro'):
         pass

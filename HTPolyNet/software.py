@@ -24,6 +24,7 @@ class Software:
         if gromacs_dict:
             self.gmx=gromacs_dict.get('gmx','gmx')
             self.gmx_options=gromacs_dict.get('gmx_options','-quiet')
+            self.mdrun_options=gromacs_dict.get('mdrun_options',{})
             self.mdrun=gromacs_dict.get('mdrun',f'{self.gmx} {self.gmx_options} mdrun')
             self.mdrun_single_molecule=gromacs_dict.get('mdrun_single_molecule',f'{self.gmx} {self.gmx_options}  mdrun')
             logger.debug(f'{self.gmx}, {self.gmx_options}, {self.mdrun}')
@@ -72,10 +73,10 @@ def set_gmx_preferences(parmdict):
     gmx=_SW_.gmx
     gmx_options=_SW_.gmx_options
     mdrun=_SW_.mdrun
-    ngpu=parmdict.get('ngpu',-1)
-    gpus=getGPUs()
-    if len(gpus)>0 and ngpu!=-1:
-        _SW_.mdrun+=' -gpu_id '+','.join([f'{gpus[x]:d}' for x in range(len(gpus))])
-        mdrun=_SW_.mdrun
+    # ngpu=parmdict.get('ngpu',-1)
+    # gpus=getGPUs()
+    # if len(gpus)>0 and ngpu!=-1:
+    #     _SW_.mdrun+=' -gpu_id '+','.join([f'{gpus[x]:d}' for x in range(len(gpus))])
+    #     mdrun=_SW_.mdrun
     mdrun_single_molecule=_SW_.mdrun_single_molecule
 
