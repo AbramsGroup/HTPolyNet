@@ -109,10 +109,10 @@ class Configuration:
         self.molecule_report['implied by symmetry']+=generate_symmetry_reactions(self.reactions,self.molecules)
         for R in self.reactions:
             for rnum,rname in R.reactants.items():
-                logger.debug(f'z: update {rname} num {rnum} in rxn {R.name}')
+                # logger.debug(f'z: update {rname} num {rnum} in rxn {R.name}')
                 zrecs=[]
                 for atnum,atrec in R.atoms.items():
-                    logger.debug(f'query {atrec} for "reactant" {rnum}')
+                    # logger.debug(f'query {atrec} for "reactant" {rnum}')
                     if atrec['reactant']==rnum:
                         cprec=atrec.copy()
                         del cprec['reactant']
@@ -198,5 +198,4 @@ class Configuration:
             Z[Atoms.index(B.aj)]-=MaxB[-1]
         logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         self.maxconv=sum(MaxB)
-        exit()
         # return sum(MaxB)
