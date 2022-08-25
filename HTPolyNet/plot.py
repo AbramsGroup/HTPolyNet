@@ -81,7 +81,7 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
         for i in range(1,len(transition_times)):
             interval_times.append((transition_times[i]+transition_times[i-1])/2)
     for l,t in zip(interval_labels,interval_times):
-        print(f'{t} {l}')
+        logger.info(f'{t} {l}')
     assert len(interval_labels)==len(interval_times)
     L,R=-1,-1
     if len(markers)>1:
@@ -196,7 +196,7 @@ def diagnostics_graphs(logfiles,filename,**kwargs):
     for logfile in logfiles:
         with open(logfile,'r') as f:
             lines=f.read().split('\n')
-        print(f'read {len(lines)} lines from {logfile}')
+        logger.info(f'read {len(lines)} lines from {logfile}')
         data={}
         data['time']=[]
         data['iter']=[]
