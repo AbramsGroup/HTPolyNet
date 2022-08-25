@@ -50,7 +50,7 @@ _indir_pfx['precure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibrati
 _indir_pfx['iter-n']=[r'1-cure_drag-stage-{stage:d}-{ens:s}',r'3-cure_relax-stage-{stage:d}-{ens:s}',r'4-cure_equilibrate-{ens:s}']
 _indir_pfx['capping']=[r'7-cap_relax-stage-{stage:d}-{ens:s}',r'8-cap_equilibrate-{ens:s}']
 _indir_pfx['postcure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
-def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
+def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0),('Temperature',0.0)]):
     xshift=0.0
     if not df.empty: xshift=df.iloc[-1]['time (ps)']
     if len(names)==0: return df,xshift
