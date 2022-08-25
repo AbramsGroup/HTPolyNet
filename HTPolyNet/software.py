@@ -76,5 +76,6 @@ def set_gmx_preferences(parmdict):
     gpus=getGPUs()
     if len(gpus)>0 and ngpu!=-1:
         _SW_.mdrun+=' -gpu_id '+','.join([f'{gpus[x]:d}' for x in range(len(gpus))])
+        mdrun=_SW_.mdrun
     mdrun_single_molecule=_SW_.mdrun_single_molecule
 
