@@ -109,8 +109,10 @@ class Configuration:
         self.molecule_report['implied by symmetry']+=generate_symmetry_reactions(self.reactions,self.molecules)
         for R in self.reactions:
             for rnum,rname in R.reactants.items():
+                logger.debug(f'z: update {rname} num {rnum} in rxn {R.name}')
                 zrecs=[]
                 for atnum,atrec in R.atoms.items():
+                    logger.debug(f'query {atrec} for "reactant" {rnum}')
                     if atrec['reactant']==rnum:
                         cprec=atrec.copy()
                         del cprec['reactant']
@@ -124,10 +126,10 @@ class Configuration:
         for m,M in self.molecules.items():
             R=M.generator
             if not R==None:
-                logger.debug(f'{m}: {R.name}')
+                logger.debug(f'{m}: generator: {R.name}')
             else:
-                logger.debug(f'{m}: None')
-            logger.debug(f'zrecs: {M.zrecs}')
+                logger.debug(f'{m}: generator: None')
+            logger.debug(f'{m}: zrecs: {M.zrecs}')
         
         self.initial_composition=[]
         for molecule,mrec in self.constituents.items():
@@ -158,17 +160,20 @@ class Configuration:
         Bonds=[]
         Atoms=[]
         for R in [x for x in self.reactions if x.stage==reaction_stage.cure]:
+            logger.debug(str(R))
             for b in R.bonds:
                 A,B=b['atoms']
                 a,b=R.atoms[A],R.atoms[B]
                 aan,ban=a['atom'],b['atom']
                 ari,bri=a['resid'],b['resid']
                 arnum,brnum=a['reactant'],b['reactant']
+                # TODO: fix this -- z's defined by residue not reactant!!
                 arn,brn=R.reactants[arnum],R.reactants[brnum]
-                if arnum==brnum:  continue # this is an intermolecular reaction
+                if arnum==brnum:  continue # this is an intramolecular reaction
                 az,bz=a['z'],b['z']
                 ia=Atom(aan,ari,arnum,arn,az)
                 ib=Atom(ban,bri,brnum,brn,bz)
+                logger.debug(f'ia {ia} ib {ib} arn {arn} brn {brn}')
                 b=Bond(ia,ib)
                 if ia not in Atoms and arn in N:
                     Atoms.append(ia)
@@ -193,4 +198,5 @@ class Configuration:
             Z[Atoms.index(B.aj)]-=MaxB[-1]
         logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         self.maxconv=sum(MaxB)
+        exit()
         # return sum(MaxB)
