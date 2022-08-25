@@ -64,7 +64,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
 
 def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],interval_labels=[],y2names=[],**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
-    default_units={'Temperature':'K','Pressure':'bar','Density':'kg/m^3'}
+    default_units={'Temperature':'K','Pressure':'bar','Density':'kg/m^3','Potential':'kJ/mol'}
     units=kwargs.get('units',default_units)
     logging.disable(logging.DEBUG)
     size=kwargs.get('size',(16,4*len(names)))
