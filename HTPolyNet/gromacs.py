@@ -163,7 +163,7 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
         for i in names:
             if i in menu:
                 f.write(f'{menu[i]}\n')
-                namvals.append((i,menu[i]))
+                namvals.append((i,int(menu[i])))
         f.write('\n')
     namvals.sort(key=lambda x: x[1])
     print(namvals)
