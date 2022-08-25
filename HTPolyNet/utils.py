@@ -43,7 +43,7 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
     return fac*mass/volume
 
 _system_dirs=['densification','precure',r'iter-{iter:d}','capping','postcure']
-_md_ensembles={'nvt':['Temperature','Potential'],'npt':['Temperature','Potential','Density']}
+_md_ensembles={'nvt':['Temperature','Potential'],'npt':['Temperature','Potential','Density'],'default':['Temperature','Potential']}
 _indir_pfx={}
 _indir_pfx['densification']=[r'densified-{ens:s}',r'densified-repeat-{repeat:d}-{ens:s}']
 _indir_pfx['precure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
@@ -163,7 +163,7 @@ def density_evolution(proj_dir):
                         density=0.0
                         if os.path.exists(gro):
                             density=density_from_gro(gro,os.path.join(proj_dir,'molecules/parameterized'))
-                        df,xshift=_concat_from_edr(df,edr_pfx,['Temperature'],add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
+                        df,xshift=_concat_from_edr(df,edr_pfx,_md_ensembles['default'],add=[('nbonds',nbonds)],add_if_missing=[('Density',density)])
                         transition_times.append(xshift)
                         interval_labels.append([edr_pfx])
     return df,transition_times,markers,interval_labels

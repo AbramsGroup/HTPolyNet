@@ -81,11 +81,11 @@ def htpolynet_cure_plots(args):
     if args.proj:
         if args.t:
             df,transition_times,cure_markers,interval_labels=density_evolution(args.proj)
-            global_trace(df,['Temperature','Density'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
+            global_trace(df,['Temperature','Density','Potential'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
             if args.o:
                 print(f'All data to {args.o}')
                 with open(args.o,'w') as f:
-                    f.write(df.to_string(header=['time(ps)','Temperature','nbonds','Density'],index=False,float_format='{:.3f}'.format)+'\n')
+                    f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
         if args.g:
             if args.byiter:
                 n=1
