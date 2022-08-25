@@ -43,7 +43,7 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
     return fac*mass/volume
 
 _system_dirs=['densification','precure',r'iter-{iter:d}','capping','postcure']
-_md_ensembles={'nvt':['Temperature'],'npt':['Temperature','Density']}
+_md_ensembles={'nvt':['Temperature','Potential'],'npt':['Temperature','Density','Potential']}
 _indir_pfx={}
 _indir_pfx['densification']=[r'densified-{ens:s}',r'densified-repeat-{repeat:d}-{ens:s}']
 _indir_pfx['precure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
