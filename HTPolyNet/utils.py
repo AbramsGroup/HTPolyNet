@@ -29,13 +29,6 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
         T=templates[nm].Topology.D['atoms']
         for aname,c in adict.items():
             mass+=c*T[T['atom']==aname]['mass'].values[0]
-    # for i,r in C.A.iterrows():
-    #     resname=r['resName']
-    #     tadf=templates[resname].Topology.D['atoms']
-    #     atomName=r['atomName']
-    #     m=tadf[tadf['atom']==atomName]['mass'].values[0]
-    #     # print(f'{atomName} {m}')
-    #     mass+=m
     volume=np.prod(C.box.diagonal())
     fac=1.0
     if units=='SI':
