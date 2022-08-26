@@ -148,6 +148,7 @@ This example file contains nine distinct **directives**.
     ``gmx_options``                          quoted string   options to pass to all ``gmx`` calls (default ``-quiet -nobackup``)
     ``mdrun``                                quoted string   ``mdrun`` command (default ``gmx (options) mdrun``)
     ``mdrun_single_molecule``                quoted string   version of ``mdrun`` to use for any single-molecule Gromacs runs
+    ``mdrun_options``                        dict            command-line arguments to pass to ``mdrun`` (none)
     =====================================    ==============  =====================
 
     If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter ``gmx`` to the fully resolved pathname of ``gmx_mpi`` (or load the appropriate module), and use the ``mdrun`` parameters to specify the ``mpirun`` or ``mpiexec`` syntax needed to launch ``gmx_mpi mdrun``.  The ``gromacs_single_molecule`` subdirective allows you to specify a particular form of ``mdrun`` appropriate for single-molecule simulations.  These are most often used as part of parameterization or conformer generation.  Typically, it's best to run these on a single processor without domain decomposition.
@@ -168,16 +169,42 @@ This example file contains nine distinct **directives**.
   
     This **required** directive is a set of one or more "key":"record" pairs in which each key is the name of a molecule (here, "STY") and the record is a dictionary of keyword:value pairs.  The allowable keywords in a ``constituent`` record are as follows.
 
-    =====================================    ==============  =====================
-    ``constituents`` record keyword          Type            Description (default)
-    =====================================    ==============  =====================
-    ``count``                                int             (required) number of these molecules in the system
-    ``stereocenters``                        list            (optional) list of names of chiral carbon atoms if any
-    ``symmetry_equivalent_atoms``            list            (optional) list of sets of symmetry equivalent atom names, if any
-    ``nconformers``                          int             (optional) number of conformers to generate for this molecule, to give a little variety to the initial condition
-    =====================================    ==============  =====================
+    =====================================    =================  =====================
+    ``constituents`` record keyword          Type               Description (default)
+    =====================================    =================  =====================
+    ``count``                                int                (required) number of these molecules in the system
+    ``stereocenters``                        list               (optional) list of names of chiral carbon atoms if any
+    ``symmetry_equivalent_atoms``            list               (optional) list of sets of symmetry equivalent atom names, if any
+    ``conformers``                           conformers record  (optional) parameters specifying if and how initial conformers are generated
+    =====================================    =================  =====================
 
     In the example above, we are requesting a system of 100 styrene molecules.  The key ``STY`` signals to ``HTPolyNet`` that it should look for either ``STY.mol2`` or ``STY.pdb`` in ``./lib/molecules/inputs`` **or** it should look for ``STY.gro``, ``STY.itp``, ``STY.top``, and ``STY.grx`` in ``./lib/molecules/parameterized``.  The latter is the case if either ``htpolynet run`` or ``htpolynet parameterized`` has already been run with ``STY.mol2`` or ``STY.pdb``.  Multiple records in ``constituents`` should all have the "key":"record" syntax and be separated by commas.
+
+    ``HTPolyNet`` allows you to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either ``obabel``'s ``confomers`` capability or an MD simulation via ``gromacs`` to generate these.  The ``conformers`` record has two subdirectives:
+    =====================================    ==========================  =====================
+    ``conformers`` record keyword            Type                        Description (default)
+    =====================================    ==========================  =====================
+    ``count``                                int                         (required) number of unique conformers to generate (per stereoisomer)
+    ``generator``                            conformer generator record  (optional) parameters specifying how conformers are generated
+    =====================================    ==========================  =====================
+
+    The ``conformers.generator`` record has several subdirectives:
+    =====================================    ===========================  =====================
+    ``generator`` record keyword             Type                         Description (default)
+    =====================================    ===========================  =====================
+    ``name``                                 str                          (required) ``obabel`` or ``gromacs``
+    ``params``                               generator parameters record  (optional) parameters specifying the generator's operation (only relevant for ``gromacs``)
+    =====================================    ===========================  =====================
+
+    The ``conformers.generator.params`` record has several subdirectives:
+    =====================================    ===========================  =====================
+    ``params`` record keyword                Type                         Description (default)
+    =====================================    ===========================  =====================
+    ``ensemble``                             str                          ``nvt`` is the only option that makes sense
+    ``temperature``                          float                        (optional) Temperature of the conformer-generating MD simulation
+    ``ps``                                   float                        (optional) Duration of the conformer-generating MD simulation
+    ``pad``                                  float                        (optional) Box-size padding for the vacuum MD simulation
+    =====================================    ===========================  =====================
 
 * ``densification``
 
@@ -310,13 +337,15 @@ This example file contains nine distinct **directives**.
     ``reaction`` record directives  Type        Description
     ==============================  ==========  =================
     ``name``                        str         descriptive name
-    ``stage``                       str         "cure" or "cap"
+    ``stage``                       str         one of ``cure``, ``cap``, ``build``, or ``param``
     ``probability``                 float       probability that bond will form in one iteration if identified (1.0)
     ``reactants``                   dict        keyword: reactant key, value: reactant molecule name
     ``product``                     str         name of product molecule
     ``atoms``                       dict        keyword: atom key, value: **atom record**
     ``bonds``                       list        list of **bond records**, one item per bond formed in reaction
     ==============================  ==========  =================
+
+    The ``stage`` value signifies how ``HTPolyNet`` uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage ``cure``, ``cap``, or ``param``.  ``cure`` reactions are those assigned to take place during CURE.  ``cap`` reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  ``
 
     The ``atoms`` directive is a dictionary of atom records where the key is an atom "key", which is referenced in bond record.
 
