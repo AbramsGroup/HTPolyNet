@@ -13,6 +13,22 @@ logger=logging.getLogger(__name__)
 # prevents "RuntimeError: main thread is not in main loop" tk bug
 plt.switch_backend('agg')
 
+def scatter(df,xcolumn,columns=[],outfile='plot.png',**kwargs):
+    logging.disable(logging.DEBUG)
+    cmapname=kwargs.get('colormap','plasma')
+    size=kwargs.get('size',(8,6))
+    yunits=kwargs.get('yunits',None)
+    cmap=cm.get_cmap(cmapname)
+    fig,ax=plt.subplots(1,1,figsize=size)
+    ax.set_xlabel(xcolumn)
+    for n in columns:
+        ax.scatter(df[xcolumn],df[n],label=n)
+    plt.legend()
+    plt.savefig(outfile)
+    plt.close(fig)
+    logging.disable(logging.NOTSET)
+
+
 def trace(qty,edrs,outfile='plot.png',**kwargs):
     # disable debug-level logging and above since matplotlib has a lot of debug statements
     logging.disable(logging.DEBUG)

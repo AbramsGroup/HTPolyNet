@@ -1411,7 +1411,7 @@ class TopoCoord:
                 shutil.copy(filename,cwd)
             self.files[ext]=os.path.abspath(os.path.basename(filename))
 
-    def grompp_and_mdrun(self,out,mdp,**kwargs):
+    def grompp_and_mdrun(self,out,mdp,mylogger=logger.debug,**kwargs):
         wrap_coords=kwargs.get('wrap_coords',False)
         self.grab_files()
         top=os.path.basename(self.files['top']).replace('.top','')
@@ -1419,10 +1419,10 @@ class TopoCoord:
         assert os.path.exists(f'{top}.top')
         assert os.path.exists(f'{gro}.gro')
         assert os.path.exists(f'{mdp}.mdp')
-        logger.debug(f'TopoCoord: running Gromacs {pfs.cwd()} {top}, {gro}, {mdp}')
+        mylogger(f'TopoCoord: running Gromacs {top}, {gro}, {mdp}')
         msg=grompp_and_mdrun(gro=gro,top=top,out=out,mdp=mdp,**kwargs)
         self.copy_coords(TopoCoord(grofilename=f'{out}.gro',wrap_coords=wrap_coords))
-        logger.debug(f'after grompp_and_run: gro {self.files["gro"]}')
+        mylogger(f'after grompp_and_run: gro {self.files["gro"]}')
         return msg
 
     def load_files(self):

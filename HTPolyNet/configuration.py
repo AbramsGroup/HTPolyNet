@@ -42,31 +42,31 @@ class Configuration:
         self.maxconv=0.0
 
     @classmethod
-    def read(cls,filename):
+    def read(cls,filename,parse=True):
         extension=filename.split('.')[-1]
         if extension=='json':
-            return cls.read_json(filename)
+            return cls._read_json(filename,parse)
         elif extension=='yaml' or extension=='yml':
-            return cls.read_yaml(filename)
+            return cls._read_yaml(filename,parse)
         else:
             raise Exception(f'Unknown config file extension {extension}')
 
     @classmethod
-    def read_json(cls,filename):
+    def _read_json(cls,filename,parse=True):
         inst=cls()
         inst.cfgFile=filename
         with open(filename,'r') as f:
             inst.basedict=json.load(f)
-        inst.parse()
+        if parse: inst.parse()
         return inst
 
     @classmethod
-    def read_yaml(cls,filename):
+    def _read_yaml(cls,filename,parse=True):
         inst=cls()
         inst.cfgFile=filename
         with open(filename,'r') as f:
             inst.basedict=yaml.safe_load(f)
-        inst.parse()
+        if parse: inst.parse()
         return inst
     
     def NewMolecule(self,mol_name,molrec={}):

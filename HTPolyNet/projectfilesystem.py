@@ -132,7 +132,6 @@ class ProjectFileSystem:
             self._next_project_dir(projdir=projdir,reProject=reProject)
             self._setup_project_dir(topdirs=topdirs)
         
-
     def cdroot(self):
         os.chdir(self.rootPath)
         self.cwd=self.rootPath
@@ -141,19 +140,25 @@ class ProjectFileSystem:
         os.chdir(self.projPath)
         self.cwd=self.projPath
 
+    def go_to(self,subPath):
+        self.cdproj()
+        if os.path.exists(subPath):
+            os.chdir(subPath)
+            self.cwd=os.getcwd()
+
     def __str__(self):
         return f'root {self.rootPath}: cwd {self.cwd}'
 
     def _next_project_dir(self,projdir='next',reProject=False,prefix='proj-'):
         if not projdir=='next':  # explicit project directory is named
-            if os.path.exists(projdir) and not reProject:
-                raise Exception(f'Project directory {projdir} exists but you did not indicate you wanted to restart with the "-restart" flag')
+            # if os.path.exists(projdir) and not reProject:
+            #     raise Exception(f'Project directory {projdir} exists but you did not indicate you wanted to restart with the "-restart" flag')
             self.projPath=os.path.join(self.rootPath,projdir)
             if os.path.exists(projdir):
-                logger.info(f'Restarting project in {self.projPath}')
+                logger.info(f'Working in existing project {self.projPath}')
             else:
                 os.mkdir(projdir)
-                logger.info(f'New project in {self.projPath}')
+                logger.info(f'Working in new project {self.projPath}')
         else:
             i=0
             lastprojdir=''

@@ -15,6 +15,7 @@ from HTPolyNet.utils import density_evolution, graph_from_bondsfiles, graph_from
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.command import Command
+from HTPolyNet.postprocess import postprocess, tladder
 
 logger=logging.getLogger(__name__)
 
@@ -158,6 +159,7 @@ def cli():
     commands['plots']=htpolynet_cure_plots
     commands['fetch-example']=fetch_example
     commands['input-check']=input_check
+    commands['postprocess']=postprocess
 
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
@@ -166,6 +168,7 @@ def cli():
     helps['plots']='generate some plots that summarize aspects of the current completed build'
     helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
     helps['input-check']='reports number of atoms that would be in initial system based on config'
+    helps['postprocess']='perform specified postprocessing calculations on final results in one or more project directory'
 
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     subparsers=parser.add_subparsers()
@@ -208,6 +211,12 @@ def cli():
 
     command_parsers['input-check'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['input-check'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+
+    command_parsers['postprocess'].add_argument('-proj',type=str,default='',nargs='+',help='name of project directory')
+    command_parsers['postprocess'].add_argument('-Tladder',type=tladder, default='',help='run a temperature-ladder simulation to measure density=f(T); format (T0,T1,Ntemps,ps_per_run,ps_per_rise,ps_warmup')
+    command_parsers['postprocess'].add_argument('-cfg',type=str,default='',help='config file used to generate this project')
+    command_parsers['postprocess'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
+    command_parsers['postprocess'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
 
     args=parser.parse_args()
     args.func(args)

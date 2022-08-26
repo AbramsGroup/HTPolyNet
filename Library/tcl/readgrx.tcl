@@ -7,6 +7,7 @@
 #
 # Cameron F. Abrams cfa22@drexel.edu
 
+#set fn "proj-0/systems/final-results/final.grx"
 set fn "proj-0/systems/init/init.grx"
 set fp [open $fn "r"]
 set hdr [gets $fp]
