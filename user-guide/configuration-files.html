@@ -201,6 +201,10 @@
 <td><p>quoted string</p></td>
 <td><p>version of <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> to use for any single-molecule Gromacs runs</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mdrun_options</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>command-line arguments to pass to <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> (none)</p></td>
+</tr>
 </tbody>
 </table>
 <p>If you are running on a supercomputer with a native installation of Gromacs, it is likely you should point the parameter <code class="docutils literal notranslate"><span class="pre">gmx</span></code> to the fully resolved pathname of <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (or load the appropriate module), and use the <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> parameters to specify the <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">mpiexec</span></code> syntax needed to launch <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span> <span class="pre">mdrun</span></code>.  The <code class="docutils literal notranslate"><span class="pre">gromacs_single_molecule</span></code> subdirective allows you to specify a particular form of <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> appropriate for single-molecule simulations.  These are most often used as part of parameterization or conformer generation.  Typically, it’s best to run these on a single processor without domain decomposition.</p>
@@ -236,9 +240,9 @@
 <div><p>This <strong>required</strong> directive is a set of one or more “key”:”record” pairs in which each key is the name of a molecule (here, “STY”) and the record is a dictionary of keyword:value pairs.  The allowable keywords in a <code class="docutils literal notranslate"><span class="pre">constituent</span></code> record are as follows.</p>
 <table class="docutils align-default">
 <colgroup>
-<col style="width: 23%" />
-<col style="width: 9%" />
-<col style="width: 69%" />
+<col style="width: 28%" />
+<col style="width: 13%" />
+<col style="width: 58%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">constituents</span></code> record keyword</p></th>
@@ -259,13 +263,36 @@
 <td><p>list</p></td>
 <td><p>(optional) list of sets of symmetry equivalent atom names, if any</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nconformers</span></code></p></td>
-<td><p>int</p></td>
-<td><p>(optional) number of conformers to generate for this molecule, to give a little variety to the initial condition</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">conformers</span></code></p></td>
+<td><p>conformers record</p></td>
+<td><p>(optional) parameters specifying if and how initial conformers are generated</p></td>
 </tr>
 </tbody>
 </table>
 <p>In the example above, we are requesting a system of 100 styrene molecules.  The key <code class="docutils literal notranslate"><span class="pre">STY</span></code> signals to <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> that it should look for either <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> <strong>or</strong> it should look for <code class="docutils literal notranslate"><span class="pre">STY.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.itp</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.top</span></code>, and <code class="docutils literal notranslate"><span class="pre">STY.grx</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code>.  The latter is the case if either <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterized</span></code> has already been run with <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code>.  Multiple records in <code class="docutils literal notranslate"><span class="pre">constituents</span></code> should all have the “key”:”record” syntax and be separated by commas.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> allows you to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either <code class="docutils literal notranslate"><span class="pre">obabel</span></code>’s <code class="docutils literal notranslate"><span class="pre">confomers</span></code> capability or an MD simulation via <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> to generate these.  The <code class="docutils literal notranslate"><span class="pre">conformers</span></code> record has two subdirectives:
+=====================================    ==========================  =====================
+<code class="docutils literal notranslate"><span class="pre">conformers</span></code> record keyword            Type                        Description (default)
+=====================================    ==========================  =====================
+<code class="docutils literal notranslate"><span class="pre">count</span></code>                                int                         (required) number of unique conformers to generate (per stereoisomer)
+<code class="docutils literal notranslate"><span class="pre">generator</span></code>                            conformer generator record  (optional) parameters specifying how conformers are generated
+=====================================    ==========================  =====================</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">conformers.generator</span></code> record has several subdirectives:
+=====================================    ===========================  =====================
+<code class="docutils literal notranslate"><span class="pre">generator</span></code> record keyword             Type                         Description (default)
+=====================================    ===========================  =====================
+<code class="docutils literal notranslate"><span class="pre">name</span></code>                                 str                          (required) <code class="docutils literal notranslate"><span class="pre">obabel</span></code> or <code class="docutils literal notranslate"><span class="pre">gromacs</span></code>
+<code class="docutils literal notranslate"><span class="pre">params</span></code>                               generator parameters record  (optional) parameters specifying the generator’s operation (only relevant for <code class="docutils literal notranslate"><span class="pre">gromacs</span></code>)
+=====================================    ===========================  =====================</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">conformers.generator.params</span></code> record has several subdirectives:
+=====================================    ===========================  =====================
+<code class="docutils literal notranslate"><span class="pre">params</span></code> record keyword                Type                         Description (default)
+=====================================    ===========================  =====================
+<code class="docutils literal notranslate"><span class="pre">ensemble</span></code>                             str                          <code class="docutils literal notranslate"><span class="pre">nvt</span></code> is the only option that makes sense
+<code class="docutils literal notranslate"><span class="pre">temperature</span></code>                          float                        (optional) Temperature of the conformer-generating MD simulation
+<code class="docutils literal notranslate"><span class="pre">ps</span></code>                                   float                        (optional) Duration of the conformer-generating MD simulation
+<code class="docutils literal notranslate"><span class="pre">pad</span></code>                                  float                        (optional) Box-size padding for the vacuum MD simulation
+=====================================    ===========================  =====================</p>
 </div></blockquote>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">densification</span></code></p>
@@ -623,7 +650,7 @@
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">stage</span></code></p></td>
 <td><p>str</p></td>
-<td><p>“cure” or “cap”</p></td>
+<td><p>one of <code class="docutils literal notranslate"><span class="pre">cure</span></code>, <code class="docutils literal notranslate"><span class="pre">cap</span></code>, <code class="docutils literal notranslate"><span class="pre">build</span></code>, or <code class="docutils literal notranslate"><span class="pre">param</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">probability</span></code></p></td>
 <td><p>float</p></td>
@@ -647,6 +674,7 @@
 </tr>
 </tbody>
 </table>
+<p>The <code class="docutils literal notranslate"><span class="pre">stage</span></code> value signifies how <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage <code class="docutils literal notranslate"><span class="pre">cure</span></code>, <code class="docutils literal notranslate"><span class="pre">cap</span></code>, or <code class="docutils literal notranslate"><span class="pre">param</span></code>.  <code class="docutils literal notranslate"><span class="pre">cure</span></code> reactions are those assigned to take place during CURE.  <code class="docutils literal notranslate"><span class="pre">cap</span></code> reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  ``</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">atoms</span></code> directive is a dictionary of atom records where the key is an atom “key”, which is referenced in bond record.</p>
 <ul>
 <li><p>Atom records uniquely identify atoms in reactants, assigning them a shorthand key that is used in subsequent bond records.</p>
