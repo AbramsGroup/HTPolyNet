@@ -10,8 +10,8 @@ We'll use a very small, stoichiometric system of only 200 DGEBA's and 100 PACM's
 .. code-block:: yaml
 
   constituents: {  
-    DGE: { count: 200, symmetry_equivalent_atoms: [[C1,C2],[C3,C4],[O1,O2]], stereocenters: [C3], nconformers: 2 },                                       
-    PAC: { count: 100, symmetry_equivalent_atoms: [[N1,N2],[C1,C2]], stereocenters: [C1], nconformers: 2 }                                               
+    DGE: { count: 200, symmetry_equivalent_atoms: [[C1,C2],[C3,C4],[O1,O2]], stereocenters: [C3] },                                       
+    PAC: { count: 100, symmetry_equivalent_atoms: [[N1,N2],[C1,C2]], stereocenters: [C1] }                                               
   }
 
-Notice that the ``contituents`` directive is where we specify both symmetry-equivalent atoms and stereocenters in each monomer by referencing atom names.  DGEBA has three sets of symmetry-equivalent atoms and one symmetry-unique stereocenter, for example.  We are also asking ``HTPolyNet`` to generate two unique conformers per stereoisomer of each monomer for building the initial system.
+Notice that the ``contituents`` directive is where we specify both symmetry-equivalent atoms and stereocenters in each monomer by referencing atom names.  DGEBA has three sets of symmetry-equivalent atoms and one symmetry-unique stereocenter, for example.
