@@ -3,155 +3,30 @@
 Configuration Files
 -------------------
 
-The configuration file is how the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects configuration files to be in ``YAML`` format, and it recognizes nine section names:
+Overview
+^^^^^^^^
 
-1. :ref:`Title <config_title>`
-2. ``gromacs``
-3. ``ambertools``
-4. ``constituents``
-5. ``densification``
-6. ``precure``
-7. ``CURE``
-8. ``postcure``
-9. ``reactions``
+The configuration file is a YAML-format human-readable text file by which the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects at most ten distinct sections in a configuration file:
 
-For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like::
+=================   =====================  
+Section name        Role 
+=================   =====================  
+``Title``           Just a descriptive title
+``gromacs``         Directives for interacting with Gromacs
+``ambertools``      Directives for interacting with AmberTools
+``GAFF``            Directives for handling inconsistencies in the General Amber Force Field
+``constituents``    Directives for molecular constituents in the initial system``
+``densification``   Directives for how the densification phase is run
+``precure``         Directives for how precure equilibration and annealing is run
+``CURE``            Directives for how the CURE is run
+``postcure``        Directives for how postcure equilibration and annealing is run
+``reactions``       List of all reactions needed to build and cure the system
+=================   =====================  
 
-    Title: polystyrene
-    gromacs: {
-        gmx: 'gmx',
-        gmx_options: '-quiet -nobackup',
-        mdrun: 'gmx mdrun'
-    }
-    ambertools: {
-        charge_method: gas
-    }
-    constituents: {
-        STY: {count: 100}
-    }
-    densification: {
-        initial_density: 300.0,  # kg/m3
-        equilibration: [
-            { ensemble: min },
-            { ensemble: nvt, temperature: 300, ps: 10 },
-            { ensemble: npt, temperature: 300, pressure: 10, ps: 200 }
-        ]
-    }
-    precure: {
-        preequilibration: {
-            ensemble: npt,
-            temperature: 300,        # K
-            pressure: 1,             # bar
-            ps: 200
-        },
-        anneal: {
-            ncycles: 2,
-            initial_temperature: 300,
-            cycle_segments: [
-                { T: 300, ps: 0 },
-                { T: 600, ps: 20 },
-                { T: 600, ps: 20 },
-                { T: 300, ps: 20 },
-                { T: 300, ps: 20 }
-            ]
-        },
-        postequilibration: {
-            ensemble: npt,
-            temperature: 300,        # K
-            pressure: 1,             # bar
-            ps: 100
-        }
-    }
-    CURE: {
-        controls: {
-            initial_search_radius: 0.5, # nm
-            radial_increment: 0.25,     # nm
-            max_iterations: 150, 
-            desired_conversion: 0.95,
-            late_threshhold: 0.85
-        },
-        drag: {
-            trigger_distance: 0.6,   # nm
-            increment: 0.08,         # nm
-            limit: 0.3,              # nm
-            equilibration: [
-                { ensemble: min },
-                { ensemble: nvt, temperature: 600, nsteps: 1000 },
-                { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
-            ]
-        },
-        relax: {
-            increment: 0.08,         # nm
-            equilibration: [
-                { ensemble: min },
-                { ensemble: nvt, temperature: 600, nsteps: 1000 },
-                { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
-            ]
-        },
-        equilibrate: {
-            ensemble: npt,
-            temperature: 300,       # K
-            pressure: 1,            # bar
-            ps: 100
-        },
-        gromacs: {
-            rdefault: 0.9 # nm
-        }
-    }
-    postcure: {
-        anneal: {
-            ncycles: 2,
-            initial_temperature: 300,
-            cycle_segments: [
-                { T: 300, ps: 0 },
-                { T: 600, ps: 20 },
-                { T: 600, ps: 20 },
-                { T: 300, ps: 20 },
-                { T: 300, ps: 20 }
-            ]
-        },
-        postequilibration: {
-            ensemble: npt,
-            temperature: 300,       # K
-            pressure: 1,            # bar
-            ps:  100
-        }
-    }
-    reactions:
-    - {
-        name:        'sty1_1',
-        stage:       cure,
-        reactants:   {1: STY, 2: STY},
-        product:     STY~C1-C2~STY,
-        probability: 1.0,
-        atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C2, z: 1}
-        },
-        bonds: [
-            {atoms: [A, B], order: 1}
-        ]
-      }
-    - {
-        name:         'styCC',
-        stage:        cap,
-        reactants:    {1: STY},
-        product:      STYCC,
-        probability:  1.0,
-        atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 1, resid: 1, atom: C2, z: 1}
-        },
-        bonds: [
-            {atoms: [A, B], order: 2}
-        ]
-      }
+Sections can appear in any order (since the whole YAML file is like a nested python dictionary).  The ``gromacs`` and ``ambertools`` sections are mainly for specifying system-specific commands for running Gromacs and AmberTools executables; they have defaults that work for simple Linux workstations. ``densification``, ``precure``, and ``postcure`` all specify series of MD simulations on the system.  ``constituents`` specifies the initial make-up of the system, and ``reactions`` describe both how to build those constituents from input monomers (if necessary) as well as the types of bonds that you want to occur during polymerization.  Both ``constituents`` and ``reactions`` sections are where ``HTPolyNet`` extracts the names of molecular species in the system and how they are chemically interrelated.  ``CURE`` is the most complicated section, and it desribes how the CURE algorithm is to be run.  We consider each of these eight sections (minus ``Title``) below.
 
-This example file contains nine distinct **directives**. 
-
-.. _config_title:
-
-* ``Title``: Just a descriptive title for the system; it can be anything you like
+All the details
+^^^^^^^^^^^^^^^
 
 * ``gromacs``:  This directive specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
   
@@ -179,9 +54,29 @@ This example file contains nine distinct **directives**.
 
     For now, you can choose any charging method compatible with ``antechamber``.  The ``antechamber`` directive is optional.
 
+* ``GAFF``
+
+    In very rare instances, AmberTools will generate GAFF atom types and parameters that are internally inconsistent, or at least are not understandable by the ``parmed`` package that translates them into Gromacs topology files.  Directives in this section instruct ``HTPolyNet`` how to resolve these inconsistencies.  
+
+    =====================================    ==================  =====================
+    ``GAFF`` subdirective                    Type                Description (default)
+    =====================================    ==================  =====================
+    ``resolve_type_discrepancies``           **resolve record**  Directives for resolving atom type discrepancies
+    =====================================    ==================  =====================
+
+    ==============================================    =========================================
+    ``GAFF.resolve_type_discrepancies`` directives    Description (default)
+    ==============================================    =========================================
+    ``typename``                                      Name of interaction type in ``top`` file (``dihedraltypes``)
+    ``funcidx``                                       Function index assigned to this type in the ``top`` file
+    ``rule``                                          What rule to apply to resolve discrepancies (``stiffest``)
+    ==============================================    ========================================  =====================
+
+    Currently, the only type of discrepancy that can be handled is one in which four atom types define one dihedral type in one ``top`` file but a different one in another.  If these to topologies are merged to make a composite system, Gromacs will flag this as an error in the topology file.  This directive allows you to check for all such discrepancies before Gromacs does, and keep only the one that follows the stipulated ``rule``.  For dihedrals, the ``stiffest`` rule means that of the conflicting types, the one with the largest energetic parameters is kept.
+
 * ``constituents``
   
-    This **required** directive is a set of one or more "key":"record" pairs in which each key is the name of a molecule (here, "STY") and the record is a dictionary of keyword:value pairs.  The allowable keywords in a ``constituent`` record are as follows.
+    This directive is a set of one or more "key":"record" pairs in which each key is the name of a molecule (here, "STY") and the record is a dictionary of keyword:value pairs.  The allowable keywords in a ``constituent`` record are as follows.
 
     =====================================    =================  =====================
     ``constituents`` record keyword          Type               Description (default)
@@ -192,9 +87,10 @@ This example file contains nine distinct **directives**.
     ``conformers``                           conformers record  (optional) parameters specifying if and how initial conformers are generated
     =====================================    =================  =====================
 
-    In the example above, we are requesting a system of 100 styrene molecules.  The key ``STY`` signals to ``HTPolyNet`` that it should look for either ``STY.mol2`` or ``STY.pdb`` in ``./lib/molecules/inputs`` **or** it should look for ``STY.gro``, ``STY.itp``, ``STY.top``, and ``STY.grx`` in ``./lib/molecules/parameterized``.  The latter is the case if either ``htpolynet run`` or ``htpolynet parameterized`` has already been run with ``STY.mol2`` or ``STY.pdb``.  Multiple records in ``constituents`` should all have the "key":"record" syntax and be separated by commas.
+    In the example below, we are requesting a system of 100 styrene molecules.  The key ``STY`` signals to ``HTPolyNet`` that it should look for either ``STY.mol2`` or ``STY.pdb`` in ``./lib/molecules/inputs`` **or** it should look for ``STY.gro``, ``STY.itp``, ``STY.top``, and ``STY.grx`` in ``./lib/molecules/parameterized``.  The latter is the case if either ``htpolynet run`` or ``htpolynet parameterized`` has already been run with ``STY.mol2`` or ``STY.pdb``.  Multiple records in ``constituents`` should all have the "key":"record" syntax and be separated by commas.
 
-    ``HTPolyNet`` allows you to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either ``obabel``'s ``confomers`` capability or an MD simulation via ``gromacs`` to generate these.  The ``conformers`` record has two subdirectives:
+    ``HTPolyNet`` allows you the option to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either ``obabel``'s ``confomers`` capability or an MD simulation via ``gromacs`` to generate these.  The ``conformers`` record has two subdirectives:
+
     =====================================    ==========================  =====================
     ``conformers`` record keyword            Type                        Description (default)
     =====================================    ==========================  =====================
@@ -211,6 +107,7 @@ This example file contains nine distinct **directives**.
     =====================================    ===========================  =====================
 
     The ``conformers.generator.params`` record has several subdirectives:
+
     =====================================    ===========================  =====================
     ``params`` record keyword                Type                         Description (default)
     =====================================    ===========================  =====================
@@ -219,6 +116,8 @@ This example file contains nine distinct **directives**.
     ``ps``                                   float                        (optional) Duration of the conformer-generating MD simulation
     ``pad``                                  float                        (optional) Box-size padding for the vacuum MD simulation
     =====================================    ===========================  =====================
+
+    If an entry in ``constituents`` has no ``confomers`` member directive, then the confomer used for it in building the system is whatever one is in either the input ``mol2`` file (after AmberTools and ``parmed`` convert it to a ``gro`` file) **or** the ``gro`` file of the constructed molecule.
 
 * ``densification``
 
@@ -345,7 +244,7 @@ This example file contains nine distinct **directives**.
 
 * ``reactions``
 
-    The ``reactions`` directive contains a list of **reaction records**.  HTPolyNet expects one or more reaction templates to be defined in the configuration file.  A reaction is defined by the precise pairs of atoms that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.
+    The ``reactions`` directive contains a list of **reaction records** that specify the chemisty of any bonds that form to either build molecular constituents or polymers/crosslinks. A reaction is defined by the precise pairs of atom types that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.
 
     ==============================  ==========  =================
     ``reaction`` record directives  Type        Description
@@ -359,7 +258,9 @@ This example file contains nine distinct **directives**.
     ``bonds``                       list        list of **bond records**, one item per bond formed in reaction
     ==============================  ==========  =================
 
-    The ``stage`` value signifies how ``HTPolyNet`` uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage ``cure``, ``cap``, or ``param``.  ``cure`` reactions are those assigned to take place during CURE.  ``cap`` reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  ``
+    The ``stage`` value signifies how ``HTPolyNet`` uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage ``cure``, ``cap``, or ``param``.  ``cure`` reactions are those assigned to take place during CURE.  ``cap`` reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  ``param`` reactions are only performed in the beginning when molecular constituents are being built.  If you want to build the molecular constituents out of simpler monomers, you will likely want to use ``param`` reactions.  
+    .. 
+        Finally, if you have constituents that are themselves made of repeating monomeric components, you need parameterize on one such reaction, and others can be specified to be state ``build``, for which no parameters are generated, only a bond is formed.
 
     The ``atoms`` directive is a dictionary of atom records where the key is an atom "key", which is referenced in bond record.
 
@@ -384,3 +285,139 @@ This example file contains nine distinct **directives**.
         ======================== ============== =================
 
     In the example here, we define two unique reactions.  One is the C1-C2 bond that links two styrene monomers, and the other is the *intramolecular* C1-C2 double bond that "reverts" the active form of a monomer back to its "proper" form.  Since that reaction's ``stage`` is ``cap``, this signifies that it is formed only **after** CURE has finished.
+
+A Simple Configuration Example:  Polymerizing styrene
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like::
+
+    Title: polystyrene
+    constituents: {
+        STY: {count: 100}
+    }
+    densification: {
+        initial_density: 300.0,  # kg/m3
+        equilibration: [
+            { ensemble: min },
+            { ensemble: nvt, temperature: 300, ps: 10 },
+            { ensemble: npt, temperature: 300, pressure: 10, ps: 200 }
+        ]
+    }
+    precure: {
+        preequilibration: {
+            ensemble: npt,
+            temperature: 300,        # K
+            pressure: 1,             # bar
+            ps: 200
+        },
+        anneal: {
+            ncycles: 2,
+            initial_temperature: 300,
+            cycle_segments: [
+                { T: 300, ps: 0 },
+                { T: 600, ps: 20 },
+                { T: 600, ps: 20 },
+                { T: 300, ps: 20 },
+                { T: 300, ps: 20 }
+            ]
+        },
+        postequilibration: {
+            ensemble: npt,
+            temperature: 300,        # K
+            pressure: 1,             # bar
+            ps: 100
+        }
+    }
+    CURE: {
+        controls: {
+            initial_search_radius: 0.5, # nm
+            radial_increment: 0.25,     # nm
+            max_iterations: 150, 
+            desired_conversion: 0.95
+        },
+        drag: {
+            trigger_distance: 0.6,   # nm
+            increment: 0.08,         # nm
+            limit: 0.3,              # nm
+            equilibration: [
+                { ensemble: min },
+                { ensemble: nvt, temperature: 600, nsteps: 1000 },
+                { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
+            ]
+        },
+        relax: {
+            increment: 0.08,         # nm
+            equilibration: [
+                { ensemble: min },
+                { ensemble: nvt, temperature: 600, nsteps: 1000 },
+                { ensemble: npt, temperature: 600, pressure: 1, nsteps: 2000 }
+            ]
+        },
+        equilibrate: {
+            ensemble: npt,
+            temperature: 300,       # K
+            pressure: 1,            # bar
+            ps: 100
+        },
+        gromacs: {
+            rdefault: 0.9 # nm
+        }
+    }
+    postcure: {
+        anneal: {
+            ncycles: 2,
+            initial_temperature: 300,
+            cycle_segments: [
+                { T: 300, ps: 0 },
+                { T: 600, ps: 20 },
+                { T: 600, ps: 20 },
+                { T: 300, ps: 20 },
+                { T: 300, ps: 20 }
+            ]
+        },
+        postequilibration: {
+            ensemble: npt,
+            temperature: 300,       # K
+            pressure: 1,            # bar
+            ps:  100
+        }
+    }
+    reactions:
+    - {
+        name:        'sty1_1',
+        stage:       cure,
+        reactants:   {1: STY, 2: STY},
+        product:     STY~C1-C2~STY,
+        probability: 1.0,
+        atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 2, resid: 1, atom: C2, z: 1}
+        },
+        bonds: [
+            {atoms: [A, B], order: 1}
+        ]
+      }
+    - {
+        name:         'styCC',
+        stage:        cap,
+        reactants:    {1: STY},
+        product:      STYCC,
+        probability:  1.0,
+        atoms: {
+            A: {reactant: 1, resid: 1, atom: C1, z: 1},
+            B: {reactant: 1, resid: 1, atom: C2, z: 1}
+        },
+        bonds: [
+            {atoms: [A, B], order: 2}
+        ]
+      }
+
+Here is what this configuration specifies.  First, we are starting with 100 styrene molecules.  So, ``HTPolyNet`` expects to find an **input** file name ``STY.mol2`` **or** ``STY.pdb`` in the system or user ``molecules/inputs`` library.  A liquid system of these 100 styrenes is densified starting from an initial density of 300 kg/m\ :sup:`3`\ using first an energy minimzation, then an NVT MD simulation at 300 K for 10 picoseconds, then an NPT MD simulation at 300 K and 10 bar for 200 ps.  (The 10 bar helps to ensure rapid densification, but don't feel pressured to use it.)  To prepare for cure, the system is brought to 1 bar in the precure stage, where it is also annealed by raising the temprature from 300 to 600 K and bringing it back down, for two cycles.  The CURE is run such that 
+
+1. The search radius begins at 0.5 nm and goes up in increments of 0.25 nm;
+2. The algorithm bails out after 150 iterations; and
+3. The desired cure conversion is 95%;
+
+Prebond dragging is permitted if any newly identified bond is more than 0.6 nm in length, and the dragging happens in increments of 0.08 nm and each increment involves an energy minimization, an NVT MD simulation, and an NPT MD simulation, all at 600 K. (I find curing at elevated temperature keeps the system from jamming up, but don't feel forced to use this temperature.)  Bond relaxation takes place using a similar series of MD stages.  Remember that dragging is performed on the system **before** bonds are formed and atoms deleted, while bond relaxation occurs **after** the bonds are formed and the sacrificial, valence-conserving H atoms are deleted.  Finally, when all new bonds are relaxed, a single NPT MD simulation is performed to end an iteration.  Postcure involves an annealing simulation much like the precure stage, followed by an NPT MD simulation.
+
+Finally, we stipulate the reactions.  In this system, there is really only one reaction: the one in which the C1 of one styrene bonds to the C2 of another.  The reaction named ``sty1_1`` specifies this reaction, and causes ``HTPolyNet`` to parameterize the dimeric product named ``STY~C1-C2~STY``.  This molecule provides a template for atom types, charges, and new bonded interactions that must be merged into a system if such a bond forms.  The other reaction, ``styCC``, specifies a ``cap``ping reaction that reverts any unreacted styrene back to its proper form (with the C-C double bond). Capping reactions are 100\% optional; don't feel forced to use them.
