@@ -3,7 +3,17 @@
 Configuration Files
 -------------------
 
-The configuration file is how the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects configuration files to be in ``YAML`` format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of ``HTPolyNet`` execution.
+The configuration file is how the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects configuration files to be in ``YAML`` format, and it recognizes nine section names:
+
+1. ``Title``
+2. ``gromacs``
+3. ``ambertools``
+4. ``constituents``
+5. ``densification``
+6. ``precure``
+7. ``CURE``
+8. ``postcure``
+9. ``reactions``
 
 For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like::
 
@@ -137,7 +147,10 @@ For example, a simple configuration file that describes building a system of pol
         ]
       }
 
-This example file contains nine distinct **directives**.  
+This example file contains nine distinct **directives**. 
+
+.. _config_title:
+* ``Title``: Just a descriptive title for the system; it can be anything you like
 
 * ``gromacs``:  This directive specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
   
