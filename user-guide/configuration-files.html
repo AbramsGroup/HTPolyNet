@@ -35,140 +35,56 @@
             
   <section id="configuration-files">
 <span id="id1"></span><h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h1>
-<p>The configuration file is how the user tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects configuration files to be in <code class="docutils literal notranslate"><span class="pre">YAML</span></code> format.  In essence, the configuration is a set of dictonaries of key:value pairs, with each dictionary corresponding to certain phases of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> execution.</p>
-<p>For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Title</span><span class="p">:</span> <span class="n">polystyrene</span>
-<span class="n">gromacs</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">gmx</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span><span class="p">,</span>
-    <span class="n">gmx_options</span><span class="p">:</span> <span class="s1">&#39;-quiet -nobackup&#39;</span><span class="p">,</span>
-    <span class="n">mdrun</span><span class="p">:</span> <span class="s1">&#39;gmx mdrun&#39;</span>
-<span class="p">}</span>
-<span class="n">ambertools</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">charge_method</span><span class="p">:</span> <span class="n">gas</span>
-<span class="p">}</span>
-<span class="n">constituents</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">STY</span><span class="p">:</span> <span class="p">{</span><span class="n">count</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="n">densification</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">initial_density</span><span class="p">:</span> <span class="mf">300.0</span><span class="p">,</span>  <span class="c1"># kg/m3</span>
-    <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
-        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span>
-        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">200</span> <span class="p">}</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-<span class="n">precure</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">preequilibration</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># K</span>
-        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>             <span class="c1"># bar</span>
-        <span class="n">ps</span><span class="p">:</span> <span class="mi">200</span>
-    <span class="p">},</span>
-    <span class="n">anneal</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">ncycles</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="n">initial_temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-        <span class="n">cycle_segments</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="n">postequilibration</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># K</span>
-        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>             <span class="c1"># bar</span>
-        <span class="n">ps</span><span class="p">:</span> <span class="mi">100</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="n">CURE</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">controls</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">initial_search_radius</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="c1"># nm</span>
-        <span class="n">radial_increment</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>     <span class="c1"># nm</span>
-        <span class="n">max_iterations</span><span class="p">:</span> <span class="mi">150</span><span class="p">,</span>
-        <span class="n">desired_conversion</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span>
-        <span class="n">late_threshhold</span><span class="p">:</span> <span class="mf">0.85</span>
-    <span class="p">},</span>
-    <span class="n">drag</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">trigger_distance</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>   <span class="c1"># nm</span>
-        <span class="n">increment</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>         <span class="c1"># nm</span>
-        <span class="n">limit</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>              <span class="c1"># nm</span>
-        <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">2000</span> <span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="n">relax</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">increment</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>         <span class="c1"># nm</span>
-        <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">2000</span> <span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="n">equilibrate</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>       <span class="c1"># K</span>
-        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>            <span class="c1"># bar</span>
-        <span class="n">ps</span><span class="p">:</span> <span class="mi">100</span>
-    <span class="p">},</span>
-    <span class="n">gromacs</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">rdefault</span><span class="p">:</span> <span class="mf">0.9</span> <span class="c1"># nm</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="n">postcure</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">anneal</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">ncycles</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="n">initial_temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-        <span class="n">cycle_segments</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
-            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">}</span>
-        <span class="p">]</span>
-    <span class="p">},</span>
-    <span class="n">postequilibration</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
-        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>       <span class="c1"># K</span>
-        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>            <span class="c1"># bar</span>
-        <span class="n">ps</span><span class="p">:</span>  <span class="mi">100</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="n">reactions</span><span class="p">:</span>
-<span class="o">-</span> <span class="p">{</span>
-    <span class="n">name</span><span class="p">:</span>        <span class="s1">&#39;sty1_1&#39;</span><span class="p">,</span>
-    <span class="n">stage</span><span class="p">:</span>       <span class="n">cure</span><span class="p">,</span>
-    <span class="n">reactants</span><span class="p">:</span>   <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">STY</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">STY</span><span class="p">},</span>
-    <span class="n">product</span><span class="p">:</span>     <span class="n">STY</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">STY</span><span class="p">,</span>
-    <span class="n">probability</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="n">atoms</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C1</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-        <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C2</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-    <span class="p">},</span>
-    <span class="n">bonds</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span><span class="n">atoms</span><span class="p">:</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">order</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-    <span class="p">]</span>
-  <span class="p">}</span>
-<span class="o">-</span> <span class="p">{</span>
-    <span class="n">name</span><span class="p">:</span>         <span class="s1">&#39;styCC&#39;</span><span class="p">,</span>
-    <span class="n">stage</span><span class="p">:</span>        <span class="n">cap</span><span class="p">,</span>
-    <span class="n">reactants</span><span class="p">:</span>    <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">STY</span><span class="p">},</span>
-    <span class="n">product</span><span class="p">:</span>      <span class="n">STYCC</span><span class="p">,</span>
-    <span class="n">probability</span><span class="p">:</span>  <span class="mf">1.0</span><span class="p">,</span>
-    <span class="n">atoms</span><span class="p">:</span> <span class="p">{</span>
-        <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C1</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
-        <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C2</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-    <span class="p">},</span>
-    <span class="n">bonds</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span><span class="n">atoms</span><span class="p">:</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">order</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-    <span class="p">]</span>
-  <span class="p">}</span>
-</pre></div>
-</div>
-<p>This example file contains nine distinct <strong>directives</strong>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The configuration file is a YAML-format human-readable text file by which the user tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects at most ten distinct sections in a configuration file:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 81%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Section name</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Title</span></code></p></td>
+<td><p>Just a descriptive title</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+<td><p>Directives for interacting with Gromacs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ambertools</span></code></p></td>
+<td><p>Directives for interacting with AmberTools</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GAFF</span></code></p></td>
+<td><p>Directives for handling inconsistencies in the General Amber Force Field</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">constituents</span></code></p></td>
+<td><p>Directives for molecular constituents in the initial system``</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">densification</span></code></p></td>
+<td><p>Directives for how the densification phase is run</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">precure</span></code></p></td>
+<td><p>Directives for how precure equilibration and annealing is run</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CURE</span></code></p></td>
+<td><p>Directives for how the CURE is run</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">postcure</span></code></p></td>
+<td><p>Directives for how postcure equilibration and annealing is run</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">reactions</span></code></p></td>
+<td><p>List of all reactions needed to build and cure the system</p></td>
+</tr>
+</tbody>
+</table>
+<p>Sections can appear in any order (since the whole YAML file is like a nested python dictionary).  The <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> and <code class="docutils literal notranslate"><span class="pre">ambertools</span></code> sections are mainly for specifying system-specific commands for running Gromacs and AmberTools executables; they have defaults that work for simple Linux workstations. <code class="docutils literal notranslate"><span class="pre">densification</span></code>, <code class="docutils literal notranslate"><span class="pre">precure</span></code>, and <code class="docutils literal notranslate"><span class="pre">postcure</span></code> all specify series of MD simulations on the system.  <code class="docutils literal notranslate"><span class="pre">constituents</span></code> specifies the initial make-up of the system, and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> describe both how to build those constituents from input monomers (if necessary) as well as the types of bonds that you want to occur during polymerization.  Both <code class="docutils literal notranslate"><span class="pre">constituents</span></code> and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> sections are where <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> extracts the names of molecular species in the system and how they are chemically interrelated.  <code class="docutils literal notranslate"><span class="pre">CURE</span></code> is the most complicated section, and it desribes how the CURE algorithm is to be run.  We consider each of these eight sections (minus <code class="docutils literal notranslate"><span class="pre">Title</span></code>) below.</p>
+</section>
+<section id="all-the-details">
+<h2>All the details<a class="headerlink" href="#all-the-details" title="Permalink to this headline">¶</a></h2>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code>:  This directive specifies parameters <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses when invoking the Gromacs executable.</p>
 <blockquote>
@@ -235,9 +151,56 @@
 <p>For now, you can choose any charging method compatible with <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>.  The <code class="docutils literal notranslate"><span class="pre">antechamber</span></code> directive is optional.</p>
 </div></blockquote>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GAFF</span></code></p>
+<blockquote>
+<div><p>In very rare instances, AmberTools will generate GAFF atom types and parameters that are internally inconsistent, or at least are not understandable by the <code class="docutils literal notranslate"><span class="pre">parmed</span></code> package that translates them into Gromacs topology files.  Directives in this section instruct <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> how to resolve these inconsistencies.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 36%" />
+<col style="width: 17%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">GAFF</span></code> subdirective</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resolve_type_discrepancies</span></code></p></td>
+<td><p><strong>resolve record</strong></p></td>
+<td><p>Directives for resolving atom type discrepancies</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">GAFF.resolve_type_discrepancies</span></code> directives</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">typename</span></code></p></td>
+<td><p>Name of interaction type in <code class="docutils literal notranslate"><span class="pre">top</span></code> file (<code class="docutils literal notranslate"><span class="pre">dihedraltypes</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">funcidx</span></code></p></td>
+<td><p>Function index assigned to this type in the <code class="docutils literal notranslate"><span class="pre">top</span></code> file</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rule</span></code></p></td>
+<td><p>What rule to apply to resolve discrepancies (<code class="docutils literal notranslate"><span class="pre">stiffest</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Currently, the only type of discrepancy that can be handled is one in which four atom types define one dihedral type in one <code class="docutils literal notranslate"><span class="pre">top</span></code> file but a different one in another.  If these to topologies are merged to make a composite system, Gromacs will flag this as an error in the topology file.  This directive allows you to check for all such discrepancies before Gromacs does, and keep only the one that follows the stipulated <code class="docutils literal notranslate"><span class="pre">rule</span></code>.  For dihedrals, the <code class="docutils literal notranslate"><span class="pre">stiffest</span></code> rule means that of the conflicting types, the one with the largest energetic parameters is kept.</p>
+</div></blockquote>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">constituents</span></code></p>
 <blockquote>
-<div><p>This <strong>required</strong> directive is a set of one or more “key”:”record” pairs in which each key is the name of a molecule (here, “STY”) and the record is a dictionary of keyword:value pairs.  The allowable keywords in a <code class="docutils literal notranslate"><span class="pre">constituent</span></code> record are as follows.</p>
+<div><p>This directive is a set of one or more “key”:”record” pairs in which each key is the name of a molecule (here, “STY”) and the record is a dictionary of keyword:value pairs.  The allowable keywords in a <code class="docutils literal notranslate"><span class="pre">constituent</span></code> record are as follows.</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 28%" />
@@ -269,30 +232,88 @@
 </tr>
 </tbody>
 </table>
-<p>In the example above, we are requesting a system of 100 styrene molecules.  The key <code class="docutils literal notranslate"><span class="pre">STY</span></code> signals to <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> that it should look for either <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> <strong>or</strong> it should look for <code class="docutils literal notranslate"><span class="pre">STY.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.itp</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.top</span></code>, and <code class="docutils literal notranslate"><span class="pre">STY.grx</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code>.  The latter is the case if either <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterized</span></code> has already been run with <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code>.  Multiple records in <code class="docutils literal notranslate"><span class="pre">constituents</span></code> should all have the “key”:”record” syntax and be separated by commas.</p>
-<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> allows you to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either <code class="docutils literal notranslate"><span class="pre">obabel</span></code>’s <code class="docutils literal notranslate"><span class="pre">confomers</span></code> capability or an MD simulation via <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> to generate these.  The <code class="docutils literal notranslate"><span class="pre">conformers</span></code> record has two subdirectives:
-=====================================    ==========================  =====================
-<code class="docutils literal notranslate"><span class="pre">conformers</span></code> record keyword            Type                        Description (default)
-=====================================    ==========================  =====================
-<code class="docutils literal notranslate"><span class="pre">count</span></code>                                int                         (required) number of unique conformers to generate (per stereoisomer)
-<code class="docutils literal notranslate"><span class="pre">generator</span></code>                            conformer generator record  (optional) parameters specifying how conformers are generated
-=====================================    ==========================  =====================</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">conformers.generator</span></code> record has several subdirectives:
-=====================================    ===========================  =====================
-<code class="docutils literal notranslate"><span class="pre">generator</span></code> record keyword             Type                         Description (default)
-=====================================    ===========================  =====================
-<code class="docutils literal notranslate"><span class="pre">name</span></code>                                 str                          (required) <code class="docutils literal notranslate"><span class="pre">obabel</span></code> or <code class="docutils literal notranslate"><span class="pre">gromacs</span></code>
-<code class="docutils literal notranslate"><span class="pre">params</span></code>                               generator parameters record  (optional) parameters specifying the generator’s operation (only relevant for <code class="docutils literal notranslate"><span class="pre">gromacs</span></code>)
-=====================================    ===========================  =====================</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">conformers.generator.params</span></code> record has several subdirectives:
-=====================================    ===========================  =====================
-<code class="docutils literal notranslate"><span class="pre">params</span></code> record keyword                Type                         Description (default)
-=====================================    ===========================  =====================
-<code class="docutils literal notranslate"><span class="pre">ensemble</span></code>                             str                          <code class="docutils literal notranslate"><span class="pre">nvt</span></code> is the only option that makes sense
-<code class="docutils literal notranslate"><span class="pre">temperature</span></code>                          float                        (optional) Temperature of the conformer-generating MD simulation
-<code class="docutils literal notranslate"><span class="pre">ps</span></code>                                   float                        (optional) Duration of the conformer-generating MD simulation
-<code class="docutils literal notranslate"><span class="pre">pad</span></code>                                  float                        (optional) Box-size padding for the vacuum MD simulation
-=====================================    ===========================  =====================</p>
+<p>In the example below, we are requesting a system of 100 styrene molecules.  The key <code class="docutils literal notranslate"><span class="pre">STY</span></code> signals to <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> that it should look for either <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> <strong>or</strong> it should look for <code class="docutils literal notranslate"><span class="pre">STY.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.itp</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.top</span></code>, and <code class="docutils literal notranslate"><span class="pre">STY.grx</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code>.  The latter is the case if either <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterized</span></code> has already been run with <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code>.  Multiple records in <code class="docutils literal notranslate"><span class="pre">constituents</span></code> should all have the “key”:”record” syntax and be separated by commas.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> allows you the option to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either <code class="docutils literal notranslate"><span class="pre">obabel</span></code>’s <code class="docutils literal notranslate"><span class="pre">confomers</span></code> capability or an MD simulation via <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> to generate these.  The <code class="docutils literal notranslate"><span class="pre">conformers</span></code> record has two subdirectives:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 20%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">conformers</span></code> record keyword</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">count</span></code></p></td>
+<td><p>int</p></td>
+<td><p>(required) number of unique conformers to generate (per stereoisomer)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">generator</span></code></p></td>
+<td><p>conformer generator record</p></td>
+<td><p>(optional) parameters specifying how conformers are generated</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">conformers.generator</span></code> record has several subdirectives:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 18%" />
+<col style="width: 58%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">generator</span></code> record keyword</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p>str</p></td>
+<td><p>(required) <code class="docutils literal notranslate"><span class="pre">obabel</span></code> or <code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">params</span></code></p></td>
+<td><p>generator parameters record</p></td>
+<td><p>(optional) parameters specifying the generator’s operation (only relevant for <code class="docutils literal notranslate"><span class="pre">gromacs</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">conformers.generator.params</span></code> record has several subdirectives:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 21%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">params</span></code> record keyword</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description (default)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ensemble</span></code></p></td>
+<td><p>str</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">nvt</span></code> is the only option that makes sense</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">temperature</span></code></p></td>
+<td><p>float</p></td>
+<td><p>(optional) Temperature of the conformer-generating MD simulation</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ps</span></code></p></td>
+<td><p>float</p></td>
+<td><p>(optional) Duration of the conformer-generating MD simulation</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pad</span></code></p></td>
+<td><p>float</p></td>
+<td><p>(optional) Box-size padding for the vacuum MD simulation</p></td>
+</tr>
+</tbody>
+</table>
+<p>If an entry in <code class="docutils literal notranslate"><span class="pre">constituents</span></code> has no <code class="docutils literal notranslate"><span class="pre">confomers</span></code> member directive, then the confomer used for it in building the system is whatever one is in either the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file (after AmberTools and <code class="docutils literal notranslate"><span class="pre">parmed</span></code> convert it to a <code class="docutils literal notranslate"><span class="pre">gro</span></code> file) <strong>or</strong> the <code class="docutils literal notranslate"><span class="pre">gro</span></code> file of the constructed molecule.</p>
 </div></blockquote>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">densification</span></code></p>
@@ -630,7 +651,7 @@
 <ul id="reactions">
 <li><p><code class="docutils literal notranslate"><span class="pre">reactions</span></code></p>
 <blockquote>
-<div><p>The <code class="docutils literal notranslate"><span class="pre">reactions</span></code> directive contains a list of <strong>reaction records</strong>.  HTPolyNet expects one or more reaction templates to be defined in the configuration file.  A reaction is defined by the precise pairs of atoms that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.</p>
+<div><p>The <code class="docutils literal notranslate"><span class="pre">reactions</span></code> directive contains a list of <strong>reaction records</strong> that specify the chemisty of any bonds that form to either build molecular constituents or polymers/crosslinks. A reaction is defined by the precise pairs of atom types that become new covalent bonds.  To precisely define each such pair, the reaction must also identify one or more reactant molecules.  Each reaction also names a single product molecule.  HTPolyNet will build oligomer templates using these reactions and then GAFF-parameterize them.  The parameterizations are used during CURE to re-type atoms and reset charges after each new bond is formed.</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 28%" />
@@ -674,7 +695,7 @@
 </tr>
 </tbody>
 </table>
-<p>The <code class="docutils literal notranslate"><span class="pre">stage</span></code> value signifies how <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage <code class="docutils literal notranslate"><span class="pre">cure</span></code>, <code class="docutils literal notranslate"><span class="pre">cap</span></code>, or <code class="docutils literal notranslate"><span class="pre">param</span></code>.  <code class="docutils literal notranslate"><span class="pre">cure</span></code> reactions are those assigned to take place during CURE.  <code class="docutils literal notranslate"><span class="pre">cap</span></code> reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  ``</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">stage</span></code> value signifies how <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage <code class="docutils literal notranslate"><span class="pre">cure</span></code>, <code class="docutils literal notranslate"><span class="pre">cap</span></code>, or <code class="docutils literal notranslate"><span class="pre">param</span></code>.  <code class="docutils literal notranslate"><span class="pre">cure</span></code> reactions are those assigned to take place during CURE.  <code class="docutils literal notranslate"><span class="pre">cap</span></code> reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  <code class="docutils literal notranslate"><span class="pre">param</span></code> reactions are only performed in the beginning when molecular constituents are being built.  If you want to build the molecular constituents out of simpler monomers, you will likely want to use <code class="docutils literal notranslate"><span class="pre">param</span></code> reactions.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">atoms</span></code> directive is a dictionary of atom records where the key is an atom “key”, which is referenced in bond record.</p>
 <ul>
 <li><p>Atom records uniquely identify atoms in reactants, assigning them a shorthand key that is used in subsequent bond records.</p>
@@ -744,6 +765,141 @@
 </div></blockquote>
 </li>
 </ul>
+</section>
+<section id="a-simple-configuration-example-polymerizing-styrene">
+<h2>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Permalink to this headline">¶</a></h2>
+<p>For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Title</span><span class="p">:</span> <span class="n">polystyrene</span>
+<span class="n">constituents</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">STY</span><span class="p">:</span> <span class="p">{</span><span class="n">count</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="n">densification</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">initial_density</span><span class="p">:</span> <span class="mf">300.0</span><span class="p">,</span>  <span class="c1"># kg/m3</span>
+    <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">200</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+<span class="n">precure</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">preequilibration</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># K</span>
+        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>             <span class="c1"># bar</span>
+        <span class="n">ps</span><span class="p">:</span> <span class="mi">200</span>
+    <span class="p">},</span>
+    <span class="n">anneal</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">ncycles</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">initial_temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+        <span class="n">cycle_segments</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">postequilibration</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># K</span>
+        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>             <span class="c1"># bar</span>
+        <span class="n">ps</span><span class="p">:</span> <span class="mi">100</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">CURE</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">controls</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">initial_search_radius</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="c1"># nm</span>
+        <span class="n">radial_increment</span><span class="p">:</span> <span class="mf">0.25</span><span class="p">,</span>     <span class="c1"># nm</span>
+        <span class="n">max_iterations</span><span class="p">:</span> <span class="mi">150</span><span class="p">,</span>
+        <span class="n">desired_conversion</span><span class="p">:</span> <span class="mf">0.95</span>
+    <span class="p">},</span>
+    <span class="n">drag</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">trigger_distance</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>   <span class="c1"># nm</span>
+        <span class="n">increment</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>         <span class="c1"># nm</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>              <span class="c1"># nm</span>
+        <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">2000</span> <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">relax</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">increment</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>         <span class="c1"># nm</span>
+        <span class="n">equilibration</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">min</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">nvt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">1000</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">:</span> <span class="mi">2000</span> <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">equilibrate</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>       <span class="c1"># K</span>
+        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>            <span class="c1"># bar</span>
+        <span class="n">ps</span><span class="p">:</span> <span class="mi">100</span>
+    <span class="p">},</span>
+    <span class="n">gromacs</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">rdefault</span><span class="p">:</span> <span class="mf">0.9</span> <span class="c1"># nm</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">postcure</span><span class="p">:</span> <span class="p">{</span>
+    <span class="n">anneal</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">ncycles</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">initial_temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+        <span class="n">cycle_segments</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">},</span>
+            <span class="p">{</span> <span class="n">T</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="n">ps</span><span class="p">:</span> <span class="mi">20</span> <span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">postequilibration</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">ensemble</span><span class="p">:</span> <span class="n">npt</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>       <span class="c1"># K</span>
+        <span class="n">pressure</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>            <span class="c1"># bar</span>
+        <span class="n">ps</span><span class="p">:</span>  <span class="mi">100</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="n">reactions</span><span class="p">:</span>
+<span class="o">-</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span>        <span class="s1">&#39;sty1_1&#39;</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span>       <span class="n">cure</span><span class="p">,</span>
+    <span class="n">reactants</span><span class="p">:</span>   <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">STY</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">STY</span><span class="p">},</span>
+    <span class="n">product</span><span class="p">:</span>     <span class="n">STY</span><span class="o">~</span><span class="n">C1</span><span class="o">-</span><span class="n">C2</span><span class="o">~</span><span class="n">STY</span><span class="p">,</span>
+    <span class="n">probability</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">atoms</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C1</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C2</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">bonds</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="n">atoms</span><span class="p">:</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">order</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="o">-</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span>         <span class="s1">&#39;styCC&#39;</span><span class="p">,</span>
+    <span class="n">stage</span><span class="p">:</span>        <span class="n">cap</span><span class="p">,</span>
+    <span class="n">reactants</span><span class="p">:</span>    <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">STY</span><span class="p">},</span>
+    <span class="n">product</span><span class="p">:</span>      <span class="n">STYCC</span><span class="p">,</span>
+    <span class="n">probability</span><span class="p">:</span>  <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">atoms</span><span class="p">:</span> <span class="p">{</span>
+        <span class="n">A</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C1</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+        <span class="n">B</span><span class="p">:</span> <span class="p">{</span><span class="n">reactant</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">resid</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">atom</span><span class="p">:</span> <span class="n">C2</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">bonds</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="n">atoms</span><span class="p">:</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">],</span> <span class="n">order</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>Here is what this configuration specifies.  First, we are starting with 100 styrene molecules.  So, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects to find an <strong>input</strong> file name <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> <strong>or</strong> <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code> in the system or user <code class="docutils literal notranslate"><span class="pre">molecules/inputs</span></code> library.  A liquid system of these 100 styrenes is densified starting from an initial density of 300 kg/m<sup>3</sup>using first an energy minimzation, then an NVT MD simulation at 300 K for 10 picoseconds, then an NPT MD simulation at 300 K and 10 bar for 200 ps.  (The 10 bar helps to ensure rapid densification, but don’t feel pressured to use it.)  To prepare for cure, the system is brought to 1 bar in the precure stage, where it is also annealed by raising the temprature from 300 to 600 K and bringing it back down, for two cycles.  The CURE is run such that</p>
+<ol class="arabic simple">
+<li><p>The search radius begins at 0.5 nm and goes up in increments of 0.25 nm;</p></li>
+<li><p>The algorithm bails out after 150 iterations; and</p></li>
+<li><p>The desired cure conversion is 95%;</p></li>
+</ol>
+<p>Prebond dragging is permitted if any newly identified bond is more than 0.6 nm in length, and the dragging happens in increments of 0.08 nm and each increment involves an energy minimization, an NVT MD simulation, and an NPT MD simulation, all at 600 K. (I find curing at elevated temperature keeps the system from jamming up, but don’t feel forced to use this temperature.)  Bond relaxation takes place using a similar series of MD stages.  Remember that dragging is performed on the system <strong>before</strong> bonds are formed and atoms deleted, while bond relaxation occurs <strong>after</strong> the bonds are formed and the sacrificial, valence-conserving H atoms are deleted.  Finally, when all new bonds are relaxed, a single NPT MD simulation is performed to end an iteration.  Postcure involves an annealing simulation much like the precure stage, followed by an NPT MD simulation.</p>
+<p>Finally, we stipulate the reactions.  In this system, there is really only one reaction: the one in which the C1 of one styrene bonds to the C2 of another.  The reaction named <code class="docutils literal notranslate"><span class="pre">sty1_1</span></code> specifies this reaction, and causes <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to parameterize the dimeric product named <code class="docutils literal notranslate"><span class="pre">STY~C1-C2~STY</span></code>.  This molecule provides a template for atom types, charges, and new bonded interactions that must be merged into a system if such a bond forms.  The other reaction, <code class="docutils literal notranslate"><span class="pre">styCC</span></code>, specifies a <code class="docutils literal notranslate"><span class="pre">cap</span></code> reaction that reverts any unreacted styrene back to its proper form (with the C-C double bond). Capping reactions are 100% optional; don’t feel forced to use them.</p>
+</section>
 </section>
 
 
