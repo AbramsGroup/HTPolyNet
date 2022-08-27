@@ -150,6 +150,7 @@ For example, a simple configuration file that describes building a system of pol
 This example file contains nine distinct **directives**. 
 
 .. _config_title:
+
 * ``Title``: Just a descriptive title for the system; it can be anything you like
 
 * ``gromacs``:  This directive specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
