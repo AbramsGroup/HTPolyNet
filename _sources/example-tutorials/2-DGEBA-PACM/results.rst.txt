@@ -23,7 +23,7 @@ By using the ``plots`` subcommand, we can generate traces of temperature, densit
 
 Below we show before and after pictures of the system, where all bonds associated with crosslink sites are rendered in "licorice" with the rest in lines, and DGEBA molecules are mauve while PACMs are green:
 
-. list-table:: 
+.. list-table:: 
 
     * - .. figure:: pics/dge-pac-liq.png
 
