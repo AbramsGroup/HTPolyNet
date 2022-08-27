@@ -64,6 +64,7 @@ All the details
     ``resolve_type_discrepancies``           **resolve record**  Directives for resolving atom type discrepancies
     =====================================    ==================  =====================
 
+
     ==============================================    =========================================
     ``GAFF.resolve_type_discrepancies`` directives    Description (default)
     ==============================================    =========================================
