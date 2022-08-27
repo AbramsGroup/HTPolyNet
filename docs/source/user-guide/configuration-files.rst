@@ -70,7 +70,7 @@ All the details
     ``typename``                                      Name of interaction type in ``top`` file (``dihedraltypes``)
     ``funcidx``                                       Function index assigned to this type in the ``top`` file
     ``rule``                                          What rule to apply to resolve discrepancies (``stiffest``)
-    ==============================================    ========================================  =====================
+    ==============================================    ========================================
 
     Currently, the only type of discrepancy that can be handled is one in which four atom types define one dihedral type in one ``top`` file but a different one in another.  If these to topologies are merged to make a composite system, Gromacs will flag this as an error in the topology file.  This directive allows you to check for all such discrepancies before Gromacs does, and keep only the one that follows the stipulated ``rule``.  For dihedrals, the ``stiffest`` rule means that of the conflicting types, the one with the largest energetic parameters is kept.
 
@@ -99,6 +99,7 @@ All the details
     =====================================    ==========================  =====================
 
     The ``conformers.generator`` record has several subdirectives:
+    
     =====================================    ===========================  =====================
     ``generator`` record keyword             Type                         Description (default)
     =====================================    ===========================  =====================
