@@ -99,7 +99,7 @@ All the details
     =====================================    ==========================  =====================
 
     The ``conformers.generator`` record has several subdirectives:
-    
+
     =====================================    ===========================  =====================
     ``generator`` record keyword             Type                         Description (default)
     =====================================    ===========================  =====================
@@ -260,6 +260,7 @@ All the details
     ==============================  ==========  =================
 
     The ``stage`` value signifies how ``HTPolyNet`` uses the reaction.  It will generate GAFF parameters and topologies for any product of a reaction with stage ``cure``, ``cap``, or ``param``.  ``cure`` reactions are those assigned to take place during CURE.  ``cap`` reactions are optional and take place once the CURE has finished; these can be used to revert the active form of any unreacted monomers back to their proper forms.  ``param`` reactions are only performed in the beginning when molecular constituents are being built.  If you want to build the molecular constituents out of simpler monomers, you will likely want to use ``param`` reactions.  
+    
     .. 
         Finally, if you have constituents that are themselves made of repeating monomeric components, you need parameterize on one such reaction, and others can be specified to be state ``build``, for which no parameters are generated, only a bond is formed.
 
