@@ -5,7 +5,7 @@ Configuration Files
 
 The configuration file is how the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects configuration files to be in ``YAML`` format, and it recognizes nine section names:
 
-1. ``Title``
+1. :ref:`Title <_onfig_title>`
 2. ``gromacs``
 3. ``ambertools``
 4. ``constituents``
