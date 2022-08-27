@@ -25,10 +25,10 @@ Below we show before and after pictures of the system, where all bonds associate
 
 .. list-table:: 
 
-    * - .. figure:: pics/dge-pac-liq.png
+    * - .. figure:: dge-pac-liq.png
 
            System before cure.
 
-      - .. figure:: pics/cge-pac-cured.png
+      - .. figure:: dge-pac-cured.png
 
            System after cure.
