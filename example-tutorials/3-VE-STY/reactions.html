@@ -38,6 +38,37 @@
 <p>There are three types of reactions defined in the YAML configuration files.  The first two describe how to build a bisGMA molecule, the next four describe the polymerization reactions, and the final two describe capping reactions for unreacted monomers.</p>
 <section id="building-bisgma">
 <h2>Building bisGMA<a class="headerlink" href="#building-bisgma" title="Permalink to this headline">¶</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><figure class="align-default" id="id1">
+<img alt="../../_images/BPA.png" src="../../_images/BPA.png" />
+<figcaption>
+<p><span class="caption-text">Bisphenol-A</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</td>
+<td><figure class="align-default" id="id2">
+<img alt="../../_images/HIE.png" src="../../_images/HIE.png" />
+<figcaption>
+<p><span class="caption-text">2-hydroxypropyl isopropyl ester (HIE)</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</td>
+<td><figure class="align-default" id="id3">
+<img alt="../../_images/GMA.png" src="../../_images/GMA.png" />
+<figcaption>
+<p><span class="caption-text">bis GMA</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</td>
+</tr>
+</tbody>
+</table>
 <p>Let’s focus first on the reactions used to build bisGMA.  First, we react one HIE to one hydroxyl on BPA:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
 <span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">B1</span><span class="p p-Indicator">,</span><span class="w"></span>
@@ -77,8 +108,8 @@
 <h2>Cure reactions<a class="headerlink" href="#cure-reactions" title="Permalink to this headline">¶</a></h2>
 <p>Now that the input structures for BisGMA and styrene have been generated, we are ready to generate the reaction dictionaries that describe the chemistry.  BisGMA has two carbon-carbon double bonds, each housed in HIE monomers between their C1 and C2 atoms.  As on styrene, we have also chosen on HIE to let <code class="docutils literal notranslate"><span class="pre">C1</span></code> be the radical carbon and <code class="docutils literal notranslate"><span class="pre">C2</span></code> be the methyl.</p>
 <p>Our basic reaction model is that a radical carbon “attacks” a methyl carbon, ejecting 2 sacrifical H’s and forming a single C-C bond.  We must therefore encode four basic reaction scenarios:</p>
-<table class="colwidths-auto docutils align-default" id="id1">
-<caption><span class="caption-text">Monomer-monomer reactions in the bisGMA/styrene system</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<table class="colwidths-auto docutils align-default" id="id4">
+<caption><span class="caption-text">Monomer-monomer reactions in the bisGMA/styrene system</span><a class="headerlink" href="#id4" title="Permalink to this table">¶</a></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Attacker (C1 owner)</p></th>
 <th class="head"><p>Attackee (C2 owner)</p></th>
