@@ -24,7 +24,7 @@ In this system, the only *actual* reaction is between  a ``C1`` of one 4-methyls
 
 Naturally, this generates a dimer:
 
-.. image:: EMB1_1_labelled.png
+.. image:: pics/EMB1_1_labelled.png
 
 Notice that atom ``C1`` of resid 1 has "attacked" ``C2`` of resid 2 to form the bond.
 

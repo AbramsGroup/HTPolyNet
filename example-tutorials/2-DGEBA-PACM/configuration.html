@@ -43,7 +43,30 @@
 <span class="p p-Indicator">}</span><span class="w"></span>
 </pre></div>
 </div>
-<p>Notice that the <code class="docutils literal notranslate"><span class="pre">contituents</span></code> directive is where we specify both symmetry-equivalent atoms and stereocenters in each monomer by referencing atom names.  DGEBA has three sets of symmetry-equivalent atoms and one symmetry-unique stereocenter, for example.</p>
+<p>Notice that the <code class="docutils literal notranslate"><span class="pre">contituents</span></code> directive is where we specify both symmetry-equivalent atoms and stereocenters in each monomer by referencing atom names.  DGEBA has three sets of symmetry-equivalent atoms and one symmetry-unique stereocenter, for example.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses information on symmetry-equivalent atoms to “expand” the set of reactions to include all possible combinations of reactants that symmetry allows.  In the case of a general diepoxy with both C1 and C2 atoms designated as reactive and a general diamine with both N1 and N2 atoms designated as reactive, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expands the <em>single</em> primary-to-seconary amine reaction that generates DGE~C1-N1~PAC, which is explicitly specified in the configuration file, into a set of four reactions with distinct products:</p>
+<ol class="arabic simple">
+<li><p>PAC~N1-C1~DGE</p></li>
+<li><p>PAC~N1-C2~DGE</p></li>
+<li><p>PAC~N2-C1~DGE</p></li>
+<li><p>PAC~N2-C2~DGE</p></li>
+</ol>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> only does this because we stipulate that atoms C1 and C2 in DGE be treated as symmetric, and that atoms N1 and N2 on PACM be treated as symmetric.  Now, from the standpoint of chemical structure, these atoms <em>are</em> strictly symmetry-equivalent, since the molecules themselves are symmetric.  However, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> does not recognize symmetry; the user can instead use symmetry-equivalence as a shortcut to automatically build all possible intermolecular interactions.  This guarantees that all possible reactions are templated correctly during a cure.</p>
+<p>Note also that since PAC~N1-C1~DGE is the product of the primary-to-secondary amine reaction <em>and</em> a reactant in the secondary-to-tertiary reaction, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> must also expand the secondary-to-tertiary amine reactions into a set of <em>eight</em> distinct reactions whose products are:</p>
+<ol class="arabic simple">
+<li><p>PAC~N1-C1~DGE~N1-C1~DGE</p></li>
+<li><p>PAC~N1-C2~DGE~N1-C1~DGE</p></li>
+<li><p>PAC~N2-C1~DGE~N2-C1~DGE</p></li>
+<li><p>PAC~N2-C2~DGE~N2-C1~DGE</p></li>
+<li><p>PAC~N1-C1~DGE~N1-C2~DGE</p></li>
+<li><p>PAC~N1-C2~DGE~N1-C2~DGE</p></li>
+<li><p>PAC~N2-C1~DGE~N2-C2~DGE</p></li>
+<li><p>PAC~N2-C2~DGE~N2-C2~DGE</p></li>
+</ol>
+<p>Note that each of these reactions indicates a product where <em>only</em> N1 <em>or</em> N2 of a PACM is reacted with <em>either</em> a C1 <em>or</em> C2 of two distinct DGEBAs.  Because the two nitrogens are so far apart on PACM, there is no need to parameterize an oligomer in which <em>both</em> N1 <em>and</em> N2 are simultaneously bound to DGEBA carbons.  So we see that during cure, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will search for atoms that satisfy one of <em>twelve</em> possible reactions, all because we specified <em>two</em> reactions among reactants that have several sets of symmetry-equivalent atoms <em>and</em> the product of the first reaction is a reactant in the second.</p>
+<p>Stereocenters are used by <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate enantiomers strictly for building initial liquid systems that are racemic by default.  That is, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> assumes that any monomer structure provided by an input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> file is a single enantiomer (if it has one or more stereocenters), and instead of copying only this structure to build the liquid, it instead generates <em>all</em> possible enantiomers by flipping stereocenters and then randomly selects among these to build a liquid.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> does brute force enumeration of enantiomers, meaning that a molecule with <em>N</em> stereocenters will have 2<sup>N</sup>enantiomers.</p>
+<p>In the case of of DGEBA, two atoms are designated by stereocenters, and since they each also belong to distinct groups of symmetry-equivalent atoms, a DGEBA has four unique stereocenters.  This means 16 unique DGEBA diastereomers are used to build the liquid.  Two of those atoms are not strictly chiral in the activated form, since they each have two methyl ligands, but only one of those methyl ligands contains the reactive C1 (or by symmetry, C2) atom that will form a bond, at which point they <em>become</em> chiral.  Since we don’t want polymerization to introduce handedness, we make sure we have a racemic mixture to begin with with respect to all <em>potentially</em> chiral atoms.</p>
+<p>PACM has only two relevant stereocenters, which are the carbons in the cyclohexyl rings to which the amine nitrogens are attached, so four distinct PACM diastereomers are used in building the initial liquid.</p>
+<p>Now we can turn to actually <a class="reference internal" href="run.html#dgeba-run"><span class="std std-ref">running the build</span></a>.</p>
 </section>
 
 
@@ -70,6 +93,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Example Tutorials</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../1-polymethylstyrene/index.html">Poly(4-methyl styrene)</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">DGEBA-PACM Thermoset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../3-VE-STY/index.html">BisGMA-Styrene Thermoset</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-guide/index.html">Reference Guide</a></li>

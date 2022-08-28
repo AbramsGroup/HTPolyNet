@@ -82,7 +82,7 @@ Then a description of all the molecules that need to be created:
     INFO> Initial composition is DGE 200, PAC 100
     INFO> 100% conversion is 400 bonds
 
-Notice that the symmetry-equivalent atoms in both monomers result in a total of 16 unique cure reactions forming secondary and tertiary amines, as well as two capping reactions for DGEBA.  Now the initial construction of the system and its densification are next:
+Notice that the symmetry-equivalent atoms in both monomers result in a total of 12 unique cure reactions forming secondary and tertiary amines, as well as two capping reactions for DGEBA.  Now the initial construction of the system and its densification are next:
 
 .. code-block:: console
 
@@ -254,5 +254,4 @@ If we consider the ``hi``-cure system, we see that it took 40 iterations to reac
     INFO> *********** Final data to proj-1/systems/final-results ************
     INFO> ********************* HTPolyNet runtime ends **********************
 
-
-
+Let's now take a look at some selected :ref:`results <dgeba_results>`.
