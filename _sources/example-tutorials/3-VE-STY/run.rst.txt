@@ -74,7 +74,7 @@ First are the molecules that are explicit in the configuration file:
     INFO> AmberTools> generating GAFF parameters from GMA.mol2
     INFO> GMA: 516.61 g/mol
 
-Next are the diastereomers that are implied by symmetry.  Note that these are just built, not parameterized:
+Next are the diastereomers that are implied by stereocenters.  Note that these are just built, not parameterized:
 
 .. code-block:: console
 
@@ -114,6 +114,8 @@ Next are the diastereomers that are implied by symmetry.  Note that these are ju
     INFO> GMAS-14: 516.61 g/mol
     INFO> Built GMAS-15 using topology of GMA; copying GMA.top to GMAS-15.top
     INFO> GMAS-15: 516.61 g/mol
+
+Notice that this generates three of the four diastereomers of the intermediate GM1, and 15 of the 16 diastereomers of GMA; the missing ones were already generated!  This set of 16 GMA diastereomers is used to add GMA molecules to the initial liquid.
 
 Finally, the 32 molecules implied by chain-expansion of the cure reactions:
 
