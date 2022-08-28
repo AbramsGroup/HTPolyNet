@@ -1,4 +1,4 @@
-.. _dgeba_pacm_results:
+.. _dgeba_results:
 
 Results
 -------
@@ -7,7 +7,7 @@ The :ref:`results section of the PMS tutorial <pms_results>` does a good job wal
 
 First, if we look in either ``proj-0/plots`` (lo-cure) or ``proj-1/plots`` (hi-cure), we can see the density vs. time of the densification stage:
 
-.. figure:: densification-density.png 
+.. figure:: pics/densification-density.png 
 
     Density vs. time during the densification stage of the DGEBA/PACM liquid.
 
@@ -17,7 +17,7 @@ By using the ``plots`` subcommand, we can generate traces of temperature, densit
 
     $ htpolynet plots -proj proj-1 -t p1-traces.png -o p1-traces.csv
     
-.. figure:: p1-traces.png 
+.. figure:: pics/p1-traces.png 
 
     (Top) Temperature vs. time for 95% cure of DGEBA/PACM; (Middle) Density vs time.  The two topmost plots also report number of bonds; (Bottom) Potential energy vs. time.
 
@@ -25,10 +25,10 @@ Below we show before and after pictures of the system, where all bonds associate
 
 .. list-table:: 
 
-    * - .. figure:: dge-pac-liq.png
+    * - .. figure:: pics/dge-pac-liq.png
 
            System before cure.
 
-      - .. figure:: dge-pac-cured.png
+      - .. figure:: pics/dge-pac-cured.png
 
            System after cure.

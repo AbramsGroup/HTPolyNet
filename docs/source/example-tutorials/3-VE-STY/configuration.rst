@@ -3,177 +3,29 @@
 The Configuration File
 ======================
 
-The reaction dicts from the previous section appear in a list together with many other parameters in the YAML-format configuration file :download:`GMASTY.yaml <GMASTY.yaml>`.  Below is a full listing of this file, followed by a detailed explanation (line numbers are added here for guidance):
+We just presented the reactions in the configuration file.  The rest of the file is essentially the same as the original config file for the poly(methyl styrene) system, with the exception of the ``contituents``  and ``densification`` directives:
 
 .. code-block:: yaml
-    :linenos:
 
-    Title: vinyl-ester-styrene
-    gmx: 'gmx'
-    gmx_options: '-quiet -nobackup'
-    initial_density: 150.0  # kg/m3
-    densification_temperature: 300
-    densification_pressure: 10
-    densification_steps: 150000
-    CURE_initial_search_radius: 0.5 # nm
-    CURE_radial_increment: 0.25
-    CURE_max_iterations: 150
-    CURE_desired_conversion: 0.95
-    CURE_late_threshold: 0.85
-    drag_trigger_distance: 0.5 # nm
-    drag_increment: 0.05 #nm
-    drag_limit: 0.3 # nm
-    drag_nvt_steps: 1000
-    drag_npt_steps: 2000
-    drag_temperature: 600
-    relax_increment: 0.05
-    relax_nvt_steps: 1000
-    relax_npt_steps: 2000
-    relax_temperature: 600
-    equilibration_temperature: 300
-    equilibration_steps: 50000
-    charge_method: gas
-    symmetry_equivalent_atoms: { GMA: [[C1,C2],[C3,C4],[C5,C6]] }
-    stereocenters: { GMA: [C1,C5] }
-    reactions:
-      - {
-          name:        'sty~c1-c2~sty',
-          stage:       cure,
-          reactants:   {1: STY, 2: STY},
-          product:     STY~C1-C2~STY,
-          probability: 1.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C2, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:        'gma~c1-c2~sty',
-          stage:       cure,
-          reactants:   {1: GMA, 2: STY},
-          product:     GMA~C1-C2~STY,
-          probability: 1.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C2, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:        'sty~c1-c3~gma',
-          stage:       cure,
-          reactants:   {1: STY, 2: GMA},
-          product:     STY~C1-C3~GMA,
-          probability: 1.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C3, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:        'gma~c1-c3~gma',
-          stage:       cure,
-          reactants:   {1: GMA, 2: GMA},
-          product:     GMA~C1-C3~GMA,
-          probability: 1.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 2, resid: 1, atom: C3, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 1}
-          ]
-        }
-      - {
-          name:         'styCC',
-          stage:        post-cure,
-          reactants:    {1: STY},
-          product:      STYCC,
-          probability:  1.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 1, resid: 1, atom: C2, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 2}
-          ]
-        }
-      - {
-          name:         'gmaCC',
-          stage:        post-cure,
-          reactants:    {1: GMA},
-          product:      GMACC,
-          probability:  1.0,
-          atoms: {
-            A: {reactant: 1, resid: 1, atom: C1, z: 1},
-            B: {reactant: 1, resid: 1, atom: C3, z: 1}
-          },
-          bonds: [
-            {atoms: [A, B], order: 2}
-          ]
-        }
-    initial_composition:
-      - {molecule: STY, count: 150}
-      - {molecule: GMA, count: 75}
+  constituents: {
+    STY: { count: 150 },
+    GMA: { count: 75 },
+    HIE: { stereocenters: [C1, C3] }
+  }
 
+Importantly, we can specify GMA here, even though we are not providing an input ``GMA.mol2`` file because GMA is a product that ``HTPolyNet`` recognizes that it will generate by itself.  Secondly, we know that there are two chiral carbons in HIE, which will result in a grand total of 16 distinct diastereromers of GMA being used to build the initial racemic system.
 
+.. code-block:: yaml
 
-* ``Title`` (line 1): A descriptive title.  Not really used anywhere but in logging output.
-* ``gmx`` and ``gmx_options`` (lines 2 and 3):  The specific ``gmx`` command; by default we expect ``gmx``, but ``gmx_mpi`` is also possible (or something else if you have a weird custom Gromacs installation).  By default we use ``-quiet -nobackup`` options to ``gmx``.
-* **Densification parameters:** These parameters refer to the MD simulation used to create the initial liquid system.
-  
-  * ``initial_density`` (line 4):  The density in kg/m\ :sup:`3` of the initial system generated by randomly inserting copies of all initial molecules into the initial box.  300 is the default, which usually guarantees successful insertion of the requested number of molecules.
-  * ``densification_temperature`` (line 5):  The temperature in K for the MD simulation that aims to bring the initially low-density system to a liquid-like state.  300 is the default.
-  * ``densification_pressure`` (line 6):  The pressure in bar the MD simulation that aims to bring the initially low-density system to a liquid-like state.  10 is the default.
-  * ``densification_steps`` (line 7):  The number of time-steps for the MD simulation that aims to bring the initially low-density system to a liquid-like state.  150000 is the default.
-  
-* **CURE parameters:** These parameters refer to the CURE iterations.
-  
-  * ``CURE_initial_search_radius`` (line 8):  The initial cutoff radius, in nm, for bond searching.  0.5 nm by default.
-  * ``CURE_radial_increment`` (line 9): The increment in nm by which the cutoff radius is increased in bond searching.  The radius is increased incrementally until at least on possible bond is identified or it reaches half the shortest box dimension.  0.25 nm by default.
-  * ``CURE_max_iterations`` (line 10):  The upper limit of CURE iterations to allow.  150 by default.
-  * ``CURE_desired_conversion`` (line 11):  The target conversion.  MUST BE SPECIFIED; there is no default.
-  * ``CURE_late_threshold`` (line 12):  The conversion beyond which bond relative probabilities are ignored.  1.0 by default (no limitation).  This can be helpful in speeding up very late stages of the cure process (but is not here since there is only one type of bond).
+  densification: {
+    initial_density: 100.0,  # kg/m3
+    equilibration: [
+      { ensemble: min },
+      { ensemble: nvt, temperature: 300, ps: 10.0 },
+      { ensemble: npt, temperature: 300, pressure: 10, ps: 100.0, repeat: 8 }
+    ]
+  }
 
-* **Dragging parameters:**  The parameters govern the series of iterative MD simulations that aim to pull atoms together before activating their bonds.
-
-  * ``drag_increment`` (line 13):  The largest increment in nm by which the restrained bond-designate distances are decreased each stage.
-  * ``drag_trigger_distance`` (line 14):  If the longest initial distance between bond-designated atoms is longer than this distance, then dragging is enabled.  0.5 nm by default.
-  * ``drag_limit`` (line 15):  The bond-designate distance in nm that dragging targets.  0.3 by default.
-  * ``drag_nvt_steps`` (line 16):  Number of time-steps in the NVT drag stages; -2 by default (uses value in mdp file).
-  * ``drag_npt_steps`` (line 17):  Number of time-steps in the NPT drag stages; -2 by default (uses value in mdp file).
-  * ``drag_temperature`` (line 18):  Temperature of the drag stages; 300 by default.
-
-* **Bond relaxation parameters:** These parameters govern the series of iterative MD simulations that aim to relax bonds once they are created.
-
-  * ``relax_increment`` (line 19):  The largest increment in nm by which the restrained bond distances are decreased each stage.
-  * ``relax_nvt_steps`` (line 20):  Number of time-steps in the NVT bond relaxation stages; -2 by default (uses value in mdp file).
-  * ``relax_npt_steps`` (line 21): Number of time-steps in the NPT bond relaxation stages; -2 by default (uses value in mdp file).
-  * ``relax_temperature`` (line 22): Temperature of the drag stages; 300 by default.
-
-* **Equilibration parameters:** These parameters govern the single MD simulation performed once all cure and post-cure reactions are complete.
-
-  * ``equilibration_temperature`` (line 23): Temperature in K; 300 by default.
-  * ``equilibration_steps`` (line 24):  Number of time-steps; 50000 by default.
-
-* **Chemistry parameters:**  These parameters govern the parameterization of monomers and other molecules.
-
-  * ``charge_method`` (line 25):  Charge method designation understandable by ``antechamber``'s ``-c`` option.  "gas" (Gasteiger) by default.
-  * ``symmetry_equivalent_atoms`` (line 26): This is a dictionary keyed by monomer name whose value is a list of "symmetry sets", each of which is a list of atom names that are considered symmetry-equivalent.  In bisGMA, there are three sets of symmetry-equivalent sets, as shown.
-  * ``stereocenters`` (line 27):  This is a dictionary keyed by monomer name whose values are lists of chiral carbon atom names in each monomer.  We treat radical carbons in methacrylates as chiral because the are once they have formed an intermonomer bond.  HTPolyNet applies symmetry equivalence to these atoms, so it is only necessary to list the symmetry-unique stereocenters.
-
-* Reaction dictionaries:
-
-  These are explained in detail in :ref:`the previous section <ve_reaction_dictionaries>`.
-
-* ``initial_composition`` (lines 113-114):  Dictionary declaring the counts of each molecule type in the initial liquid.  Here we are declaring a relatively small systems of 150 STY and 75 GMA.
+In the densification, we are stipulating a very low initial density, which is arrived at by trial-and-error because ``gmx insert-molecules`` has problems reliably inserting all the required molecular instances at higher densities, presumably because of GMA's rather long aspect ratio.  To fully densify, we specify that the NPT simulation be repeated 8 times in series, with each step taking 100 ps.  This ensures that gromacs will not complain about the box size changing too much during the densification.  (There may be a better way to do this in a single mdrun execution, but this works.)
 
 Now we are ready to :ref:`run the build <ve_run>`.

@@ -3,11 +3,11 @@
 Monomer: 4-methylstyrene
 ------------------------
 
-.. image:: mst-vinyl.png
+.. image:: pics/mst-vinyl.png
 
 `4-methylstyrene <https://pubchem.ncbi.nlm.nih.gov/compound/4-Methylstyrene>`_ is a common monomer in the manufacture of polyesters.  Its most important feature from the standpoint of polymerization is the carbon-carbon double bond, which will open to form a single bond and a radical if attacked by another radical.  For plain old styrene, this looks like:
 
-.. image:: styrene-polymerization.png 
+.. image:: pics/styrene-polymerization.png 
 
 (http://2015.igem.org/Team:Stanford-Brown/PS)
 
@@ -15,7 +15,7 @@ Note that the radical lives on the interior carbon and attacks a terminal carbon
 
 As described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene:
 
-.. image:: 4meb.png 
+.. image:: pics/4meb.png 
 
 We can easily generate a ``mol2`` file for 1-ethyl-4-methylbenzene using `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ (or any of a variety of molecular builders):
 
@@ -78,7 +78,7 @@ Now, let's have a look at this file (your coordinates may be different)::
 
 Notice how the atom names (second column in the ``@<TRIPOS>ATOM`` section) are not unique?  This is potentially a problem, since HTPolyNet always refers to particular atoms by virtue of their "residue name" and "name".  (There is only one residue here, called ``EMB``.) Let's call the radical-bearing carbon ``C1`` and the methyl carbon ``C2``.  To figure out which atoms these are in the ``mol2`` file, we can interrogate the structure in VMD (or any other suitable visualization software):
 
-.. image:: emb-labelled.png
+.. image:: pics/emb-labelled.png
 
 The black numbers shown here indicate internal atom indexes in VMD, and VMD starts counting at zero.  ``Mol2`` and Gromacs start counting at 1, so these atoms' indexes are one more than what is shown here.  We see the methylene carbon is index 7 in VMD, so it is index 8 in the ``mol2`` file; likewise, the methyl carbon is index 8 in VMD and so index 9 in the ``mol2`` file.  Let's use this information along to force ``obabel`` to give us a ready-to-use ``mol2`` file:
 
@@ -90,7 +90,7 @@ The black numbers shown here indicate internal atom indexes in VMD, and VMD star
       sed s/" 9 C "/" 9 C2"/ | \
       sed s/"UNL1"/"EMB "/ > EMB.mol2
 
-Let's look at the file :download:`EMB.mol2 <EMB.mol2>` that results from the command above::
+Let's look at the file :download:`EMB.mol2 <files/EMB.mol2>` that results from the command above::
 
     @<TRIPOS>MOLECULE
     EMB

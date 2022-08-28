@@ -9,5 +9,4 @@ Example Tutorials
 
    1-polymethylstyrene/index
    2-DGEBA-PACM/index
-.. 
-  3-VE-STY/index
+   3-VE-STY/index

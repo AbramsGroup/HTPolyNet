@@ -3,7 +3,49 @@
 Results
 -------
 
-The first ``htpolynet run`` invocation in ``run.sh`` runs the high-cure build (95\% conversion) in the ``proj-1`` subdirectory.  Let's look at the results in this directory:
+Overall behavior
+^^^^^^^^^^^^^^^^
+
+Using ``htpolynet plots`` we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a low-cure build under ``proj-0`` and a high-cure build under ``proj-1``.  Diagnostic output for each run is in ``diagnostics-lo.log`` and ``diagnostics-hi.log``, respectively.
+
+First, we can make plots of the conversion vs. run time and the cure iteration vs. run time:
+
+.. code-block:: console
+
+    $ htpolynet plots -logs diagnostics-*.log
+
+This generates ``cure-info.png``: 
+
+.. image:: pics/cure-info.png 
+
+We can see here that the 95\% cure took about 8 and a half minutes of run time (which is not really impressive since this is a **very** small system).  Fully two-thirds of the run time is consumed realizing the final 15\% of the cure.
+
+Second, we can make plots that track the temperature and density throughout the entire build process:
+
+.. code-block:: console
+
+    $ htpolynet plots -proj proj-0
+
+.. image:: pics/global_traces.png 
+
+From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top two plots show temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I'm showing one transition for each drag/relax stage.  The bottom two plots show density in kg/m^3 vs time in ps.  The second and fourth plots "zoom in" on just the CURE iterations (though the zoom is not quite so big).
+
+In the figure below, we show two renderings of this system.  In each, all bonds between C1 and C2 atoms are shown as grey tubes, and all other bonds are colored by individual unique monomer and made transparent.  On the left is the system just after the precure anneal, where you can see that only **intramolecular** C1 and C2 bonds exist.  On the right is the system after postcure, where you can see chains of -C1-C2- bonds.
+
+.. list-table:: 
+
+    * - .. figure:: pics/hi-pre.png
+
+           System before cure.
+
+      - .. figure:: pics/hi.png
+
+           System after cure.
+
+Details
+^^^^^^^
+
+The first ``htpolynet run`` invocation in ``run.sh`` runs the low-cure build (50\% conversion) in the ``proj-0`` project directory, and the second runs the high-cure build (95\% conversion) in the ``proj-1`` subdirectory.  Let's look at the results for the high-cure run:
 
 .. code-block:: console
 
@@ -21,7 +63,7 @@ The ``yaml`` file is just a checkpoint.  We will consider how to use checkpoints
 * ``plots/``: This directory contains some plots generated on the fly.
 
 ``proj-1/systems``
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
@@ -31,8 +73,8 @@ The ``yaml`` file is just a checkpoint.  We will consider how to use checkpoints
 
 The ``init/`` directory is where the initial topology and coordinates are generated.  Then in ``densification`` are the files associated with the MD simulations used to densify the initial system.  Next comes the ``precure`` directory, which contains all the results of the precure equilibrations and annealing (if requested).  Next come the iteration directories; here, only two CURE iterations were run (remember the console ouput?) so we see only ``iter-1`` and ``iter-2``.  Then comes the ``capping`` directory where the final topology updates are performed to cap any unreacted monomers (reverting them from their "active" forms to their "proper" forms).  Then comes ``postcure`` equilibration and relaxation.  Finally, in ``final-results`` are the ``top``, ``gro``, and ``grx`` files of the final system.
 
-``proj-0/plots``
-^^^^^^^^^^^^^^^^
+``proj-1/plots``
+~~~~~~~~~~~~~~~~
 
 ``HTPolyNet`` generates several plots on the fly during a system build.  
 

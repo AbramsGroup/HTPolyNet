@@ -6,7 +6,7 @@ Monomers
 DGEBA
 ^^^^^
 
-.. image:: DGE-epoxy.png
+.. image:: pics/DGE-epoxy.png
 
 `Bisphenol A diglycidyl ether <https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether>`_, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we'll consider how to build the input ``*.mol2`` file for DGEBA.  It is quite easy to generate a 3D structure from a SMILES representation.  The canonical SMILES string for DGEBA is::
     
@@ -31,11 +31,11 @@ Note that we have used ``sed`` to change the generic residue name ``UNL1`` provi
 
 To understand how to make these fixes, we should visualize the molecule:
 
-.. image:: DGE-labelled.png
+.. image:: pics/DGE-labelled.png
 
-This image was made with `VMD <http://www.ks.uiuc.edu/Research/vmd/>`_, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the ``*.mol2`` file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in :download:`DGE.mol2 <DGE.mol2>`; these are the two "reactive" carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in *S*; these of course are atoms with the indicies 12 and 23 in :download:`DGE.mol2 <DGE.mol2>`.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in :download:`DGE.mol2 <DGE.mol2>` file.  
+This image was made with `VMD <http://www.ks.uiuc.edu/Research/vmd/>`_, and you can see that four carbons and two oxygens are labelled.  The numbers refer to internal atom indices assigned by VMD, which begins counting at zero.  These correspond to the atom indices in the ``*.mol2`` file, which begins counting at 1.  So the atoms labelled 13 and 24 are atoms 14 and 25 in :download:`DGE.mol2 <files/DGE.mol2>`; these are the two "reactive" carbons because each can bond to an N of an amine.  Furthermore, since oxirane opening usually generates a chiral carbon, we indeed see that the atoms labelled 11 and 22 are both chiral centers, and both in *S*; these of course are atoms with the indicies 12 and 23 in :download:`DGE.mol2 <files/DGE.mol2>`.   Finally, since we will ultimately want to convert any unreacted epoxies back into oxirane rings, we need to specify the relevant oxygen atoms; these are atom with VMD-indices 12 and 23, which are 13 and 24 in :download:`DGE.mol2 <files/DGE.mol2>` file.  
 
-Let's edit :download:`DGE.mol2 <DGE.mol2>` to name the two reactive atoms `C1` and `C2`, the two chiral atoms at `C3` and `C4`, and the two oxirane oxygens as ``O1`` and ``O2``:
+Let's edit :download:`DGE.mol2 <files/DGE.mol2>` to name the two reactive atoms `C1` and `C2`, the two chiral atoms at `C3` and `C4`, and the two oxirane oxygens as ``O1`` and ``O2``:
 
 .. code-block:: console
 
@@ -48,7 +48,7 @@ Let's edit :download:`DGE.mol2 <DGE.mol2>` to name the two reactive atoms `C1` a
 
 Note that in the ``sed`` substitution directives, we have preserved the number of characters substituted to keep the column spacing in the ``*.mol2`` file from changing.
 
-Now, let's take a look at :download:`DGE.mol2 <DGE.mol2>`::
+Now, let's take a look at :download:`DGE.mol2 <files/DGE.mol2>`::
 
     @<TRIPOS>MOLECULE
     DGE
@@ -171,7 +171,7 @@ You can see that only C1-C4 are uniquely named.  Those unique names will persist
 PACM
 ^^^^
 
-.. image:: PAC-2d.png
+.. image:: pics/PAC-2d.png
 
 `4,4-diaminodicyclohexylmethane <https://en.wikipedia.org/wiki/4,4-Diaminodicyclohexylmethane>`_, referred to colloquially as PACM ("pack-em"), is a common hardener in epoxy formulations.  Since it has two primary amine groups, it can bond to at most four distinct epoxide groups.  The SMILES string for PACM is::
     
@@ -187,7 +187,7 @@ Just as we did with DGEBA, we can generate a structure for the "PAC" monomer:
 
 Since we know PACM has two primary amines, we don't need to convert it to a form with sacrificial H's -- it already has them.  We do, however, need to edit ``PAC-raw.mol2`` to give unique atom names to the two amine nitrogens and the two chiral carbons to which they are attached:
 
-.. image:: PAC-labelled.png
+.. image:: pics/PAC-labelled.png
 
 We see that the two amine nitrogens are atoms 13 and 14 in VMD numbering, which correspond respectively to atoms 14 and 15 in ``mol2`` numbering, so let's call them "N1" and "N2", respectively.  The carbon atom 11 (10 in VMD numbering) to which our "N1" is bound can now be called "C1", and the carbon atom 3 (2 in VMD) to which our "N2" is bound "C2".
 
@@ -198,7 +198,7 @@ We see that the two amine nitrogens are atoms 13 and 14 in VMD numbering, which 
                           sed s/"3 C "/"3 C1"/ | \
                           sed s/"11 C "/"11 C1"/ > PAC.mol2
 
-Let's look at the file :download:`PAC.mol2 <PAC.mol2>` that results from the command above::
+Let's look at the file :download:`PAC.mol2 <files/PAC.mol2>` that results from the command above::
 
     @<TRIPOS>MOLECULE
     PAC
