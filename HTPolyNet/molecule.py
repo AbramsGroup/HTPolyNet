@@ -402,9 +402,7 @@ class Molecule:
                 shutil.copy(f'{self.parentname}.grx',f'{self.name}.grx')
 
         if do_minimization:
-            self.TopoCoord.write_mol2(filename=f'{self.name}-preminimize.mol2',molname=self.name)
             self.minimize(outname,**kwargs)
-            self.TopoCoord.write_mol2(filename=f'{self.name}-postminimize.mol2',molname=self.name)
         self.set_sequence_from_coordinates()
         if not self.generator:
             self.TopoCoord.set_gro_attribute('reactantName',reactantName)
