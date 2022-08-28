@@ -20,9 +20,9 @@ Building bisGMA
 
       - .. figure:: pics/GMA.png
 
-           bis GMA
+           bis GMA (active form)
 
-Let's focus first on the reactions used to build bisGMA.  First, we react one HIE to one hydroxyl on BPA:
+Let's focus first on the reactions used to build bis GMA.  First, we react one HIE to one hydroxyl on BPA:
 
 .. code-block:: yaml
 
