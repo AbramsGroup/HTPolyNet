@@ -12,9 +12,7 @@ import HTPolyNet.software as software
 from HTPolyNet.plot import diagnostics_graphs,global_trace, network_graph
 from HTPolyNet.stringthings import my_logger
 from HTPolyNet.utils import density_evolution, graph_from_bondsfiles, graph_from_bondfile
-from HTPolyNet.configuration import Configuration
-from HTPolyNet.coordinates import Coordinates
-from HTPolyNet.command import Command
+from HTPolyNet.inputcheck import input_check
 from HTPolyNet.postprocess import postprocess, tladder
 
 logger=logging.getLogger(__name__)
@@ -123,26 +121,6 @@ def fetch_example(args):
     os.system(f'tar zxf {fullname}.tgz')
     if not kp:
         os.remove(f'{fullname}.tgz')
-
-def input_check(args):
-    lib='./lib/molecules/inputs'
-    C=Configuration.read(args.config)
-    icdict={x['molecule']:x['count'] for x in C.initial_composition}
-    natoms=0
-    for mname,M in C.molecules.items():
-        if os.path.exists(os.path.join(lib,f'{mname}.mol2')):
-            c=Coordinates.read_mol2(os.path.join(lib,f'{mname}.mol2'))
-            matoms=c.A.shape[0]
-        elif os.path.exists(os.path.join(lib,f'{mname}.pdb')):
-            # print(os.path.join(lib,f"{mname}.{fmt}"))
-            out,err=Command(f'grep -c ^ATOM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
-            matoms=int(out)
-            out,err=Command(f'grep -c ^HETATM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
-            matoms+=int(out)
-        if mname in icdict:
-            natoms+=icdict[mname]*matoms
-            print(f'Molecule {mname}: {matoms} atoms, {icdict[mname]} molecules')
-    print(f'{args.config}: {natoms} atoms in initial system.')
 
 
 def cli():

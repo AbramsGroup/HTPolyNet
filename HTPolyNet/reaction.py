@@ -89,7 +89,7 @@ def parse_reaction_list(baselist:ReactionList):
         lasti+=len(sublist)
     return ret_reactions
 
-def extract_molecule_reactions(rlist:ReactionList):
+def extract_molecule_reactions(rlist:ReactionList,plot=True):
     working_rlist=rlist.copy()
     G=nx.DiGraph()
     # Given an unsorted list of reactions (list of reactants +  one product), order a list of 
@@ -104,7 +104,7 @@ def extract_molecule_reactions(rlist:ReactionList):
             reactants.add(r)
             G.add_edge(r,R.product)
         products.add(R.product)
-    network_graph(G,'plots/reaction_network.png',arrows=True)
+    if plot: network_graph(G,'plots/reaction_network.png',arrows=True)
     input_reactants=reactants.intersection(reactants.symmetric_difference(products))
     logger.debug(f'Input reactants: {input_reactants}')
     for i in input_reactants:

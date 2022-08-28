@@ -42,40 +42,41 @@ class Configuration:
         self.maxconv=0.0
 
     @classmethod
-    def read(cls,filename,parse=True):
+    def read(cls,filename,parse=True,**kwargs):
         extension=filename.split('.')[-1]
         if extension=='json':
-            return cls._read_json(filename,parse)
+            return cls._read_json(filename,parse,**kwargs)
         elif extension=='yaml' or extension=='yml':
-            return cls._read_yaml(filename,parse)
+            return cls._read_yaml(filename,parse,**kwargs)
         else:
             raise Exception(f'Unknown config file extension {extension}')
 
     @classmethod
-    def _read_json(cls,filename,parse=True):
+    def _read_json(cls,filename,parse=True,**kwargs):
         inst=cls()
         inst.cfgFile=filename
         with open(filename,'r') as f:
             inst.basedict=json.load(f)
-        if parse: inst.parse()
+        if parse: inst.parse(**kwargs)
         return inst
 
     @classmethod
-    def _read_yaml(cls,filename,parse=True):
+    def _read_yaml(cls,filename,parse=True,**kwargs):
         inst=cls()
         inst.cfgFile=filename
         with open(filename,'r') as f:
             inst.basedict=yaml.safe_load(f)
-        if parse: inst.parse()
+        if parse: inst.parse(**kwargs)
         return inst
     
     def NewMolecule(self,mol_name,molrec={}):
         return Molecule.New(mol_name,molrec)
         
-    def parse(self):
+    def parse(self,**kwargs):
         """parse self.basedict to set Title, initial_composition, and lists of
            reactions and molecules.
         """
+        plot_reaction_network=kwargs.get('plot_reaction_network',True)
         assert not self.basedict=={},f'Reading error for config'
         for d in self.basedict.keys():
             if not d in self.default_directives:
@@ -91,7 +92,7 @@ class Configuration:
 
         base_reaction_list=[Reaction(r) for r in rlist]
         self.reactions=parse_reaction_list(base_reaction_list)
-        mol_reac_detected=extract_molecule_reactions(self.reactions)
+        mol_reac_detected=extract_molecule_reactions(self.reactions,plot=plot_reaction_network)
         self.molecule_report['explicit']=len(mol_reac_detected)
         self.molecule_report['implied by stereochemistry']=0
         self.molecule_report['implied by symmetry']=0
