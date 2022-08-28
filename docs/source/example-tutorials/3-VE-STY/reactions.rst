@@ -8,6 +8,20 @@ There are three types of reactions defined in the YAML configuration files.  The
 Building bisGMA
 ^^^^^^^^^^^^^^^
 
+.. list-table:: 
+
+    * - .. figure:: pics/BPA.png
+
+           Bisphenol-A
+
+      - .. figure:: pics/HIE.png
+
+           2-hydroxypropyl isopropyl ester (HIE)
+
+      - .. figure:: pics/GMA.png
+
+           bis GMA
+
 Let's focus first on the reactions used to build bisGMA.  First, we react one HIE to one hydroxyl on BPA:
 
 .. code-block:: yaml
