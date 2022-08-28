@@ -62,7 +62,7 @@
 <td><p>Directives for handling inconsistencies in the General Amber Force Field</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">constituents</span></code></p></td>
-<td><p>Directives for molecular constituents in the initial system``</p></td>
+<td><p>Directives for molecular constituents in the initial system</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">densification</span></code></p></td>
 <td><p>Directives for how the densification phase is run</p></td>
@@ -216,7 +216,7 @@
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">count</span></code></p></td>
 <td><p>int</p></td>
-<td><p>(required) number of these molecules in the system</p></td>
+<td><p>(optional) number of these molecules in the system</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">stereocenters</span></code></p></td>
 <td><p>list</p></td>
@@ -233,6 +233,7 @@
 </tbody>
 </table>
 <p>In the example below, we are requesting a system of 100 styrene molecules.  The key <code class="docutils literal notranslate"><span class="pre">STY</span></code> signals to <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> that it should look for either <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> <strong>or</strong> it should look for <code class="docutils literal notranslate"><span class="pre">STY.gro</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.itp</span></code>, <code class="docutils literal notranslate"><span class="pre">STY.top</span></code>, and <code class="docutils literal notranslate"><span class="pre">STY.grx</span></code> in <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code>.  The latter is the case if either <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterized</span></code> has already been run with <code class="docutils literal notranslate"><span class="pre">STY.mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">STY.pdb</span></code>.  Multiple records in <code class="docutils literal notranslate"><span class="pre">constituents</span></code> should all have the “key”:”record” syntax and be separated by commas.</p>
+<p>Any entry in <code class="docutils literal notranslate"><span class="pre">constituents</span></code> for which the <code class="docutils literal notranslate"><span class="pre">count</span></code> is 0 or missing is treated as an intermediate for which stereocenters or symmetry-equivalent atoms are specified.</p>
 <p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> allows you the option to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either <code class="docutils literal notranslate"><span class="pre">obabel</span></code>’s <code class="docutils literal notranslate"><span class="pre">confomers</span></code> capability or an MD simulation via <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> to generate these.  The <code class="docutils literal notranslate"><span class="pre">conformers</span></code> record has two subdirectives:</p>
 <table class="docutils align-default">
 <colgroup>

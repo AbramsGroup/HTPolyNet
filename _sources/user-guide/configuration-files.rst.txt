@@ -15,7 +15,7 @@ Section name        Role
 ``gromacs``         Directives for interacting with Gromacs
 ``ambertools``      Directives for interacting with AmberTools
 ``GAFF``            Directives for handling inconsistencies in the General Amber Force Field
-``constituents``    Directives for molecular constituents in the initial system``
+``constituents``    Directives for molecular constituents in the initial system
 ``densification``   Directives for how the densification phase is run
 ``precure``         Directives for how precure equilibration and annealing is run
 ``CURE``            Directives for how the CURE is run
@@ -82,13 +82,15 @@ All the details
     =====================================    =================  =====================
     ``constituents`` record keyword          Type               Description (default)
     =====================================    =================  =====================
-    ``count``                                int                (required) number of these molecules in the system
+    ``count``                                int                (optional) number of these molecules in the system
     ``stereocenters``                        list               (optional) list of names of chiral carbon atoms if any
     ``symmetry_equivalent_atoms``            list               (optional) list of sets of symmetry equivalent atom names, if any
     ``conformers``                           conformers record  (optional) parameters specifying if and how initial conformers are generated
     =====================================    =================  =====================
 
     In the example below, we are requesting a system of 100 styrene molecules.  The key ``STY`` signals to ``HTPolyNet`` that it should look for either ``STY.mol2`` or ``STY.pdb`` in ``./lib/molecules/inputs`` **or** it should look for ``STY.gro``, ``STY.itp``, ``STY.top``, and ``STY.grx`` in ``./lib/molecules/parameterized``.  The latter is the case if either ``htpolynet run`` or ``htpolynet parameterized`` has already been run with ``STY.mol2`` or ``STY.pdb``.  Multiple records in ``constituents`` should all have the "key":"record" syntax and be separated by commas.
+
+    Any entry in ``constituents`` for which the ``count`` is 0 or missing is treated as an intermediate for which stereocenters or symmetry-equivalent atoms are specified.
 
     ``HTPolyNet`` allows you the option to use multiple conformers of flexible molecules to build the initial liquid system.  It can use either ``obabel``'s ``confomers`` capability or an MD simulation via ``gromacs`` to generate these.  The ``conformers`` record has two subdirectives:
 
