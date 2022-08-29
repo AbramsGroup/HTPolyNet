@@ -18,13 +18,13 @@ def input_check(args):
             matoms=M.TopoCoord.Coordinates.A.shape[0]
             mmass[mname]=M.TopoCoord.Topology.total_mass()
         elif os.path.exists(os.path.join(lib,'inputs',f'{mname}.mol2')):
-            c=Coordinates.read_mol2(os.path.join(lib,f'{mname}.mol2'))
+            c=Coordinates.read_mol2(os.path.join(lib,'inputs',f'{mname}.mol2'))
             matoms=c.A.shape[0]
         elif os.path.exists(os.path.join(lib,'inputs',f'{mname}.pdb')):
             # print(os.path.join(lib,f"{mname}.{fmt}"))
-            out,err=Command(f'grep -c ^ATOM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
+            out,err=Command(f'grep -c ^ATOM {os.path.join(lib,"inputs",f"{mname}.pdb")}').run(ignore_codes=[1])
             matoms=int(out)
-            out,err=Command(f'grep -c ^HETATM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
+            out,err=Command(f'grep -c ^HETATM {os.path.join(lib,"inputs",f"{mname}.pdb")}').run(ignore_codes=[1])
             matoms+=int(out)
         else:
             raise Exception(f'No input found for {mname}')
