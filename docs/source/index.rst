@@ -11,8 +11,6 @@ HTPolyNet is a tool for building atomic configurations of amorphous network poly
 It uses the Generalized Amber Force Field and produces output that can be simulated 
 using Gromacs.
 
-**NOTE: This documentation is currently under development, and may be incomplete in places.**
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
