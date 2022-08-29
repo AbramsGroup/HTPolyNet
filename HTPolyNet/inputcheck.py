@@ -26,6 +26,8 @@ def input_check(args):
             matoms=int(out)
             out,err=Command(f'grep -c ^HETATM {os.path.join(lib,f"{mname}.pdb")}').run(ignore_codes=[1])
             matoms+=int(out)
+        else:
+            raise Exception(f'No input found for {mname}')
         if mname in icdict:
             natoms+=icdict[mname]*matoms
             tmass+=icdict[mname]*mmass[mname]
