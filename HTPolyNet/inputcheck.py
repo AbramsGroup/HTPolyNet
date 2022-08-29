@@ -12,6 +12,7 @@ def input_check(args):
     tmass=0.0
     mmass={}
     for mname,M in C.molecules.items():
+        matoms=0
         mmass[mname]=0.0
         if os.path.exists(os.path.join(lib,'parameterized',f'{mname}.top')):
             M.TopoCoord=TopoCoord(grofilename=os.path.join(lib,'parameterized',f'{mname}.gro'),topfilename=os.path.join(lib,'parameterized',f'{mname}.top'))
@@ -26,9 +27,7 @@ def input_check(args):
             matoms=int(out)
             out,err=Command(f'grep -c ^HETATM {os.path.join(lib,"inputs",f"{mname}.pdb")}').run(ignore_codes=[1])
             matoms+=int(out)
-        else:
-            raise Exception(f'No input found for {mname}')
-        if mname in icdict:
+        if matoms>0 and mname in icdict:
             natoms+=icdict[mname]*matoms
             tmass+=icdict[mname]*mmass[mname]
             print(f'Molecule {mname}: {matoms} atoms, {icdict[mname]} molecules')
