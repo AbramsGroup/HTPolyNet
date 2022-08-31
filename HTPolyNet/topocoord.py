@@ -1231,14 +1231,22 @@ class TopoCoord:
             # logger.debug(f'chain of aidx {aidx}: {chainlists[ac]}')
             aci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':aidx})
             bci=self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':bidx})
-            logger.debug(f' -> {aidx}-{bidx}: ac {ac} bc {bc} aci {aci} bci {bci}')
+            logger.debug(f' -> {aidx}-{bidx}: ac {ac} #{len(chainlists[ac])} aci {aci} bc {bc} #{len(chainlists[bc])} bci {bci}')
             # one must be a head and the other a tail
             if aci==0: # a is a head
-                assert len(chainlists[bc])-1==bci,f'incorrect tail'
+                if len(chainlists[bc])-1!=bci:
+                    logger.warning(f'Atom {bidx} has index {bci} in chain {bc} but that chain has {len(chainlists[bc])} elements, so it cannot be the tail of the chain. The tail appears to be atom {chainlists[bc][-1]}. So something is wrong, and I am not merging these chains.')
+                    logger.debug(f'chain of {aidx} {chainlists[ac]}')
+                    logger.debug(f'chain of {bidx} {chainlists[bc]}')
+                    continue
                 c1=ac
                 c2=bc
             elif bci==0: # b is a head
-                assert len(chainlists[ac])-1==aci,f'incorrect tail'
+                if len(chainlists[ac])-1!=aci:
+                    logger.warning(f'Atom {aidx} has index {aci} in chain {ac} but that chain has {len(chainlists[ac])} elements, so it cannot be the tail of the chain. The tail appears to be atom {chainlists[ac][-1]}. So something is wrong, and I am not merging these chains.')
+                    logger.debug(f'chain of {aidx} {chainlists[ac]}')
+                    logger.debug(f'chain of {bidx} {chainlists[bc]}')
+                    continue
                 c1=bc
                 c2=ac
             else:
