@@ -274,6 +274,10 @@ def info():
         print(_PFS_.userlibrary.info())
     print(_PFS_.library.info())
 
+def proj_abspath(filename):
+    abf=os.path.abspath(filename)
+    return os.path.relpath(abf,_PFS_.projPath)
+
 if __name__=='__main__':
     pfs=ProjectFileSystem(verbose=True)
 

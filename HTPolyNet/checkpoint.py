@@ -2,6 +2,7 @@ import os
 import yaml
 import logging
 from HTPolyNet.topocoord import TopoCoord
+import HTPolyNet.projectfilesystem as pfs
 
 logger=logging.getLogger(__name__)
 
@@ -35,11 +36,12 @@ class Checkpoint:
     @classmethod
     def read(cls,TC:TopoCoord,filename):
         inst=cls.from_yaml(filename)
-        inst.my_filename=os.path.abspath(filename)
+#        inst.my_filename=os.path.abspath(filename)
+        inst.my_filename=filename
         for ext in cls.reqd_files:
-            TC.files[ext]=inst.files[ext]
+            TC.files[ext]=os.path.abspath(inst.files[ext])
         for ext in cls.opt_files:
-            TC.files[ext]=inst.files[ext]
+            TC.files[ext]=os.path.abspath(inst.files[ext])
         return inst
 
     @classmethod
@@ -48,7 +50,7 @@ class Checkpoint:
             logger.debug('New checkpoint; no file')
             absfilename=os.path.join(os.getcwd(),filename)
             assert not os.path.exists(absfilename)
-            return cls(filename=absfilename)
+            return cls(filename=filename)
         return cls.read(TC,filename)
 
     def set(self,TC:TopoCoord,stepname):
@@ -61,10 +63,10 @@ class Checkpoint:
 
     def _filename_transfers(self,TC:TopoCoord):
         for v in self.reqd_files:
-            self.files[v]=os.path.abspath(TC.files[v])
+            self.files[v]=pfs.proj_abspath(TC.files[v])
         for v in self.opt_files:
             if v in TC.files and TC.files[v]:
-                self.files[v]=os.path.abspath(TC.files[v])
+                self.files[v]=pfs.proj_abspath(TC.files[v])
 
     def set_substep(self,TC:TopoCoord,currentstepname,substepname):
         self.currentstepname=currentstepname
@@ -73,7 +75,10 @@ class Checkpoint:
         self.to_yaml()
 
     def passed(self,stepname):
-        return stepname in self.stepschecked
+        if stepname in self.stepschecked:
+            logger.debug(f'[ {stepname} ] checkpoint passed')
+            return True
+        return False
     
     def is_currentstepname(self,stepname):
         return self.currentstepname==stepname

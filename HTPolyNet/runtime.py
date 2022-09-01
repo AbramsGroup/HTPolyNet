@@ -269,9 +269,7 @@ class Runtime:
         if not hasattr(self,'cc'): 
             logger.debug(f'no cure controller')
             return  # no cure controller
-        if cp.passed('cure'): 
-            logger.debug(f'checkpoint already done')
-            return
+        if cp.passed('cure'): return
         cc=self.cc
         TC=self.TopoCoord
         RL=self.cfg.reactions
