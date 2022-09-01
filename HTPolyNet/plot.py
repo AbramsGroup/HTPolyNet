@@ -5,8 +5,6 @@ import pandas as pd
 import logging
 import networkx as nx
 from datetime import datetime
-#from glob import glob
-
 
 logger=logging.getLogger(__name__)
 
@@ -210,6 +208,7 @@ def diagnostics_graphs(logfiles,filename,**kwargs):
     logging.disable(logging.DEBUG)
     df:dict[pd.DataFrame]={}
     for logfile in logfiles:
+        bn,ex=os.path.splitext(logfile)
         with open(logfile,'r') as f:
             lines=f.read().split('\n')
         logger.info(f'read {len(lines)} lines from {logfile}')
@@ -236,6 +235,7 @@ def diagnostics_graphs(logfiles,filename,**kwargs):
         df[logfile]=pd.DataFrame(data)
         time_idx=list(df[logfile].columns).index('time')
         df[logfile]['elapsed']=(df[logfile]['time']-df[logfile].iloc[0,time_idx]).astype(int)/1.e9/3600.0
+        df[logfile].to_csv(f'{bn}.csv',index=False,sep=' ',header=True)
     fig,ax=plt.subplots(1,2,sharex=True,figsize=figsize)
     ax[0].set_ylim([0,1])
     ax[0].set_xlabel('runtime (h)')

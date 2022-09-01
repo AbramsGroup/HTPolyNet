@@ -157,7 +157,7 @@ def cli():
 
     command_parsers['run'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['run'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
-    command_parsers['run'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory\nAnything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
+    command_parsers['run'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory.  Anything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
     command_parsers['run'].add_argument('-diag',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
     command_parsers['run'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     command_parsers['run'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
