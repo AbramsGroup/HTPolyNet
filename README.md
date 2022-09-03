@@ -15,8 +15,10 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
+* 1.0.0
+    * First release
 * 0.0.1
-    * Initial version
+    * Initial beta version
 
 ## Meta
 
