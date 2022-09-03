@@ -17,7 +17,7 @@ from HTPolyNet.molecule import Molecule, MoleculeDict
 from HTPolyNet.reaction import is_reactant
 from HTPolyNet.expandreactions import chain_expand_reactions
 from HTPolyNet.reaction import reaction_stage
-from HTPolyNet.curecontroller import CureController
+from HTPolyNet.curecontroller import CureController, CureState
 from HTPolyNet.stringthings import my_logger
 
 logger=logging.getLogger(__name__)
@@ -252,31 +252,26 @@ class Runtime:
         if not hasattr(self,'cc'): 
             logger.debug(f'no cure controller')
             return  # no cure controller
-        # if cp.passed('cure'): return
         cc=self.cc
         TC=self.TopoCoord
         RL=self.cfg.reactions
         MD=self.molecules
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
-        # if cp.is_currentstepname('cure'):
-        #     cc.iter=cp.last_substep()
-        # else:
-        #     cc.reset()
-        cc.setup(max_nxlinkbonds=self.cfg.maxconv,desired_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['controls']['desired_conversion']),max_search_radius=min(TC.Coordinates.box.diagonal()/2))
+        if os.path.exists('cure_state.yaml'):
+            cc.state=CureState.from_yaml('cure_state.yaml')
+            my_logger('Connect-Update-Relax-Equilibrate (CURE) resumes at iteration {cc.state.iter}',logger.info)
+        else:
+            cc.setup(max_nxlinkbonds=self.cfg.maxconv,desired_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['controls']['desired_conversion']),max_search_radius=float(min(TC.Coordinates.box.diagonal()/2)))
+            cc.state.iter=1
+            my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
         cure_finished=cc.is_cured()
         if cure_finished: 
             logger.debug('cure finished even before loop')
             return
-        my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
-        logger.info(f'Attempting to form {cc.desired_nxlinkbonds} bonds')
+        logger.info(f'Attempting to form {cc.state.desired_nxlinkbonds} bonds')
         while not cure_finished:
-            pfs.go_to(f'systems/iter-{cc.iter}')
-            if os.path.exists('cure_controller_state.yaml'):
-                logger.debug(f'Reading new cure controller in {pfs.cwd()}')
-                cc=CureController.from_yaml('cure_controller_state.yaml')
-                logger.info(f'Restarting at {cc.cum_nxlinkbonds} bonds')
+            pfs.go_to(f'systems/iter-{cc.state.iter}')
             cc.do_iter(TC,RL,MD,gromacs_dict=gromacs_dict)
-            cp.write_checkpoint()
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
@@ -284,7 +279,6 @@ class Runtime:
         my_logger(f'Capping begins',logger.info)
         pfs.go_to(f'systems/capping')
         cc.do_capping(TC,RL,MD,gromacs_dict=gromacs_dict)
-        cp.write_checkpoint()
         my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
 
     @cp.enableCheckpoint
@@ -318,23 +312,18 @@ class Runtime:
         last_data=cp.read_checkpoint()
         logger.debug(f'Checkpoint last_data {last_data}')
         TC.load_files(last_data)
-        logger.debug(TC.files)
+        # logger.debug(TC.files)
         pfs.go_to(f'systems/init')
         self.do_initialization()
-        cp.write_checkpoint()
         pfs.go_to(f'systems/densification')
         self.do_densification()
-        cp.write_checkpoint()
         pfs.go_to(f'systems/precure')
         self.do_precure()
-        cp.write_checkpoint()
         self.do_cure()
         pfs.go_to(f'systems/postcure')
         self.do_postcure()
-        cp.write_checkpoint()
         pfs.go_to(f'systems/final-results')
         self.save_data()
-        cp.write_checkpoint()
         pfs.go_proj()
 
     def _generate_molecule(self,M:Molecule,**kwargs):

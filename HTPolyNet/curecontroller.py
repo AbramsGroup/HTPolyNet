@@ -5,7 +5,7 @@ import numpy as np
 import os
 from itertools import product
 from HTPolyNet.topocoord import TopoCoord, BTRC
-from HTPolyNet.plot import trace
+# from HTPolyNet.plot import trace
 from HTPolyNet.gromacs import gromacs_distance, mdp_modify
 from HTPolyNet.configuration import ReactionList
 from HTPolyNet.molecule import MoleculeDict
@@ -20,7 +20,7 @@ import logging
 
 logger=logging.getLogger(__name__)
 
-class state(Enum):
+class cure_step(Enum):
     """Enumerated CURE state
     """
     cure_bondsearch=0
@@ -42,6 +42,46 @@ class state(Enum):
             return name[len('cap_'):]
         if 'cure_' in name:
             return name[len('cure_'):]
+
+class CureState:
+    def __init__(self):
+        self.iter=0
+        self.max_nxlinkbonds=0
+        self.cum_nxlinkbonds=0
+        self.desired_nxlinkbonds=0
+        self.max_search_radius=0.0
+        self.max_radidx=0
+        self.step=cure_step.unknown
+        self.curr_nxlinkbonds=0
+
+        self.current_stage={}
+        self.current_stage['drag']=0
+        self.current_stage['relax']=0
+
+        self.current_radidx=0
+        self.current_radius=0.0
+
+        self.bonds_file=''
+
+    def _to_yaml(self,filename='../cure_state.yaml'):
+        with open(filename,'w') as f:
+            f.write(yaml.dump(self))
+
+    @classmethod
+    def from_yaml(cls,filename='cure_state.yaml'):
+        with open(filename,'r') as f:
+            yaml_string=f.read()
+        return yaml.load(yaml_string,Loader=yaml.Loader)
+
+    def reset(self):
+        self.iter=1
+        self.step=cure_step.cure_bondsearch
+        self.curr_nxlinkbonds=0
+        self.current_stage['drag']=0
+        self.current_stage['relax']=0
+        self.current_radidx=0
+        self.current_radius=0.0
+        self.bonds_file=''
 
 class CureController:
     default_equilibration_sequence = [ { 'ensemble': 'min' }, 
@@ -88,25 +128,9 @@ class CureController:
     }
 
     def __init__(self,curedict={}):
-        self.iter=0
-        self.max_nxlinkbonds=0
-        self.cum_nxlinkbonds=0
-        self.desired_nxlinkbonds=0
-        self.max_search_radius=0.0
-        self.max_radidx=0
-        self.state=state.unknown
-        self.curr_nxlinkbonds=0
-
-        self.current_stage={}
-        self.current_stage['drag']=0
-        self.current_stage['relax']=0
-
-        self.current_radidx=0
-        self.current_radius=0.0
-
+        self.state=CureState()
         self.bonds_df:pd.DataFrame=None
         self.bonds_are='nonexistent!'
-
         self.search_failed=False
         self.dicts={}
         for k,v in self.curedict_defaults.items():
@@ -121,34 +145,26 @@ class CureController:
         if (d['nstages']>0 or d['increment']>0.0) and d['limit']>0.0:
             self.dragging_enabled=True
 
-    def _to_yaml(self,filename='cure_controller_state.yaml'):
-        with open(filename,'w') as f:
-            f.write(yaml.dump(self))
-
-    @classmethod
-    def from_yaml(cls,filename='cure_controller_state.yaml'):
-        with open(filename,'r') as f:
-            yaml_string=f.read()
-        return yaml.load(yaml_string,Loader=yaml.Loader)
-
     def setup(self,max_nxlinkbonds=0,desired_nxlinkbonds=0,max_search_radius=0.0):
-        self.max_nxlinkbonds=max_nxlinkbonds
-        self.desired_nxlinkbonds=desired_nxlinkbonds
-        self.max_search_radius=max_search_radius
+        st=self.state
+        st.max_nxlinkbonds=max_nxlinkbonds
+        st.desired_nxlinkbonds=desired_nxlinkbonds
+        st.max_search_radius=max_search_radius
         d=self.dicts['controls']
-        self.max_radidx=int((self.max_search_radius-d['search_radius'])/d['radial_increment'])
+        st.max_radidx=int((st.max_search_radius-d['search_radius'])/d['radial_increment'])
 
     @cp.enableCheckpoint
     def do_iter(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,gromacs_dict={}):
-        my_logger(f'Iteration {self.iter} begins',logger.info,fill='~')
+        my_logger(f'Iteration {self.state.iter} begins',logger.info,fill='~')
         TC.grab_files() # copy files locally
+        self.state.step=cure_step.cure_bondsearch
         self._do_bondsearch(TC,RL,MD)
         self._do_preupdate_dragging(TC,gromacs_dict)
         self._do_topology_update(TC,MD)
         self._do_relax(TC,gromacs_dict)
         self._do_equilibrate(TC,gromacs_dict)
-        logger.info(f'Iteration {self.iter} current conversion {self._curr_conversion():.3f} or {self.cum_nxlinkbonds} bonds')
-        self._to_yaml()
+        logger.info(f'Iteration {self.state.iter} current conversion {self._curr_conversion():.3f} or {self.state.cum_nxlinkbonds} bonds')
+        # self._to_yaml()
         return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
 
     @cp.enableCheckpoint
@@ -160,45 +176,40 @@ class CureController:
         return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
 
     def is_cured(self):
+        st=self.state
         logger.debug(f'search_failed? {self.search_failed}')
-        logger.debug(f'cumxlinks {self.cum_nxlinkbonds} maxxlinks {self.max_nxlinkbonds}: {(self.cum_nxlinkbonds>=self.max_nxlinkbonds)}')
-        finished=self.search_failed or (self.cum_nxlinkbonds>=self.desired_nxlinkbonds)
+        logger.debug(f'cumxlinks {st.cum_nxlinkbonds} maxxlinks {st.max_nxlinkbonds}: {(st.cum_nxlinkbonds>=st.max_nxlinkbonds)}')
+        finished=self.search_failed or (st.cum_nxlinkbonds>=st.desired_nxlinkbonds)
         if finished:
-            self.state=state.cap_bondsearch
+            st.step=cure_step.cap_bondsearch
         return finished
 
     def _curr_conversion(self):
-        if not self.max_nxlinkbonds: return 0
-        return float(self.cum_nxlinkbonds)/self.max_nxlinkbonds
+        if not self.state.max_nxlinkbonds: return 0
+        return float(self.state.cum_nxlinkbonds)/self.state.max_nxlinkbonds
 
     def reset(self):
-        self.iter=1
-        self.state=state.cure_bondsearch
-        self.curr_nxlinkbonds=0
-        self.current_stage['drag']=0
-        self.current_stage['relax']=0
-        self.current_radidx=0
-        self.current_radius=0.0
+        self.state.reset()
         self.bonds_df=pd.DataFrame()
         self.bonds_are='nonexistent!'
         self.search_failed=False
 
     def next_iter(self):
-        i=self.iter+1
+        i=self.state.iter+1
         self.reset()
-        self.iter=i
-        return self.iter>=self.dicts['controls']['max_iterations']
+        self.state.iter=i
+        return self.state.iter>=self.dicts['controls']['max_iterations']
 
     def _do_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,reentry=False):
-        if self.state!=state.cure_bondsearch: return
+        if self.state.step!=cure_step.cure_bondsearch: return
         opfx=self._pfx()
         d=self.dicts['controls']
-        self.current_radius=d['search_radius']+self.current_radidx*d['radial_increment']
-        logger.info(f'Bond search using radius {self.current_radius} nm initiated')
+        self.state.current_radius=d['search_radius']+self.state.current_radidx*d['radial_increment']
+        logger.info(f'Bond search using radius {self.state.current_radius} nm initiated')
         curr_conversion=self._curr_conversion()
         apply_probabilities=curr_conversion<d['late_threshold']
-        bond_limit=int(d['max_conversion_per_iteration']*self.max_nxlinkbonds)
-        bond_target=int((d['desired_conversion']-curr_conversion)*self.max_nxlinkbonds)
+        bond_limit=int(d['max_conversion_per_iteration']*self.state.max_nxlinkbonds)
+        bond_target=int((d['desired_conversion']-curr_conversion)*self.state.max_nxlinkbonds)
         bond_limit=min([bond_limit,bond_target])
         logger.debug(f'Iteration limited to at most {bond_limit} new bonds')
         # TODO: new branch: multisearch:
@@ -207,7 +218,7 @@ class CureController:
         # of bonds has been formed, or we've maxed out the radius
         # raw_bdf=self.make_candidates(TC,RL,MD,...)
         nbonds=0
-        while nbonds==0 and self.current_radidx<self.max_radidx:
+        while nbonds==0 and self.state.current_radidx<self.state.max_radidx:
             # test_bdf=raw_bdf[raw_bdf['r']<self.current_radius]
             # result_bdf=self.apply_filters(TC,RL,MD,...)
             nbdf=self._searchbonds(TC,RL,MD,stage=reaction_stage.cure,abs_max=bond_limit,apply_probabilities=apply_probabilities,reentry=reentry)
@@ -215,25 +226,25 @@ class CureController:
             # nbonds+=result_bdf.shape[0]
             # if nbonds<PARAMETER:
             if nbonds==0:
-                self.current_radidx+=1
-                self.current_radius+=d['radial_increment']
-                logger.info(f'Radius increased to {self.current_radius} nm')
+                self.state.current_radidx+=1
+                self.state.current_radius+=d['radial_increment']
+                logger.info(f'Radius increased to {self.state.current_radius} nm')
         if nbonds>0:
             ess='' if nbonds==1 else 's'
-            logger.info(f'Iteration {self.iter} will generate {nbdf.shape[0]} new bond{ess}')
+            logger.info(f'Iteration {self.state.iter} will generate {nbdf.shape[0]} new bond{ess}')
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self._register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
-            self.state=state.cure_drag if self.dragging_enabled else state.cure_update
+            self.state.step=cure_step.cure_drag if self.dragging_enabled else cure_step.cure_update
         else:
             self.search_failed=True
-            self.state=state.cap_bondsearch # proceed to cap
-        self.cum_nxlinkbonds+=nbonds
-        self._to_yaml()
-        logger.debug(f'next: {self.state}')
+            self.state.step=cure_step.cap_bondsearch # proceed to cap
+        self.state.cum_nxlinkbonds+=nbonds
+        self.state._to_yaml()
+        logger.debug(f'next: {self.state.step}')
 
     def _do_preupdate_dragging(self,TC:TopoCoord,gromacs_dict={}):
-        if self.state!=state.cure_drag: return
+        if self.state.step!=cure_step.cure_drag: return
         nbdf=self.bonds_df
         assert nbdf.shape[0]>0
         d=self.dicts['drag']
@@ -243,29 +254,29 @@ class CureController:
             logger.debug(f'No dragging is necessary')
         else:
             self._distance_attenuation(TC,mode='drag',gromacs_dict=gromacs_dict)
-        self.state=state.cure_update
-        self._to_yaml()
-        logger.debug(f'next: {self.state}')
+        self.state.step=cure_step.cure_update
+        self.state._to_yaml()
+        logger.debug(f'next: {self.state.step}')
 
     def _do_relax(self,TC:TopoCoord,gromacs_dict={}):
-        if self.state!=state.cure_relax and self.state!=state.cap_relax: return
+        if self.state.step!=cure_step.cure_relax and self.state.step!=cure_step.cap_relax: return
         nbdf=self.bonds_df
         if nbdf.shape[0]==0: # no bonds identified
-            if self.state==state.cure_relax:
-                self.state=state.cap_bondsearch # drop out of CURE loop
+            if self.state.step==cure_step.cure_relax:
+                self.state.step=cure_step.cap_bondsearch # drop out of CURE loop
             else:
-                self.state=state.finished
+                self.state.step=cure_step.finished
             return
         self._distance_attenuation(TC,mode='relax',gromacs_dict=gromacs_dict)
-        if self.state==state.cure_relax:
-            self.state=state.cure_equilibrate
+        if self.state.step==cure_step.cure_relax:
+            self.state.step=cure_step.cure_equilibrate
         else:
-            self.state=state.cap_equilibrate
-        self._to_yaml()
-        logger.debug(f'next: {self.state}')
+            self.state.step=cure_step.cap_equilibrate
+        self.state._to_yaml()
+        logger.debug(f'next: {self.state.step}')
 
     def _do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
-        if self.state!=state.cure_update and self.state!=state.cap_update: return
+        if self.state.step!=cure_step.cure_update and self.state.step!=cure_step.cap_update: return
         opfx=self._pfx()
         logger.debug(f'Topology update')
         bonds_df,pairs_df=TC.update_topology_and_coordinates(self.bonds_df,template_dict=MD,write_mapper_to=f'{opfx}-idx-mapper.csv')
@@ -275,26 +286,26 @@ class CureController:
         TC.write_gro(f'{opfx}.gro')
         TC.write_top(f'{opfx}.top')
         TC.write_grx_attributes(f'{opfx}.grx')
-        if self.state==state.cure_update:
-            self.state=state.cure_relax
+        if self.state.step==cure_step.cure_update:
+            self.state.step=cure_step.cure_relax
         else:
-            self.state=state.cap_relax
-        self._to_yaml()
+            self.state.step=cure_step.cap_relax
+        self.state._to_yaml()
 
     def _do_equilibrate(self,TC:TopoCoord,gromacs_dict={}):
-        if self.state!=state.cure_equilibrate and self.state!=state.cap_equilibrate: return
+        if self.state.step!=cure_step.cure_equilibrate and self.state.step!=cure_step.cap_equilibrate: return
         d=self.dicts['equilibrate']
         opfx=self._pfx()
-        TC.equilibrate(deffnm=f'{opfx}',edict=d,gromacs_dict=gromacs_dict,plot_pfx=f'iter-{self.iter}-{str(self.state)}')
-        if self.state==state.cure_equilibrate:
+        TC.equilibrate(deffnm=f'{opfx}',edict=d,gromacs_dict=gromacs_dict,plot_pfx=f'iter-{self.state.iter}-{str(self.state.step)}')
+        if self.state.step==cure_step.cure_equilibrate:
             # go to next iteration -- this whole method is skipped if nbonds==0 in relax
-            self.state=state.cure_bondsearch # if not self.search_failed else state.cap_bondsearch
-        elif self.state==state.cap_equilibrate:
-            self.state=state.finished
-        self._to_yaml()
+            self.state.step=cure_step.cure_bondsearch # if not self.search_failed else state.cap_bondsearch
+        elif self.state.step==cure_step.cap_equilibrate:
+            self.state.step=cure_step.finished
+        self.state._to_yaml()
 
     def _do_cap_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
-        if self.state!=state.cap_bondsearch: return
+        if self.state.step!=cure_step.cap_bondsearch: return
         opfx=self._pfx()
         # multi: nbdf=self.make_cadidates(...,stage='cap')
         nbdf=self._searchbonds(TC,RL,MD,stage=reaction_stage.cap)
@@ -306,10 +317,10 @@ class CureController:
             pairs=pd.DataFrame() # empty placeholder
             TC.add_length_attribute(nbdf,attr_name='initial_distance')
             self._register_bonds(nbdf,pairs,f'{opfx}-bonds.csv',bonds_are='identified')
-            self.state=state.cap_update
+            self.state.step=cure_step.cap_update
         else:
-            self.state=state.finished
-        self._to_yaml()
+            self.state.step=cure_step.finished
+        self.state._to_yaml()
 
     def _write_bonds_df(self,bondsfile='bonds.csv'):
         self.bonds_df.to_csv(bondsfile,sep=' ',mode='w',index=False,header=True,doublequote=False)
@@ -324,15 +335,16 @@ class CureController:
         self.bonds_df=bonds
         self.pairs_df=pairs
         self.bonds_are=bonds_are
+        self.state.bonds_file=bonds_file
         self._write_bonds_df(bonds_file)
         self.dicts['output']['bonds_file']=os.path.abspath(bonds_file)
 
     def _pfx(self):
-        return f'{self.state.value}-{self.state}'
+        return f'{self.state.step.value}-{self.state.step}'
 
     def _distance_attenuation(self,TC:TopoCoord,mode='drag',gromacs_dict={}):
         assert mode in ['drag','relax']
-        statename=self.state.basename()
+        statename=self.state.step.basename()
         opfx=self._pfx()
         nbdf=self.bonds_df.copy()
         pdf=self.pairs_df.copy()
@@ -341,7 +353,7 @@ class CureController:
         maxL,minL,meanL=nbdf['current_lengths'].max(),nbdf['current_lengths'].min(),nbdf['current_lengths'].mean()
         logger.debug(f'Lengths avg/min/max: {meanL:.3f}/{minL:.3f}/{maxL:.3f}')
         ess='' if nbdf.shape[0]==1 else 's'
-        logger.info(f'{str(self.state).capitalize()} initiated on {nbdf.shape[0]} distance{ess} (max {maxL:.3f} nm)')
+        logger.info(f'Step "{str(self.state.step)}" initiated on {nbdf.shape[0]} distance{ess} (max {maxL:.3f} nm)')
         roptions=[self.dicts['gromacs']['rdefault'],maxL]
         if mode=='drag':
             TC.add_restraints(nbdf,typ=6)
@@ -364,11 +376,11 @@ class CureController:
                 mdp_mods_dict['ref_p']=stg_dict['pressure']
             mdp_modify(f'{impfx}.mdp',mdp_mods_dict,add_if_missing=(ensemble!='min'))
         this_nstages=int(maxL/d['increment'])
-        this_firststage=self.current_stage[mode]
-        logger.debug(f'{self.state} {this_nstages} {this_firststage}')
+        this_firststage=self.state.current_stage[mode]
+        logger.debug(f'{self.state.step} {this_nstages} {this_firststage}')
         saveT=TC.copy_bond_parameters(self.bonds_df)
         for i in range(this_firststage,this_nstages):
-            self.current_stage[mode]=i
+            self.state.current_stage[mode]=i
             if mode=='drag':
                 TC.attenuate_bond_parameters(self.bonds_df,i,this_nstages,minimum_distance=d['limit'],init_colname='initial_distance')
             else:
@@ -391,22 +403,21 @@ class CureController:
                 pmaxL,pminL,pmeanL=pdf['current_lengths'].max(),pdf['current_lengths'].min(),pdf['current_lengths'].mean()
                 logger.debug(f'1-4 distances lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
                 logger.info(f'{i+1:>10d}  {maxL:>17.3f}  {pmaxL:>21.3f}')
-            self._to_yaml()
+            self.state._to_yaml()
         if mode=='drag':
             TC.remove_restraints(self.bonds_df)
         TC.write_top(f'{opfx}-complete.top')
         self._register_bonds(nbdf,pdf,f'{opfx}-{mode}-bonds.csv',bonds_are=('relaxed' if mode=='relax' else 'dragged'))
-        self.current_stage[mode]=0
-        self._to_yaml()
+        self.state.current_stage[mode]=0
+        self.state._to_yaml()
 
     # TODO: move to searchbonds.by; split into make_candidates() and apply_filters()
     def _searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage=reaction_stage.cure,abs_max=0,apply_probabilities=False,reentry=False):
-
         adf=TC.gro_DataFrame('atoms')
         gro=TC.files['gro']
         ncpu=self.dicts['controls']['ncpu']
         if stage==reaction_stage.cure:
-            TC.linkcell_initialize(self.current_radius,ncpu=ncpu,force_repopulate=reentry)
+            TC.linkcell_initialize(self.state.current_radius,ncpu=ncpu,force_repopulate=reentry)
         raset=adf[adf['z']>0]  # this view will be used for downselecting to potential A-B partners
         bdf=pd.DataFrame()
         Rlist=[x for x in RL if (x.stage==stage and x.probability>0.0)]
@@ -468,9 +479,9 @@ class CureController:
                         idf=pd.concat(results,ignore_index=True)
                         # gromacs_distance(idf,gro,new_column_name='r') # use "gmx distance" to very quickly get all lengths
                         logger.debug(f'{idf.shape[0]} bond-candidate length{ess} avg/min/max: {idf["r"].mean():0.3f}/{idf["r"].min():0.3f}/{idf["r"].max():0.3f}')
-                        idf=idf[idf['r']<self.current_radius].copy().reset_index(drop=True)
+                        idf=idf[idf['r']<self.state.current_radius].copy().reset_index(drop=True)
                         ess='' if idf.shape[0]!=1 else 's'
-                        logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {self.current_radius} nm')
+                        logger.debug(f'{idf.shape[0]} bond-candidate{ess} with lengths below {self.state.current_radius} nm')
                         p=Pool(processes=ncpu)
                         idf_split=np.array_split(idf,ncpu)
                         # logger.debug(f'Decomposed dataframe lengths: {", ".join([str(x.shape[0]) for x in idf_split])}')

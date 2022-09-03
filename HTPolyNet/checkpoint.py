@@ -129,16 +129,17 @@ def enableCheckpoint(method):
     def wrapper_method(self,*args,**kwargs):
         mywd=os.path.relpath(os.getcwd(),_CP_.my_abspath)
         if len(_CP_.calls)>0 and (method.__name__,mywd) in _CP_.calls:
-            logger.info(f'skipping {method.__name__}') 
+            logger.info(f'Skipping {method.__name__} in {mywd}') 
             return
         result=method(self,*args,**kwargs)
         _CP_.calls.append((method.__name__,mywd))
         _CP_.results.update(result) # must be a dict
-        _CP_.narrative.append(f'Method {method.__name__} called with args {args} in {os.path.join(_CP_.my_abspath,mywd)} gave result {result}')
+        _CP_.narrative.append(f'Method {method.__name__} called in {os.path.join(_CP_.my_abspath,mywd)} gave result {result}')
+        _write_checkpoint()
         return result
     return wrapper_method
 
-def write_checkpoint():
+def _write_checkpoint():
     sv=os.getcwd()
     os.chdir(_CP_.my_abspath)
     _CP_.to_yaml()
