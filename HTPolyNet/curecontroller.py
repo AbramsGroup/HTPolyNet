@@ -13,6 +13,8 @@ from HTPolyNet.reaction import reaction_stage
 from multiprocessing import Pool
 from functools import partial
 import HTPolyNet.projectfilesystem as pfs
+from HTPolyNet.stringthings import my_logger
+import HTPolyNet.checkpoint as cp
 
 import logging
 
@@ -124,7 +126,7 @@ class CureController:
             f.write(yaml.dump(self))
 
     @classmethod
-    def _from_yaml(cls,filename='cure_controller_state.yaml'):
+    def from_yaml(cls,filename='cure_controller_state.yaml'):
         with open(filename,'r') as f:
             yaml_string=f.read()
         return yaml.load(yaml_string,Loader=yaml.Loader)
@@ -136,6 +138,27 @@ class CureController:
         d=self.dicts['controls']
         self.max_radidx=int((self.max_search_radius-d['search_radius'])/d['radial_increment'])
 
+    @cp.enableCheckpoint
+    def do_iter(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,gromacs_dict={}):
+        my_logger(f'Iteration {self.iter} begins',logger.info,fill='~')
+        TC.grab_files() # copy files locally
+        self._do_bondsearch(TC,RL,MD)
+        self._do_preupdate_dragging(TC,gromacs_dict)
+        self._do_topology_update(TC,MD)
+        self._do_relax(TC,gromacs_dict)
+        self._do_equilibrate(TC,gromacs_dict)
+        logger.info(f'Iteration {self.iter} current conversion {self._curr_conversion():.3f} or {self.cum_nxlinkbonds} bonds')
+        self._to_yaml()
+        return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
+
+    @cp.enableCheckpoint
+    def do_capping(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,gromacs_dict={}):
+        self._do_cap_bondsearch(TC,RL,MD)
+        self._do_topology_update(TC,MD)
+        self._do_relax(TC)
+        self._do_equilibrate(TC,gromacs_dict)
+        return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
+
     def is_cured(self):
         logger.debug(f'search_failed? {self.search_failed}')
         logger.debug(f'cumxlinks {self.cum_nxlinkbonds} maxxlinks {self.max_nxlinkbonds}: {(self.cum_nxlinkbonds>=self.max_nxlinkbonds)}')
@@ -144,7 +167,7 @@ class CureController:
             self.state=state.cap_bondsearch
         return finished
 
-    def curr_conversion(self):
+    def _curr_conversion(self):
         if not self.max_nxlinkbonds: return 0
         return float(self.cum_nxlinkbonds)/self.max_nxlinkbonds
 
@@ -164,16 +187,15 @@ class CureController:
         i=self.iter+1
         self.reset()
         self.iter=i
-        logger.debug(f'{self.iter}')
         return self.iter>=self.dicts['controls']['max_iterations']
 
-    def do_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,reentry=False):
+    def _do_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,reentry=False):
         if self.state!=state.cure_bondsearch: return
         opfx=self._pfx()
         d=self.dicts['controls']
         self.current_radius=d['search_radius']+self.current_radidx*d['radial_increment']
         logger.info(f'Bond search using radius {self.current_radius} nm initiated')
-        curr_conversion=self.curr_conversion()
+        curr_conversion=self._curr_conversion()
         apply_probabilities=curr_conversion<d['late_threshold']
         bond_limit=int(d['max_conversion_per_iteration']*self.max_nxlinkbonds)
         bond_target=int((d['desired_conversion']-curr_conversion)*self.max_nxlinkbonds)
@@ -210,7 +232,7 @@ class CureController:
         self._to_yaml()
         logger.debug(f'next: {self.state}')
 
-    def do_preupdate_dragging(self,TC:TopoCoord,gromacs_dict={}):
+    def _do_preupdate_dragging(self,TC:TopoCoord,gromacs_dict={}):
         if self.state!=state.cure_drag: return
         nbdf=self.bonds_df
         assert nbdf.shape[0]>0
@@ -225,7 +247,7 @@ class CureController:
         self._to_yaml()
         logger.debug(f'next: {self.state}')
 
-    def do_relax(self,TC:TopoCoord,gromacs_dict={}):
+    def _do_relax(self,TC:TopoCoord,gromacs_dict={}):
         if self.state!=state.cure_relax and self.state!=state.cap_relax: return
         nbdf=self.bonds_df
         if nbdf.shape[0]==0: # no bonds identified
@@ -242,7 +264,7 @@ class CureController:
         self._to_yaml()
         logger.debug(f'next: {self.state}')
 
-    def do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
+    def _do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
         if self.state!=state.cure_update and self.state!=state.cap_update: return
         opfx=self._pfx()
         logger.debug(f'Topology update')
@@ -259,7 +281,7 @@ class CureController:
             self.state=state.cap_relax
         self._to_yaml()
 
-    def do_equilibrate(self,TC:TopoCoord,gromacs_dict={}):
+    def _do_equilibrate(self,TC:TopoCoord,gromacs_dict={}):
         if self.state!=state.cure_equilibrate and self.state!=state.cap_equilibrate: return
         d=self.dicts['equilibrate']
         opfx=self._pfx()
@@ -271,7 +293,7 @@ class CureController:
             self.state=state.finished
         self._to_yaml()
 
-    def do_cap_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
+    def _do_cap_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
         if self.state!=state.cap_bondsearch: return
         opfx=self._pfx()
         # multi: nbdf=self.make_cadidates(...,stage='cap')

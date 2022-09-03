@@ -142,7 +142,7 @@ class Runtime:
             they are all unparameterized '''
         for mname,M in self.cfg.molecules.items():
             M.set_origin('unparameterized')
-        cwd=pfs.go_to('molecules/parameterized')
+        pfs.go_to('molecules/parameterized')
         my_logger(f'Templates in {pfs.cwd()}',logger.info)
         ''' Each molecule implied by the cfg is 'generated' here, either by
             reading from the library or direct parameterization.  In some cases,
@@ -155,19 +155,9 @@ class Runtime:
             logger.info(ln)
         ml=list(self.cfg.molecules.keys())
         logger.debug(f'Generating: {ml}')
-        # my_logger(ml,logger.info)
-        # all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
-        # while not all_made:
-        #     for mname,M in self.cfg.molecules.items():
-        #         if mname not in self.molecules:
-        #             if self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin):
-        #                 self.molecules[mname]=M
-        #                 logger.debug(f'Generated {mname}')
-        #     all_made=all([(m in self.molecules and M.get_origin()!='unparameterized') for m,M in self.cfg.molecules.items()])
         for mname,M in self.cfg.molecules.items():
             self._generate_molecule(M,force_parameterization=force_parameterization,force_checkin=force_checkin)
             self.molecules[mname]=M
-
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
         new_reactions,new_molecules=chain_expand_reactions(self.molecules)
@@ -204,10 +194,6 @@ class Runtime:
             self.cfg.calculate_maximum_conversion()
             logger.info(f'100% conversion is {self.cfg.maxconv} bonds')
 
-        # for mname,M in self.molecules.items():
-        #     if M.generator:
-        #         M.prepare_new_bonds(available_molecules=self.molecules)
-
         logger.debug(f'Reaction bond(s) in each molecular template:')
         for M in self.molecules.values():
             if len(M.reaction_bonds)>0:
@@ -227,12 +213,14 @@ class Runtime:
             if relaxdict:
                 self.molecules[k].relax(relaxdict)
 
+    @cp.enableCheckpoint
     def do_initialization(self,inpfnm='init'):
-        cwd=pfs.go_to('systems/init')
         my_logger(f'Initialization in {pfs.cwd()}',logger.info)
-        self._initialize_topology(inpfnm)
-        self._initialize_coordinates(inpfnm)
+        top=self._initialize_topology(inpfnm)
+        gro,grx=self._initialize_coordinates(inpfnm)
+        return {'top':top,'gro':gro,'grx':grx}
 
+    @cp.enableCheckpoint
     def do_densification(self,deffnm='densified'):
         """do_liquid_simulation Manages execution of gmx mdrun to perform minimization
             and NPT MD simulation of the initial liquid system.  Final coordinates are
@@ -243,10 +231,7 @@ class Runtime:
         :param deffnm: deffnm prefix fed to gmx mdrun, defaults to 'npt-1'
         :type deffnm: str, optional
         """
-        if cp.passed('do_densification'): return
-        cwd=pfs.go_to('systems/densification')
         my_logger(f'Densification in {pfs.cwd()}',logger.info)
-        gromacs_dict=self.cfg.parameters.get('gromacs',{})
         densification_dict=self.cfg.parameters.get('densification',{})
         assert len(densification_dict)>0,'"densification" directives missing'
         equilibration=densification_dict.get('equilibration',[])
@@ -255,30 +240,28 @@ class Runtime:
         infiles=[TC.files[x] for x in ['gro','top','grx']]
         assert all([os.path.exists(x) for x in infiles]),f'One or more of {infiles} not found'
         self._do_equilibration_series(equilibration,deffnm=f'{deffnm}',plot_pfx='densification')
-        gro_res=os.path.basename(TC.files["gro"])
-        deffnm_res=gro_res.replace('.gro','')
-        logger.info(f'Densified coordinates in {pfs.cwd()}/{gro_res}')
-        cp.set(TC,'do_densification')
+        logger.info(f'Densified coordinates in {pfs.cwd()}/{os.path.basename(TC.files["gro"])}')
+        return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
 
+    @cp.enableCheckpoint
     def do_precure(self):
-        if cp.passed('do_precure'): return
         self._do_pap(pfx='precure')
-        cp.set(self.TopoCoord,'do_precure')
+        return {c:os.path.basename(x) for c,x in self.TopoCoord.files.items() if c!='mol2'}
 
     def do_cure(self):
         if not hasattr(self,'cc'): 
             logger.debug(f'no cure controller')
             return  # no cure controller
-        if cp.passed('cure'): return
+        # if cp.passed('cure'): return
         cc=self.cc
         TC=self.TopoCoord
         RL=self.cfg.reactions
         MD=self.molecules
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
-        if cp.is_currentstepname('cure'):
-            cc.iter=cp.last_substep()
-        else:
-            cc.reset()
+        # if cp.is_currentstepname('cure'):
+        #     cc.iter=cp.last_substep()
+        # else:
+        #     cc.reset()
         cc.setup(max_nxlinkbonds=self.cfg.maxconv,desired_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['controls']['desired_conversion']),max_search_radius=min(TC.Coordinates.box.diagonal()/2))
         cure_finished=cc.is_cured()
         if cure_finished: 
@@ -287,50 +270,41 @@ class Runtime:
         my_logger('Connect-Update-Relax-Equilibrate (CURE) begins',logger.info)
         logger.info(f'Attempting to form {cc.desired_nxlinkbonds} bonds')
         while not cure_finished:
-            my_logger(f'Iteration {cc.iter} begins',logger.info,fill='~')
-            reentry=pfs.go_to(f'systems/iter-{cc.iter}')
+            pfs.go_to(f'systems/iter-{cc.iter}')
             if os.path.exists('cure_controller_state.yaml'):
                 logger.debug(f'Reading new cure controller in {pfs.cwd()}')
-                self.cc=CureController._from_yaml('cure_controller_state.yaml')
-                cc=self.cc
+                cc=CureController.from_yaml('cure_controller_state.yaml')
                 logger.info(f'Restarting at {cc.cum_nxlinkbonds} bonds')
-            TC.grab_files() # copy files locally
-            cc.do_bondsearch(TC,RL,MD,reentry=reentry)
-            cc.do_preupdate_dragging(TC,gromacs_dict)
-            cc.do_topology_update(TC,MD)
-            cc.do_relax(TC,gromacs_dict)
-            cc.do_equilibrate(TC,gromacs_dict)
-            cp.subset(TC,'cure',cc.iter)
-            logger.info(f'Iteration {cc.iter} current conversion {cc.curr_conversion():.3f} or {cc.cum_nxlinkbonds} bonds')
+            cc.do_iter(TC,RL,MD,gromacs_dict=gromacs_dict)
+            cp.write_checkpoint()
             cure_finished=cc.is_cured()
             if not cure_finished:
                 cure_finished=cc.next_iter()
-        my_logger(f'Capping begins',logger.info)
-        cc.do_cap_bondsearch(TC,RL,MD)
-        cc.do_topology_update(TC,MD)
-        cc.do_relax(TC)
-        cc.do_equilibrate(TC,gromacs_dict)
-        my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
-        cp.set(TC,'cure')
 
+        my_logger(f'Capping begins',logger.info)
+        pfs.go_to(f'systems/capping')
+        cc.do_capping(TC,RL,MD,gromacs_dict=gromacs_dict)
+        cp.write_checkpoint()
+        my_logger('Connect-Update-Relax-Equilibrate (CURE) ends',logger.info)
+
+    @cp.enableCheckpoint
     def do_postcure(self):
-        if cp.passed('do_postcure'): return
         self._do_pap(pfx='postcure')
-        cp.set(self.TopoCoord,'do_postcure')
-        
+        return {c:os.path.basename(x) for c,x in self.TopoCoord.files.items() if c!='mol2'}
+
+    @cp.enableCheckpoint
     def save_data(self,result_name='final'):
         TC=self.TopoCoord
-        pfs.go_to(f'systems/{result_name}-results')
         my_logger(f'Final data to {pfs.cwd()}',logger.info)
         TC.write_grx_attributes(f'{result_name}.grx')
         TC.write_gro(f'{result_name}.gro')
         TC.write_top(f'{result_name}.top')
-        cp.set(TC,'final')
+        return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
 
     def do_workflow(self,**kwargs):
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
-        checkpoint_file=kwargs.get('checkpoint_file','checkpoint_state.yaml')
+        # checkpoint_file=kwargs.get('checkpoint_file','checkpoint_state.yaml')
         TC=self.TopoCoord
 
         pfs.go_proj()
@@ -341,20 +315,32 @@ class Runtime:
         )
 
         pfs.go_proj()
-        cp.setup(TC,filename=checkpoint_file)
-        TC.load_files()
+        last_data=cp.read_checkpoint()
+        logger.debug(f'Checkpoint last_data {last_data}')
+        TC.load_files(last_data)
+        logger.debug(TC.files)
+        pfs.go_to(f'systems/init')
         self.do_initialization()
+        cp.write_checkpoint()
+        pfs.go_to(f'systems/densification')
         self.do_densification()
+        cp.write_checkpoint()
+        pfs.go_to(f'systems/precure')
         self.do_precure()
+        cp.write_checkpoint()
         self.do_cure()
+        pfs.go_to(f'systems/postcure')
         self.do_postcure()
+        cp.write_checkpoint()
+        pfs.go_to(f'systems/final-results')
         self.save_data()
+        cp.write_checkpoint()
+        pfs.go_proj()
 
     def _generate_molecule(self,M:Molecule,**kwargs):
         if M.origin!='unparameterized' and M.origin!='symmetry_product': return
         mname=M.name
         checkin=pfs.checkin
-        # pfs.go_to(f'molecules/parameterized/work/{M.name}')
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
         if force_parameterization or not M.previously_parameterized():
@@ -365,8 +351,6 @@ class Runtime:
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
                 for ex in ['mol2','top','itp','gro','grx']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
-#                    checkin(f'molecules/parameterized/work/{mname}/{mname}.{ex}',overwrite=force_checkin)
-#                    shutil.copy(f'molecules/parameterized/{mname}.{ex}','../../')
                 M.set_origin('newly parameterized')
             else:
                 logger.debug(f'Error: could not generate {mname}')
@@ -380,7 +364,7 @@ class Runtime:
             logger.debug(f'fetched {mname} exts {exts}')
             # for ex in ['mol2','top','itp','gro','grx']:
             #     pfs.checkout(f'molecules/parameterized/{mname}.{ex}')
-            mol2=f'{mname}.mol2' if 'mol2' in exts else ''
+            # mol2=f'{mname}.mol2' if 'mol2' in exts else ''
             M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename='',wrap_coords=False)
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             # logger.debug(f'{M.name} box {M.TopoCoord.Coordinates.box}')
@@ -394,10 +378,6 @@ class Runtime:
         for s,SI in M.stereoisomers.items():
             logger.debug(f'SI {s}: {SI.origin}')
         M.generate_conformers()
-
-        # for ln in M.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
-        logger.debug(f'Done.')
-        return
 
     def _type_consistency_check(self,typename='dihedraltypes',funcidx=4,selection_rule='stiffest'):
         logger.debug(f'Consistency check of {typename} func {funcidx} on all {len(self.molecules)} molecules requested')
@@ -442,13 +422,12 @@ class Runtime:
         :param inpfnm: input file name prefix, defaults to 'init'
         :type inpfnm: str, optional
         """
-        TC=self.TopoCoord
-        if cp.passed('initialize_topology'): return
-        cwd=pfs.go_to('systems/init')
+        # if cp.passed('initialize_topology'): return
         if os.path.isfile(f'{inpfnm}.top'):
-            logger.debug(f'{inpfnm}.top already exists in {cwd} but we will rebuild it anyway!')
+            logger.debug(f'{inpfnm}.top already exists in {pfs.cwd()} but we will rebuild it anyway!')
 
         ''' for each monomer named in the cfg, either parameterize it or fetch its parameterization '''
+        TC=self.TopoCoord
         already_merged=[]
         for item in self.cfg.initial_composition:
             M=self.molecules[item['molecule']]
@@ -466,7 +445,7 @@ class Runtime:
                 TC.Topology.merge_types(M.TopoCoord.Topology)
         logger.info(f'Topology "{inpfnm}.top" in {pfs.cwd()}')
         TC.write_top(f'{inpfnm}.top')
-        cp.set(self.TopoCoord,stepname='initialize_topology')
+        return f'{inpfnm}.top'
 
     def _initialize_coordinates(self,inpfnm='init'):
         """Builds initial top and gro files for initial liquid simulation
@@ -474,11 +453,9 @@ class Runtime:
         :param inpfnm: input file name prefix, defaults to 'init'
         :type inpfnm: str, optional
         """
-        if cp.passed('initialize_coordinates'): return
-        TC=self.TopoCoord
-        cwd=pfs.go_to('systems/init')
         densification_dict=self.cfg.parameters.get('densification',{})
         # logger.debug(f'{densification_dict}')
+        TC=self.TopoCoord
         if not densification_dict:
             densification_dict['aspect_ratio']=self.cfg.parameters.get('aspect_ratio',np.array([1.,1.,1.]))
             if 'initial_density' in self.cfg.parameters:
@@ -546,20 +523,15 @@ class Runtime:
         msg=insert_molecules(c_togromacs,boxsize,inpfnm,inputs_dir='../../molecules/parameterized',**self.cfg.parameters)
         TC.read_gro(f'{inpfnm}.gro')
         TC.atom_count()
-        # TC.set_grx_attributes(['z','nreactions','reactantName','cycle','cycle_idx','chain','chain_idx'])
         TC.set_grx_attributes()
         TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition)
         for list_name in ['cycle','chain']:
             TC.reset_idx_list_from_grx_attributes(list_name)
-        # chainlists=TC.idx_lists['chain']
-        # logger.debug(f'virgin chains')
-        # for i,c in enumerate(chainlists):
-        #     logger.debug(f'  {i} {c}')
         TC.make_resid_graph()
         TC.write_grx_attributes(f'{inpfnm}.grx')
         logger.info(f'Coordinates "{inpfnm}.gro" in {pfs.cwd()}')
         logger.info(f'Extended attributes "{inpfnm}.grx" in {pfs.cwd()}')
-        cp.set(TC,stepname='initialize_coordinates')
+        return f'{inpfnm}.gro',f'{inpfnm}.grx'
 
     def _do_equilibration(self,edict={},deffnm='equilibrate',plot_pfx=''):
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
@@ -579,13 +551,11 @@ class Runtime:
         assert pfx in ['precure','postcure']
         pap_dict=self.cfg.parameters.get(pfx,{})
         if not pap_dict: return
-        gromacs_dict=self.cfg.parameters.get('gromacs',{})
         preequil=pap_dict.get('preequilibration',{})
         anneal=pap_dict.get('anneal',{})
         postequil=pap_dict.get('postequilibration',{})
         if not any([preequil,anneal,postequil]): return
         if not _nonempty_directives([x for x in [preequil,anneal,postequil] if x]): return
-        cwd=pfs.go_to(f'systems/{pfx}')
         my_logger(f'{pfx.capitalize()} in {pfs.cwd()}',logger.info)
         if preequil: self._do_equilibration(preequil,deffnm='preequilibration',plot_pfx=f'{pfx}-preequilibration')
         if anneal and _nonempty_directives([anneal]): 

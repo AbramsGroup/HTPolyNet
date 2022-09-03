@@ -845,7 +845,7 @@ class TopoCoord:
     #         logger.debug(f'cycle {c}: {cnames}')
         # logger.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
 
-    def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=False):
+    def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=True):
         """Initialize the linkcell structure; a wrapper for Coordinates
 
         :param cutoff: minimum value of cell side-length
@@ -1391,9 +1391,9 @@ class TopoCoord:
 
     def grab_files(self):
         cwd=os.getcwd()
-        for ext in ['top','gro']:
+        for ext in ['top','gro','grx']:
             filename=self.files[ext]
-            logger.debug(f'{ext} grabbing {pfs.proj_abspath(filename)} for {pfs.cwd()}')  
+            logger.debug(f'{ext} grabbing {pfs.proj_abspath(filename)} into {pfs.cwd()}')  
             if os.path.commonprefix([cwd,filename])!=cwd:
                 shutil.copy(filename,cwd)
             self.files[ext]=os.path.abspath(os.path.basename(filename))
@@ -1413,15 +1413,17 @@ class TopoCoord:
         mylogger(f'after grompp_and_run: gro {self.files["gro"]}')
         return msg
 
-    def load_files(self):
-        if self.files['gro']:
-            self.read_gro(self.files['gro'])
-        if self.files['top']:
-            self.read_top(self.files['top'])
-        if self.files['grx']:
-            self.read_gro_attributes(self.files['grx'])
-        if self.files['mol2']:
-            self.read_mol2(self.files['mol2'])
+    def load_files(self,filenames:list):
+        for e,n in filenames.items():
+            if not e in ['gro','top','grx','mol2']: continue
+            bn,ext=os.path.splitext(n)
+            logger.debug(f'bn {bn} ext {ext}')
+            if   ext=='.gro':  self.read_gro(n)
+            elif ext=='.top':  self.read_top(n)
+            elif ext=='.grx':  self.read_gro_attributes(n)
+            elif ext=='.mol2': self.read_mol2(n)
+            else:
+                logger.debug(f'Warning: file {n} has unknown file extension.  Skipped.')
 
     def center_coords(self,new_boxsize:np.ndarray=None):
         if type(new_boxsize)==np.ndarray:
