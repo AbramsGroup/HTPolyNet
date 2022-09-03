@@ -257,9 +257,11 @@ class Runtime:
         RL=self.cfg.reactions
         MD=self.molecules
         gromacs_dict=self.cfg.parameters.get('gromacs',{})
-        if os.path.exists('cure_state.yaml'):
-            cc.state=CureState.from_yaml('cure_state.yaml')
-            my_logger('Connect-Update-Relax-Equilibrate (CURE) resumes at iteration {cc.state.iter}',logger.info)
+        pfs.go_proj()
+        if os.path.exists('systems/cure_state.yaml'):
+            cc.state=CureState.from_yaml('systems/cure_state.yaml')
+            my_logger(f'Connect-Update-Relax-Equilibrate (CURE) resumes',logger.info)
+            my_logger(f'at iteration {cc.state.iter} and {cc.state.cum_nxlinkbonds} bonds',logger.info)
         else:
             cc.setup(max_nxlinkbonds=self.cfg.maxconv,desired_nxlinkbonds=int(self.cfg.maxconv*cc.dicts['controls']['desired_conversion']),max_search_radius=float(min(TC.Coordinates.box.diagonal()/2)))
             cc.state.iter=1
