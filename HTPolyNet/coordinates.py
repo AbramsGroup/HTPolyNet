@@ -226,7 +226,7 @@ class Coordinates:
                     series['resName'].append(x[5:10].strip())
                     series['atomName'].append(x[10:15].strip())
                     ''' if formatted correctly, globalIdx is row index + 1 always! '''
-                    series['globalIdx']=lc_globalIdx
+                    series['globalIdx'].append(lc_globalIdx)
                     lc_globalIdx+=1
                     # split won't work since sometimes there might be no spaces
                     # "%5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"
