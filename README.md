@@ -15,6 +15,8 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
+* 1.0.1
+    * Fixed atom index assignment issue for systems with more than 100,000 atoms
 * 1.0.0
     * First release
 * 0.0.1
