@@ -6,7 +6,50 @@
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
 """
+# NOTICE:
+'''
+[gmx-users] maximum number of atoms
+Erik Lindahl lindahl at stanford.edu
+Fri Mar 22 18:52:46 CET 2002
+Previous message: [gmx-users] maximum number of atoms
+Next message: [gmx-users] Non-zero charged system
+Messages sorted by: [ date ] [ thread ] [ subject ] [ author ]
+hugo verli wrote:
 
+>Hi,
+>
+>what is the maximum number of atoms that can be simulated in gromacs? I
+>apologize if this information is in the manual, but I was not able to find it.
+>
+>Thanks in advance,
+>
+>Hugo.
+>
+
+Hi Hugo,
+ 
+We are using signed (vs. unsigned) integers in a couple of places, so I 
+think you are currently limited to 2^31-1=2,147,483,647 atoms. The only 
+reason we are not using 64 bit integers is that it would hurt 
+performance on x86, powerpc, and other 32 bit platforms.
+
+
+
+Since you usually need 20-30 bytes of storage per atom it is possible 
+that we hit the roof slightly earlier if there are places in the code 
+where we first calculate the amount of memory we need and then allocate 
+it. Let us know if that's a problem and I promise we'll look into it ;-)
+
+
+You might have noticed that the pdb and gro input files can't handle 
+atom numbers larger than 9999 and 99999, respectively. For this reason 
+we just skip the actual number, and use the linecount when reading. When 
+we write files we just restart from 0 or 1 after (9)9999.
+
+Cheers,
+
+Erik
+'''
 import pandas as pd
 import numpy as np
 from io import StringIO
@@ -177,12 +220,14 @@ class Coordinates:
                 inst.N=int(data[1])
                 inst.metadat['N']=inst.N
                 series={k:[] for k in cls.gro_attributes}
+                lc_globalIdx=1
                 for x in data[2:-1]:
                     series['resNum'].append(int(x[0:5].strip()))
                     series['resName'].append(x[5:10].strip())
                     series['atomName'].append(x[10:15].strip())
                     ''' if formatted correctly, globalIdx is row index + 1 always! '''
-                    series['globalIdx'].append(int(x[15:20].strip()))
+                    series['globalIdx']=lc_globalIdx
+                    lc_globalIdx+=1
                     # split won't work since sometimes there might be no spaces
                     # "%5d%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"
                     #numbers=list(map(float,[y.strip() for y in x[20:].split()]))
