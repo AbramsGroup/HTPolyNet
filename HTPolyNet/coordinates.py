@@ -887,7 +887,7 @@ class Coordinates:
                 lambda x: f'{x:>5d}',
                 lambda x: f'{x:<5s}',
                 lambda x: f'{x:>5s}',
-                lambda x: f'{x:5d}']+[lambda x: f'{x:8.3f}']*3 + [lambda x: f'{x:8.4f}']*3
+                lambda x: f'{x%10000:5d}']+[lambda x: f'{x:8.3f}']*3 + [lambda x: f'{x:8.4f}']*3
             # unfortunately, DataFrame.to_string() can't write fields with zero whitespace
             for i,r in self.A.iterrows():
                 if has_vel:
