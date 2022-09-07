@@ -883,6 +883,8 @@ class Coordinates:
             f.write(title+'\n')
             f.write(f'{self.N:>5d}\n')
             # C-format: “%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f”
+            # Note that the gro atom number is not used; gromacs assigns atom indicies based
+            # on counting input lines!  We will wrap the index so that it only has 5 digits.
             atomformatters = [
                 lambda x: f'{x:>5d}',
                 lambda x: f'{x:<5s}',
