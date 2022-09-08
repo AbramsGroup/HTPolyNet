@@ -179,7 +179,7 @@ def graph_from_bondfile(bondsfile):
     G=nx.DiGraph()
     df=pd.read_csv(bondsfile,header=0,index_col=None,sep='\s+')
     for i,r in df.iterrows():
-        G.add_edge(r['ri'],r['rj'])
+        G.add_edge(r['mi'],r['mj'])
     nnodes=G.number_of_nodes()
     cluster_ids=np.arange(nnodes+1)
     cluster_ids[0]=-1
@@ -222,7 +222,6 @@ def graph_from_bondfile(bondsfile):
     return G,n_cid
 
 def graph_from_bondsfiles(proj_dir):
-    # TODO: fix so all residues are accounted for
     gro=os.path.join(proj_dir,'systems/init/init.gro')
     top=os.path.join(proj_dir,'systems/init/init.top')
     TC=TopoCoord(grofilename=gro,topfilename=top)
