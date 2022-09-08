@@ -237,7 +237,7 @@ def graph_from_bondsfiles(proj_dir):
     while os.path.exists(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv')):
         df=pd.read_csv(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv'),header=0,index_col=None,sep='\s+')
         for i,r in df.iterrows():
-            G.add_edge(r['ri'],r['rj'])
+            G.add_edge(r['mi'],r['mj'])
         n+=1
     nnodes=G.number_of_nodes()
     cluster_ids=np.arange(len(resids)+1)
