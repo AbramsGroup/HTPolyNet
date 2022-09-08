@@ -58,8 +58,8 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
             if avgafter>0:
                 pass
             else:
-                avgafter=df['time (ps)'].iloc[-1]/2
-            sdf=df[df['time (ps)']>avgafter]
+                avgafter=df['time(ps)'].iloc[-1]/2
+            sdf=df[df['time(ps)']>avgafter]
             avg=sdf[c].mean()
             ax.plot(df.iloc[:,0],[avg]*df.shape[0],'k-',alpha=0.3,label=f'{avg:0.2f}')
         else:
@@ -68,7 +68,7 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
         plt.ylabel(qty)
     else:
         plt.ylabel(f'{qty} ({yunits})')
-    plt.xlabel('time (ps)')
+    plt.xlabel('time(ps)')
     plt.legend()
     plt.savefig(outfile)
     plt.close(fig)
@@ -84,7 +84,7 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
     size=kwargs.get('size',(16,4*len(names)))
     legend=kwargs.get('legend',False)
     fig,ax=plt.subplots(len(names),1,figsize=size)
-    plt.xlabel('time (ps)')
+    plt.xlabel('time(ps)')
     cmapname=kwargs.get('colormap','plasma')
     # yunits=kwargs.get('yunits',None)
     cmap=cm.get_cmap(cmapname)
@@ -101,41 +101,41 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
     if len(markers)>1:
         L,R=markers[0],markers[-1]
         in_tt=[x for x in transition_times if L<x<R]
-        marked_df=df[(df['time (ps)']>L)&(df['time (ps)']<R)]
+        marked_df=df[(df['time(ps)']>L)&(df['time(ps)']<R)]
         fig,ax=plt.subplots(len(names)*2,1,figsize=size)
         for i,colname in enumerate(names):
             out_ax=ax[0] if len(names)==1 else ax[i*2]
             in_ax=ax[1] if len(names)==1 else ax[i*2+1]
-            out_ax.plot(df['time (ps)'],df[colname],label=colname)
+            out_ax.plot(df['time(ps)'],df[colname],label=colname)
             ylabel=colname
             if ylabel in units: ylabel+=f' ({units[ylabel]})'
             out_ax.set_ylabel(ylabel)
-            out_ax.set_xlabel('time (ps)')
+            out_ax.set_xlabel('time(ps)')
             if len(y2names)>i:
                 out_ax2=out_ax.twinx()
-                out_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
+                out_ax2.plot(df['time(ps)'],df[y2names[i]],label=y2names[i],color='black')
                 ylabel=y2names[i]
                 if ylabel in units: ylabel+=f' ({units[ylabel]})'
                 out_ax2.set_ylabel(ylabel)
-                out_ax2.set_xlabel('time (ps)')
+                out_ax2.set_xlabel('time(ps)')
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=out_ax.get_ylim()
                 out_ax.vlines(transition_times,ylim[0],ylim[1],color=colors,linewidth=0.75,alpha=0.5)
                 # for x,l in zip(interval_times,interval_labels):
                 #     out_ax.text(x,0.9*ylim[1],l,fontsize=8)
-            in_ax.plot(marked_df['time (ps)'],marked_df[colname],label=colname)
+            in_ax.plot(marked_df['time(ps)'],marked_df[colname],label=colname)
             ylabel=colname
             if ylabel in units: ylabel+=f' ({units[ylabel]})'
-            in_ax.set_xlabel('time (ps)')
+            in_ax.set_xlabel('time(ps)')
             in_ax.set_yabel(ylabel)
             if len(y2names)>i:
                 in_ax2=in_ax.twinx()
-                in_ax2.plot(marked_df['time (ps)'],marked_df[y2names[i]],label=y2names[i],color='black')
+                in_ax2.plot(marked_df['time(ps)'],marked_df[y2names[i]],label=y2names[i],color='black')
                 ylabel=y2names[i]
                 if ylabel in units: ylabel+=f' ({units[ylabel]})'
                 in_ax2.set_ylabel(ylabel)
-                in_ax2.set_xlabel('time (ps)')
+                in_ax2.set_xlabel('time(ps)')
             if len(transition_times)>0:
                 colors=[cmap(i/len(transition_times)) for i in range(len(transition_times))]
                 ylim=in_ax.get_ylim()
@@ -147,14 +147,14 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
         fig,ax=plt.subplots(len(names),1,figsize=size)
         for i,colname in enumerate(names):
             the_ax=ax if len(names)==1 else ax[i]
-            the_ax.plot(df['time (ps)'],df[colname],label=colname)
+            the_ax.plot(df['time(ps)'],df[colname],label=colname)
             ylabel=colname
             if ylabel in units: ylabel+=f' ({units[ylabel]})'
             the_ax.set_ylabel(ylabel)
-            the_ax.set_xlabel('time (ps)')
+            the_ax.set_xlabel('time(ps)')
             if len(y2names)>i:
                 the_ax2=the_ax.twinx()
-                the_ax2.plot(df['time (ps)'],df[y2names[i]],label=y2names[i],color='black')
+                the_ax2.plot(df['time(ps)'],df[y2names[i]],label=y2names[i],color='black')
                 ylabel=y2names[i]
                 if ylabel in units: ylabel+=f' ({units[ylabel]})'
                 the_ax2.set_ylabel(ylabel)
@@ -163,7 +163,7 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
                 ylim=the_ax.get_ylim()
                 the_ax.vlines(transition_times,ylim[0],ylim[1],color=colors,linewidth=0.5,alpha=0.5)
 
-    # plt.xlabel('time (ps)')
+    # plt.xlabel('time(ps)')
     if legend:
         plt.legend()
     plt.savefig(outfile)

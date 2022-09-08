@@ -171,7 +171,7 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
     c.run()
     # os.remove('gmx.in')
     colnames=[x[0] for x in namvals]
-    colnames.insert(0,'time (ps)')
+    colnames.insert(0,'time(ps)')
     # print(f'in gmx {edr}.edr {names}:')
     data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
     # print(f'{data.head().to_string()}')

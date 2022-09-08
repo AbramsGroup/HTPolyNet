@@ -48,7 +48,7 @@ _indir_pfx['capping']=[r'7-cap_relax-stage-{stage:d}-{ens:s}',r'8-cap_equilibrat
 _indir_pfx['postcure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
 def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
     xshift=0.0
-    if not df.empty: xshift=df.iloc[-1]['time (ps)']
+    if not df.empty: xshift=df.iloc[-1]['time(ps)']
     if len(names)==0: return df,xshift
     # print(f'{add_if_missing}')
     this_df=gmx_energy_trace(edr,names,xshift=xshift)
@@ -82,7 +82,7 @@ def density_evolution(proj_dir):
             while os.path.exists(iter_subd):
                 logger.info(f'Reading edrs in {iter_subd_rel}...')
                 if r'iter' in subd:
-                    markers.append(df.iloc[-1]['time (ps)'])
+                    markers.append(df.iloc[-1]['time(ps)'])
                 dirkey='iter-n' if subd==r'iter-{iter:d}' else subd
                 if subd==r'iter-{iter:d}':
                     if os.path.exists(os.path.join(iter_subd,'2-cure_update-bonds.csv')):
