@@ -224,14 +224,20 @@ def graph_from_bondfile(bondsfile):
 def graph_from_bondsfiles(proj_dir):
     gro=os.path.join(proj_dir,'systems/init/init.gro')
     top=os.path.join(proj_dir,'systems/init/init.top')
-    TC=TopoCoord(grofilename=gro,topfilename=top)
-    resids=[]
+    grx=os.path.join(proj_dir,'systems/init/init.grx')
+    TC=TopoCoord(grofilename=gro,topfilename=top,grxfilename=grx)
+    molids={}
     for i,r in TC.Coordinates.A.iterrows():
-        if not r['resNum'] in resids: resids.append(r['resNum'])
-    resids=list(sorted(resids))
+        if not r['molecule'] in molids: 
+            molids[r['molecule']]={'molecule_name':r['molecule_name']}
+    # molids=list(sorted(list(molids.keys())))
     G=nx.DiGraph()
-    for r in resids:
+    for r in molids:
         G.add_node(r)
+    for i,n in G.nodes.items():
+        n['molecule_name']=molids[i]['molecule_name']
+    # print(molids)
+    # nx.set_node_attributes(G,molids)
     n=1
     while os.path.exists(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv')):
         df=pd.read_csv(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv'),header=0,index_col=None,sep='\s+')
@@ -239,7 +245,7 @@ def graph_from_bondsfiles(proj_dir):
             G.add_edge(r['mi'],r['mj'])
         n+=1
     nnodes=G.number_of_nodes()
-    cluster_ids=np.arange(len(resids)+1)
+    cluster_ids=np.arange(len(molids)+1)
     cluster_ids[0]=-1
     finished=False
     cpass=1
