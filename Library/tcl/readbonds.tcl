@@ -2,7 +2,7 @@
 # This script is intended to be loaded in an interactive Tcl session in
 # VMD.  If "fn" is set to the name of a bonds CSV file (see example),
 # then this will generate the two lists "ai" and "aj" that contain
-# the serial numbers of each atom in each bond.  he loop at the
+# the serial numbers of each atom in each bond.  The loop at the
 # end just draws them.
 #
 # Cameron F Abrams cfa22@drexel.edu
