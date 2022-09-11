@@ -168,119 +168,59 @@ def density_evolution(proj_dir):
                         interval_labels.append([edr_pfx])
     return df,transition_times,markers,interval_labels
 
-def _encluster(i,j,c):
-    if c[i]==c[j]:
-        return c,True
-    cj,ci=c[j],c[i]
-    lower,higher=list(sorted([ci,cj]))
-    return np.array([(x if x!=higher else lower) for x in c]),False 
-
-def graph_from_bondfile(bondsfile):
-    G=nx.DiGraph()
+def graph_from_bondsfile(bondsfile):
+    G=nx.Graph()
     df=pd.read_csv(bondsfile,header=0,index_col=None,sep='\s+')
     for i,r in df.iterrows():
         G.add_edge(r['mi'],r['mj'])
-    nnodes=G.number_of_nodes()
-    cluster_ids=np.arange(nnodes+1)
-    cluster_ids[0]=-1
-    finished=False
-    cpass=1
-    while not finished:
-        finished=True
-        for i,j in G.edges():
-            # print(i,j)
-            cluster_ids,unchanged=_encluster(i,j,cluster_ids)
-            # print(id(cluster_ids))
-            finished=finished and unchanged
-            assert cluster_ids[i]==cluster_ids[j],f'{i} {j} {cluster_ids[i]} {cluster_ids[j]}'
-        cpass+=1
-    lastid=0
-    mapping={}
-    for c in cluster_ids:
-        if not c in mapping:
-            mapping[c]=lastid
-            lastid+=1
-    print(mapping)
-    nclu=lastid
-    mcid=[mapping[x] for x in cluster_ids] #{i:mapping[x] for i,x in zip(G,cluster_ids)}
-    members={}
-    for i in G:
-        if not mcid[i] in members:
-            members[mcid[i]]=[]
-        members[mcid[i]].append(i)
+    return G
 
-    for c,m in members.items():
-        print(f'covalent-group {c} members {m}')
-
-    scid=[]
-    for n in G:
-        scid.append(mcid[n])
-
-    n_cid=[float(x)/nclu for x in scid]
-    assert len(n_cid)==len(G)
-    # print(n_cid)
-    return G,n_cid
-
-def graph_from_bondsfiles(proj_dir):
+def init_molecule_graph(proj_dir):
     gro=os.path.join(proj_dir,'systems/init/init.gro')
     top=os.path.join(proj_dir,'systems/init/init.top')
     grx=os.path.join(proj_dir,'systems/init/init.grx')
     TC=TopoCoord(grofilename=gro,topfilename=top,grxfilename=grx)
-    molids={}
-    for i,r in TC.Coordinates.A.iterrows():
-        if not r['molecule'] in molids: 
-            molids[r['molecule']]={'molecule_name':r['molecule_name']}
-    # molids=list(sorted(list(molids.keys())))
-    G=nx.DiGraph()
-    for r in molids:
-        G.add_node(r)
-    for i,n in G.nodes.items():
-        n['molecule_name']=molids[i]['molecule_name']
-    # print(molids)
-    # nx.set_node_attributes(G,molids)
-    n=1
-    while os.path.exists(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv')):
-        df=pd.read_csv(os.path.join(proj_dir,f'systems/iter-{n}/2-cure_update-bonds.csv'),header=0,index_col=None,sep='\s+')
-        for i,r in df.iterrows():
-            G.add_edge(r['mi'],r['mj'])
-        n+=1
-    nnodes=G.number_of_nodes()
-    cluster_ids=np.arange(len(molids)+1)
-    cluster_ids[0]=-1
-    finished=False
-    cpass=1
-    while not finished:
-        finished=True
-        for i,j in G.edges():
-            # print(i,j)
-            cluster_ids,unchanged=_encluster(i,j,cluster_ids)
-            # print(id(cluster_ids))
-            finished=finished and unchanged
-            assert cluster_ids[i]==cluster_ids[j],f'{i} {j} {cluster_ids[i]} {cluster_ids[j]}'
-        cpass+=1
-    lastid=0
-    mapping={}
-    for c in cluster_ids:
-        if not c in mapping:
-            mapping[c]=lastid
-            lastid+=1
-    print(mapping)
-    nclu=lastid
-    mcid=[mapping[x] for x in cluster_ids] #{i:mapping[x] for i,x in zip(G,cluster_ids)}
-    members={}
-    for i in G:
-        if not mcid[i] in members:
-            members[mcid[i]]=[]
-        members[mcid[i]].append(i)
+    G=nx.Graph()
+    adf=TC.Coordinates.A
+    mm=set(zip(adf['molecule'],adf['molecule_name']))
+    for mx,mn in mm:
+        G.add_node(mx,molecule_name=mn)
+    return G
 
-    for c,m in members.items():
-        print(f'covalent-group {c} members {m}')
-
-    scid=[]
-    for n in G:
-        scid.append(mcid[n])
-
-    n_cid=[float(x)/nclu for x in scid]
-    assert len(n_cid)==len(G)
-    # print(n_cid)
-    return G,n_cid
+def mwbxl(G:nx.Graph,crosslinker='GMA',monomer='STY'):
+    xG=G.copy()
+    # traverse edges and label hetero/homo participants
+    for u,v in xG.edges():
+        n,m=xG.nodes[u],xG.nodes[v]
+        if n['molecule_name']!=m['molecule_name']:
+            n['monomer_type']='hetero'
+            m['monomer_type']='hetero'
+        else:
+            n['monomer_type']='homo'
+            m['monomer_type']='homo'
+    wipe_us=[]
+    for n in xG.nodes():
+        if xG.nodes[n]['molecule_name']==crosslinker:
+            wipe_us.append(n)
+    xG.remove_nodes_from(wipe_us)
+    chaintype=[]
+    ch=nx.connected_components(xG)
+    mwhist={}
+    nb=0
+    for c in ch:
+        nhetero=0
+        for n in c:
+            node=xG.nodes[n]
+            if node['monomer_type']=='hetero':
+                nhetero+=1
+        if nhetero==0:
+            chaintype.append('isolated')
+        elif nhetero==1:
+            chaintype.append('dangling')
+        elif nhetero==2:
+            chaintype.append('bridging')
+            if len(c) not in mwhist:
+                mwhist[len(c)]=0
+            mwhist[len(c)]+=1
+            nb+=1
+    return 0.0 if nb==0 else float(sum([k*v for k,v in mwhist.items()]))/nb
