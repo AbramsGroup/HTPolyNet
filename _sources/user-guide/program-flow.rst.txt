@@ -29,8 +29,8 @@ The algorithm used to create new bonds and polymerize a system is called the CUR
 
 .. _bondsearch_filters:
 
-Identifying allowable bonds:  Bonsearch filters
------------------------------------------------
+Identifying allowable bonds:  Bondsearch filters
+------------------------------------------------
 
 A key task of ``HTPolyNet`` is identifying potential bonds between reactive atoms.  ``HTPolyNet`` organizes its "bondsearch" in any one CURE iteration along reactions.  Each reaction specified in the :ref:`configuration file <configuration_files>` usually defines one bond by the identies of each reactant and the name of each atom in each reactant.  The bondsearch algorithm begins considering each reaction, and for each one, filtering the set of *possible* bonds using a series of rules, depicted below.
 
