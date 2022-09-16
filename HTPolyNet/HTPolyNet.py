@@ -66,7 +66,7 @@ def parameterize(args):
     if not os.path.exists(args.lib):
         userlib=None
     software.sw_setup()
-    pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,reProject=args.restart,userlibrary=userlib)
+    pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots'],verbose=True,projdir=args.proj,reProject=args.restart,userlibrary=userlib)
     a=Runtime(cfgfile=args.config,restart=args.restart)
     a.generate_molecules(force_checkin=args.force_checkin,force_parameterization=args.force_parameterization)
     my_logger('HTPolynet parameterization ends',logger.info)
@@ -146,7 +146,7 @@ def cli():
 
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
-    helps['parameterize']='parameterize monomers and oligomer templates using instructinos in the config file'
+    helps['parameterize']='parameterize monomers and oligomer templates using instructions in the config file'
     helps['info']='print some information to the console'
     helps['plots']='generate some plots that summarize aspects of the current completed build'
     helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
@@ -172,6 +172,7 @@ def cli():
 
     command_parsers['parameterize'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['parameterize'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+    command_parsers['parameterize'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory.  Anything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
     command_parsers['parameterize'].add_argument('-diag',type=str,default='htpolynet_runtime_diagnostics.log',help='diagnostic log file')
     command_parsers['parameterize'].add_argument('-restart',default=False,action='store_true',help='restart in latest proj dir')
     command_parsers['parameterize'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')

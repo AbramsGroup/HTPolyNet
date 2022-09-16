@@ -179,11 +179,11 @@ def network_graph(G,filename,**kwargs):
     cmap=cm.get_cmap('plasma')
     fig,ax=plt.subplots(1,1,figsize=figsize)
     ax.axis('off')
-    molnames=list(set([n['molecule_name'] for k,n in G.nodes.items()]))
+    molnames=list(set([n.get('molecule_name','anonymous') for k,n in G.nodes.items()]))
     nmolname=len(molnames)
     cx=[]
     for n in G.nodes.values():
-        idx=molnames.index(n['molecule_name'])
+        idx=molnames.index(n.get('molecule_name','anonymous'))
         cx.append((float(idx)+1)/(nmolname+2))
     nx.draw_networkx(G,ax=ax,arrows=arrows,node_size=node_size,node_color=cx,cmap=cmap,with_labels=False)
     
