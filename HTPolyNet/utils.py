@@ -190,8 +190,12 @@ def init_molecule_graph(proj_dir):
 def mwbxl(G:nx.Graph,crosslinker='GMA',monomer='STY'):
     xG=G.copy()
     # traverse edges and label hetero/homo participants
+    for n in xG.nodes():
+        xG.nodes[n]['neighbor_count']=0
     for u,v in xG.edges():
         n,m=xG.nodes[u],xG.nodes[v]
+        n['neighbor_count']+=1
+        m['neighbor_count']+=1
         if n['molecule_name']!=m['molecule_name']:
             n['monomer_type']='hetero'
             m['monomer_type']='hetero'
@@ -211,16 +215,50 @@ def mwbxl(G:nx.Graph,crosslinker='GMA',monomer='STY'):
         nhetero=0
         for n in c:
             node=xG.nodes[n]
-            if node['monomer_type']=='hetero':
+            if node.get('monomer_type','none')=='hetero':
                 nhetero+=1
         if nhetero==0:
             chaintype.append('isolated')
         elif nhetero==1:
-            chaintype.append('dangling')
+            if len(c)==1:
+                node=list(xG.nodes.values())[0]
+                if node['neighbor_count']==1:
+                    chaintype.append('dangling')
+                elif node['neighbor_count']==2:
+                    chaintype.append('bridging')
+                    if len(c) not in mwhist:
+                        mwhist[len(c)]=0
+                    mwhist[len(c)]+=1
+            else:
+                chaintype.append('dangling')
         elif nhetero==2:
             chaintype.append('bridging')
             if len(c) not in mwhist:
                 mwhist[len(c)]=0
             mwhist[len(c)]+=1
             nb+=1
-    return 0.0 if nb==0 else float(sum([k*v for k,v in mwhist.items()]))/nb
+    maxlen=max(list(mwhist.keys()))
+    mw=[]
+    counts=[]
+    for n in range(maxlen):
+        cnt=mwhist.get(n,0)
+        mw.append(n)
+        counts.append(cnt)
+    df=pd.DataFrame({'n':mw,'counts':counts})
+    return df
+
+def clusters(G:nx.Graph):
+    counts={}
+    for c in sorted(nx.connected_components(G),key=len,reverse=True):
+        size=len(c)
+        if not size in counts:
+            counts[size]=0
+        counts[size]+=1
+    sizes=[]
+    numbers=[]
+    for s,c in counts.items():
+        sizes.append(s)
+        numbers.append(c)
+    df=pd.DataFrame({'sizes':sizes,'counts':numbers})
+    df.sort_values(by='sizes',ascending=False,inplace=True)
+    return df

@@ -5,13 +5,14 @@ import argparse as ap
 import textwrap
 import shutil
 import networkx as nx
+import numpy as np
 from HTPolyNet.banner import banner, banner_message
 from HTPolyNet.runtime import Runtime,logrotate
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
 from HTPolyNet.plot import diagnostics_graphs,global_trace,network_graph
 from HTPolyNet.stringthings import my_logger
-from HTPolyNet.utils import density_evolution, graph_from_bondsfile, init_molecule_graph,mwbxl
+from HTPolyNet.utils import density_evolution, graph_from_bondsfile, init_molecule_graph,mwbxl,clusters
 from HTPolyNet.inputcheck import input_check
 from HTPolyNet.postprocess import postprocess, tladder
 
@@ -88,23 +89,27 @@ def htpolynet_cure_plots(args):
                 logger.info(f'All data to {args.o}')
                 with open(args.o,'w') as f:
                     f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
-        if args.g:
+        if args.g or args.mwbxl or args.clusters:
             G=init_molecule_graph(args.proj)
             n=1
             while os.path.exists(os.path.join(args.proj,f'systems/iter-{n}/2-cure_update-bonds.csv')):
                 logger.info(f'iter-{n}/2-cure_update-bonds.csv')
                 g=graph_from_bondsfile(os.path.join(args.proj,f'systems/iter-{n}/2-cure_update-bonds.csv'))
                 G=nx.compose(G,g)
-                if args.byiter: 
+                if args.g and args.byiter: 
                     network_graph(G,os.path.join(args.proj,f'plots/iter-{n}-{args.g}'))
                 n+=1
-            network_graph(G,args.g)
-            print('Covalent cluster sizes (in monomers):')
-            for c in sorted(nx.connected_components(G),key=len,reverse=True):
-                print(len(c))
+            if args.g: network_graph(G,args.g)
+            # print('Covalent cluster sizes (in monomers):')
+            if args.clusters:
+                clu=clusters(G)
+                clu.to_csv(args.clusters,sep=' ',header=True,index=False)
+                print(f'{args.clusters} created.')
             if args.mwbxl:
-                amw=mwbxl(G)
-                print(f'Avg MW between xlinks: {amw:.2f}')
+                am=mwbxl(G)
+                print(f'Avg homo-N between xlinks: {np.average(am["n"],weights=am["counts"]):.2f}')
+                am.to_csv(args.mwbxl,sep=' ',index=False,header=True)
+                print(f'{args.mwbxl} created.')
 
 def fetch_example(args):
     l=pfs.system()
@@ -186,7 +191,8 @@ def cli():
     command_parsers['plots'].add_argument('-o',type=str,default='',help='dump density/temperature trace data to this file')
     command_parsers['plots'].add_argument('-g',type=str,default='',help='Plot graph network of resids and save to this file name')
     command_parsers['plots'].add_argument('-byiter',default=False,action='store_true',help='Plot graph network of resids for each iter separately')
-    command_parsers['plots'].add_argument('-mwbxl',default=False,action='store_true',help='Compute MW between crosslinks')
+    command_parsers['plots'].add_argument('-mwbxl',default='',help='Compute home-N between crosslinks, save to this file')
+    command_parsers['plots'].add_argument('-clusters',default='',help='Save cluster size distribution to this file')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
     command_parsers['plots'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['plots'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
