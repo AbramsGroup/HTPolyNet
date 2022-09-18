@@ -176,7 +176,7 @@ def network_graph(G,filename,**kwargs):
     arrows=kwargs.get('arrows',False)
     figsize=kwargs.get('figsize',(32,32))
     node_size=kwargs.get('node_size',200)
-    cmap=cm.get_cmap('plasma')
+    cmap=cm.get_cmap('seismic')
     fig,ax=plt.subplots(1,1,figsize=figsize)
     ax.axis('off')
     molnames=list(set([n.get('molecule_name','anonymous') for k,n in G.nodes.items()]))
@@ -184,7 +184,7 @@ def network_graph(G,filename,**kwargs):
     cx=[]
     for n in G.nodes.values():
         idx=molnames.index(n.get('molecule_name','anonymous'))
-        cx.append((float(idx)+1)/(nmolname+2))
+        cx.append((float(idx)+0.25)/(nmolname+1))
     nx.draw_networkx(G,ax=ax,arrows=arrows,node_size=node_size,node_color=cx,cmap=cmap,with_labels=False)
     
     plt.savefig(filename)
@@ -193,7 +193,9 @@ def network_graph(G,filename,**kwargs):
 
 _template_1='2022-08-11 17:40:36,969 HTPolyNet.runtime.my_logger INFO> ********* Connect-Update-Relax-Equilibrate (CURE) begins **********'
 _template_1_token_idx=[2,3,5,7]
-_template_2='2022-08-11 17:43:35,512 HTPolyNet.runtime.do_cure INFO> Iteration 1 current conversion 0.210 or 63 bonds'
+#_template_2='2022-08-11 17:43:35,512 HTPolyNet.runtime.do_cure INFO> Iteration 1 current conversion 0.210 or 63 bonds'
+_template_2='2022-09-03 19:32:46,830 HTPolyNet.curecontroller.do_iter INFO> Iteration 1 current conversion 0.283 or 1082 bonds'
+
 _template_2_token_idx=[2,3,6,7]
 _template_2_data_idx={'iter':(int,5),'conv':(float,8),'nbonds':(int,10)}
 def _token_match(l,template,pat_idx):
