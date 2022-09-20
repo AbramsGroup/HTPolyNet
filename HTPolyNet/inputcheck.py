@@ -1,3 +1,11 @@
+"""
+
+.. module:: inputcheck
+   :synopsis: manages the inputcheck subcommand
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.configuration import Configuration
 from HTPolyNet.coordinates import Coordinates
@@ -5,6 +13,11 @@ from HTPolyNet.command import Command
 import os
 
 def input_check(args):
+    """input_check manages in the input-check subcommand
+
+    :param args: parsed arguments
+    :type args: argparse.Namespace
+    """
     lib='./lib/molecules'
     C=Configuration.read(args.config,plot_reaction_network=False)
     icdict={x['molecule']:x['count'] for x in C.initial_composition}

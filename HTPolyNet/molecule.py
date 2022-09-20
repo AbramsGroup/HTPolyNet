@@ -1,18 +1,24 @@
-from itertools import chain, product
+"""
+
+.. module:: molecule
+   :synopsis: manages generation of molecular templates
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import os
-from sqlite3 import connect
-from typing import TypeVar
-from copy import deepcopy
 import pandas as pd
 import numpy as np
 import logging
 import shutil
+from itertools import chain, product
+from copy import deepcopy
 
+import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
 from HTPolyNet.coordinates import dfrotate, GRX_ATTRIBUTES
 from HTPolyNet.ambertools import GAFFParameterize
-import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import mdp_modify,gro_from_trr
 from HTPolyNet.command import Command
 from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage, generate_product_name, reactant_resid_to_presid
@@ -20,6 +26,15 @@ from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage, generate_
 logger=logging.getLogger(__name__)
 
 def _rotmat(axis,radians):
+    """_rotmat generates a rotation matrix that rotates coordinates around axis by radians
+
+    :param axis: 0=x,1=y,2=z
+    :type axis: int
+    :param radians: angle measure
+    :type radians: float
+    :return: rotation matrix
+    :rtype: np.ndarray(3,float)
+    """
     R=np.identity(3)
     sr=np.sin(radians)
     cr=np.cos(radians)
@@ -41,6 +56,17 @@ def _rotmat(axis,radians):
     return R
 
 def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
+    """yield_bonds for each bond pattern in the reaction R, yield the specific bond represented by this pattern in the molecule's topology
+
+    :param R: a Reaction
+    :type R: Reaction
+    :param TC: molecule topology and coordinates
+    :type TC: TopoCoord
+    :param resid_mapper: dictionary that maps in-reactant resids to in-product resids
+    :type resid_mapper: dict
+    :yield: a reaction bond
+    :rtype: ReactionBond
+    """
     nreactants=len(R.reactants)
     for bondrec in R.bonds:
         atom_keys=bondrec['atoms']
@@ -59,6 +85,17 @@ def yield_bonds(R:Reaction,TC:TopoCoord,resid_mapper):
         yield ReactionBond(atom_idx,in_product_resids,order,bystander_resids,bystander_atomidx,oneaway_resids,oneaway_atomidx)
 
 def yield_bonds_as_df(R:Reaction,TC:TopoCoord,resid_mapper):
+    """yield_bonds_as_df returns a pandas DataFrame identifying all reaction bonds obtained by matching the reaction template bonds to instances in the molecule topology
+
+    :param R: a Reaction
+    :type R: Reaction
+    :param TC: molecule topology and coordinates
+    :type TC: TopoCoord
+    :param resid_mapper: dictionary that maps in-reactant resids to in-product resids
+    :type resid_mapper: dict
+    :return: dataframe with all reaction bonds
+    :rtype: pd.DataFrame
+    """
     bdf=pd.DataFrame()
     nreactants=len(R.reactants)
     for bondrec in R.bonds:
@@ -89,8 +126,8 @@ class Molecule:
         self.reaction_bonds:ReactionBondList=[]
         self.bond_templates:BondTemplateList=[]
         self.symmetry_relateds=[]
-        self.stereocenters=[] # list of atomnames names (TODO: (resid,atomname))
-        self.stereoisomers:dict(str,Molecule)={}  # these are actual molecules that can react
+        self.stereocenters=[] # list of atomnames
+        self.stereoisomers:dict(str,Molecule)={}
         self.nconformers=0
         self.conformers_dict={}
         self.conformers=[] # just a list of gro file basenames
@@ -99,11 +136,23 @@ class Molecule:
 
     @classmethod
     def New(cls,mol_name,generator:Reaction,molrec={}):
+        """New generates a new, partially populated Molecule based on directives in the configuration input
+
+        :param mol_name: name of molecule
+        :type mol_name: str
+        :param generator: reaction that generates this molecule, if applicable
+        :type generator: Reaction
+        :param molrec: dictionary of directive for this molecule, defaults to {}
+        :type molrec: dict, optional
+        :return: a new Molecule object
+        :rtype: Molecule
+        """
         M=cls(name=mol_name)
         M.generator=generator
         if not molrec: return M
         M.symmetry_relateds=molrec.get('symmetry_equivalent_atoms',[])
-        M.stereocenters=molrec.get('stereocenters',[]) #TODO: (resid,atomname)
+        M.stereocenters=molrec.get('stereocenters',[])
+        # expand list of stereocenters if any are in symmetry sets
         extra_stereocenters=[]
         for stc in M.stereocenters:
             for sc in M.symmetry_relateds:
@@ -114,26 +163,37 @@ class Molecule:
                         extra_stereocenters.extend(sc_copy)
         M.stereocenters.extend(extra_stereocenters)
         logger.debug(f'{M.name} stereocenters: {M.stereocenters}')
+        # generate shells for new stereoisomers
         M.create_new_stereoisomers()
         logger.debug(f'{M.name} stereoisomers: {[s.name for s in M.stereoisomers.values()]}')
         M.conformers_dict=molrec.get('conformers',{})
         logger.debug(f'{M.name} conformers_dict {M.conformers_dict}')
-        # M.create_new_conformers()
-        # logger.debug(f'{M.name} conformers: {M.conformers}')
         return M
 
-    def set_generator(self,generator:Reaction=None):
-        self.generator=generator
-        if generator:
-            self.sequence=None
-
     def set_origin(self,value):
+        """set_origin sets the value of the origin member
+
+        :param value: value
+        :type value: anything
+        """
         self.origin=value
 
     def get_origin(self):
+        """get_origin returns the value of the origin member
+
+        :return: value of origin member
+        :rtype: anything
+        """
         return self.origin
 
     def update_zrecs(self,zrecs,moldict):
+        """update_zrecs updates the "z-records" based on z's declared in the input configuration file
+
+        :param zrecs: zrecs extracted from configuration file for this molecule
+        :type zrecs: dict
+        :param moldict: dictionary of available molecules
+        :type moldict: dicts
+        """
         def replace_if_greater(rec,D,matchattr=[],maxattr=[]):
             if not matchattr or not maxattr: return
             for r in D:
@@ -157,6 +217,13 @@ class Molecule:
             logger.debug(f'-> {target.name} {target.zrecs}')
 
     def determine_sequence(self,moldict):
+        """determine_sequence recursively determine the sequence of a molecule using the network of reactions that must be executed to generate it from primitives
+
+        :param moldict: dictionary of available molecules
+        :type moldict: dict
+        :return: list of resnames in order of sequence
+        :rtype: list
+        """
         if not self.generator: return [self.parentname]
         R:Reaction=self.generator
         thisseq=[]
@@ -167,6 +234,13 @@ class Molecule:
         return thisseq
     
     def set_sequence_from_moldict(self,moldict):
+        """set_sequence_from_moldict set the sequence of this molecule using the recursive determine_sequence method
+
+        :param moldict: dictionary of available molecules
+        :type moldict: dict
+        :return: self
+        :rtype: Molecule
+        """
         self.sequence=self.determine_sequence(moldict)
         return self
 
@@ -184,36 +258,28 @@ class Molecule:
                 trial_sequence.append(rn)
         assert trial_sequence==self.sequence,f'trial {trial_sequence} seq {self.sequence}'
         return self
-        # logger.debug(f'{self.name} sequence: {self.sequence}')
 
     def create_new_stereoisomers(self):
+        """create_new_stereoisomers generate new molecules to hold stereoisomers of self
+
+        :return: None if no action taken
+        :rtype: none
+        """
         if self.generator: return  # we only consider stereoisomers on monomers
         if not self.stereocenters: return
         basename=self.name+'-S'
         b=[[0,1] for _ in range(len(self.stereocenters))]
         sseq=product(*b)
-        next(sseq) # skip the unmodified; its the base molecule
+        next(sseq) # skip the unmodified; it's the base molecule
         for x in sseq:
             s=''.join([str(_) for _ in x])
             mname=f'{basename}{s}'
             self.stereoisomers[mname]=Molecule.New(mname,None)
             self.stereoisomers[mname].parentname=self.name
             
-
-    # def name_conformers(self):
-    #     N=self.conformers_dict.get('count',0)
-    #     if not N: return
-    #     self.nconformers=N*(1+len(self.stereoisomers))
-    #     ndig=min(2,len(str(self.nconformers)))
-    #     fmt=r'-C{i:0'+ndig+r'd}'
-    #     self.conformers_dict['nzero']=ndig
-    #     basenames=[self.name]+list(self.stereoisomers.keys())
-    #     for basename in basenames:
-    #         for i in range(N):
-    #             mname=basename+fmt.format(i=i)
-    #             self.conformers[mname]=Molecule.NewCopy(self,mname)
-
     def initialize_molecule_cycles(self):
+        """initialize_molecule_cycles assigns cycle indexes to all atoms
+        """
         TC=self.TopoCoord
         TC.idx_lists['cycle']=[]
         cycle_dict=TC.Topology.detect_cycles()
@@ -224,6 +290,8 @@ class Molecule:
         logger.debug('Done')
 
     def initialize_monomer_grx_attributes(self):
+        """initialize_monomer_grx_attributes initializes all GRX attributes of atoms in molecule
+        """
         logger.debug(f'{self.name}')
         TC=self.TopoCoord
         TC.set_gro_attribute('z',0)
@@ -292,12 +360,24 @@ class Molecule:
         self.initialize_molecule_cycles()
 
     def previously_parameterized(self):
+        """previously_parameterized if a gro file exists in the project molecule/parameterized directory for this molecule, return True
+
+        :return: True if gro file found
+        :rtype: bool
+        """
         rval=True
         for ext in ['gro']:
             rval=rval and pfs.exists(os.path.join('molecules/parameterized',f'{self.name}.{ext}'))
         return rval
 
     def parameterize(self,outname='',input_structure_format='mol2',**kwargs):
+        """parameterize manages GAFF parameterization of this molecule
+
+        :param outname: output file basename, defaults to ''
+        :type outname: str, optional
+        :param input_structure_format: input structure format, defaults to 'mol2' ('pdb' is other possibility)
+        :type input_structure_format: str, optional
+        """
         assert os.path.exists(f'{self.name}.{input_structure_format}'),f'Cannot parameterize molecule {self.name} without {self.name}.{input_structure_format} as input'
         if outname=='':
             outname=f'{self.name}'
@@ -305,11 +385,21 @@ class Molecule:
         self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2',wrap_coords=False)
 
     def minimize(self,outname='',**kwargs):
+        """minimize manages invocation of vacuum minimization
+
+        :param outname: output file basename, defaults to ''
+        :type outname: str, optional
+        """
         if outname=='':
             outname=f'{self.name}'
         self.TopoCoord.vacuum_minimize(outname,**kwargs)
 
     def relax(self,relax_dict):
+        """relax manages invocation of MD relaxations
+
+        :param relax_dict: dictionary of simulation directives
+        :type relax_dict: dict
+        """
         deffnm=relax_dict.get('deffnm',f'{self.name}-relax')
         nsteps=relax_dict.get('nsteps',10000)
         temperature=relax_dict.get('temperature',10000)
@@ -323,13 +413,21 @@ class Molecule:
         self.TopoCoord.grompp_and_mdrun(out=deffnm,mdp=mdp_prefix,boxSize=boxsize)
 
     def center_coords(self,new_boxsize:np.ndarray=None):
+        """center_coords wrapper for the TopoCoord.center_coords method
+
+        :param new_boxsize: new box size, defaults to None
+        :type new_boxsize: np.ndarray, optional
+        """
         self.TopoCoord.center_coords(new_boxsize)
 
-    # def get_random_isomer(self):
-    #     pick_from=[self.name]+self.stereoisomers+self.conformers
-    #     return random.choice(pick_from)
-
     def generate(self,outname='',available_molecules={},**kwargs):
+        """generate manages generating topology and coordinates for self
+
+        :param outname: output file basename, defaults to ''
+        :type outname: str, optional
+        :param available_molecules: dictionary of available molecules, defaults to {}
+        :type available_molecules: dict, optional
+        """
         logger.debug(f'{self.name}.generate() begins')
         if outname=='': outname=f'{self.name}'
         do_minimization=True
@@ -421,10 +519,20 @@ class Molecule:
         logger.debug('Done.')
 
     def get_molecular_weight(self):
+        """get_molecular_weight returns the molecular weight of self
+
+        :return: _description_
+        :rtype: _type_
+        """
         mass=self.TopoCoord.total_mass(units='gromacs') # g
         return mass
 
     def prepare_new_bonds(self,available_molecules={}):
+        """prepare_new_bonds populates the bond templates and reaction bonds for self
+
+        :param available_molecules: dictionary of available molecules, defaults to {}
+        :type available_molecules: dict, optional
+        """
         # logger.debug(f'set_reaction_bonds: molecules {list(available_molecules.keys())}')
         R=self.generator
         if not R:
@@ -466,8 +574,23 @@ class Molecule:
             intraresidue=in_product_resids[0]==in_product_resids[1]
             self.bond_templates.append(BondTemplate(atom_names,in_product_resnames,intraresidue,order,bystander_resnames,bystander_atomnames,oneaway_resnames,oneaway_atomnames))
 
-
     def idx_mappers(self,otherTC:TopoCoord,other_bond,bystanders,oneaways,uniq_atom_idx:set):
+        """idx_mappers computes the mapping dictionary from molecule template index to instance index in the other TopoCoord
+
+        :param otherTC: the other TopoCoord
+        :type otherTC: TopoCoord
+        :param other_bond: 2 atom indices of the bond in the other TopoCoord
+        :type other_bond: list-like container of length 2
+        :param bystanders: bystander lists, one for each reacting atom
+        :type bystanders: lists
+        :param oneaways: oneaways, one for each atom in the bond
+        :type oneaways: list (2)
+        :param uniq_atom_idx: _description_
+        :type uniq_atom_idx: set
+        :raises Exception: _description_
+        :return: _description_
+        :rtype: _type_
+        """
         assert len(other_bond)==2
         assert len(bystanders)==2
         assert len(oneaways)==2
@@ -649,7 +772,6 @@ class Molecule:
             template_source='internal'  # signals that a template molecule should be identified to parameterize this bond
         TC.update_topology_and_coordinates(bdf,moldict,explicit_sacH=explicit_sacrificial_Hs,template_source=template_source)
         self.initialize_molecule_cycles()
-
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):
         # Rotate and translate

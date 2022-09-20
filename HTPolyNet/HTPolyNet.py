@@ -1,3 +1,11 @@
+"""
+
+.. module:: HTPolyNet
+   :synopsis: manages the HTPolyNet application, provides the command-line interface entry point
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 import os
 import argparse as ap
@@ -15,6 +23,11 @@ from HTPolyNet.postprocess import postprocess, tladder
 logger=logging.getLogger(__name__)
 
 def info(args):
+    """info handles the info subcommmand
+
+    :param args: parsed arguments
+    :type args: argparse.Namespace
+    """
     print('This is some information on your installed version of HTPolyNet')
     l=pfs.lib_setup()
     software.sw_setup()
@@ -22,9 +35,12 @@ def info(args):
     print(software.to_string())
 
 def run(args):
+    """run handles the run subcommand
 
+    :param args: parsed arguments
+    :type args: argparse.Namespace
+    """
     logrotate(args.diag)
-
     ''' set up logger with all debug+-level messages going to the diagnostic log file and info to console '''
     loglevel_numeric=getattr(logging, args.loglevel.upper())
     logging.basicConfig(filename=args.diag,filemode='w',format='%(asctime)s %(name)s.%(funcName)s %(levelname)s> %(message)s',level=loglevel_numeric)
@@ -33,7 +49,6 @@ def run(args):
     formatter=logging.Formatter('%(levelname)s> %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
-
     if not args.no_banner: banner(logger.info)
     my_logger('HTPolyNet runtime begins',logger.info)
     userlib=args.lib if os.path.exists(args.lib) else None
@@ -44,9 +59,12 @@ def run(args):
     my_logger('HTPolyNet runtime ends',logger.info)
 
 def parameterize(args):
+    """parameterize handles the parameterize subcommand
 
+    :param args: parsed arguments
+    :type args: argparse.Namespace
+    """
     logrotate(args.diag)
-
     ''' set up logger with all debug+-level messages going to the diagnostic log file and info to console '''
     loglevel_numeric=getattr(logging, args.loglevel.upper())
     logging.basicConfig(filename=args.diag,filemode='w',format='%(asctime)s %(name)s.%(funcName)s %(levelname)s> %(message)s',level=loglevel_numeric)
@@ -55,9 +73,7 @@ def parameterize(args):
     formatter=logging.Formatter('%(levelname)s> %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
-
     if not args.no_banner: banner(logger.info)
-    # banner(logger.info)
     my_logger('HTPolyNet parameterization begins',logger.info)
     userlib=args.lib
     if not os.path.exists(args.lib):
@@ -69,6 +85,11 @@ def parameterize(args):
     my_logger('HTPolynet parameterization ends',logger.info)
 
 def fetch_example(args):
+    """fetch_example handles the fetch-example subcommand
+
+    :param args: parsed arguments
+    :type args: argparse.Namespace
+    """
     l=pfs.system()
     nm=args.n
     kp=args.k
@@ -92,10 +113,10 @@ def fetch_example(args):
 def cli():
     """cli Command-line interface
     """
-
     l=pfs.lib_setup()
     example_names=l.get_example_names()
     example_ids=[x.split('-')[0] for x in example_names]
+    # declare subcommands and their handlers
     commands={}
     commands['run']=run
     commands['parameterize']=parameterize
@@ -104,7 +125,7 @@ def cli():
     commands['fetch-example']=fetch_example
     commands['input-check']=input_check
     commands['postprocess']=postprocess
-
+    # declare subcommand helpstrings
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
     helps['parameterize']='parameterize monomers and oligomer templates using instructions in the config file'
@@ -113,14 +134,14 @@ def cli():
     helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
     helps['input-check']='reports number of atoms that would be in initial system based on config'
     helps['postprocess']='perform specified postprocessing calculations on final results in one or more project directory'
-
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
+    # Subparsers, one per subcommand
     subparsers=parser.add_subparsers()
     command_parsers={}
     for k in commands:
         command_parsers[k]=subparsers.add_parser(k,help=helps[k])
         command_parsers[k].set_defaults(func=commands[k])
-
+    ######## run ########
     command_parsers['run'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['run'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
     command_parsers['run'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory.  Anything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
@@ -130,7 +151,7 @@ def cli():
     command_parsers['run'].add_argument('--force-parameterization',default=False,action='store_true',help='force GAFF parameterization of any input mol2 structures')
     command_parsers['run'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
     command_parsers['run'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
-
+    ######## parameterize ########
     command_parsers['parameterize'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['parameterize'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
     command_parsers['parameterize'].add_argument('-proj',type=str,default='next',help='project directory; "next" (default) generates next directory.  Anything other than "next": if it exists, "-restart" must be included as a parameter; if not, it is created as a new project')
@@ -140,7 +161,7 @@ def cli():
     command_parsers['parameterize'].add_argument('--force-checkin',default=False,action='store_true',help='force check-in of any generated parameter files to the system library')
     command_parsers['parameterize'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['parameterize'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
-
+    ######## plots ########
     command_parsers['plots'].add_argument('-logs',type=str,default='',nargs='+',help='names of diagnostic log files (1 or more)')
     command_parsers['plots'].add_argument('-proj',type=str,default='',help='name of project directory')
     command_parsers['plots'].add_argument('-t',type=str,default='',help='Plot density and temperature traces for entire build in specified project directory to this file')
@@ -152,13 +173,13 @@ def cli():
     command_parsers['plots'].add_argument('--plotfile',type=str,default='cure-info.png',help='name of plot file to generate')
     command_parsers['plots'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['plots'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
-
+    ######## fetch-example ########
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
-
+    ######## input-check ########
     command_parsers['input-check'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['input-check'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
-
+    ######## postprocess ########
     command_parsers['postprocess'].add_argument('-proj',type=str,default='',nargs='+',help='name of project directory')
     command_parsers['postprocess'].add_argument('-Tladder',type=tladder, default='',help='run a temperature-ladder simulation to measure density=f(T); format (T0,T1,Ntemps,ps_per_run,ps_per_rise,ps_warmup')
     command_parsers['postprocess'].add_argument('-cfg',type=str,default='',help='config file used to generate this project')

@@ -1,9 +1,18 @@
+"""
+
+.. module:: linkcell
+   :synopsis: manages the link-cell structure used for searching for pierced rings
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import numpy as np
 import pandas as pd
 import logging
 from itertools import product
 from multiprocessing import Pool
 from functools import partial
+
 logger=logging.getLogger(__name__)
 
 class Linkcell:
@@ -11,7 +20,7 @@ class Linkcell:
         cutoff distance from each other
     """
     def __init__(self,box=[],cutoff=None,pbc_wrapper=None):
-        """__init__ Constructor for an empy instance
+        """__init__ Constructor for an empty Linkcell object
 
         :param box: system box size, defaults to []
         :type box: list, optional
@@ -126,6 +135,13 @@ class Linkcell:
         return xc
 
     def cellndx_of_ldx(self,i):
+        """cellndx_of_ldx returns (i,j,k)-index of cell with scalar index i
+
+        :param i: scalar cell index
+        :type i: int
+        :return: (i,j,k)-index of cell
+        :rtype: (int,int,int)
+        """
         return self.cellndx[i]
 
     def populate_par(self,adf):
@@ -189,9 +205,6 @@ class Linkcell:
                 logger.debug(f'Linear linkcell index {lc_idx} of atom {i} is out of range.\ncellndx.shape[0] is {self.cellndx.shape[0]}\nThis is a bug.')
                 raise Exception
 
-        # for i in range(len(self.memberlists)):
-        #     logger.debug(f'{i} {len(self.memberlists[i])}')
-
         idx_list=list(range(len(self.memberlists)))
         p=Pool(processes=ncpu)
         idx_list_split=np.array_split(idx_list,ncpu)
@@ -206,6 +219,8 @@ class Linkcell:
         # logger.debug(f'Linkcell.populate() ends.')
 
     def make_neighborlists(self):
+        """make_neighborlists populates the neighborlist member, one element per cell; each element is the list of neighbors of that cell
+        """
         self.neighborlists=[[] for _ in range(self.cellndx.shape[0])]
         for C in self.cellndx:
             idx=self.ldx_of_cellndx(C)
@@ -214,6 +229,11 @@ class Linkcell:
                     self.neighborlists[idx].append(self.ldx_of_cellndx(D))
 
     def make_memberlists(self,cdf):
+        """make_memberlists populates the memberlists member, one element per cell; each element is the list of atom indices in that cell 
+
+        :param cdf: coordinates data frame
+        :type cdf: pd.DataFrame
+        """
         self.memberlists=[[] for _ in range(self.cellndx.shape[0])]
         rdf=cdf[cdf['linkcell_idx']!=-1]
         # logger.debug(f'Generated {len(self.memberlists)} empty memberlists.')
@@ -229,6 +249,13 @@ class Linkcell:
         logger.debug(f'Avg/min/max cell pop: {avg_cell_pop:>8.3f}/{min_cell_pop:>8d}/{max_cell_pop:>8d}')
 
     def neighbors_of_cellndx(self,Ci):
+        """neighbors_of_cellndx returns the list of neighbors of cell Ci by their (i,j,k) indices
+
+        :param Ci: _description_
+        :type Ci: _type_
+        :return: _description_
+        :rtype: _type_
+        """
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
         retlist=[]
         dd=np.array([-1,0,1])
@@ -246,6 +273,13 @@ class Linkcell:
         return retlist
 
     def searchlist_of_ldx(self,i):
+        """searchlist_of_ldx returns the list of scalar cell indices of cells that are neighbors of cell with scalar index i
+
+        :param i: scalar cell index
+        :type i: int
+        :return: list of scalar indices of neighbor cells
+        :rtype: list
+        """
         assert i!=-1
         retlist=[]
         C=self.cellndx[i]
@@ -255,6 +289,15 @@ class Linkcell:
         return retlist
 
     def are_cellndx_neighbors(self,Ci,Cj):
+        """are_cellndx_neighbors returns True if cells with (i,j,k) indices Ci and Cj are neighbors
+
+        :param Ci: cell index
+        :type Ci: np.ndarray(3,int)
+        :param Cj: cell index
+        :type Cj: np.ndarray(3,int)
+        :return: True if cells are neighbors, False otherwise
+        :rtype: bool
+        """
         assert self.cellndx_in_structure(Ci),f'Error: cell {Ci} outside of cell structure {self.ncells}'
         assert self.cellndx_in_structure(Cj),f'Error: cell {Cj} outside of cell structure {self.ncells}'
         dij=Ci-Cj
@@ -264,26 +307,16 @@ class Linkcell:
         return all([x in [-1,0,1] for x in dij])
 
     def are_ldx_neighbors(self,ildx,jldx):
+        """are_ldx_neighbors returns True if cells with scalar indices ildx and jldx are neighbors
+
+        :param ildx: scalar cell index
+        :type ildx: int
+        :param jldx: scalar cell index
+        :type jldx: int
+        :return: True if cells are neighbors, False otherwise
+        :rtype: bool
+        """
         # should never call this for atoms with unset lc indices
         assert ildx!=-1
         assert jldx!=-1
         return jldx in self.neighborlists[ildx]
-
-if __name__=='__main__':
-    box=np.array([4.7,4.7,4.7])
-    cutoff=0.5
-    L=Linkcell()
-    L.create(cutoff,box)
-    check1=[]
-    for i,C in enumerate(L.cellndx):
-        check1.append(i==L.ldx_of_cellndx(C))
-    print(f'check1 {all(check1)}')
-    check2=[]
-    for i,C in enumerate(L.cellndx):
-        n=0
-        for j,dldx in enumerate(L.neighborlists[i]):
-            D=L.cellndx[dldx]
-            check2.append(L.are_cellndx_neighbors(C,D))
-            n+=1
-        
-    print(f'check2 {all(check2)}')
