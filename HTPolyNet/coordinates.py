@@ -100,8 +100,6 @@ def dfrotate(df:pd.DataFrame,R):
         newri=np.matmul(R,ri)
         df.loc[i,'posX':'posZ']=newri
 
-
-
 class Coordinates:
     ''' A class for handling atom coordinates (and other attributes)
         Instance attributes:
@@ -121,6 +119,11 @@ class Coordinates:
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_attributes, [int, int, int, str])}
 
     def __init__(self,name=''):
+        """__init__ contructs an empty Coordinates object
+
+        :param name: a name string, defaults to ''
+        :type name: str, optional
+        """
         self.name=name
         self.metadat={}
         self.N=0
@@ -249,6 +252,15 @@ class Coordinates:
 
     @classmethod
     def fcc(cls,a,nc=[1,1,1]):
+        """fcc generates a Coordinates object that represents an FCC crystal
+
+        :param a: lattice parameter
+        :type a: float
+        :param nc: number of unit cells in the three lattice vector directions, defaults to [1,1,1]
+        :type nc: list, optional
+        :return: a Coordinates object
+        :rtype: Coordinates
+        """
         inst=cls()
         basis=np.identity(3)*a
         base_atoms=np.array([[0.0,0.0,0.0],[0.5,0.5,0.0],[0.5,0.0,0.5],[0.0,0.5,0.5]])*a
@@ -311,7 +323,14 @@ class Coordinates:
             self.A[c]=otherpos
         self.box=np.copy(other.box)
 
-    def subcoords(self,sub_adf):
+    def subcoords(self,sub_adf:pd.DataFrame):
+        """subcoords generates a new Coordinates object to hold the atoms dataframe in 'sub_adf' parameter
+
+        :param sub_adf: an atom dataframe
+        :type sub_adf: pd.DataFrame
+        :return: a new Coordinates object
+        :rtype: Coordinates
+        """
         newC=Coordinates()
         newC.set_box(self.box)
         newC.A=sub_adf
@@ -319,6 +338,13 @@ class Coordinates:
         return newC
     
     def reconcile_subcoords(self,subc,attr):
+        """reconcile_subcoords moves all values of attribute name contained in attr from Coordinates object subc to self
+
+        :param subc: A separate, independent Coordinates object
+        :type subc: Coordinates
+        :param attr: attribute name whose value is to be copied from subc to self
+        :type attr: str
+        """
         jdx=list(subc.A.columns).index(attr)
         for r in subc.A.itertuples(index=False):
             idx=r.globalIdx
@@ -326,13 +352,34 @@ class Coordinates:
             self.A.loc[idx-1,attr]=lc_idx
 
     def unwrap(self,P,O,pbc):
-        ''' shift point P to its CPI* to point O
-            *CPI=closest periodic image (unwrapped) '''
+        """unwrap shifts point P to its unwrapped closest periodic image to point O
+            *CPI=closest periodic image (unwrapped)
+
+        :param P: a point
+        :type P: np.ndarray(3,float)
+        :param O: origin
+        :type O: np.ndarray(3,float)
+        :param pbc: directions in which pbc are applied
+        :type pbc: np.ndarray(3,int)
+        :return: a point
+        :rtype: nd.ndarray(3,float)
+        """
         ROP=self.mic(O-P,pbc)
         PCPI=O-ROP
         return PCPI
 
     def pierces(self,B:pd.DataFrame,C:pd.DataFrame,pbc):
+        """pierces determines whether or not bond represented by two points in B pierces ring represented by N points in C
+
+        :param B: two points defining a bond
+        :type B: pd.DataFrame
+        :param C: N points defining a ring
+        :type C: pd.DataFrame
+        :param pbc: periodic boundary condition flags, one per dimension
+        :type pbc: list
+        :return: True if ring is pierced
+        :rtype: bool
+        """
         BC=np.array(B[['posX','posY','posZ']])
         CC=np.array(C[['posX','posY','posZ']])
         # get both atoms in bond into CPI
@@ -349,6 +396,19 @@ class Coordinates:
         return do_it
 
     def linkcell_initialize(self,cutoff=0.0,ncpu=1,populate=True,force_repopulate=False,save=True):
+        """linkcell_initialize initializes link-cell structure for ring-pierce testing
+
+        :param cutoff: cutoff radius for link-cell structure, defaults to 0.0
+        :type cutoff: float, optional
+        :param ncpu: number of cpus to use to populate link-cell structure, defaults to 1
+        :type ncpu: int, optional
+        :param populate: If True, an actual population of the link-cell structure is performed; defaults to True
+        :type populate: bool, optional
+        :param force_repopulate: If True and this link-cell structure is already populated, a repopulation is performed based on the current Coordinates; defaults to False
+        :type force_repopulate: bool, optional
+        :param save: If true, all atoms' linkcell_idx attributes are written to an output file; defaults to True
+        :type save: bool, optional
+        """
         logger.debug('Initializing link-cell structure')
         self.linkcell.create(cutoff,self.box)
         if populate:
@@ -367,8 +427,16 @@ class Coordinates:
                     self.write_atomset_attributes(['linkcell_idx'],lc_file)
 
     def linkcelltest(self,i,j):
-        ''' return True if atoms i and j are within potential interaction
-            range based on current link-cell structure '''
+        """linkcelltest returns True if atoms i and j are within potential interaction
+            range based on current link-cell structure
+
+        :param i: An atom index
+        :type i: int
+        :param j: another atom index
+        :type j: int
+        :return: True if i and j are in the same cell or in neighboring cells
+        :rtype: bool
+        """
         ci=self.get_atom_attribute('linkcell_idx',{'globalIdx':i})
         cj=self.get_atom_attribute('linkcell_idx',{'globalIdx':j})
         if ci==cj:
@@ -378,11 +446,20 @@ class Coordinates:
         return False
 
     def geometric_center(self):
+        """geometric_center computes and returns the geometric center of the atoms in self's A dataframe
+
+        :return: geometric center
+        :rtype: np.ndarray(3,float)
+        """
         a=self.A
         return np.array([a.posX.mean(),a.posY.mean(),a.posZ.mean()])
 
     def rij(self,i,j,pbc=[1,1,1]):
-        ''' compute distance between atoms i and j '''
+        """rij compute distance between atoms i and j
+
+        :return: distance between i and j
+        :rtype: float
+        """
         if np.any(pbc) and not np.any(self.box):
             logger.warning('Interatomic distance calculation using PBC with no boxsize set.')
         ri=self.get_R(i)
@@ -391,7 +468,16 @@ class Coordinates:
         return np.sqrt(Rij.dot(Rij))
 
     def mic(self,r,pbc):
-        ''' minimum image convention '''
+        """mic applies minimum image convention to displacement vector r
+
+        :param r: displacement vector
+        :type r: np.ndarray(3,float)
+        :param pbc: periodic boundary condition 
+        :type pbc: _type_
+        :return: _description_
+        :rtype: _type_
+        """
+        '''  '''
         for c in range(0,3):
             if pbc[c]:
                 hbx=self.box[c][c]/2
@@ -402,6 +488,13 @@ class Coordinates:
         return r
 
     def wrap_point(self,ri):
+        """wrap_point wraps point ri into the central periodic image
+
+        :param ri: a point
+        :type ri: np.ndarray(3,float)
+        :return: a tuple containing (1) the wrapped point and (2) number of box lengths required to wrap this point, per dimension
+        :rtype: tuple
+        """
         R=ri.copy()
         box_lengths=np.array([0,0,0],dtype=int)
         for i in range(3):
@@ -428,14 +521,6 @@ class Coordinates:
         self.A['boxLy']=boxL[:,1]
         self.A['boxLz']=boxL[:,2]
         # logger.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
-
-    def calc_distance_matrix(self):
-        M=np.zeros((self.N,self.N))
-        for i in range(self.N-1):
-            for j in range(i+1,self.N):
-                d=self.rij(i,j)
-                M[i][j]=M[j][i]=d
-        self.distance_matrix=M
 
     def merge(self,other):
         """merge Merge two Coordinates instances
@@ -519,7 +604,7 @@ class Coordinates:
         return attributes_read
 
     def set_atomset_attribute(self,attribute,srs):
-        """Set attribute of atoms to srs
+        """set_atomset_attribute sets attribute of atoms to srs
 
         :param attribute: name of attribute
         :type attribute: str
@@ -529,10 +614,15 @@ class Coordinates:
         self.A[attribute]=srs
 
     def atomcount(self):
+        """atomcount returns the number of atoms in the Coordinates object
+
+        :return: number of atoms
+        :rtype: int
+        """
         return self.N
 
     def decrement_z(self,pairs):
-        """decrement_z Decrements value of z attributes of all atoms found in pairs
+        """decrement_z decrements value of z attributes of all atoms found in pairs
 
         :param pairs: list of atom index pairs, interpreted as new bonds that just formed
         :type pairs: list of 2-tuples
@@ -557,6 +647,8 @@ class Coordinates:
             self.set_atom_attribute('nreactions',jnr,{'globalIdx':aj})
             
     def show_z_report(self):
+        """show_z_report generates a little text-based histogram displaying number of atoms with each value of z between 0 and 3; atoms are keyed by resname:atomname.
+        """
         zhists={}
         for r in self.A.itertuples():
             n=r.atomName
@@ -566,7 +658,6 @@ class Coordinates:
             if not k in zhists:
                 zhists[k]=np.zeros(4).astype(int)
             zhists[k][z]+=1
-
         for n in zhists:
             if any([zhists[n][i]>0 for i in range(1,4)]):
                 logger.debug(f'Z-hist for {n} atoms:')
@@ -574,22 +665,30 @@ class Coordinates:
                     logger.debug(f'{i:>5d} ({zhists[n][i]:>6d}): '+'*'*(zhists[n][i]//10))
 
     def return_bond_lengths(self,bdf):
+        """return_bond_lengths returns an ordered list of bond lengths computed based on bonds indicated by the parallel 'ai' and 'aj' columns of the parameter dataframe bdf
+
+        :param bdf: a pandas dataframe with 'ai' and 'aj' columns of atom indices indicating bonds
+        :type bdf: pd.DataFrame
+        :return: list of atom distances
+        :rtype: list
+        """
         lengths=[]
         for b in bdf.itertuples():
             lengths.append(self.rij(b.ai,b.aj))
         return lengths
 
     def add_length_attribute(self,bdf,attr_name='length'):
+        """add_length_attribute computes bond lengths based on bonds indicated by the parallel 'ai' and 'aj' columns of the parameter dataframe bdf and stores result in a new column called attr_name
+
+        :param bdf: a pandas dataframe with 'ai' and 'aj' columns of atom indices indicating bonds
+        :type bdf: pd.DataFrame
+        :param attr_name: name of length attribute column, defaults to 'length'
+        :type attr_name: str, optional
+        """
         lengths=[]
         for b in bdf.itertuples():
             lengths.append(self.rij(b.ai,b.aj))
         bdf[attr_name]=lengths
-
-    # def return_pair_lengths(self,pdf):
-    #     lengths=[]
-    #     for i,b in pdf.iterrows():
-    #         lengths.append(self.rij(b['ai'],b['aj']))
-    #     return lengths
 
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
         """minimum_distance Computes and returns distance of closest approach between two sets of atoms
@@ -654,25 +753,57 @@ class Coordinates:
         )
 
     def minmax(self):
+        """minmax returns the coordinates of the atoms at the lower-leftmost and upper-rightmost positions in the constellation of points in the atoms dataframe
+
+        :return: tuple of two points, lower-leftmost and upper-rightmost, respectively
+        :rtype: tuple(np.ndarray(3,float),np.ndarray(3,float))
+        """
         sp=self.A[['posX','posY','posZ']]
         return np.array([sp.posX.min(),sp.posY.min(),sp.posZ.min()]),np.array([sp.posX.max(),sp.posY.max(),sp.posZ.max()])
 
     def checkbox(self):
+        """checkbox checks that the entire constellation of points in the atoms dataframe fits within the designated box for this Configuration object
+
+        :return: True,True if both lower-leftmost and upper-rightmost points are within the box
+        :rtype: tuple(bool,bool)
+        """
         mm,MM=self.minmax()
         bb=self.box.diagonal()
         return mm<bb,MM>bb
 
     def get_idx(self,attributes):
+        """get_idx returns the global atom index of the atom in the atoms dataframe which has the attribute:value pairs indicated in the parameter attributes
+
+        :param attributes: dictionary of attribute:value pairs that identify the atom
+        :type attributes: dict
+        :return: global atom index
+        :rtype: int
+        """
         df=self.A
         return get_row_attribute(df,'globalIdx',attributes)
     
     def get_R(self,idx):
+        """get_R return the cartesian position of atom with global index idx
+
+        :param idx: global index of atom
+        :type idx: int
+        :return: its cartesian position
+        :rtype: np.ndarray(3,float)
+        """
         df=self.A
         return get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})
     
     def get_atom_attribute(self,name,attributes):
+        """get_atom_attribute return values of attributes listed in name from atoms specified by attribute:value pairs in attributes
+
+        :param name: list of attributes whose values are to be returned
+        :type name: list
+        :param attributes: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attributes: dict
+        :return: scalar or list of one or more return attribute values
+        :rtype: list if name is a list; scalar otherwise
+        """
         df=self.A
-        # assert name in self.A.columns
         if type(name)==list:
             assert all([i in self.A.columns for i in name])
         else:
@@ -680,22 +811,67 @@ class Coordinates:
         return get_row_attribute(df,name,attributes)
     
     def spew_atom(self,attributes):
+        """spew_atom outputs all attributes of atom identified by the attributes dict
+
+        :param attributes: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attributes: dict  
+        :return: stringified dataframe
+        :rtype: string
+        """
         df=self.A
         return get_row_as_string(df,attributes)
 
     def get_atoms_w_attribute(self,name,attributes):
+        """get_atoms_w_attribute returns all rows of atoms dataframe and columns named in names of atoms identified by the attributes dict
+
+        :param name: list of attributes to be in the rows that are returned
+        :type name: list
+        :param attributes: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attributes: dict
+        :return: a dataframe segment
+        :rtype: pd.DataFrame
+        """
         df=self.A
         return get_rows_w_attribute(df,name,attributes)
 
     def set_atom_attribute(self,name,value,attributes):
+        """set_atom_attribute set the attributes named in name to values named in values (names||values) for the set of atoms specified in the attributes dict
+
+        :param name: list of names of attributes
+        :type name: list
+        :param value: list of values of attributes to be set
+        :type value: list
+        :param attributes: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attributes: dict
+        """
         df=self.A
         set_row_attribute(df,name,value,attributes)
 
     def has_atom_attributes(self,attributes):
+        """has_atom_attributes returns True if all atoms in atoms dataframe have the attribute named in attributes
+
+        :param attributes: list of attribute names to look for
+        :type attributes:  list or list-like container
+        :return: True if all atoms have the attributes
+        :rtype: bool
+        """
         df=self.A
         return all([name in df for name in attributes])
 
     def find_sacrificial_H(self,pairs,T,rename=False,explicit_sacH={}):
+        """find_sacrificial_H identifies all appropriate sacrificial hydrogen atoms determined by the bonds indicated in the pairs list of 3-tuples (ai,aj,order)
+
+        :param pairs: list of atom pairs/order tuples
+        :type pairs: tuple(int,int,int)
+        :param T: the global Topology
+        :type T: Topology
+        :param rename: If true, renames any remaining H atoms so that it appears as though highest-order named H atoms are the ones sacrificed, defaults to False
+        :type rename: bool, optional
+        :param explicit_sacH: dictionary of pre-chosen sacrificial H atoms, keyed by pair index, defaults to {}
+        :type explicit_sacH: dict, optional
+        :return: list of global atom indices to delete
+        :rtype: list
+        """
         idx_to_delete=[]
         for i,b in enumerate(pairs):
             if not i in explicit_sacH:

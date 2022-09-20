@@ -13,30 +13,25 @@ import numpy as np
 from itertools import product
 from collections import namedtuple
 
-from pytrr import GroTrrReader
+
 from HTPolyNet.command import Command
 import HTPolyNet.software as sw
 logger=logging.getLogger(__name__)
-# mdp_library = {'liquid-densify':'liquid-densify-npt',
-#                'sea':'sea-nvt',
-#                'minimize-single-molecule':'minimize-single-molecule',
-#                'minimize':'minimize',
-#                'equilibrate':'equilibrate-npt',
-#                'drag-minimize':'drag-minimize',
-#                'drag-nvt':'drag-nvt',
-#                'drag-npt':'drag-npt',
-#                'relax-minimize':'relax-minimize',
-#                'relax-nvt':'relax-nvt',
-#                'relax-npt':'relax-npt'}
+
 
 def insert_molecules(composition,boxSize,outName,inputs_dir='.',**kwargs):
-    ''' launcher for `gmx insert-molecules`
-        monomers:  dictionary of Molecule instances keyed on molecule name
-        composition: dictionary keyed on molecule name with value molecule count
-        boxSize:  3-element list of floats OR a single float (cubic box)
-        outName:  output filename basename.  If {outName}.gro exists,
-                  insertions are made into it.
-    '''
+    """insert_molecules launcher for gmx insert-molecules
+
+    :param composition: dictionary of molecule_name:count
+    :type composition: dict
+    :param boxSize: size of box as 3 floats or 1 float (if cubic box)
+    :type boxSize: list(3,float) or float
+    :param outName: basename of output files
+    :type outName: str
+    :param inputs_dir: directory to search for input structures, defaults to '.'
+    :type inputs_dir: str, optional
+    :raises Exception: if gmx-insert molecules fails to insert the requested number of molecules
+    """
     if type(boxSize)==int:
         boxSize=float(boxSize)
     if type(boxSize)==float:
@@ -71,12 +66,21 @@ def insert_molecules(composition,boxSize,outName,inputs_dir='.',**kwargs):
                 raise Exception('need bigger box')
 
 def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=False,**kwargs):
-    ''' launcher for grompp and mdrun
-        gro: prefix for input coordinate file
-        top: prefix for input topology
-        out: prefix for desired output files
-        boxsize: (optional) desired box size; triggers editconf before grompp
-    '''
+    """grompp_and_mdrun launcher for grompp and mdrun
+
+    :param gro: input gro file, defaults to ''
+    :type gro: str, optional
+    :param top: input top file, defaults to ''
+    :type top: str, optional
+    :param out: output file basename, defaults to ''
+    :type out: str, optional
+    :param mdp: input mdp file, defaults to ''
+    :type mdp: str, optional
+    :param boxSize: explicit box size, defaults to []
+    :type boxSize: list, optional
+    :param single_molecule: if true, a single-molecule system is simulated, defaults to False
+    :type single_molecule: bool, optional
+    """
     logger.debug(kwargs)
     quiet=kwargs.get('quiet',True)
     ignore_codes=kwargs.get('ignore_codes',[-11])
@@ -112,7 +116,7 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
         raise Exception(f'{sw.mdrun} ended prematurely; {out}.gro not found.')
 
 def get_energy_menu(edr,**kwargs):
-    """Get then menu provided by 'gmx energy' when applied to a particular edr file
+    """get_energy_menu gets the menu provided by 'gmx energy' when applied to a particular edr file
 
     :param edr: name of edr file
     :type edr: str
@@ -184,24 +188,6 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
             for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string(float_format='{:.2f}'.format).split('\n'):
                 logger.info(f'{ln}')
     return data       
-        
-# def density_trace(edr,**kwargs):
-#     """Report density trace from edr file
-
-#     :param edr: edr file name
-#     :type edr: str
-#     """
-#     msg=kwargs.get('msg','Density:')
-#     with open('gmx.in','w') as f:
-#         f.write('22\n\n')
-#     c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-density.xvg -xvg none < gmx.in')
-#     c.run()
-#     os.remove('gmx.in')
-#     density=pd.read_csv(f'{edr}-density.xvg',sep='\s+',names=['time(ps)','density(kg/m^3)'])
-#     density['Running-average-density']=density['density(kg/m^3)'].expanding(1).mean()
-#     density['Rolling-average-10']=density['density(kg/m^3)'].rolling(window=10).mean()
-#     for ln in density.iloc[-1].to_string().split('\n'):
-#         logger.info(f'{ln}')
 
 # make a bunch of 3-character filename prefixes so parallel invocations don't collide
 _abc='abcdefghijklmnopqrstuwxyz'
@@ -254,126 +240,8 @@ def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=Fal
     assert npair==nd
     return idf
 
-def encluster(i,j,c):
-    # NOT USED
-    if c[i]==c[j]:
-        return True
-    if c[j]>c[i]:
-        for k in range(len(c)):
-            if c[k]==c[j]:
-                c[k]=c[i]
-    elif c[j]<c[i]:
-        for k in range(len(c)):
-            if c[k]==c[i]:
-                c[k]=c[j]
-    return False        
 
-def symm(d,thresh=0.1,outfile=None):
-    ''' Builds and returns an atom-idx-ordered list of sea-cluster indexes.
-        Any two atoms with the same sea-cluster-index are considered
-        symmetry equivalent.
-        
-        NOT USED
-
-        Parameters:
-           - d: interatomic distance matrix
-           - thresh:  threshhold below which two sorted columns of d are considered
-                      the "same" when compared to the magnitude of their straight
-                      difference
-    '''
-    na=d.shape[0]
-    # initialize per-atom cluster id's to atom indexes (0-)
-    cluster_ids=np.arange(na)
-    # sort every column of distance matrix
-    d=np.sort(d,axis=0)
-    # make a list of columns
-    c=np.array([d[:,i] for i in range(d.shape[1])])
-    l=[]
-    # compute magnitude of distance between columns for 
-    # all unique pairs of columns, store as a list
-    # of 3-tuples (i,j,distance)
-    for i,ri in enumerate(c):
-        for j,rj in enumerate(c):
-            if i<j: 
-                ij=ri-rj
-                l.append((i,j,np.sqrt(ij.dot(ij))))
-
-    # sort the list by distances (not strictly necessary)
-    L=sorted(l,key=lambda x: x[2])
-    if outfile:
-        with open(outfile,'w') as f:
-            for i,j,r in L:
-                f.write(f'{i} {j} {r:0.8f}\n')
-
-    # clusterize the i,j entries of each element of L
-    all_done=False
-    cpass=0
-    while not all_done:
-        all_done=True
-        for i,j,r in L:
-            if r<thresh:
-                all_done=encluster(i,j,cluster_ids)
-        cpass+=1
-
-    # reindex cluster id 
-    cpop={}
-    for i,c in enumerate(cluster_ids):
-        if not c in cpop:
-            cpop[c]=[]
-        cpop[c].append(i)
-    rc=set(cpop.keys())
-    for i,r in enumerate(rc):
-        for j in cpop[r]:
-            cluster_ids[j]=i
-    return cluster_ids
-
-def analyze_sea(deffnm,thresh=0.1):
-    ''' Builds and returns an atom-idx-ordered list of sea-cluster indexes.
-        Any two atoms with the same sea-cluster-index are considered
-        symmetry equivalent.
-        
-        NOT USED
-
-        Parameters:
-           - deffnm: ouput filename prefix for the Gromacs mdrun that generated the 
-                     trajectory file we are analyzing here
-           - thresh: threshhold below which two sorted columns of d are considered
-                     the "same" when compared to the magnitude of their straight
-                     difference
-
-        The main job of this method is to compute the time-averaged interatomic
-        distance matrix.  This matrix, if computed from a "hot" md simulation,
-        should reveal atoms that are topologically symmetric, since the set of 
-        average interatomic distances from atom A to all other atoms and the set
-        of average interatomic distances from atom B to all other atoms are the 
-        same if A and B are symmetry-equivalent.
-    '''
-    if not os.path.exists(f'{deffnm}.trr'):
-        logger.error(f'{deffnm}.trr not found.')
-        return []
-    logger.debug(f'SEA analysis from {deffnm}.trr')
-    with GroTrrReader(f'{deffnm}.trr') as trrfile:
-        d=np.array((0,))
-        nframes=0
-        for mobydick in trrfile:
-            frame_natoms=mobydick['natoms']
-            if d.shape==(1,):
-                d=np.zeros((frame_natoms,frame_natoms))
-            data=trrfile.get_data()
-            # tally all interatomic distances
-            for i,ri in enumerate(data['x']):
-                for j,rj in enumerate(data['x']):
-                    rij=ri-rj
-                    dist=np.sqrt(rij.dot(rij))
-                    d[i][j]+=dist
-            nframes+=1
-        # averages over frames
-        d/=nframes
-        logger.debug(f'{deffnm}.trr: {nframes} frames')
-        # send the distance matrix to be processed, return
-        # the atom-ordered list of sea-cluster-idx's
-        return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
-
+ 
 def mdp_to_dict(mdp_filename):
     with open(mdp_filename,'r') as f:
         lines=f.read().split('\n')

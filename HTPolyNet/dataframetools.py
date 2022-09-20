@@ -58,8 +58,13 @@ def get_row_as_string(df:pd.DataFrame,attributes):
     return df[list(l)].to_string()
 
 def get_rows_w_attribute(df:pd.DataFrame,name,attributes:dict):
-    ''' returns a series of values of attribute "name" from
-        all rows matching attributes dict '''
+    ''' '''
+    """get_rows_w_attribute returns a series of values of attribute "name" from
+        all rows matching attributes dict 
+
+    :return: list of values from selected rows
+    :rtype: whatever pd.dataframe.values type is?
+    """
     ga={k:v for k,v in attributes.items() if k in df}
     assert len(ga)>0,f'Cannot find any rows with attributes {attributes}'
     if type(name)==list:
@@ -75,7 +80,17 @@ def get_rows_w_attribute(df:pd.DataFrame,name,attributes:dict):
     return df[list(l)][name].values
 
 def set_row_attribute(df:pd.DataFrame,name,value,attributes):
-    ''' set value of attribute name to value in all rows matching attributes dict '''
+    """set_row_attribute set value of attribute name to value in all rows matching attributes dict
+
+    :param df: a pandas dataframe
+    :type df: pd.DataFrame
+    :param name: name of attribute whose value is to be set
+    :type name: str
+    :param value: value the attribute is to be set to
+    :type value: scalar
+    :param attributes: dictionary of attribute:value pairs that specify the atoms whose attribute is to be set
+    :type attributes: dict
+    """
     ga={k:v for k,v in attributes.items() if k in df}
     exla={k:v for k,v in attributes.items() if not k in df}
     if len(exla)>0:
@@ -90,8 +105,16 @@ def set_row_attribute(df:pd.DataFrame,name,value,attributes):
         df.loc[list(l),cidx]=value
 
 def set_rows_attributes_from_dict(df:pd.DataFrame,valdict,attributes):
-    ''' set values of attributes in valdict dict of all rows
-        matching attributes dict '''
+    """set_rows_attributes_from_dict set values of attributes in valdict dict of all rows
+        matching attributes dict
+
+    :param df: a pandas dataframe
+    :type df: pd.DataFrame
+    :param valdict: dictionary of attribute:value pairs to set
+    :type valdict: dict
+    :param attributes: dictionary of attribute:value pairs that specify the atoms whose attribute is to be set
+    :type attributes: dict
+    """
     ga={k:v for k,v in attributes.items() if k in df}
     exla={k:v for k,v in attributes.items() if not k in df}
     if len(exla)>0:

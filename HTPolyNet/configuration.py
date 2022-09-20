@@ -49,6 +49,16 @@ class Configuration:
 
     @classmethod
     def read(cls,filename,parse=True,**kwargs):
+        """read generates a new Configuration object by reading in the JSON or YAML file indicated by filename
+
+        :param filename: name of file from which to read new Configuration object
+        :type filename: str
+        :param parse: if True, parse the input configuration file, defaults to True
+        :type parse: bool, optional
+        :raises Exception: if extension of filename is not '.json' or '.yaml' or '.yml'
+        :return: a new Configuration object
+        :rtype: Configuration
+        """
         basename,extension=os.path.splitext(filename)
         if extension=='.json':
             return cls._read_json(filename,parse,**kwargs)
@@ -59,6 +69,15 @@ class Configuration:
 
     @classmethod
     def _read_json(cls,filename,parse=True,**kwargs):
+        """_read_json create a new Configuration object by reading from JSON input
+
+        :param filename: name of JSON file
+        :type filename: str
+        :param parse: if True, parse the JSON data, defaults to True
+        :type parse: bool, optional
+        :return: a new Configuration object
+        :rtype: Configuration
+        """
         inst=cls()
         inst.cfgFile=filename
         with open(filename,'r') as f:
@@ -68,6 +87,15 @@ class Configuration:
 
     @classmethod
     def _read_yaml(cls,filename,parse=True,**kwargs):
+        """_read_yaml create a new Configuration object by reading from YAML input
+
+        :param filename: name of YAML file
+        :type filename: str
+        :param parse: if True, parse the YAML data, defaults to True
+        :type parse: bool, optional
+        :return: a new Configuration object
+        :rtype: Configuration
+        """
         inst=cls()
         inst.cfgFile=filename
         with open(filename,'r') as f:
@@ -76,6 +104,15 @@ class Configuration:
         return inst
     
     def NewMolecule(self,mol_name,molrec={}):
+        """NewMolecule generate and return a new Molecule object with name mol_name and populated via directives in molrec
+
+        :param mol_name: name of new molecule
+        :type mol_name: str
+        :param molrec: dictionary of new molecule directives, defaults to {}
+        :type molrec: dict, optional
+        :return: the new Molecule object
+        :rtype: Molecule
+        """
         return Molecule.New(mol_name,molrec)
         
     def parse(self,**kwargs):

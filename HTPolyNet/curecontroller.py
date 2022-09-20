@@ -339,6 +339,13 @@ class CureController:
         logger.debug(f'next: {self.state.step}')
 
     def _do_preupdate_dragging(self,TC:TopoCoord,gromacs_dict={}):
+        """_do_preupdate_dragging manages the preupdate dragging CURE step
+
+        :param TC: the global system topology and coordinates
+        :type TC: TopoCoord
+        :param gromacs_dict: dictionary of optional gromacs directives, defaults to {}
+        :type gromacs_dict: dict, optional
+        """
         if self.state.step!=cure_step.cure_drag: return
         nbdf=self.bonds_df
         assert nbdf.shape[0]>0
@@ -354,6 +361,13 @@ class CureController:
         logger.debug(f'next: {self.state.step}')
 
     def _do_relax(self,TC:TopoCoord,gromacs_dict={}):
+        """_do_relax manages relaxation steps within the CURE algorithm
+
+        :param TC: global topology and coordinates
+        :type TC: TopoCoord
+        :param gromacs_dict: dictionary of optional gromacs directives, defaults to {}
+        :type gromacs_dict: dict, optional
+        """
         if self.state.step!=cure_step.cure_relax and self.state.step!=cure_step.cap_relax: return
         nbdf=self.bonds_df
         if nbdf.shape[0]==0: # no bonds identified
@@ -371,6 +385,13 @@ class CureController:
         logger.debug(f'next: {self.state.step}')
 
     def _do_topology_update(self,TC:TopoCoord,MD:MoleculeDict):
+        """_do_topology_update manages the topology update in CURE
+
+        :param TC: global system topology and coordinates
+        :type TC: TopoCoord
+        :param MD: dictionary of all molecular templates
+        :type MD: MoleculeDict
+        """
         if self.state.step!=cure_step.cure_update and self.state.step!=cure_step.cap_update: return
         opfx=self._pfx()
         logger.debug(f'Topology update')
@@ -388,6 +409,13 @@ class CureController:
         self.state._to_yaml()
 
     def _do_equilibrate(self,TC:TopoCoord,gromacs_dict={}):
+        """_do_equilibrate manages pre- and post-cure equilibration runs
+
+        :param TC: global system topology and coordinates
+        :type TC: TopoCoord
+        :param gromacs_dict: dictionary of optional gromacs directives, defaults to {}
+        :type gromacs_dict: dict, optional
+        """
         if self.state.step!=cure_step.cure_equilibrate and self.state.step!=cure_step.cap_equilibrate: return
         d=self.dicts['equilibrate']
         opfx=self._pfx()
@@ -400,6 +428,15 @@ class CureController:
         self.state._to_yaml()
 
     def _do_cap_bondsearch(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict):
+        """_do_cap_bondsearch manages the post-cure capping reaction bond search
+
+        :param TC: global system topology and coordinates
+        :type TC: TopoCoord
+        :param RL: list of all reactions
+        :type RL: ReactionList
+        :param MD: dictionary of all molecular templates
+        :type MD: MoleculeDict
+        """
         if self.state.step!=cure_step.cap_bondsearch: return
         opfx=self._pfx()
         # multi: nbdf=self.make_cadidates(...,stage='cap')
@@ -418,15 +455,36 @@ class CureController:
         self.state._to_yaml()
 
     def _write_bonds_df(self,bondsfile='bonds.csv'):
+        """_write_bonds_df writes all bonds in the bonds dataframe to a CSV file
+
+        :param bondsfile: name of csv file to write, defaults to 'bonds.csv'
+        :type bondsfile: str, optional
+        """
         self.bonds_df.to_csv(bondsfile,sep=' ',mode='w',index=False,header=True,doublequote=False)
 
     def _read_bonds_df(self,bonds_file_override=''):
+        """_read_bonds_df reads bonds into bonds dataframe from a CSV file
+
+        :param bonds_file_override: name of file to read from (overrides default), defaults to ''
+        :type bonds_file_override: str, optional
+        """
         infile=self.dicts['output']['bonds_file'] if not bonds_file_override else bonds_file_override
         assert os.path.exists(infile),f'Error: {infile} not found'
         self.bonds_df=pd.read_csv(infile,sep='\s+',header=0)
         self.dicts['output']['bonds_file']=os.path.abspath(infile)
 
     def _register_bonds(self,bonds,pairs,bonds_file,bonds_are='unrelaxed'):
+        """_register_bonds registers the bonds, 1-4 pairs from the input parameters
+
+        :param bonds: dataframe of bonds
+        :type bonds: pd.DataFrame
+        :param pairs: dataframe of 1-4 pairs
+        :type pairs: pd.DataFrame
+        :param bonds_file: file to which bonds are written
+        :type bonds_file: str
+        :param bonds_are: a little flag to remind us the state of these bonds, defaults to 'unrelaxed'
+        :type bonds_are: str, optional
+        """
         self.bonds_df=bonds
         self.pairs_df=pairs
         self.bonds_are=bonds_are
@@ -435,9 +493,23 @@ class CureController:
         self.dicts['output']['bonds_file']=os.path.abspath(bonds_file)
 
     def _pfx(self):
+        """_pfx generates a little string that can be used as a state-specific filename prefix
+
+        :return: the little string
+        :rtype: str
+        """
         return f'{self.state.step.value}-{self.state.step}'
 
     def _distance_attenuation(self,TC:TopoCoord,mode='drag',gromacs_dict={}):
+        """_distance_attenuation manages the progressive attenuation of bond parameters for new bonds
+
+        :param TC: global system topology and coordinates
+        :type TC: TopoCoord
+        :param mode: string indicating whether this is prebonding or postbonding attentuation; defaults to 'drag' (prebonding); other option is 'relax' (postbonding)
+        :type mode: str, optional
+        :param gromacs_dict: dictionary of optional gromacs directives, defaults to {}
+        :type gromacs_dict: dict, optional
+        """
         assert mode in ['drag','relax']
         statename=self.state.step.basename()
         opfx=self._pfx()
@@ -508,6 +580,25 @@ class CureController:
 
     # TODO: move to searchbonds.by; split into make_candidates() and apply_filters()
     def _searchbonds(self,TC:TopoCoord,RL:ReactionList,MD:MoleculeDict,stage=reaction_stage.cure,abs_max=0,apply_probabilities=False,reentry=False):
+        """_searchbonds manages the search for bonds
+
+        :param TC: global system topology and coordinates
+        :type TC: TopoCoord
+        :param RL: list of all reactions
+        :type RL: ReactionList
+        :param MD: dictionary of all molecular templates
+        :type MD: MoleculeDict
+        :param stage: which reaction stage, defaults to reaction_stage.cure, other choice is reaction_stage.cap
+        :type stage: reaction_stage, optional
+        :param abs_max: upper limit to number of new bonds allowed, defaults to 0, signifying no limit
+        :type abs_max: int, optional
+        :param apply_probabilities: if true, bond probabilities are applied, defaults to False
+        :type apply_probabilities: bool, optional
+        :param reentry: if true, existing linkcell data stored on disk is used, defaults to False
+        :type reentry: bool, optional
+        :return: the dataframe of proposed bonds
+        :rtype: pd.DataFrame
+        """
         adf=TC.gro_DataFrame('atoms')
         gro=TC.files['gro']
         ncpu=self.dicts['controls']['ncpu']
