@@ -10,7 +10,7 @@ import shutil
 
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
-from HTPolyNet.coordinates import _dfrotate, GRX_ATTRIBUTES
+from HTPolyNet.coordinates import dfrotate, GRX_ATTRIBUTES
 from HTPolyNet.ambertools import GAFFParameterize
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.gromacs import mdp_modify,gro_from_trr
@@ -776,13 +776,13 @@ class Molecule:
         v2=np.dot(v,v)
         I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
         R=I+v+v2/(1.+c)
-        _dfrotate(adf,R)
+        dfrotate(adf,R)
         A.loc[A['globalIdx'].isin(aset),['posX','posY','posZ']]=adf[['posX','posY','posZ']]
         cp=np.cross(rOb,rOa)
         v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
         v2=np.dot(v,v)
         R=I+v+v2/(1.+c)
-        _dfrotate(bdf,R)
+        dfrotate(bdf,R)
         A.loc[A['globalIdx'].isin(bset),['posX','posY','posZ']]=bdf[['posX','posY','posZ']]
         # translate back to original coordinate frame
         TC.translate(O)

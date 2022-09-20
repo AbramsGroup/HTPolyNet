@@ -605,7 +605,10 @@ class Runtime:
         for k in edict.keys():
             if not k in self.default_edict:
                 logger.debug(f'ignoring unknown equilibration directive "{k}"')
-        TC.equilibrate(deffnm,edict,gromacs_dict,plot_pfx)
+        edr_list=TC.equilibrate(deffnm,edict,gromacs_dict)
+        ens=edict['ensemble']
+        if ens=='npt' and plot_pfx!='':
+            trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
 
     def _do_equilibration_series(self,eq_stgs=[],deffnm='equilibrate',plot_pfx=''):
         """_do_equilibration_series manages a series of equilibrations

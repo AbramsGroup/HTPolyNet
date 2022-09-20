@@ -21,18 +21,6 @@ echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen3d -h -omol2 --title "EMB" | \
       sed s/" 9 C "/" 9 C2"/ | \
       sed s/"UNL1"/"EMB "/ > inputs/EMB.mol2
 
-# BisGMA
-PHENOLTHING="C1=CC=C(OCC(O)COC(=O)C(C)C)C=C1"
-obabel -:"C(C)(C)($PHENOLTHING)($PHENOLTHING)" -ismi -opng -O pics/GMA.png -xp 600 -xt
-obabel -:"C(C)(C)($PHENOLTHING)($PHENOLTHING)" -ismi --gen3d -h -omol2 --title GMA | \
-      sed s/"16 C "/"16 C1"/ | \
-      sed s/"33 C "/"33 C2"/ | \
-      sed s/"17 C "/"17 C3"/ | \
-      sed s/"34 C "/"33 C4"/ | \
-      sed s/"10 C "/"10 C5"/ | \
-      sed s/"27 C "/"27 C6"/ | \
-      sed s/"UNL1   "/"GMA    "/ > inputs/GMA.mol2
-
 # DGEBA
 obabel -:"CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C" -ismi --gen2d -opng -O pics/DGE.png -xp 600 -xt
 obabel -:"CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C" -ismi -h --gen3d -omol2 --title "DGE" | \

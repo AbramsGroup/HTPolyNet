@@ -8,6 +8,8 @@
 """
 
 '''
+...first, a blast from the past:
+
 [gmx-users] maximum number of atoms
 Erik Lindahl lindahl at stanford.edu
 Fri Mar 22 18:52:46 CET 2002
@@ -33,13 +35,10 @@ think you are currently limited to 2^31-1=2,147,483,647 atoms. The only
 reason we are not using 64 bit integers is that it would hurt 
 performance on x86, powerpc, and other 32 bit platforms.
 
-
-
 Since you usually need 20-30 bytes of storage per atom it is possible 
 that we hit the roof slightly earlier if there are places in the code 
 where we first calculate the amount of memory we need and then allocate 
 it. Let us know if that's a problem and I promise we'll look into it ;-)
-
 
 You might have noticed that the pdb and gro input files can't handle 
 atom numbers larger than 9999 and 99999, respectively. For this reason 
@@ -60,116 +59,48 @@ from itertools import product
 from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.linkcell import Linkcell
 from HTPolyNet.ring import Ring,Segment
+from HTPolyNet.dataframetools import *
 
 logger=logging.getLogger(__name__)
 
-# def my_check(A,item):
-#     idx=item[0].astype(int)
-#     for a in A:
-#         if all(a[0].astype(int)==idx):
-#             return True
-#     return False
+''' GROMACS EXTENDED ATOM ATTRIBUTES
 
+    Below are a set of "extended" atom attributes used by htpolynet but are not part of Gromacs:
+
+    - z: number of sacrificial hydrogens/number of available bonds
+    - nreactions: complement of z/number of bonds formed by reactions
+    - reactantName: name of oligomer template last used when a bond was formed to this atom
+    - sea_idx: index of symmetry set of this atom
+    - cycle: unique index of cycle to which this atom belongs (e.g., aromatic ring)
+    - cycle_idx:  unique index of this atom in that cycle
+    - chain: unique index of C-C chain to which this atom belongs
+    - chain_idx: unique index of this atom in that chain
+    - molecule: unique molecule index of this atom
+    - molecule_name:  name of molecule to which atom belongs
+
+    A value of -1 in any of sea_idx, cycle, cycle_idx, chain, chain_idx indicates atom does not belong to that set.
+    All of sea_idx, cycle, chain, and molecule are globally unique, meaning that when two coordinate structures are merged,
+    these indexes must be updated to keep them unique.
+
+'''
 GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name']
 GRX_GLOBALLY_UNIQUE=[False,       False,         False,     True,  True,       False,   True,      False,      True,          False]
 GRX_UNSET_DEFAULTS =[    0,           0,       'UNSET',       -1,    -1,          -1,     -1,          -1,       -1,        'UNSET']
 
-def _dfrotate(df:pd.DataFrame,R):
+def dfrotate(df:pd.DataFrame,R):
+    """dfrotate applies rotation matrix R to coordinates in dataframe
+
+    :param df: coordinates dataframe; must have 'posX', 'posY', and 'posZ' columns
+    :type df: pd.DataFrame
+    :param R: rotation matrix
+    :type R: np.ndarray((3,3))
+    """
     for i,srow in df.iterrows():
         ri=srow[['posX','posY','posZ']].values
         newri=np.matmul(R,ri)
         df.loc[i,'posX':'posZ']=newri
 
-def _get_row_attribute(df:pd.DataFrame,name,attributes):
-    """_get_row_attribute returns a scalar value of attribute "name" in row
-        expected to be uniquely defined by attributes dict
 
-    :param df: dataframe to search
-    :type df: pandas.DataFrame
-    :param name: name of attribute whose value you want
-    :type name: str
-    :param attributes: dictionary of attribute:value pairs that defines target set or row
-    :type attributes: dict
-    :return: value of attribute name
-    :rtype: scalar
-    """
-    ga={k:v for k,v in attributes.items() if k in df}
-    assert len(ga)>0,f'Cannot find row with attributes {attributes}'
-    if type(name)==list:
-        name_in_df=all([n in df for n in name])
-    else:
-        name_in_df= name in df
-    assert name_in_df,f'Attribute(s) {name} not found'
-    c=[df[k] for k in ga]
-    V=list(ga.values())
-    l=[True]*df.shape[0]
-    for i in range(len(c)):
-        l = (l) & (c[i]==V[i])
-    # logger.debug(f'_get_row_attribute {name} {attributes} -> {df[list(l)][name].values}')
-    return df[list(l)][name].values[0]
-
-def _get_row_as_string(df,attributes):
-    ''' returns a scalar value of attribute "name" in row
-        expected to be uniquely defined by attributes dict '''
-    ga={k:v for k,v in attributes.items() if k in df}
-    c=[df[k] for k in ga]
-    V=list(ga.values())
-    l=[True]*df.shape[0]
-    for i in range(len(c)):
-        l = (l) & (c[i]==V[i])
-    return df[list(l)].to_string()
-
-def _get_rows_w_attribute(df,name,attributes):
-    ''' returns a series of values of attribute "name" from
-        all rows matching attributes dict '''
-    ga={k:v for k,v in attributes.items() if k in df}
-    assert len(ga)>0,f'Cannot find any rows with attributes {attributes}'
-    if type(name)==list:
-        name_in_df=all([n in df for n in name])
-    else:
-        name_in_df= name in df
-    assert name_in_df,f'Attribute(s) {name} not found'
-    c=[df[k] for k in ga]
-    V=list(ga.values())
-    l=[True]*df.shape[0]
-    for i in range(len(c)):
-        l = (l) & (c[i]==V[i])
-#        print(name,attributes,df[list(l)][name].values)
-    return df[list(l)][name].values
-
-def _set_row_attribute(df,name,value,attributes):
-    ''' set value of attribute name to value in all rows matching attributes dict '''
-    ga={k:v for k,v in attributes.items() if k in df}
-    exla={k:v for k,v in attributes.items() if not k in df}
-    if len(exla)>0:
-        logger.warning(f'Caller attempts to use unrecognized attributes to refer to row: {exla}')
-    if name in df and len(ga)>0:
-        c=[df[k] for k in ga]
-        V=list(ga.values())
-        l=[True]*df.shape[0]
-        for i in range(len(c)):
-            l = (l) & (c[i]==V[i])
-        cidx=[c==name for c in df.columns]
-        df.loc[list(l),cidx]=value
-
-def _set_rows_attributes_from_dict(df,valdict,attributes):
-    ''' set values of attributes in valdict dict of all rows
-        matching attributes dict '''
-    ga={k:v for k,v in attributes.items() if k in df}
-    exla={k:v for k,v in attributes.items() if not k in df}
-    if len(exla)>0:
-        logger.warning(f'using unknown attributes to refer to atom: {exla}')
-    if all([x in df for x in valdict]) and len(ga)>0:
-        c=[df[k] for k in ga]
-        V=list(ga.values())
-        l=[True]*df.shape[0]
-        for i in range(len(c)):
-            l = (l) & (c[i]==V[i])
-        for k,v in valdict.items():
-            cidx=[c==k for c in df.columns]
-            df.loc[list(l),cidx]=v 
-
-_ANGSTROM_='Ångström'
 
 class Coordinates:
     ''' A class for handling atom coordinates (and other attributes)
@@ -733,11 +664,11 @@ class Coordinates:
 
     def get_idx(self,attributes):
         df=self.A
-        return _get_row_attribute(df,'globalIdx',attributes)
+        return get_row_attribute(df,'globalIdx',attributes)
     
     def get_R(self,idx):
         df=self.A
-        return _get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})
+        return get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})
     
     def get_atom_attribute(self,name,attributes):
         df=self.A
@@ -746,19 +677,19 @@ class Coordinates:
             assert all([i in self.A.columns for i in name])
         else:
             assert name in self.A.columns,f'{name} not found in attributes\n{df.columns}'
-        return _get_row_attribute(df,name,attributes)
+        return get_row_attribute(df,name,attributes)
     
     def spew_atom(self,attributes):
         df=self.A
-        return _get_row_as_string(df,attributes)
+        return get_row_as_string(df,attributes)
 
     def get_atoms_w_attribute(self,name,attributes):
         df=self.A
-        return _get_rows_w_attribute(df,name,attributes)
+        return get_rows_w_attribute(df,name,attributes)
 
     def set_atom_attribute(self,name,value,attributes):
         df=self.A
-        _set_row_attribute(df,name,value,attributes)
+        set_row_attribute(df,name,value,attributes)
 
     def has_atom_attributes(self,attributes):
         df=self.A

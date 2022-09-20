@@ -1,9 +1,8 @@
-
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.gromacs import gmx_energy_trace
-import pandas as pd
 from scipy.constants import physical_constants
+import pandas as pd
 import os
 import numpy as np
 import networkx as nx
@@ -173,18 +172,6 @@ def graph_from_bondsfile(bondsfile):
     df=pd.read_csv(bondsfile,header=0,index_col=None,sep='\s+')
     for i,r in df.iterrows():
         G.add_edge(r['mi'],r['mj'])
-    return G
-
-def init_molecule_graph(proj_dir):
-    gro=os.path.join(proj_dir,'systems/init/init.gro')
-    top=os.path.join(proj_dir,'systems/init/init.top')
-    grx=os.path.join(proj_dir,'systems/init/init.grx')
-    TC=TopoCoord(grofilename=gro,topfilename=top,grxfilename=grx)
-    G=nx.Graph()
-    adf=TC.Coordinates.A
-    mm=set(zip(adf['molecule'],adf['molecule_name']))
-    for mx,mn in mm:
-        G.add_node(mx,molecule_name=mn)
     return G
 
 def mwbxl(G:nx.Graph,crosslinker='GMA',monomer='STY'):

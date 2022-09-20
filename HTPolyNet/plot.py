@@ -296,3 +296,14 @@ def plots(args):
                 am.to_csv(args.mwbxl,sep=' ',index=False,header=True)
                 print(f'{args.mwbxl} created.')
 
+def init_molecule_graph(proj_dir):
+    gro=os.path.join(proj_dir,'systems/init/init.gro')
+    top=os.path.join(proj_dir,'systems/init/init.top')
+    grx=os.path.join(proj_dir,'systems/init/init.grx')
+    TC=TopoCoord(grofilename=gro,topfilename=top,grxfilename=grx)
+    G=nx.Graph()
+    adf=TC.Coordinates.A
+    mm=set(zip(adf['molecule'],adf['molecule_name']))
+    for mx,mn in mm:
+        G.add_node(mx,molecule_name=mn)
+    return G

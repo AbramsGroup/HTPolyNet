@@ -22,7 +22,7 @@ copyright = '2022, Cameron Abrams, Ming Huang'
 author = 'Cameron Abrams, Ming Huang'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '1.0.5'
 
 
 # -- General configuration ---------------------------------------------------

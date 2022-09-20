@@ -1,4 +1,5 @@
 import pandas as pd
+_ANGSTROM_='Ångström'
 
 def my_logger(msg,logf,width=67,fill='*',sep=', ',just='^'):
     fmt=r'{'+r':'+fill+just+f'{width}'+r'}'

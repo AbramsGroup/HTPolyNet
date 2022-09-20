@@ -12,14 +12,14 @@ import pandas as pd
 import logging
 from HTPolyNet.bondlist import Bondlist
 import os
-from copy import deepcopy
+# from copy import deepcopy
 from scipy.constants import physical_constants
 import numpy as np
 import networkx as nx
 from networkx.readwrite import json_graph
 import json
 from itertools import product
-from HTPolyNet.plot import network_graph
+# from HTPolyNet.plot import network_graph
 
 logger=logging.getLogger(__name__)
 
@@ -1249,7 +1249,7 @@ class Topology:
         self.build_interresidue_graph(G,ri)
         return [x for x in G]
 
-    def make_resid_graph(self,json_file=None,draw=None):
+    def make_resid_graph(self,json_file=None):
         adf=self.D['atoms']
         N=adf.shape[0]
         self.residue_network=nx.DiGraph()
@@ -1297,8 +1297,8 @@ class Topology:
                     logger.debug(str(msg))
                     logger.debug(f'writing resid graph to JSON not currently supported')
                     f.write(str(the_data)+'\n')
-        if draw:
-            network_graph(self.residue_network,draw)
+        # if draw:
+        #     network_graph(self.residue_network,draw)
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds

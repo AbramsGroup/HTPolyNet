@@ -14,10 +14,10 @@ import pandas as pd
 from HTPolyNet.coordinates import Coordinates, GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
 from HTPolyNet.topology import Topology
 from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
-from HTPolyNet.reaction import reaction_stage
+# from HTPolyNet.reaction import reaction_stage
 from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 # from HTPolyNet.molecule import MoleculeDict,ReactionList
-from HTPolyNet.plot import trace
+# from HTPolyNet.plot import trace
 import HTPolyNet.projectfilesystem as pfs
 import logging
 import numpy as np
@@ -964,8 +964,8 @@ class TopoCoord:
             self.Coordinates.A[k]=L
         logger.debug(f'postinherit adf columns {self.Coordinates.A.columns}')
 
-    def make_resid_graph(self,json_file=None,draw=None):
-        self.Topology.make_resid_graph(json_file=json_file,draw=draw)
+    def make_resid_graph(self,json_file=None):
+        self.Topology.make_resid_graph(json_file=json_file)
 
     def maxspan(self):
         """Returns the maxspan of the Coordinates (dimensions of orthorhombic
@@ -1479,8 +1479,9 @@ class TopoCoord:
         self.grompp_and_mdrun(out=f'{outname}',
             mdp=mdp_prefix,boxSize=boxsize,single_molecule=True,wrap_coords=False) #,**gromacs_dict)
 
-    def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={},plot_pfx=''):
+    def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={}):
         mod_dict={}
+        edr_list=[]
         ens=edict['ensemble']
         repeat=edict.get('repeat',0)
         assert ens in ['min','npt','nvt'],f'Bad ensemble: {ens}'
@@ -1510,8 +1511,8 @@ class TopoCoord:
         mdp_modify(f'{ens}.mdp',mod_dict,new_filename=f'{new_mdp}.mdp')
         logger.info(f'Running Gromacs: {msg}')
         self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=new_mdp,quiet=False,**gromacs_dict)
+        edr_list=[f'{deffnm}-{ens}']
         if ens=='npt':
-            edr_list=[f'{deffnm}-{ens}']
             box=self.Coordinates.box.diagonal()
             logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
             gmx_energy_trace(f'{deffnm}-{ens}',['Density'],report_averages=True,**gromacs_dict)
@@ -1519,14 +1520,12 @@ class TopoCoord:
             logger.info(f'Repeat {rep+1} out of {repeat}')
             this_deffnm=f'{deffnm}-repeat-{rep+1}-{ens}'
             self.grompp_and_mdrun(out=this_deffnm,mdp=ens,quiet=False,**gromacs_dict)
+            edr_list.append(this_deffnm)
             if ens=='npt':
                 box=self.Coordinates.box.diagonal()
                 logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-                edr_list.append(this_deffnm)
             gmx_energy_trace(this_deffnm,['Density'],report_averages=True,**gromacs_dict)
-        if ens=='npt':
-            if plot_pfx!='':
-                trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
+        return edr_list
 
     def get_resid_sets(self,atom_pair):
         # assertion: i and j are not bonded and they represent two separate sets of residues in this topocoord.

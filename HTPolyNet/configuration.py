@@ -50,9 +50,9 @@ class Configuration:
     @classmethod
     def read(cls,filename,parse=True,**kwargs):
         basename,extension=os.path.splitext(filename)
-        if extension=='json':
+        if extension=='.json':
             return cls._read_json(filename,parse,**kwargs)
-        elif extension=='yaml' or extension=='yml':
+        elif extension=='.yaml' or extension=='.yml':
             return cls._read_yaml(filename,parse,**kwargs)
         else:
             raise Exception(f'Unknown config file extension {extension}')
