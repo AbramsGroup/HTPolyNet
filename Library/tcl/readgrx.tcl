@@ -1,7 +1,8 @@
 # This proc returns a TcL dictionary keyed by attribute name with values that are atom-by-atom
 # Source this file in your vmd script or a TcL interactive session
-# IMPORTANT: If you are using a TcL interactive session, you must SQUASH the output echo or vmd will HANG
-# Like this:
+# IMPORTANT: If you are using a TcL interactive session, you must SQUASH the output echo or vmd will HANG!
+#
+# One way to do this is to chain the "set" command with creation of an empty list:
 #
 # % set D [get_grx "myfile.grx"]; list
 #
@@ -19,7 +20,6 @@
 # Cameron F. Abrams cfa22@drexel.edu
 
 proc get_grx { fn } {
-    # upvar $mydict D
     set D [dict create]
     set fp [open $fn "r"]
     set data [read -nonewline $fp]
@@ -34,17 +34,13 @@ proc get_grx { fn } {
     set hdr [lindex $lines 0]
     set lines [lrange $lines 1 end]
     set ndatalines [llength $lines]
-    # set ndatalines [expr $nlines - 1]
     set cols [regexp -all -inline {\S+} $hdr]
-    # puts "$fn: $cols columns, $ndatalines lines of data"
-    # puts "[lindex $lines 0] ... ($nlines) ... [lindex $lines end-1]"
     for {set i 0} {$i < [llength $cols]} {incr i} {
         set mylist {}
         foreach {ln} $lines {
             lappend mylist [lindex $ln $i]
         }
         set D [dict append D [lindex $cols $i] $mylist]
-        # puts "[lindex $cols $i]: [llength $mylist]"
     }
     return $D
 }

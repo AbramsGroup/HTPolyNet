@@ -1,8 +1,10 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Nov  9 15:30:10 2020
 
-@author: huang
+.. module:: countTime
+   :synopsis: defines a wrapper implementing method timing
+   
+.. moduleauthor: Ming Huang, <mh3429@dragons.drexel.edu>
+
 """
 import os
 import time

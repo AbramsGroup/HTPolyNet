@@ -1,3 +1,11 @@
+"""
+
+.. module:: ambertools
+   :synopsis: Manages execution of AmberTools antechamber, parmchk2.
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 import hashlib
 import shutil
@@ -7,6 +15,17 @@ from HTPolyNet.coordinates import Coordinates
 logger=logging.getLogger(__name__)
 
 def GAFFParameterize(inputPrefix,outputPrefix,input_structure_format='mol2',**kwargs):
+    """GAFFParameterize manages execution of antechamber, tleap, and parmchk2 to generate
+    GAFF parameters
+
+    :param inputPrefix: basename of input structure file
+    :type inputPrefix: str
+    :param outputPrefix: basename of output files
+    :type outputPrefix: str
+    :param input_structure_format: format of input structure file, defaults to 'mol2'; 'pdb' is other option        
+    :type input_structure_format: str, optional
+    :raises parmed.exceptions.GromacsError: if parmed fails
+    """
     ambertools_dict=kwargs.get('ambertools',{})
     if ambertools_dict:
         chargemethod=ambertools_dict.get('charge_method','bcc')

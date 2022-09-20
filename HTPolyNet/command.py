@@ -1,3 +1,11 @@
+"""
+
+.. module:: command
+   :synopsis: Custom handling of calls to subprocess.Popen() 
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 import subprocess
 logger=logging.getLogger(__name__)
@@ -22,7 +30,6 @@ class Command:
                 logger.error('stderr buffer follows\n'+'*'*self.linelen+'\n'+err+'\n'+'*'*self.linelen)
             raise subprocess.SubprocessError(f'Command "{self.c}" failed with returncode {process.returncode}')
         else:
-            # logger.info(f'Returncode: {process.returncode}.')
             if len(override)==2:
                 needle,msg=override
                 if needle in out or needle in err:

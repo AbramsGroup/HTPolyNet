@@ -1,4 +1,6 @@
 from HTPolyNet.gromacs import *
+from HTPolyNet.utils import *
+from HTPolyNet.banner import banner
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
@@ -257,4 +259,40 @@ def diagnostics_graphs(logfiles,filename,**kwargs):
     plt.close(fig)
 
     logging.disable(logging.NOTSET)
+
+def plots(args):
+    logs=args.logs
+    loglevel_numeric=getattr(logging, args.loglevel.upper())
+    logging.basicConfig(format='%(levelname)s> %(message)s',level=loglevel_numeric)
+    if not args.no_banner: banner(logger.info)
+    if len(logs)>0:
+        diagnostics_graphs(logs,args.plotfile)
+    if args.proj:
+        if args.t:
+            df,transition_times,cure_markers,interval_labels=density_evolution(args.proj)
+            global_trace(df,['Temperature','Density','Potential'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
+            if args.o:
+                logger.info(f'All data to {args.o}')
+                with open(args.o,'w') as f:
+                    f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
+        if args.g or args.mwbxl or args.clusters:
+            G=init_molecule_graph(args.proj)
+            n=1
+            while os.path.exists(os.path.join(args.proj,f'systems/iter-{n}/2-cure_update-bonds.csv')):
+                logger.info(f'iter-{n}/2-cure_update-bonds.csv')
+                g=graph_from_bondsfile(os.path.join(args.proj,f'systems/iter-{n}/2-cure_update-bonds.csv'))
+                G=nx.compose(G,g)
+                if args.g and args.byiter: 
+                    network_graph(G,os.path.join(args.proj,f'plots/iter-{n}-{args.g}'))
+                n+=1
+            if args.g: network_graph(G,args.g)
+            if args.clusters:
+                clu=clusters(G)
+                clu.to_csv(args.clusters,sep=' ',header=True,index=False)
+                print(f'{args.clusters} created.')
+            if args.mwbxl:
+                am=mwbxl(G)
+                print(f'Avg homo-N between xlinks: {np.average(am["n"],weights=am["counts"]):.2f}')
+                am.to_csv(args.mwbxl,sep=' ',index=False,header=True)
+                print(f'{args.mwbxl} created.')
 

@@ -6,7 +6,7 @@
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
 """
-# NOTICE:
+
 '''
 [gmx-users] maximum number of atoms
 Erik Lindahl lindahl at stanford.edu

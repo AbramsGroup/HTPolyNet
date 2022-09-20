@@ -1,8 +1,14 @@
-from imp import init_builtin
+"""
+
+.. module:: configuration
+   :synopsis: Manages reading and parsing of YAML configuration files
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import json
 import yaml
 import os
-from copy import deepcopy
 import logging
 from collections import namedtuple
 from HTPolyNet.molecule import Molecule, MoleculeDict, generate_stereo_reactions, generate_symmetry_reactions
@@ -43,7 +49,7 @@ class Configuration:
 
     @classmethod
     def read(cls,filename,parse=True,**kwargs):
-        extension=filename.split('.')[-1]
+        basename,extension=os.path.splitext(filename)
         if extension=='json':
             return cls._read_json(filename,parse,**kwargs)
         elif extension=='yaml' or extension=='yml':
@@ -110,16 +116,13 @@ class Configuration:
         self.molecule_report['implied by symmetry']+=generate_symmetry_reactions(self.reactions,self.molecules)
         for R in self.reactions:
             for rnum,rname in R.reactants.items():
-                # logger.debug(f'z: update {rname} num {rnum} in rxn {R.name}')
                 zrecs=[]
                 for atnum,atrec in R.atoms.items():
-                    # logger.debug(f'query {atrec} for "reactant" {rnum}')
                     if atrec['reactant']==rnum:
                         cprec=atrec.copy()
                         del cprec['reactant']
                         zrecs.append(cprec)
                 self.molecules[rname].update_zrecs(zrecs,self.molecules)
-        # self.reactions.extend(new_reactions)
 
         for r in self.reactions:
             logger.debug(f'{str(r)}')
@@ -145,6 +148,8 @@ class Configuration:
 
 
     def calculate_maximum_conversion(self):
+        """calculate_maximum_conversion calculates the maximum number of polymerization bonds that can form based on specified system composition and reactions
+        """
         Atom=namedtuple('Atom',['name','resid','reactantKey','reactantName','z'])
         Bond=namedtuple('Bond',['ai','aj'])
         N={}
@@ -168,7 +173,6 @@ class Configuration:
                 aan,ban=a['atom'],b['atom']
                 ari,bri=a['resid'],b['resid']
                 arnum,brnum=a['reactant'],b['reactant']
-                # TODO: fix this -- z's defined by residue not reactant!!
                 arn,brn=R.reactants[arnum],R.reactants[brnum]
                 if arnum==brnum:  continue # this is an intramolecular reaction
                 az,bz=a['z'],b['z']
@@ -186,12 +190,10 @@ class Configuration:
         Z=[]
         for a in Atoms:
             Z.append(a.z*N[a.reactantName])
-            # Z.append(a[4]*N[a[3]])
         logger.debug(f'Z: {Z}')
         logger.debug(f'bondset: {Bonds}')
         MaxB=[]
         for B in Bonds:
-            # a,b=B
             az=Z[Atoms.index(B.ai)]
             bz=Z[Atoms.index(B.aj)]
             MaxB.append(min(az,bz))
@@ -199,4 +201,3 @@ class Configuration:
             Z[Atoms.index(B.aj)]-=MaxB[-1]
         logger.debug(f'MaxB: {MaxB} {sum(MaxB)}')
         self.maxconv=sum(MaxB)
-        # return sum(MaxB)
