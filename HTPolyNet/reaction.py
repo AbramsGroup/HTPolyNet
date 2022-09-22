@@ -129,7 +129,7 @@ def extract_molecule_reactions(rlist:ReactionList,plot=True):
             reactants.add(r)
             G.add_edge(r,R.product)
         products.add(R.product)
-    if plot: network_graph(G,'plots/reaction_network.png',arrows=True,with_labels=True)
+    if plot: network_graph(G,'plots/reaction_network.png',arrows=True,with_labels=True,figsize=(10,10),node_size=0)
     input_reactants=reactants.intersection(reactants.symmetric_difference(products))
     logger.debug(f'Input reactants: {input_reactants}')
     for i in input_reactants:

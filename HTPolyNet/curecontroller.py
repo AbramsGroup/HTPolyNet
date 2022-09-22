@@ -22,6 +22,7 @@ from functools import partial
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.stringthings import my_logger
 import HTPolyNet.checkpoint as cp
+from HTPolyNet.plot import trace
 
 import logging
 
@@ -419,7 +420,11 @@ class CureController:
         if self.state.step!=cure_step.cure_equilibrate and self.state.step!=cure_step.cap_equilibrate: return
         d=self.dicts['equilibrate']
         opfx=self._pfx()
-        edr_list=TC.equilibrate(deffnm=f'{opfx}',edict=d,gromacs_dict=gromacs_dict,plot_pfx=f'iter-{self.state.iter}-{str(self.state.step)}')
+        edr_list=TC.equilibrate(deffnm=f'{opfx}',edict=d,gromacs_dict=gromacs_dict) #,plot_pfx=f'iter-{self.state.iter}-{str(self.state.step)}')
+        ens=d['ensemble']
+        if ens=='npt':
+            plot_pfx=f'iter-{self.state.iter}-{str(self.state.step)}'
+            trace('Density',edr_list,outfile=os.path.join(pfs.proj(),f'plots/{plot_pfx}-density.png'))
         if self.state.step==cure_step.cure_equilibrate:
             # go to next iteration -- this whole method is skipped if nbonds==0 in relax
             self.state.step=cure_step.cure_bondsearch # if not self.search_failed else state.cap_bondsearch
