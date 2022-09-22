@@ -1,14 +1,23 @@
-''' Check for presence of required software '''
+"""
+
+.. module:: software
+   :synopsis: handles identification of available software needed by HTPolyNet
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import subprocess
 import logging
 import os
 from HTPolyNet.stringthings import my_logger
-from GPUtil import getGPUs
+# from GPUtil import getGPUs
 logger=logging.getLogger(__name__)
 
 class Software:
     ambertools=['antechamber','tleap','parmchk2']
     def __init__(self):
+        """__init__ generates a new Software object
+        """
         cnf=[]
         passes=True
         for c in Software.ambertools:
@@ -19,6 +28,11 @@ class Software:
         assert passes,f'Could not find {cnf}'
 
     def set_gmx_preferences(self,parameters):
+        """set_gmx_preferences set the necessary resolution of gromacs executables based on directives in the parameters parameter
+
+        :param parameters: dictionary read in from cfg file
+        :type parameters: dict
+        """
         gromacs_dict=parameters.get('gromacs',{})
         logger.debug(f'gromacs_dict {gromacs_dict}')
         if gromacs_dict:
@@ -44,6 +58,8 @@ class Software:
         return '\n'.join(r)
 
     def getVersions(self):
+        """getVersions attempts to determine versions of AmberTools
+        """
         self.versions={}
         CP=subprocess.run(['antechamber','-h'],capture_output=True,text=True)
         l=CP.stdout.split('\n')[1].split()[3].strip().strip(':')
@@ -54,6 +70,8 @@ class Software:
 
 _SW_:Software=None
 def sw_setup():
+    """sw_setup sets up the global Software object
+    """
     global _SW_
     _SW_=Software()
 
@@ -68,15 +86,15 @@ gmx_options='-quiet'
 mdrun=f'{gmx} mdrun'
 mdrun_single_molecule=f'{gmx} mdrun'
 def set_gmx_preferences(parmdict):
+    """set_gmx_preferences sets the global Gromacs preferences
+
+    :param parmdict: dictionary from cfg file
+    :type parmdict: dict
+    """
     global _SW_, gmx, gmx_options, mdrun, mdrun_single_molecule
     _SW_.set_gmx_preferences(parmdict)
     gmx=_SW_.gmx
     gmx_options=_SW_.gmx_options
     mdrun=_SW_.mdrun
-    # ngpu=parmdict.get('ngpu',-1)
-    # gpus=getGPUs()
-    # if len(gpus)>0 and ngpu!=-1:
-    #     _SW_.mdrun+=' -gpu_id '+','.join([f'{gpus[x]:d}' for x in range(len(gpus))])
-    #     mdrun=_SW_.mdrun
     mdrun_single_molecule=_SW_.mdrun_single_molecule
 

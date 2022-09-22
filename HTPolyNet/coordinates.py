@@ -523,9 +523,9 @@ class Coordinates:
         # logger.debug(f'Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.')
 
     def merge(self,other):
-        """merge Merge two Coordinates instances
+        """merge Merge two Coordinates objects
 
-        :param other: the other Coordinates instance
+        :param other: the other Coordinates object
         :type other: Coordinates
         :return: integer shifts in atom index, bond index, and residue index as a 3-tuple
         :rtype: tuple
@@ -788,7 +788,7 @@ class Coordinates:
         :param idx: global index of atom
         :type idx: int
         :return: its cartesian position
-        :rtype: np.ndarray(3,float)
+        :rtype: numpy.ndarray(3,float)
         """
         df=self.A
         return get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})

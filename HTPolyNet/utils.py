@@ -1,3 +1,11 @@
+"""
+
+.. module:: utils
+   :synopsis: various utility methods for plotting and postprocessing
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.gromacs import gmx_energy_trace
@@ -11,6 +19,17 @@ import logging
 logger=logging.getLogger(__name__)
 
 def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
+    """density_from_gro computes density from a Gromacs gro file
+
+    :param gro: name of gro file
+    :type gro: str
+    :param mollib: location of parameterized molecular templates, defaults to './lib/molecules/parameterized'
+    :type mollib: str, optional
+    :param units: string indicating unit system, defaults to 'SI'
+    :type units: str, optional
+    :return: density
+    :rtype: float
+    """
     C=Coordinates.read_gro(gro)
     resnames=list(set(C.A['resName']))
     templates={x:TopoCoord.from_top_gro(os.path.join(mollib,f'{x}.top'),os.path.join(mollib,f'{x}.gro')) for x in resnames}
@@ -37,6 +56,7 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
         fac=mfac/vfac
     return fac*mass/volume
 
+""" These globals are used in traversing a project directory to extract data from edr files """
 _system_dirs=['densification','precure',r'iter-{iter:d}','capping','postcure']
 _md_ensembles={'nvt':['Temperature','Potential'],'npt':['Temperature','Potential','Density'],'default':['Temperature','Potential']}
 _indir_pfx={}
@@ -46,6 +66,21 @@ _indir_pfx['iter-n']=[r'1-cure_drag-stage-{stage:d}-{ens:s}',r'3-cure_relax-stag
 _indir_pfx['capping']=[r'7-cap_relax-stage-{stage:d}-{ens:s}',r'8-cap_equilibrate-{ens:s}']
 _indir_pfx['postcure']=[r'preequilibration-{ens:s}',r'annealed',r'postequilibration-{ens:s}']
 def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
+    """_concat_from_edr concentates rows onto dataframe df by reading data from an edr file
+
+    :param df: a dataframe with data read in from edr files
+    :type df: pandas.DataFrame
+    :param edr: name of a new edr file to read from
+    :type edr: str
+    :param names: names of energy-like quantities to be read in; each must have a column in df already
+    :type names: list of strings
+    :param add: names and values to add to dataset, defaults to []
+    :type add: list, optional
+    :param add_if_missing: names and values to add if not found in edr file, defaults to [('Density',0.0)]
+    :type add_if_missing: list, optional
+    :return: a tuple of the dataframe and the scalar value of last time *before* this data increment is read in
+    :rtype: tuple
+    """
     xshift=0.0
     if not df.empty: xshift=df.iloc[-1]['time(ps)']
     if len(names)==0: return df,xshift
@@ -62,6 +97,13 @@ def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
     return df,xshift
 
 def density_evolution(proj_dir):
+    """density_evolution returns a single dataframe containing density, temperture, number of bonds vs time by reading all edrs in the correct order from a complete project directory
+
+    :param proj_dir: name of complete project directory
+    :type proj_dir: str
+    :return: the dataframe
+    :rtype: pandas.DataFrame
+    """
     if not os.path.exists(proj_dir): return
     sysd=os.path.join(proj_dir,'systems')
     df=pd.DataFrame()
@@ -168,6 +210,13 @@ def density_evolution(proj_dir):
     return df,transition_times,markers,interval_labels
 
 def graph_from_bondsfile(bondsfile):
+    """graph_from_bondsfile generates a networkx Graph in which each node is a molecule (from 'mi' and 'mj' records in the bondsfile) and edges indicate two molecules are joined by a covalent bond
+
+    :param bondsfile: name of bondsfile
+    :type bondsfile: str
+    :return: the graph
+    :rtype: networkx.Graph
+    """
     G=nx.Graph()
     df=pd.read_csv(bondsfile,header=0,index_col=None,sep='\s+')
     for i,r in df.iterrows():
@@ -175,6 +224,17 @@ def graph_from_bondsfile(bondsfile):
     return G
 
 def mwbxl(G:nx.Graph,crosslinker='GMA',monomer='STY'):
+    """mwbxl computes the histogram of monomer counts 'n' between crosslinking sites using a molecular connectivity graph; used mainly for vinyl-based polymerizations
+
+    :param G: molecular connectivity graph
+    :type G: nx.Graph
+    :param crosslinker: name of crosslinker molecule, defaults to 'GMA'
+    :type crosslinker: str, optional
+    :param monomer: name of monomer, defaults to 'STY'
+    :type monomer: str, optional
+    :return: a dataframe of 'n' and 'count'
+    :rtype: pd.DataFrame
+    """
     xG=G.copy()
     # traverse edges and label hetero/homo participants
     for n in xG.nodes():
@@ -235,6 +295,13 @@ def mwbxl(G:nx.Graph,crosslinker='GMA',monomer='STY'):
     return df
 
 def clusters(G:nx.Graph):
+    """clusters performs a clustering analysis and returns a histgram of cluster sizes (in numbers of molecules) as a pandas DataFrame
+
+    :param G: molecular connectivity graph
+    :type G: nx.Graph
+    :return: cluster size histogram
+    :rtype: pd.DataFrame
+    """
     counts={}
     for c in sorted(nx.connected_components(G),key=len,reverse=True):
         size=len(c)

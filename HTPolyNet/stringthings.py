@@ -1,3 +1,11 @@
+"""
+
+.. module:: stringthings
+   :synopsis: defines a specially-formatted logging method (silly)
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import pandas as pd
 _ANGSTROM_='Ångström'
 

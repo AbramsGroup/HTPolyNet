@@ -1,3 +1,11 @@
+"""
+
+.. module:: reaction
+   :synopsis: handles Reaction objects
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 from copy import deepcopy
 from enum import Enum
@@ -28,6 +36,11 @@ class Reaction:
         'probability':1.0
     }
     def __init__(self,jsondict={}):
+        """__init__ generates a Reaction object using directives in jsondict
+
+        :param jsondict: directives for creating a new Reaction object, defaults to {}
+        :type jsondict: dict, optional
+        """
         self.jsondict=jsondict
         self.name=jsondict.get('name',self.default_directives['name'])
         self.atoms=jsondict.get('atoms',self.default_directives['atoms'])
@@ -40,7 +53,6 @@ class Reaction:
         for label in jsondict:
             if not label in self.default_directives:
                 logging.debug(f'Ignoring unknown reaction directive "{label}"')
-
         self.symmetry_versions=[]
     
     def __str__(self):
@@ -57,9 +69,13 @@ class Reaction:
 ReactionList = list[Reaction]
 
 def parse_reaction_list(baselist:ReactionList):
-    ''' baselist is read directly in from cfg, just a list of unprocessed dicts
-        generates any new reactions that are inferred by procession (polymerization)
-    '''
+    """parse_reaction_list generates any new reactions inferred by procession (i.e., linear polymerization)
+
+    :param baselist: list of unprocessed reaction dicts read directly from configuration file
+    :type baselist: ReactionList
+    :return: entire set of all reactions, including new ones added here
+    :rtype: ReactionList
+    """
     processives=[]
     for i,R in enumerate(baselist):
         if R.procession:
@@ -90,6 +106,15 @@ def parse_reaction_list(baselist:ReactionList):
     return ret_reactions
 
 def extract_molecule_reactions(rlist:ReactionList,plot=True):
+    """extract_molecule_reactions establishes the correct order of reactions so that molecular templates are created in a sensible order (reactants before products for all reactions)
+
+    :param rlist: list of all reactions
+    :type rlist: ReactionList
+    :param plot: flag to plot the reaction network, defaults to True
+    :type plot: bool, optional
+    :return: ordered list of tuples, reach of the from (name-of-product-molecule,Reaction)
+    :rtype: list of tuples
+    """
     working_rlist=rlist.copy()
     G=nx.DiGraph()
     # Given an unsorted list of reactions (list of reactants +  one product), order a list of 
@@ -104,7 +129,7 @@ def extract_molecule_reactions(rlist:ReactionList,plot=True):
             reactants.add(r)
             G.add_edge(r,R.product)
         products.add(R.product)
-    if plot: network_graph(G,'plots/reaction_network.png',arrows=True)
+    if plot: network_graph(G,'plots/reaction_network.png',arrows=True,with_labels=True)
     input_reactants=reactants.intersection(reactants.symmetric_difference(products))
     logger.debug(f'Input reactants: {input_reactants}')
     for i in input_reactants:
@@ -128,6 +153,15 @@ def extract_molecule_reactions(rlist:ReactionList,plot=True):
     return molecule_react_order
 
 def get_r(mname,RL:ReactionList):
+    """get_r returns the Reaction that generates molecule mname as a product, if it exists, otherwise None
+
+    :param mname: name of molecule to search 
+    :type mname: str
+    :param RL: list of all Reactions
+    :type RL: ReactionList
+    :return: Reaction that generates mname, or None
+    :rtype: Reaction or NoneType
+    """
     if not RL: return None
     i=0
     while RL[i].product!=mname: 
@@ -137,6 +171,17 @@ def get_r(mname,RL:ReactionList):
     return RL[i]
 
 def is_reactant(name:str,reaction_list:ReactionList,stage=reaction_stage.cure):
+    """is_reactant tests to see if molecule 'name' appears as a reactant in any reaction in reaction_list
+
+    :param name: name of molecule
+    :type name: str
+    :param reaction_list: list of all Reactions
+    :type reaction_list: ReactionList
+    :param stage: stage or reactions to search, defaults to reaction_stage.cure
+    :type stage: reaction_stage(Enum), optional
+    :return: True if molecule is a reactant, False otherwise
+    :rtype: bool
+    """
     reactants=[]
     for r in reaction_list:
         if r.stage==stage:
@@ -146,6 +191,15 @@ def is_reactant(name:str,reaction_list:ReactionList,stage=reaction_stage.cure):
     return name in reactants
     
 def product_sequence_resnames(R:Reaction,reactions:ReactionList):
+    """product_sequence_resnames recursively generate sequence of product of R by traversing network of reactions; sequence is by definition an ordered list of monomer names
+
+    :param R: a Reaction
+    :type R: Reaction
+    :param reactions: list of all Reactions
+    :type reactions: ReactionList
+    :return: the sequence of R's product molecule as a list of monomer names
+    :rtype: list
+    """
     result=[]
     allProducts=[x.product for x in reactions]
     for rKey,rName in R.reactants.items():
@@ -156,6 +210,15 @@ def product_sequence_resnames(R:Reaction,reactions:ReactionList):
     return result
 
 def molname_sequence_resnames(molname:str,reactions:ReactionList):
+    """molname_sequence_resnames determine monomer sequence of the molecule with name molname based on a traversal of the reaction network
+
+    :param molname: name of molecule
+    :type molname: str
+    :param reactions: list of all Reactions
+    :type reactions: ReactionList
+    :return: monomer sequence of molecule as a list of monomer names
+    :rtype: list
+    """
     prodnames=[x.product for x in reactions]
     if molname in prodnames:
         R=reactions[prodnames.index(molname)]
@@ -164,6 +227,19 @@ def molname_sequence_resnames(molname:str,reactions:ReactionList):
         return [molname]  # not a product in the reaction list?  must be a monomer
 
 def reactant_resid_to_presid(R:Reaction,reactantName:str,resid:int,reactions:ReactionList):
+    """reactant_resid_to_presid map the resid of a reactant monomer to its inferred resid in the associate product in reaction R, by traversing the reaction network
+
+    :param R: a Reaction
+    :type R: Reaction
+    :param reactantName: the name of one of the reactants in R
+    :type reactantName: str
+    :param resid: the resid in that reactant we want mapped to the product
+    :type resid: int
+    :param reactions: list of all Reactions
+    :type reactions: ReactionList
+    :return: resid of this residue in the product of R
+    :rtype: int
+    """
     reactants=[x for x in R.reactants.values()]
     if reactantName in reactants:
         ridx=reactants.index(reactantName)
@@ -178,6 +254,13 @@ def reactant_resid_to_presid(R:Reaction,reactantName:str,resid:int,reactions:Rea
         return -1
 
 def generate_product_name(R:Reaction):
+    """generate_product_name automatically generate the name of the product based on the names of the reactants and the bonds in R
+
+    :param R: a Reaction
+    :type R: Reaction
+    :return: suggested name of product
+    :rtype: str
+    """
     pname=''
     for b in R.bonds:
         i,j=b['atoms']
@@ -196,23 +279,4 @@ def generate_product_name(R:Reaction):
             else:
                 pname+='---'+tbNm
     return pname
-
-# def get_atom_options(R:Reaction,symmetry_relateds:dict): #,reactions:ReactionList):
-#     # prod_seq_resn=product_sequence_resnames(R,reactions)
-#     atom_options=[]
-#     for atomKey,atomRec in R.atoms.items():
-#         reactantKey=atomRec['reactant']
-#         reactantName=R.reactants[reactantKey]
-#         resid=atomRec['resid']
-#         # resName=prod_seq_resn[resid-1]
-#         atomName=atomRec['atom']
-#         # logger.debug(f'resName {resName} atomName {atomName}')
-#         symm_sets=symmetry_relateds.get(reactantName,[])
-#         # logger.debug(f'symm_set {symm_sets}')
-#         if symm_sets:
-#             for symm_set in symm_sets:
-#                 # logger.debug(f'symm_set {symm_set}')
-#                 if atomName in symm_set:
-#                     atom_options.append([[atomKey,c] for c in symm_set])
-#     return atom_options
 

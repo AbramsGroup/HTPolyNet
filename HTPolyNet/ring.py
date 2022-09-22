@@ -1,3 +1,11 @@
+"""
+
+.. module:: ring
+   :synopsis: handles ring-piercing determinations
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 # Pierced rings
 # Cameron F. Abrams cfa22@drexel.edu
 #
@@ -13,7 +21,7 @@
 #    for i in range(0,len(X),6):
 #        Rings.append(Ring(np.array([X[i+j] for j in range(6)]))
 #
-#    This can be done once per SCUR iteration as long as R is
+#    This can be done once per CURE iteration as long as R is
 #    in scope.
 #
 # 2. Now, suppose B is a 2x3 numpy array containing coordinates
@@ -35,18 +43,41 @@
 import numpy as np
 
 def lawofcos(a,b):
+    """lawofcos return the cosine of the angle defined by vectors a and b if they share a vertex (the LAW OF COSINES)
+
+    :param a: a vector
+    :type a: numpy.ndarray(3,float)
+    :param b: another vector
+    :type b: numpy.ndarray(3,float)
+    :return: cosine of the angle formed by a and b
+    :rtype: float
+    """
     return np.dot(a,b)/np.sqrt(np.dot(a,a)*np.dot(b,b))
 
 class Segment:
+    """ a segment object owns a list of Points P with two elements representing segment endpoints, and a vector that points from the first point to the second, V
+    """
     def __init__(self,P):
+        """__init__ generates a new Segment object from the points in container P
+
+        :param P: listlike container of two points, each of which is a 3-dimensional numpy array
+        :type P: list
+        """
         self.P=P.copy()
         # will need to recompute this when molecules are shifted
         self.V=self.P[1]-self.P[0] # p1=p0+t*(p1-p0)
 
 class Ring:
     def __init__(self,P):
+        """__init__ generates a Ring object from the list of N points P
+
+        :param P: listlike container of N points defining an N-membered ring
+        :type P: list
+        """
         self.V=P.copy() # Nx3 np array P[i] is point-i (x,y,z)
     def analyze(self):
+        """analyze computes some geometric features of a Ring object
+        """
         # geometric center
         self.O=np.zeros(shape=(3))
         for i in self.V:
@@ -80,7 +111,8 @@ class Ring:
     def __str__(self):
         return str(self.V)
     def self_planarize(self):
-        # projects points in P into plane -> vP
+        """self_planarize projects points in P into plane -> vP
+        """
         self.vP=[]
         for v in self.V:
             r=v-self.O
@@ -88,8 +120,15 @@ class Ring:
             newv=p+self.O
             self.vP.append(newv)
     def segint(self,S):
-        # determines if segment S pierces ring; uses ray projection method
-        # and fact that scaled length must be between 0 and 1 for a plane intersection
+        """segint determines if segment S pierces ring; uses ray projection method
+        and fact that scaled length must be between 0 and 1 for a plane intersection
+
+        :param S: a Segment object
+        :type S: Segment
+        :return: True if S pierces self's ring, along with the intersection point
+        :rtype: tuple (boolean, Point)
+        """
+        # 
         t=-(np.dot(S.P[0],self.n)+self.d)/(np.dot(S.V,self.n))
         if 0<t<1:
             # compute point in ring plane that marks intersection with this vector

@@ -1,3 +1,11 @@
+"""
+
+.. module:: runtime
+   :synopsis: handles the HTPolyNet runtime workflow
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 import os
 import shutil
@@ -42,7 +50,7 @@ def _nonempty_directives(dirlist):
     :param dirlist: list of dictionaries
     :type dirlist: lsit
     :return: True if one of the strings in _directives is present in one of the dictionaries
-    :rtype: Boolean
+    :rtype: bool
     """
     amts=[]
     for d in dirlist:
@@ -120,6 +128,14 @@ class Runtime:
     }
 
     def __init__(self,cfgfile='',restart=False):
+        """__init__ generates a new Runtime object based on the cfg file
+
+        :param cfgfile: name of YAML cfg file
+        :type cfgfile: str, optional
+        :param restart: flag indicating if this is a restart
+        :type restart: bool
+
+        """
         my_logger(software.to_string(),logger.info)
         self.cfgfile=cfgfile
         if cfgfile=='':

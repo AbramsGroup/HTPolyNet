@@ -1,7 +1,7 @@
 """
 
 .. module:: unused_symmetry_stuff
-   :synopsis: tools for automated detection of molecular symmetry; as the name implies, HTPolyNet does not use these routines currently.  In pre-release versions, we attempted to use these routines along with very high-T MD simulations of flexible molecules to identify symmetry-equivalent atoms using a distance-matrix approach.  Now since we force the user to explicitly declare symmetry-sets, these routines are defunct.  They didn't work reliably anyway, but they're kept here to stimulate future efforts to make this feature work.
+   :synopsis: tools for automated detection of molecular symmetry; as the name implies, HTPolyNet does not use these routines currently.  In pre-release versions, we attempted to use these routines along with very high-T MD simulations of flexible molecules to identify symmetry-equivalent atoms using a distance-matrix approach.  Now since we force the user to explicitly declare symmetry-sets, these routines are defunct.  They didn't work reliably anyway, but they're kept here to stimulate future efforts to make this feature work.  I've also included a couple of methods used for enumeration of angles and dihedrals that have not proven necessary.
    
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
@@ -137,3 +137,155 @@ def analyze_sea(deffnm,thresh=0.1):
         # send the distance matrix to be processed, return
         # the atom-ordered list of sea-cluster-idx's
         return symm(d,thresh=thresh,outfile=f'{deffnm}-symmanalysis.dat')
+
+# defunct old funtions from topology module that I can't just quit
+from HTPolyNet.topology import typeorder,repeat_check,idxorder,_GromacsTopologyDirectiveHeaders_
+import pandas as pd
+def add_enumerated_angles(self,newbonds,ignores=[],quiet=True):       
+    at=self.D['atoms']
+    ijk=self.D['angletypes'].set_index(['i','j','k']).sort_index()
+    newangles=[]
+    for b in newbonds:
+        ''' new angles due to other neighbors of b[0] '''
+        for ai in [i for i in self.bondlist.partners_of(b[0]) if (i!=b[1] and not i in ignores)]:
+            aj=b[0]
+            ak=b[1]
+            it=at.iloc[ai-1].type
+            jt=at.iloc[aj-1].type
+            kt=at.iloc[ak-1].type
+            idx=typeorder((it,jt,kt))
+            i,j,k=idxorder((ai,aj,ak))
+            repeat_check((i,j,k))
+            if idx in ijk.index:
+                angletype=ijk.loc[idx,'func']  # why no .values[0]
+            else:
+                if not quiet:
+                    logger.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
+                angletype=1
+            h=_GromacsTopologyDirectiveHeaders_['angles']
+            data=[i,j,k,angletype,pd.NA,pd.NA]
+            assert len(h)==len(data), 'Error: not enough data for new angle?'
+            angledict={k:[v] for k,v in zip(h,data)}
+            self.D['angles']=pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
+            newangles.append([i,j,k])
+        ''' new angles due to other neighbors of b[1] '''
+        for ak in [k for k in self.bondlist.partners_of(b[1]) if (k!=b[0] and not k in ignores)]:
+            ai=b[0]
+            aj=b[1]
+            it=at.iloc[ai-1].type
+            jt=at.iloc[aj-1].type
+            kt=at.iloc[ak-1].type
+            idx=typeorder((it,jt,kt))
+            i,j,k=idxorder((ai,aj,ak))
+            repeat_check((i,j,k))
+            if idx in ijk.index:
+                angletype=ijk.loc[idx,'func'] # why no .values[0]
+            else:
+                if not quiet:
+                    logger.warning(f'Angle type {idx} ({ai}-{aj}-{ak}) not found.')
+                angletype=1
+            h=_GromacsTopologyDirectiveHeaders_['angles']
+            data=[i,j,k,angletype,pd.NA,pd.NA]
+            assert len(h)==len(data), 'Error: not enough data for new angle?'
+            angledict={k:[v] for k,v in zip(h,data)}
+            self.D['angles']=pd.concat((self.D['angles'],pd.DataFrame(angledict)),ignore_index=True)
+            newangles.append([i,j,k])
+    return newangles
+    
+def add_enumerated_dihedrals(self,newbonds,ignores=[],quiet=True):
+    newdihedrals=[]
+    newpairs=[]
+    at=self.D['atoms']
+    ijkl=self.D['dihedraltypes'].set_index(['i','j','k','l']).sort_index()
+
+    ''' new proper dihedrals for which the new bond is the central j-k bond '''
+    for b in newbonds:
+        aj,ak=idxorder(b)
+        for ai in [i for i in self.bondlist.partners_of(aj) if (i!=ak and not i in ignores)]:
+            for al in [l for l in self.bondlist.partners_of(ak) if (l!=aj and not l in ignores)]:
+                it=at.iloc[ai-1].type
+                jt=at.iloc[aj-1].type
+                kt=at.iloc[ak-1].type
+                lt=at.iloc[al-1].type
+                idx=typeorder((it,jt,kt,lt))
+                i,j,k,l=idxorder((ai,aj,ak,al))
+                repeat_check((i,j,k,l),msg=f'central {j}-{k}')
+                if idx in ijkl.index:
+                    dihedtype=ijkl.loc[idx,'func'].values[0] # why values[0]
+                else:
+                    if not quiet:
+                        logger.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
+                    dihedtype=9
+                h=_GromacsTopologyDirectiveHeaders_['dihedrals']
+                data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
+                assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
+                diheddict={k:[v] for k,v in zip(h,data)}
+                self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                newdihedrals.append([i,j,k,l])
+                ''' i-l is a new 1-4 pair '''
+                h=_GromacsTopologyDirectiveHeaders_['pairs']
+                data=[i,l,1]
+                pairdict={k:[v] for k,v in zip(h,data)}
+                self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
+                newpairs.append((i,l))
+        ''' new proper dihedrals for which the new bond is the i-j or j-i bond '''
+        for ai,aj in zip(b,reversed(b)):
+            for ak in [k for k in self.bondlist.partners_of(aj) if (k!=ai and not k in ignores)]:
+                for al in [l for l in self.bondlist.partners_of(ak) if (l!=aj and not l in ignores)]:
+                    it=at.iloc[ai-1].type
+                    jt=at.iloc[aj-1].type
+                    kt=at.iloc[ak-1].type
+                    lt=at.iloc[al-1].type
+                    idx=typeorder((it,jt,kt,lt))
+                    i,j,k,l=idxorder((ai,aj,ak,al))
+                    repeat_check((i,j,k,l),msg=f'i-j neighbor of j-k {j}-{k}')
+                    if idx in ijkl.index:
+                        dihedtype=ijkl.loc[idx,'func'].values[0]
+                        # dihedtype=ijkl.loc[idx,'func']
+                    else:
+                        if not quiet:
+                            logger.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
+                        dihedtype=9
+                    h=_GromacsTopologyDirectiveHeaders_['dihedrals']
+                    data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
+                    assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
+                    diheddict={k:[v] for k,v in zip(h,data)}
+                    self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                    newdihedrals.append([i,j,k,l])
+                    ''' i-l is a new 1-4 pair '''
+                    h=_GromacsTopologyDirectiveHeaders_['pairs']
+                    data=[i,l,1]
+                    pairdict={k:[v] for k,v in zip(h,data)}
+                    self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
+                    newpairs.append((i,l))
+
+        ''' new proper dihedrals for which the new bond is the k-l or l-k bond '''
+        for ak,al in zip(b,reversed(b)):
+            for aj in [j for j in self.bondlist.partners_of(ak) if (j!=al and not j in ignores)]:
+                for ai in [i for i in self.bondlist.partners_of(aj) if (i!=ak and not i in ignores)]:
+                    it=at.iloc[ai-1].type
+                    jt=at.iloc[aj-1].type
+                    kt=at.iloc[ak-1].type
+                    lt=at.iloc[al-1].type
+                    idx=typeorder((it,jt,kt,lt))
+                    i,j,k,l=idxorder((ai,aj,ak,al))
+                    repeat_check((i,j,k,l),msg=f'k-l neighbor of j-k {j}-{k}')
+                    if idx in ijkl.index:
+                        dihedtype=ijkl.loc[idx,'func'].values[0]
+                    else:
+                        if not quiet:
+                            logger.warning(f'Dihedral type {idx} {ai}-{aj}-{ak}-{al} not found.')
+                        dihedtype=9
+                    h=_GromacsTopologyDirectiveHeaders_['dihedrals']
+                    data=[i,j,k,l,dihedtype,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA,pd.NA]
+                    assert len(h)==len(data), 'Error: not enough data for new  dihedral?'
+                    diheddict={k:[v] for k,v in zip(h,data)}
+                    self.D['dihedrals']=pd.concat((self.D['dihedrals'],pd.DataFrame(diheddict)),ignore_index=True)
+                    newdihedrals.append([i,j,k,l])
+                    h=_GromacsTopologyDirectiveHeaders_['pairs']
+                    ''' i-l is a new 1-4 pair '''
+                    data=[i,l,1]
+                    pairdict={k:[v] for k,v in zip(h,data)}
+                    self.D['pairs']=pd.concat((self.D['pairs'],pd.DataFrame(pairdict)),ignore_index=True)
+                    newpairs.append((i,l))
+    return newdihedrals,newpairs

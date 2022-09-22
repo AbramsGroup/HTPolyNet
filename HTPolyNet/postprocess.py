@@ -1,3 +1,11 @@
+"""
+
+.. module:: postprocess
+   :synopsis: handles the postprocess subcommand
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import logging
 import shutil
 import numpy as np
@@ -11,6 +19,8 @@ from HTPolyNet.plot import scatter
 logger=logging.getLogger(__name__)
 
 class tladder:
+    """ a class to handle a temperature-ladder MD simulation
+    """
     def __init__(self,initstr):
         try:
             tok=initstr.split(',')
@@ -29,6 +39,13 @@ class tladder:
         return restr
 
     def t_ladder(self,TC:TopoCoord,mdp_pfx='npt',**gromacs_dict):
+        """t_ladder handles exectuting the temperature-ladder on the passed-in system
+
+        :param TC: system (topology and coordinates)
+        :type TC: TopoCoord
+        :param mdp_pfx: filename prefix for output files, defaults to 'npt'
+        :type mdp_pfx: str, optional
+        """
         timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
         Tladder=np.linspace(self.T[0],self.T[1],self.N)
         timepoints=[0.0,self.warmup_ps]
@@ -60,6 +77,11 @@ class tladder:
         logger.info(f'Final coordinates in {deffnm}.gro')
 
 def postprocess(args):
+    """postprocess handles the postprocess subcommand; currently only does T-ladder simulations
+
+    :param args: command-line arguments
+    :type args: argparse.Namespace
+    """
     loglevel_numeric=getattr(logging, args.loglevel.upper())
     logging.basicConfig(format='%(levelname)s> %(message)s',level=loglevel_numeric)
     ess='y' if len(args.proj)==0 else 'ies'

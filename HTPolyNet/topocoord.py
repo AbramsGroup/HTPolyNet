@@ -1,30 +1,24 @@
 """
 
 .. module:: topocoords
-   :synopsis: Class for jointly handling Topology and Coordinate instances
+   :synopsis: Class for jointly handling Topology and Coordinate objects
 
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
 """
-
-#
-#  class for methods that need to work with both Topology and Coordinates
 from itertools import product
 import pandas as pd
-from HTPolyNet.coordinates import Coordinates, GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
-from HTPolyNet.topology import Topology
-from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
-# from HTPolyNet.reaction import reaction_stage
-from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
-# from HTPolyNet.molecule import MoleculeDict,ReactionList
-# from HTPolyNet.plot import trace
-import HTPolyNet.projectfilesystem as pfs
 import logging
 import numpy as np
 from enum import Enum
 import os
 import shutil
 from copy import deepcopy
+from HTPolyNet.coordinates import Coordinates, GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
+from HTPolyNet.topology import Topology
+from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
+from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
+import HTPolyNet.projectfilesystem as pfs
 
 logger=logging.getLogger(__name__)
 
@@ -385,6 +379,13 @@ class TopoCoord:
         self.adjust_charges(atoms=mapped_inst_atoms,overcharge_threshhold=overcharge_threshhold,msg=f'overcharge magnitude exceeds {overcharge_threshhold}')
 
     def enumerate_1_4_pairs(self,at_idx):
+        """enumerate_1_4_pairs enumerate all 1-4 pair interactions resulting from new bonds in at_idx
+
+        :param at_idx: list of 2-tuples, each containing global indices of atoms that bond to each other
+        :type at_idx: list
+        :return: dataframe of all pairs
+        :rtype: pandas.DataFrame
+        """
         pdf=self.Topology.D['pairs']
         # each of these bonds results in 1-4 pair interactions
         bl=self.Topology.bondlist
@@ -489,7 +490,7 @@ class TopoCoord:
             return ri_bdf,pi_df
 
     def read_top(self,topfilename):
-        """Creates a new Topology member by reading from a Gromacs-style top file.
+        """read_top Creates a new Topology member by reading from a Gromacs-style top file.
             Just a wrapper for the read_gro method of Topology
 
         :param topfilename: name of topology file
@@ -499,7 +500,7 @@ class TopoCoord:
         self.Topology=Topology.read_gro(topfilename)
 
     def read_gro(self,grofilename,preserve_box=False,wrap_coords=False):
-        """Creates a new Coordinates member by reading from a Gromacs-style coordinates
+        """read_gro Creates a new Coordinates member by reading from a Gromacs-style coordinates
             file.  Just a wrapper for the read_gro method of Coordinates
 
         :param grofilename: name of gro file
@@ -514,7 +515,7 @@ class TopoCoord:
         # logger.debug(f'box: {self.Coordinates.box}')
 
     def read_mol2(self,mol2filename,**kwargs):
-        """Creates a new Coordinates member by reading from a SYBYL-style MOL2 file.
+        """read_mol2 Creates a new Coordinates member by reading from a SYBYL-style MOL2 file.
             A wrapper for read_mol2 from Coordinates, but also sets the 'mol2_bonds'
             dataframe in the Topology if the parameter ignore_bonds is False.  If
             the mol2_bonds dataframe is created, and the Topology already has a 'bonds' dataframe, a consistency check is peformed.
@@ -537,7 +538,7 @@ class TopoCoord:
                 self.Topology.bond_source_check()
 
     def swap_atom_names(self,ai,aj):
-        """Swaps the names of the two atoms with global indicies ai and aj.  This is used when
+        """swap_atom_names Swaps the names of the two atoms with global indicies ai and aj.  This is used when
         automatically selected which of several possible sacrificial H's will actually be
         selected.  Surviving H's are renamed so it always appears that the H with "least
         important" name (lowest order if sorted) is the sacrificial H.  Why do we do this?  It
@@ -562,7 +563,7 @@ class TopoCoord:
         C.iloc[aj-1,l2]=tmpNm
 
     def read_top_gro(self,topfilename,grofilename):
-        """Wrapper for read_top and read_gro; generates new Topology and Coordinates members
+        """read_top_gro Wrapper for read_top and read_gro; generates new Topology and Coordinates members
 
         :param topfilename: name of topology file
         :type topfilename: str
@@ -573,7 +574,7 @@ class TopoCoord:
         self.read_gro(grofilename)
 
     def write_top(self,topfilename):
-        """Write a Gromacs-format topology file; this will only write an in-line version,
+        """write_top Write a Gromacs-format topology file; this will only write an in-line version,
             no itp; wrapper for Topology.to_file()
 
         :param topfilename: name of file to write
@@ -583,7 +584,7 @@ class TopoCoord:
         self.files['top']=os.path.abspath(topfilename)
 
     def write_gro(self,grofilename,grotitle=''):
-        """Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()
+        """write_gro Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()
 
         :param grofilename: name of file to write
         :type grofilename: str
@@ -592,7 +593,7 @@ class TopoCoord:
         self.files['gro']=os.path.abspath(grofilename)
 
     def write_top_gro(self,topfilename,grofilename):
-        """Writes both a Gromacs top file and Gromacs coordinate file
+        """write_top_gro Writes both a Gromacs top file and Gromacs coordinate file
 
         :param topfilename: name of topology file to write
         :type topfilename: str
@@ -603,7 +604,7 @@ class TopoCoord:
         self.write_gro(grofilename)
 
     def return_bond_lengths(self,bdf):
-        """Return the length of all bonds in list bonds
+        """return_bond_lengths Return the length of all bonds in list bonds
 
         :param bdf: bonds dataframe, 'ai','aj','reactantName'
         :type bonds: pandas.DataFrame
@@ -613,17 +614,14 @@ class TopoCoord:
         return self.Coordinates.return_bond_lengths(bdf)
 
     def add_length_attribute(self,bdf:pd.DataFrame,attr_name='length'):
+        """add_length_attribute computes bond lengths based on bonds indicated by the parallel 'ai' and 'aj' columns of the parameter dataframe bdf and stores result in a new column called attr_name
+
+        :param bdf: a pandas dataframe with 'ai' and 'aj' columns of atom indices indicating bonds
+        :type bdf: pd.DataFrame
+        :param attr_name: name of length attribute column, defaults to 'length'
+        :type attr_name: str, optional
+        """
         self.Coordinates.add_length_attribute(bdf,attr_name=attr_name)
-
-    # def return_pair_lengths(self):
-    #     """Return the length of all 1-4 pairs in topology
-
-    #     :param bdf: bonds dataframe, 'ai','aj','reactantName'
-    #     :type bonds: pandas.DataFrame
-    #     :return: list of lengths parallel to bonds
-    #     :rtype: list of floats
-    #     """
-    #     return self.Coordinates.return_pair_lengths(self.Topology.D['pairs'])
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds
@@ -637,6 +635,14 @@ class TopoCoord:
         return self.Topology.copy_bond_parameters(bonds)
 
     def remove_restraints(self,pairsdf):
+        """Remove all bonds represented in in pairdf.
+        These are interpreted as non-topological
+        restraints, so deleting these 'bonds' does 
+        not influence angles or dihedrals
+
+        :param pairdf: dataframe of pairs ['ai','aj']
+        :type pairdf: pandas DataFrame
+        """
         self.Topology.remove_restraints(pairsdf)
 
     def attenuate_bond_parameters(self,bonds,i,n,minimum_distance=0.0,init_colname='initial_distance'):
@@ -693,6 +699,11 @@ class TopoCoord:
         self.Topology.restore_bond_parameters(saved)
 
     def set_grx_attributes(self,attributes=[]):
+        """set_grx_attributes override the global GRX_ATTRIBUTES
+
+        :param attributes: new GRX attributes to use, defaults to []
+        :type attributes: list, optional
+        """
         if len(attributes)==0:
             self.grxattr=GRX_ATTRIBUTES
         else:
@@ -700,7 +711,7 @@ class TopoCoord:
         logger.debug(f'grxattr set to {self.grxattr}')
     
     def write_gro_attributes(self,attributes_list,grxfilename):
-        """Writes atomic attributes to a file
+        """write_gro_attributes Writes atomic attributes to a file
 
         :param attributes_list: list of attributes to write
         :type attributes_list: list
@@ -711,6 +722,11 @@ class TopoCoord:
         self.files['grx']=os.path.abspath(grxfilename)
 
     def write_grx_attributes(self,grxfilename):
+        """write_grx_attributes Writes GRX attributes to a file
+
+        :param grxfilename: name of output file
+        :type grxfilename: str
+        """        
         self.write_gro_attributes(self.grxattr,grxfilename)
 
     def read_gro_attributes(self,grxfilename,attribute_list=[]):
@@ -732,42 +748,119 @@ class TopoCoord:
             self.grxattr=attributes_read
 
     def set_gro_attribute(self,attribute,srs):
+        """set_gro_attribute sets attribute of atoms to srs (drillst through to Coordinates.set_atomset_attributes())
+
+        :param attribute: name of attribute
+        :type attribute: str
+        :param srs: scalar or list-like attribute values in same ordering as self.A
+        :type srs: scalar or list-like
+        """
         self.Coordinates.set_atomset_attribute(attribute,srs)
 
     def set_gro_attribute_by_attributes(self,att_name,att_value,attribute_dict):
+        """set_atom_attribute set the attributes named in name to values named in values (names||values) for the set of atoms specified in the attributes dict
+
+        :param name: list of names of attributes
+        :type name: list
+        :param value: list of values of attributes to be set
+        :type value: list
+        :param attributes: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attributes: dict
+        """
         self.Coordinates.set_atom_attribute(att_name,att_value,attribute_dict)
 
     def get_gro_attribute_by_attributes(self,att_name,attribute_dict):
+        """get_gro_attribute_by_attributes return values of attributes listed in name from atoms specified by attribute:value pairs in attribute_dict
+
+        :param att_name: list of attributes whose values are to be returned
+        :type att_name: list
+        :param attribute_dict: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attribute_dict: dict
+        :return: scalar or list of one or more return attribute values
+        :rtype: list if name is a list; scalar otherwise
+        """
         return self.Coordinates.get_atom_attribute(att_name,attribute_dict)
 
     def increment_gro_attribute_by_attributes(self,att_name,attribute_dict):
+        """increment_gro_attribute_by_attributes add one to attribute att_name of all atoms identified by attribute:value pairs in attribute_dict
+
+        :param att_name: name of attribute to increment
+        :type att_name: str
+        :param attribute_dict: attribute:value pairs that specify atoms to which to apply this incrementation
+        :type attribute_dict: dict
+        """
         val=self.get_gro_attribute_by_attributes(att_name,attribute_dict)
-        # logger.debug(f'increment {att_name} {attribute_dict} {val}')
         val+=1
         self.set_gro_attribute_by_attributes(att_name,val,attribute_dict)
 
     def decrement_gro_attribute_by_attributes(self,att_name,attribute_dict):
+        """decrement_gro_attribute_by_attributes subtract one from attribute att_name of all atoms identified by attribute:value pairs in attribute_dict
+
+        :param att_name: name of attribute to increment
+        :type att_name: str
+        :param attribute_dict: attribute:value pairs that specify atoms to which to apply this incrementation
+        :type attribute_dict: dict
+        """
         val=self.get_gro_attribute_by_attributes(att_name,attribute_dict)
-        # logger.debug(f'decrement {att_name} {attribute_dict} {val}')
         val-=1
         self.set_gro_attribute_by_attributes(att_name,val,attribute_dict)
 
     def get_gro_attributelist_by_attributes(self,attribute_list,attribute_dict):
+        """get_atoms_w_attribute returns all rows of atoms dataframe and columns named in names of atoms identified by the attributes dict
+
+        :param attribute_list: list of attributes to be in the rows that are returned
+        :type sttribute_list: list
+        :param attribute_dict: dictionary of attribute:value pairs that specify the set of atoms to be considered
+        :type attribute_dict: dict
+        :return: a dataframe segment
+        :rtype: pd.DataFrame
+        """
         return self.Coordinates.get_atoms_w_attribute(attribute_list,attribute_dict)
 
     def get_R(self,idx):
+        """get_R return the cartesian position of atom with global index idx
+
+        :param idx: atom global index
+        :type idx: int
+        :return: position of atom
+        :rtype: numpy.ndarray(3,float)
+        """
         return self.Coordinates.get_R(idx)
 
     def rotate(self,R):
+        """rotate applies rotation matrix R to all atom positions
+
+        :param R: rotation matrix
+        :type R: numpy.ndarray((3,3),float)
+        """
         self.Coordinates.rotate(R)
 
     def translate(self,L):
+        """translate applies translation vector L to all atom positions
+
+        :param L: translation vector
+        :type L: numpy.ndarray(3,float)
+        """
         self.Coordinates.translate(L)
 
     def partners_of(self,i):
+        """partners_of return list of atom indices of bonded partners of atom i
+
+        :param i: global index of atom
+        :type i: int
+        :return: list of partner global indices
+        :rtype: list
+        """
         return self.Topology.bondlist.partners_of(i)
 
     def resid_partners_of(self,ri):
+        """resid_partners_of return list of resid partners of resid ri
+
+        :param ri: residue index
+        :type ri: int
+        :return: list of partner residue indices (two residues are partners if there is at least one interatomic bond joining them)
+        :rtype: list
+        """
         result=[]
         adf=self.Coordinates.A
         radf=adf[adf['resNum']==ri]
@@ -780,6 +873,13 @@ class TopoCoord:
         return result
 
     def interresidue_partners_of(self,i):
+        """interresidue_partners_of return list of atom indices that are bonded partners of atom i and are not in the residue of atom i
+
+        :param i: atom global index
+        :type i: int
+        :return: list of atom indices of atoms that are partners of i not in i's residue
+        :rtype: list
+        """
         result=[]
         bl=self.Topology.bondlist.partners_of(i)
         # logger.debug(f'{i} partners {bl}')
@@ -791,30 +891,59 @@ class TopoCoord:
         return result
 
     def minimum_distance(self,other,self_excludes=[],other_excludes=[]):
+        """minimum_distance computes the distance of closest approach between self's Coordinates that other's Coordinates
+
+        :param other: another TopoCoord object
+        :type other: TopoCoord
+        :param self_excludes: list of global atom indices to ignore in self, defaults to []
+        :type self_excludes: list, optional
+        :param other_excludes: list of global atom indices to ignore in other, defaults to []
+        :type other_excludes: list, optional
+        :return: distance of closest approach: i.e., the distance between the two atoms, one from self and one from other, that are closest together
+        :rtype: float
+        """
         return self.Coordinates.minimum_distance(other.Coordinates,self_excludes=self_excludes,other_excludes=other_excludes)
 
-    # def ring_detector(self):
-    #     return self.Topology.ring_detector()
-
-    def has_gro_attributes(self,attribute_list):
-        return self.Coordinates.has_atom_attributes(attribute_list)
+    # def has_gro_attributes(self,attribute_list):
+    #     return self.Coordinates.has_atom_attributes(attribute_list)
 
     def are_bonded(self,i,j):
+        """are_bonded checks to see if atoms with indices i and j are bonded to each other
+
+        :param i: an atom global index
+        :type i: int
+        :param j: another atom global index
+        :type j: int
+        :return: True if atoms are bonded, False otherwise
+        :rtype: bool
+        """
         return self.Topology.bondlist.are_bonded(i,j)
 
-    def decrement_z(self,pairs):
-        self.Coordinates.decrement_z(pairs)
-
-    def show_z_report(self):
-        self.Coordinates.show_z_report()
-
-    def make_ringlist(self):
-        self.Coordinates.make_ringlist()
+    # def decrement_z(self,pairs):
+    #     self.Coordinates.decrement_z(pairs)
 
     def adjust_charges(self,atoms=[],overcharge_threshhold=0.1,netcharge=0.0,msg=''):
+        """adjust_charges adjust the partial charges on atoms in list 'atoms' if the absolute net charge exceeds 'netcharge' by the 'overcharge_threshhold' 
+
+        :param atoms: list of atom indexes to consider, defaults to []
+        :type atoms: list, optional
+        :param overcharge_threshhold: absolute deviation from netcharge that triggers adjustment, defaults to 0.1
+        :type overcharge_threshhold: float, optional
+        :param netcharge: desired net charge, defaults to 0.0
+        :type netcharge: float, optional
+        :param msg: a little message to echo to console if adjustment is necessary, defaults to ''
+        :type msg: str, optional
+        """
         self.Topology.adjust_charges(atoms=atoms,overcharge_threshhold=overcharge_threshhold,desired_charge=netcharge,msg=msg)
 
     def gro_DataFrame(self,name):
+        """gro_DataFrame return the appropriate Coordinates dataframe based on the directive in 'name'
+
+        :param name: either 'atoms' or 'mol2_bonds'
+        :type name: str
+        :return: the desired dataframe
+        :rtype: pandas.DataFrame
+        """
         if name=='atoms':
             return self.Coordinates.A
         elif name=='mol2_bonds':
@@ -823,6 +952,11 @@ class TopoCoord:
             return None
 
     def overwrite_coords(self,other):
+        """overwrite_coords overwrite coordinates in self by those in other
+
+        :param other: another TopoCoord object
+        :type other: TopoCoord
+        """
         # logger.debug(f'Overwriting {other.Coordinates.A.shape[0]} coordinates')
         C=self.Coordinates.A
         C=C.set_index('globalIdx')
@@ -835,18 +969,8 @@ class TopoCoord:
         self.Coordinates.A=C.reset_index()
         # logger.debug(f'after update:\n{self.Coordinates.A.to_string()}')
 
-    # def label_cycle_atoms(self):
-    #     adf=self.Coordinates.A
-    #     cycle_idx=list(sorted(list(set(adf['cycle'].to_list()))))
-    #     if -1 in cycle_idx:
-    #         cycle_idx.remove(-1)
-    #     for c in cycle_idx:
-    #         cnames=adf[adf['cycle']==c]['atomName'].to_list()
-    #         logger.debug(f'cycle {c}: {cnames}')
-        # logger.debug(f'label_ring_atoms for {self.name}:\n{adf.to_string()}')
-
     def linkcell_initialize(self,cutoff,ncpu=1,force_repopulate=True):
-        """Initialize the linkcell structure; a wrapper for Coordinates
+        """linkcell_initialize Initialize the linkcell structure; a wrapper for Coordinates
 
         :param cutoff: minimum value of cell side-length
         :type cutoff: float
@@ -861,7 +985,7 @@ class TopoCoord:
         self.Coordinates.A.drop(columns=['linkcell_idx'],inplace=True)
 
     def atom_count(self):
-        """Check to be sure the Coordinate and Topology members contain the same number of
+        """atom_count Check to be sure the Coordinate and Topology members contain the same number of
             atoms
 
         :return: the number of atoms
@@ -871,7 +995,7 @@ class TopoCoord:
         return self.Coordinates.A.shape[0]
 
     def total_mass(self,units='SI'):
-        """Returns the total mass of the system.  Just a wrapper.
+        """total_mass Returns the total mass of the system.  Just a wrapper.
 
         :param units: units designation, defaults to 'SI' (other option is 'gromacs')
         :type units: str, optional
@@ -881,12 +1005,28 @@ class TopoCoord:
         return self.Topology.total_mass(units=units)
 
     def total_volume(self,units='SI'):
+        """total_volume returns total volume represented by the system's Coordinates
+
+        :param units: unit designation, defaults to 'SI'
+        :type units: str, optional
+        :return: box volume
+        :rtype: float
+        """
         return self.Coordinates.box_volume(units=units)
 
     def density(self,units='SI'):
+        """density returns system density
+
+        :param units: unit designation, defaults to 'SI'
+        :type units: str, optional
+        :return: density
+        :rtype: float
+        """
         return self.total_mass(units)/self.total_volume(units)
 
     def wrap_coords(self):
+        """wrap_coords wrap all coordinates into center periodic box
+        """
         self.Coordinates.wrap_coords()
 
     def inherit_grx_attributes_from_molecules(self,molecule_dict,initial_composition,globally_unique=GRX_GLOBALLY_UNIQUE,unset_defaults=GRX_UNSET_DEFAULTS,overall_default=0):
@@ -965,10 +1105,15 @@ class TopoCoord:
         logger.debug(f'postinherit adf columns {self.Coordinates.A.columns}')
 
     def make_resid_graph(self,json_file=None):
+        """make_resid_graph make a residue connectivity graph
+
+        :param json_file: name of output JSON file to write, defaults to None
+        :type json_file: str, optional
+        """
         self.Topology.make_resid_graph(json_file=json_file)
 
     def maxspan(self):
-        """Returns the maxspan of the Coordinates (dimensions of orthorhombic
+        """maxspan Returns the maxspan of the Coordinates (dimensions of orthorhombic
             convex hull enclosing Coordinates). Just a wrapper.
 
         :return: array of x-span, y-span, z-span
@@ -977,13 +1122,23 @@ class TopoCoord:
         return self.Coordinates.maxspan()
 
     def minmax(self):
+        """minmax returns the coordinates of the atoms at the lower-leftmost and upper-rightmost positions in the constellation of points in the atoms dataframe
+
+        :return: tuple of two points, lower-leftmost and upper-rightmost, respectively
+        :rtype: tuple(np.ndarray(3,float),np.ndarray(3,float))
+        """
         return self.Coordinates.minmax()
 
     def checkbox(self):
+        """checkbox checks that the entire constellation of points in the atoms dataframe fits within the designated box for this Configuration object
+
+        :return: True,True if both lower-leftmost and upper-rightmost points are within the box
+        :rtype: tuple(bool,bool)
+        """
         return self.Coordinates.checkbox()
 
     def write_mol2(self,filename,molname='',element_names_as_types=False):
-        """Writes a SYBYL MOL2-format file using Coordinates, with certain
+        """write_mol2 Writes a SYBYL MOL2-format file using Coordinates, with certain
            atom attributes borrowed from the Topology
 
         :param filename: name of file to write
@@ -1008,7 +1163,7 @@ class TopoCoord:
             self.Coordinates.write_mol2(filename,molname=molname,other_attributes=other_attributes)
 
     def merge(self,other):
-        """Merges the TopoCoord instance "other" to self
+        """merge Merges the TopoCoord instance "other" to self
 
         :param other: another TopoCoord instance
         :type other: TopoCoord
@@ -1025,6 +1180,17 @@ class TopoCoord:
         return shifts
 
     def bondtest_df(self,df:pd.DataFrame,pbc=[1,1,1],show_piercings=True):
+        """bondtest_df applies bond filters to all bonds in the dataframe;
+
+        :param df: dataframe of possible bonds; dataframe should have columns 'ai', 'aj' and 'r'; this method adds the column 'results'
+        :type df: pd.DataFrame
+        :param pbc: flags indicating dimensions in which pbc are used, defaults to [1,1,1]
+        :type pbc: list, optional
+        :param show_piercings: toggles diagnostic output for pierced rings, defaults to True
+        :type show_piercings: bool, optional
+        :return: input data frame with new 'results' column
+        :rtype: pandas.DataFrame
+        """
         if df.empty:
             return df
         results=[]
@@ -1063,6 +1229,19 @@ class TopoCoord:
         return BTRC.passed,rij
 
     def pierces_ring(self,i,j,pbc=[1,1,1],show_piercings=True):
+        """pierces_ring checks to see if bond i-j would pierce any covalent ring structure
+
+        :param i: global index of an atom
+        :type i: int
+        :param j: global index of another
+        :type j: int
+        :param pbc: flags indicating which dimensions have pbc applied, defaults to [1,1,1]
+        :type pbc: list, optional
+        :param show_piercings: toggles diagnostic output of ring piercings, defaults to True
+        :type show_piercings: bool, optional
+        :return: True if a ring is pierced; False otherwise
+        :rtype: bool
+        """
         adf=self.Coordinates.A
         LC=self.Coordinates.linkcell
         # at the current state, a linkcell is active under Coordinates
@@ -1146,6 +1325,11 @@ class TopoCoord:
         return False
 
     def reset_grx_attributes_from_idx_list(self,list_name):
+        """reset_grx_attributes_from_idx_list uses information in the "index lists" to repopulate appropriate GRX attributes.  There are two index lists:  one for cycles and the other for chains.  Each index list is a list of lists; each element corresponds to a unique structure (cycle or chain) and is a list of global atom indices for atoms that make up that structural instance.
+
+        :param list_name: either 'cycle' or 'chain'
+        :type list_name: str
+        """
         self.set_gro_attribute(list_name,-1)
         self.set_gro_attribute(f'{list_name}_idx',-1)
         for i,c in enumerate(self.idx_lists[list_name]):
@@ -1154,6 +1338,11 @@ class TopoCoord:
                 self.set_gro_attribute_by_attributes(f'{list_name}_idx',j,{'globalIdx':x})
 
     def reset_idx_list_from_grx_attributes(self,list_name):
+        """reset_idx_list_from_grx_attributes is the inverse of reset_grx_attributes_from_idx_list: it uses the GRX attributes to rebuild index lists.
+
+        :param list_name: either 'cycle' or 'chain'
+        :type list_name: str
+        """
         adf=self.Coordinates.A
         logger.debug(f'reset: columns {adf.columns}')
         tmp_dict={}
@@ -1178,16 +1367,14 @@ class TopoCoord:
                     self.idx_lists[list_name][i].append(tmp_dict[i][j])
         # logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
 
-    # def remap_idx_list(self,list_name,mapper):
-    #     logger.debug(f'{list_name}')
-    #     remapped_groups=[]
-    #     for c in self.idx_lists[list_name]:
-    #         remapped_groups.append([mapper[x] for x in c])
-    #     self.idx_lists[list_name]=remapped_groups
-    #     self.reset_grx_attributes_from_idx_list(list_name)
-    #     logger.debug(f'finished.')
-
     def chainlist_update(self,new_bond_recs,msg=''):
+        """chainlist_update updates the chain index lists due to generation of new bonds
+
+        :param new_bond_recs: list of bond records, each a tuple of two ints corresponding to atom indices
+        :type new_bond_recs: list
+        :param msg: a nice message (unused), defaults to ''
+        :type msg: str, optional
+        """
         chainlists=self.idx_lists['chain']
         if len(chainlists)==0: return
         # logger.debug(f'pre {msg} chainlists')
@@ -1252,6 +1439,15 @@ class TopoCoord:
         # logger.debug(f'post {msg} chains {self.idx_lists["chain"]} {cnms}')
 
     def makes_cycle(self,aidx,bidx):
+        """makes_cycle checks the current chain index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C' cycle
+
+        :param aidx: global index of an atom
+        :type aidx: int
+        :param bidx: global index of another atom
+        :type bidx: int
+        :return: True if a bond betwen aidx and bidx would form a C-C' cycle
+        :rtype: bool
+        """
         # is there a chain with aidx as head and bidx as tail, or vice versa?
         for c in self.idx_lists['chain']:
             if (aidx==c[0] and bidx==c[-1]) or (aidx==c[-1] and bidx==c[0]):
@@ -1321,7 +1517,14 @@ class TopoCoord:
         return new_bdf
 
     def get_bystanders(self,atom_idx):
-        bystander_atomidx=[[int],[int]]
+        """get_bystanders identify and return bystanders at a particular proposed bond specified by atom_idx
+
+        :param atom_idx: container of two global atom indices specifying a proposed bond
+        :type atom_idx: container
+        :return: 4-tuple of special bystander info containers
+        :rtype: tuple
+        """
+        bystander_atomidx=[[int],[int]] # elements correspond to atoms in atom_idx
         bystander_atomnames=[[str],[str]]
         bystander_resids=[[int],[int]]
         bystander_resnames=[[str],[str]]
@@ -1335,6 +1538,13 @@ class TopoCoord:
         return bystander_resids,bystander_resnames,bystander_atomidx,bystander_atomnames
     
     def get_oneaways(self,atom_idx):
+        """get_oneaways identify and return one-aways for a particular proposed bond specified by atom_idx
+
+        :param atom_idx: two-element container of atom indices specifying proposed bond
+        :type atom_idx: list
+        :return: tuple of oneaways-lists
+        :rtype: tuple
+        """
         resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
         chains=[self.get_gro_attribute_by_attributes('chain',{'globalIdx':x}) for x in atom_idx]
         chain_idx=[self.get_gro_attribute_by_attributes('chain_idx',{'globalIdx':x}) for x in atom_idx]
@@ -1390,6 +1600,8 @@ class TopoCoord:
         return oneaway_resids,oneaway_resnames,oneaway_atomidx,oneaway_atomnames
 
     def grab_files(self):
+        """grab_files using absolute pathname information, grab the most up-to-date gromacs files for this system and deposit them into the cwd
+        """
         cwd=os.getcwd()
         for ext in ['top','gro','grx']:
             filename=self.files[ext]
@@ -1399,6 +1611,17 @@ class TopoCoord:
             self.files[ext]=os.path.abspath(os.path.basename(filename))
 
     def grompp_and_mdrun(self,out,mdp,mylogger=logger.debug,**kwargs):
+        """grompp_and_mdrun manages invoking a single Gromacs run using the current TopoCoord
+
+        :param out: output filename basename
+        :type out: str
+        :param mdp: name of mdp file
+        :type mdp: str
+        :param mylogger: a logger, defaults to logger.debug
+        :type mylogger: logging.logger, optional
+        :return: any message generated by gromacs.grompp_and_mdrun
+        :rtype: str
+        """
         wrap_coords=kwargs.get('wrap_coords',False)
         self.grab_files()
         # make sure required files exist in this directory
@@ -1413,7 +1636,12 @@ class TopoCoord:
         mylogger(f'after grompp_and_run: gro {self.files["gro"]}')
         return msg
 
-    def load_files(self,filenames:list):
+    def load_files(self,filenames:dict):
+        """load_files load all gromacs files into TopoCoord
+
+        :param filenames: dictionary of extension:filename
+        :type filenames: dict
+        """
         for e,n in filenames.items():
             if not e in ['gro','top','grx','mol2']: continue
             bn,ext=os.path.splitext(n)
@@ -1426,6 +1654,11 @@ class TopoCoord:
                 logger.debug(f'Warning: file {n} has unknown file extension.  Skipped.')
 
     def center_coords(self,new_boxsize:np.ndarray=None):
+        """center_coords center all coordinates in box
+
+        :param new_boxsize: new boxsize if desired, defaults to None
+        :type new_boxsize: numpy.ndarray, optional
+        """
         if type(new_boxsize)==np.ndarray:
             if new_boxsize.shape==(3,):
                 box_vectors=new_boxsize*np.identity(3,dtype=float)
@@ -1438,6 +1671,11 @@ class TopoCoord:
         self.Coordinates.translate(addme)
 
     def vacuum_minimize(self,outname='minimized',**kwargs):
+        """vacuum_minimize the minimize analog to grompp_and_mdrun; performs an energy minimization using mdrun
+
+        :param outname: output file basename, defaults to 'minimized'
+        :type outname: str, optional
+        """
         pad=kwargs.get('pad',5)
         boxsize=np.array(self.maxspan())+pad*np.ones(3)
         logger.debug(f'{self.maxspan()} -> {boxsize}')
@@ -1449,6 +1687,11 @@ class TopoCoord:
             mdp=mdp_prefix,boxSize=boxsize,single_molecule=True,wrap_coords=False) #,**gromacs_dict)
 
     def vacuum_simulate(self,outname='simulated',**kwargs):
+        """vacuum_simulate peform a vacuum MD simulation using mdrun
+
+        :param outname: output file basename, defaults to 'simulated'
+        :type outname: str, optional
+        """
         pad=kwargs.get('pad',5)
         boxsize=np.array(self.maxspan())+pad*np.ones(3)
         logger.debug(f'{self.maxspan()} -> {boxsize}')
@@ -1480,6 +1723,17 @@ class TopoCoord:
             mdp=mdp_prefix,boxSize=boxsize,single_molecule=True,wrap_coords=False) #,**gromacs_dict)
 
     def equilibrate(self,deffnm='equilibrate',edict={},gromacs_dict={}):
+        """equilibrate perform an MD simulation using mdrun
+
+        :param deffnm: output file basename, defaults to 'equilibrate'
+        :type deffnm: str, optional
+        :param edict: dictionary of simulation directives, defaults to {}
+        :type edict: dict, optional
+        :param gromacs_dict: dictionary of gromacs directives, defaults to {}
+        :type gromacs_dict: dict, optional
+        :return: list of edr files this equilibration generates
+        :rtype: list
+        """
         mod_dict={}
         edr_list=[]
         ens=edict['ensemble']
@@ -1528,6 +1782,13 @@ class TopoCoord:
         return edr_list
 
     def get_resid_sets(self,atom_pair):
+        """get_resid_sets identifies individual sets of separate resids owned by unbonded atoms i and j 
+
+        :param atom_pair: tuple of i,j atom indices
+        :type atom_pair: tuple
+        :return: tuple containing the two apposing residue sets
+        :rtype: tuple
+        """
         # assertion: i and j are not bonded and they represent two separate sets of residues in this topocoord.
         i,j=atom_pair
         ri=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':i})
@@ -1540,6 +1801,8 @@ class TopoCoord:
         return [ci,cj]
 
     def check_your_topology(self):
+        """check_your_topology checks topology for duplicate 1-4 pair interactions and deletes them
+        """
         T=self.Topology
         C=self.Coordinates
         aT={}
@@ -1572,6 +1835,16 @@ class TopoCoord:
         self.write_top('checked.top')
 
 def find_template(BT:BondTemplate,moldict):
+    """find_template searches the dictionary of available molecules to identify a bond template that matches the passed-in template, returning the corresponding template molecule and reaction-bond
+
+    :param BT: bond template to search for
+    :type BT: BondTemplate
+    :param moldict: dictionary of available molecule
+    :type moldict: MoleculeDict
+    :raises Exception: if no matching template is found
+    :return: template Molecule object, corresponding ReactionBond object from that template, and a boolean flag indicating whether or not the match required a symmetric-reversal of the template
+    :rtype: tuple(Molecule,ReactionBond,bool)
+    """
     use_T=None
     b_idx=-1
     reverse_bond=False
