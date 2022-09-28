@@ -1773,7 +1773,7 @@ class TopoCoord:
         for rep in range(repeat):
             logger.info(f'Repeat {rep+1} out of {repeat}')
             this_deffnm=f'{deffnm}-repeat-{rep+1}-{ens}'
-            self.grompp_and_mdrun(out=this_deffnm,mdp=ens,quiet=False,**gromacs_dict)
+            self.grompp_and_mdrun(out=this_deffnm,mdp=new_mdp,quiet=False,**gromacs_dict)
             edr_list.append(this_deffnm)
             if ens=='npt':
                 box=self.Coordinates.box.diagonal()
