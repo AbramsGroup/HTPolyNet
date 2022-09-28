@@ -44,25 +44,42 @@
 <span class="go">2-polymethylstyrene/</span>
 <span class="gp">$ </span><span class="nb">cd</span> <span class="m">2</span>-polymethylstyrene
 <span class="gp">$ </span>ls
-<span class="go">lib/  pMSTY-hi.yaml  pMSTY-lo.yaml  run.sh</span>
+<span class="go">lib/  README.md  pMSTY.yaml  run.sh</span>
 </pre></div>
 </div>
-<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run both a low-cure and high-cure build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated methylstyrene (i.e., ethylmethylbenzene, or “EMB”).</p>
+<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run the build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated methylstyrene (i.e., ethylmethylbenzene, or “EMB”).  A listing of <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> appears below:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
-<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;pMSTY&quot;</span>
+<span class="c1"># A simple driver to demonstrate usage of HTPolyNet</span>
+<span class="c1">#</span>
+<span class="c1"># Cameron F. Abrams cfa22@drexel.edu</span>
+
+<span class="c1"># activate the conda environment we configured to run htpolynet</span>
 conda activate mol-env
-<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/inputs&#39;</span>
-rm -rf proj-* *log lib/molecules/parameterized/*
+
+<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;pMSTY&quot;</span>
+<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules&#39;</span>
+
+<span class="c1"># clean out any existing project directories and the library</span>
+rm -rf proj-* *log <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/parameterized/*
+
+<span class="c1"># Generate a 2d picture and a 3d mol2 file for methylstyrene&#39;s activated</span>
+<span class="c1"># form, ethylmethylbenzene (EMB) and rename reactive atoms</span>
 <span class="nb">echo</span> <span class="s2">&quot;C1=CC(C)=CC=C1CC&quot;</span> <span class="p">|</span> obabel -ismi --gen2d -opng -O <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/EMB.png
 <span class="nb">echo</span> <span class="s2">&quot;C1=CC(C)=CC=C1CC&quot;</span> <span class="p">|</span> obabel -ismi --gen3d -h -omol2 --title <span class="s2">&quot;EMB&quot;</span> <span class="p">|</span> <span class="se">\</span>
       sed s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C1&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
       sed s/<span class="s2">&quot; 9 C &quot;</span>/<span class="s2">&quot; 9 C2&quot;</span>/ <span class="p">|</span> <span class="se">\</span>
       sed s/<span class="s2">&quot;UNL1&quot;</span>/<span class="s2">&quot;EMB &quot;</span>/ &gt; <span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/EMB.mol2
-htpolynet run -diag diagnostics-lo.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>-lo.yaml <span class="p">&amp;</span>&gt; lo.log
-htpolynet run -diag diagnostics-hi.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>-hi.yaml <span class="p">&amp;</span>&gt; hi.log
+
+<span class="c1"># launch the build</span>
+htpolynet run -diag diagnostics.log <span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>.yaml <span class="p">&amp;</span>&gt; console.log
 </pre></div>
 </div>
-<p>So, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
+<p>Note that we are activating the <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda environment; that may not be necessary in your case, depending on how you configured your Python instance.  Note the two <code class="docutils literal notranslate"><span class="pre">obabel</span></code> commands: the first simply draws the chemical structure of the monomer as  PNG file, and the second generates the 3D structure in <code class="docutils literal notranslate"><span class="pre">mol2</span></code> format.  The <code class="docutils literal notranslate"><span class="pre">sed</span></code> commands are used to give unique atom names to atoms 8 and 9, and the default residue name <code class="docutils literal notranslate"><span class="pre">UNL1</span></code> is replaced with <code class="docutils literal notranslate"><span class="pre">EMB</span></code>.</p>
+<p>So running the build just requires launching the script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./run.sh <span class="p">&amp;</span>
+</pre></div>
+</div>
+<p>The following sections guide the rest of the way through the tutorial.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>

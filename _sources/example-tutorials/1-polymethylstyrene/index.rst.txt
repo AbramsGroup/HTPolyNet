@@ -16,26 +16,47 @@ The first step is to get to a clean working directory, and then use ``htpolynet 
    2-polymethylstyrene/
    $ cd 2-polymethylstyrene
    $ ls
-   lib/  pMSTY-hi.yaml  pMSTY-lo.yaml  run.sh
+   lib/  README.md  pMSTY.yaml  run.sh
 
-The bash script ``run.sh`` is a *suggested* way to run both a low-cure and high-cure build, and it contains the commands to generate the input ``mol2`` file for activated methylstyrene (i.e., ethylmethylbenzene, or "EMB").
+The bash script ``run.sh`` is a *suggested* way to run the build, and it contains the commands to generate the input ``mol2`` file for activated methylstyrene (i.e., ethylmethylbenzene, or "EMB").  A listing of ``run.sh`` appears below:
 
 .. code-block:: bash
 
    #!/bin/bash -l
-   sysname="pMSTY"
+   # A simple driver to demonstrate usage of HTPolyNet
+   #
+   # Cameron F. Abrams cfa22@drexel.edu
+
+   # activate the conda environment we configured to run htpolynet
    conda activate mol-env
-   mollib='./lib/molecules/inputs'
-   rm -rf proj-* *log lib/molecules/parameterized/*
+
+   sysname="pMSTY"
+   mollib='./lib/molecules'
+
+   # clean out any existing project directories and the library
+   rm -rf proj-* *log ${mollib}/parameterized/*
+
+   # Generate a 2d picture and a 3d mol2 file for methylstyrene's activated
+   # form, ethylmethylbenzene (EMB) and rename reactive atoms
    echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen2d -opng -O ${mollib}/EMB.png
    echo "C1=CC(C)=CC=C1CC" | obabel -ismi --gen3d -h -omol2 --title "EMB" | \
          sed s/" 8 C "/" 8 C1"/ | \
          sed s/" 9 C "/" 9 C2"/ | \
          sed s/"UNL1"/"EMB "/ > ${mollib}/EMB.mol2
-   htpolynet run -diag diagnostics-lo.log ${sysname}-lo.yaml &> lo.log
-   htpolynet run -diag diagnostics-hi.log ${sysname}-hi.yaml &> hi.log
 
-So, if you have a ``mol-env`` conda enviroment, just issue ``./run.sh`` to start the builds.  The section "run" below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions' syntax.
+   # launch the build
+   htpolynet run -diag diagnostics.log ${sysname}.yaml &> console.log
+
+Note that we are activating the ``mol-env`` conda environment; that may not be necessary in your case, depending on how you configured your Python instance.  Note the two ``obabel`` commands: the first simply draws the chemical structure of the monomer as  PNG file, and the second generates the 3D structure in ``mol2`` format.  The ``sed`` commands are used to give unique atom names to atoms 8 and 9, and the default residue name ``UNL1`` is replaced with ``EMB``.  
+
+So running the build just requires launching the script:
+
+.. code-block:: bash
+
+   $ ./run.sh &
+   
+
+The following sections guide the rest of the way through the tutorial.
 
 .. toctree::
    :maxdepth: 2
