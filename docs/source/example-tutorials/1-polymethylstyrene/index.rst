@@ -55,8 +55,21 @@ So running the build just requires launching the script:
 
    $ ./run.sh &
    
+Results will appear in the files ``diagnostics.log`` and ``console.log``, and the project directory ``proj-0/``.
 
-The following sections guide the rest of the way through the tutorial.
+The first invocation of ``htpolynet run`` performs all needed parameterizations *and* runs the first system build.  These parameterizations appear in the library ``lib/molecules/parameterized/``.  All subsequent invocations of ``htpolynet run`` will use these parameterizations directly without re-performing them.
+
+So, you could build multiple replicas by simply issuing more ``htpolynet run`` commands in series, for example:
+
+.. code-block:: bash
+
+   $ htpolynet run -diag diagnositics-1 pMSTY.yaml &> console-1.log
+   $ htpolynet run -diag diagnositics-2 pMSTY.yaml &> console-2.log
+   $ htpolynet run -diag diagnositics-3 pMSTY.yaml &> console-3.log
+
+These will generate three new replicas in ``proj-1/``, ``proj-2/``, and ``proj-3/``, respectively.
+
+Although this makes it seem quite simple to run ``htpolynet``, the aim of the tutorial is to show `how` it works to a level of detail sufficient to allow a user to develop their own new systems.  The remainder of this tutorial considers the major elements of ``htpolynet run`` and its usage.
 
 .. toctree::
    :maxdepth: 2
