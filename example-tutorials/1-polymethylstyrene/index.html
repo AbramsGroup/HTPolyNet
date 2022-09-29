@@ -79,7 +79,16 @@ htpolynet run -diag diagnostics.log <span class="si">${</span><span class="nv">s
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./run.sh <span class="p">&amp;</span>
 </pre></div>
 </div>
-<p>The following sections guide the rest of the way through the tutorial.</p>
+<p>Results will appear in the files <code class="docutils literal notranslate"><span class="pre">diagnostics.log</span></code> and <code class="docutils literal notranslate"><span class="pre">console.log</span></code>, and the project directory <code class="docutils literal notranslate"><span class="pre">proj-0/</span></code>.</p>
+<p>The first invocation of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> performs all needed parameterizations <em>and</em> runs the first system build.  These parameterizations appear in the library <code class="docutils literal notranslate"><span class="pre">lib/molecules/parameterized/</span></code>.  All subsequent invocations of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> will use these parameterizations directly without re-performing them.</p>
+<p>So, you could build multiple replicas by simply issuing more <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> commands in series, for example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ htpolynet run -diag diagnositics-1 pMSTY.yaml <span class="p">&amp;</span>&gt; console-1.log
+$ htpolynet run -diag diagnositics-2 pMSTY.yaml <span class="p">&amp;</span>&gt; console-2.log
+$ htpolynet run -diag diagnositics-3 pMSTY.yaml <span class="p">&amp;</span>&gt; console-3.log
+</pre></div>
+</div>
+<p>These will generate three new replicas in <code class="docutils literal notranslate"><span class="pre">proj-1/</span></code>, <code class="docutils literal notranslate"><span class="pre">proj-2/</span></code>, and <code class="docutils literal notranslate"><span class="pre">proj-3/</span></code>, respectively.</p>
+<p>Although this makes it seem quite simple to run <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code>, the aim of the tutorial is to show <cite>how</cite> it works to a level of detail sufficient to allow a user to develop their own new systems.  The remainder of this tutorial considers the major elements of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> and its usage.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>

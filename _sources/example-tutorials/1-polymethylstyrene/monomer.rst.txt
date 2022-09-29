@@ -3,21 +3,15 @@
 Monomer: 4-methylstyrene
 ------------------------
 
-.. image:: pics/mst-vinyl.png
+.. _fig_pmsty_polym:
 
-`4-methylstyrene <https://pubchem.ncbi.nlm.nih.gov/compound/4-Methylstyrene>`_ is a common monomer in the manufacture of polyesters.  Its most important feature from the standpoint of polymerization is the carbon-carbon double bond, which will open to form a single bond and a radical if attacked by another radical.  For plain old styrene, this looks like:
+.. figure:: pics/pmsty_sys.png
 
-.. image:: pics/styrene-polymerization.png 
+    Polymerization of methyl styrene.
 
-(http://2015.igem.org/Team:Stanford-Brown/PS)
+`4-methylstyrene <https://pubchem.ncbi.nlm.nih.gov/compound/4-Methylstyrene>`_ is a common monomer in the manufacture of polyesters.  Its most important feature from the standpoint of polymerization is the carbon-carbon double bond, which opens to form a single bond and a radical if attacked by another radical (:numref:`fig_pmsty_polym`).  Note from :numref:`fig_pmsty_polym` that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two carbon atoms.  To see how we do that, let's turn to a way to build the ``mol2`` file that describes the monomer structure and topology.
 
-Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two carbon atoms.  To see how we do that, let's turn to a way to build the ``mol2`` file.
-
-As described in the user guide, HTPolyNet uses the concept of "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene:
-
-.. image:: pics/4meb.png 
-
-We can easily generate a ``mol2`` file for 1-ethyl-4-methylbenzene using `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ (or any of a variety of molecular builders):
+As described in the user guide, HTPolyNet uses the concepts of "valence conservation" and "sacrificial hydrogens": any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene.  We can easily generate a ``mol2`` file for 1-ethyl-4-methylbenzene using `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ (or any of a variety of molecular builders):
 
 .. code-block:: console
 

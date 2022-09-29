@@ -35,14 +35,14 @@
             
   <section id="monomer-4-methylstyrene">
 <span id="tutorial-pms-monomer"></span><h1>Monomer: 4-methylstyrene<a class="headerlink" href="#monomer-4-methylstyrene" title="Permalink to this headline">¶</a></h1>
-<img alt="../../_images/mst-vinyl.png" src="../../_images/mst-vinyl.png" />
-<p><a class="reference external" href="https://pubchem.ncbi.nlm.nih.gov/compound/4-Methylstyrene">4-methylstyrene</a> is a common monomer in the manufacture of polyesters.  Its most important feature from the standpoint of polymerization is the carbon-carbon double bond, which will open to form a single bond and a radical if attacked by another radical.  For plain old styrene, this looks like:</p>
-<img alt="../../_images/styrene-polymerization.png" src="../../_images/styrene-polymerization.png" />
-<p>(<a class="reference external" href="http://2015.igem.org/Team:Stanford-Brown/PS">http://2015.igem.org/Team:Stanford-Brown/PS</a>)</p>
-<p>Note that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two carbon atoms.  To see how we do that, let’s turn to a way to build the <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file.</p>
-<p>As described in the user guide, HTPolyNet uses the concept of “sacrificial hydrogens”: any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene:</p>
-<img alt="../../_images/4meb.png" src="../../_images/4meb.png" />
-<p>We can easily generate a <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for 1-ethyl-4-methylbenzene using <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> (or any of a variety of molecular builders):</p>
+<figure class="align-default" id="id1">
+<span id="fig-pmsty-polym"></span><img alt="../../_images/pmsty_sys.png" src="../../_images/pmsty_sys.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 5 </span><span class="caption-text">Polymerization of methyl styrene.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p><a class="reference external" href="https://pubchem.ncbi.nlm.nih.gov/compound/4-Methylstyrene">4-methylstyrene</a> is a common monomer in the manufacture of polyesters.  Its most important feature from the standpoint of polymerization is the carbon-carbon double bond, which opens to form a single bond and a radical if attacked by another radical (<a class="reference internal" href="#fig-pmsty-polym"><span class="std std-numref">Fig. 5</span></a>).  Note from <a class="reference internal" href="#fig-pmsty-polym"><span class="std std-numref">Fig. 5</span></a> that the radical lives on the interior carbon and attacks a terminal carbon of another unreacted monomer to create a bond.  Clearly, then, HTPolyNet must be able to distinguish between these two carbon atoms.  To see how we do that, let’s turn to a way to build the <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file that describes the monomer structure and topology.</p>
+<p>As described in the user guide, HTPolyNet uses the concepts of “valence conservation” and “sacrificial hydrogens”: any two atoms designated as forming a bond must each sacrifice one H atom to make the bond.  The form of 4-methylstyrene we will actually use to build our system will be 1-ethyl-4-methylbenzene.  We can easily generate a <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for 1-ethyl-4-methylbenzene using <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a> (or any of a variety of molecular builders):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span> <span class="s2">&quot;C1=CC(C)=CC=C1CC&quot;</span> <span class="p">|</span> obabel -ismi --gen3d -h -omol2 &gt; EMB-raw.mol2
 </pre></div>
 </div>
