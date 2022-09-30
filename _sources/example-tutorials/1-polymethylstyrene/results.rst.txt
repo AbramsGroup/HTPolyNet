@@ -6,17 +6,28 @@ Results
 Overall behavior
 ^^^^^^^^^^^^^^^^
 
-Using ``htpolynet plots`` we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a low-cure build under ``proj-0`` and a high-cure build under ``proj-1``.  Diagnostic output for each run is in ``diagnostics-lo.log`` and ``diagnostics-hi.log``, respectively.
+Using ``htpolynet plots`` we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a 95%-cure build under ``proj-0``, with diagnostic output in ``diagnostics.log`` and console output to ``console.log``.  
+
+As an exercise, edit ``pMSTY.yaml`` to change the desired cure to 0.50 instead of 0.95.  Then launch a second build:
+
+.. code-block:: bash
+
+    $ htpolynet run -diag diagnostics-low.log pMSTY.yaml &> console-low.log
+
+
+This will populate the project directory ``proj-1`` (whose name is automatically assigned).  Once it completes, we can generate some plots.
 
 First, we can make plots of the conversion vs. run time and the cure iteration vs. run time:
 
 .. code-block:: console
 
-    $ htpolynet plots -logs diagnostics-*.log
+    $ htpolynet plots -logs diagnostics.log diagnostics-low.log
 
 This generates ``cure-info.png``: 
 
-.. image:: pics/cure-info.png 
+.. figure:: pics/cure-info.png
+
+    (Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.
 
 We can see here that the 95\% cure took about 8 and a half minutes of run time (which is not really impressive since this is a **very** small system).  Fully two-thirds of the run time is consumed realizing the final 15\% of the cure.
 
@@ -24,11 +35,15 @@ Second, we can make plots that track the temperature and density throughout the 
 
 .. code-block:: console
 
-    $ htpolynet plots -proj proj-0
+    $ htpolynet plots -proj proj-0 -t p0-traces.png -o p0.csv
 
-.. image:: pics/global_traces.png 
+This command extracts temperature, density, and potential energy from all Gromacs ``edr`` output files in ``proj-0/`` in the order they were generated, plots them according to a default format, and stores the extracted data in a ``csv`` file.
 
-From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top two plots show temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I'm showing one transition for each drag/relax stage.  The bottom two plots show density in kg/m^3 vs time in ps.  The second and fourth plots "zoom in" on just the CURE iterations (though the zoom is not quite so big).
+.. figure:: pics/p0-traces.png 
+
+    (Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.
+
+From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top plot shows temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I'm showing one transition for each drag/relax stage.  The middle plot shows the density trace' note how the density begins at the stipulated low value of 300 kg/m3.  The bottom plot shows the potential energy trace.
 
 In the figure below, we show two renderings of this system.  In each, all bonds between C1 and C2 atoms are shown as grey tubes, and all other bonds are colored by individual unique monomer and made transparent.  On the left is the system just after the precure anneal, where you can see that only **intramolecular** C1 and C2 bonds exist.  On the right is the system after postcure, where you can see chains of -C1-C2- bonds.
 
@@ -36,20 +51,20 @@ In the figure below, we show two renderings of this system.  In each, all bonds 
 
     * - .. figure:: pics/hi-pre.png
 
-           System before cure.
+           Methystyrene liquid before cure.
 
       - .. figure:: pics/hi.png
 
-           System after cure.
+           Poly(methyl styrene) after 95% cure.
 
 Details
 ^^^^^^^
 
-The first ``htpolynet run`` invocation in ``run.sh`` runs the low-cure build (50\% conversion) in the ``proj-0`` project directory, and the second runs the high-cure build (95\% conversion) in the ``proj-1`` subdirectory.  Let's look at the results for the high-cure run:
+The ``htpolynet run`` invocation in ``run.sh`` runs a high-cure build (95\% conversion) in the ``proj-0`` subdirectory:
 
 .. code-block:: console
 
-    $ cd proj-1
+    $ cd proj-0
     $ ls
     checkpoint_state.yaml  molecules/  plots/  systems/
     $
@@ -62,16 +77,17 @@ The ``yaml`` file is just a checkpoint.  We will consider how to use checkpoints
 
 * ``plots/``: This directory contains some plots generated on the fly.
 
-``proj-1/systems``
+``proj-0/systems``
 ~~~~~~~~~~~~~~~~~~
 
 .. code-block:: console
 
     $ cd systems
     $ ls
-    capping/  densification/  final-results/  init/  iter-1/  iter-2/  postcure/  precure/
+    capping/         densification/  init/    iter-10/  iter-3/  iter-5/  iter-7/  iter-9/    precure/
+    cure_state.yaml  final-results/  iter-1/  iter-2/   iter-4/  iter-6/  iter-8/  postcure/
 
-The ``init/`` directory is where the initial topology and coordinates are generated.  Then in ``densification`` are the files associated with the MD simulations used to densify the initial system.  Next comes the ``precure`` directory, which contains all the results of the precure equilibrations and annealing (if requested).  Next come the iteration directories; here, only two CURE iterations were run (remember the console ouput?) so we see only ``iter-1`` and ``iter-2``.  Then comes the ``capping`` directory where the final topology updates are performed to cap any unreacted monomers (reverting them from their "active" forms to their "proper" forms).  Then comes ``postcure`` equilibration and relaxation.  Finally, in ``final-results`` are the ``top``, ``gro``, and ``grx`` files of the final system.
+The ``init/`` directory is where the initial topology and coordinates are generated.  Then in ``densification`` are the files associated with the MD simulations used to densify the initial system.  Next comes the ``precure`` directory, which contains all the results of the precure equilibrations and annealing (if requested).  Next come the iteration directories; here, ten CURE iterations were run.  Then comes the ``capping`` directory where the final topology updates are performed to cap any unreacted monomers (reverting them from their "active" forms to their "proper" forms).  Then comes ``postcure`` equilibration and relaxation.  Finally, in ``final-results`` are the ``top``, ``gro``, and ``grx`` files of the final system; the ``top`` and ``gro`` files can be used right away for Gromacs MD simulations.
 
 ``proj-1/plots``
 ~~~~~~~~~~~~~~~~
