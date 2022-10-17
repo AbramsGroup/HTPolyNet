@@ -37,9 +37,14 @@ class Tanneal:
         'T0_ps': 1000
     }
     def __init__(self,indict):
+        logger.info(f'received: {indict}')
         self.params={}
         for p,v in self.default_params.items():
             self.params[p]=indict.get(p,v)
+        for p,v in indict.items():
+            if not p in self.default_params:
+                self.params[p]=v
+        logger.info(f'init: {self.params}')
     def __str__(self):
         p=self.params
         restr=f'Tanneal: {p["T0"]} to {p["T1"]}'
@@ -54,6 +59,7 @@ class Tanneal:
         :type mdp_pfx: str, optional
         """
         p=self.params
+        logger.info(f'do {p}')
         software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
         logger.info(f'going to {p["subdir"]}')
         pfs.go_to(p['subdir'])
@@ -108,9 +114,13 @@ class Tladder:
         'warmup_ps':5000
     }
     def __init__(self,indict):
+        logger.info(f'received: {indict}')
         self.params={}
         for p,v in self.default_params.items():
             self.params[p]=indict.get(p,v)
+        for p,v in indict.items():
+            if not p in self.default_params:
+                self.params[p]=v
 
     def __str__(self):
         p=self.params
@@ -253,8 +263,8 @@ class PostsimConfiguration:
             assert len(p)==1,f'Poorly formatted {self.cfgFile}; each stanza may have only one keyword'
             simtype=list(p.keys())[0]
             assert simtype in self.default_classes,f'Simulation type "{simtype}" in {self.cfgFile} not understood.'
+            logger.info(f'passing in {p[simtype]}')
             self.stagelist.append(self.default_classes[simtype](p[simtype]))
-
 
 def postsim(args):
     """postsim handles the postsim subcommand for managing post-cure production MD simulations
