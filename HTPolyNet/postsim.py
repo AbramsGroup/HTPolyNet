@@ -89,7 +89,7 @@ class Tanneal:
         mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
         msg=TC.grompp_and_mdrun(out=p['output_deffnm'],mdp=mdp_pfx,quiet=False,mylogger=logger.info,**gromacs_dict)
         df=gmx_energy_trace(p['output_deffnm'],['Temperature','Density','Volume'])
-        scatter(df,'Temperature',['Density'],'rho_v_T.png')
+        scatter(df,'time(ps)',['Density'],'rho_v_ns.png')
         df.to_csv(f'{p["output_deffnm"]}.csv',header=True,index=False)
         logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
         logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
