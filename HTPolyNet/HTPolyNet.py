@@ -182,6 +182,7 @@ def cli():
     ######## postsim ########
     command_parsers['postsim'].add_argument('-proj',type=str,default='',nargs='+',help='name of project directory')
     # command_parsers['postsim'].add_argument('-Tladder',type=tladder, default='',help='run a temperature-ladder simulation to measure density=f(T); format (T0,T1,Ntemps,ps_per_run,ps_per_rise,ps_warmup')
+    command_parsers['postsim'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
     command_parsers['postsim'].add_argument('-ocfg',type=str,default='',help='original HTPolyNet config file used to generate project(s)')
     command_parsers['postsim'].add_argument('-cfg',type=str,default='',help='config file for specifying the MD simulations to perform')
     command_parsers['postsim'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')

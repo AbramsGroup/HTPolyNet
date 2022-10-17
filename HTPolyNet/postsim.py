@@ -12,7 +12,7 @@ import numpy as np
 import os
 import json
 import yaml
-from HTPolyNet.projectfilesystem import ProjectFileSystem
+import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.gromacs import mdp_get, mdp_modify, gmx_energy_trace
 import HTPolyNet.software as software
@@ -118,7 +118,7 @@ class Tanneal:
         restr=f'Tanneal: {p["T0"]} to {p["T1"]}'
         return restr
     
-    def do(self,pfs:ProjectFileSystem,mdp_pfx='npt',**gromacs_dict):
+    def do(self,mdp_pfx='npt',**gromacs_dict):
         """do handles executing the temperature-anneal on the passed-in system
 
         :param pfs: the project file system
@@ -129,15 +129,15 @@ class Tanneal:
         p=self.params
         software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
         logger.info(f'going to {p["subdir"]}')
-        pfs.go_to(p['subdir'],make=True)
+        pfs.go_to(p['subdir'])
         for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.projPath,p['input_deffnm']+sfx)
+            srcnm=os.path.join(pfs.proj(),p['input_deffnm']+sfx)
             shutil.copy(srcnm,'.')
             logger.info(f'Copied {srcnm} to ./')
         local_deffnm=os.path.basename(p['input_deffnm'])
         TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
         logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
-        pfs.library.checkout('mdp/npt.mdp')
+        pfs.checkout('mdp/npt.mdp')
         os.rename('npt.mdp',f'{mdp_pfx}.mdp')
         timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
         timeints=[0.0,p['T0_to_T1_ps'],p['T1_ps'],p['T1_to_T0_ps'],p['T0_ps']]
@@ -191,24 +191,22 @@ class Tladder:
         restr=f'Tladder: {p["Tlo"]}K -> {p["Tlo"]} K in {p["Ntemps"]} rungs at {p["ps_per_run"]} ps per run and {p["ps_per_rise"]} ps per rise; warmup for {p["warmup_ps"]} ps'
         return restr
 
-    def do(self,pfs,mdp_pfx='npt',**gromacs_dict):
+    def do(self,mdp_pfx='npt',**gromacs_dict):
         """do handles executing the temperature-ladder
 
-        :param pfs: the project file system
-        :type pfs: ProjectFileSystem
         :param mdp_pfx: filename prefix for output files, defaults to 'npt'
         :type mdp_pfx: str, optional
         """
         p=self.params
         software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
-        pfs.go_to(p['subdir'],make=True)
+        pfs.go_to(p['subdir'])
         for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.projPath,p['input_deffnm']+sfx)
+            srcnm=os.path.join(pfs.proj(),p['input_deffnm']+sfx)
             shutil.copy(srcnm,'.')
         local_deffnm=os.path.basename(p['input_deffnm'])
         TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
         logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
-        pfs.library.checkout(f'mdp/npt.mdp')
+        pfs.checkout(f'mdp/npt.mdp')
         os.rename('npt.mdp',f'{mdp_pfx}.mdp')
         timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
         Tladder=np.linspace(p['Tlo'],p['Thi'],p['Ntemps'])
@@ -258,8 +256,8 @@ def postsim(args):
     software.sw_setup()
     ogromacs=ocfg.basedict.get('gromacs',{})
     for d in args.proj:
-        pfs=ProjectFileSystem(projdir=d,topdirs=['molecules','systems','plots','postsim'])
+        pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots','postsim'],verbose=True,projdir=d,reProject=False,userlibrary=args.lib)
         pfs.go_to('postsim')
         for stage in cfg.stagelist:
-            stage.do(pfs,mdp_pfx='local',**ogromacs)
+            stage.do(mdp_pfx='local',**ogromacs)
 
