@@ -282,6 +282,7 @@ def postsim(args):
     software.sw_setup()
     ogromacs=ocfg.basedict.get('gromacs',{})
     logger.info(f'{ogromacs}')
+    software.set_gmx_preferences(ocfg.parameters)
     for d in args.proj:
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots','postsim'],verbose=True,projdir=d,reProject=False,userlibrary=args.lib)
         pfs.go_to('postsim')

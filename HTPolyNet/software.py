@@ -45,7 +45,7 @@ class Software:
         else:
             self.gmx_options=parameters.get('gmx_options','')
             self.gmx=parameters.get('gmx','gmx')
-            self.mdrun=parameters.get('gmx_mdrun',f'{self.gmx} {self.gmx_options} mdrun')
+            self.mdrun=parameters.get('mdrun',f'{self.gmx} {self.gmx_options} mdrun')
             self.mdrun_single_molecule=parameters.get('mdrun_single_molecule',f'{self.gmx} {self.gmx_options}  mdrun')
         CP=subprocess.run(['which',self.gmx],capture_output=True,text=True)
         assert CP.returncode==0,f'{self.gmx} not found'
