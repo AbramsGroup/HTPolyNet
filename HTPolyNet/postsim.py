@@ -21,6 +21,70 @@ from HTPolyNet.plot import scatter
 
 logger=logging.getLogger(__name__)
 
+class Tequilibrate:
+    """ a class to handle simple equilibration MD simulation 
+    """
+    default_params={
+        'subdir':'postsim/equilibrate',
+        'input_deffnm':'systems/final-results/final',
+        'output_deffnm':'equilibrate',
+        'T': 300,
+        'ps': 1000
+    }
+    def __init__(self,indict):
+        logger.info(f'received: {indict}')
+        self.params={}
+        for p,v in self.default_params.items():
+            self.params[p]=indict.get(p,v)
+        for p,v in indict.items():
+            if not p in self.default_params:
+                self.params[p]=v
+        logger.info(f'init: {self.params}')
+    def __str__(self):
+        p=self.params
+        restr=f'Tanneal: {p["T0"]} to {p["T1"]}'
+        return restr
+    
+    def do(self,mdp_pfx='npt',**gromacs_dict):
+        """do handles executing the temperature-anneal on the passed-in system
+
+        :param pfs: the project file system
+        :type pfs: ProjectFileSystem
+        :param mdp_pfx: filename prefix for output files, defaults to 'npt'
+        :type mdp_pfx: str, optional
+        """
+        p=self.params
+        logger.info(f'do {p}')
+        software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
+        logger.info(f'going to {p["subdir"]}')
+        pfs.go_to(p['subdir'])
+        for sfx in ['.gro','.top','.grx']:
+            srcnm=os.path.join(pfs.proj(),p['input_deffnm']+sfx)
+            shutil.copy(srcnm,'.')
+            logger.info(f'Copied {srcnm} to ./')
+        local_deffnm=os.path.basename(p['input_deffnm'])
+        TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
+        logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
+        pfs.checkout('mdp/npt.mdp')
+        os.rename('npt.mdp',f'{mdp_pfx}.mdp')
+        timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
+        duration=p['ps']
+        nsteps=int(duration/timestep)
+        mod_dict={
+            'ref_t':p['T'],
+            'gen-temp':p['T'],
+            'gen-vel':'yes',
+            'nsteps':nsteps,
+            'tcoupl':'v-rescale','tau_t':0.5
+            }
+        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
+        msg=TC.grompp_and_mdrun(out=p['output_deffnm'],mdp=mdp_pfx,quiet=False,mylogger=logger.info,**gromacs_dict)
+        df=gmx_energy_trace(p['output_deffnm'],['Temperature','Density','Volume'])
+        scatter(df,'time(ps)',['Density'],'rho_v_ns.png')
+        df.to_csv(f'{p["output_deffnm"]}.csv',header=True,index=False)
+        logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
+        logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
+
 class Tanneal:
     """ a class to handle temperature annealing MD simulation 
     """
@@ -194,7 +258,7 @@ class PostsimConfiguration:
         - 'deform': deform along one axis (not yet implemented)
         
         """
-    default_classes={'anneal':Tanneal,'ladder':Tladder,'deform':None}
+    default_classes={'equilibrate':Tequilibrate,'anneal':Tanneal,'ladder':Tladder,'deform':None}
     def __init__(self):
         self.cfgFile=''
         self.baselist=[]
