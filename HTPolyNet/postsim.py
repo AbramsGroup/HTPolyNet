@@ -21,78 +21,6 @@ from HTPolyNet.plot import scatter
 
 logger=logging.getLogger(__name__)
 
-class PostsimConfiguration:
-    def __init__(self):
-        self.cfgFile = ''
-        self.baselist = []
-
-    @classmethod
-    def read(cls,filename,parse=True,**kwargs):
-        """read generates a new PostsimConfiguration object by reading in the JSON or YAML file indicated by filename
-
-        :param filename: name of file from which to read new PostsimConfiguration object
-        :type filename: str
-        :param parse: if True, parse the input configuration file, defaults to True
-        :type parse: bool, optional
-        :raises Exception: if extension of filename is not '.json' or '.yaml' or '.yml'
-        :return: a new PostsimConfiguration object
-        :rtype: PostsimConfiguration
-        """
-        basename,extension=os.path.splitext(filename)
-        if extension=='.json':
-            return cls._read_json(filename,parse,**kwargs)
-        elif extension=='.yaml' or extension=='.yml':
-            return cls._read_yaml(filename,parse,**kwargs)
-        else:
-            raise Exception(f'Unknown config file extension {extension}')
-
-    @classmethod
-    def _read_json(cls,filename,parse=True,**kwargs):
-        """_read_json create a new Configuration object by reading from JSON input
-
-        :param filename: name of JSON file
-        :type filename: str
-        :param parse: if True, parse the JSON data, defaults to True
-        :type parse: bool, optional
-        :return: a new Configuration object
-        :rtype: Configuration
-        """
-        inst=cls()
-        inst.cfgFile=filename
-        with open(filename,'r') as f:
-            inst.baselist=json.load(f)
-            assert type(inst.baselist)==list,f'Poorly formatted {filename}'
-        if parse: inst.parse(**kwargs)
-        return inst
-
-    @classmethod
-    def _read_yaml(cls,filename,parse=True,**kwargs):
-        """_read_yaml create a new Configuration object by reading from YAML input
-
-        :param filename: name of YAML file
-        :type filename: str
-        :param parse: if True, parse the YAML data, defaults to True
-        :type parse: bool, optional
-        :return: a new Configuration object
-        :rtype: Configuration
-        """
-        inst=cls()
-        inst.cfgFile=filename
-        with open(filename,'r') as f:
-            inst.baselist=yaml.safe_load(f)
-            assert type(inst.baselist)==list,f'Poorly formatted {filename}'
-        if parse: inst.parse(**kwargs)
-        return inst
-
-    def parse(self,**kwargs):
-        self.stagelist=[]
-        for p in self.baselist:
-            assert len(p)==1,f'Poorly formatted {self.cfgFile}'
-            if 'anneal' in p:
-                self.stagelist.append(Tanneal(p['anneal']))
-            elif 'ladder' in p:
-                self.stagelist.append(Tladder(p['ladder']))
-
 class Tanneal:
     """ a class to handle temperature annealing MD simulation 
     """
@@ -239,6 +167,97 @@ class Tladder:
         logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
         logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
 
+class PostsimConfiguration:
+    """ handles reading and parsing a postcure simulation input config file.
+        Config file format:
+        
+        - { key1: {<paramdict>}}
+        - { key2: {<paramdict>}} 
+        ...
+
+        The config file is a list of single-element dictionaries, whose single keyword
+        indicates the type of MD simulation to be run; simulations are run in the order
+        they appear in the config file.
+
+        Currently allowed simulation types:
+
+        - 'anneal': simple simulated annealing;
+        - 'ladder': temperature ladder
+        - 'deform': deform along one axis (not yet implemented)
+        
+        """
+    default_classes={'anneal':Tanneal,'ladder':Tladder,'deform':None}
+    def __init__(self):
+        self.cfgFile=''
+        self.baselist=[]
+        self.stagelist=[]
+
+    @classmethod
+    def read(cls,filename,parse=True,**kwargs):
+        """read generates a new PostsimConfiguration object by reading in the JSON or YAML file indicated by filename
+
+        :param filename: name of file from which to read new PostsimConfiguration object
+        :type filename: str
+        :param parse: if True, parse the input configuration file, defaults to True
+        :type parse: bool, optional
+        :raises Exception: if extension of filename is not '.json' or '.yaml' or '.yml'
+        :return: a new PostsimConfiguration object
+        :rtype: PostsimConfiguration
+        """
+        basename,extension=os.path.splitext(filename)
+        if extension=='.json':
+            return cls._read_json(filename,parse,**kwargs)
+        elif extension=='.yaml' or extension=='.yml':
+            return cls._read_yaml(filename,parse,**kwargs)
+        else:
+            raise Exception(f'Unknown config file extension {extension}')
+
+    @classmethod
+    def _read_json(cls,filename,parse=True,**kwargs):
+        """_read_json create a new Configuration object by reading from JSON input
+
+        :param filename: name of JSON file
+        :type filename: str
+        :param parse: if True, parse the JSON data, defaults to True
+        :type parse: bool, optional
+        :return: a new Configuration object
+        :rtype: Configuration
+        """
+        inst=cls()
+        inst.cfgFile=filename
+        with open(filename,'r') as f:
+            inst.baselist=json.load(f)
+            assert type(inst.baselist)==list,f'Poorly formatted {filename}'
+        if parse: inst.parse(**kwargs)
+        return inst
+
+    @classmethod
+    def _read_yaml(cls,filename,parse=True,**kwargs):
+        """_read_yaml create a new Configuration object by reading from YAML input
+
+        :param filename: name of YAML file
+        :type filename: str
+        :param parse: if True, parse the YAML data, defaults to True
+        :type parse: bool, optional
+        :return: a new Configuration object
+        :rtype: Configuration
+        """
+        inst=cls()
+        inst.cfgFile=filename
+        with open(filename,'r') as f:
+            inst.baselist=yaml.safe_load(f)
+            assert type(inst.baselist)==list,f'Poorly formatted {filename}'
+        if parse: inst.parse(**kwargs)
+        return inst
+
+    def parse(self,**kwargs):
+        for p in self.baselist:
+            assert len(p)==1,f'Poorly formatted {self.cfgFile}; each stanza may have only one keyword'
+            simtype=list(p.keys())[0]
+            assert simtype in self.default_classes,f'Simulation type "{simtype}" in {self.cfgFile} not understood.'
+            self.stagelist.append(self.default_classes[simtype](p[simtype]))
+
+
 def postsim(args):
     """postsim handles the postsim subcommand for managing post-cure production MD simulations
 
@@ -252,7 +271,6 @@ def postsim(args):
     cfg=PostsimConfiguration.read(args.cfg)
     logger.info(f'{cfg.baselist}')
     logger.info(f'Project director{ess}: {args.proj}')
-    # logger.info(f'{str(args.Tladder)}')
     software.sw_setup()
     ogromacs=ocfg.basedict.get('gromacs',{})
     for d in args.proj:
