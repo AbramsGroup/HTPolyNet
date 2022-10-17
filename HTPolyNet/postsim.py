@@ -90,7 +90,7 @@ class PostsimConfiguration:
             assert len(p)==1,f'Poorly formatted {self.cfgFile}'
             if 'anneal' in p:
                 self.stagelist.append(Tanneal(p['anneal']))
-            elif 't_ladder' in p:
+            elif 'ladder' in p:
                 self.stagelist.append(Tladder(p['ladder']))
 
 class Tanneal:
@@ -106,7 +106,8 @@ class Tanneal:
         'T0_to_T1_ps': 1000,
         'T1_ps': 1000,
         'T1_to_T0_ps': 1000,
-        'T0_ps': 1000
+        'T0_ps': 1000,
+        'gromacs': {'gmx':'gmx'}
     }
     def __init__(self,indict):
         self.params={}
@@ -126,16 +127,19 @@ class Tanneal:
         :type mdp_pfx: str, optional
         """
         p=self.params
-        pfs.go_to(p['subdir'])
+        software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
+        logger.info(f'going to {p["subdir"]}')
+        pfs.go_to(p['subdir'],make=True)
         for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.projPath,p['deffnm']+sfx)
+            srcnm=os.path.join(pfs.projPath,p['input_deffnm']+sfx)
             shutil.copy(srcnm,'.')
-        local_deffnm=os.path.basename(p['deffnm'])
+            logger.info(f'Copied {srcnm} to ./')
+        local_deffnm=os.path.basename(p['input_deffnm'])
         TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
         logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
         pfs.library.checkout('mdp/npt.mdp')
         os.rename('npt.mdp',f'{mdp_pfx}.mdp')
-        timestep=float(mdp_get('npt.mdp','dt'))
+        timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
         timeints=[0.0,p['T0_to_T1_ps'],p['T1_ps'],p['T1_to_T0_ps'],p['T0_ps']]
         timepoints=[0.0]
         temppoints=[p['T0'],p['T1'],p['T1'],p['T0'],p['T0']]
@@ -166,15 +170,16 @@ class Tladder:
     """ a class to handle a temperature-ladder MD simulation
     """
     default_params={
-        'subdir':'postsim/t_ladder',
+        'subdir':'postsim/ladder',
         'input_deffnm':'systems/final-results/final',
-        'output_deffnm':'t_ladder',
+        'output_deffnm':'ladder',
         'Tlo':300.0,
         'Thi':600.0,
         'Ntemps':31,
         'ps_per_run':1000,
         'ps_per_rise':1000,
-        'warmup_ps':5000
+        'warmup_ps':5000,
+        'gromacs': {'gmx':'gmx'}
     }
     def __init__(self,indict):
         self.params={}
@@ -195,15 +200,16 @@ class Tladder:
         :type mdp_pfx: str, optional
         """
         p=self.params
-        pfs.go_to(p['subdir'])
+        software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
+        pfs.go_to(p['subdir'],make=True)
         for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.projPath,p['deffnm']+sfx)
+            srcnm=os.path.join(pfs.projPath,p['input_deffnm']+sfx)
             shutil.copy(srcnm,'.')
-        local_deffnm=os.path.basename(p['deffnm'])
+        local_deffnm=os.path.basename(p['input_deffnm'])
         TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
         logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
         pfs.library.checkout(f'mdp/npt.mdp')
-        os.rename('npt.mdp',f'mdp/{mdp_pfx}.mdp')
+        os.rename('npt.mdp',f'{mdp_pfx}.mdp')
         timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
         Tladder=np.linspace(p['Tlo'],p['Thi'],p['Ntemps'])
         timepoints=[0.0,p['warmup_ps']]
@@ -246,14 +252,14 @@ def postsim(args):
     ess='y' if len(args.proj)==0 else 'ies'
     ocfg=Configuration.read(args.ocfg,parse=False)
     cfg=PostsimConfiguration.read(args.cfg)
-    logger.info(f'{cfg.basedict}')
+    logger.info(f'{cfg.baselist}')
     logger.info(f'Project director{ess}: {args.proj}')
     # logger.info(f'{str(args.Tladder)}')
     software.sw_setup()
-    software.set_gmx_preferences(cfg.basedict.get('gromacs',ocfg.basedict.get('gromacs',{})))
+    ogromacs=ocfg.basedict.get('gromacs',{})
     for d in args.proj:
         pfs=ProjectFileSystem(projdir=d,topdirs=['molecules','systems','plots','postsim'])
         pfs.go_to('postsim')
-        for stage in cfg.baselist:
-            stage.do(pfs,mdp_pfx='local')
+        for stage in cfg.stagelist:
+            stage.do(pfs,mdp_pfx='local',**ogromacs)
 

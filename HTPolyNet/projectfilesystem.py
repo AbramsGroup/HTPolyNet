@@ -233,7 +233,7 @@ class ProjectFileSystem:
         os.chdir(self.projPath)
         self.cwd=self.projPath
 
-    def go_to(self,subPath):
+    def go_to(self,subPath,make=False):
         """go_to change the cwd to the directory named by 'subPath'
 
         :param subPath: directory to change to, relative to project directory
@@ -241,6 +241,10 @@ class ProjectFileSystem:
         """
         self.cdproj()
         if os.path.exists(subPath):
+            os.chdir(subPath)
+            self.cwd=os.getcwd()
+        elif make:
+            os.mkdir(subPath)
             os.chdir(subPath)
             self.cwd=os.getcwd()
 
