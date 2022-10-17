@@ -34,8 +34,7 @@ class Tanneal:
         'T0_to_T1_ps': 1000,
         'T1_ps': 1000,
         'T1_to_T0_ps': 1000,
-        'T0_ps': 1000,
-        'gromacs': {'gmx':'gmx'}
+        'T0_ps': 1000
     }
     def __init__(self,indict):
         self.params={}
@@ -106,8 +105,7 @@ class Tladder:
         'Ntemps':31,
         'ps_per_run':1000,
         'ps_per_rise':1000,
-        'warmup_ps':5000,
-        'gromacs': {'gmx':'gmx'}
+        'warmup_ps':5000
     }
     def __init__(self,indict):
         self.params={}
@@ -273,6 +271,7 @@ def postsim(args):
     logger.info(f'Project director{ess}: {args.proj}')
     software.sw_setup()
     ogromacs=ocfg.basedict.get('gromacs',{})
+    logger.info(f'{ogromacs}')
     for d in args.proj:
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots','postsim'],verbose=True,projdir=d,reProject=False,userlibrary=args.lib)
         pfs.go_to('postsim')
