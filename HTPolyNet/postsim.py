@@ -253,8 +253,9 @@ class PostsimConfiguration:
 
         Currently allowed simulation types:
 
+        - 'equilibrate': simple NPT equilibration;
         - 'anneal': simple simulated annealing;
-        - 'ladder': temperature ladder
+        - 'ladder': temperature ladder;
         - 'deform': deform along one axis (not yet implemented)
         
         """
