@@ -21,35 +21,28 @@ from HTPolyNet.plot import scatter
 
 logger=logging.getLogger(__name__)
 
-class Tequilibrate:
-    """ a class to handle simple equilibration MD simulation 
-    """
+class PostSimMD:
     default_params={
-        'subdir':'postsim/equilibrate',
-        'input_deffnm':'systems/final-results/final',
-        'output_deffnm':'equilibrate',
+        'subdir': 'postsim/equilibrate',
+        'input_top': 'systems/final-results/final.top',
+        'input_gro': 'systems/final-results/final.gro',
+        'input_grx': 'systems/final-results/final.grx',
+        'ps': 1000,
         'T': 300,
-        'ps': 1000
+        'output_deffnm': 'equilibrate',
+        'traces': ['Temperature','Density','Volume'],
+        'scatter': ('time(ps)',['Density'],'rho_v_ns.png')
     }
     def __init__(self,indict):
-        logger.info(f'received: {indict}')
         self.params={}
         for p,v in self.default_params.items():
             self.params[p]=indict.get(p,v)
         for p,v in indict.items():
             if not p in self.default_params:
                 self.params[p]=v
-        logger.info(f'init: {self.params}')
-    def __str__(self):
-        p=self.params
-        restr=f'Tanneal: {p["T0"]} to {p["T1"]}'
-        return restr
-    
     def do(self,mdp_pfx='npt',**gromacs_dict):
-        """do handles executing the temperature-anneal on the passed-in system
+        """do handles executing the postsim MD simulation
 
-        :param pfs: the project file system
-        :type pfs: ProjectFileSystem
         :param mdp_pfx: filename prefix for output files, defaults to 'npt'
         :type mdp_pfx: str, optional
         """
@@ -58,40 +51,49 @@ class Tequilibrate:
         software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
         logger.info(f'going to {p["subdir"]}')
         pfs.go_to(p['subdir'])
-        for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.proj(),p['input_deffnm']+sfx)
+        for input_file in ['input_top','input_gro','input_grx']:
+            srcnm=os.path.join(pfs.proj(),p[input_file])
             shutil.copy(srcnm,'.')
-            logger.info(f'Copied {srcnm} to ./')
-        local_deffnm=os.path.basename(p['input_deffnm'])
-        TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
+        local_top=os.path.basename(p['input_top'])
+        local_gro=os.path.basename(p['input_gro'])
+        local_grx=os.path.basename(p['input_grx'])
+        TC=TopoCoord(topfilename=local_top,grofilename=local_gro,grxfilename=local_grx)
         logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
         pfs.checkout('mdp/npt.mdp')
         os.rename('npt.mdp',f'{mdp_pfx}.mdp')
-        timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
-        duration=p['ps']
+        self.build_mdp(f'{mdp_pfx}.mdp')
+        msg=TC.grompp_and_mdrun(out=p['output_deffnm'],mdp=mdp_pfx,quiet=False,mylogger=logger.info,**gromacs_dict)
+        df=gmx_energy_trace(p['output_deffnm'],p['traces'])
+        df.to_csv(f'{p["output_deffnm"]}.csv',header=True,index=False)
+        scatter(df,*p['scatter'])
+        logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
+        logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
+
+    def build_mdp(self,mdpname):
+        params=self.params
+        timestep=float(mdp_get(mdpname,'dt'))
+        duration=params['ps']
         nsteps=int(duration/timestep)
         mod_dict={
-            'ref_t':p['T'],
-            'gen-temp':p['T'],
+            'ref_t':params['T'],
+            'gen-temp':params['T'],
             'gen-vel':'yes',
             'nsteps':nsteps,
             'tcoupl':'v-rescale','tau_t':0.5
             }
-        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
-        msg=TC.grompp_and_mdrun(out=p['output_deffnm'],mdp=mdp_pfx,quiet=False,mylogger=logger.info,**gromacs_dict)
-        df=gmx_energy_trace(p['output_deffnm'],['Temperature','Density','Volume'])
-        scatter(df,'time(ps)',['Density'],'rho_v_ns.png')
-        df.to_csv(f'{p["output_deffnm"]}.csv',header=True,index=False)
-        logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
-        logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
-
-class Tanneal:
+        mdp_modify(mdpname,mod_dict)
+        
+class PostSimAnneal(PostSimMD):
     """ a class to handle temperature annealing MD simulation 
     """
     default_params={
         'subdir':'postsim/anneal',
-        'input_deffnm':'systems/final-results/final',
+        'input_top': 'systems/final-results/final.top',
+        'input_gro': 'systems/final-results/final.gro',
+        'input_grx': 'systems/final-results/final.grx',
         'output_deffnm':'anneal',
+        'traces': ['Temperature','Density','Volume'],
+        'scatter': ('time(ps)',['Density'],'rho_v_ns.png'),
         'T0': 300,
         'T1': 600,
         'ncycles': 1,
@@ -100,76 +102,40 @@ class Tanneal:
         'T1_to_T0_ps': 1000,
         'T0_ps': 1000
     }
-    def __init__(self,indict):
-        logger.info(f'received: {indict}')
-        self.params={}
-        for p,v in self.default_params.items():
-            self.params[p]=indict.get(p,v)
-        for p,v in indict.items():
-            if not p in self.default_params:
-                self.params[p]=v
-        logger.info(f'init: {self.params}')
-    def __str__(self):
-        p=self.params
-        restr=f'Tanneal: {p["T0"]} to {p["T1"]}'
-        return restr
-    
-    def do(self,mdp_pfx='npt',**gromacs_dict):
-        """do handles executing the temperature-anneal on the passed-in system
-
-        :param pfs: the project file system
-        :type pfs: ProjectFileSystem
-        :param mdp_pfx: filename prefix for output files, defaults to 'npt'
-        :type mdp_pfx: str, optional
-        """
-        p=self.params
-        logger.info(f'do {p}')
-        software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
-        logger.info(f'going to {p["subdir"]}')
-        pfs.go_to(p['subdir'])
-        for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.proj(),p['input_deffnm']+sfx)
-            shutil.copy(srcnm,'.')
-            logger.info(f'Copied {srcnm} to ./')
-        local_deffnm=os.path.basename(p['input_deffnm'])
-        TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
-        logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
-        pfs.checkout('mdp/npt.mdp')
-        os.rename('npt.mdp',f'{mdp_pfx}.mdp')
-        timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
-        timeints=[0.0,p['T0_to_T1_ps'],p['T1_ps'],p['T1_to_T0_ps'],p['T0_ps']]
+    def build_mdp(self,mdpname):
+        params=self.params
+        timestep=float(mdp_get(mdpname,'dt'))
+        timeints=[0.0,params['T0_to_T1_ps'],params['T1_ps'],params['T1_to_T0_ps'],params['T0_ps']]
         timepoints=[0.0]
-        temppoints=[p['T0'],p['T1'],p['T1'],p['T0'],p['T0']]
+        temppoints=[params['T0'],params['T1'],params['T1'],params['T0'],params['T0']]
         for i in range(1,len(timeints)):
             timepoints.append(timepoints[-1]+timeints[i])
         duration=timepoints[-1]
-        nsteps=int(duration/timestep)*p['ncycles']
+        nsteps=int(duration/timestep)*params['ncycles']
         mod_dict={
-            'ref_t':p['T0'],
-            'gen-temp':p['T0'],
+            'ref_t':params['T0'],
+            'gen-temp':params['T0'],
             'gen-vel':'yes',
             'annealing-npoints':len(timepoints),
             'annealing-temp':' '.join([str(x) for x in temppoints]),
             'annealing-time':' '.join([str(x) for x in timepoints]),
-            'annealing':'periodic' if p['ncycles']>1 else 'single',
+            'annealing':'periodic' if params['ncycles']>1 else 'single',
             'nsteps':nsteps,
             'tcoupl':'v-rescale','tau_t':0.5
             }
-        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
-        msg=TC.grompp_and_mdrun(out=p['output_deffnm'],mdp=mdp_pfx,quiet=False,mylogger=logger.info,**gromacs_dict)
-        df=gmx_energy_trace(p['output_deffnm'],['Temperature','Density','Volume'])
-        scatter(df,'time(ps)',['Density'],'rho_v_ns.png')
-        df.to_csv(f'{p["output_deffnm"]}.csv',header=True,index=False)
-        logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
-        logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
+        mdp_modify(mdpname,mod_dict)
 
-class Tladder:
+class PostSimLadder(PostSimMD):
     """ a class to handle a temperature-ladder MD simulation
     """
     default_params={
         'subdir':'postsim/ladder',
-        'input_deffnm':'systems/final-results/final',
+        'input_top': 'systems/final-results/final.top',
+        'input_gro': 'systems/final-results/final.gro',
+        'input_grx': 'systems/final-results/final.grx',
         'output_deffnm':'ladder',
+        'traces': ['Temperature','Density','Volume'],
+        'scatter': ('time(ps)',['Density'],'rho_v_ns.png'),
         'Tlo':300.0,
         'Thi':600.0,
         'Ntemps':31,
@@ -177,52 +143,24 @@ class Tladder:
         'ps_per_rise':1000,
         'warmup_ps':5000
     }
-    def __init__(self,indict):
-        logger.info(f'received: {indict}')
-        self.params={}
-        for p,v in self.default_params.items():
-            self.params[p]=indict.get(p,v)
-        for p,v in indict.items():
-            if not p in self.default_params:
-                self.params[p]=v
 
-    def __str__(self):
-        p=self.params
-        restr=f'Tladder: {p["Tlo"]}K -> {p["Tlo"]} K in {p["Ntemps"]} rungs at {p["ps_per_run"]} ps per run and {p["ps_per_rise"]} ps per rise; warmup for {p["warmup_ps"]} ps'
-        return restr
-
-    def do(self,mdp_pfx='npt',**gromacs_dict):
-        """do handles executing the temperature-ladder
-
-        :param mdp_pfx: filename prefix for output files, defaults to 'npt'
-        :type mdp_pfx: str, optional
-        """
-        p=self.params
-        software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
-        pfs.go_to(p['subdir'])
-        for sfx in ['.gro','.top','.grx']:
-            srcnm=os.path.join(pfs.proj(),p['input_deffnm']+sfx)
-            shutil.copy(srcnm,'.')
-        local_deffnm=os.path.basename(p['input_deffnm'])
-        TC=TopoCoord(topfilename=f'{local_deffnm}.top',grofilename=f'{local_deffnm}.gro',grxfilename=f'{local_deffnm}.grx')
-        logger.info(f'{TC.Coordinates.A.shape[0]} atoms {TC.total_mass(units="gromacs"):.2f} amu')
-        pfs.checkout(f'mdp/npt.mdp')
-        os.rename('npt.mdp',f'{mdp_pfx}.mdp')
-        timestep=float(mdp_get(f'{mdp_pfx}.mdp','dt'))
-        Tladder=np.linspace(p['Tlo'],p['Thi'],p['Ntemps'])
-        timepoints=[0.0,p['warmup_ps']]
-        temppoints=[p['Tlo'],p['Tlo']]
-        for i in range(p['Ntemps']):
+    def build_mdp(self,mdpname):
+        params=self.params
+        timestep=float(mdp_get(mdpname,'dt'))
+        Tladder=np.linspace(params['Tlo'],params['Thi'],params['Ntemps'])
+        timepoints=[0.0,params['warmup_ps']]
+        temppoints=[params['Tlo'],params['Tlo']]
+        for i in range(params['Ntemps']):
             cT=Tladder[i]
-            timepoints.append(timepoints[-1]+p['ps_per_rise'])
+            timepoints.append(timepoints[-1]+params['ps_per_rise'])
             temppoints.append(cT)
-            timepoints.append(timepoints[-1]+p['ps_per_run'])
+            timepoints.append(timepoints[-1]+params['ps_per_run'])
             temppoints.append(cT)
         duration=timepoints[-1]
         nsteps=int(duration/timestep)
         mod_dict={
-            'ref_t':p['Tlo'],
-            'gen-temp':p['Thi'],
+            'ref_t':params['Tlo'],
+            'gen-temp':params['Thi'],
             'gen-vel':'yes',
             'annealing-npoints':len(timepoints),
             'annealing-temp':' '.join([str(x) for x in temppoints]),
@@ -231,13 +169,7 @@ class Tladder:
             'nsteps':nsteps,
             'tcoupl':'v-rescale','tau_t':0.5
             }
-        mdp_modify(f'{mdp_pfx}.mdp',mod_dict)
-        msg=TC.grompp_and_mdrun(out=p['output_deffnm'],mdp=mdp_pfx,quiet=False,mylogger=logger.info,**gromacs_dict)
-        df=gmx_energy_trace(p['output_deffnm'],['Temperature','Density','Volume'])
-        scatter(df,'Temperature',['Density'],'rho_v_T.png')
-        df.to_csv(f'{p["output_deffnm"]}.csv',header=True,index=False)
-        logger.info(f'Final coordinates in {p["output_deffnm"]}.gro')
-        logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
+        mdp_modify(mdpname,mod_dict)
 
 class PostsimConfiguration:
     """ handles reading and parsing a postcure simulation input config file.
@@ -259,7 +191,7 @@ class PostsimConfiguration:
         - 'deform': deform along one axis (not yet implemented)
         
         """
-    default_classes={'equilibrate':Tequilibrate,'anneal':Tanneal,'ladder':Tladder,'deform':None}
+    default_classes={'equilibrate':PostSimMD,'anneal':PostSimAnneal,'ladder':PostSimLadder,'deform':None}
     def __init__(self):
         self.cfgFile=''
         self.baselist=[]
@@ -347,7 +279,7 @@ def postsim(args):
     software.sw_setup()
     ogromacs=ocfg.basedict.get('gromacs',{})
     logger.info(f'ogromacs {ogromacs}')
-    software.set_gmx_preferences(ocfg.basedict)
+    # software.set_gmx_preferences(ocfg.basedict)
     for d in args.proj:
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots','postsim'],verbose=True,projdir=d,reProject=False,userlibrary=args.lib)
         pfs.go_to('postsim')
