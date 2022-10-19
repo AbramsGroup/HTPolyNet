@@ -22,6 +22,9 @@ from HTPolyNet.plot import scatter
 logger=logging.getLogger(__name__)
 
 class PostSimMD:
+    """ Generic class for handling post-cure md simulations; this one just does simple NPT MD equilibration;
+    Classes that inherit from this class should define their own default_params and build_npt
+    """
     default_params={
         'subdir': 'postsim/equilibrate',
         'input_top': 'systems/final-results/final.top',
@@ -70,6 +73,11 @@ class PostSimMD:
         logger.info(f'Traces saved in {p["output_deffnm"]}.csv')
 
     def build_mdp(self,mdpname):
+        """build_mdp builds the GROMACS mdp file required for an NPT equilibration
+
+        :param mdpname: name of mdp file
+        :type mdpname: str
+        """
         params=self.params
         timestep=float(mdp_get(mdpname,'dt'))
         duration=params['ps']
@@ -103,6 +111,11 @@ class PostSimAnneal(PostSimMD):
         'T0_ps': 1000
     }
     def build_mdp(self,mdpname):
+        """build_mdp builds the GROMACS mdp file required for an annealing MD simulation
+
+        :param mdpname: name of mdp file
+        :type mdpname: str
+        """        
         params=self.params
         timestep=float(mdp_get(mdpname,'dt'))
         timeints=[0.0,params['T0_to_T1_ps'],params['T1_ps'],params['T1_to_T0_ps'],params['T0_ps']]
@@ -145,6 +158,11 @@ class PostSimLadder(PostSimMD):
     }
 
     def build_mdp(self,mdpname):
+        """build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation
+
+        :param mdpname: name of mdp file
+        :type mdpname: str
+        """
         params=self.params
         timestep=float(mdp_get(mdpname,'dt'))
         Tladder=np.linspace(params['Tlo'],params['Thi'],params['Ntemps'])
@@ -219,14 +237,14 @@ class PostsimConfiguration:
 
     @classmethod
     def _read_json(cls,filename,parse=True,**kwargs):
-        """_read_json create a new Configuration object by reading from JSON input
+        """_read_json create a new PostsimConfiguration object by reading from JSON input
 
         :param filename: name of JSON file
         :type filename: str
         :param parse: if True, parse the JSON data, defaults to True
         :type parse: bool, optional
-        :return: a new Configuration object
-        :rtype: Configuration
+        :return: a new PostsimConfiguration object
+        :rtype: PostsimConfiguration
         """
         inst=cls()
         inst.cfgFile=filename
@@ -238,14 +256,14 @@ class PostsimConfiguration:
 
     @classmethod
     def _read_yaml(cls,filename,parse=True,**kwargs):
-        """_read_yaml create a new Configuration object by reading from YAML input
+        """_read_yaml create a new PostsimConfiguration object by reading from YAML input
 
         :param filename: name of YAML file
         :type filename: str
         :param parse: if True, parse the YAML data, defaults to True
         :type parse: bool, optional
-        :return: a new Configuration object
-        :rtype: Configuration
+        :return: a new PostsimConfiguration object
+        :rtype: PostsimConfiguration
         """
         inst=cls()
         inst.cfgFile=filename
@@ -256,6 +274,8 @@ class PostsimConfiguration:
         return inst
 
     def parse(self,**kwargs):
+        """parse parses a PostsimConfiguration file to build the list of stages to run
+        """
         for p in self.baselist:
             assert len(p)==1,f'Poorly formatted {self.cfgFile}; each stanza may have only one keyword'
             simtype=list(p.keys())[0]
@@ -274,12 +294,11 @@ def postsim(args):
     ess='y' if len(args.proj)==0 else 'ies'
     ocfg=Configuration.read(args.ocfg,parse=False)
     cfg=PostsimConfiguration.read(args.cfg)
-    logger.info(f'{cfg.baselist}')
+    logger.debug(f'{cfg.baselist}')
     logger.info(f'Project director{ess}: {args.proj}')
     software.sw_setup()
     ogromacs=ocfg.basedict.get('gromacs',{})
-    logger.info(f'ogromacs {ogromacs}')
-    # software.set_gmx_preferences(ocfg.basedict)
+    logger.debug(f'ogromacs {ogromacs}')
     for d in args.proj:
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots','postsim'],verbose=True,projdir=d,reProject=False,userlibrary=args.lib)
         pfs.go_to('postsim')
