@@ -30,19 +30,28 @@ class PostSimMD:
         'input_top': 'systems/final-results/final.top',
         'input_gro': 'systems/final-results/final.gro',
         'input_grx': 'systems/final-results/final.grx',
+        'gromacs' : {
+            'gmx': 'gmx',
+            'mdrun': 'gmx mdrun',
+            'options': '-quiet -nobackup',
+            'mdrun_single_molecule': 'gmx mdrun mdrun'
+        },
         'ps': 1000,
         'T': 300,
         'output_deffnm': 'equilibrate',
         'traces': ['Temperature','Density','Volume'],
         'scatter': ('time(ps)',['Density'],'rho_v_ns.png')
     }
-    def __init__(self,indict):
+    def __init__(self,indict,strict=True):
         self.params={}
         for p,v in self.default_params.items():
             self.params[p]=indict.get(p,v)
         for p,v in indict.items():
             if not p in self.default_params:
-                self.params[p]=v
+                if strict:
+                    logger.info(f'Ignoring directive \'{p}\' in yaml input file')
+                else:
+                    self.params[p]=v
     def do(self,mdp_pfx='npt',**gromacs_dict):
         """do handles executing the postsim MD simulation
 
@@ -51,7 +60,11 @@ class PostSimMD:
         """
         p=self.params
         logger.info(f'do {p}')
-        software.set_gmx_preferences(p.get('gromacs',gromacs_dict))
+        # if a gromacs dict is passed in, assume this overrides the one read in from the file
+        if gromacs_dict:
+            software.set_gmx_preferences(gromacs_dict)
+        else:
+            software.set_gmx_preferences(p['gromacs'])
         logger.info(f'going to {p["subdir"]}')
         pfs.go_to(p['subdir'])
         for input_file in ['input_top','input_gro','input_grx']:
@@ -99,6 +112,12 @@ class PostSimAnneal(PostSimMD):
         'input_top': 'systems/final-results/final.top',
         'input_gro': 'systems/final-results/final.gro',
         'input_grx': 'systems/final-results/final.grx',
+        'gromacs' : {
+            'gmx': 'gmx',
+            'mdrun': 'gmx mdrun',
+            'options': '-quiet -nobackup',
+            'mdrun_single_molecule': 'gmx mdrun mdrun'
+        },
         'output_deffnm':'anneal',
         'traces': ['Temperature','Density','Volume'],
         'scatter': ('time(ps)',['Density'],'rho_v_ns.png'),
@@ -146,6 +165,12 @@ class PostSimLadder(PostSimMD):
         'input_top': 'systems/final-results/final.top',
         'input_gro': 'systems/final-results/final.gro',
         'input_grx': 'systems/final-results/final.grx',
+        'gromacs' : {
+            'gmx': 'gmx',
+            'mdrun': 'gmx mdrun',
+            'options': '-quiet -nobackup',
+            'mdrun_single_molecule': 'gmx mdrun mdrun'
+        },
         'output_deffnm':'ladder',
         'traces': ['Temperature','Density','Volume'],
         'scatter': ('time(ps)',['Density'],'rho_v_ns.png'),
@@ -292,12 +317,14 @@ def postsim(args):
     loglevel_numeric=getattr(logging, args.loglevel.upper())
     logging.basicConfig(format='%(levelname)s> %(message)s',level=loglevel_numeric)
     ess='y' if len(args.proj)==0 else 'ies'
-    ocfg=Configuration.read(args.ocfg,parse=False)
+    ogromacs={}
+    if args.ocfg:
+        ocfg=Configuration.read(args.ocfg,parse=False)
+        ogromacs=ocfg.basedict.get('gromacs',{})
     cfg=PostsimConfiguration.read(args.cfg)
     logger.debug(f'{cfg.baselist}')
     logger.info(f'Project director{ess}: {args.proj}')
     software.sw_setup()
-    ogromacs=ocfg.basedict.get('gromacs',{})
     logger.debug(f'ogromacs {ogromacs}')
     for d in args.proj:
         pfs.pfs_setup(root=os.getcwd(),topdirs=['molecules','systems','plots','postsim'],verbose=True,projdir=d,reProject=False,userlibrary=args.lib)
