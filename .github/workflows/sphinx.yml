@@ -10,7 +10,7 @@ jobs:
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
       with:
-         pre-build-command: "sphinx-apidoc -o source ../HTPolyNet/"
+         build-command: "make html"
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
