@@ -2,53 +2,11 @@
 
 .. module:: coordinates
    :synopsis: Class for managing gromacs .gro file data
-   
+
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
 """
 
-'''
-...first, a blast from the past:
-
-[gmx-users] maximum number of atoms
-Erik Lindahl lindahl at stanford.edu
-Fri Mar 22 18:52:46 CET 2002
-Previous message: [gmx-users] maximum number of atoms
-Next message: [gmx-users] Non-zero charged system
-Messages sorted by: [ date ] [ thread ] [ subject ] [ author ]
-hugo verli wrote:
-
->Hi,
->
->what is the maximum number of atoms that can be simulated in gromacs? I
->apologize if this information is in the manual, but I was not able to find it.
->
->Thanks in advance,
->
->Hugo.
->
-
-Hi Hugo,
- 
-We are using signed (vs. unsigned) integers in a couple of places, so I 
-think you are currently limited to 2^31-1=2,147,483,647 atoms. The only 
-reason we are not using 64 bit integers is that it would hurt 
-performance on x86, powerpc, and other 32 bit platforms.
-
-Since you usually need 20-30 bytes of storage per atom it is possible 
-that we hit the roof slightly earlier if there are places in the code 
-where we first calculate the amount of memory we need and then allocate 
-it. Let us know if that's a problem and I promise we'll look into it ;-)
-
-You might have noticed that the pdb and gro input files can't handle 
-atom numbers larger than 9999 and 99999, respectively. For this reason 
-we just skip the actual number, and use the linecount when reading. When 
-we write files we just restart from 0 or 1 after (9)9999.
-
-Cheers,
-
-Erik
-'''
 import pandas as pd
 import numpy as np
 from io import StringIO

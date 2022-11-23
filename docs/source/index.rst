@@ -18,7 +18,7 @@ using Gromacs.
    install
    user-guide/index
    example-tutorials/index
-   reference-guide/index
+   reference-materials/index
 
 
 

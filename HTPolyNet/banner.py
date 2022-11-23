@@ -1,8 +1,7 @@
 """
 
 .. module:: banner
-   :synopsis: Defines the banner method for printing the banner to a 
-   logging channel
+   :synopsis: Defines the banner method for printing the banner to a logging channel
    
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
 
