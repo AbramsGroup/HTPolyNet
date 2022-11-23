@@ -403,6 +403,11 @@ def go_proj():
     """
     _PFS_.cdproj()
 
+def go_root():
+    """go_root change the current working directory to the root directory
+    """
+    _PFS_.cdroot()
+
 def go_to(pathstr):
     """go_to Change the current working directory to "pathstr" which is relative to the project root.
 

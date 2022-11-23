@@ -331,4 +331,5 @@ def postsim(args):
         pfs.go_to('postsim')
         for stage in cfg.stagelist:
             stage.do(mdp_pfx='local',**ogromacs)
+        pfs.go_root()
 
