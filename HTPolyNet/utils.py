@@ -58,6 +58,8 @@ def density_from_gro(gro,mollib='./lib/molecules/parameterized',units='SI'):
 
 """ These globals are used in traversing a project directory to extract data from edr files """
 _system_dirs=['densification','precure',r'iter-{iter:d}','capping','postcure']
+_postsim_dirs=['anneal','equilibrate']
+_measurement_dirs=['Tg','E']
 _md_ensembles={'nvt':['Temperature','Potential'],'npt':['Temperature','Potential','Density'],'default':['Temperature','Potential']}
 _indir_pfx={}
 _indir_pfx['densification']=[r'densified-{ens:s}',r'densified-repeat-{repeat:d}-{ens:s}']
@@ -95,6 +97,28 @@ def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
             this_df[nm]=np.ones(this_df.shape[0],dtype=type(val))*val
     df=pd.concat((df,this_df),ignore_index=True)
     return df,xshift
+
+def postsim_density_evolution(proj_dir):
+    """postsim_density_evolution returns a single dataframe that is a concatenation of the csv files
+    in the 'postsim' subdirectories
+
+    :param proj_dir: name of complete project directory
+    :type proj_dir: str
+    :return: the dataframe
+    :rtype: pandas.DataFrame
+    """
+    if not os.path.exists(proj_dir): return
+    sysd=os.path.join(proj_dir,'postsim')
+    fn=[f'{sysd}/anneal/anneal.csv',f'{sysd}/equilibrate/equilibrate.csv']
+    df=pd.DataFrame()
+    lt=0.0
+    for f in fn:
+        t=pd.read_csv(f,header=0,index_col=None)
+        print(f'shifting by {lt}')
+        t['time(ps)']+=lt
+        lt=t['time(ps)'].to_list()[-1]
+        df=pd.concat((df,t))
+    return df
 
 def density_evolution(proj_dir):
     """density_evolution returns a single dataframe containing density, temperture, number of bonds vs time by reading all edrs in the correct order from a complete project directory

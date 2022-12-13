@@ -1,3 +1,4 @@
+*.bak
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -131,9 +132,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .vscode/settings.json
-mh-cl/all_bonds_within_cutoff.csv
-mh-cl/atomsDf.csv
-mh-cl/df1.csv
-mh-cl/df3_sorted.csv
-mh-cl/df4.csv
-mh-cl/z.csv
+

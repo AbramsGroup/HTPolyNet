@@ -380,6 +380,9 @@ def plots(args):
                 logger.info(f'All data to {args.o}')
                 with open(args.o,'w') as f:
                     f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
+        if args.postsim:
+            df=postsim_density_evolution(args.proj)
+            global_trace(df,['Density'],args.postsim)
         if args.g or args.mwbxl or args.clusters:
             G=init_molecule_graph(args.proj)
             n=1
