@@ -109,6 +109,44 @@ def trace(qty,edrs,outfile='plot.png',**kwargs):
     logging.disable(logging.NOTSET)
     return avg
 
+def multi_trace(dfL,xnames,ynames,labels=[],xlabel='time [ps]',ylabel='',outfile='plot.png',**kwargs):
+    """multi_trace generates a plot of each y vs x in df
+
+    :param df: a pandas dataframe
+    :type df: pandas.DataFrame
+    :param xnames: list of x-column names
+    :type xnames: list
+    :param ynames: list of y-column names, parallel to xnames
+    :type ynames: list
+    :param outfile: name of output image file, defaults to 'plot.png'
+    :type outfile: str, optional
+    """
+    # disable debug-level logging and above since matplotlib has a lot of debug statements
+    default_units={'Temperature':'K','Pressure':'bar','Density':'kg/m^3','Potential':'kJ/mol'}
+    units=kwargs.get('units',default_units)
+    logging.disable(logging.DEBUG)
+    size=kwargs.get('size',(16,4))
+    legend=kwargs.get('legend',True)
+    fig,ax=plt.subplots(1,1,figsize=size)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    cmapname=kwargs.get('colormap','plasma')
+    cmap=cm.get_cmap(cmapname)
+
+    ndatasets=len(xnames)
+    assert ndatasets==len(ynames)
+
+    for i,(df,x,y,l) in enumerate(zip(dfL,xnames,ynames,labels)):
+        ax.plot(df[x],df[y],label=l,color=cmap(i/ndatasets))
+
+    if legend:
+        plt.legend()
+    plt.savefig(outfile)
+    plt.close(fig)
+    # re-establish previous logging level
+    logging.disable(logging.NOTSET)
+
+
 def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],interval_labels=[],y2names=[],**kwargs):
     """global_trace generates custom-formatted multiplots of energy-like quantities named in 'names' in the input dataframe df
 
@@ -139,6 +177,7 @@ def global_trace(df,names,outfile='plot.png',transition_times=[],markers=[],inte
     # yunits=kwargs.get('yunits',None)
     cmap=cm.get_cmap(cmapname)
     # print(f'in global_trace:\n{df.head().to_string()}')
+
 
     interval_times=[]
     if interval_labels:
@@ -366,32 +405,36 @@ def plots(args):
     :param args: command-line arguments
     :type args: argparse.Namespace
     """
-    logs=args.logs
     loglevel_numeric=getattr(logging, args.loglevel.upper())
     logging.basicConfig(format='%(levelname)s> %(message)s',level=loglevel_numeric)
     if not args.no_banner: banner(logger.info)
+
+    logs=args.logs
     if len(logs)>0:
         diagnostics_graphs(logs,args.plotfile)
-    if args.proj:
-        if args.t:
-            df,transition_times,cure_markers,interval_labels=density_evolution(args.proj)
+
+    mdf=[]
+    for p in args.proj:
+        if args.t and len(args.proj)==1:
+            df,transition_times,cure_markers,interval_labels=density_evolution(p)
             global_trace(df,['Temperature','Density','Potential'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
             if args.o:
-                logger.info(f'All data to {args.o}')
+                logger.info(f'Project dir {p}: All trace data to {args.o}')
                 with open(args.o,'w') as f:
                     f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
         if args.postsim:
-            df=postsim_density_evolution(args.proj)
-            global_trace(df,['Density'],args.postsim)
+            print(f'adding {p}')
+            mdf.append(postsim_density_evolution(p))
+            # global_trace(df,['Density'],args.postsim)
         if args.g or args.mwbxl or args.clusters:
-            G=init_molecule_graph(args.proj)
+            G=init_molecule_graph(p)
             n=1
-            while os.path.exists(os.path.join(args.proj,f'systems/iter-{n}/2-cure_update-bonds.csv')):
+            while os.path.exists(os.path.join(p,f'systems/iter-{n}/2-cure_update-bonds.csv')):
                 logger.info(f'iter-{n}/2-cure_update-bonds.csv')
-                g=graph_from_bondsfile(os.path.join(args.proj,f'systems/iter-{n}/2-cure_update-bonds.csv'))
+                g=graph_from_bondsfile(os.path.join(p,f'systems/iter-{n}/2-cure_update-bonds.csv'))
                 G=nx.compose(G,g)
                 if args.g and args.byiter: 
-                    network_graph(G,os.path.join(args.proj,f'plots/iter-{n}-{args.g}'))
+                    network_graph(G,os.path.join(p,f'plots/iter-{n}-{args.g}'))
                 n+=1
             if args.g: network_graph(G,args.g)
             if args.clusters:
@@ -403,4 +446,5 @@ def plots(args):
                 print(f'Avg homo-N between xlinks: {np.average(am["n"],weights=am["counts"]):.2f}')
                 am.to_csv(args.mwbxl,sep=' ',index=False,header=True)
                 print(f'{args.mwbxl} created.')
-
+    if mdf:
+        multi_trace(mdf,xnames=['time(ps)']*len(mdf),ynames=['Density']*len(mdf),labels=args.proj,ylabel='Density [kg/m$^3$]',outfile=args.postsim)

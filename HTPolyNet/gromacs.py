@@ -238,8 +238,6 @@ def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=Fal
     assert npair==nd
     return idf
 
-
- 
 def mdp_to_dict(mdp_filename):
     with open(mdp_filename,'r') as f:
         lines=f.read().split('\n')

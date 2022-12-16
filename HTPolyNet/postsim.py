@@ -38,6 +38,7 @@ class PostSimMD:
         },
         'ps': 1000,
         'T': 300,
+        'P':1,
         'output_deffnm': 'equilibrate',
         'traces': ['Temperature','Density','Volume'],
         'scatter': ('time(ps)',['Density'],'rho_v_ns.png')
@@ -97,6 +98,7 @@ class PostSimMD:
         nsteps=int(duration/timestep)
         mod_dict={
             'ref_t':params['T'],
+            'ref_p':params['P'],
             'gen-temp':params['T'],
             'gen-vel':'yes',
             'nsteps':nsteps,
@@ -127,7 +129,8 @@ class PostSimAnneal(PostSimMD):
         'T0_to_T1_ps': 1000,
         'T1_ps': 1000,
         'T1_to_T0_ps': 1000,
-        'T0_ps': 1000
+        'T0_ps': 1000,
+        'P':1
     }
     def build_mdp(self,mdpname):
         """build_mdp builds the GROMACS mdp file required for an annealing MD simulation
@@ -146,6 +149,7 @@ class PostSimAnneal(PostSimMD):
         nsteps=int(duration/timestep)*params['ncycles']
         mod_dict={
             'ref_t':params['T0'],
+            'ref_p':params['P'],
             'gen-temp':params['T0'],
             'gen-vel':'yes',
             'annealing-npoints':len(timepoints),
@@ -176,10 +180,11 @@ class PostSimLadder(PostSimMD):
         'scatter': ('time(ps)',['Density'],'rho_v_ns.png'),
         'Tlo':300.0,
         'Thi':600.0,
-        'Ntemps':31,
+        'deltaT':5,
         'ps_per_run':1000,
         'ps_per_rise':1000,
-        'warmup_ps':5000
+        'warmup_ps':5000,
+        'P':1
     }
 
     def build_mdp(self,mdpname):
@@ -190,26 +195,94 @@ class PostSimLadder(PostSimMD):
         """
         params=self.params
         timestep=float(mdp_get(mdpname,'dt'))
-        Tladder=np.linspace(params['Tlo'],params['Thi'],params['Ntemps'])
+        Tdomain=params['Thi']-params['Tlo']
+        nSteps=int(Tdomain/np.abs(params['deltaT']))+1
+        T0=params['Tlo'] if params['deltaT']>0.0 else params['Thi']
+        T1=params['Thi'] if params['deltaT']>0.0 else params['Tlo']
+        Tladder=np.linspace(T0,T1,nSteps)
         timepoints=[0.0,params['warmup_ps']]
-        temppoints=[params['Tlo'],params['Tlo']]
-        for i in range(params['Ntemps']):
+        temppoints=[T0,T0]
+        for i in range(nSteps):
             cT=Tladder[i]
             timepoints.append(timepoints[-1]+params['ps_per_rise'])
             temppoints.append(cT)
             timepoints.append(timepoints[-1]+params['ps_per_run'])
             temppoints.append(cT)
         duration=timepoints[-1]
-        nsteps=int(duration/timestep)
+        nMDsteps=int(duration/timestep)
         mod_dict={
-            'ref_t':params['Tlo'],
-            'gen-temp':params['Thi'],
+            'ref_t':T0,
+            'ref_p':params['P'],
+            'gen-temp':T0,
             'gen-vel':'yes',
             'annealing-npoints':len(timepoints),
             'annealing-temp':' '.join([str(x) for x in temppoints]),
             'annealing-time':' '.join([str(x) for x in timepoints]),
             'annealing':'single',
-            'nsteps':nsteps,
+            'nsteps':nMDsteps,
+            'tcoupl':'v-rescale','tau_t':0.5
+            }
+        mdp_modify(mdpname,mod_dict)
+
+class PostSimDeform(PostSimMD):
+    """ a class to handle a temperature-ladder MD simulation
+    """
+    default_params={
+        'subdir':'postsim/deform',
+        'input_top': 'systems/final-results/final.top',
+        'input_gro': 'postsim/equilibrate/equilibrate.gro',
+        'input_grx': 'systems/final-results/final.grx',
+        'gromacs' : {
+            'gmx': 'gmx',
+            'mdrun': 'gmx mdrun',
+            'options': '-quiet -nobackup',
+            'mdrun_single_molecule': 'gmx mdrun mdrun'
+        },
+        'output_deffnm':'ladder',
+        'traces': ['Temperature','Density','Volume'],
+        'scatter': ('time(ps)',['Density'],'rho_v_ns.png'),
+        'Tlo':300.0,
+        'Thi':600.0,
+        'deltaT':5,
+        'ps_per_run':1000,
+        'ps_per_rise':1000,
+        'warmup_ps':5000,
+        'P':1
+    }
+
+    def build_mdp(self,mdpname):
+        """build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation
+
+        :param mdpname: name of mdp file
+        :type mdpname: str
+        """
+        params=self.params
+        timestep=float(mdp_get(mdpname,'dt'))
+        Tdomain=params['Thi']-params['Tlo']
+        nSteps=int(Tdomain/np.abs(params['deltaT']))+1
+        T0=params['Tlo'] if params['deltaT']>0.0 else params['Thi']
+        T1=params['Thi'] if params['deltaT']>0.0 else params['Tlo']
+        Tladder=np.linspace(T0,T1,nSteps)
+        timepoints=[0.0,params['warmup_ps']]
+        temppoints=[T0,T0]
+        for i in range(nSteps):
+            cT=Tladder[i]
+            timepoints.append(timepoints[-1]+params['ps_per_rise'])
+            temppoints.append(cT)
+            timepoints.append(timepoints[-1]+params['ps_per_run'])
+            temppoints.append(cT)
+        duration=timepoints[-1]
+        nMDsteps=int(duration/timestep)
+        mod_dict={
+            'ref_t':T0,
+            'ref_p':params['P'],
+            'gen-temp':T0,
+            'gen-vel':'yes',
+            'annealing-npoints':len(timepoints),
+            'annealing-temp':' '.join([str(x) for x in temppoints]),
+            'annealing-time':' '.join([str(x) for x in timepoints]),
+            'annealing':'single',
+            'nsteps':nMDsteps,
             'tcoupl':'v-rescale','tau_t':0.5
             }
         mdp_modify(mdpname,mod_dict)

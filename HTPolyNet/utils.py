@@ -98,7 +98,7 @@ def _concat_from_edr(df,edr,names,add=[],add_if_missing=[('Density',0.0)]):
     df=pd.concat((df,this_df),ignore_index=True)
     return df,xshift
 
-def postsim_density_evolution(proj_dir):
+def postsim_density_evolution(proj_dir,append_dirname=False):
     """postsim_density_evolution returns a single dataframe that is a concatenation of the csv files
     in the 'postsim' subdirectories
 
@@ -118,6 +118,8 @@ def postsim_density_evolution(proj_dir):
         t['time(ps)']+=lt
         lt=t['time(ps)'].to_list()[-1]
         df=pd.concat((df,t))
+    if append_dirname:
+        df.rename(columns={x:f'{x}-{proj_dir}' for x in df.columns})
     return df
 
 def density_evolution(proj_dir):

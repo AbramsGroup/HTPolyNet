@@ -163,10 +163,10 @@ def cli():
     command_parsers['parameterize'].add_argument('--loglevel',type=str,default='debug',help='Log level for messages written to diagnostic log (debug|info)')
     ######## plots ########
     command_parsers['plots'].add_argument('-logs',type=str,default='',nargs='+',help='names of diagnostic log files (1 or more)')
-    command_parsers['plots'].add_argument('-proj',type=str,default='',help='name of project directory')
+    command_parsers['plots'].add_argument('-proj',nargs='+',type=str,default=[],help='name of project director[y/ies]')
     command_parsers['plots'].add_argument('-t',type=str,default='',help='Plot density and temperature traces for entire build in specified project directory to this file')
-    command_parsers['plots'].add_argument('-postsim',type=str,default='',help='Plot density traces for post-build anneal/equilibration simulations in specified project directory to this file')
     command_parsers['plots'].add_argument('-o',type=str,default='',help='dump density/temperature trace data to this file')
+    command_parsers['plots'].add_argument('-postsim',type=str,default='',help='Plot density traces for post-build anneal/equilibration simulations in specified project directory to this file')
     command_parsers['plots'].add_argument('-g',type=str,default='',help='Plot graph network of resids and save to this file name')
     command_parsers['plots'].add_argument('-byiter',default=False,action='store_true',help='Plot graph network of resids for each iter separately')
     command_parsers['plots'].add_argument('-mwbxl',default='',help='Compute home-N between crosslinks, save to this file')
