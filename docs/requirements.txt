@@ -1,4 +1,1 @@
 furo==2022.12.7
-pandas
-parmed
-numpy

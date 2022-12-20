@@ -11,8 +11,11 @@ jobs:
     - name: Install package
       run: |
           python3 -m pip install -e .
-    - name: Build HTML
-      uses: ammaraskar/sphinx-action@master
+          cd docs
+          make html
+          cd ..
+    # - name: Build HTML
+    #   uses: ammaraskar/sphinx-action@master
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
