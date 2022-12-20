@@ -11,7 +11,7 @@ jobs:
     - name: Install package
       run: |
           python3 -m pip install -e .
-          python3 -m pip install sphinx
+          python3 -m pip install sphinx matplotlib trr
           cd docs
           make html
           cd ..
