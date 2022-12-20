@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install package
-    - run: |
+      run: |
           pip install -e .
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
