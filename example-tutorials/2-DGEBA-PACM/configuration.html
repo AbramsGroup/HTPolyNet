@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Running the Build" href="run.html" />
@@ -33,13 +35,13 @@
           <div class="body" role="main">
             
   <div class="section" id="the-configuration-file">
-<span id="dgeba-configuration-file"></span><h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this headline">¶</a></h1>
+<span id="dgeba-configuration-file"></span><h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this heading">¶</a></h1>
 <p>The example you fetched has two configuration files that are essentially identical, except one sets the desired cure to 95% (hi) and the other only to 50% (lo).  We previously described an example <a class="reference internal" href="../../user-guide/configuration-files.html#configuration-files"><span class="std std-ref">configuration file for making a system of polystyrene</span></a>, where all the directives were explained in detail.  Here we will only highlight the <code class="docutils literal notranslate"><span class="pre">constituents</span></code> directive.</p>
 <p>We’ll use a very small, stoichiometric system of only 200 DGEBA’s and 100 PACM’s.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">constituents</span><span class="p">:</span> <span class="p p-Indicator">{</span>
-<span class="nt">  DGE</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span> <span class="nv">200</span><span class="p p-Indicator">,</span><span class="nt"> symmetry_equivalent_atoms</span><span class="p">:</span> <span class="p p-Indicator">[[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">],[</span><span class="nv">C3</span><span class="p p-Indicator">,</span><span class="nv">C4</span><span class="p p-Indicator">],[</span><span class="nv">O1</span><span class="p p-Indicator">,</span><span class="nv">O2</span><span class="p p-Indicator">]],</span><span class="nt"> stereocenters</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">C3</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">},</span>
-<span class="nt">  PAC</span><span class="p">:</span> <span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span> <span class="nv">100</span><span class="p p-Indicator">,</span><span class="nt"> symmetry_equivalent_atoms</span><span class="p">:</span> <span class="p p-Indicator">[[</span><span class="nv">N1</span><span class="p p-Indicator">,</span><span class="nv">N2</span><span class="p p-Indicator">],[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">]],</span><span class="nt"> stereocenters</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">}</span>
-<span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">constituents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
+<span class="nt">  DGE</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">200</span><span class="p p-Indicator">,</span><span class="nt"> symmetry_equivalent_atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">],[</span><span class="nv">C3</span><span class="p p-Indicator">,</span><span class="nv">C4</span><span class="p p-Indicator">],[</span><span class="nv">O1</span><span class="p p-Indicator">,</span><span class="nv">O2</span><span class="p p-Indicator">]],</span><span class="nt"> stereocenters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C3</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">},</span><span class="w"></span>
+<span class="nt">  PAC</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="nt"> symmetry_equivalent_atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[[</span><span class="nv">N1</span><span class="p p-Indicator">,</span><span class="nv">N2</span><span class="p p-Indicator">],[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nv">C2</span><span class="p p-Indicator">]],</span><span class="nt"> stereocenters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
+<span class="p p-Indicator">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Notice that the <code class="docutils literal notranslate"><span class="pre">contituents</span></code> directive is where we specify both symmetry-equivalent atoms and stereocenters in each monomer by referencing atom names.  DGEBA has three sets of symmetry-equivalent atoms and one symmetry-unique stereocenter, for example.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses information on symmetry-equivalent atoms to “expand” the set of reactions to include all possible combinations of reactants that symmetry allows.  In the case of a general diepoxy with both C1 and C2 atoms designated as reactive and a general diamine with both N1 and N2 atoms designated as reactive, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expands the <em>single</em> primary-to-seconary amine reaction that generates DGE~C1-N1~PAC, which is explicitly specified in the configuration file, into a set of four reactions with distinct products:</p>
@@ -121,7 +123,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -138,7 +140,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

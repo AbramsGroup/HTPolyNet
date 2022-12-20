@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Reference Materials" href="../../reference-materials/index.html" />
@@ -33,7 +35,7 @@
           <div class="body" role="main">
             
   <div class="section" id="results">
-<span id="ve-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h1>
+<span id="ve-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this heading">¶</a></h1>
 <p>The <a class="reference internal" href="../1-polymethylstyrene/results.html#pms-results"><span class="std std-ref">results section of the PMS tutorial</span></a> does a good job walking you through the project directory structure for any <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> run, so we’ll skip that here.</p>
 <p>First, if we look in either <code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code> (lo-cure) or <code class="docutils literal notranslate"><span class="pre">proj-1/plots</span></code> (hi-cure), we can see the density vs. time of the densification stage:</p>
 <div class="figure align-default" id="id1">
@@ -41,7 +43,7 @@
 <p class="caption"><span class="caption-number">Fig. 20 </span><span class="caption-text">Density vs. time during the densification stage of the bisGMA/STY liquid.  Each of the nine distinct simulations in series is colored uniquely along a <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> <code class="docutils literal notranslate"><span class="pre">plasma</span></code> colomap.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </div>
 <p>By using the <code class="docutils literal notranslate"><span class="pre">plots</span></code> subcommand, we can generate traces of temperature, density, and potential energy vs time for the entire course of the system build:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> htpolynet plots -proj proj-1 -t p1-traces.png -o p1-traces.csv
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -proj proj-1 -t p1-traces.png -o p1-traces.csv
 </pre></div>
 </div>
 <div class="figure align-default" id="id2">
@@ -123,7 +125,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -140,7 +142,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

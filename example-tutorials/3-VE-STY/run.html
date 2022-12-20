@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Results" href="results.html" />
@@ -33,9 +35,9 @@
           <div class="body" role="main">
             
   <div class="section" id="running-the-build">
-<span id="ve-run"></span><h1>Running the Build<a class="headerlink" href="#running-the-build" title="Permalink to this headline">¶</a></h1>
+<span id="ve-run"></span><h1>Running the Build<a class="headerlink" href="#running-the-build" title="Permalink to this heading">¶</a></h1>
 <p>Now, in our working directory <code class="docutils literal notranslate"><span class="pre">my_vinyl_ester/3-bisgma-styrene-thermoset/</span></code>, if you haven’t already, go ahead and launch via <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ./run.sh
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./run.sh
 </pre></div>
 </div>
 <p>As the two <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> commands indicate, standard output is being redirected from the console to the file <code class="docutils literal notranslate"><span class="pre">lo.log</span></code> for the low-cure run and <code class="docutils literal notranslate"><span class="pre">hi.log</span></code> for the high-cure run.  Let’s consider the contents of <code class="docutils literal notranslate"><span class="pre">lo.log</span></code>.</p>
@@ -457,7 +459,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -474,7 +476,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

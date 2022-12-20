@@ -11,7 +11,9 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Configuration Files" href="configuration-files.html" />
@@ -33,7 +35,7 @@
           <div class="body" role="main">
             
   <div class="section" id="molecular-structure-inputs">
-<span id="id1"></span><h1>Molecular Structure Inputs<a class="headerlink" href="#molecular-structure-inputs" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Molecular Structure Inputs<a class="headerlink" href="#molecular-structure-inputs" title="Permalink to this heading">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> requires molecular structures in order to generate systems.  It recognizes <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and <code class="docutils literal notranslate"><span class="pre">pdb</span></code> format files, and it is up to you to make these for your system.  Any <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> file you wish to use as a monomer template should be in the <cite>./lib/molecules/inputs/</cite> relative to the current directory in which you issue <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code>.  There are several ways to make such files from other (e.g., 2-dimensional) structural information, and we will cover two here.  There are also two <strong>very important</strong> things to keep in mind when generating your molecular structure files.</p>
 <p>The first <strong>very important</strong> thing is this:  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> requires <strong>valence-conservation</strong> when polymerizing.  This means that when two atoms are identified as bonding partners (each of which is on a separate molecule, most likely), they each must own at least one <strong>sacrificial hydrogen</strong> atom that is deleted when the bond is formed, thus keeping the valence of each atom constant.  We refer to the <strong>valence-conserving</strong> form of a monomer as its <strong>active</strong> form.</p>
 <p>To illustrate how to handle this, let’s consider the simple monomer styrene.  The “inactive” form of styrene is its “actual” structure:</p>
@@ -47,7 +49,7 @@
 <p class="caption"><span class="caption-number">Fig. 4 </span><span class="caption-text">Example of a Chemdoodle 2d-sketcher session for creating an input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for styrene (ahem, actually ethylbenzene).</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </div>
 <p>Another way is to use <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a>’s <code class="docutils literal notranslate"><span class="pre">obabel</span></code> command.  For example, we can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system">SMILES string</a> for ethylbenzene to tell <code class="docutils literal notranslate"><span class="pre">openbabel</span></code> to generate 3-D coordinates and save to a <code class="docutils literal notranslate"><span class="pre">mol2</span></code> (or, alternatively, a <code class="docutils literal notranslate"><span class="pre">pdb</span></code>) file:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> obabel -:<span class="s2">&quot;C1=CC=CC=C1CC&quot;</span> -ismi --gen-3d -h -omol2 -O STY.mol2
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>obabel -:<span class="s2">&quot;C1=CC=CC=C1CC&quot;</span> -ismi --gen-3d -h -omol2 -O STY.mol2
 </pre></div>
 </div>
 <p>SMILES is a really great way to describe molecular structures, and it makes monomer structure generation simply a matter of expressing it as a string and using <code class="docutils literal notranslate"><span class="pre">obabel</span></code> to generate coordinates.</p>
@@ -108,7 +110,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -125,7 +127,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

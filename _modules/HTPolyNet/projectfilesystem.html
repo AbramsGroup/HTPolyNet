@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -72,7 +74,7 @@
                 <span class="n">subdirs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">xxx</span><span class="p">)</span>
             <span class="n">inst</span><span class="o">.</span><span class="n">subdirs</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">root</span><span class="p">,</span><span class="n">xxx</span><span class="p">)</span> <span class="k">for</span> <span class="n">xxx</span> <span class="ow">in</span> <span class="n">subdirs</span><span class="p">]</span>
         <span class="k">except</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not find package </span><span class="si">{libpackage}</span><span class="s1">.  Your HTPolyNet installation is corrupt.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not find package </span><span class="si">{</span><span class="n">libpackage</span><span class="si">}</span><span class="s1">.  Your HTPolyNet installation is corrupt.&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
         <span class="k">return</span> <span class="n">inst</span></div>
 
@@ -114,9 +116,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">pathname</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pathname</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Cannot find </span><span class="si">{pathname}</span><span class="s1"> in {os.getcwd()}&#39;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pathname</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Cannot find </span><span class="si">{</span><span class="n">pathname</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="n">tt</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">pathname</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">tt</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Please ensure that {str(tt)} is a directory&#39;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">tt</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Please ensure that </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span><span class="si">}</span><span class="s1"> is a directory&#39;</span>
         <span class="n">inst</span><span class="o">=</span><span class="bp">cls</span><span class="p">()</span>
         <span class="n">inst</span><span class="o">.</span><span class="n">designation</span><span class="o">=</span><span class="s1">&#39;User&#39;</span>
         <span class="n">inst</span><span class="o">.</span><span class="n">root</span><span class="o">=</span><span class="n">tt</span>
@@ -139,14 +141,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">basefilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">basefilename</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{basefilename}</span><span class="s1"> not found in {os.getcwd()}. No check-in performed.&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">basefilename</span><span class="si">}</span><span class="s1"> not found in </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s1">. No check-in performed.&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="n">fullfilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>
                 <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">basefilename</span><span class="p">,</span><span class="n">fullfilename</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{filename}</span><span class="s1"> already exists in system library. No check-in performed.&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1"> already exists in system library. No check-in performed.&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">basefilename</span><span class="p">,</span><span class="n">fullfilename</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">True</span></div>
@@ -200,7 +202,7 @@
 <span class="sd">        :return: the string</span>
 <span class="sd">        :rtype: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{self.designation}</span><span class="s1"> library is </span><span class="si">{self.root}</span><span class="s1">&#39;</span></div></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">designation</span><span class="si">}</span><span class="s1"> library is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s1">&#39;</span></div></div>
 
 <span class="n">_SYSTEM_LIBRARY_</span><span class="o">=</span><span class="kc">None</span>
 <div class="viewcode-block" id="lib_setup"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.projectfilesystem.lib_setup">[docs]</a><span class="k">def</span> <span class="nf">lib_setup</span><span class="p">():</span>
@@ -282,7 +284,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;root </span><span class="si">{self.rootPath}</span><span class="s1">: cwd </span><span class="si">{self.cwd}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;root </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="si">}</span><span class="s1">: cwd </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="si">}</span><span class="s1">&#39;</span>
 
     <span class="k">def</span> <span class="nf">_next_project_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">projdir</span><span class="o">=</span><span class="s1">&#39;next&#39;</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;proj-&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;_next_project_dir sets the name of the current project directory and creates it if necessary</span>
@@ -299,30 +301,30 @@
             <span class="c1">#     raise Exception(f&#39;Project directory {projdir} exists but you did not indicate you wanted to restart with the &quot;-restart&quot; flag&#39;)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">projdir</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">projdir</span><span class="p">):</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Working in existing project </span><span class="si">{self.projPath}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Working in existing project </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">projdir</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Working in new project </span><span class="si">{self.projPath}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Working in new project </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
             <span class="n">lastprojdir</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
             <span class="n">currentprojdir</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
-            <span class="k">while</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{prefix}{i}</span><span class="s1">&#39;</span><span class="p">))):</span>
-                <span class="n">lastprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{prefix}{i}</span><span class="s1">&#39;</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{lastprojdir}</span><span class="s1"> exists&#39;</span><span class="p">)</span>
+            <span class="k">while</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))):</span>
+                <span class="n">lastprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lastprojdir</span><span class="si">}</span><span class="s1"> exists&#39;</span><span class="p">)</span>
                 <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
-            <span class="k">assert</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{prefix}{i}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">reProject</span> <span class="ow">or</span> <span class="n">lastprojdir</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="c1"># this is a fresh project</span>
                 <span class="k">if</span> <span class="n">lastprojdir</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
-                    <span class="n">currentprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{prefix}</span><span class="s1">0&#39;</span>
+                    <span class="n">currentprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s1">0&#39;</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">currentprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{prefix}{i}</span><span class="s1">&#39;</span>
+                    <span class="n">currentprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">currentprojdir</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;New project in </span><span class="si">{self.projPath}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;New project in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">currentprojdir</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">lastprojdir</span><span class="p">)</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Restarting project in </span><span class="si">{self.projPath}</span><span class="s1"> (latest project)&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Restarting project in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1"> (latest project)&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_setup_project_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">topdirs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;molecules&#39;</span><span class="p">,</span><span class="s1">&#39;systems&#39;</span><span class="p">,</span><span class="s1">&#39;plots&#39;</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;_setup_project_dir sets up the project directory after it is created by creating the requested top-level subdirectories</span>
@@ -386,7 +388,7 @@
     <span class="n">ret_exts</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">dirname</span><span class="o">=</span><span class="s1">&#39;molecules/parameterized&#39;</span>
     <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mol2&#39;</span><span class="p">,</span><span class="s1">&#39;pdb&#39;</span><span class="p">,</span><span class="s1">&#39;gro&#39;</span><span class="p">,</span><span class="s1">&#39;top&#39;</span><span class="p">,</span><span class="s1">&#39;itp&#39;</span><span class="p">,</span><span class="s1">&#39;grx&#39;</span><span class="p">]:</span>
-        <span class="n">prob_filename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{mname}</span><span class="s1">.</span><span class="si">{e}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">prob_filename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">exists</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">):</span>
             <span class="n">ret_exts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
             <span class="n">checkout</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">)</span>
@@ -453,7 +455,7 @@
     <span class="n">dirname</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">pathstr</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">dirname</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
         <span class="n">dirname</span><span class="o">=</span><span class="n">pathstr</span> <span class="c1"># assume this is a topdir</span>
-    <span class="k">assert</span> <span class="n">dirname</span> <span class="ow">in</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">projSubPaths</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Error: cannot navigate using pathstring </span><span class="si">{pathstr}</span><span class="s1">&#39;</span>
+    <span class="k">assert</span> <span class="n">dirname</span> <span class="ow">in</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">projSubPaths</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Error: cannot navigate using pathstring </span><span class="si">{</span><span class="n">pathstr</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">reentry</span><span class="o">=</span><span class="kc">True</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
         <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
@@ -462,7 +464,7 @@
     <span class="n">basename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">pathstr</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">basename</span><span class="o">!=</span><span class="n">pathstr</span><span class="p">:</span>  <span class="c1"># this is not a topdir</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">basename</span><span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;PFS: making </span><span class="si">{basename}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;PFS: making </span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
     <span class="n">_PFS_</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
@@ -563,7 +565,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -580,7 +582,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

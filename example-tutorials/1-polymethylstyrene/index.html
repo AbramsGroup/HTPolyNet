@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Monomer: 4-methylstyrene" href="monomer.html" />
@@ -33,16 +35,16 @@
           <div class="body" role="main">
             
   <div class="section" id="poly-4-methyl-styrene">
-<span id="pms-tutorial"></span><h1>Poly(4-methyl styrene)<a class="headerlink" href="#poly-4-methyl-styrene" title="Permalink to this headline">¶</a></h1>
+<span id="pms-tutorial"></span><h1>Poly(4-methyl styrene)<a class="headerlink" href="#poly-4-methyl-styrene" title="Permalink to this heading">¶</a></h1>
 <p>This tutorial illustrates how to build an all-atom model of a poly(methyl styrene) system using HTPolyNet.</p>
 <p>The first step is to get to a clean working directory, and then use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> to setup this example.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir my_pms
-<span class="gp">$</span> <span class="nb">cd</span> my_pms
-<span class="gp">$</span> htpolynet fetch-example -n <span class="m">2</span>
-<span class="gp">$</span> ls
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir my_pms
+<span class="gp">$ </span><span class="nb">cd</span> my_pms
+<span class="gp">$ </span>htpolynet fetch-example -n <span class="m">2</span>
+<span class="gp">$ </span>ls
 <span class="go">2-polymethylstyrene/</span>
-<span class="gp">$</span> <span class="nb">cd</span> <span class="m">2</span>-polymethylstyrene
-<span class="gp">$</span> ls
+<span class="gp">$ </span><span class="nb">cd</span> <span class="m">2</span>-polymethylstyrene
+<span class="gp">$ </span>ls
 <span class="go">lib/  README.md  pMSTY.yaml  run.sh</span>
 </pre></div>
 </div>
@@ -162,7 +164,7 @@ $ htpolynet run -diag diagnositics-3 pMSTY.yaml <span class="p">&amp;</span>&gt;
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -179,7 +181,7 @@ $ htpolynet run -diag diagnositics-3 pMSTY.yaml <span class="p">&amp;</span>&gt;
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

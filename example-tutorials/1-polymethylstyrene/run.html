@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Results" href="results.html" />
@@ -33,14 +35,14 @@
           <div class="body" role="main">
             
   <div class="section" id="running-the-build">
-<span id="pms-run"></span><h1>Running the Build<a class="headerlink" href="#running-the-build" title="Permalink to this headline">¶</a></h1>
+<span id="pms-run"></span><h1>Running the Build<a class="headerlink" href="#running-the-build" title="Permalink to this heading">¶</a></h1>
 <p>Now, in our working directory <code class="docutils literal notranslate"><span class="pre">my_pms/2-polymethylstyrene/</span></code>, if you haven’t already, go ahead and launch via <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ./run.sh <span class="p">&amp;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./run.sh <span class="p">&amp;</span>
 </pre></div>
 </div>
 <p>As the <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> command inside <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> indicates, standard output is being redirected from the console to the file <code class="docutils literal notranslate"><span class="pre">console.log</span></code>.</p>
 <div class="section" id="console-output">
-<h2>Console output<a class="headerlink" href="#console-output" title="Permalink to this headline">¶</a></h2>
+<h2>Console output<a class="headerlink" href="#console-output" title="Permalink to this heading">¶</a></h2>
 <p>In this section, let’s go section by section through the console log <code class="docutils literal notranslate"><span class="pre">console.log</span></code> to understand what <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is doing.  The first section just shows a banner and indicates where the library is and where the project directory is, then reports on the available Ambertools software, finally ending by stating the name of the configuration file.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">INFO&gt;</span>
 <span class="go">INFO&gt;     HTPolyNet 1.0.5</span>
@@ -351,7 +353,7 @@ and not finding any cappable bonds, proceeds to the postcure:</p>
 </pre></div>
 </div>
 <p>This just tells us the final density and where the final results are found.  If we look there, we see:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l proj-0/systems/final-results
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls -l proj-0/systems/final-results
 <span class="go">final.gro  final.grx  final.top</span>
 </pre></div>
 </div>
@@ -412,7 +414,7 @@ and not finding any cappable bonds, proceeds to the postcure:</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -429,7 +431,7 @@ and not finding any cappable bonds, proceeds to the postcure:</p>
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

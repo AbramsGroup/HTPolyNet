@@ -11,7 +11,9 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Monomers" href="monomers.html" />
@@ -33,15 +35,15 @@
           <div class="body" role="main">
             
   <div class="section" id="dgeba-pacm-thermoset">
-<span id="dgeba-pacm-tutorial"></span><h1>DGEBA-PACM Thermoset<a class="headerlink" href="#dgeba-pacm-thermoset" title="Permalink to this headline">¶</a></h1>
+<span id="dgeba-pacm-tutorial"></span><h1>DGEBA-PACM Thermoset<a class="headerlink" href="#dgeba-pacm-thermoset" title="Permalink to this heading">¶</a></h1>
 <p>The first step is to get to a clean working directory, and then use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> to setup this example.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir my_dgeba_pacm
-<span class="gp">$</span> <span class="nb">cd</span> my_dgeba_pacm
-<span class="gp">$</span> htpolynet fetch-example -n <span class="m">4</span>
-<span class="gp">$</span> ls
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir my_dgeba_pacm
+<span class="gp">$ </span><span class="nb">cd</span> my_dgeba_pacm
+<span class="gp">$ </span>htpolynet fetch-example -n <span class="m">4</span>
+<span class="gp">$ </span>ls
 <span class="go">4-pacm-dgeba-epoxy-thermoset/</span>
-<span class="gp">$</span> <span class="nb">cd</span> <span class="m">4</span>-pacm-dgeba-epoxy-thermoset
-<span class="gp">$</span> ls
+<span class="gp">$ </span><span class="nb">cd</span> <span class="m">4</span>-pacm-dgeba-epoxy-thermoset
+<span class="gp">$ </span>ls
 <span class="go">DGE-PAC-hi.yaml  DGE-PAC-lo.yaml  lib/  run.sh</span>
 </pre></div>
 </div>
@@ -144,7 +146,7 @@ htpolynet run -diag diagnostics-hi.log <span class="si">${</span><span class="nv
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -161,7 +163,7 @@ htpolynet run -diag diagnostics-hi.log <span class="si">${</span><span class="nv
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

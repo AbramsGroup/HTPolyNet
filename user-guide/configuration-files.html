@@ -11,7 +11,9 @@
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Example Tutorials" href="../example-tutorials/index.html" />
@@ -33,9 +35,9 @@
           <div class="body" role="main">
             
   <div class="section" id="configuration-files">
-<span id="id1"></span><h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this heading">¶</a></h1>
 <div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
 <p>The configuration file is a YAML-format human-readable text file by which the user tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects at most ten distinct sections in a configuration file:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -83,7 +85,7 @@
 <p>Sections can appear in any order (since the whole YAML file is like a nested python dictionary).  The <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> and <code class="docutils literal notranslate"><span class="pre">ambertools</span></code> sections are mainly for specifying system-specific commands for running Gromacs and AmberTools executables; they have defaults that work for simple Linux workstations. <code class="docutils literal notranslate"><span class="pre">densification</span></code>, <code class="docutils literal notranslate"><span class="pre">precure</span></code>, and <code class="docutils literal notranslate"><span class="pre">postcure</span></code> all specify series of MD simulations on the system.  <code class="docutils literal notranslate"><span class="pre">constituents</span></code> specifies the initial make-up of the system, and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> describe both how to build those constituents from input monomers (if necessary) as well as the types of bonds that you want to occur during polymerization.  Both <code class="docutils literal notranslate"><span class="pre">constituents</span></code> and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> sections are where <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> extracts the names of molecular species in the system and how they are chemically interrelated.  <code class="docutils literal notranslate"><span class="pre">CURE</span></code> is the most complicated section, and it desribes how the CURE algorithm is to be run.  We consider each of these eight sections (minus <code class="docutils literal notranslate"><span class="pre">Title</span></code>) below.</p>
 </div>
 <div class="section" id="all-the-details">
-<h2>All the details<a class="headerlink" href="#all-the-details" title="Permalink to this headline">¶</a></h2>
+<h2>All the details<a class="headerlink" href="#all-the-details" title="Permalink to this heading">¶</a></h2>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code>:  This directive specifies parameters <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses when invoking the Gromacs executable.</p>
 <blockquote>
@@ -767,7 +769,7 @@
 </ul>
 </div>
 <div class="section" id="a-simple-configuration-example-polymerizing-styrene">
-<h2>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Permalink to this headline">¶</a></h2>
+<h2>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Permalink to this heading">¶</a></h2>
 <p>For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Title</span><span class="p">:</span> <span class="n">polystyrene</span>
 <span class="n">constituents</span><span class="p">:</span> <span class="p">{</span>
@@ -956,7 +958,7 @@
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -973,7 +975,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
