@@ -33,11 +33,447 @@
             
   <div class="section" id="htpolynet-package">
 <h1>HTPolyNet package<a class="headerlink" href="#htpolynet-package" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-HTPolyNet.command">
+<span id="submodules"></span><h2>Submodules<a class="headerlink" href="#module-HTPolyNet.command" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-command"></span><dl class="py class">
+<dt class="sig sig-object py" id="HTPolyNet.command.Command">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HTPolyNet.command.</span></span><span class="sig-name descname"><span class="pre">Command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/command.html#Command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.command.Command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="HTPolyNet.command.Command.linelen">
+<span class="sig-name descname"><span class="pre">linelen</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">55</span></em><a class="headerlink" href="#HTPolyNet.command.Command.linelen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.command.Command.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">override</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_codes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quiet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/command.html#Command.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.command.Command.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-HTPolyNet.countTime"></span><span class="target" id="module-countTime"></span><dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.countTime.countTime">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.countTime.</span></span><span class="sig-name descname"><span class="pre">countTime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/countTime.html#countTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.countTime.countTime" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-HTPolyNet.projectfilesystem"></span><span class="target" id="module-projectfilesystem"></span><dl class="py class">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.ProjectFileSystem">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">ProjectFileSystem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topdirs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['molecules',</span> <span class="pre">'systems',</span> <span class="pre">'plots']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'next'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reProject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">userlibrary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#ProjectFileSystem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.ProjectFileSystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Handles all aspects of the creation and organization of a project filesystem</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.ProjectFileSystem.cdproj">
+<span class="sig-name descname"><span class="pre">cdproj</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#ProjectFileSystem.cdproj"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.ProjectFileSystem.cdproj" title="Permalink to this definition">¶</a></dt>
+<dd><p>cdproj change the cwd to the toplevel project directory</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.ProjectFileSystem.cdroot">
+<span class="sig-name descname"><span class="pre">cdroot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#ProjectFileSystem.cdroot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.ProjectFileSystem.cdroot" title="Permalink to this definition">¶</a></dt>
+<dd><p>cdroot change the cwd to the root (parent directory of project directory)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.ProjectFileSystem.go_to">
+<span class="sig-name descname"><span class="pre">go_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subPath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#ProjectFileSystem.go_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.ProjectFileSystem.go_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>go_to change the cwd to the directory named by ‘subPath’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>subPath</strong> (<em>str</em>) – directory to change to, relative to project directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">RuntimeLibrary</span></span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>a library object – default creation references the Library resource package.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.checkin">
+<span class="sig-name descname"><span class="pre">checkin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.checkin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.checkin" title="Permalink to this definition">¶</a></dt>
+<dd><p>checkin check filename into this RuntimeLibrary</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – name of file to check in, <strong>*relative to the top level directory in which the library is housed*</strong></p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em><em>, </em><em>optional</em>) – if True, overwrite the file in the RuntimeLibrary if it exists, defaults to False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>False if filename not found in cwd; True if check-in was successful</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.checkout">
+<span class="sig-name descname"><span class="pre">checkout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searchpath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altpath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.checkout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.checkout" title="Permalink to this definition">¶</a></dt>
+<dd><p>checkout check the file named by filename out of this RuntimeLibrary and copy it to the cwd</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – name of file to checkout, relative to the top level directory in which the library is found</p></li>
+<li><p><strong>searchpath</strong> (<em>list</em><em>, </em><em>optional</em>) – path of directories to search if the filename is not resolved, defaults to []</p></li>
+<li><p><strong>altpath</strong> (<em>list</em><em>, </em><em>optional</em>) – additional directories to add to the search path, defaults to []</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if file checkout was successful, False if not</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.exists">
+<span class="sig-name descname"><span class="pre">exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>exists checks to see if filename exists in this RuntimeLibrary</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – name of file to check for, relative to toplevel directory of RuntimeLibrary</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if filename exists in RuntimeLibrary, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.get_example_depot_location">
+<span class="sig-name descname"><span class="pre">get_example_depot_location</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.get_example_depot_location"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.get_example_depot_location" title="Permalink to this definition">¶</a></dt>
+<dd><p>get_example_depot_location reports the location of the examples in this RuntimeLibrary, if they exist</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>name of depot directory</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.get_example_names">
+<span class="sig-name descname"><span class="pre">get_example_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.get_example_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.get_example_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get_example_names returns the names of the example tarballs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of names of example tarballs</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.info">
+<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>info returns a simple string describing this RuntimeLibrary</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the string</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.system">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">system</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">libpackage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Library'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.system"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.system" title="Permalink to this definition">¶</a></dt>
+<dd><p>system generates a RuntimeLibrary object corresponding to the installed Library subpackage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>libpackage</strong> (<em>str</em><em>, </em><em>optional</em>) – name of the HTPolyNet Library subpackage, defaults to ‘Library’</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ImportError</strong> – if the system library subpackage is not found</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a RuntimeLibrary object holding the system library subpackage</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#HTPolyNet.projectfilesystem.RuntimeLibrary" title="HTPolyNet.projectfilesystem.RuntimeLibrary">RuntimeLibrary</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.RuntimeLibrary.user">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">user</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pathname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#RuntimeLibrary.user"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.RuntimeLibrary.user" title="Permalink to this definition">¶</a></dt>
+<dd><p>user generates a new user-level RuntimeLibrary object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pathname</strong> (<em>str</em><em>, </em><em>optional</em>) – where to find the library, defaults to ‘.’</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a new RuntimeLibrary object</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#HTPolyNet.projectfilesystem.RuntimeLibrary" title="HTPolyNet.projectfilesystem.RuntimeLibrary">RuntimeLibrary</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.checkin">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">checkin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'user'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#checkin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.checkin" title="Permalink to this definition">¶</a></dt>
+<dd><p>checkin check the file named ‘filename’ into either the user-level local library or the global system Library package (the latter requires write priveleges wherever Python packages are stored if HTPolyNet is installed without -e or from PyPI)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – name of file to check in</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em><em>, </em><em>optional</em>) – flag indicates whether file should overwrite file of same name in library, defaults to False</p></li>
+<li><p><strong>priority</strong> (<em>str</em><em>, </em><em>optional</em>) – string indicating which library to check into, defaults to ‘user’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.checkout">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">checkout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">altpath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#checkout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.checkout" title="Permalink to this definition">¶</a></dt>
+<dd><p>checkout handles checking files out of the library owned by the global ProjectFileSystem object; tries to checkout from user-level local library first before trying to check out from the global system Library subpackage</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – name of file to check out relative to top-level of library</p></li>
+<li><p><strong>altpath</strong> (<em>list</em><em>, </em><em>optional</em>) – list of alternate directories to search, defaults to []</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if checkout from user library successful, otherwise returns result of checkout from global system Library (also a bool)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.cwd">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">cwd</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#cwd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.cwd" title="Permalink to this definition">¶</a></dt>
+<dd><p>cwd returns name of current working directory relative to the root path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>name of current working directory relative to the root path</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>os.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.exists">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>exists checks for existence of filename in user-level local library, then in the system Library</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – name of file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if found in either library</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.fetch_molecule_files">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">fetch_molecule_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#fetch_molecule_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.fetch_molecule_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>fetch_molecule_files fetches all relevant molecule data files for molecule named ‘mname’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mname</strong> (<em>str</em>) – name of molecule</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of filetypes found and fetched</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.go_proj">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">go_proj</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#go_proj"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.go_proj" title="Permalink to this definition">¶</a></dt>
+<dd><p>go_proj change the current working directory to the project directory</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.go_root">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">go_root</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#go_root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.go_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>go_root change the current working directory to the root directory</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.go_to">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">go_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pathstr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#go_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.go_to" title="Permalink to this definition">¶</a></dt>
+<dd><p>go_to Change the current working directory to “pathstr” which is relative to the project root.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pathstr</strong> (<em>str</em>) – pathname of directory relative to project root</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>absolute path of current working direcory</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>os.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.info">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>info prints some summary information about Libraries to the console</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.lib_setup">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">lib_setup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#lib_setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.lib_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>lib_setup sets up the system RuntimeLibrary</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>system RuntimeLibrary object</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#HTPolyNet.projectfilesystem.RuntimeLibrary" title="HTPolyNet.projectfilesystem.RuntimeLibrary">RuntimeLibrary</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.local_data_searchpath">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">local_data_searchpath</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#local_data_searchpath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.local_data_searchpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>local_data_searchpath returns container containing root path and project path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list containing root path and project path</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.pfs_setup">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">pfs_setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topdirs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['molecules',</span> <span class="pre">'systems',</span> <span class="pre">'plots']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'next'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reProject</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">userlibrary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#pfs_setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.pfs_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>pfs_setup sets up the global ProjectFileSystem object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<em>str</em><em>, </em><em>optional</em>) – parent directory of this project file system, defaults to ‘.’</p></li>
+<li><p><strong>topdirs</strong> (<em>list</em><em>, </em><em>optional</em>) – top-level subdirectories, defaults to [‘molecules’,’systems’,’plots’]</p></li>
+<li><p><strong>projdir</strong> (<em>str</em><em>, </em><em>optional</em>) – name of the project directory itself, defaults to ‘next’</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – flag indicating verbose output, defaults to False</p></li>
+<li><p><strong>reProject</strong> (<em>bool</em><em>, </em><em>optional</em>) – flag indicating restart, defaults to False</p></li>
+<li><p><strong>userlibrary</strong> (<em>str</em><em>, </em><em>optional</em>) – name of user library relative to root, defaults to None</p></li>
+<li><p><strong>mock</strong> (<em>bool</em><em>, </em><em>optional</em>) – flag indicating this is a mock call, defaults to False</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.proj">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">proj</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#proj"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.proj" title="Permalink to this definition">¶</a></dt>
+<dd><p>proj returns name of project directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>name of project directory</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>os.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.proj_abspath">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">proj_abspath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#proj_abspath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.proj_abspath" title="Permalink to this definition">¶</a></dt>
+<dd><p>proj_abspath returns the path of the file named filename relative to the project directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – name of the probe file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>name of probe file relative to the project directory</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>os.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.root">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">root</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.root" title="Permalink to this definition">¶</a></dt>
+<dd><p>root returns name of root directory (parent of project directory)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>name of root directory</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>os.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.subpath">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">subpath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#subpath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.subpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>subpath returns the path of the project subdirectory with name ‘name’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – name of subdirectory</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>path of subdirectory</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>os.path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.projectfilesystem.system">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.projectfilesystem.</span></span><span class="sig-name descname"><span class="pre">system</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/projectfilesystem.html#system"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.projectfilesystem.system" title="Permalink to this definition">¶</a></dt>
+<dd><p>system returns the system RuntimeLibrary object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>system RuntimeLibrary object</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#HTPolyNet.projectfilesystem.RuntimeLibrary" title="HTPolyNet.projectfilesystem.RuntimeLibrary">RuntimeLibrary</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </div>
-<div class="section" id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-HTPolyNet">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-HTPolyNet" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -65,8 +501,8 @@
 <li class="toctree-l1"><a class="reference internal" href="example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference-materials/index.html">Reference Materials</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">HTPolyNet package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-HTPolyNet.command">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-HTPolyNet">Module contents</a></li>
 </ul>
 </li>
 </ul>
