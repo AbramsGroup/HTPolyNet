@@ -11,6 +11,7 @@ jobs:
     - name: Install package
       run: |
           python3 -m pip install -e .
+          python3 -m pip install sphinx
           cd docs
           make html
           cd ..
