@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.reaction &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.reaction</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: reaction</span>
+<span class="sd">   :synopsis: handles Reaction objects</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.plot</span> <span class="kn">import</span> <span class="n">network_graph</span>
+<span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="reaction_stage"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.reaction_stage">[docs]</a><span class="k">class</span> <span class="nc">reaction_stage</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Enumerated reaction stage</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">build</span><span class="o">=</span><span class="mi">0</span>   <span class="c1"># only used for building molecules that use parameterized oligomers</span>
+    <span class="n">param</span><span class="o">=</span><span class="mi">1</span>   <span class="c1"># used to generate parameterized oligomers that are not cure reactions</span>
+    <span class="n">cure</span><span class="o">=</span><span class="mi">2</span>    <span class="c1"># used to generate parameterized oligormers that ARE cure reactions</span>
+    <span class="n">cap</span><span class="o">=</span><span class="mi">3</span>     <span class="c1"># used to generate parameterized capped monomers</span>
+    <span class="n">unset</span><span class="o">=</span><span class="mi">99</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
+<div class="viewcode-block" id="Reaction"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.Reaction">[docs]</a><span class="k">class</span> <span class="nc">Reaction</span><span class="p">:</span>
+    <span class="n">default_directives</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;atoms&#39;</span><span class="p">:{},</span>
+        <span class="s1">&#39;bonds&#39;</span><span class="p">:[],</span>
+        <span class="s1">&#39;reactants&#39;</span><span class="p">:{},</span>
+        <span class="s1">&#39;product&#39;</span><span class="p">:</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;stage&#39;</span><span class="p">:</span><span class="n">reaction_stage</span><span class="o">.</span><span class="n">unset</span><span class="p">,</span>
+        <span class="s1">&#39;procession&#39;</span><span class="p">:{},</span>
+        <span class="s1">&#39;probability&#39;</span><span class="p">:</span><span class="mf">1.0</span>
+    <span class="p">}</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">jsondict</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="sd">&quot;&quot;&quot;__init__ generates a Reaction object using directives in jsondict</span>
+
+<span class="sd">        :param jsondict: directives for creating a new Reaction object, defaults to {}</span>
+<span class="sd">        :type jsondict: dict, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jsondict</span><span class="o">=</span><span class="n">jsondict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;atoms&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;atoms&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bonds</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bonds&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;bonds&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;reactants&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;reactants&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">product</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;product&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;product&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="o">=</span><span class="n">reaction_stage</span><span class="p">[</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stage&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]))]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">procession</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;procession&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;procession&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">probability</span><span class="o">=</span><span class="n">jsondict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;probability&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">[</span><span class="s1">&#39;probability&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">jsondict</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_directives</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Ignoring unknown reaction directive &quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symmetry_versions</span><span class="o">=</span><span class="p">[]</span>
+    
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">retstr</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Reaction &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot; (</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stage</span><span class="p">)</span><span class="si">}</span><span class="s1">)</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">retstr</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;reactant </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">retstr</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;product </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">product</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">atoms</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">retstr</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;atom </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bonds</span><span class="p">:</span>
+            <span class="n">retstr</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;bond </span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="n">retstr</span></div>
+
+<span class="n">ReactionList</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="n">Reaction</span><span class="p">]</span>
+
+<div class="viewcode-block" id="parse_reaction_list"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.parse_reaction_list">[docs]</a><span class="k">def</span> <span class="nf">parse_reaction_list</span><span class="p">(</span><span class="n">baselist</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;parse_reaction_list generates any new reactions inferred by procession (i.e., linear polymerization)</span>
+
+<span class="sd">    :param baselist: list of unprocessed reaction dicts read directly from configuration file</span>
+<span class="sd">    :type baselist: ReactionList</span>
+<span class="sd">    :return: entire set of all reactions, including new ones added here</span>
+<span class="sd">    :rtype: ReactionList</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">processives</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">R</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">baselist</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">R</span><span class="o">.</span><span class="n">procession</span><span class="p">:</span>
+            <span class="n">nReactions</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Reaction </span><span class="si">{</span><span class="n">R</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> is processive: </span><span class="si">{</span><span class="n">R</span><span class="o">.</span><span class="n">procession</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">final_product_name</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">product</span>
+            <span class="n">R</span><span class="o">.</span><span class="n">product</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">final_product_name</span><span class="si">}</span><span class="s1">_I0&#39;</span>
+            <span class="n">original_name</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">R</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">R</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">-i0&#39;</span>
+            <span class="n">base_reactant_key</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">procession</span><span class="p">[</span><span class="s1">&#39;increment_resid&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">procession</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]):</span>
+                <span class="n">nR</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+                <span class="n">nR</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">original_name</span><span class="si">}</span><span class="s1">-i</span><span class="si">{</span><span class="n">c</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="n">nR</span><span class="o">.</span><span class="n">product</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">final_product_name</span><span class="si">}</span><span class="s1">_I</span><span class="si">{</span><span class="n">c</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">c</span><span class="o">&lt;</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">procession</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">else</span> <span class="n">final_product_name</span>
+                <span class="n">nR</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">base_reactant_key</span><span class="p">]</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">final_product_name</span><span class="si">}</span><span class="s1">_I</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="k">for</span> <span class="n">ak</span><span class="p">,</span><span class="n">arec</span> <span class="ow">in</span> <span class="n">nR</span><span class="o">.</span><span class="n">atoms</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">arec</span><span class="p">[</span><span class="s1">&#39;reactant&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">base_reactant_key</span><span class="p">:</span> <span class="n">arec</span><span class="p">[</span><span class="s1">&#39;resid&#39;</span><span class="p">]</span><span class="o">+=</span><span class="p">(</span><span class="n">c</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">nR</span><span class="o">.</span><span class="n">procession</span><span class="o">=</span><span class="p">{}</span>
+                <span class="n">nReactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nR</span><span class="p">)</span>
+            <span class="n">processives</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span><span class="n">nReactions</span><span class="p">))</span>
+    <span class="n">lasti</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">ret_reactions</span><span class="o">=</span><span class="n">baselist</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">processives</span><span class="p">:</span>
+        <span class="n">atidx</span><span class="p">,</span><span class="n">sublist</span><span class="o">=</span><span class="n">rec</span>
+        <span class="n">atidx</span><span class="o">+=</span><span class="n">lasti</span>
+        <span class="n">ret_reactions</span><span class="o">=</span><span class="n">ret_reactions</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">atidx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">sublist</span><span class="o">+</span><span class="n">ret_reactions</span><span class="p">[</span><span class="n">atidx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">lasti</span><span class="o">+=</span><span class="nb">len</span><span class="p">(</span><span class="n">sublist</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret_reactions</span></div>
+
+<div class="viewcode-block" id="extract_molecule_reactions"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.extract_molecule_reactions">[docs]</a><span class="k">def</span> <span class="nf">extract_molecule_reactions</span><span class="p">(</span><span class="n">rlist</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;extract_molecule_reactions establishes the correct order of reactions so that molecular templates are created in a sensible order (reactants before products for all reactions)</span>
+
+<span class="sd">    :param rlist: list of all reactions</span>
+<span class="sd">    :type rlist: ReactionList</span>
+<span class="sd">    :param plot: flag to plot the reaction network, defaults to True</span>
+<span class="sd">    :type plot: bool, optional</span>
+<span class="sd">    :return: ordered list of tuples, reach of the from (name-of-product-molecule,Reaction)</span>
+<span class="sd">    :rtype: list of tuples</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">working_rlist</span><span class="o">=</span><span class="n">rlist</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">G</span><span class="o">=</span><span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">()</span>
+    <span class="c1"># Given an unsorted list of reactions (list of reactants +  one product), order a list of </span>
+    <span class="c1"># of molecules so that no product comes before any of its reactants</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rlist</span><span class="p">:</span> <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">molecule_react_order</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">reactants</span><span class="o">=</span><span class="nb">set</span><span class="p">()</span>
+    <span class="n">products</span><span class="o">=</span><span class="nb">set</span><span class="p">()</span>
+    <span class="c1"># first molecules to generate are the input reactants</span>
+    <span class="k">for</span> <span class="n">R</span> <span class="ow">in</span> <span class="n">working_rlist</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">reactants</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="n">R</span><span class="o">.</span><span class="n">product</span><span class="p">)</span>
+        <span class="n">products</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">product</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span> <span class="n">network_graph</span><span class="p">(</span><span class="n">G</span><span class="p">,</span><span class="s1">&#39;plots/reaction_network.png&#39;</span><span class="p">,</span><span class="n">arrows</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span><span class="n">node_size</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">input_reactants</span><span class="o">=</span><span class="n">reactants</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">reactants</span><span class="o">.</span><span class="n">symmetric_difference</span><span class="p">(</span><span class="n">products</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Input reactants: </span><span class="si">{</span><span class="n">input_reactants</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">input_reactants</span><span class="p">:</span>
+        <span class="n">molecule_react_order</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span><span class="kc">None</span><span class="p">))</span>
+    <span class="c1"># once inputs are generated, any moleculed constructed only from inputs can be generated</span>
+    <span class="k">for</span> <span class="n">R</span> <span class="ow">in</span> <span class="n">rlist</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">in</span> <span class="n">input_reactants</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">values</span><span class="p">()]):</span>
+            <span class="n">molecule_react_order</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">R</span><span class="o">.</span><span class="n">product</span><span class="p">,</span><span class="n">R</span><span class="p">))</span>
+            <span class="n">working_rlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+    
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">working_rlist</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">molecules</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">molecule_react_order</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">R</span> <span class="ow">in</span> <span class="n">working_rlist</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">in</span> <span class="n">molecules</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">values</span><span class="p">()]):</span>
+                <span class="n">molecule_react_order</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">R</span><span class="o">.</span><span class="n">product</span><span class="p">,</span><span class="n">R</span><span class="p">))</span>
+                <span class="n">molecules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">product</span><span class="p">)</span>
+                <span class="n">working_rlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+            <span class="c1"># else:</span>
+            <span class="c1">#     logger.debug(f&#39;Cannot place {R.product} since not all of {R.reactants.values()} are in the list yet&#39;)</span>
+
+    <span class="k">return</span> <span class="n">molecule_react_order</span></div>
+
+<div class="viewcode-block" id="get_r"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.get_r">[docs]</a><span class="k">def</span> <span class="nf">get_r</span><span class="p">(</span><span class="n">mname</span><span class="p">,</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;get_r returns the Reaction that generates molecule mname as a product, if it exists, otherwise None</span>
+
+<span class="sd">    :param mname: name of molecule to search </span>
+<span class="sd">    :type mname: str</span>
+<span class="sd">    :param RL: list of all Reactions</span>
+<span class="sd">    :type RL: ReactionList</span>
+<span class="sd">    :return: Reaction that generates mname, or None</span>
+<span class="sd">    :rtype: Reaction or NoneType</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">RL</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">while</span> <span class="n">RL</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">product</span><span class="o">!=</span><span class="n">mname</span><span class="p">:</span> 
+        <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">RL</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">RL</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="is_reactant"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.is_reactant">[docs]</a><span class="k">def</span> <span class="nf">is_reactant</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="n">reaction_list</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">stage</span><span class="o">=</span><span class="n">reaction_stage</span><span class="o">.</span><span class="n">cure</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;is_reactant tests to see if molecule &#39;name&#39; appears as a reactant in any reaction in reaction_list</span>
+
+<span class="sd">    :param name: name of molecule</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :param reaction_list: list of all Reactions</span>
+<span class="sd">    :type reaction_list: ReactionList</span>
+<span class="sd">    :param stage: stage or reactions to search, defaults to reaction_stage.cure</span>
+<span class="sd">    :type stage: reaction_stage(Enum), optional</span>
+<span class="sd">    :return: True if molecule is a reactant, False otherwise</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reactants</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reaction_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">stage</span><span class="o">==</span><span class="n">stage</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">reactants</span><span class="p">:</span>
+                    <span class="n">reactants</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">reactants</span></div>
+    
+<div class="viewcode-block" id="product_sequence_resnames"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.product_sequence_resnames">[docs]</a><span class="k">def</span> <span class="nf">product_sequence_resnames</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">reactions</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;product_sequence_resnames recursively generate sequence of product of R by traversing network of reactions; sequence is by definition an ordered list of monomer names</span>
+
+<span class="sd">    :param R: a Reaction</span>
+<span class="sd">    :type R: Reaction</span>
+<span class="sd">    :param reactions: list of all Reactions</span>
+<span class="sd">    :type reactions: ReactionList</span>
+<span class="sd">    :return: the sequence of R&#39;s product molecule as a list of monomer names</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">allProducts</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">product</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">rKey</span><span class="p">,</span><span class="n">rName</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">rName</span> <span class="ow">in</span> <span class="n">allProducts</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">product_sequence_resnames</span><span class="p">(</span><span class="n">reactions</span><span class="p">[</span><span class="n">allProducts</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">rName</span><span class="p">)],</span><span class="n">reactions</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">rName</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="molname_sequence_resnames"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.molname_sequence_resnames">[docs]</a><span class="k">def</span> <span class="nf">molname_sequence_resnames</span><span class="p">(</span><span class="n">molname</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="n">reactions</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;molname_sequence_resnames determine monomer sequence of the molecule with name molname based on a traversal of the reaction network</span>
+
+<span class="sd">    :param molname: name of molecule</span>
+<span class="sd">    :type molname: str</span>
+<span class="sd">    :param reactions: list of all Reactions</span>
+<span class="sd">    :type reactions: ReactionList</span>
+<span class="sd">    :return: monomer sequence of molecule as a list of monomer names</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prodnames</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">product</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">reactions</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">molname</span> <span class="ow">in</span> <span class="n">prodnames</span><span class="p">:</span>
+        <span class="n">R</span><span class="o">=</span><span class="n">reactions</span><span class="p">[</span><span class="n">prodnames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">molname</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">product_sequence_resnames</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">reactions</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">molname</span><span class="p">]</span>  <span class="c1"># not a product in the reaction list?  must be a monomer</span></div>
+
+<div class="viewcode-block" id="reactant_resid_to_presid"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.reactant_resid_to_presid">[docs]</a><span class="k">def</span> <span class="nf">reactant_resid_to_presid</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">reactantName</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span><span class="n">resid</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span><span class="n">reactions</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;reactant_resid_to_presid map the resid of a reactant monomer to its inferred resid in the associate product in reaction R, by traversing the reaction network</span>
+
+<span class="sd">    :param R: a Reaction</span>
+<span class="sd">    :type R: Reaction</span>
+<span class="sd">    :param reactantName: the name of one of the reactants in R</span>
+<span class="sd">    :type reactantName: str</span>
+<span class="sd">    :param resid: the resid in that reactant we want mapped to the product</span>
+<span class="sd">    :type resid: int</span>
+<span class="sd">    :param reactions: list of all Reactions</span>
+<span class="sd">    :type reactions: ReactionList</span>
+<span class="sd">    :return: resid of this residue in the product of R</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reactants</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+    <span class="k">if</span> <span class="n">reactantName</span> <span class="ow">in</span> <span class="n">reactants</span><span class="p">:</span>
+        <span class="n">ridx</span><span class="o">=</span><span class="n">reactants</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">reactantName</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;reactantName </span><span class="si">{</span><span class="n">reactantName</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">ridx</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">reactants</span><span class="si">}</span><span class="s1"> of </span><span class="si">{</span><span class="n">R</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">S</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ridx</span><span class="p">):</span>
+            <span class="n">seq</span><span class="o">=</span><span class="n">molname_sequence_resnames</span><span class="p">(</span><span class="n">reactants</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">reactions</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">seq</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">S</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">S</span><span class="o">+=</span><span class="nb">len</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">S</span><span class="o">+</span><span class="n">resid</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span></div>
+
+<div class="viewcode-block" id="generate_product_name"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.reaction.generate_product_name">[docs]</a><span class="k">def</span> <span class="nf">generate_product_name</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;generate_product_name automatically generate the name of the product based on the names of the reactants and the bonds in R</span>
+
+<span class="sd">    :param R: a Reaction</span>
+<span class="sd">    :type R: Reaction</span>
+<span class="sd">    :return: suggested name of product</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pname</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">R</span><span class="o">.</span><span class="n">bonds</span><span class="p">:</span>
+        <span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="o">=</span><span class="n">b</span><span class="p">[</span><span class="s1">&#39;atoms&#39;</span><span class="p">]</span>
+        <span class="n">i_arec</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">atoms</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">j_arec</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">atoms</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">i_reKey</span><span class="o">=</span><span class="n">i_arec</span><span class="p">[</span><span class="s1">&#39;reactant&#39;</span><span class="p">]</span>
+        <span class="n">i_reNm</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">i_reKey</span><span class="p">]</span>
+        <span class="n">i_aNm</span><span class="o">=</span><span class="n">i_arec</span><span class="p">[</span><span class="s1">&#39;atom&#39;</span><span class="p">]</span>
+        <span class="n">j_reKey</span><span class="o">=</span><span class="n">j_arec</span><span class="p">[</span><span class="s1">&#39;reactant&#39;</span><span class="p">]</span>
+        <span class="n">j_reNm</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">j_reKey</span><span class="p">]</span>
+        <span class="n">j_aNm</span><span class="o">=</span><span class="n">j_arec</span><span class="p">[</span><span class="s1">&#39;atom&#39;</span><span class="p">]</span>
+        <span class="n">tbNm</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i_reNm</span><span class="si">}</span><span class="s1">~</span><span class="si">{</span><span class="n">i_aNm</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">j_aNm</span><span class="si">}</span><span class="s1">~</span><span class="si">{</span><span class="n">j_reNm</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">pname</span><span class="o">=</span><span class="n">tbNm</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pname</span><span class="o">+=</span><span class="s1">&#39;---&#39;</span><span class="o">+</span><span class="n">tbNm</span>
+    <span class="k">return</span> <span class="n">pname</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
