@@ -451,6 +451,7 @@ class TopoCoord:
         :type dict of molecules
         :return: 3-tuple: new topology file name, new coordinate file name, list of bonds with atom indices updated to reflect any atom deletions
         :rtype: 3-tuple
+        
         """
         explicit_sacH=kwargs.get('explicit_sacH',{})
         template_source=kwargs.get('template_source','internal')

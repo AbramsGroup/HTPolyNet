@@ -293,6 +293,7 @@ class PostsimConfiguration:
         
         - { key1: {<paramdict>}}
         - { key2: {<paramdict>}} 
+        
         ...
 
         The config file is a list of single-element dictionaries, whose single keyword
