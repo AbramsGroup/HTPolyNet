@@ -13,8 +13,9 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../HTPolyNet/'))
-
-
+# dnw:
+#from HTPolyNet.__init__.py import HTPOLYNET_VERSION
+HTPOLYNET_VERSION='1.0.5'
 # -- Project information -----------------------------------------------------
 
 project = 'HTPolyNet'
@@ -22,7 +23,7 @@ copyright = '2022, Cameron Abrams, Ming Huang'
 author = 'Cameron Abrams, Ming Huang'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0.5'
+release = HTPOLYNET_VERSION
 
 
 # -- General configuration ---------------------------------------------------
@@ -30,7 +31,7 @@ release = '1.0.5'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon', 'sphinx.ext.githubpages']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -38,7 +39,7 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ['*.xmind']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -54,3 +55,4 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 
 numfig = True
+autosummary_generate = True
