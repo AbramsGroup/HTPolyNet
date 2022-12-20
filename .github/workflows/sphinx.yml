@@ -10,7 +10,7 @@ jobs:
     - uses: actions/setup-python@v2
     - name: Install package
       run: |
-          pip install -e .
+          python3 -m pip install -e .
     - name: Build HTML
       uses: ammaraskar/sphinx-action@master
     - name: Upload artifacts
