@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Installation and Prerequisites &#8212; HTPolyNet 1.0.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
@@ -34,9 +35,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="installation-and-prerequisites">
+  <section id="installation-and-prerequisites">
 <h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this heading">¶</a></h1>
-<div class="section" id="software-prequisites">
+<section id="software-prequisites">
 <h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this heading">¶</a></h2>
 <p>The following commands should be in your path:</p>
 <ol class="arabic simple">
@@ -54,8 +55,8 @@
 </pre></div>
 </div>
 <p>(<code class="docutils literal notranslate"><span class="pre">ambertools</span></code> is available from the <code class="docutils literal notranslate"><span class="pre">conda-forge</span></code> channel.)  If you don’t do this, <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> in <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will do it for you, which might take a bit.</p>
-</div>
-<div class="section" id="installation">
+</section>
+<section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>Because <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is under active development, we recommend installing from a freshly cloned Github repository:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git clone git@github.com:AbramsGroup/HTPolyNet.git
@@ -64,11 +65,11 @@
 </pre></div>
 </div>
 <p>If you created the recommended python environment, make sure it is activated before running <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>!</p>
-</div>
-<div class="section" id="notes">
+</section>
+<section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading">¶</a></h2>
 <p>If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  <strong>It is recommended that you deactivate any conda environment before performing any of these compilations.</strong></p>
-<div class="section" id="compilation-of-ambertools">
+<section id="compilation-of-ambertools">
 <h3>Compilation of AmberTools<a class="headerlink" href="#compilation-of-ambertools" title="Permalink to this heading">¶</a></h3>
 <p>Compilation of AmberTools requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar jxf AmberTools21.tar.bz2
@@ -78,8 +79,8 @@
 <span class="gp">$ </span>make install
 </pre></div>
 </div>
-</div>
-<div class="section" id="compilation-of-gromacs">
+</section>
+<section id="compilation-of-gromacs">
 <h3>Compilation of Gromacs<a class="headerlink" href="#compilation-of-gromacs" title="Permalink to this heading">¶</a></h3>
 <p>You can also compile Gromacs from source, if your Linux distibution doesn’t include it in its package management, or you are on a big supercomputer.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar xfz gromacs-2022.1.tar.gz
@@ -97,8 +98,8 @@
 </pre></div>
 </div>
 <p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.</p>
-</div>
-<div class="section" id="compilation-of-obabel">
+</section>
+<section id="compilation-of-obabel">
 <h3>Compilation of <code class="docutils literal notranslate"><span class="pre">obabel</span></code><a class="headerlink" href="#compilation-of-obabel" title="Permalink to this heading">¶</a></h3>
 <p>If your system does not have <code class="docutils literal notranslate"><span class="pre">obabel</span></code> installed and your Linux distribution doesn’t offer a package for it (or you are not root!), you can compile it from source.  Be sure to unpack <a class="reference external" href="https://eigen.tuxfamily.org/index.php?title=Main_Page">Eigen</a> first so that the <code class="docutils literal notranslate"><span class="pre">conformer</span></code> plug-in for <code class="docutils literal notranslate"><span class="pre">obabel</span></code> will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to <code class="docutils literal notranslate"><span class="pre">~/Downloads</span></code> and are unpacked in the directory <code class="docutils literal notranslate"><span class="pre">~/build/</span></code>, and the OpenBabel installation directory is <code class="docutils literal notranslate"><span class="pre">~/opt/obabel</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ~/build
@@ -114,9 +115,9 @@
 </pre></div>
 </div>
 <p>You will need to ensure that <code class="docutils literal notranslate"><span class="pre">${HOME}/opt/babel/bin</span></code> is in your <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, <code class="docutils literal notranslate"><span class="pre">${HOME}/opt/babel/lib</span></code> is in your <code class="docutils literal notranslate"><span class="pre">LD_LIBRARY_PATH</span></code>, and that the environment variable <code class="docutils literal notranslate"><span class="pre">BABEL_LIBDIR</span></code> is set to <code class="docutils literal notranslate"><span class="pre">${HOME}/opt/babel/lib</span></code>.</p>
-</div>
-</div>
-<div class="section" id="other-prequisites">
+</section>
+</section>
+<section id="other-prequisites">
 <h2>Other Prequisites<a class="headerlink" href="#other-prequisites" title="Permalink to this heading">¶</a></h2>
 <p>In order to use <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> effectively, it is recommended that you have good working knowledge of the following:</p>
 <ol class="arabic simple">
@@ -129,8 +130,8 @@
 </li>
 <li><p>Polymer chemistry, at least for the systems you are interested in simulating.</p></li>
 </ol>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>

@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Monomers &#8212; HTPolyNet 1.0.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
@@ -34,9 +35,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="monomers">
+  <section id="monomers">
 <span id="dgeba-pacm-monomers"></span><h1>Monomers<a class="headerlink" href="#monomers" title="Permalink to this heading">¶</a></h1>
-<div class="section" id="dgeba">
+<section id="dgeba">
 <h2>DGEBA<a class="headerlink" href="#dgeba" title="Permalink to this heading">¶</a></h2>
 <img alt="../../_images/DGE-epoxy.png" src="../../_images/DGE-epoxy.png" />
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether">Bisphenol A diglycidyl ether</a>, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we’ll consider how to build the input <code class="docutils literal notranslate"><span class="pre">*.mol2</span></code> file for DGEBA.  It is quite easy to generate a 3D structure from a SMILES representation.  The canonical SMILES string for DGEBA is:</p>
@@ -190,8 +191,8 @@
 </pre></div>
 </div>
 <p>You can see that only C1-C4 are uniquely named.  Those unique names will persist forever in HTPolyNet in any system derived from this DGE input file.  Other atoms will acquire unique names through processing with AmberTools, but that won’t concern us here.</p>
-</div>
-<div class="section" id="pacm">
+</section>
+<section id="pacm">
 <h2>PACM<a class="headerlink" href="#pacm" title="Permalink to this heading">¶</a></h2>
 <img alt="../../_images/PAC-2d.png" src="../../_images/PAC-2d.png" />
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/4,4-Diaminodicyclohexylmethane">4,4-diaminodicyclohexylmethane</a>, referred to colloquially as PACM (“pack-em”), is a common hardener in epoxy formulations.  Since it has two primary amine groups, it can bond to at most four distinct epoxide groups.  The SMILES string for PACM is:</p>
@@ -308,8 +309,8 @@
 </pre></div>
 </div>
 <p>The next thing we consider is how to create the <a class="reference internal" href="reactions.html#dgeba-reaction-dictionaries"><span class="std std-ref">reaction dictionaries</span></a> necessary to describe the crosslinking chemistry.</p>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>

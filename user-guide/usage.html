@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Usage &#8212; HTPolyNet 1.0.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
@@ -34,7 +35,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="usage">
+  <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h1>
 <p>Installation of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command.  Invoking <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">--help</span></code> shows basic usage of the command, which always involves providing a <em>subcommand</em>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet --help
@@ -72,7 +73,7 @@
 <span class="go">  -h, --help            show this help message and exit</span>
 </pre></div>
 </div>
-<div class="section" id="htpolynet-run">
+<section id="htpolynet-run">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code><a class="headerlink" href="#htpolynet-run" title="Permalink to this heading">¶</a></h2>
 <p>This subcommand is used to build a polymerized system given directives in the configuration file and any required input monomer structures.</p>
 <p>The arguments for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> are explained in more detail below.</p>
@@ -92,8 +93,8 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">--force-parameterization</span></code> signals that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> should perform all molecular parameterizations from scratch even if parameterizations exist in the library.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--force-checkin</span></code> signals that any parameterizations <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> does should have their results “checked-in” to the library, even if previous parameterizations are there already.</p></li>
 </ul>
-</div>
-<div class="section" id="htpolynet-parameterize">
+</section>
+<section id="htpolynet-parameterize">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code><a class="headerlink" href="#htpolynet-parameterize" title="Permalink to this heading">¶</a></h2>
 <p>This is the command for only performing molecular parameterizations and checking the results into a library:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet parameterize --help
@@ -114,8 +115,8 @@
 </pre></div>
 </div>
 <p>The command-line options of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code> have all the same meanings as they do for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code>.  The only difference is that <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code> <strong>only</strong> performs the parameterization of all monomers and oligomer templates.  The intention is that later invocations of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> can use these parameterizations without having to reperform them.  Of course, since a first invocation of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> also peforms parameterizations and saves their results, it is strictly <strong>never</strong> necessary to use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code>.  However, if your parameterizations have issues, it is cleaner to use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code> to try to fix them.</p>
-</div>
-<div class="section" id="htpolynet-info">
+</section>
+<section id="htpolynet-info">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">info</span></code><a class="headerlink" href="#htpolynet-info" title="Permalink to this heading">¶</a></h2>
 <p>This simply outputs some information about <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet info
@@ -128,8 +129,8 @@
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">info</span></code> only reports the absolute pathname of the <code class="docutils literal notranslate"><span class="pre">Library</span></code> subpackage for your reference, and the fully resolved command names for the three required Ambertools executables <code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">tleap</span></code> and <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, along with their versions.  If they are already in your path, the results appear as above.</p>
-</div>
-<div class="section" id="htpolynet-plots">
+</section>
+<section id="htpolynet-plots">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code><a class="headerlink" href="#htpolynet-plots" title="Permalink to this heading">¶</a></h2>
 <p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots --help
@@ -145,8 +146,8 @@
 </pre></div>
 </div>
 <p>We explain detailed usage of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> in the tutorials.  Briefly, if a project directory is name via the <code class="docutils literal notranslate"><span class="pre">-proj</span></code> option, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will generate a set of plots tracing the system temperature, density, and number of polymerization bonds vs simulation time.  If one or more diagnostic log files is named in the <code class="docutils literal notranslate"><span class="pre">-logs</span></code> option, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will generate a pair of plots of conversion vs. wall-clock time and iteration vs wall-clock time, with each diagnostic log getting its own curve on each plot.</p>
-</div>
-<div class="section" id="htpolynet-fetch-example">
+</section>
+<section id="htpolynet-fetch-example">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code><a class="headerlink" href="#htpolynet-fetch-example" title="Permalink to this heading">¶</a></h2>
 <p>This will fetch one or more examples from the <code class="docutils literal notranslate"><span class="pre">example_depot</span></code> of the system <code class="docutils literal notranslate"><span class="pre">Library</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet fetch-example --help
@@ -173,8 +174,8 @@
 </div>
 <p>This folder (like all example folders) comes with two configuration files that differ only the the requested degree of cure.  “hi” refers to 95% cure, and “lo” to 50%.  Also provided is the <code class="docutils literal notranslate"><span class="pre">./lib/molecules</span></code> folders with the <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs</span></code> and <code class="docutils literal notranslate"><span class="pre">./lib/molecules/parameterized</span></code> empty subfolders.  Finally, the bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> can just be invoked to build the input monomers and run the two builds in series.  This will be described in much more detail in the tutorials.</p>
 <p><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span> <span class="pre">-n</span> <span class="pre">all</span></code> just grabs all seven examples.</p>
-</div>
-<div class="section" id="htpolynet-input-check">
+</section>
+<section id="htpolynet-input-check">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">input-check</span></code><a class="headerlink" href="#htpolynet-input-check" title="Permalink to this heading">¶</a></h2>
 <p>The purpose of this subcommand is to report the size of the initial system that <em>would</em> be created by the provided configuration file and monomer input structures.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet input-check DGE-PAC-hi.yaml
@@ -183,8 +184,8 @@
 <span class="go">DGE-PAC-hi.yaml: 14700 atoms in initial system</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>

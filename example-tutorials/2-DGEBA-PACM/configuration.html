@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>The Configuration File &#8212; HTPolyNet 1.0.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
@@ -34,7 +35,7 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="the-configuration-file">
+  <section id="the-configuration-file">
 <span id="dgeba-configuration-file"></span><h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this heading">¶</a></h1>
 <p>The example you fetched has two configuration files that are essentially identical, except one sets the desired cure to 95% (hi) and the other only to 50% (lo).  We previously described an example <a class="reference internal" href="../../user-guide/configuration-files.html#configuration-files"><span class="std std-ref">configuration file for making a system of polystyrene</span></a>, where all the directives were explained in detail.  Here we will only highlight the <code class="docutils literal notranslate"><span class="pre">constituents</span></code> directive.</p>
 <p>We’ll use a very small, stoichiometric system of only 200 DGEBA’s and 100 PACM’s.</p>
@@ -68,7 +69,7 @@
 <p>In the case of of DGEBA, two atoms are designated by stereocenters, and since they each also belong to distinct groups of symmetry-equivalent atoms, a DGEBA has four unique stereocenters.  This means 16 unique DGEBA diastereomers are used to build the liquid.  Two of those atoms are not strictly chiral in the activated form, since they each have two methyl ligands, but only one of those methyl ligands contains the reactive C1 (or by symmetry, C2) atom that will form a bond, at which point they <em>become</em> chiral.  Since we don’t want polymerization to introduce handedness, we make sure we have a racemic mixture to begin with with respect to all <em>potentially</em> chiral atoms.</p>
 <p>PACM has only two relevant stereocenters, which are the carbons in the cyclohexyl rings to which the amine nitrogens are attached, so four distinct PACM diastereomers are used in building the initial liquid.</p>
 <p>Now we can turn to actually <a class="reference internal" href="run.html#dgeba-run"><span class="std std-ref">running the build</span></a>.</p>
-</div>
+</section>
 
 
           </div>

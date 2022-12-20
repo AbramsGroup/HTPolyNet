@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Results &#8212; HTPolyNet 1.0.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
@@ -34,9 +35,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="results">
+  <section id="results">
 <span id="pms-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this heading">¶</a></h1>
-<div class="section" id="overall-behavior">
+<section id="overall-behavior">
 <h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this heading">¶</a></h2>
 <p>Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a 95%-cure build under <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, with diagnostic output in <code class="docutils literal notranslate"><span class="pre">diagnostics.log</span></code> and console output to <code class="docutils literal notranslate"><span class="pre">console.log</span></code>.</p>
 <p>As an exercise, edit <code class="docutils literal notranslate"><span class="pre">pMSTY.yaml</span></code> to change the desired cure to 0.50 instead of 0.95.  Then launch a second build:</p>
@@ -49,43 +50,47 @@
 </pre></div>
 </div>
 <p>This generates <code class="docutils literal notranslate"><span class="pre">cure-info.png</span></code>:</p>
-<div class="figure align-default" id="id1">
+<figure class="align-default" id="id1">
 <img alt="../../_images/cure-info.png" src="../../_images/cure-info.png" />
-<p class="caption"><span class="caption-number">Fig. 6 </span><span class="caption-text">(Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 6 </span><span class="caption-text">(Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>We can see here that the 95% cure took about 8 and a half minutes of run time (which is not really impressive since this is a <strong>very</strong> small system).  Fully two-thirds of the run time is consumed realizing the final 15% of the cure.</p>
 <p>Second, we can make plots that track the temperature and density throughout the entire build process:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -proj proj-0 -t p0-traces.png -o p0.csv
 </pre></div>
 </div>
 <p>This command extracts temperature, density, and potential energy from all Gromacs <code class="docutils literal notranslate"><span class="pre">edr</span></code> output files in <code class="docutils literal notranslate"><span class="pre">proj-0/</span></code> in the order they were generated, plots them according to a default format, and stores the extracted data in a <code class="docutils literal notranslate"><span class="pre">csv</span></code> file.</p>
-<div class="figure align-default" id="id2">
+<figure class="align-default" id="id2">
 <img alt="../../_images/p0-traces.png" src="../../_images/p0-traces.png" />
-<p class="caption"><span class="caption-number">Fig. 7 </span><span class="caption-text">(Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 7 </span><span class="caption-text">(Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top plot shows temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I’m showing one transition for each drag/relax stage.  The middle plot shows the density trace’ note how the density begins at the stipulated low value of 300 kg/m3.  The bottom plot shows the potential energy trace.</p>
 <p>In the figure below, we show two renderings of this system.  In each, all bonds between C1 and C2 atoms are shown as grey tubes, and all other bonds are colored by individual unique monomer and made transparent.  On the left is the system just after the precure anneal, where you can see that only <strong>intramolecular</strong> C1 and C2 bonds exist.  On the right is the system after postcure, where you can see chains of -C1-C2- bonds.</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
 <tbody>
-<tr class="row-odd"><td><div class="figure align-default" id="id3">
+<tr class="row-odd"><td><figure class="align-default" id="id3">
 <img alt="../../_images/hi-pre.png" src="../../_images/hi-pre.png" />
-<p class="caption"><span class="caption-number">Fig. 8 </span><span class="caption-text">Methystyrene liquid before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 8 </span><span class="caption-text">Methystyrene liquid before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 </td>
-<td><div class="figure align-default" id="id4">
+<td><figure class="align-default" id="id4">
 <img alt="../../_images/hi.png" src="../../_images/hi.png" />
-<p class="caption"><span class="caption-number">Fig. 9 </span><span class="caption-text">Poly(methyl styrene) after 95% cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 9 </span><span class="caption-text">Poly(methyl styrene) after 95% cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 </td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="details">
+</section>
+<section id="details">
 <h2>Details<a class="headerlink" href="#details" title="Permalink to this heading">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> invocation in <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> runs a high-cure build (95% conversion) in the <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> subdirectory:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> proj-0
@@ -100,7 +105,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code>:  This directory contains all directories where Gromacs runs are conducted.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code>: This directory contains some plots generated on the fly.</p></li>
 </ul>
-<div class="section" id="proj-0-systems">
+<section id="proj-0-systems">
 <h3><code class="docutils literal notranslate"><span class="pre">proj-0/systems</span></code><a class="headerlink" href="#proj-0-systems" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> systems
 <span class="gp">$ </span>ls
@@ -109,8 +114,8 @@
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">init/</span></code> directory is where the initial topology and coordinates are generated.  Then in <code class="docutils literal notranslate"><span class="pre">densification</span></code> are the files associated with the MD simulations used to densify the initial system.  Next comes the <code class="docutils literal notranslate"><span class="pre">precure</span></code> directory, which contains all the results of the precure equilibrations and annealing (if requested).  Next come the iteration directories; here, ten CURE iterations were run.  Then comes the <code class="docutils literal notranslate"><span class="pre">capping</span></code> directory where the final topology updates are performed to cap any unreacted monomers (reverting them from their “active” forms to their “proper” forms).  Then comes <code class="docutils literal notranslate"><span class="pre">postcure</span></code> equilibration and relaxation.  Finally, in <code class="docutils literal notranslate"><span class="pre">final-results</span></code> are the <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">gro</span></code>, and <code class="docutils literal notranslate"><span class="pre">grx</span></code> files of the final system; the <code class="docutils literal notranslate"><span class="pre">top</span></code> and <code class="docutils literal notranslate"><span class="pre">gro</span></code> files can be used right away for Gromacs MD simulations.</p>
-</div>
-<div class="section" id="proj-1-plots">
+</section>
+<section id="proj-1-plots">
 <h3><code class="docutils literal notranslate"><span class="pre">proj-1/plots</span></code><a class="headerlink" href="#proj-1-plots" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> generates several plots on the fly during a system build.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ../plots
@@ -133,24 +138,30 @@
 </pre></div>
 </div>
 <p>For example, <code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> indicates that the densification simulation was in fact able to densify the system:</p>
-<div class="figure align-default" id="id5">
+<figure class="align-default" id="id5">
 <img alt="../../_images/densification-density.png" src="../../_images/densification-density.png" />
-<p class="caption"><span class="caption-number">Fig. 10 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 10 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>We can check that the annealing cycles were correctly performed from either <code class="docutils literal notranslate"><span class="pre">precure-anneal-T.png</span></code> or <code class="docutils literal notranslate"><span class="pre">postcure-anneal-T.png</span></code>:</p>
-<div class="figure align-default" id="id6">
+<figure class="align-default" id="id6">
 <img alt="../../_images/postcure-anneal-T.png" src="../../_images/postcure-anneal-T.png" />
-<p class="caption"><span class="caption-number">Fig. 11 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-anneal-T.png</span></code></span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 11 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-anneal-T.png</span></code></span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>Finally, we can take a look at the density after the postcure-anneal in <code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code>:</p>
-<div class="figure align-default" id="id7">
+<figure class="align-default" id="id7">
 <img alt="../../_images/postcure-postequilibration-density.png" src="../../_images/postcure-postequilibration-density.png" />
-<p class="caption"><span class="caption-number">Fig. 12 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 12 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>Note that the final equilibrated density is about 950 kg/m^3 at 300 K and 1 bar, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.  This result is outside the range expected for <a class="reference external" href="https://polymerdatabase.com/polymers/poly4-methylstyrene.html">poly(4-methyl styrene)</a> of about 1.01 g/cc, but it’s not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated.</p>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
           </div>

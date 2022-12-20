@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.stringthings &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.stringthings</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: stringthings</span>
+<span class="sd">   :synopsis: defines a specially-formatted logging method (silly)</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">_ANGSTROM_</span><span class="o">=</span><span class="s1">&#39;Ångström&#39;</span>
+
+<div class="viewcode-block" id="my_logger"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.stringthings.my_logger">[docs]</a><span class="k">def</span> <span class="nf">my_logger</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span><span class="n">logf</span><span class="p">,</span><span class="n">width</span><span class="o">=</span><span class="mi">67</span><span class="p">,</span><span class="n">fill</span><span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;, &#39;</span><span class="p">,</span><span class="n">just</span><span class="o">=</span><span class="s1">&#39;^&#39;</span><span class="p">):</span>
+    <span class="n">fmt</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;{&#39;</span><span class="o">+</span><span class="sa">r</span><span class="s1">&#39;:&#39;</span><span class="o">+</span><span class="n">fill</span><span class="o">+</span><span class="n">just</span><span class="o">+</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s1">&#39;</span><span class="o">+</span><span class="sa">r</span><span class="s1">&#39;}&#39;</span>
+    <span class="n">ll</span><span class="o">=</span><span class="s1">&#39; &#39;</span> <span class="k">if</span> <span class="n">just</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;^&#39;</span><span class="p">,</span><span class="s1">&#39;&gt;&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">rr</span><span class="o">=</span><span class="s1">&#39; &#39;</span> <span class="k">if</span> <span class="n">just</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;^&#39;</span><span class="p">,</span><span class="s1">&#39;&lt;&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">:</span>
+        <span class="n">rr</span><span class="o">=</span><span class="s1">&#39; &#39;</span> <span class="k">if</span> <span class="s1">&#39; &#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sep</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">lnlst</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">msg</span><span class="p">:</span>
+            <span class="n">ll_sofar</span><span class="o">=</span><span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lnlst</span><span class="p">])</span>
+            <span class="n">test_ll</span><span class="o">=</span><span class="n">ll_sofar</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lnlst</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">test_ll</span><span class="o">&gt;</span><span class="n">width</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">sep</span><span class="p">)):</span>
+                <span class="n">outstr</span><span class="o">=</span><span class="n">ll</span><span class="o">+</span><span class="n">sep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lnlst</span><span class="p">)</span><span class="o">+</span><span class="n">sep</span><span class="o">+</span><span class="n">rr</span>
+                <span class="n">logf</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outstr</span><span class="p">))</span>
+                <span class="n">lnlst</span><span class="o">=</span><span class="p">[</span><span class="n">tok</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lnlst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+        <span class="n">outstr</span><span class="o">=</span><span class="n">ll</span><span class="o">+</span><span class="n">sep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lnlst</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39; &#39;</span>
+        <span class="n">logf</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outstr</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="o">==</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ln</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="n">outstr</span><span class="o">=</span><span class="n">ll</span><span class="o">+</span><span class="n">ln</span><span class="o">+</span><span class="n">rr</span>
+            <span class="n">logf</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outstr</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lns</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ln</span> <span class="ow">in</span> <span class="n">lns</span><span class="p">:</span>
+            <span class="n">outstr</span><span class="o">=</span><span class="n">ll</span><span class="o">+</span><span class="n">ln</span><span class="o">+</span><span class="n">rr</span>
+            <span class="n">logf</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outstr</span><span class="p">))</span></div>
+        
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -4,7 +4,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Results &#8212; HTPolyNet 1.0.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
@@ -34,43 +35,47 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="results">
+  <section id="results">
 <span id="dgeba-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this heading">¶</a></h1>
 <p>The <a class="reference internal" href="../1-polymethylstyrene/results.html#pms-results"><span class="std std-ref">results section of the PMS tutorial</span></a> does a good job walking you through the project directory structure for any <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> run, so we’ll skip that here.</p>
 <p>First, if we look in either <code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code> (lo-cure) or <code class="docutils literal notranslate"><span class="pre">proj-1/plots</span></code> (hi-cure), we can see the density vs. time of the densification stage:</p>
-<div class="figure align-default" id="id1">
+<figure class="align-default" id="id1">
 <img alt="../../_images/densification-density1.png" src="../../_images/densification-density1.png" />
-<p class="caption"><span class="caption-number">Fig. 13 </span><span class="caption-text">Density vs. time during the densification stage of the DGEBA/PACM liquid.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 13 </span><span class="caption-text">Density vs. time during the densification stage of the DGEBA/PACM liquid.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>By using the <code class="docutils literal notranslate"><span class="pre">plots</span></code> subcommand, we can generate traces of temperature, density, and potential energy vs time for the entire course of the system build:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -proj proj-1 -t p1-traces.png -o p1-traces.csv
 </pre></div>
 </div>
-<div class="figure align-default" id="id2">
+<figure class="align-default" id="id2">
 <img alt="../../_images/p1-traces.png" src="../../_images/p1-traces.png" />
-<p class="caption"><span class="caption-number">Fig. 14 </span><span class="caption-text">(Top) Temperature vs. time for 95% cure of DGEBA/PACM; (Middle) Density vs time.  The two topmost plots also report number of bonds; (Bottom) Potential energy vs. time.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 14 </span><span class="caption-text">(Top) Temperature vs. time for 95% cure of DGEBA/PACM; (Middle) Density vs time.  The two topmost plots also report number of bonds; (Bottom) Potential energy vs. time.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 <p>Below we show before and after pictures of the system, where all bonds associated with crosslink sites are rendered in “licorice” with the rest in lines, and DGEBA molecules are mauve while PACMs are green:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
 <tbody>
-<tr class="row-odd"><td><div class="figure align-default" id="id3">
+<tr class="row-odd"><td><figure class="align-default" id="id3">
 <img alt="../../_images/dge-pac-liq.png" src="../../_images/dge-pac-liq.png" />
-<p class="caption"><span class="caption-number">Fig. 15 </span><span class="caption-text">System before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 15 </span><span class="caption-text">System before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 </td>
-<td><div class="figure align-default" id="id4">
+<td><figure class="align-default" id="id4">
 <img alt="../../_images/dge-pac-cured.png" src="../../_images/dge-pac-cured.png" />
-<p class="caption"><span class="caption-number">Fig. 16 </span><span class="caption-text">System after cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
-</div>
+<figcaption>
+<p><span class="caption-number">Fig. 16 </span><span class="caption-text">System after cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
 </td>
 </tr>
 </tbody>
 </table>
-</div>
+</section>
 
 
           </div>
