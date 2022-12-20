@@ -8,9 +8,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
-    - name: Install setuptools
+    - name: Install importlib
       run: |
-          python3 -m pip install setuptools
+          python3 -m pip install importlib
     - name: Install package
       run: |
           python3 -m pip install -e .
