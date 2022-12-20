@@ -12,7 +12,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('../../'))
 # dnw:
 #from HTPolyNet.__init__.py import HTPOLYNET_VERSION
 HTPOLYNET_VERSION='1.0.5'
