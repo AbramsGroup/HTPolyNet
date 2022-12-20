@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.dataframetools &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.dataframetools</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: dataframetools</span>
+<span class="sd">   :synopsis: Some convenient tools for handling pandas dataframes in the context of htpolynet coordinates</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="get_row_attribute"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.dataframetools.get_row_attribute">[docs]</a><span class="k">def</span> <span class="nf">get_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;get_row_attribute returns a scalar value of attribute &quot;name&quot; in row</span>
+<span class="sd">        expected to be uniquely defined by attributes dict</span>
+
+<span class="sd">    :param df: dataframe to search</span>
+<span class="sd">    :type df: pandas.DataFrame</span>
+<span class="sd">    :param name: name of attribute whose value you want</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :param attributes: dictionary of attribute:value pairs that defines target set or row</span>
+<span class="sd">    :type attributes: dict</span>
+<span class="sd">    :return: value of attribute name</span>
+<span class="sd">    :rtype: scalar</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ga</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ga</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Cannot find row with attributes </span><span class="si">{</span><span class="n">attributes</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">:</span>
+        <span class="n">name_in_df</span><span class="o">=</span><span class="nb">all</span><span class="p">([</span><span class="n">n</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">name</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">name_in_df</span><span class="o">=</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">df</span>
+    <span class="k">assert</span> <span class="n">name_in_df</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Attribute(s) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> not found&#39;</span>
+    <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ga</span><span class="p">]</span>
+    <span class="n">V</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ga</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">l</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">)][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="get_row_as_string"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.dataframetools.get_row_as_string">[docs]</a><span class="k">def</span> <span class="nf">get_row_as_string</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;get_row_as_string returns a scalar value of attribute &quot;name&quot; in row</span>
+<span class="sd">        expected to be uniquely defined by attributes dict</span>
+
+<span class="sd">    :param df: a pandas dataframe</span>
+<span class="sd">    :type df: pd.DataFrame</span>
+<span class="sd">    :param attributes: dictionary of column names (keys) and values that specify set of rows to be returned</span>
+<span class="sd">    :type attributes: dict(str,obj)</span>
+<span class="sd">    :return: selected dataframe converted to a string</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ga</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ga</span><span class="p">]</span>
+    <span class="n">V</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ga</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">l</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">)]</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="get_rows_w_attribute"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.dataframetools.get_rows_w_attribute">[docs]</a><span class="k">def</span> <span class="nf">get_rows_w_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">:</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; &#39;&#39;&#39;</span>
+    <span class="sd">&quot;&quot;&quot;get_rows_w_attribute returns a series of values of attribute &quot;name&quot; from</span>
+<span class="sd">        all rows matching attributes dict </span>
+
+<span class="sd">    :return: list of values from selected rows</span>
+<span class="sd">    :rtype: whatever pd.dataframe.values type is?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ga</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">ga</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Cannot find any rows with attributes </span><span class="si">{</span><span class="n">attributes</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">:</span>
+        <span class="n">name_in_df</span><span class="o">=</span><span class="nb">all</span><span class="p">([</span><span class="n">n</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">name</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">name_in_df</span><span class="o">=</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">df</span>
+    <span class="k">assert</span> <span class="n">name_in_df</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Attribute(s) </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> not found&#39;</span>
+    <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ga</span><span class="p">]</span>
+    <span class="n">V</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ga</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="n">l</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">)][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span></div>
+
+<div class="viewcode-block" id="set_row_attribute"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.dataframetools.set_row_attribute">[docs]</a><span class="k">def</span> <span class="nf">set_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;set_row_attribute set value of attribute name to value in all rows matching attributes dict</span>
+
+<span class="sd">    :param df: a pandas dataframe</span>
+<span class="sd">    :type df: pd.DataFrame</span>
+<span class="sd">    :param name: name of attribute whose value is to be set</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :param value: value the attribute is to be set to</span>
+<span class="sd">    :type value: scalar</span>
+<span class="sd">    :param attributes: dictionary of attribute:value pairs that specify the atoms whose attribute is to be set</span>
+<span class="sd">    :type attributes: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ga</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="n">exla</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exla</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Caller attempts to use unrecognized attributes to refer to row: </span><span class="si">{</span><span class="n">exla</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">df</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ga</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ga</span><span class="p">]</span>
+        <span class="n">V</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ga</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">l</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)):</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">cidx</span><span class="o">=</span><span class="p">[</span><span class="n">c</span><span class="o">==</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">),</span><span class="n">cidx</span><span class="p">]</span><span class="o">=</span><span class="n">value</span></div>
+
+<div class="viewcode-block" id="set_rows_attributes_from_dict"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.dataframetools.set_rows_attributes_from_dict">[docs]</a><span class="k">def</span> <span class="nf">set_rows_attributes_from_dict</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">valdict</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;set_rows_attributes_from_dict set values of attributes in valdict dict of all rows</span>
+<span class="sd">        matching attributes dict</span>
+
+<span class="sd">    :param df: a pandas dataframe</span>
+<span class="sd">    :type df: pd.DataFrame</span>
+<span class="sd">    :param valdict: dictionary of attribute:value pairs to set</span>
+<span class="sd">    :type valdict: dict</span>
+<span class="sd">    :param attributes: dictionary of attribute:value pairs that specify the atoms whose attribute is to be set</span>
+<span class="sd">    :type attributes: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ga</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="n">exla</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">attributes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">df</span><span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exla</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;using unknown attributes to refer to atom: </span><span class="si">{</span><span class="n">exla</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">valdict</span><span class="p">])</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">ga</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ga</span><span class="p">]</span>
+        <span class="n">V</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">ga</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">l</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span><span class="o">*</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)):</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">==</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">valdict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">cidx</span><span class="o">=</span><span class="p">[</span><span class="n">c</span><span class="o">==</span><span class="n">k</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">l</span><span class="p">),</span><span class="n">cidx</span><span class="p">]</span><span class="o">=</span><span class="n">v</span> </div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

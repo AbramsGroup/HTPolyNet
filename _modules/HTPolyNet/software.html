@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.software &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.software</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: software</span>
+<span class="sd">   :synopsis: handles identification of available software needed by HTPolyNet</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.stringthings</span> <span class="kn">import</span> <span class="n">my_logger</span>
+<span class="c1"># from GPUtil import getGPUs</span>
+<span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Software"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software">[docs]</a><span class="k">class</span> <span class="nc">Software</span><span class="p">:</span>
+    <span class="n">ambertools</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;antechamber&#39;</span><span class="p">,</span><span class="s1">&#39;tleap&#39;</span><span class="p">,</span><span class="s1">&#39;parmchk2&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;__init__ generates a new Software object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cnf</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">passes</span><span class="o">=</span><span class="kc">True</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Software</span><span class="o">.</span><span class="n">ambertools</span><span class="p">:</span>
+            <span class="n">CP</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;which&#39;</span><span class="p">,</span><span class="n">c</span><span class="p">],</span><span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">CP</span><span class="o">.</span><span class="n">returncode</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">passes</span><span class="o">=</span><span class="kc">False</span>
+                <span class="n">cnf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">passes</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Could not find </span><span class="si">{</span><span class="n">cnf</span><span class="si">}</span><span class="s1">&#39;</span>
+
+<div class="viewcode-block" id="Software.set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software.set_gmx_preferences">[docs]</a>    <span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parameters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set_gmx_preferences set the necessary resolution of gromacs executables based on directives in the parameters parameter</span>
+
+<span class="sd">        :param parameters: dictionary read in from cfg file</span>
+<span class="sd">        :type parameters: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">gromacs_dict</span><span class="o">=</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gromacs&#39;</span><span class="p">,{})</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;gromacs_dict </span><span class="si">{</span><span class="n">gromacs_dict</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gromacs_dict</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="o">=</span><span class="n">gromacs_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gmx&#39;</span><span class="p">,</span><span class="s1">&#39;gmx&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="o">=</span><span class="n">gromacs_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gmx_options&#39;</span><span class="p">,</span><span class="s1">&#39;-quiet&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdrun_options</span><span class="o">=</span><span class="n">gromacs_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mdrun_options&#39;</span><span class="p">,{})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdrun</span><span class="o">=</span><span class="n">gromacs_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mdrun&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="si">}</span><span class="s1"> mdrun&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdrun_single_molecule</span><span class="o">=</span><span class="n">gromacs_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mdrun_single_molecule&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="si">}</span><span class="s1">  mdrun&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mdrun</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="o">=</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gmx_options&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="o">=</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gmx&#39;</span><span class="p">,</span><span class="s1">&#39;gmx&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdrun</span><span class="o">=</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mdrun&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="si">}</span><span class="s1"> mdrun&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdrun_single_molecule</span><span class="o">=</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mdrun_single_molecule&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx_options</span><span class="si">}</span><span class="s1">  mdrun&#39;</span><span class="p">)</span>
+        <span class="n">CP</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;which&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="p">],</span><span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">CP</span><span class="o">.</span><span class="n">returncode</span><span class="o">==</span><span class="mi">0</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> not found&#39;</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">getVersions</span><span class="p">()</span>
+        <span class="n">r</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Ambertools:&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ambertools</span><span class="p">:</span>
+            <span class="n">r</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">c</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;12s</span><span class="si">}</span><span class="s1"> (ver. </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">versions</span><span class="p">[</span><span class="s2">&quot;ambertools&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;s</span><span class="si">}</span><span class="s1">) at </span><span class="si">{</span><span class="n">c</span><span class="si">:</span><span class="s1">&lt;50s</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Software.getVersions"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software.getVersions">[docs]</a>    <span class="k">def</span> <span class="nf">getVersions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;getVersions attempts to determine versions of AmberTools</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">versions</span><span class="o">=</span><span class="p">{}</span>
+        <span class="n">CP</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">([</span><span class="s1">&#39;antechamber&#39;</span><span class="p">,</span><span class="s1">&#39;-h&#39;</span><span class="p">],</span><span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">l</span><span class="o">=</span><span class="n">CP</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">versions</span><span class="p">[</span><span class="s1">&#39;ambertools&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">l</span></div>
+        
+<div class="viewcode-block" id="Software.info"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">my_logger</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">)</span></div></div>
+
+<span class="n">_SW_</span><span class="p">:</span><span class="n">Software</span><span class="o">=</span><span class="kc">None</span>
+<div class="viewcode-block" id="sw_setup"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.sw_setup">[docs]</a><span class="k">def</span> <span class="nf">sw_setup</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;sw_setup sets up the global Software object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_SW_</span>
+    <span class="n">_SW_</span><span class="o">=</span><span class="n">Software</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="info"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.info">[docs]</a><span class="k">def</span> <span class="nf">info</span><span class="p">():</span>
+    <span class="n">_SW_</span><span class="o">.</span><span class="n">info</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="to_string"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.to_string">[docs]</a><span class="k">def</span> <span class="nf">to_string</span><span class="p">():</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">_SW_</span><span class="p">)</span></div>
+
+<span class="n">gmx</span><span class="o">=</span><span class="s1">&#39;gmx&#39;</span>
+<span class="n">gmx_options</span><span class="o">=</span><span class="s1">&#39;-quiet&#39;</span>
+<span class="n">mdrun</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> mdrun&#39;</span>
+<span class="n">mdrun_single_molecule</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> mdrun&#39;</span>
+<div class="viewcode-block" id="set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.set_gmx_preferences">[docs]</a><span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="n">parmdict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;set_gmx_preferences sets the global Gromacs preferences</span>
+
+<span class="sd">    :param parmdict: dictionary from cfg file</span>
+<span class="sd">    :type parmdict: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_SW_</span><span class="p">,</span> <span class="n">gmx</span><span class="p">,</span> <span class="n">gmx_options</span><span class="p">,</span> <span class="n">mdrun</span><span class="p">,</span> <span class="n">mdrun_single_molecule</span>
+    <span class="n">_SW_</span><span class="o">.</span><span class="n">set_gmx_preferences</span><span class="p">(</span><span class="n">parmdict</span><span class="p">)</span>
+    <span class="n">gmx</span><span class="o">=</span><span class="n">_SW_</span><span class="o">.</span><span class="n">gmx</span>
+    <span class="n">gmx_options</span><span class="o">=</span><span class="n">_SW_</span><span class="o">.</span><span class="n">gmx_options</span>
+    <span class="n">mdrun</span><span class="o">=</span><span class="n">_SW_</span><span class="o">.</span><span class="n">mdrun</span>
+    <span class="n">mdrun_single_molecule</span><span class="o">=</span><span class="n">_SW_</span><span class="o">.</span><span class="n">mdrun_single_molecule</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

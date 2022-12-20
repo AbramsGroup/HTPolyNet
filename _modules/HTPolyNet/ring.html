@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.ring &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.ring</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: ring</span>
+<span class="sd">   :synopsis: handles ring-piercing determinations</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Pierced rings</span>
+<span class="c1"># Cameron F. Abrams cfa22@drexel.edu</span>
+<span class="c1">#</span>
+<span class="c1"># How to use (suggested):</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Create a list of rings from a coordinate snapshot:</span>
+<span class="c1">#    Suppose X is an Nx3 numpy array ordered such</span>
+<span class="c1">#    that each consecutive group of six elements are</span>
+<span class="c1">#    the positions of carbon atoms of a phenyl ring.</span>
+<span class="c1">#    Then</span>
+<span class="c1">#</span>
+<span class="c1">#    Rings=[]</span>
+<span class="c1">#    for i in range(0,len(X),6):</span>
+<span class="c1">#        Rings.append(Ring(np.array([X[i+j] for j in range(6)]))</span>
+<span class="c1">#</span>
+<span class="c1">#    This can be done once per CURE iteration as long as R is</span>
+<span class="c1">#    in scope.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Now, suppose B is a 2x3 numpy array containing coordinates</span>
+<span class="c1">#    of two atoms that are a potential bond.  Cast this as a </span>
+<span class="c1">#    Segment, and then loop over Rings until a piercing is found</span>
+<span class="c1">#   </span>
+<span class="c1">#    S=Segment(B)</span>
+<span class="c1">#    for R in Rings:</span>
+<span class="c1">#        pierced,P=R.segint(S)</span>
+<span class="c1">#        if pierced:</span>
+<span class="c1">#            # print some message</span>
+<span class="c1">#            # set some &quot;not allowed to bond&quot; flag</span>
+<span class="c1">#            break</span>
+<span class="c1">#    </span>
+<span class="c1"># IMPORTANT NOTE: no MIC is used here, so all </span>
+<span class="c1"># coordinates must be unwrapped into the *same*</span>
+<span class="c1"># periodic image!</span>
+<span class="c1">#</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="lawofcos"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.lawofcos">[docs]</a><span class="k">def</span> <span class="nf">lawofcos</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;lawofcos return the cosine of the angle defined by vectors a and b if they share a vertex (the LAW OF COSINES)</span>
+
+<span class="sd">    :param a: a vector</span>
+<span class="sd">    :type a: numpy.ndarray(3,float)</span>
+<span class="sd">    :param b: another vector</span>
+<span class="sd">    :type b: numpy.ndarray(3,float)</span>
+<span class="sd">    :return: cosine of the angle formed by a and b</span>
+<span class="sd">    :rtype: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">b</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Segment"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Segment">[docs]</a><span class="k">class</span> <span class="nc">Segment</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; a segment object owns a list of Points P with two elements representing segment endpoints, and a vector that points from the first point to the second, V</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">P</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;__init__ generates a new Segment object from the points in container P</span>
+
+<span class="sd">        :param P: listlike container of two points, each of which is a 3-dimensional numpy array</span>
+<span class="sd">        :type P: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1"># will need to recompute this when molecules are shifted</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># p1=p0+t*(p1-p0)</span></div>
+
+<div class="viewcode-block" id="Ring"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring">[docs]</a><span class="k">class</span> <span class="nc">Ring</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">P</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;__init__ generates a Ring object from the list of N points P</span>
+
+<span class="sd">        :param P: listlike container of N points defining an N-membered ring</span>
+<span class="sd">        :type P: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1"># Nx3 np array P[i] is point-i (x,y,z)</span>
+<div class="viewcode-block" id="Ring.analyze"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;analyze computes some geometric features of a Ring object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># geometric center</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">+</span><span class="n">i</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">=</span><span class="p">[]</span> <span class="c1"># list of bond vectors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="o">=</span><span class="p">[]</span> <span class="c1"># list of bond-i-bond-i+1 cross produts</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="n">j</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">bi</span><span class="p">,</span><span class="n">bj</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">bi</span><span class="p">,</span><span class="n">bj</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="c1"># compute unit normal vector as average</span>
+        <span class="c1"># of all bond-i-bond-i+1 crosses</span>
+        <span class="n">n</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">:</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="o">+</span><span class="n">c</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">))</span>
+        <span class="c1"># compute planarity as average of all</span>
+        <span class="c1"># cross-i-cross-i+1 dot products</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">planarity</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">ci</span><span class="p">,</span><span class="n">cj</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">planarity</span><span class="o">+=</span><span class="n">lawofcos</span><span class="p">(</span><span class="n">ci</span><span class="p">,</span><span class="n">cj</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">planarity</span><span class="o">+=</span><span class="n">lawofcos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">planarity</span><span class="o">/=</span><span class="mi">6</span>
+        <span class="c1"># get the d for n-dot-r + d = 0 equation of the plane</span>
+        <span class="c1"># n[0]*(x-O[0])+n[1]*(y-O[1])+n[2]*(z-O[2])=0</span>
+        <span class="c1"># n[0]*x + n[1]*y + n[2]*z - (n[0]*O[0]+n[1]*O[1]+n[2]*O[2]) = 0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">)</span>
+<div class="viewcode-block" id="Ring.self_planarize"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring.self_planarize">[docs]</a>    <span class="k">def</span> <span class="nf">self_planarize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;self_planarize projects points in P into plane -&gt; vP</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">:</span>
+            <span class="n">r</span><span class="o">=</span><span class="n">v</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span>
+            <span class="n">p</span><span class="o">=</span><span class="n">r</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span>
+            <span class="n">newv</span><span class="o">=</span><span class="n">p</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">newv</span><span class="p">)</span></div>
+<div class="viewcode-block" id="Ring.segint"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring.segint">[docs]</a>    <span class="k">def</span> <span class="nf">segint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">S</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;segint determines if segment S pierces ring; uses ray projection method</span>
+<span class="sd">        and fact that scaled length must be between 0 and 1 for a plane intersection</span>
+
+<span class="sd">        :param S: a Segment object</span>
+<span class="sd">        :type S: Segment</span>
+<span class="sd">        :return: True if S pierces self&#39;s ring, along with the intersection point</span>
+<span class="sd">        :rtype: tuple (boolean, Point)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># </span>
+        <span class="n">t</span><span class="o">=-</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">S</span><span class="o">.</span><span class="n">V</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+        <span class="k">if</span> <span class="mi">0</span><span class="o">&lt;</span><span class="n">t</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># compute point in ring plane that marks intersection with this vector</span>
+            <span class="n">P</span><span class="o">=</span><span class="n">S</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">t</span><span class="o">*</span><span class="n">S</span><span class="o">.</span><span class="n">V</span>
+            <span class="c1"># determine if P is inside ring:</span>
+            <span class="c1"># 1. project every ring vertex into the common plane (if necessary)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">self_planarize</span><span class="p">()</span>
+            <span class="n">OP</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">-</span><span class="n">P</span>
+            <span class="n">inside</span><span class="o">=</span><span class="kc">True</span>
+            <span class="c1"># 2. for every vertex vi: angle O-vi-P must be</span>
+            <span class="c1">#    more acute than angle O-vi-v(i+1) in order</span>
+            <span class="c1">#    for point P to be inside the ring</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="p">)):</span>
+                <span class="n">vi</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">vii</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="p">))]</span>
+                <span class="n">r</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="o">-</span><span class="n">vi</span>
+                <span class="n">e</span><span class="o">=</span><span class="n">vii</span><span class="o">-</span><span class="n">vi</span>
+                <span class="n">vp</span><span class="o">=</span><span class="n">P</span><span class="o">-</span><span class="n">vi</span>
+                <span class="n">cp</span><span class="o">=</span><span class="n">lawofcos</span><span class="p">(</span><span class="n">vp</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+                <span class="n">ce</span><span class="o">=</span><span class="n">lawofcos</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="n">r</span><span class="p">)</span>
+                <span class="n">inside</span> <span class="o">=</span> <span class="n">inside</span> <span class="ow">and</span> <span class="n">cp</span> <span class="o">&gt;</span> <span class="n">ce</span>
+            <span class="k">return</span> <span class="n">inside</span><span class="p">,</span> <span class="n">P</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span></div></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.bondtemplate &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.bondtemplate</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: bondtemplate</span>
+<span class="sd">   :synopsis: Manages bond templates (bonds defined by type) and reaction bonds (bonds defined by instances)</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+
+<div class="viewcode-block" id="BondTemplate"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.BondTemplate">[docs]</a><span class="k">class</span> <span class="nc">BondTemplate</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">names</span><span class="p">,</span><span class="n">resnames</span><span class="p">,</span><span class="n">intraresidue</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystander_resnames</span><span class="p">,</span><span class="n">bystander_atomnames</span><span class="p">,</span><span class="n">oneaway_resnames</span><span class="p">,</span><span class="n">oneaway_atomnames</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;__init__ create a BondTemplate object</span>
+
+<span class="sd">        :param names: names of atoms in the bond</span>
+<span class="sd">        :type names: list-like container of two ints</span>
+<span class="sd">        :param resnames: names of the two residues to which the atoms belong</span>
+<span class="sd">        :type resnames: list-like container of two strs</span>
+<span class="sd">        :param intraresidue: True if this is an intraresidue bond</span>
+<span class="sd">        :type intraresidue: bool</span>
+<span class="sd">        :param order: bond order (1=single, 2=double, ...)</span>
+<span class="sd">        :type order: int</span>
+<span class="sd">        :param bystander_resnames: lists of names of bystander residues (residues also bound to one of the atoms)</span>
+<span class="sd">        :type bystander_resnames: list of two list-like containers of strs, one for each atom in names</span>
+<span class="sd">        :param bystander_atomnames: lists of names of atoms in bystander residues</span>
+<span class="sd">        :type bystander_atomnames: list of two list-like containers of strs (parallel to bystander_resnames)</span>
+<span class="sd">        :param oneaway_resnames: names of one-away residues (residues bound one bond away from the new interresidue bond; only relevant for C=C free-radical polymerization)</span>
+<span class="sd">        :type oneaway_resnames: list-like container of strs</span>
+<span class="sd">        :param oneaway_atomnames: names of atoms in one-away residues</span>
+<span class="sd">        :type oneaway_atomnames: list-like container of strs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">=</span><span class="n">names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resnames</span><span class="o">=</span><span class="n">resnames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intraresidue</span><span class="o">=</span><span class="n">intraresidue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_resnames</span><span class="o">=</span><span class="n">bystander_resnames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomnames</span><span class="o">=</span><span class="n">bystander_atomnames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="o">=</span><span class="n">oneaway_resnames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="o">=</span><span class="n">oneaway_atomnames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">=</span><span class="n">order</span>
+<div class="viewcode-block" id="BondTemplate.reverse"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.BondTemplate.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;reverse the order of all parallel lists in a BondTemplate object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resnames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_resnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_resnames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomnames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;BondTemplate </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="si">}</span><span class="s1"> resnames </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resnames</span><span class="si">}</span><span class="s1"> intraresidue? </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">intraresidue</span><span class="si">}</span><span class="s1"> order </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="si">}</span><span class="s1"> bystander-resnames </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_resnames</span><span class="si">}</span><span class="s1"> bystander-atomnames </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomnames</span><span class="si">}</span><span class="s1"> oneaway-resnames </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="si">}</span><span class="s1"> oneaway-atomnames </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="n">check</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">names</span>
+        <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">intraresidue</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">intraresidue</span>
+        <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">resnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">resnames</span>
+        <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">bystander_resnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">bystander_resnames</span>
+        <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">bystander_atomnames</span>
+        <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">oneaway_resnames</span>
+        <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">oneaway_atomnames</span>
+        <span class="k">return</span> <span class="n">check</span>
+<div class="viewcode-block" id="BondTemplate.is_reverse_of"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.BondTemplate.is_reverse_of">[docs]</a>    <span class="k">def</span> <span class="nf">is_reverse_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;is_reverse_of return True if self and other are reverse of each other</span>
+
+<span class="sd">        :param other: another BondTemplate object</span>
+<span class="sd">        :type other: BondTemplate</span>
+<span class="sd">        :return: True if self and other are reverse copies of each other</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rb</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="n">rb</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">==</span><span class="n">rb</span></div></div>
+
+<span class="n">BondTemplateList</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">BondTemplate</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ReactionBond"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.ReactionBond">[docs]</a><span class="k">class</span> <span class="nc">ReactionBond</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">,</span><span class="n">resids</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystanders</span><span class="p">,</span><span class="n">bystanders_atomidx</span><span class="p">,</span><span class="n">oneaways</span><span class="p">,</span><span class="n">oneaways_atomidx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;__init__ generate a new ReactionBond object</span>
+
+<span class="sd">        :param idx: indices of two atoms that form the bond</span>
+<span class="sd">        :type idx: list-like container of two ints</span>
+<span class="sd">        :param resids: resids of the two atoms that form the bond</span>
+<span class="sd">        :type resids: list-like container of two ints</span>
+<span class="sd">        :param order: order of the bond (1=single, 2=double, ...)</span>
+<span class="sd">        :type order: int</span>
+<span class="sd">        :param bystanders: two lists of indices of interresidue resids already bound to each atom in idx </span>
+<span class="sd">        :type bystanders: list of two list-like containers of ints</span>
+<span class="sd">        :param bystanders_atomidx: two lists of indices of interresidue atoms already bound to each atom in idx </span>
+<span class="sd">        :type bystanders_atomidx: list of two list-like containers of ints</span>
+<span class="sd">        :param oneaways: list of one-away resids</span>
+<span class="sd">        :type oneaways: list of ints</span>
+<span class="sd">        :param oneaways_atomidx: list of one-away atom indices</span>
+<span class="sd">        :type oneaways_atomidx: list of ints</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">=</span><span class="n">idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resids</span><span class="o">=</span><span class="n">resids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_resids</span><span class="o">=</span><span class="n">bystanders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomidx</span><span class="o">=</span><span class="n">bystanders_atomidx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resids</span><span class="o">=</span><span class="n">oneaways</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomidx</span><span class="o">=</span><span class="n">oneaways_atomidx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">=</span><span class="n">order</span>
+<div class="viewcode-block" id="ReactionBond.reverse"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.ReactionBond.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resids</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_resids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_resids</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomidx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_atomidx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resids</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomidx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomidx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;ReactionBond </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="si">}</span><span class="s1"> resids </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resids</span><span class="si">}</span><span class="s1"> order </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="si">}</span><span class="s1"> bystander-resids </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_resids</span><span class="si">}</span><span class="s1"> oneaway-resids </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resids</span><span class="si">}</span><span class="s1"> oneaway-atomidx </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomidx</span><span class="si">}</span><span class="s1">&#39;</span></div>
+
+<span class="n">ReactionBondList</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">ReactionBond</span><span class="p">]</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
