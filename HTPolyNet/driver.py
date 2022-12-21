@@ -1,6 +1,6 @@
 """
 
-.. module:: HTPolyNet
+.. module:: driver
    :synopsis: manages the HTPolyNet application, provides the command-line interface entry point
    
 .. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
@@ -18,7 +18,7 @@ import HTPolyNet.software as software
 from HTPolyNet.plot import plots
 from HTPolyNet.stringthings import my_logger
 from HTPolyNet.inputcheck import input_check
-from HTPolyNet.postsim import postsim #, tladder
+from HTPolyNet.postsim import postsim
 
 logger=logging.getLogger(__name__)
 
