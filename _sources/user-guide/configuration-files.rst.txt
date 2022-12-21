@@ -28,6 +28,8 @@ Sections can appear in any order (since the whole YAML file is like a nested pyt
 All the details
 ^^^^^^^^^^^^^^^
 
+In this section we show all subdirectives for each of the five main directives in the configuration file.  Please note that, although default values are quoted for some of these parameters, these default values are *not* guaranteed to be optimal or even functional in all possible scenarios.
+
 * ``gromacs``:  This directive specifies parameters ``HTPolyNet`` uses when invoking the Gromacs executable.
   
     =====================================    ==============  =====================
