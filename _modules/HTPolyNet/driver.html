@@ -67,8 +67,12 @@
     <span class="n">l</span><span class="o">=</span><span class="n">pfs</span><span class="o">.</span><span class="n">lib_setup</span><span class="p">()</span>
     <span class="n">software</span><span class="o">.</span><span class="n">sw_setup</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">software</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span></div>
-
+    <span class="nb">print</span><span class="p">(</span><span class="n">software</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+    <span class="n">possibles</span><span class="o">=</span><span class="n">l</span><span class="o">.</span><span class="n">get_example_names</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Available examples using htpolynet fetch-example&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">possibles</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">isdecimal</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;   </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 <div class="viewcode-block" id="run"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.driver.run">[docs]</a><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;run handles the run subcommand</span>
 
