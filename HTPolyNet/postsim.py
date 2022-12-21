@@ -289,7 +289,7 @@ class PostSimDeform(PostSimMD):
 
 class PostsimConfiguration:
     """ handles reading and parsing a postcure simulation input config file.
-        Config file format:
+        Config file format
         
         - { key1: {<paramdict>}}
         - { key2: {<paramdict>}} 

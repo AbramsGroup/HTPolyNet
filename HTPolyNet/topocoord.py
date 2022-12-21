@@ -443,12 +443,12 @@ class TopoCoord:
 
 
     def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,**kwargs):
-        """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in "keepbonds"
+        """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in `keepbonds`
 
         :param bdf: bonds dataframe, columns 'ai', 'aj', 'reactantName'
         :type bdf: pandas.DataFrame
         :param template_dict: dictionary of molecule templates keyed on molecule name
-        :type dict of molecules
+        :type template_dict: dict
         :return: 3-tuple: new topology file name, new coordinate file name, list of bonds with atom indices updated to reflect any atom deletions
         :rtype: 3-tuple
         

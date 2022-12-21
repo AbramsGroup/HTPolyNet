@@ -16,12 +16,15 @@ logger=logging.getLogger(__name__)
 def chain_expand_reactions(molecules:MoleculeDict):
     """chain_expand_reactions handles generation of new reactions and molecular templates implied by any C-C chaining
 
+    Note
+    ----
+    must be called after all grx attributes are set for all molecules
+
     :param molecules: dictionary of molecular templates constructed from explicit declarations
     :type molecules: MoleculeDict
     :return: the list of new reactions and dictionary of new molecules
     :rtype: tuple(ReactionList,MoleculeDict)
     """
-    ''' must be called after all grx attributes are set for all molecules '''
     extra_reactions:ReactionList=[]
     extra_molecules:MoleculeDict={}
     monomers:MoleculeList=[]

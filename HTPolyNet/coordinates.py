@@ -21,27 +21,20 @@ from HTPolyNet.dataframetools import *
 
 logger=logging.getLogger(__name__)
 
-''' GROMACS EXTENDED ATOM ATTRIBUTES
-
-    Below are a set of "extended" atom attributes used by htpolynet but are not part of Gromacs:
-
-    - z: number of sacrificial hydrogens/number of available bonds
-    - nreactions: complement of z/number of bonds formed by reactions
-    - reactantName: name of oligomer template last used when a bond was formed to this atom
-    - sea_idx: index of symmetry set of this atom
-    - cycle: unique index of cycle to which this atom belongs (e.g., aromatic ring)
-    - cycle_idx:  unique index of this atom in that cycle
-    - chain: unique index of C-C chain to which this atom belongs
-    - chain_idx: unique index of this atom in that chain
-    - molecule: unique molecule index of this atom
-    - molecule_name:  name of molecule to which atom belongs
-
-    A value of -1 in any of sea_idx, cycle, cycle_idx, chain, chain_idx indicates atom does not belong to that set.
-    All of sea_idx, cycle, chain, and molecule are globally unique, meaning that when two coordinate structures are merged,
-    these indexes must be updated to keep them unique.
-
-'''
 GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name']
+"""Extended atom attributes
+
+    - 'z' number of sacrificial H's on atom 
+    - 'nreactions' number of H's sacrificed so far to form bonds
+    - 'reactantName' name of most recent reactant to which atom belonged
+    - 'sea_idx' index of the group of symmetry-related atoms this atom belongs to (atoms with the same sea_idx in the same resid are considered symmetry-equivalent)
+    - 'cycle' index of the unique cycle this atom belongs to
+    - 'cycle_idx' index of this atom within this cycle
+    - 'chain' index of the unique chain this atom belongs to
+    - 'chain_idx' index of this atom within this chain
+    - 'molecule' index of the unique molecule this atom belongs to
+    - 'molecule_name' name of that molecule
+"""
 GRX_GLOBALLY_UNIQUE=[False,       False,         False,     True,  True,       False,   True,      False,      True,          False]
 GRX_UNSET_DEFAULTS =[    0,           0,       'UNSET',       -1,    -1,          -1,     -1,          -1,       -1,        'UNSET']
 
@@ -59,20 +52,31 @@ def dfrotate(df:pd.DataFrame,R):
         df.loc[i,'posX':'posZ']=newri
 
 class Coordinates:
-    ''' A class for handling atom coordinates (and other attributes)
-        Instance attributes:
-        - A : a DataFrame that contains atom attributes, one atom per row.
-        - metadat : a dictionary of metadata populated from a MOLECULE section of a mol2 file
-        - N : number of atoms (A.shape[0])
-        - mol2_bonds: a DataFrame that contains bond attributes, one bond per row; typically only
-          read from a mol2 file, since gro coordinate files don't have bonds
-        - mol2_bondlist: a Bondlist built from the mol2_bonds DataFrame (see bondlist.py)
-        - linkcell: a Linkcell instance built from the atomic positions, box size, and desired cutoff
-        - empty: a Boolean indicating whether or not this is an "empty" instance
-        - box: 3x3 numpy array containing the box side vectors (for a rectilinear box, only diagonals have values)
-        '''
+    """ Handles atom coordinates.
+
+    The primary object is `A`, a pandas DataFrame with one row per atom.  Each atom has attributes that may be found in a `gro` file and/or a `mol2` file, along with so-called extended attributes, which are used solely  by HTPolyNet.  
+
+    """
     gro_attributes = ['resNum', 'resName', 'atomName', 'globalIdx', 'posX', 'posY', 'posZ', 'velX', 'velY', 'velZ']
+    """GRO format atom attributes
+    
+    - 'resNum' unique index of residue to which atom belongs
+    - 'resName' name of that residue (usually a 3-letter designation)
+    - 'atomName' name of this atom, must be unique within a residue
+    - 'globalIdx' global index of atom in whole system
+    - 'posX', 'posY', 'posZ' cartesian coordinates
+    - 'velX', 'velY', 'velZ' cartesian velocities
+    """
     mol2_atom_attributes = ['globalIdx','atomName','posX','posY','posZ','type','resNum','resName','charge']
+    """MOL2 format atom attributes
+    
+    - 'globalIdx' global index of atom in whole system
+    - 'atomName' name of this atom, must be unique within a residue
+    - 'posX', 'posY', 'posZ' cartesian coordinates
+    - 'resNum' unique index of residue to which atom belongs
+    - 'resName' name of that residue (usually a 3-letter designation)
+    - 'charge' charge on atom
+    """
     mol2_bond_attributes = ['bondIdx','ai','aj','order']
     mol2_bond_types = {k:v for k,v in zip(mol2_bond_attributes, [int, int, int, str])}
 
@@ -247,7 +251,7 @@ class Coordinates:
     def set_box(self,box:np.ndarray):
         """set_box Set the box size from box
 
-        :param box: 3x1 or 3x3 box size matrix
+        :param box: 3-by-1 or 3-by-3 box size matrix
         :type box: numpy.ndarray
         """
         if box.shape==(3,1):
@@ -296,7 +300,7 @@ class Coordinates:
         return newC
     
     def reconcile_subcoords(self,subc,attr):
-        """reconcile_subcoords moves all values of attribute name contained in attr from Coordinates object subc to self
+        """moves all values of attribute name contained in attr from Coordinates object subc to self
 
         :param subc: A separate, independent Coordinates object
         :type subc: Coordinates
@@ -311,7 +315,6 @@ class Coordinates:
 
     def unwrap(self,P,O,pbc):
         """unwrap shifts point P to its unwrapped closest periodic image to point O
-            *CPI=closest periodic image (unwrapped)
 
         :param P: a point
         :type P: np.ndarray(3,float)
@@ -899,11 +902,7 @@ class Coordinates:
         """delete_atoms Deletes atoms whose global indices appear in the list idx.
         If parameter 'reindex' is true, then the global indices 
         are recalculated so that they are sequential starting at 1 with no
-        gaps, and two new columns are added to self.DF:
-          - 'oldGlobalIdx' contains the global index values before 
-             the deletion.
-          - 'globalIdxShift' is the change from the old to the new
-             global index for each atom.
+        gaps, and two new columns are added to self.DF: 'oldGlobalIdx' contains the global index values before the deletion, and 'globalIdxShift' is the change from the old to the new global index for each atom.
 
         :param idx: list of atom indexes to delete, defaults to []
         :type idx: list, optional
