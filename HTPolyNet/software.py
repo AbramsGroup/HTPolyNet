@@ -54,7 +54,7 @@ class Software:
         self.getVersions()
         r=['Ambertools:']
         for c in self.ambertools:
-            r.append(f'{os.path.split(c)[1]:>12s} (ver. {self.versions["ambertools"]:>s}) at {c:<50s}')
+            r.append(f'{os.path.split(c)[1]:>12s} (ver. {self.versions["ambertools"]:>s})')
         return '\n'.join(r)
 
     def getVersions(self):
@@ -64,7 +64,7 @@ class Software:
         CP=subprocess.run(['antechamber','-h'],capture_output=True,text=True)
         l=CP.stdout.split('\n')[1].split()[3].strip().strip(':')
         self.versions['ambertools']=l
-        
+
     def info(self):
         my_logger(str(self),logger.info)
 

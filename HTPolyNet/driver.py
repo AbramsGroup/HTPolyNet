@@ -33,7 +33,11 @@ def info(args):
     software.sw_setup()
     print(l.info())
     print(software.to_string())
-
+    possibles=l.get_example_names()
+    print('Available examples using htpolynet fetch-example')
+    for p in possibles:
+        if p[0].isdecimal():
+            print(f'   {p}')
 def run(args):
     """run handles the run subcommand
 

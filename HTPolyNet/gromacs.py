@@ -159,7 +159,6 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
         logger.debug(f'None of {names} in menu {menu}')
         return pd.DataFrame()
     logger.debug(f'report_averages? {report_averages} {names}')
-    # print(f'{menu}')
     namvals=[]
     with open(f'{edr}-gmx.in','w') as f:
         for i in names:
@@ -168,15 +167,11 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
                 namvals.append((i,int(menu[i])))
         f.write('\n')
     namvals.sort(key=lambda x: x[1])
-    # print(f'{menu} {names}')
     c=Command(f'{sw.gmx} {sw.gmx_options} energy -f {edr}.edr -o {edr}-out.xvg -xvg none < {edr}-gmx.in')
     c.run()
-    # os.remove('gmx.in')
     colnames=[x[0] for x in namvals]
     colnames.insert(0,'time(ps)')
-    # print(f'in gmx {edr}.edr {names}:')
     data=pd.read_csv(f'{edr}-out.xvg',sep='\s+',header=None,names=colnames)
-    # print(f'{data.head().to_string()}')
     data.iloc[:,0]+=xshift
     ndata=data.shape[0]
     if report_averages:

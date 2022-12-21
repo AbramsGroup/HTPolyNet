@@ -1,5 +1,2 @@
 include README.md
-include Library/cfg/*
-include Library/Gromacs_mdp/*.mdp
-include mol2/*.mol2
-include Examples/*
+include Library
