@@ -51,7 +51,7 @@
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Configuration"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.configuration.Configuration">[docs]</a><span class="k">class</span> <span class="nc">Configuration</span><span class="p">:</span>
+<div class="viewcode-block" id="Configuration"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.configuration.Configuration">[docs]</a><span class="k">class</span> <span class="nc">Configuration</span><span class="p">:</span>
     <span class="n">default_directives</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s1">&#39;Title&#39;</span><span class="p">:</span> <span class="s1">&#39;No title provided&#39;</span><span class="p">,</span>
         <span class="s1">&#39;constituents&#39;</span><span class="p">:</span> <span class="p">{},</span>
@@ -82,7 +82,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">basedict</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">maxconv</span><span class="o">=</span><span class="mf">0.0</span>
 
-<div class="viewcode-block" id="Configuration.read"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.configuration.Configuration.read">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Configuration.read"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.configuration.Configuration.read">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;read generates a new Configuration object by reading in the JSON or YAML file indicated by filename</span>
 
@@ -138,7 +138,7 @@
         <span class="k">if</span> <span class="n">parse</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">inst</span>
     
-<div class="viewcode-block" id="Configuration.NewMolecule"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.configuration.Configuration.NewMolecule">[docs]</a>    <span class="k">def</span> <span class="nf">NewMolecule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mol_name</span><span class="p">,</span><span class="n">molrec</span><span class="o">=</span><span class="p">{}):</span>
+<div class="viewcode-block" id="Configuration.NewMolecule"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.configuration.Configuration.NewMolecule">[docs]</a>    <span class="k">def</span> <span class="nf">NewMolecule</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mol_name</span><span class="p">,</span><span class="n">molrec</span><span class="o">=</span><span class="p">{}):</span>
         <span class="sd">&quot;&quot;&quot;NewMolecule generate and return a new Molecule object with name mol_name and populated via directives in molrec</span>
 
 <span class="sd">        :param mol_name: name of new molecule</span>
@@ -150,7 +150,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Molecule</span><span class="o">.</span><span class="n">New</span><span class="p">(</span><span class="n">mol_name</span><span class="p">,</span><span class="n">molrec</span><span class="p">)</span></div>
         
-<div class="viewcode-block" id="Configuration.parse"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.configuration.Configuration.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Configuration.parse"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.configuration.Configuration.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;parse self.basedict to set Title, initial_composition, and lists of</span>
 <span class="sd">           reactions and molecules.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -219,7 +219,7 @@
                 <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s1"> seq: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">[</span><span class="n">mname</span><span class="p">]</span><span class="o">.</span><span class="n">sequence</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="Configuration.calculate_maximum_conversion"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.configuration.Configuration.calculate_maximum_conversion">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_maximum_conversion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Configuration.calculate_maximum_conversion"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.configuration.Configuration.calculate_maximum_conversion">[docs]</a>    <span class="k">def</span> <span class="nf">calculate_maximum_conversion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;calculate_maximum_conversion calculates the maximum number of polymerization bonds that can form based on specified system composition and reactions</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">Atom</span><span class="o">=</span><span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;Atom&#39;</span><span class="p">,[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="s1">&#39;resid&#39;</span><span class="p">,</span><span class="s1">&#39;reactantKey&#39;</span><span class="p">,</span><span class="s1">&#39;reactantName&#39;</span><span class="p">,</span><span class="s1">&#39;z&#39;</span><span class="p">])</span>
@@ -297,7 +297,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

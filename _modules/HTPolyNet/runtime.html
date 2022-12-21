@@ -64,7 +64,7 @@
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="logrotate"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.logrotate">[docs]</a><span class="k">def</span> <span class="nf">logrotate</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="logrotate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.logrotate">[docs]</a><span class="k">def</span> <span class="nf">logrotate</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;logrotate renames any existing log file with name &#39;filename&#39; using a pattern that</span>
 <span class="sd">    prevents overwriting any old logs</span>
 
@@ -93,7 +93,7 @@
         <span class="n">amts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">any</span><span class="p">(</span><span class="n">ta</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">amts</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Runtime"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime">[docs]</a><span class="k">class</span> <span class="nc">Runtime</span><span class="p">:</span>
+<div class="viewcode-block" id="Runtime"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime">[docs]</a><span class="k">class</span> <span class="nc">Runtime</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot; Runtime class manages all aspects of a system build using HTPolyNet.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_edict</span><span class="o">=</span><span class="p">{</span> <span class="s1">&#39;ensemble&#39;</span><span class="p">:</span> <span class="s1">&#39;npt&#39;</span><span class="p">,</span> <span class="s1">&#39;temperature&#39;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="s1">&#39;pressure&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;ps&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span> <span class="s1">&#39;nsteps&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;repeat&#39;</span><span class="p">:</span> <span class="mi">0</span> <span class="p">}</span>
@@ -198,7 +198,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">cc</span><span class="o">=</span><span class="n">CureController</span><span class="p">(</span><span class="n">cure_dict</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ncpu</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ncpu&#39;</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span>
 
-<div class="viewcode-block" id="Runtime.generate_molecules"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.generate_molecules">[docs]</a>    <span class="k">def</span> <span class="nf">generate_molecules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">force_parameterization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">force_checkin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Runtime.generate_molecules"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.generate_molecules">[docs]</a>    <span class="k">def</span> <span class="nf">generate_molecules</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">force_parameterization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">force_checkin</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;generate_molecules manages creation and parameterization of all monomers</span>
 <span class="sd">        and oligomer templates</span>
 
@@ -284,7 +284,7 @@
             <span class="k">if</span> <span class="n">relaxdict</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">molecules</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">relax</span><span class="p">(</span><span class="n">relaxdict</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Runtime.do_initialization"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.do_initialization">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
+<div class="viewcode-block" id="Runtime.do_initialization"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.do_initialization">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
     <span class="k">def</span> <span class="nf">do_initialization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inpfnm</span><span class="o">=</span><span class="s1">&#39;init&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do_initialization manages creation of the global system topology file</span>
 <span class="sd">        and the execution of &#39;gmx insert-molecules&#39; to create the initial</span>
@@ -300,7 +300,7 @@
         <span class="n">gro</span><span class="p">,</span><span class="n">grx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_initialize_coordinates</span><span class="p">(</span><span class="n">inpfnm</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;top&#39;</span><span class="p">:</span><span class="n">top</span><span class="p">,</span><span class="s1">&#39;gro&#39;</span><span class="p">:</span><span class="n">gro</span><span class="p">,</span><span class="s1">&#39;grx&#39;</span><span class="p">:</span><span class="n">grx</span><span class="p">}</span></div>
 
-<div class="viewcode-block" id="Runtime.do_densification"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.do_densification">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
+<div class="viewcode-block" id="Runtime.do_densification"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.do_densification">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
     <span class="k">def</span> <span class="nf">do_densification</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">deffnm</span><span class="o">=</span><span class="s1">&#39;densified&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do_densification manages execution of gmx mdrun to perform minimization</span>
 <span class="sd">            and NPT MD simulation of the initial liquid system.  Final coordinates are</span>
@@ -325,7 +325,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Densified coordinates in </span><span class="si">{</span><span class="n">pfs</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">TC</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s2">&quot;gro&quot;</span><span class="p">])</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="n">TC</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span><span class="o">!=</span><span class="s1">&#39;mol2&#39;</span><span class="p">}</span></div>
 
-<div class="viewcode-block" id="Runtime.do_precure"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.do_precure">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
+<div class="viewcode-block" id="Runtime.do_precure"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.do_precure">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
     <span class="k">def</span> <span class="nf">do_precure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do_precure manages execution of mdrun to perform any pre-cure MD simulation(s).</span>
 
@@ -335,7 +335,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_do_pap</span><span class="p">(</span><span class="n">pfx</span><span class="o">=</span><span class="s1">&#39;precure&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span><span class="o">!=</span><span class="s1">&#39;mol2&#39;</span><span class="p">}</span></div>
 
-<div class="viewcode-block" id="Runtime.do_cure"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.do_cure">[docs]</a>    <span class="k">def</span> <span class="nf">do_cure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Runtime.do_cure"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.do_cure">[docs]</a>    <span class="k">def</span> <span class="nf">do_cure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do_cure manages CURE algorithm execution.</span>
 
 <span class="sd">        :return: only returns None if CURE cannot execute</span>
@@ -377,7 +377,7 @@
         <span class="n">cc</span><span class="o">.</span><span class="n">do_capping</span><span class="p">(</span><span class="n">TC</span><span class="p">,</span><span class="n">RL</span><span class="p">,</span><span class="n">MD</span><span class="p">,</span><span class="n">gromacs_dict</span><span class="o">=</span><span class="n">gromacs_dict</span><span class="p">)</span>
         <span class="n">my_logger</span><span class="p">(</span><span class="s1">&#39;Connect-Update-Relax-Equilibrate (CURE) ends&#39;</span><span class="p">,</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Runtime.do_postcure"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.do_postcure">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
+<div class="viewcode-block" id="Runtime.do_postcure"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.do_postcure">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
     <span class="k">def</span> <span class="nf">do_postcure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do_postcure manages execution of mdrun to perform any post-cure MD simulation(s).</span>
 
@@ -387,7 +387,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_do_pap</span><span class="p">(</span><span class="n">pfx</span><span class="o">=</span><span class="s1">&#39;postcure&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span><span class="o">!=</span><span class="s1">&#39;mol2&#39;</span><span class="p">}</span></div>
 
-<div class="viewcode-block" id="Runtime.save_data"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.save_data">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
+<div class="viewcode-block" id="Runtime.save_data"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.save_data">[docs]</a>    <span class="nd">@cp</span><span class="o">.</span><span class="n">enableCheckpoint</span>
     <span class="k">def</span> <span class="nf">save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">result_name</span><span class="o">=</span><span class="s1">&#39;final&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;save_data writes &#39;gro&#39;, &#39;top&#39;, and &#39;grx&#39; files for system</span>
 
@@ -403,7 +403,7 @@
         <span class="n">TC</span><span class="o">.</span><span class="n">write_top</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">result_name</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="n">TC</span><span class="o">.</span><span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">c</span><span class="o">!=</span><span class="s1">&#39;mol2&#39;</span><span class="p">}</span></div>
 
-<div class="viewcode-block" id="Runtime.do_workflow"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.runtime.Runtime.do_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">do_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Runtime.do_workflow"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.runtime.Runtime.do_workflow">[docs]</a>    <span class="k">def</span> <span class="nf">do_workflow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do_workflow manages runtime for one entire system-build workflow</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">force_parameterization</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;force_parameterization&#39;</span><span class="p">,</span><span class="kc">False</span><span class="p">)</span>
@@ -766,7 +766,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

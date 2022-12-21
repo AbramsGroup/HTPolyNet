@@ -44,7 +44,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
-<div class="viewcode-block" id="BondTemplate"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.BondTemplate">[docs]</a><span class="k">class</span> <span class="nc">BondTemplate</span><span class="p">:</span>
+<div class="viewcode-block" id="BondTemplate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondtemplate.BondTemplate">[docs]</a><span class="k">class</span> <span class="nc">BondTemplate</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">names</span><span class="p">,</span><span class="n">resnames</span><span class="p">,</span><span class="n">intraresidue</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystander_resnames</span><span class="p">,</span><span class="n">bystander_atomnames</span><span class="p">,</span><span class="n">oneaway_resnames</span><span class="p">,</span><span class="n">oneaway_atomnames</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;__init__ create a BondTemplate object</span>
 
@@ -73,7 +73,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="o">=</span><span class="n">oneaway_resnames</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="o">=</span><span class="n">oneaway_atomnames</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">=</span><span class="n">order</span>
-<div class="viewcode-block" id="BondTemplate.reverse"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.BondTemplate.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="BondTemplate.reverse"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondtemplate.BondTemplate.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;reverse the order of all parallel lists in a BondTemplate object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -93,7 +93,7 @@
         <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">oneaway_resnames</span>
         <span class="n">check</span><span class="o">=</span><span class="n">check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomnames</span><span class="o">==</span><span class="n">other</span><span class="o">.</span><span class="n">oneaway_atomnames</span>
         <span class="k">return</span> <span class="n">check</span>
-<div class="viewcode-block" id="BondTemplate.is_reverse_of"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.BondTemplate.is_reverse_of">[docs]</a>    <span class="k">def</span> <span class="nf">is_reverse_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="BondTemplate.is_reverse_of"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondtemplate.BondTemplate.is_reverse_of">[docs]</a>    <span class="k">def</span> <span class="nf">is_reverse_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;is_reverse_of return True if self and other are reverse of each other</span>
 
 <span class="sd">        :param other: another BondTemplate object</span>
@@ -107,7 +107,7 @@
 
 <span class="n">BondTemplateList</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">BondTemplate</span><span class="p">]</span>
 
-<div class="viewcode-block" id="ReactionBond"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.ReactionBond">[docs]</a><span class="k">class</span> <span class="nc">ReactionBond</span><span class="p">:</span>
+<div class="viewcode-block" id="ReactionBond"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondtemplate.ReactionBond">[docs]</a><span class="k">class</span> <span class="nc">ReactionBond</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">,</span><span class="n">resids</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystanders</span><span class="p">,</span><span class="n">bystanders_atomidx</span><span class="p">,</span><span class="n">oneaways</span><span class="p">,</span><span class="n">oneaways_atomidx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;__init__ generate a new ReactionBond object</span>
 
@@ -133,7 +133,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_resids</span><span class="o">=</span><span class="n">oneaways</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">oneaway_atomidx</span><span class="o">=</span><span class="n">oneaways_atomidx</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="o">=</span><span class="n">order</span>
-<div class="viewcode-block" id="ReactionBond.reverse"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondtemplate.ReactionBond.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionBond.reverse"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondtemplate.ReactionBond.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">resids</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bystander_resids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bystander_resids</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -168,7 +168,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

@@ -56,7 +56,7 @@
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PostSimMD"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimMD">[docs]</a><span class="k">class</span> <span class="nc">PostSimMD</span><span class="p">:</span>
+<div class="viewcode-block" id="PostSimMD"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD">[docs]</a><span class="k">class</span> <span class="nc">PostSimMD</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot; Generic class for handling post-cure md simulations; this one just does simple NPT MD equilibration;</span>
 <span class="sd">    Classes that inherit from this class should define their own default_params and build_npt</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -88,7 +88,7 @@
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Ignoring directive </span><span class="se">\&#39;</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="se">\&#39;</span><span class="s1"> in yaml input file&#39;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">v</span>
-<div class="viewcode-block" id="PostSimMD.do"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimMD.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdp_pfx</span><span class="o">=</span><span class="s1">&#39;npt&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">gromacs_dict</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimMD.do"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdp_pfx</span><span class="o">=</span><span class="s1">&#39;npt&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">gromacs_dict</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;do handles executing the postsim MD simulation</span>
 
 <span class="sd">        :param mdp_pfx: filename prefix for output files, defaults to &#39;npt&#39;</span>
@@ -121,7 +121,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Final coordinates in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;output_deffnm&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Traces saved in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;output_deffnm&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">.csv&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PostSimMD.build_mdp"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimMD.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimMD.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for an NPT equilibration</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
@@ -141,7 +141,7 @@
             <span class="p">}</span>
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
         
-<div class="viewcode-block" id="PostSimAnneal"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimAnneal">[docs]</a><span class="k">class</span> <span class="nc">PostSimAnneal</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimAnneal"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimAnneal">[docs]</a><span class="k">class</span> <span class="nc">PostSimAnneal</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; a class to handle temperature annealing MD simulation </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
@@ -167,7 +167,7 @@
         <span class="s1">&#39;T0_ps&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
         <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mi">1</span>
     <span class="p">}</span>
-<div class="viewcode-block" id="PostSimAnneal.build_mdp"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimAnneal.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimAnneal.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimAnneal.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for an annealing MD simulation</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
@@ -196,7 +196,7 @@
             <span class="p">}</span>
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
 
-<div class="viewcode-block" id="PostSimLadder"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimLadder">[docs]</a><span class="k">class</span> <span class="nc">PostSimLadder</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimLadder"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimLadder">[docs]</a><span class="k">class</span> <span class="nc">PostSimLadder</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; a class to handle a temperature-ladder MD simulation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
@@ -222,7 +222,7 @@
         <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mi">1</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="PostSimLadder.build_mdp"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimLadder.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimLadder.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimLadder.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
@@ -259,7 +259,7 @@
             <span class="p">}</span>
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
 
-<div class="viewcode-block" id="PostSimDeform"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimDeform">[docs]</a><span class="k">class</span> <span class="nc">PostSimDeform</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimDeform"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimDeform">[docs]</a><span class="k">class</span> <span class="nc">PostSimDeform</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; a class to handle a temperature-ladder MD simulation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
@@ -285,7 +285,7 @@
         <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mi">1</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="PostSimDeform.build_mdp"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostSimDeform.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
+<div class="viewcode-block" id="PostSimDeform.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimDeform.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
@@ -322,9 +322,9 @@
             <span class="p">}</span>
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
 
-<div class="viewcode-block" id="PostsimConfiguration"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostsimConfiguration">[docs]</a><span class="k">class</span> <span class="nc">PostsimConfiguration</span><span class="p">:</span>
+<div class="viewcode-block" id="PostsimConfiguration"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostsimConfiguration">[docs]</a><span class="k">class</span> <span class="nc">PostsimConfiguration</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot; handles reading and parsing a postcure simulation input config file.</span>
-<span class="sd">        Config file format:</span>
+<span class="sd">        Config file format</span>
 <span class="sd">        </span>
 <span class="sd">        - { key1: {&lt;paramdict&gt;}}</span>
 <span class="sd">        - { key2: {&lt;paramdict&gt;}} </span>
@@ -350,7 +350,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">=</span><span class="p">[]</span>
 
-<div class="viewcode-block" id="PostsimConfiguration.read"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostsimConfiguration.read">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="PostsimConfiguration.read"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostsimConfiguration.read">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;read generates a new PostsimConfiguration object by reading in the JSON or YAML file indicated by filename</span>
 
@@ -408,7 +408,7 @@
         <span class="k">if</span> <span class="n">parse</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">inst</span>
 
-<div class="viewcode-block" id="PostsimConfiguration.parse"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.PostsimConfiguration.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="PostsimConfiguration.parse"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostsimConfiguration.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;parse parses a PostsimConfiguration file to build the list of stages to run</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="p">:</span>
@@ -418,7 +418,7 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;passing in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="n">simtype</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_classes</span><span class="p">[</span><span class="n">simtype</span><span class="p">](</span><span class="n">p</span><span class="p">[</span><span class="n">simtype</span><span class="p">]))</span></div></div>
 
-<div class="viewcode-block" id="postsim"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.postsim.postsim">[docs]</a><span class="k">def</span> <span class="nf">postsim</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+<div class="viewcode-block" id="postsim"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.postsim">[docs]</a><span class="k">def</span> <span class="nf">postsim</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;postsim handles the postsim subcommand for managing post-cure production MD simulations</span>
 
 <span class="sd">    :param args: command-line arguments</span>
@@ -467,7 +467,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

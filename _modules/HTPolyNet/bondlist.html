@@ -49,20 +49,20 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Bondlist"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist">[docs]</a><span class="k">class</span> <span class="nc">Bondlist</span><span class="p">:</span>
+<div class="viewcode-block" id="Bondlist"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist">[docs]</a><span class="k">class</span> <span class="nc">Bondlist</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot; The member &quot;B&quot; is a dictionary keyed on atom index whose values of lists </span>
 <span class="sd">    of atom indices indicating bond partners of the key atom</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">=</span><span class="p">{}</span>
     
-<div class="viewcode-block" id="Bondlist.fromDataFrame"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.fromDataFrame">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Bondlist.fromDataFrame"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.fromDataFrame">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">fromDataFrame</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
         <span class="n">inst</span><span class="o">=</span><span class="bp">cls</span><span class="p">()</span>
         <span class="n">inst</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">inst</span></div>
 
-<div class="viewcode-block" id="Bondlist.update"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.update"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;update updates the bondlist using data in the parameter dataframe df</span>
 
 <span class="sd">        :param df: dataframe with minimally columns named &#39;ai&#39; and &#39;aj&#39;</span>
@@ -96,7 +96,7 @@
             <span class="n">retstr</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">: &#39;</span><span class="o">+</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">vv</span><span class="p">)</span> <span class="k">for</span> <span class="n">vv</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
         <span class="k">return</span> <span class="n">retstr</span>
     
-<div class="viewcode-block" id="Bondlist.partners_of"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.partners_of">[docs]</a>    <span class="k">def</span> <span class="nf">partners_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.partners_of"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.partners_of">[docs]</a>    <span class="k">def</span> <span class="nf">partners_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;partners_of returns a copy of the value of self.B[idx]</span>
 
 <span class="sd">        :param idx: atom index</span>
@@ -109,7 +109,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">idx</span><span class="p">][:]</span>
         <span class="k">return</span> <span class="p">[]</span></div>
 
-<div class="viewcode-block" id="Bondlist.are_bonded"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.are_bonded">[docs]</a>    <span class="k">def</span> <span class="nf">are_bonded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">,</span><span class="n">jdx</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.are_bonded"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.are_bonded">[docs]</a>    <span class="k">def</span> <span class="nf">are_bonded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">,</span><span class="n">jdx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;are_bonded returns True if atoms with indices idx and jdx are bonded neighbors</span>
 
 <span class="sd">        :param idx: atom index</span>
@@ -123,7 +123,7 @@
             <span class="k">return</span> <span class="n">jdx</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="Bondlist.append"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pair</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.append"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pair</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;append appends the bonded pair in parameter &#39;pair&#39; to the bondlist</span>
 
 <span class="sd">        :param pair: pair atom indices</span>
@@ -140,7 +140,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">aj</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">aj</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Bondlist.delete_atoms"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.delete_atoms">[docs]</a>    <span class="k">def</span> <span class="nf">delete_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.delete_atoms"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.delete_atoms">[docs]</a>    <span class="k">def</span> <span class="nf">delete_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;delete_atoms deletes all instances of atoms in the list idx from the bondlist</span>
 
 <span class="sd">        :param idx: list of indices for atoms to delete</span>
@@ -156,7 +156,7 @@
                 <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">i</span><span class="p">)</span></div>
     
-<div class="viewcode-block" id="Bondlist.adjacency_matrix"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.adjacency_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.adjacency_matrix"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.adjacency_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;adjacency_matrix generate and return an adjacency matrix built from the bondlist</span>
 
 <span class="sd">        :return: _description_</span>
@@ -170,7 +170,7 @@
                 <span class="n">A</span><span class="p">[</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
         <span class="k">return</span> <span class="n">A</span></div>
 
-<div class="viewcode-block" id="Bondlist.as_list"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.as_list">[docs]</a>    <span class="k">def</span> <span class="nf">as_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="n">depth</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.as_list"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.as_list">[docs]</a>    <span class="k">def</span> <span class="nf">as_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="n">depth</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;as_list recursively build a list of all atoms that form a bonded cluster by traversing maximally depth bonds</span>
 
 <span class="sd">        :param root: root bond</span>
@@ -200,7 +200,7 @@
                 <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="Bondlist.half_as_list"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.half_as_list">[docs]</a>    <span class="k">def</span> <span class="nf">half_as_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="n">depth</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.half_as_list"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.half_as_list">[docs]</a>    <span class="k">def</span> <span class="nf">half_as_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">root</span><span class="p">,</span><span class="n">depth</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;half_as_list returns bonded cluster defined by atom b in root found by traversing depth bonds excluding the bond to atom a in root</span>
 
 <span class="sd">        :param root: root bond</span>
@@ -226,7 +226,7 @@
                 <span class="n">red</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">red</span>    </div>
 
-<div class="viewcode-block" id="Bondlist.graph"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.bondlist.Bondlist.graph">[docs]</a>    <span class="k">def</span> <span class="nf">graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Bondlist.graph"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.graph">[docs]</a>    <span class="k">def</span> <span class="nf">graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;graph generate a networkx Directed Graph object from the bondlist</span>
 
 <span class="sd">        :return: a networkx DiGraph object</span>
@@ -263,7 +263,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

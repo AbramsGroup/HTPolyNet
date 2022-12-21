@@ -6,6 +6,7 @@ Submodules
 
 
 .. automodule:: HTPolyNet.HTPolyNet
+   :noindex:
    :members:
    :undoc-members:
    :show-inheritance:

@@ -77,7 +77,7 @@
 <span class="c1">#</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<div class="viewcode-block" id="lawofcos"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.lawofcos">[docs]</a><span class="k">def</span> <span class="nf">lawofcos</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+<div class="viewcode-block" id="lawofcos"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.lawofcos">[docs]</a><span class="k">def</span> <span class="nf">lawofcos</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;lawofcos return the cosine of the angle defined by vectors a and b if they share a vertex (the LAW OF COSINES)</span>
 
 <span class="sd">    :param a: a vector</span>
@@ -89,7 +89,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">b</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Segment"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Segment">[docs]</a><span class="k">class</span> <span class="nc">Segment</span><span class="p">:</span>
+<div class="viewcode-block" id="Segment"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.Segment">[docs]</a><span class="k">class</span> <span class="nc">Segment</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot; a segment object owns a list of Points P with two elements representing segment endpoints, and a vector that points from the first point to the second, V</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">P</span><span class="p">):</span>
@@ -102,7 +102,7 @@
         <span class="c1"># will need to recompute this when molecules are shifted</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># p1=p0+t*(p1-p0)</span></div>
 
-<div class="viewcode-block" id="Ring"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring">[docs]</a><span class="k">class</span> <span class="nc">Ring</span><span class="p">:</span>
+<div class="viewcode-block" id="Ring"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.Ring">[docs]</a><span class="k">class</span> <span class="nc">Ring</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">P</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;__init__ generates a Ring object from the list of N points P</span>
 
@@ -110,7 +110,7 @@
 <span class="sd">        :type P: list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="o">=</span><span class="n">P</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1"># Nx3 np array P[i] is point-i (x,y,z)</span>
-<div class="viewcode-block" id="Ring.analyze"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Ring.analyze"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.Ring.analyze">[docs]</a>    <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;analyze computes some geometric features of a Ring object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># geometric center</span>
@@ -145,7 +145,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span><span class="p">)</span></div>
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V</span><span class="p">)</span>
-<div class="viewcode-block" id="Ring.self_planarize"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring.self_planarize">[docs]</a>    <span class="k">def</span> <span class="nf">self_planarize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Ring.self_planarize"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.Ring.self_planarize">[docs]</a>    <span class="k">def</span> <span class="nf">self_planarize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;self_planarize projects points in P into plane -&gt; vP</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="o">=</span><span class="p">[]</span>
@@ -154,7 +154,7 @@
             <span class="n">p</span><span class="o">=</span><span class="n">r</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span>
             <span class="n">newv</span><span class="o">=</span><span class="n">p</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">O</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">vP</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">newv</span><span class="p">)</span></div>
-<div class="viewcode-block" id="Ring.segint"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.ring.Ring.segint">[docs]</a>    <span class="k">def</span> <span class="nf">segint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">S</span><span class="p">):</span>
+<div class="viewcode-block" id="Ring.segint"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.Ring.segint">[docs]</a>    <span class="k">def</span> <span class="nf">segint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">S</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;segint determines if segment S pierces ring; uses ray projection method</span>
 <span class="sd">        and fact that scaled length must be between 0 and 1 for a plane intersection</span>
 
@@ -212,7 +212,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

@@ -48,7 +48,7 @@
 <span class="c1"># from GPUtil import getGPUs</span>
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Software"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software">[docs]</a><span class="k">class</span> <span class="nc">Software</span><span class="p">:</span>
+<div class="viewcode-block" id="Software"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.Software">[docs]</a><span class="k">class</span> <span class="nc">Software</span><span class="p">:</span>
     <span class="n">ambertools</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;antechamber&#39;</span><span class="p">,</span><span class="s1">&#39;tleap&#39;</span><span class="p">,</span><span class="s1">&#39;parmchk2&#39;</span><span class="p">]</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;__init__ generates a new Software object</span>
@@ -62,7 +62,7 @@
                 <span class="n">cnf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
         <span class="k">assert</span> <span class="n">passes</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Could not find </span><span class="si">{</span><span class="n">cnf</span><span class="si">}</span><span class="s1">&#39;</span>
 
-<div class="viewcode-block" id="Software.set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software.set_gmx_preferences">[docs]</a>    <span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parameters</span><span class="p">):</span>
+<div class="viewcode-block" id="Software.set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.Software.set_gmx_preferences">[docs]</a>    <span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parameters</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;set_gmx_preferences set the necessary resolution of gromacs executables based on directives in the parameters parameter</span>
 
 <span class="sd">        :param parameters: dictionary read in from cfg file</span>
@@ -92,7 +92,7 @@
             <span class="n">r</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">c</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;12s</span><span class="si">}</span><span class="s1"> (ver. </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">versions</span><span class="p">[</span><span class="s2">&quot;ambertools&quot;</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;s</span><span class="si">}</span><span class="s1">) at </span><span class="si">{</span><span class="n">c</span><span class="si">:</span><span class="s1">&lt;50s</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Software.getVersions"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software.getVersions">[docs]</a>    <span class="k">def</span> <span class="nf">getVersions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Software.getVersions"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.Software.getVersions">[docs]</a>    <span class="k">def</span> <span class="nf">getVersions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;getVersions attempts to determine versions of AmberTools</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">versions</span><span class="o">=</span><span class="p">{}</span>
@@ -100,27 +100,27 @@
         <span class="n">l</span><span class="o">=</span><span class="n">CP</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">versions</span><span class="p">[</span><span class="s1">&#39;ambertools&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">l</span></div>
         
-<div class="viewcode-block" id="Software.info"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.Software.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Software.info"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.Software.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">my_logger</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">)</span></div></div>
 
 <span class="n">_SW_</span><span class="p">:</span><span class="n">Software</span><span class="o">=</span><span class="kc">None</span>
-<div class="viewcode-block" id="sw_setup"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.sw_setup">[docs]</a><span class="k">def</span> <span class="nf">sw_setup</span><span class="p">():</span>
+<div class="viewcode-block" id="sw_setup"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.sw_setup">[docs]</a><span class="k">def</span> <span class="nf">sw_setup</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;sw_setup sets up the global Software object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">_SW_</span>
     <span class="n">_SW_</span><span class="o">=</span><span class="n">Software</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="info"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.info">[docs]</a><span class="k">def</span> <span class="nf">info</span><span class="p">():</span>
+<div class="viewcode-block" id="info"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.info">[docs]</a><span class="k">def</span> <span class="nf">info</span><span class="p">():</span>
     <span class="n">_SW_</span><span class="o">.</span><span class="n">info</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="to_string"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.to_string">[docs]</a><span class="k">def</span> <span class="nf">to_string</span><span class="p">():</span>
+<div class="viewcode-block" id="to_string"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.to_string">[docs]</a><span class="k">def</span> <span class="nf">to_string</span><span class="p">():</span>
     <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">_SW_</span><span class="p">)</span></div>
 
 <span class="n">gmx</span><span class="o">=</span><span class="s1">&#39;gmx&#39;</span>
 <span class="n">gmx_options</span><span class="o">=</span><span class="s1">&#39;-quiet&#39;</span>
 <span class="n">mdrun</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> mdrun&#39;</span>
 <span class="n">mdrun_single_molecule</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> mdrun&#39;</span>
-<div class="viewcode-block" id="set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.software.set_gmx_preferences">[docs]</a><span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="n">parmdict</span><span class="p">):</span>
+<div class="viewcode-block" id="set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.set_gmx_preferences">[docs]</a><span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="n">parmdict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;set_gmx_preferences sets the global Gromacs preferences</span>
 
 <span class="sd">    :param parmdict: dictionary from cfg file</span>
@@ -157,7 +157,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

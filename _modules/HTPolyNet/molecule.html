@@ -90,7 +90,7 @@
         <span class="n">R</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">cr</span>
     <span class="k">return</span> <span class="n">R</span>
 
-<div class="viewcode-block" id="yield_bonds"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.yield_bonds">[docs]</a><span class="k">def</span> <span class="nf">yield_bonds</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
+<div class="viewcode-block" id="yield_bonds"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.yield_bonds">[docs]</a><span class="k">def</span> <span class="nf">yield_bonds</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;yield_bonds for each bond pattern in the reaction R, yield the specific bond represented by this pattern in the molecule&#39;s topology</span>
 
 <span class="sd">    :param R: a Reaction</span>
@@ -119,7 +119,7 @@
         <span class="n">oneaway_resids</span><span class="p">,</span><span class="n">oneaway_resnames</span><span class="p">,</span><span class="n">oneaway_atomidx</span><span class="p">,</span><span class="n">onewaway_atomnames</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_oneaways</span><span class="p">(</span><span class="n">atom_idx</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">ReactionBond</span><span class="p">(</span><span class="n">atom_idx</span><span class="p">,</span><span class="n">in_product_resids</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystander_resids</span><span class="p">,</span><span class="n">bystander_atomidx</span><span class="p">,</span><span class="n">oneaway_resids</span><span class="p">,</span><span class="n">oneaway_atomidx</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="yield_bonds_as_df"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.yield_bonds_as_df">[docs]</a><span class="k">def</span> <span class="nf">yield_bonds_as_df</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
+<div class="viewcode-block" id="yield_bonds_as_df"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.yield_bonds_as_df">[docs]</a><span class="k">def</span> <span class="nf">yield_bonds_as_df</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;yield_bonds_as_df returns a pandas DataFrame identifying all reaction bonds obtained by matching the reaction template bonds to instances in the molecule topology</span>
 
 <span class="sd">    :param R: a Reaction</span>
@@ -150,7 +150,7 @@
         <span class="n">bdf</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">bdf</span><span class="p">,</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">row_dict</span><span class="p">)),</span><span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">bdf</span></div>
 
-<div class="viewcode-block" id="Molecule"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule">[docs]</a><span class="k">class</span> <span class="nc">Molecule</span><span class="p">:</span>
+<div class="viewcode-block" id="Molecule"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule">[docs]</a><span class="k">class</span> <span class="nc">Molecule</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">generator</span><span class="p">:</span><span class="n">Reaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">origin</span><span class="p">:</span><span class="nb">str</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="o">=</span><span class="n">name</span> <span class="c1"># stereoisomer parent</span>
@@ -169,7 +169,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">zrecs</span><span class="o">=</span><span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_reactant</span><span class="o">=</span><span class="kc">False</span>
 
-<div class="viewcode-block" id="Molecule.New"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.New">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Molecule.New"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.New">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">New</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">mol_name</span><span class="p">,</span><span class="n">generator</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">molrec</span><span class="o">=</span><span class="p">{}):</span>
         <span class="sd">&quot;&quot;&quot;New generates a new, partially populated Molecule based on directives in the configuration input</span>
 
@@ -205,7 +205,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">M</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> conformers_dict </span><span class="si">{</span><span class="n">M</span><span class="o">.</span><span class="n">conformers_dict</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">M</span></div>
 
-<div class="viewcode-block" id="Molecule.set_origin"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.set_origin">[docs]</a>    <span class="k">def</span> <span class="nf">set_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.set_origin"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_origin">[docs]</a>    <span class="k">def</span> <span class="nf">set_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;set_origin sets the value of the origin member</span>
 
 <span class="sd">        :param value: value</span>
@@ -213,7 +213,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">origin</span><span class="o">=</span><span class="n">value</span></div>
 
-<div class="viewcode-block" id="Molecule.get_origin"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.get_origin">[docs]</a>    <span class="k">def</span> <span class="nf">get_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.get_origin"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_origin">[docs]</a>    <span class="k">def</span> <span class="nf">get_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get_origin returns the value of the origin member</span>
 
 <span class="sd">        :return: value of origin member</span>
@@ -221,7 +221,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">origin</span></div>
 
-<div class="viewcode-block" id="Molecule.update_zrecs"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.update_zrecs">[docs]</a>    <span class="k">def</span> <span class="nf">update_zrecs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zrecs</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.update_zrecs"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.update_zrecs">[docs]</a>    <span class="k">def</span> <span class="nf">update_zrecs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zrecs</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;update_zrecs updates the &quot;z-records&quot; based on z&#39;s declared in the input configuration file</span>
 
 <span class="sd">        :param zrecs: zrecs extracted from configuration file for this molecule</span>
@@ -251,7 +251,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">zrecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">zr</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-&gt; </span><span class="si">{</span><span class="n">target</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">target</span><span class="o">.</span><span class="n">zrecs</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.determine_sequence"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.determine_sequence">[docs]</a>    <span class="k">def</span> <span class="nf">determine_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.determine_sequence"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.determine_sequence">[docs]</a>    <span class="k">def</span> <span class="nf">determine_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;determine_sequence recursively determine the sequence of a molecule using the network of reactions that must be executed to generate it from primitives</span>
 
 <span class="sd">        :param moldict: dictionary of available molecules</span>
@@ -268,7 +268,7 @@
             <span class="c1"># logger.debug(thisseq)</span>
         <span class="k">return</span> <span class="n">thisseq</span></div>
     
-<div class="viewcode-block" id="Molecule.set_sequence_from_moldict"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.set_sequence_from_moldict">[docs]</a>    <span class="k">def</span> <span class="nf">set_sequence_from_moldict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.set_sequence_from_moldict"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_moldict">[docs]</a>    <span class="k">def</span> <span class="nf">set_sequence_from_moldict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;set_sequence_from_moldict set the sequence of this molecule using the recursive determine_sequence method</span>
 
 <span class="sd">        :param moldict: dictionary of available molecules</span>
@@ -279,7 +279,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">determine_sequence</span><span class="p">(</span><span class="n">moldict</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="Molecule.set_sequence_from_coordinates"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.set_sequence_from_coordinates">[docs]</a>    <span class="k">def</span> <span class="nf">set_sequence_from_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.set_sequence_from_coordinates"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_coordinates">[docs]</a>    <span class="k">def</span> <span class="nf">set_sequence_from_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">adf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">gro_DataFrame</span><span class="p">(</span><span class="s1">&#39;atoms&#39;</span><span class="p">)</span>
@@ -294,7 +294,7 @@
         <span class="k">assert</span> <span class="n">trial_sequence</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;trial </span><span class="si">{</span><span class="n">trial_sequence</span><span class="si">}</span><span class="s1"> seq </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="Molecule.create_new_stereoisomers"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.create_new_stereoisomers">[docs]</a>    <span class="k">def</span> <span class="nf">create_new_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.create_new_stereoisomers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.create_new_stereoisomers">[docs]</a>    <span class="k">def</span> <span class="nf">create_new_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;create_new_stereoisomers generate new molecules to hold stereoisomers of self</span>
 
 <span class="sd">        :return: None if no action taken</span>
@@ -312,7 +312,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">stereoisomers</span><span class="p">[</span><span class="n">mname</span><span class="p">]</span><span class="o">=</span><span class="n">Molecule</span><span class="o">.</span><span class="n">New</span><span class="p">(</span><span class="n">mname</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stereoisomers</span><span class="p">[</span><span class="n">mname</span><span class="p">]</span><span class="o">.</span><span class="n">parentname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
             
-<div class="viewcode-block" id="Molecule.initialize_molecule_cycles"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.initialize_molecule_cycles">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_molecule_cycles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.initialize_molecule_cycles"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_molecule_cycles">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_molecule_cycles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;initialize_molecule_cycles assigns cycle indexes to all atoms</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">TC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span>
@@ -324,7 +324,7 @@
         <span class="n">TC</span><span class="o">.</span><span class="n">reset_grx_attributes_from_idx_list</span><span class="p">(</span><span class="s1">&#39;cycle&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Done&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.initialize_monomer_grx_attributes"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.initialize_monomer_grx_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_monomer_grx_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.initialize_monomer_grx_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_monomer_grx_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_monomer_grx_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;initialize_monomer_grx_attributes initializes all GRX attributes of atoms in molecule</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -394,7 +394,7 @@
         <span class="c1"># set cycle, cycle_idx</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_cycles</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Molecule.previously_parameterized"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.previously_parameterized">[docs]</a>    <span class="k">def</span> <span class="nf">previously_parameterized</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.previously_parameterized"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.previously_parameterized">[docs]</a>    <span class="k">def</span> <span class="nf">previously_parameterized</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;previously_parameterized if a gro file exists in the project molecule/parameterized directory for this molecule, return True</span>
 
 <span class="sd">        :return: True if gro file found</span>
@@ -405,7 +405,7 @@
             <span class="n">rval</span><span class="o">=</span><span class="n">rval</span> <span class="ow">and</span> <span class="n">pfs</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;molecules/parameterized&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">rval</span></div>
 
-<div class="viewcode-block" id="Molecule.parameterize"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.parameterize">[docs]</a>    <span class="k">def</span> <span class="nf">parameterize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">input_structure_format</span><span class="o">=</span><span class="s1">&#39;mol2&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.parameterize"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.parameterize">[docs]</a>    <span class="k">def</span> <span class="nf">parameterize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">input_structure_format</span><span class="o">=</span><span class="s1">&#39;mol2&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;parameterize manages GAFF parameterization of this molecule</span>
 
 <span class="sd">        :param outname: output file basename, defaults to &#39;&#39;</span>
@@ -419,7 +419,7 @@
         <span class="n">GAFFParameterize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">outname</span><span class="p">,</span><span class="n">input_structure_format</span><span class="o">=</span><span class="n">input_structure_format</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">load_top_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.mol2&#39;</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.minimize"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.minimize">[docs]</a>    <span class="k">def</span> <span class="nf">minimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.minimize"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.minimize">[docs]</a>    <span class="k">def</span> <span class="nf">minimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;minimize manages invocation of vacuum minimization</span>
 
 <span class="sd">        :param outname: output file basename, defaults to &#39;&#39;</span>
@@ -429,7 +429,7 @@
             <span class="n">outname</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">vacuum_minimize</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.relax"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.relax">[docs]</a>    <span class="k">def</span> <span class="nf">relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">relax_dict</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.relax"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.relax">[docs]</a>    <span class="k">def</span> <span class="nf">relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">relax_dict</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;relax manages invocation of MD relaxations</span>
 
 <span class="sd">        :param relax_dict: dictionary of simulation directives</span>
@@ -447,7 +447,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;In vacuo equilibration of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.gro for </span><span class="si">{</span><span class="n">nsteps</span><span class="si">}</span><span class="s1"> steps at </span><span class="si">{</span><span class="n">temperature</span><span class="si">}</span><span class="s1"> K&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">grompp_and_mdrun</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">deffnm</span><span class="p">,</span><span class="n">mdp</span><span class="o">=</span><span class="n">mdp_prefix</span><span class="p">,</span><span class="n">boxSize</span><span class="o">=</span><span class="n">boxsize</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.center_coords"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.center_coords">[docs]</a>    <span class="k">def</span> <span class="nf">center_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_boxsize</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.center_coords"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.center_coords">[docs]</a>    <span class="k">def</span> <span class="nf">center_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_boxsize</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;center_coords wrapper for the TopoCoord.center_coords method</span>
 
 <span class="sd">        :param new_boxsize: new box size, defaults to None</span>
@@ -455,7 +455,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">center_coords</span><span class="p">(</span><span class="n">new_boxsize</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.generate"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{},</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.generate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{},</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;generate manages generating topology and coordinates for self</span>
 
 <span class="sd">        :param outname: output file basename, defaults to &#39;&#39;</span>
@@ -553,7 +553,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_molecular_weight</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> g/mol&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.get_molecular_weight"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.get_molecular_weight">[docs]</a>    <span class="k">def</span> <span class="nf">get_molecular_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.get_molecular_weight"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_molecular_weight">[docs]</a>    <span class="k">def</span> <span class="nf">get_molecular_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get_molecular_weight returns the molecular weight of self</span>
 
 <span class="sd">        :return: _description_</span>
@@ -562,7 +562,7 @@
         <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">total_mass</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;gromacs&#39;</span><span class="p">)</span> <span class="c1"># g</span>
         <span class="k">return</span> <span class="n">mass</span></div>
 
-<div class="viewcode-block" id="Molecule.prepare_new_bonds"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.prepare_new_bonds">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_new_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{}):</span>
+<div class="viewcode-block" id="Molecule.prepare_new_bonds"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.prepare_new_bonds">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_new_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{}):</span>
         <span class="sd">&quot;&quot;&quot;prepare_new_bonds populates the bond templates and reaction bonds for self</span>
 
 <span class="sd">        :param available_molecules: dictionary of available molecules, defaults to {}</span>
@@ -609,7 +609,7 @@
             <span class="n">intraresidue</span><span class="o">=</span><span class="n">in_product_resids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">in_product_resids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bond_templates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BondTemplate</span><span class="p">(</span><span class="n">atom_names</span><span class="p">,</span><span class="n">in_product_resnames</span><span class="p">,</span><span class="n">intraresidue</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystander_resnames</span><span class="p">,</span><span class="n">bystander_atomnames</span><span class="p">,</span><span class="n">oneaway_resnames</span><span class="p">,</span><span class="n">oneaway_atomnames</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Molecule.idx_mappers"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.idx_mappers">[docs]</a>    <span class="k">def</span> <span class="nf">idx_mappers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">otherTC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">other_bond</span><span class="p">,</span><span class="n">bystanders</span><span class="p">,</span><span class="n">oneaways</span><span class="p">,</span><span class="n">uniq_atom_idx</span><span class="p">:</span><span class="nb">set</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.idx_mappers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.idx_mappers">[docs]</a>    <span class="k">def</span> <span class="nf">idx_mappers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">otherTC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">other_bond</span><span class="p">,</span><span class="n">bystanders</span><span class="p">,</span><span class="n">oneaways</span><span class="p">,</span><span class="n">uniq_atom_idx</span><span class="p">:</span><span class="nb">set</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;idx_mappers computes the mapping dictionary from molecule template index to instance index in the other TopoCoord</span>
 
 <span class="sd">        :param otherTC: the other TopoCoord</span>
@@ -689,7 +689,7 @@
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst2temp</span><span class="p">)</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">temp2inst</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Error: could not establish two-way dict of atom globalIdx&#39;</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">inst2temp</span><span class="p">,</span><span class="n">temp2inst</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.get_angles_dihedrals"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.get_angles_dihedrals">[docs]</a>    <span class="k">def</span> <span class="nf">get_angles_dihedrals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bond</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.get_angles_dihedrals"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_angles_dihedrals">[docs]</a>    <span class="k">def</span> <span class="nf">get_angles_dihedrals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bond</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get_angles_dihedrals returns copies of selections from the Topology interaction-type dataframes that contain the two atoms indicated in the bond</span>
 
 <span class="sd">        :param bond: 2-element list-like container of ints</span>
@@ -732,7 +732,7 @@
             <span class="k">raise</span> <span class="ne">Exception</span>
         <span class="k">return</span> <span class="n">ad</span><span class="p">,</span><span class="n">td</span><span class="p">,</span><span class="n">paird</span></div>
 
-<div class="viewcode-block" id="Molecule.get_resname"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.get_resname">[docs]</a>    <span class="k">def</span> <span class="nf">get_resname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">internal_resid</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.get_resname"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_resname">[docs]</a>    <span class="k">def</span> <span class="nf">get_resname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">internal_resid</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get_resname returns the residue name at position internal_resid in the molecule&#39;s sequence</span>
 
 <span class="sd">        :param internal_resid: molecule-internal residue index</span>
@@ -788,7 +788,7 @@
     <span class="c1">#     assert len(ordered_attribute_idx)==adf.shape[0]</span>
     <span class="c1">#     adf[attribute]=ordered_attribute_idx</span>
 
-<div class="viewcode-block" id="Molecule.merge"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.merge"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;merge merges TopoCoord from other into self&#39;s TopoCoord</span>
 
 <span class="sd">        :param other: another Molecule</span>
@@ -799,7 +799,7 @@
         <span class="n">shifts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">TopoCoord</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">shifts</span></div>
 
-<div class="viewcode-block" id="Molecule.load_top_gro"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.load_top_gro">[docs]</a>    <span class="k">def</span> <span class="nf">load_top_gro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.load_top_gro"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.load_top_gro">[docs]</a>    <span class="k">def</span> <span class="nf">load_top_gro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load_top_gro generate a new TopoCoord member object for this molecule by reading in a Gromacs topology file and a Gromacs gro file</span>
 
 <span class="sd">        :param topfilename: Gromacs topology file</span>
@@ -811,7 +811,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">=</span><span class="n">TopoCoord</span><span class="p">(</span><span class="n">topfilename</span><span class="o">=</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="o">=</span><span class="n">grofilename</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="n">mol2filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.set_gro_attribute"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.set_gro_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">set_gro_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.set_gro_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_gro_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">set_gro_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;set_gro_attribute sets attribute of atoms to srs (drillst through to Coordinates.set_atomset_attributes())</span>
 
 <span class="sd">        :param attribute: name of attribute</span>
@@ -821,7 +821,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.read_gro_attributes"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.read_gro_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">read_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attribute_list</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="Molecule.read_gro_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.read_gro_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">read_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attribute_list</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">&quot;&quot;&quot;Read attributes from file into self.TopoCoord.Coordinates.A</span>
 
 <span class="sd">        :param grxfilename: name of input file</span>
@@ -831,7 +831,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">read_gro_attributes</span><span class="p">(</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attribute_list</span><span class="o">=</span><span class="n">attribute_list</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.write_gro_attributes"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.write_gro_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">write_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute_list</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.write_gro_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.write_gro_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">write_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute_list</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Writes atomic attributes to a file</span>
 
 <span class="sd">        :param attributes_list: list of attributes to write</span>
@@ -841,7 +841,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">write_gro_attributes</span><span class="p">(</span><span class="n">attribute_list</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.make_bonds"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.make_bonds">[docs]</a>    <span class="k">def</span> <span class="nf">make_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">moldict</span><span class="p">,</span><span class="n">stage</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.make_bonds"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.make_bonds">[docs]</a>    <span class="k">def</span> <span class="nf">make_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">moldict</span><span class="p">,</span><span class="n">stage</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;make_bonds adds new bonds to the molecule&#39;s topology and deletes any sacrificial hydrogens</span>
 
 <span class="sd">        :param bdf: pandas dataframe identifying new bonds</span>
@@ -867,7 +867,7 @@
         <span class="n">TC</span><span class="o">.</span><span class="n">update_topology_and_coordinates</span><span class="p">(</span><span class="n">bdf</span><span class="p">,</span><span class="n">moldict</span><span class="p">,</span><span class="n">explicit_sacH</span><span class="o">=</span><span class="n">explicit_sacrificial_Hs</span><span class="p">,</span><span class="n">template_source</span><span class="o">=</span><span class="n">template_source</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_cycles</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Molecule.transrot"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.transrot">[docs]</a>    <span class="k">def</span> <span class="nf">transrot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">at_idx</span><span class="p">,</span><span class="n">at_resid</span><span class="p">,</span><span class="n">from_idx</span><span class="p">,</span><span class="n">from_resid</span><span class="p">,</span><span class="n">connected_resids</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="Molecule.transrot"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.transrot">[docs]</a>    <span class="k">def</span> <span class="nf">transrot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">at_idx</span><span class="p">,</span><span class="n">at_resid</span><span class="p">,</span><span class="n">from_idx</span><span class="p">,</span><span class="n">from_resid</span><span class="p">,</span><span class="n">connected_resids</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">&quot;&quot;&quot;transrot given a composite molecule, translate and rotate the piece downstream of the yet-to-be created bond specified by (at_idx,at_resid) and (from_idx,from_resid) to minimize steric overlaps and identify the best two sacrificial hydrogens</span>
 
 <span class="sd">        :param at_idx: global index of left-hand atom in new bond</span>
@@ -961,7 +961,7 @@
         <span class="n">TC</span><span class="o">.</span><span class="n">swap_atom_names</span><span class="p">(</span><span class="n">otH</span><span class="p">,</span><span class="nb">list</span><span class="p">(</span><span class="n">otHighestH</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">myH</span><span class="p">,</span><span class="n">otH</span></div>
 
-<div class="viewcode-block" id="Molecule.atoms_w_same_attribute_as"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.atoms_w_same_attribute_as">[docs]</a>    <span class="k">def</span> <span class="nf">atoms_w_same_attribute_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">find_dict</span><span class="o">=</span><span class="p">{},</span><span class="n">same_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">return_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.atoms_w_same_attribute_as"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.atoms_w_same_attribute_as">[docs]</a>    <span class="k">def</span> <span class="nf">atoms_w_same_attribute_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">find_dict</span><span class="o">=</span><span class="p">{},</span><span class="n">same_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">return_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;atoms_w_same_attribute_as returns a list of atom attributes named in the return_attribute parameter from atoms that share an attribute named in the same_attribute parameter with the atom identified by the find_dict parameter</span>
 
 <span class="sd">        :param find_dict: dictionary of attribute:value pairs that should uniquely identify an atom, defaults to {}</span>
@@ -976,7 +976,7 @@
         <span class="n">att_val</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="n">same_attribute</span><span class="p">,</span><span class="n">find_dict</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">get_gro_attributelist_by_attributes</span><span class="p">(</span><span class="n">return_attribute</span><span class="p">,{</span><span class="n">same_attribute</span><span class="p">:</span><span class="n">att_val</span><span class="p">})</span></div>
 
-<div class="viewcode-block" id="Molecule.flip_stereocenter"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.flip_stereocenter">[docs]</a>    <span class="k">def</span> <span class="nf">flip_stereocenter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.flip_stereocenter"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.flip_stereocenter">[docs]</a>    <span class="k">def</span> <span class="nf">flip_stereocenter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;flip_stereocenter flips stereochemistry of atom at idx</span>
 
 <span class="sd">        :param idx: global index of atom</span>
@@ -1029,7 +1029,7 @@
         <span class="c1"># translate back to original coordinate frame</span>
         <span class="n">TC</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">O</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.rotate_bond"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.rotate_bond">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_bond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">deg</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.rotate_bond"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.rotate_bond">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_bond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">deg</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;rotate_bond rotates all atoms in molecule on b-side of a-b bond by deg degrees</span>
 
 <span class="sd">        :param a: index of a</span>
@@ -1079,7 +1079,7 @@
     <span class="c1">#                                             return_attribute=&#39;globalIdx&#39;)</span>
     <span class="c1">#     return list(clu)</span>
 
-<div class="viewcode-block" id="Molecule.generate_stereoisomers"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.generate_stereoisomers">[docs]</a>    <span class="k">def</span> <span class="nf">generate_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.generate_stereoisomers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate_stereoisomers">[docs]</a>    <span class="k">def</span> <span class="nf">generate_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;generate_stereoisomers generates list of Molecule shells, one for each stereoisomer</span>
 
 <span class="sd">        :return: only returns if no stereoisomers need to be generated</span>
@@ -1104,7 +1104,7 @@
                 <span class="n">M</span><span class="o">.</span><span class="n">flip_stereocenter</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
             <span class="n">M</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">write_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">si_name</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.generate_conformers"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.Molecule.generate_conformers">[docs]</a>    <span class="k">def</span> <span class="nf">generate_conformers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.generate_conformers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate_conformers">[docs]</a>    <span class="k">def</span> <span class="nf">generate_conformers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;generate_conformers generates this molecule&#39;s conformer instances using either gromacs or obabel</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># only generates gro files</span>
@@ -1162,7 +1162,7 @@
 <span class="n">MoleculeDict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Molecule</span><span class="p">]</span>
 <span class="n">MoleculeList</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="n">Molecule</span><span class="p">]</span>
 
-<div class="viewcode-block" id="generate_stereo_reactions"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.generate_stereo_reactions">[docs]</a><span class="k">def</span> <span class="nf">generate_stereo_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
+<div class="viewcode-block" id="generate_stereo_reactions"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.generate_stereo_reactions">[docs]</a><span class="k">def</span> <span class="nf">generate_stereo_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;generate_stereo_reactions scans the list of reactions and generates any additional reactions in which all possible stereoisomers are reactants</span>
 
 <span class="sd">    :param RL: list of Reactions</span>
@@ -1211,7 +1211,7 @@
     <span class="n">RL</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">terminal_reactions</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">adds</span></div>
 
-<div class="viewcode-block" id="generate_symmetry_reactions"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.molecule.generate_symmetry_reactions">[docs]</a><span class="k">def</span> <span class="nf">generate_symmetry_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
+<div class="viewcode-block" id="generate_symmetry_reactions"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.generate_symmetry_reactions">[docs]</a><span class="k">def</span> <span class="nf">generate_symmetry_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;generate_symmetry_reactions scans reaction list to generate any new reactions implied by symmetry-equivalent atoms</span>
 
 <span class="sd">    :param RL: list of Reactions</span>
@@ -1336,7 +1336,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

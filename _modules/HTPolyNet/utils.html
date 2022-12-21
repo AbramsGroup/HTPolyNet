@@ -53,7 +53,7 @@
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="density_from_gro"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.utils.density_from_gro">[docs]</a><span class="k">def</span> <span class="nf">density_from_gro</span><span class="p">(</span><span class="n">gro</span><span class="p">,</span><span class="n">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/parameterized&#39;</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;SI&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="density_from_gro"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.density_from_gro">[docs]</a><span class="k">def</span> <span class="nf">density_from_gro</span><span class="p">(</span><span class="n">gro</span><span class="p">,</span><span class="n">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/parameterized&#39;</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;SI&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;density_from_gro computes density from a Gromacs gro file</span>
 
 <span class="sd">    :param gro: name of gro file</span>
@@ -133,7 +133,7 @@
     <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">df</span><span class="p">,</span><span class="n">this_df</span><span class="p">),</span><span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">df</span><span class="p">,</span><span class="n">xshift</span>
 
-<div class="viewcode-block" id="postsim_density_evolution"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.utils.postsim_density_evolution">[docs]</a><span class="k">def</span> <span class="nf">postsim_density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">,</span><span class="n">append_dirname</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="postsim_density_evolution"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.postsim_density_evolution">[docs]</a><span class="k">def</span> <span class="nf">postsim_density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">,</span><span class="n">append_dirname</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;postsim_density_evolution returns a single dataframe that is a concatenation of the csv files</span>
 <span class="sd">    in the &#39;postsim&#39; subdirectories</span>
 
@@ -157,7 +157,7 @@
         <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">proj_dir</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="density_evolution"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.utils.density_evolution">[docs]</a><span class="k">def</span> <span class="nf">density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">):</span>
+<div class="viewcode-block" id="density_evolution"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.density_evolution">[docs]</a><span class="k">def</span> <span class="nf">density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;density_evolution returns a single dataframe containing density, temperture, number of bonds vs time by reading all edrs in the correct order from a complete project directory</span>
 
 <span class="sd">    :param proj_dir: name of complete project directory</span>
@@ -270,7 +270,7 @@
                         <span class="n">interval_labels</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">edr_pfx</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">df</span><span class="p">,</span><span class="n">transition_times</span><span class="p">,</span><span class="n">markers</span><span class="p">,</span><span class="n">interval_labels</span></div>
 
-<div class="viewcode-block" id="graph_from_bondsfile"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.utils.graph_from_bondsfile">[docs]</a><span class="k">def</span> <span class="nf">graph_from_bondsfile</span><span class="p">(</span><span class="n">bondsfile</span><span class="p">):</span>
+<div class="viewcode-block" id="graph_from_bondsfile"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.graph_from_bondsfile">[docs]</a><span class="k">def</span> <span class="nf">graph_from_bondsfile</span><span class="p">(</span><span class="n">bondsfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;graph_from_bondsfile generates a networkx Graph in which each node is a molecule (from &#39;mi&#39; and &#39;mj&#39; records in the bondsfile) and edges indicate two molecules are joined by a covalent bond</span>
 
 <span class="sd">    :param bondsfile: name of bondsfile</span>
@@ -284,7 +284,7 @@
         <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;mi&#39;</span><span class="p">],</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;mj&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">G</span></div>
 
-<div class="viewcode-block" id="mwbxl"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.utils.mwbxl">[docs]</a><span class="k">def</span> <span class="nf">mwbxl</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">,</span><span class="n">crosslinker</span><span class="o">=</span><span class="s1">&#39;GMA&#39;</span><span class="p">,</span><span class="n">monomer</span><span class="o">=</span><span class="s1">&#39;STY&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="mwbxl"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.mwbxl">[docs]</a><span class="k">def</span> <span class="nf">mwbxl</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">,</span><span class="n">crosslinker</span><span class="o">=</span><span class="s1">&#39;GMA&#39;</span><span class="p">,</span><span class="n">monomer</span><span class="o">=</span><span class="s1">&#39;STY&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;mwbxl computes the histogram of monomer counts &#39;n&#39; between crosslinking sites using a molecular connectivity graph; used mainly for vinyl-based polymerizations</span>
 
 <span class="sd">    :param G: molecular connectivity graph</span>
@@ -355,7 +355,7 @@
     <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;n&#39;</span><span class="p">:</span><span class="n">mw</span><span class="p">,</span><span class="s1">&#39;counts&#39;</span><span class="p">:</span><span class="n">counts</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="clusters"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.utils.clusters">[docs]</a><span class="k">def</span> <span class="nf">clusters</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">):</span>
+<div class="viewcode-block" id="clusters"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.clusters">[docs]</a><span class="k">def</span> <span class="nf">clusters</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;clusters performs a clustering analysis and returns a histgram of cluster sizes (in numbers of molecules) as a pandas DataFrame</span>
 
 <span class="sd">    :param G: molecular connectivity graph</span>
@@ -401,7 +401,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">

@@ -48,15 +48,18 @@
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="chain_expand_reactions"><a class="viewcode-back" href="../../HTPolyNet.html#HTPolyNet.expandreactions.chain_expand_reactions">[docs]</a><span class="k">def</span> <span class="nf">chain_expand_reactions</span><span class="p">(</span><span class="n">molecules</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
+<div class="viewcode-block" id="chain_expand_reactions"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.expandreactions.chain_expand_reactions">[docs]</a><span class="k">def</span> <span class="nf">chain_expand_reactions</span><span class="p">(</span><span class="n">molecules</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;chain_expand_reactions handles generation of new reactions and molecular templates implied by any C-C chaining</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    must be called after all grx attributes are set for all molecules</span>
 
 <span class="sd">    :param molecules: dictionary of molecular templates constructed from explicit declarations</span>
 <span class="sd">    :type molecules: MoleculeDict</span>
 <span class="sd">    :return: the list of new reactions and dictionary of new molecules</span>
 <span class="sd">    :rtype: tuple(ReactionList,MoleculeDict)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="sd">&#39;&#39;&#39; must be called after all grx attributes are set for all molecules &#39;&#39;&#39;</span>
     <span class="n">extra_reactions</span><span class="p">:</span><span class="n">ReactionList</span><span class="o">=</span><span class="p">[]</span>
     <span class="n">extra_molecules</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="o">=</span><span class="p">{}</span>
     <span class="n">monomers</span><span class="p">:</span><span class="n">MoleculeList</span><span class="o">=</span><span class="p">[]</span>
@@ -208,7 +211,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNet.html">HTPolyNet package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
 <div class="relations">
