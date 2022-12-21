@@ -1,7 +1,0 @@
-source leaprc.gaff
-mol = loadmol2 FDE-p.mol2
-check mol
-loadamberparams FDE-p.frcmod
-saveamberparm mol FDE-p-tleap.top FDE-p-tleap.crd
-quit
-
