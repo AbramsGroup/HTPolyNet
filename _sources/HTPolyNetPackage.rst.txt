@@ -5,8 +5,7 @@ Submodules
 ----------
 
 
-.. automodule:: HTPolyNet.HTPolyNet
-   :noindex:
+.. automodule:: HTPolyNet.driver
    :members:
    :undoc-members:
    :show-inheritance:
@@ -175,14 +174,6 @@ Submodules
 
 
 .. automodule:: HTPolyNet.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: HTPolyNet
    :members:
    :undoc-members:
    :show-inheritance:
