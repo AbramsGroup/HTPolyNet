@@ -1600,7 +1600,7 @@ from a Topology instance).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="HTPolyNet.gromacs.gmx_energy_trace">
-<span class="sig-prename descclassname"><span class="pre">HTPolyNet.gromacs.</span></span><span class="sig-name descname"><span class="pre">gmx_energy_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">report_averages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/gromacs.html#gmx_energy_trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.gromacs.gmx_energy_trace" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.gromacs.</span></span><span class="sig-name descname"><span class="pre">gmx_energy_trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">report_averages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/gromacs.html#gmx_energy_trace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.gromacs.gmx_energy_trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate traces of data in edr file</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1609,13 +1609,13 @@ from a Topology instance).</p>
 <li><p><strong>names</strong> (<em>list</em><em>, </em><em>optional</em>) – list of data names, defaults to []</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>dataframe of traces</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pandas DataFrame</p>
-</dd>
 </dl>
+<p>:param report_averages:flag to indicate if averages of all data are to be computed here, default False
+:type report_averages: bool, optional
+:param keep_files: flag indicating caller would like to keep the raw input and output files for gmx energy, default False
+:type keep_files: bool, optional
+:return: dataframe of traces
+:rtype: pandas DataFrame</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1630,7 +1630,7 @@ from a Topology instance).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="HTPolyNet.gromacs.gromacs_distance">
-<span class="sig-prename descclassname"><span class="pre">HTPolyNet.gromacs.</span></span><span class="sig-name descname"><span class="pre">gromacs_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gro</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_recalculate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/gromacs.html#gromacs_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.gromacs.gromacs_distance" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.gromacs.</span></span><span class="sig-name descname"><span class="pre">gromacs_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gro</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pfx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_recalculate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_files</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/gromacs.html#gromacs_distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.gromacs.gromacs_distance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use ‘gmx distance’ to measure interatomic distances</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1639,6 +1639,7 @@ from a Topology instance).</p>
 <li><p><strong>gro</strong> (<em>str</em>) – name of gromacs input file for ‘gmx distance’ to use</p></li>
 <li><p><strong>new_column_name</strong> (<em>str</em><em>, </em><em>optional</em>) – name of column in idf where distances are stored, default ‘r’</p></li>
 <li><p><strong>force_recalculate</strong> (<em>boolean</em><em>, </em><em>optional</em>) – flag to force calculation of distances even if a distance column exists in idf, default False</p></li>
+<li><p><strong>keep_files</strong> (<em>bool</em><em>, </em><em>optional</em>) – flag indicating caller would like to keep the raw input and output files for gmx energy default False</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
