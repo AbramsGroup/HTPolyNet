@@ -88,7 +88,7 @@ def grompp_and_mdrun(gro='',top='',out='',mdp='',boxSize=[],single_molecule=Fals
         if option in kwargs and not option in mdrun_options:
             mdrun_options[option]=kwargs[option]
 
-    tunepme=kwargs.get('tunepme','yes')
+    #tunepme=kwargs.get('tunepme','yes')
     if gro=='' or top=='' or out=='' or mdp=='':
         raise Exception('grompp_and_mdrun requires gro, top, out, and mdp filename prefixes.')
     infiles=[f'{gro}.gro',f'{top}.top',f'{mdp}.mdp']
@@ -141,13 +141,17 @@ def get_energy_menu(edr,**kwargs):
     os.remove('_menugetter_')
     return menu
 
-def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
+def gmx_energy_trace(edr,names=[],report_averages=False,keep_files=False,**kwargs):
     """Generate traces of data in edr file
 
     :param edr: name of edr file
     :type edr: str
     :param names: list of data names, defaults to []
     :type names: list, optional
+    :param report_averages:flag to indicate if averages of all data are to be computed here, default False
+    :type report_averages: bool, optional
+    :param keep_files: flag indicating caller would like to keep the raw input and output files for gmx energy, default False
+    :type keep_files: bool, optional
     :return: dataframe of traces
     :rtype: pandas DataFrame
     """
@@ -180,12 +184,15 @@ def gmx_energy_trace(edr,names=[],report_averages=False,**kwargs):
             data[f'Rolling-10-average-{i}']=data[i].rolling(window=ndata//10).mean()
             for ln in data.iloc[-1][[i,f'Running-average-{i}',f'Rolling-10-average-{i}']].to_string(float_format='{:.2f}'.format).split('\n'):
                 logger.info(f'{ln}')
+    if not keep_files:
+        os.remove(f'{edr}-out.xvg')
+        os.remove(f'{edr}-gmx.in')
     return data       
 
 # make a bunch of 3-character filename prefixes so parallel invocations don't collide
 _abc='abcdefghijklmnopqrstuwxyz'
 _fnames=[''.join(i) for i in product(_abc,_abc,_abc)]
-def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=False):
+def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=False,keep_files=False):
     """Use 'gmx distance' to measure interatomic distances
 
     :param idf: dataframe of atom indexes in pairs ['ai','aj']
@@ -196,11 +203,13 @@ def gromacs_distance(idf,gro,new_column_name='r',pfx='tmp',force_recalculate=Fal
     :type new_column_name: str, optional
     :param force_recalculate: flag to force calculation of distances even if a distance column exists in idf, default False
     :type force_recalculate: boolean, optional
+    :param keep_files: flag indicating caller would like to keep the raw input and output files for gmx energy default False
+    :type keep_files: bool, optional
     :return: list of distances parallel to idf columns
     :rtype: numpy.ndarray
     """
     if type(idf)==tuple: # this is being called in parallel
-        i,idf=idf
+        i,idf=idf # unpack index and actual data frame
         pfx=_fnames[i]
         logger.debug(f'packet {i} using fname {pfx}; dataframe size {idf.shape[0]}')
     npair=idf.shape[0]

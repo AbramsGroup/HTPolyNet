@@ -1,3 +1,11 @@
+"""
+
+.. module:: test_gromacs_get_energy_menu
+   :synopsis: tests HTPolyNet.gromacs.get_energy_menu() function
+   
+.. moduleauthor: Cameron F. Abrams, <cfa22@drexel.edu>
+
+"""
 import unittest
 import importlib.resources
 import logging
