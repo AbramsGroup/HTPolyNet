@@ -15,6 +15,7 @@ import pandas as pd
 import logging
 import networkx as nx
 from datetime import datetime
+import yaml
 
 logger=logging.getLogger(__name__)
 
@@ -409,42 +410,137 @@ def plots(args):
     logging.basicConfig(format='%(levelname)s> %(message)s',level=loglevel_numeric)
     if not args.no_banner: banner(logger.info)
 
-    logs=args.logs
-    if len(logs)>0:
-        diagnostics_graphs(logs,args.plotfile)
+    if args.source=='build':
+        build_plots(args)
+    elif args.source=='diag':
+        diag_plots(args)
+    elif args.source=='post':
+        post_plots(args)
+    else:
+        logger.error(f'Source {args.source} is not recognized.')
 
-    mdf=[]
+def diag_plots(args):
+    diags=args.diags
+    plotfile=args.plotfile
+    if not plotfile:
+        plotfile='cure_info.png'
+    if len(diags)>0:
+        diagnostics_graphs(diags,plotfile)
+
+def build_plots(args):
+    GmxNames={'t':'Temperature','d':'Density','p':'Potential'}
+    plot_types=args.buildplot
+    trace_types=[]
+    if 't' in plot_types:
+        trace_types=[GmxNames[i] for i in args.traces]
     for p in args.proj:
-        if args.t and len(args.proj)==1:
+        if trace_types:
             df,transition_times,cure_markers,interval_labels=density_evolution(p)
-            global_trace(df,['Temperature','Density','Potential'],args.t,transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
-            if args.o:
-                logger.info(f'Project dir {p}: All trace data to {args.o}')
-                with open(args.o,'w') as f:
-                    f.write(df.to_string(index=False,float_format='{:.3f}'.format)+'\n')
-        if args.postsim:
-            print(f'adding {p}')
-            mdf.append(postsim_density_evolution(p))
-            # global_trace(df,['Density'],args.postsim)
-        if args.g or args.mwbxl or args.clusters:
+            global_trace(df,trace_types,os.path.join(p,'buildtraces.png'),transition_times=transition_times,markers=[],interval_labels=interval_labels,y2names=['nbonds','nbonds'],legend=True)
+            df.to_csv(os.path.join(p,'buildtraces.csv'),index=False,header=True,float_format='{:.3f}'.format)
+        if any([x in plot_types for x in 'gnc']):
             G=init_molecule_graph(p)
             n=1
             while os.path.exists(os.path.join(p,f'systems/iter-{n}/2-cure_update-bonds.csv')):
                 logger.info(f'iter-{n}/2-cure_update-bonds.csv')
                 g=graph_from_bondsfile(os.path.join(p,f'systems/iter-{n}/2-cure_update-bonds.csv'))
                 G=nx.compose(G,g)
-                if args.g and args.byiter: 
-                    network_graph(G,os.path.join(p,f'plots/iter-{n}-{args.g}'))
+                if 'g' in plot_types: 
+                    network_graph(G,os.path.join(p,f'plots/iter-{n}-graph.png'))
                 n+=1
-            if args.g: network_graph(G,args.g)
-            if args.clusters:
-                clu=clusters(G)
-                clu.to_csv(args.clusters,sep=' ',header=True,index=False)
-                print(f'{args.clusters} created.')
-            if args.mwbxl:
-                am=mwbxl(G)
-                print(f'Avg homo-N between xlinks: {np.average(am["n"],weights=am["counts"]):.2f}')
-                am.to_csv(args.mwbxl,sep=' ',index=False,header=True)
-                print(f'{args.mwbxl} created.')
+        if 'g' in plot_types: network_graph(G,os.path.join(p,'graph.png'))
+        if 'c' in plot_types:
+            clu=clusters(G)
+            clu.to_csv(os.path.join(p,'clusters.csv'),sep=' ',header=True,index=False)
+            logger.info(f'{os.path.join(p,"clusters.csv")} created.')
+            # cluster_plot(clu,os.path.join(p,"clusters.png"))
+        if 'n' in plot_types:
+            am=mwbxl(G)
+            logger.info(f'Avg homo-N between xlinks: {np.average(am["n"],weights=am["counts"]):.2f}')
+            am.to_csv(os.path.join(p,'dist_bw_xlinks.csv'),sep=' ',index=False,header=True)
+            logger.info(f'{os.path.join(p,"dist_bw_xlinks.csv")} created.')
+            # dist_bw_xlinks_plot(am,os.path.join(p,"dist_bw_xlinks.png"))
+
+def post_plots(args):
+    phases=[]
+    # print(args.cfg)
+    for c in args.cfg:
+        with open(c,'r') as f:
+            phases+=yaml.safe_load(f)
+    phasenames=[list(x.keys())[0] for x in phases]
+    # print(phasenames)
+    mdf=[]
+    for p in args.proj:
+        if 'anneal' in phasenames and 'equilibrate' in phasenames:
+            mdf.append(postsim_density_evolution(p))
     if mdf:
-        multi_trace(mdf,xnames=['time(ps)']*len(mdf),ynames=['Density']*len(mdf),labels=args.proj,ylabel='Density [kg/m$^3$]',outfile=args.postsim)
+        multi_trace(mdf,xnames=['time(ps)']*len(mdf),ynames=['Density']*len(mdf),labels=args.proj,ylabel='Density [kg/m$^3$]',outfile='-'.join(phasenames)+'-density.png')
+        logger.info('-'.join(phasenames)+'-density.png created.')
+        m=[]
+        for d in mdf:
+            seg=d.iloc[int(0.9*d.shape[0]):]
+            logger.debug(f'averaging {seg.shape[0]} final density values out of {d.shape[0]}')
+            m.append(seg['Density'].mean())
+        m=np.array(m)
+        logger.info(f'mean density {m.mean():.0f} kg/m^3 ({m.mean()/1000.0:.3f} g/cc)')
+
+    ladder_phases=[idx for idx, value in enumerate(phasenames) if value == 'ladder']
+    # print(ladder_phases)
+    if len(ladder_phases)>0:
+        res={}
+        means={}
+        stds={}
+        rate=[]
+        Tgs=[]
+        for i in ladder_phases:
+            p=phases[i]['ladder']
+            rate.append(p['deltaT']/(p['ps_per_rise']+p['ps_per_run']))
+            res[i]=[]
+            for d in args.proj:
+                df=pd.read_csv(os.path.join(d,p['subdir'],'ladder.csv'),index_col=None,header=0)
+                t0=p['warmup_ps']
+                ps_per_step=p['ps_per_rise']+p['ps_per_run']
+                final_ps=df['time(ps)'].iloc[-1]
+                curr_ps=t0
+                T=[]
+                rho=[]
+                V=[]
+                Tstd=[]
+                rhostd=[]
+                Vstd=[]
+                while curr_ps<final_ps:
+                    ll=curr_ps+p['ps_per_rise']+0.5*p['ps_per_run']
+                    ul=ll+0.5*p['ps_per_run']
+                    tdf=df[(df['time(ps)']>=ll)&(df['time(ps)']<=ul)]
+                    T.append(tdf['Temperature'].mean())
+                    rho.append(tdf['Density'].mean())
+                    V.append(tdf['Volume'].mean())
+                    Tstd.append(tdf['Temperature'].std())
+                    rhostd.append(tdf['Density'].std())
+                    Vstd.append(tdf['Volume'].std())
+                    curr_ps+=ps_per_step
+
+                res[i].append(pd.DataFrame({'Temperature':T,'Volume':V,'Density':rho,'Temperature-std':Tstd,'Volume-std':Vstd,'Density-std':rhostd}))
+                df_concat0 = pd.concat(res[i], axis=1)
+                means[i]=df_concat0.stack().groupby(level=[0,1]).mean().unstack()
+                stds[i]=df_concat0.stack().groupby(level=[0,1]).std().unstack()
+        
+        fig,ax=plt.subplots(1,2,figsize=(10,6),sharex=True,sharey=True)
+        for i,v in enumerate(means.keys()):
+            m=means[v]
+            ax[i].set_xlabel('Temperature [K]')
+            ax[i].set_ylabel('Volume [nm$^3$]')
+            ax[i].errorbar(m['Temperature'],m['Volume'],stds[v]['Volume'])
+            Tg,c,h=compute_tg(m['Temperature'],m['Volume'],r2_thresh=0.9,min_npoints=10)
+            Tgs.append(Tg)
+            if Tg!=-1:
+                ax[i].plot(m['Temperature'],c[0]*m['Temperature']+c[1],color='blue',alpha=0.5)
+                ax[i].plot(m['Temperature'],h[0]*m['Temperature']+h[1],color='red',alpha=0.5)
+                ax[i].scatter([Tg],[c[0]*Tg+c[1]],marker='o',color='black')
+                ax[i].text(Tg,c[0]*Tg+c[1],f'   {Tg:.2f} K',verticalalignment='top')
+        plt.savefig('tg.png')
+        hTg=Tgs[0]
+        cTg=Tgs[1]
+        logger.info('tg.png created.')
+        logger.info(f'heating Tg = {hTg:.2f} K ({(hTg-273.15):.2f} C) at {rate[0]:.5f} K/ps ({rate[0]*1.e12:.3e} K/s)')
+        logger.info(f'cooling Tg = {cTg:.2f} K ({(cTg-273.15):.2f} C) at {rate[1]:.5f} K/ps ({rate[1]*1.e12:.3e} K/s)')

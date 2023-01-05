@@ -10,6 +10,7 @@ from HTPolyNet.coordinates import Coordinates
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.gromacs import gmx_energy_trace
 from scipy.constants import physical_constants
+from scipy.optimize import curve_fit
 import pandas as pd
 import os
 import numpy as np
@@ -114,7 +115,7 @@ def postsim_density_evolution(proj_dir,append_dirname=False):
     lt=0.0
     for f in fn:
         t=pd.read_csv(f,header=0,index_col=None)
-        print(f'shifting by {lt}')
+        logger.debug(f'shifting by {lt}')
         t['time(ps)']+=lt
         lt=t['time(ps)'].to_list()[-1]
         df=pd.concat((df,t))
@@ -342,3 +343,29 @@ def clusters(G:nx.Graph):
     df=pd.DataFrame({'sizes':sizes,'counts':numbers})
     df.sort_values(by='sizes',ascending=False,inplace=True)
     return df
+
+def compute_tg(T,v,r2_thresh=0.9,min_npoints=10):
+    def func(x,a,b):
+        return x*a+b
+    hot_par=[]
+    cold_par=[]
+    for i in range(min_npoints,len(T)):
+        popt,pcov = curve_fit(func,T[:i],v[:i])
+        sse=(v-func(T,*popt))**2
+        sst=(v-v.mean())**2
+        r2=1-sse.sum()/sst.sum()
+        if r2<r2_thresh:
+            cold_par=popt
+            break
+    for i in range(min_npoints,len(T)):
+        popt,pcov = curve_fit(func,T[-i:],v[-i:])
+        sse=(v-func(T,*popt))**2
+        sst=(v-v.mean())**2
+        r2=1-sse.sum()/sst.sum()
+        if r2<r2_thresh:
+            hot_par=popt
+            break
+    Tg=-1
+    if len(hot_par)>0 and len(cold_par)>0:
+        Tg=-(hot_par[1]-cold_par[1])/(hot_par[0]-cold_par[0])
+    return Tg,cold_par,hot_par
