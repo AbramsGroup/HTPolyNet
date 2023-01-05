@@ -9,9 +9,6 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -57,7 +54,7 @@
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PostSimMD"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD">[docs]</a><span class="k">class</span> <span class="nc">PostSimMD</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Generic class for handling post-cure md simulations; this one just does simple NPT MD equilibration;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Generic class for handling post-cure md simulations; this one just does simple NPT MD equilibration;</span>
 <span class="sd">    Classes that inherit from this class should define their own default_params and build_npt</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
@@ -89,7 +86,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">v</span>
 <div class="viewcode-block" id="PostSimMD.do"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdp_pfx</span><span class="o">=</span><span class="s1">&#39;npt&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">gromacs_dict</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;do handles executing the postsim MD simulation</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;do handles executing the postsim MD simulation</span>
 
 <span class="sd">        :param mdp_pfx: filename prefix for output files, defaults to &#39;npt&#39;</span>
 <span class="sd">        :type mdp_pfx: str, optional</span>
@@ -111,18 +108,34 @@
         <span class="n">local_grx</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;input_grx&#39;</span><span class="p">])</span>
         <span class="n">TC</span><span class="o">=</span><span class="n">TopoCoord</span><span class="p">(</span><span class="n">topfilename</span><span class="o">=</span><span class="n">local_top</span><span class="p">,</span><span class="n">grofilename</span><span class="o">=</span><span class="n">local_gro</span><span class="p">,</span><span class="n">grxfilename</span><span class="o">=</span><span class="n">local_grx</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">TC</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> atoms </span><span class="si">{</span><span class="n">TC</span><span class="o">.</span><span class="n">total_mass</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s2">&quot;gromacs&quot;</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> amu&#39;</span><span class="p">)</span>
+        <span class="n">box</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">box</span>
         <span class="n">pfs</span><span class="o">.</span><span class="n">checkout</span><span class="p">(</span><span class="s1">&#39;mdp/npt.mdp&#39;</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s1">&#39;npt.mdp&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mdp_pfx</span><span class="si">}</span><span class="s1">.mdp&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">build_mdp</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mdp_pfx</span><span class="si">}</span><span class="s1">.mdp&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">build_mdp</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mdp_pfx</span><span class="si">}</span><span class="s1">.mdp&#39;</span><span class="p">,</span><span class="n">box</span><span class="o">=</span><span class="n">box</span><span class="p">)</span>
         <span class="n">msg</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">grompp_and_mdrun</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;output_deffnm&#39;</span><span class="p">],</span><span class="n">mdp</span><span class="o">=</span><span class="n">mdp_pfx</span><span class="p">,</span><span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">mylogger</span><span class="o">=</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">,</span><span class="o">**</span><span class="n">gromacs_dict</span><span class="p">)</span>
         <span class="n">df</span><span class="o">=</span><span class="n">gmx_energy_trace</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;output_deffnm&#39;</span><span class="p">],</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">])</span>
+        <span class="n">use_scatter</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;scatter&#39;</span><span class="p">]</span>
+        <span class="n">temp_x</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">temp_y</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">scat_file</span><span class="o">=</span><span class="n">use_scatter</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">sznm</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Box-X&#39;</span><span class="p">,</span><span class="s1">&#39;Box-Y&#39;</span><span class="p">,</span><span class="s1">&#39;Box-Z&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">sznm</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]:</span>
+                <span class="n">L0</span><span class="o">=</span><span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">sznm</span><span class="o">==</span><span class="s1">&#39;Box-X&#39;</span> <span class="k">else</span> <span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">sznm</span><span class="o">==</span><span class="s1">&#39;Box-Y&#39;</span> <span class="k">else</span> <span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">temp_x</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">sznm</span><span class="si">}</span><span class="s1">-strain&#39;</span>
+                <span class="n">df</span><span class="p">[</span><span class="n">temp_x</span><span class="p">]</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="n">sznm</span><span class="p">]</span><span class="o">/</span><span class="n">L0</span><span class="o">-</span><span class="mf">1.0</span>
+        <span class="k">for</span> <span class="n">sznm</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Pres-XX&#39;</span><span class="p">,</span><span class="s1">&#39;Pres-YY&#39;</span><span class="p">,</span><span class="s1">&#39;Pres-ZZ&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">sznm</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]:</span>
+                <span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">sznm</span><span class="si">}</span><span class="s1">-stress&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="n">sznm</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">temp_y</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">sznm</span><span class="si">}</span><span class="s1">-stress&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">temp_x</span> <span class="ow">and</span> <span class="n">temp_y</span><span class="p">:</span>
+            <span class="n">use_scatter</span><span class="o">=</span><span class="p">(</span><span class="n">temp_x</span><span class="p">,</span><span class="n">temp_y</span><span class="p">,</span><span class="n">scat_file</span><span class="p">)</span>
         <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;output_deffnm&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">.csv&#39;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">scatter</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="o">*</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;scatter&#39;</span><span class="p">])</span>
+        <span class="n">scatter</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="o">*</span><span class="n">use_scatter</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Final coordinates in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;output_deffnm&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Traces saved in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;output_deffnm&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">.csv&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PostSimMD.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for an NPT equilibration</span>
+<div class="viewcode-block" id="PostSimMD.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimMD.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for an NPT equilibration</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
 <span class="sd">        :type mdpname: str</span>
@@ -142,7 +155,7 @@
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
         
 <div class="viewcode-block" id="PostSimAnneal"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimAnneal">[docs]</a><span class="k">class</span> <span class="nc">PostSimAnneal</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; a class to handle temperature annealing MD simulation </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; a class to handle temperature annealing MD simulation </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
         <span class="s1">&#39;subdir&#39;</span><span class="p">:</span><span class="s1">&#39;postsim/anneal&#39;</span><span class="p">,</span>
@@ -167,8 +180,8 @@
         <span class="s1">&#39;T0_ps&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
         <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mi">1</span>
     <span class="p">}</span>
-<div class="viewcode-block" id="PostSimAnneal.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimAnneal.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for an annealing MD simulation</span>
+<div class="viewcode-block" id="PostSimAnneal.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimAnneal.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for an annealing MD simulation</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
 <span class="sd">        :type mdpname: str</span>
@@ -197,7 +210,7 @@
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="PostSimLadder"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimLadder">[docs]</a><span class="k">class</span> <span class="nc">PostSimLadder</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; a class to handle a temperature-ladder MD simulation</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; a class to handle a temperature-ladder MD simulation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
         <span class="s1">&#39;subdir&#39;</span><span class="p">:</span><span class="s1">&#39;postsim/ladder&#39;</span><span class="p">,</span>
@@ -222,8 +235,8 @@
         <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mi">1</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="PostSimLadder.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimLadder.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</span>
+<div class="viewcode-block" id="PostSimLadder.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimLadder.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
 <span class="sd">        :type mdpname: str</span>
@@ -260,10 +273,10 @@
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="PostSimDeform"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimDeform">[docs]</a><span class="k">class</span> <span class="nc">PostSimDeform</span><span class="p">(</span><span class="n">PostSimMD</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; a class to handle a temperature-ladder MD simulation</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; a class to handle a uniaxial deformation MD simulation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span><span class="s1">&#39;postsim/deform&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span><span class="s1">&#39;postsim/deform-x&#39;</span><span class="p">,</span>
         <span class="s1">&#39;input_top&#39;</span><span class="p">:</span> <span class="s1">&#39;systems/final-results/final.top&#39;</span><span class="p">,</span>
         <span class="s1">&#39;input_gro&#39;</span><span class="p">:</span> <span class="s1">&#39;postsim/equilibrate/equilibrate.gro&#39;</span><span class="p">,</span>
         <span class="s1">&#39;input_grx&#39;</span><span class="p">:</span> <span class="s1">&#39;systems/final-results/final.grx&#39;</span><span class="p">,</span>
@@ -273,62 +286,79 @@
             <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="s1">&#39;-quiet -nobackup&#39;</span><span class="p">,</span>
             <span class="s1">&#39;mdrun_single_molecule&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx mdrun mdrun&#39;</span>
         <span class="p">},</span>
-        <span class="s1">&#39;output_deffnm&#39;</span><span class="p">:</span><span class="s1">&#39;ladder&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;traces&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Temperature&#39;</span><span class="p">,</span><span class="s1">&#39;Density&#39;</span><span class="p">,</span><span class="s1">&#39;Volume&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;scatter&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;time(ps)&#39;</span><span class="p">,[</span><span class="s1">&#39;Density&#39;</span><span class="p">],</span><span class="s1">&#39;rho_v_ns.png&#39;</span><span class="p">),</span>
-        <span class="s1">&#39;Tlo&#39;</span><span class="p">:</span><span class="mf">300.0</span><span class="p">,</span>
-        <span class="s1">&#39;Thi&#39;</span><span class="p">:</span><span class="mf">600.0</span><span class="p">,</span>
-        <span class="s1">&#39;deltaT&#39;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span>
-        <span class="s1">&#39;ps_per_run&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="s1">&#39;ps_per_rise&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span>
-        <span class="s1">&#39;warmup_ps&#39;</span><span class="p">:</span><span class="mi">5000</span><span class="p">,</span>
-        <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mi">1</span>
+        <span class="s1">&#39;output_deffnm&#39;</span><span class="p">:</span><span class="s1">&#39;deform-x&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;traces&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Box-X&#39;</span><span class="p">,</span><span class="s1">&#39;Pres-XX&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;scatter&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;Box-X&#39;</span><span class="p">,[</span><span class="s1">&#39;Pres-XX&#39;</span><span class="p">],</span><span class="s1">&#39;tension_v_xlength.png&#39;</span><span class="p">),</span>
+        <span class="s1">&#39;direction&#39;</span><span class="p">:</span><span class="s1">&#39;x&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;T&#39;</span><span class="p">:</span><span class="mf">300.0</span><span class="p">,</span>
+        <span class="s1">&#39;P&#39;</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="s1">&#39;ps&#39;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="s1">&#39;edot&#39;</span><span class="p">:</span> <span class="mf">0.001</span> <span class="c1"># strain rate in ps^-1</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="PostSimDeform.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimDeform.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</span>
+<div class="viewcode-block" id="PostSimDeform.build_mdp"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostSimDeform.build_mdp">[docs]</a>    <span class="k">def</span> <span class="nf">build_mdp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mdpname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</span>
 
 <span class="sd">        :param mdpname: name of mdp file</span>
 <span class="sd">        :type mdpname: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span>
         <span class="n">timestep</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">mdp_get</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="s1">&#39;dt&#39;</span><span class="p">))</span>
-        <span class="n">Tdomain</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Thi&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Tlo&#39;</span><span class="p">]</span>
-        <span class="n">nSteps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">Tdomain</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;deltaT&#39;</span><span class="p">]))</span><span class="o">+</span><span class="mi">1</span>
-        <span class="n">T0</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Tlo&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;deltaT&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mf">0.0</span> <span class="k">else</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;Thi&#39;</span><span class="p">]</span>
-        <span class="n">T1</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;Thi&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;deltaT&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mf">0.0</span> <span class="k">else</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;Tlo&#39;</span><span class="p">]</span>
-        <span class="n">Tladder</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">T0</span><span class="p">,</span><span class="n">T1</span><span class="p">,</span><span class="n">nSteps</span><span class="p">)</span>
-        <span class="n">timepoints</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;warmup_ps&#39;</span><span class="p">]]</span>
-        <span class="n">temppoints</span><span class="o">=</span><span class="p">[</span><span class="n">T0</span><span class="p">,</span><span class="n">T0</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nSteps</span><span class="p">):</span>
-            <span class="n">cT</span><span class="o">=</span><span class="n">Tladder</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">timepoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">timepoints</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ps_per_rise&#39;</span><span class="p">])</span>
-            <span class="n">temppoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cT</span><span class="p">)</span>
-            <span class="n">timepoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">timepoints</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ps_per_run&#39;</span><span class="p">])</span>
-            <span class="n">temppoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cT</span><span class="p">)</span>
-        <span class="n">duration</span><span class="o">=</span><span class="n">timepoints</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">nMDsteps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">duration</span><span class="o">/</span><span class="n">timestep</span><span class="p">)</span>
+        <span class="n">duration</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;ps&#39;</span><span class="p">]</span>
+        <span class="n">nsteps</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">duration</span><span class="o">/</span><span class="n">timestep</span><span class="p">)</span>
+        <span class="n">box</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;box&#39;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">],[</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">],[</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">]]))</span>
+        <span class="n">edot</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;edot&#39;</span><span class="p">,</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">direction</span><span class="o">=</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;direction&#39;</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
         <span class="n">mod_dict</span><span class="o">=</span><span class="p">{</span>
-            <span class="s1">&#39;ref_t&#39;</span><span class="p">:</span><span class="n">T0</span><span class="p">,</span>
+            <span class="s1">&#39;ref_t&#39;</span><span class="p">:</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">],</span>
             <span class="s1">&#39;ref_p&#39;</span><span class="p">:</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">],</span>
-            <span class="s1">&#39;gen-temp&#39;</span><span class="p">:</span><span class="n">T0</span><span class="p">,</span>
+            <span class="s1">&#39;gen-temp&#39;</span><span class="p">:</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">],</span>
             <span class="s1">&#39;gen-vel&#39;</span><span class="p">:</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;annealing-npoints&#39;</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">timepoints</span><span class="p">),</span>
-            <span class="s1">&#39;annealing-temp&#39;</span><span class="p">:</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">temppoints</span><span class="p">]),</span>
-            <span class="s1">&#39;annealing-time&#39;</span><span class="p">:</span><span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">timepoints</span><span class="p">]),</span>
-            <span class="s1">&#39;annealing&#39;</span><span class="p">:</span><span class="s1">&#39;single&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;nsteps&#39;</span><span class="p">:</span><span class="n">nMDsteps</span><span class="p">,</span>
-            <span class="s1">&#39;tcoupl&#39;</span><span class="p">:</span><span class="s1">&#39;v-rescale&#39;</span><span class="p">,</span><span class="s1">&#39;tau_t&#39;</span><span class="p">:</span><span class="mf">0.5</span>
+            <span class="s1">&#39;tcoupl&#39;</span><span class="p">:</span><span class="s1">&#39;v-rescale&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;nsteps&#39;</span><span class="p">:</span> <span class="n">nsteps</span><span class="p">,</span>
+            <span class="s1">&#39;rlist&#39;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span>
+            <span class="s1">&#39;rcoulomb&#39;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span>
+            <span class="s1">&#39;rvdw&#39;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">,</span>
+            <span class="s1">&#39;tau_t&#39;</span><span class="p">:</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="s1">&#39;tau_p&#39;</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span>
+            <span class="s1">&#39;refcoord_scaling&#39;</span><span class="p">:</span> <span class="s1">&#39;com&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;pcoupltype&#39;</span><span class="p">:</span> <span class="s1">&#39;anisotropic&#39;</span>
             <span class="p">}</span>
+        <span class="k">if</span> <span class="n">direction</span><span class="o">==</span><span class="s1">&#39;x&#39;</span><span class="p">:</span>
+            <span class="n">strain_vel</span><span class="o">=</span><span class="n">box</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">edot</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;ref_p&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;0.0 1.0 1.0 0 0 0&#39;</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;compressibility&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;0.0 4.5e-5 4.5e-5 0 0 0&#39;</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;deform&#39;</span><span class="p">]</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">strain_vel</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> 0 0 0 0 0&#39;</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;output_deffnm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;deform-x&#39;</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Box-X&#39;</span><span class="p">,</span><span class="s1">&#39;Pres-XX&#39;</span><span class="p">]</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;scatter&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Box-X&#39;</span><span class="p">,[</span><span class="s1">&#39;Pres-XX&#39;</span><span class="p">],</span><span class="s1">&#39;tension_v_xlength.png&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">direction</span><span class="o">==</span><span class="s1">&#39;y&#39;</span><span class="p">:</span>
+            <span class="n">strain_vel</span><span class="o">=</span><span class="n">box</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">edot</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;ref_p&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;1.0 0.0 1.0 0 0 0&#39;</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;compressibility&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;4.5e-5 0.0 4.5e-5 0 0 0&#39;</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;deform&#39;</span><span class="p">]</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;0 </span><span class="si">{</span><span class="n">strain_vel</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> 0 0 0 0&#39;</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;output_deffnm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;deform-y&#39;</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Box-Y&#39;</span><span class="p">,</span><span class="s1">&#39;Pres-YY&#39;</span><span class="p">]</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;scatter&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Box-Y&#39;</span><span class="p">,[</span><span class="s1">&#39;Pres-YY&#39;</span><span class="p">],</span><span class="s1">&#39;tension_v_ylength.png&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">direction</span><span class="o">==</span><span class="s1">&#39;z&#39;</span><span class="p">:</span>
+            <span class="n">strain_vel</span><span class="o">=</span><span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">edot</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;ref_p&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;1.0 1.0 0.0 0 0 0&#39;</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;compressibility&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;4.5e-5 4.5e-5 0.0 0 0 0&#39;</span>
+            <span class="n">mod_dict</span><span class="p">[</span><span class="s1">&#39;deform&#39;</span><span class="p">]</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;0 0 </span><span class="si">{</span><span class="n">strain_vel</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> 0 0 0&#39;</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;output_deffnm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;deform-z&#39;</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;traces&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Box-Z&#39;</span><span class="p">,</span><span class="s1">&#39;Pres-ZZ&#39;</span><span class="p">]</span>
+            <span class="n">params</span><span class="p">[</span><span class="s1">&#39;scatter&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;Box-Z&#39;</span><span class="p">,[</span><span class="s1">&#39;Pres-ZZ&#39;</span><span class="p">],</span><span class="s1">&#39;tension_v_zlength.png&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Bad direction for uniaxial strain </span><span class="si">{</span><span class="n">direction</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
         <span class="n">mdp_modify</span><span class="p">(</span><span class="n">mdpname</span><span class="p">,</span><span class="n">mod_dict</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="PostsimConfiguration"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostsimConfiguration">[docs]</a><span class="k">class</span> <span class="nc">PostsimConfiguration</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; handles reading and parsing a postcure simulation input config file.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; handles reading and parsing a postcure simulation input config file.</span>
 <span class="sd">        Config file format</span>
 <span class="sd">        </span>
 <span class="sd">        - { key1: {&lt;paramdict&gt;}}</span>
 <span class="sd">        - { key2: {&lt;paramdict&gt;}} </span>
-<span class="sd">        </span>
 <span class="sd">        </span>
 <span class="sd">        ...</span>
 
@@ -341,10 +371,10 @@
 <span class="sd">        - &#39;equilibrate&#39;: simple NPT equilibration;</span>
 <span class="sd">        - &#39;anneal&#39;: simple simulated annealing;</span>
 <span class="sd">        - &#39;ladder&#39;: temperature ladder;</span>
-<span class="sd">        - &#39;deform&#39;: deform along one axis (not yet implemented)</span>
+<span class="sd">        - &#39;deform: constant strain-rate uniaxial deformation;</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-    <span class="n">default_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;equilibrate&#39;</span><span class="p">:</span><span class="n">PostSimMD</span><span class="p">,</span><span class="s1">&#39;anneal&#39;</span><span class="p">:</span><span class="n">PostSimAnneal</span><span class="p">,</span><span class="s1">&#39;ladder&#39;</span><span class="p">:</span><span class="n">PostSimLadder</span><span class="p">,</span><span class="s1">&#39;deform&#39;</span><span class="p">:</span><span class="kc">None</span><span class="p">}</span>
+    <span class="n">default_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;equilibrate&#39;</span><span class="p">:</span><span class="n">PostSimMD</span><span class="p">,</span><span class="s1">&#39;anneal&#39;</span><span class="p">:</span><span class="n">PostSimAnneal</span><span class="p">,</span><span class="s1">&#39;ladder&#39;</span><span class="p">:</span><span class="n">PostSimLadder</span><span class="p">,</span><span class="s1">&#39;deform&#39;</span><span class="p">:</span><span class="n">PostSimDeform</span><span class="p">}</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="p">[]</span>
@@ -352,7 +382,7 @@
 
 <div class="viewcode-block" id="PostsimConfiguration.read"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostsimConfiguration.read">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;read generates a new PostsimConfiguration object by reading in the JSON or YAML file indicated by filename</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;read generates a new PostsimConfiguration object by reading in the JSON or YAML file indicated by filename</span>
 
 <span class="sd">        :param filename: name of file from which to read new PostsimConfiguration object</span>
 <span class="sd">        :type filename: str</span>
@@ -372,7 +402,7 @@
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_read_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;_read_json create a new PostsimConfiguration object by reading from JSON input</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_read_json create a new PostsimConfiguration object by reading from JSON input</span>
 
 <span class="sd">        :param filename: name of JSON file</span>
 <span class="sd">        :type filename: str</span>
@@ -391,7 +421,7 @@
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_read_yaml</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;_read_yaml create a new PostsimConfiguration object by reading from YAML input</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_read_yaml create a new PostsimConfiguration object by reading from YAML input</span>
 
 <span class="sd">        :param filename: name of YAML file</span>
 <span class="sd">        :type filename: str</span>
@@ -409,7 +439,7 @@
         <span class="k">return</span> <span class="n">inst</span>
 
 <div class="viewcode-block" id="PostsimConfiguration.parse"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.PostsimConfiguration.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;parse parses a PostsimConfiguration file to build the list of stages to run</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;parse parses a PostsimConfiguration file to build the list of stages to run</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="p">:</span>
             <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Poorly formatted </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="si">}</span><span class="s1">; each stanza may have only one keyword&#39;</span>
@@ -419,7 +449,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_classes</span><span class="p">[</span><span class="n">simtype</span><span class="p">](</span><span class="n">p</span><span class="p">[</span><span class="n">simtype</span><span class="p">]))</span></div></div>
 
 <div class="viewcode-block" id="postsim"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.postsim.postsim">[docs]</a><span class="k">def</span> <span class="nf">postsim</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;postsim handles the postsim subcommand for managing post-cure production MD simulations</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;postsim handles the postsim subcommand for managing post-cure production MD simulations</span>
 
 <span class="sd">    :param args: command-line arguments</span>
 <span class="sd">    :type args: argparse.Namespace</span>
@@ -505,7 +535,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

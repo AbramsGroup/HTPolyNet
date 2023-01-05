@@ -10,9 +10,6 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -41,12 +38,12 @@
 <h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this heading">¶</a></h2>
 <p>Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a 95%-cure build under <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, with diagnostic output in <code class="docutils literal notranslate"><span class="pre">diagnostics.log</span></code> and console output to <code class="docutils literal notranslate"><span class="pre">console.log</span></code>.</p>
 <p>As an exercise, edit <code class="docutils literal notranslate"><span class="pre">pMSTY.yaml</span></code> to change the desired cure to 0.50 instead of 0.95.  Then launch a second build:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ htpolynet run -diag diagnostics-low.log pMSTY.yaml <span class="p">&amp;</span>&gt; console-low.log
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-low.log<span class="w"> </span>pMSTY.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>console-low.log
 </pre></div>
 </div>
 <p>This will populate the project directory <code class="docutils literal notranslate"><span class="pre">proj-1</span></code> (whose name is automatically assigned).  Once it completes, we can generate some plots.</p>
 <p>First, we can make plots of the conversion vs. run time and the cure iteration vs. run time:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -logs diagnostics.log diagnostics-low.log
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>-logs<span class="w"> </span>diagnostics.log<span class="w"> </span>diagnostics-low.log
 </pre></div>
 </div>
 <p>This generates <code class="docutils literal notranslate"><span class="pre">cure-info.png</span></code>:</p>
@@ -58,7 +55,7 @@
 </figure>
 <p>We can see here that the 95% cure took about 8 and a half minutes of run time (which is not really impressive since this is a <strong>very</strong> small system).  Fully two-thirds of the run time is consumed realizing the final 15% of the cure.</p>
 <p>Second, we can make plots that track the temperature and density throughout the entire build process:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots -proj proj-0 -t p0-traces.png -o p0.csv
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>-proj<span class="w"> </span>proj-0<span class="w"> </span>-t<span class="w"> </span>p0-traces.png<span class="w"> </span>-o<span class="w"> </span>p0.csv
 </pre></div>
 </div>
 <p>This command extracts temperature, density, and potential energy from all Gromacs <code class="docutils literal notranslate"><span class="pre">edr</span></code> output files in <code class="docutils literal notranslate"><span class="pre">proj-0/</span></code> in the order they were generated, plots them according to a default format, and stores the extracted data in a <code class="docutils literal notranslate"><span class="pre">csv</span></code> file.</p>
@@ -93,7 +90,7 @@
 <section id="details">
 <h2>Details<a class="headerlink" href="#details" title="Permalink to this heading">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> invocation in <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> runs a high-cure build (95% conversion) in the <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> subdirectory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> proj-0
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>proj-0
 <span class="gp">$ </span>ls
 <span class="go">checkpoint_state.yaml  molecules/  plots/  systems/</span>
 <span class="gp">$</span>
@@ -107,7 +104,7 @@
 </ul>
 <section id="proj-0-systems">
 <h3><code class="docutils literal notranslate"><span class="pre">proj-0/systems</span></code><a class="headerlink" href="#proj-0-systems" title="Permalink to this heading">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> systems
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>systems
 <span class="gp">$ </span>ls
 <span class="go">capping/         densification/  init/    iter-10/  iter-3/  iter-5/  iter-7/  iter-9/    precure/</span>
 <span class="go">cure_state.yaml  final-results/  iter-1/  iter-2/   iter-4/  iter-6/  iter-8/  postcure/</span>
@@ -118,8 +115,8 @@
 <section id="proj-1-plots">
 <h3><code class="docutils literal notranslate"><span class="pre">proj-1/plots</span></code><a class="headerlink" href="#proj-1-plots" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> generates several plots on the fly during a system build.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span> ../plots
-<span class="gp">$ </span>ls -1
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>../plots
+<span class="gp">$ </span>ls<span class="w"> </span>-1
 <span class="go">densification-density.png</span>
 <span class="go">iter-1-cure_equilibrate-density.png</span>
 <span class="go">iter-2-cure_equilibrate-density.png</span>
@@ -233,7 +230,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

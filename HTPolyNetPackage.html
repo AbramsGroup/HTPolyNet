@@ -10,9 +10,6 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -2677,7 +2674,7 @@ cutoff distance from each other</p>
 <p>a class to handle temperature annealing MD simulation</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostSimAnneal.build_mdp">
-<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimAnneal.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimAnneal.build_mdp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimAnneal.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimAnneal.build_mdp" title="Permalink to this definition">¶</a></dt>
 <dd><p>build_mdp builds the GROMACS mdp file required for an annealing MD simulation</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2697,10 +2694,10 @@ cutoff distance from each other</p>
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostSimDeform">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HTPolyNet.postsim.</span></span><span class="sig-name descname"><span class="pre">PostSimDeform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimDeform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimDeform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#HTPolyNet.postsim.PostSimMD" title="HTPolyNet.postsim.PostSimMD"><code class="xref py py-class docutils literal notranslate"><span class="pre">PostSimMD</span></code></a></p>
-<p>a class to handle a temperature-ladder MD simulation</p>
+<p>a class to handle a uniaxial deformation MD simulation</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostSimDeform.build_mdp">
-<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimDeform.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimDeform.build_mdp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimDeform.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimDeform.build_mdp" title="Permalink to this definition">¶</a></dt>
 <dd><p>build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2711,7 +2708,7 @@ cutoff distance from each other</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostSimDeform.default_params">
-<span class="sig-name descname"><span class="pre">default_params</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'P':</span> <span class="pre">1,</span> <span class="pre">'Thi':</span> <span class="pre">600.0,</span> <span class="pre">'Tlo':</span> <span class="pre">300.0,</span> <span class="pre">'deltaT':</span> <span class="pre">5,</span> <span class="pre">'gromacs':</span> <span class="pre">{'gmx':</span> <span class="pre">'gmx',</span> <span class="pre">'mdrun':</span> <span class="pre">'gmx</span> <span class="pre">mdrun',</span> <span class="pre">'mdrun_single_molecule':</span> <span class="pre">'gmx</span> <span class="pre">mdrun</span> <span class="pre">mdrun',</span> <span class="pre">'options':</span> <span class="pre">'-quiet</span> <span class="pre">-nobackup'},</span> <span class="pre">'input_gro':</span> <span class="pre">'postsim/equilibrate/equilibrate.gro',</span> <span class="pre">'input_grx':</span> <span class="pre">'systems/final-results/final.grx',</span> <span class="pre">'input_top':</span> <span class="pre">'systems/final-results/final.top',</span> <span class="pre">'output_deffnm':</span> <span class="pre">'ladder',</span> <span class="pre">'ps_per_rise':</span> <span class="pre">1000,</span> <span class="pre">'ps_per_run':</span> <span class="pre">1000,</span> <span class="pre">'scatter':</span> <span class="pre">('time(ps)',</span> <span class="pre">['Density'],</span> <span class="pre">'rho_v_ns.png'),</span> <span class="pre">'subdir':</span> <span class="pre">'postsim/deform',</span> <span class="pre">'traces':</span> <span class="pre">['Temperature',</span> <span class="pre">'Density',</span> <span class="pre">'Volume'],</span> <span class="pre">'warmup_ps':</span> <span class="pre">5000}</span></em><a class="headerlink" href="#HTPolyNet.postsim.PostSimDeform.default_params" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">default_params</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'P':</span> <span class="pre">1.0,</span> <span class="pre">'T':</span> <span class="pre">300.0,</span> <span class="pre">'direction':</span> <span class="pre">'x',</span> <span class="pre">'edot':</span> <span class="pre">0.001,</span> <span class="pre">'gromacs':</span> <span class="pre">{'gmx':</span> <span class="pre">'gmx',</span> <span class="pre">'mdrun':</span> <span class="pre">'gmx</span> <span class="pre">mdrun',</span> <span class="pre">'mdrun_single_molecule':</span> <span class="pre">'gmx</span> <span class="pre">mdrun</span> <span class="pre">mdrun',</span> <span class="pre">'options':</span> <span class="pre">'-quiet</span> <span class="pre">-nobackup'},</span> <span class="pre">'input_gro':</span> <span class="pre">'postsim/equilibrate/equilibrate.gro',</span> <span class="pre">'input_grx':</span> <span class="pre">'systems/final-results/final.grx',</span> <span class="pre">'input_top':</span> <span class="pre">'systems/final-results/final.top',</span> <span class="pre">'output_deffnm':</span> <span class="pre">'deform-x',</span> <span class="pre">'ps':</span> <span class="pre">1000,</span> <span class="pre">'scatter':</span> <span class="pre">('Box-X',</span> <span class="pre">['Pres-XX'],</span> <span class="pre">'tension_v_xlength.png'),</span> <span class="pre">'subdir':</span> <span class="pre">'postsim/deform-x',</span> <span class="pre">'traces':</span> <span class="pre">['Box-X',</span> <span class="pre">'Pres-XX']}</span></em><a class="headerlink" href="#HTPolyNet.postsim.PostSimDeform.default_params" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -2723,7 +2720,7 @@ cutoff distance from each other</p>
 <p>a class to handle a temperature-ladder MD simulation</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostSimLadder.build_mdp">
-<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimLadder.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimLadder.build_mdp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimLadder.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimLadder.build_mdp" title="Permalink to this definition">¶</a></dt>
 <dd><p>build_mdp builds the GROMACS mdp file required for a temperature-ladder MD simulation</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2747,7 +2744,7 @@ cutoff distance from each other</p>
 Classes that inherit from this class should define their own default_params and build_npt</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostSimMD.build_mdp">
-<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimMD.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimMD.build_mdp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">build_mdp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdpname</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/postsim.html#PostSimMD.build_mdp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.postsim.PostSimMD.build_mdp" title="Permalink to this definition">¶</a></dt>
 <dd><p>build_mdp builds the GROMACS mdp file required for an NPT equilibration</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2793,11 +2790,11 @@ they appear in the config file.</p>
 <li><p>‘equilibrate’: simple NPT equilibration;</p></li>
 <li><p>‘anneal’: simple simulated annealing;</p></li>
 <li><p>‘ladder’: temperature ladder;</p></li>
-<li><p>‘deform’: deform along one axis (not yet implemented)</p></li>
+<li><p>‘deform: constant strain-rate uniaxial deformation;</p></li>
 </ul>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.postsim.PostsimConfiguration.default_classes">
-<span class="sig-name descname"><span class="pre">default_classes</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'anneal':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimAnneal'&gt;,</span> <span class="pre">'deform':</span> <span class="pre">None,</span> <span class="pre">'equilibrate':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimMD'&gt;,</span> <span class="pre">'ladder':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimLadder'&gt;}</span></em><a class="headerlink" href="#HTPolyNet.postsim.PostsimConfiguration.default_classes" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">default_classes</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'anneal':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimAnneal'&gt;,</span> <span class="pre">'deform':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimDeform'&gt;,</span> <span class="pre">'equilibrate':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimMD'&gt;,</span> <span class="pre">'ladder':</span> <span class="pre">&lt;class</span> <span class="pre">'HTPolyNet.postsim.PostSimLadder'&gt;}</span></em><a class="headerlink" href="#HTPolyNet.postsim.PostsimConfiguration.default_classes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -5887,7 +5884,7 @@ in the ‘postsim’ subdirectories</p>
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

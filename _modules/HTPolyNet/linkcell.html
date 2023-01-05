@@ -9,9 +9,6 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -51,11 +48,11 @@
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Linkcell"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell">[docs]</a><span class="k">class</span> <span class="nc">Linkcell</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Handles the link-cell algorithm for searching for bonding partners within a</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Handles the link-cell algorithm for searching for bonding partners within a</span>
 <span class="sd">        cutoff distance from each other</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">box</span><span class="o">=</span><span class="p">[],</span><span class="n">cutoff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">pbc_wrapper</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;__init__ Constructor for an empty Linkcell object</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;__init__ Constructor for an empty Linkcell object</span>
 
 <span class="sd">        :param box: system box size, defaults to []</span>
 <span class="sd">        :type box: list, optional</span>
@@ -68,7 +65,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pbc_wrapper</span><span class="o">=</span><span class="n">pbc_wrapper</span>
 
 <div class="viewcode-block" id="Linkcell.create"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cutoff</span><span class="p">,</span><span class="n">box</span><span class="p">,</span><span class="n">origin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">])):</span>
-        <span class="sd">&quot;&quot;&quot;create Creates the link-cell structure in a previously initialized instance</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;create Creates the link-cell structure in a previously initialized instance</span>
 
 <span class="sd">        :param cutoff: cutoff distance</span>
 <span class="sd">        :type cutoff: float</span>
@@ -100,7 +97,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Linkcell structure: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cellndx</span><span class="p">)</span><span class="si">}</span><span class="s1"> cells (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ncells</span><span class="si">}</span><span class="s1">) dim </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">celldim</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Linkcell.cellndx_of_point"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.cellndx_of_point">[docs]</a>    <span class="k">def</span> <span class="nf">cellndx_of_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">R</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;cellndx_of_point returns the (i,j,k) cell index of point R</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;cellndx_of_point returns the (i,j,k) cell index of point R</span>
 
 <span class="sd">        :param R: a 3-space point</span>
 <span class="sd">        :type R: numpy.ndarray</span>
@@ -119,7 +116,7 @@
         <span class="k">return</span> <span class="n">C</span></div>
 
 <div class="viewcode-block" id="Linkcell.point_in_cellndx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.point_in_cellndx">[docs]</a>    <span class="k">def</span> <span class="nf">point_in_cellndx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">R</span><span class="p">,</span><span class="n">C</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;point_in_cellndx returns True if point R is located in cell with (i,j,k) index C</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;point_in_cellndx returns True if point R is located in cell with (i,j,k) index C</span>
 
 <span class="sd">        :param R: 3-space point</span>
 <span class="sd">        :type R: numpy.ndarray</span>
@@ -135,7 +132,7 @@
         <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">wrapR</span><span class="o">&lt;</span><span class="n">UU</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">wrapR</span><span class="o">&gt;=</span><span class="n">LL</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Linkcell.corners_of_cellndx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.corners_of_cellndx">[docs]</a>    <span class="k">def</span> <span class="nf">corners_of_cellndx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">C</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;corners_of_cellndx returns the lower-left and upper-right corners of cell with (i,j,k) index C, as an array of 3-space points</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;corners_of_cellndx returns the lower-left and upper-right corners of cell with (i,j,k) index C, as an array of 3-space points</span>
 
 <span class="sd">        :param C: (i,j,k) index</span>
 <span class="sd">        :type C: (int,int,int)</span>
@@ -147,7 +144,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">LL</span><span class="p">,</span><span class="n">UU</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="Linkcell.cellndx_in_structure"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.cellndx_in_structure">[docs]</a>    <span class="k">def</span> <span class="nf">cellndx_in_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">C</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;cellndx_in_structure test to see if (i,j,k) index given is within the established linkcell structure</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;cellndx_in_structure test to see if (i,j,k) index given is within the established linkcell structure</span>
 
 <span class="sd">        :param C: (i,j,k) index</span>
 <span class="sd">        :type C: (int,int,int)</span>
@@ -158,7 +155,7 @@
         <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">&lt;=</span><span class="n">C</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">C</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">ncells</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Linkcell.ldx_of_cellndx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.ldx_of_cellndx">[docs]</a>    <span class="k">def</span> <span class="nf">ldx_of_cellndx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">C</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;ldx_of_cellndx return scalar index of cell with (i,j,k)-index C</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;ldx_of_cellndx return scalar index of cell with (i,j,k)-index C</span>
 
 <span class="sd">        :param C: (i,j,k)-index</span>
 <span class="sd">        :type C: (int,int,int)</span>
@@ -170,7 +167,7 @@
         <span class="k">return</span> <span class="n">xc</span></div>
 
 <div class="viewcode-block" id="Linkcell.cellndx_of_ldx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.cellndx_of_ldx">[docs]</a>    <span class="k">def</span> <span class="nf">cellndx_of_ldx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;cellndx_of_ldx returns (i,j,k)-index of cell with scalar index i</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;cellndx_of_ldx returns (i,j,k)-index of cell with scalar index i</span>
 
 <span class="sd">        :param i: scalar cell index</span>
 <span class="sd">        :type i: int</span>
@@ -180,7 +177,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cellndx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Linkcell.populate_par"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.populate_par">[docs]</a>    <span class="k">def</span> <span class="nf">populate_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">adf</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;populate_par populate the linkcell structure by setting the &quot;linkcell_idx&quot; attribute of each atom in the coordinates dataframe adf</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;populate_par populate the linkcell structure by setting the &quot;linkcell_idx&quot; attribute of each atom in the coordinates dataframe adf</span>
 
 <span class="sd">        :param adf: gromacs-format coordinate dataframe</span>
 <span class="sd">        :type adf: pandas.DataFrame</span>
@@ -196,7 +193,7 @@
         <span class="k">return</span> <span class="n">adf</span></div>
 
     <span class="k">def</span> <span class="nf">_return_list_lens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx_list</span><span class="p">,</span><span class="n">mlists</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;_return_list_lens returns a list of lengths of lists in list mlists</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_return_list_lens returns a list of lengths of lists in list mlists</span>
 
 <span class="sd">        :param idx_list: indicies of mlists that will be tallied</span>
 <span class="sd">        :type idx_list: list of ints</span>
@@ -208,7 +205,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">mlists</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">idx_list</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Linkcell.populate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.populate">[docs]</a>    <span class="k">def</span> <span class="nf">populate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Coordinates</span><span class="p">,</span><span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;populate Populates linkcell structure</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;populate Populates linkcell structure</span>
 
 <span class="sd">        :param Coordinates: Coordinates instance from which atom coordinates are taken</span>
 <span class="sd">        :type Coordinates: Coordinates</span>
@@ -254,7 +251,7 @@
         <span class="c1"># logger.debug(f&#39;Linkcell.populate() ends.&#39;)</span>
 
 <div class="viewcode-block" id="Linkcell.make_neighborlists"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.make_neighborlists">[docs]</a>    <span class="k">def</span> <span class="nf">make_neighborlists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;make_neighborlists populates the neighborlist member, one element per cell; each element is the list of neighbors of that cell</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;make_neighborlists populates the neighborlist member, one element per cell; each element is the list of neighbors of that cell</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">neighborlists</span><span class="o">=</span><span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cellndx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
         <span class="k">for</span> <span class="n">C</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cellndx</span><span class="p">:</span>
@@ -264,7 +261,7 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">neighborlists</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ldx_of_cellndx</span><span class="p">(</span><span class="n">D</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="Linkcell.make_memberlists"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.make_memberlists">[docs]</a>    <span class="k">def</span> <span class="nf">make_memberlists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cdf</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;make_memberlists populates the memberlists member, one element per cell; each element is the list of atom indices in that cell </span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;make_memberlists populates the memberlists member, one element per cell; each element is the list of atom indices in that cell </span>
 
 <span class="sd">        :param cdf: coordinates data frame</span>
 <span class="sd">        :type cdf: pd.DataFrame</span>
@@ -284,7 +281,7 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Avg/min/max cell pop: </span><span class="si">{</span><span class="n">avg_cell_pop</span><span class="si">:</span><span class="s1">&gt;8.3f</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">min_cell_pop</span><span class="si">:</span><span class="s1">&gt;8d</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">max_cell_pop</span><span class="si">:</span><span class="s1">&gt;8d</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Linkcell.neighbors_of_cellndx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.neighbors_of_cellndx">[docs]</a>    <span class="k">def</span> <span class="nf">neighbors_of_cellndx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Ci</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;neighbors_of_cellndx returns the list of neighbors of cell Ci by their (i,j,k) indices</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;neighbors_of_cellndx returns the list of neighbors of cell Ci by their (i,j,k) indices</span>
 
 <span class="sd">        :param Ci: _description_</span>
 <span class="sd">        :type Ci: _type_</span>
@@ -308,7 +305,7 @@
         <span class="k">return</span> <span class="n">retlist</span></div>
 
 <div class="viewcode-block" id="Linkcell.searchlist_of_ldx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.searchlist_of_ldx">[docs]</a>    <span class="k">def</span> <span class="nf">searchlist_of_ldx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;searchlist_of_ldx returns the list of scalar cell indices of cells that are neighbors of cell with scalar index i</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;searchlist_of_ldx returns the list of scalar cell indices of cells that are neighbors of cell with scalar index i</span>
 
 <span class="sd">        :param i: scalar cell index</span>
 <span class="sd">        :type i: int</span>
@@ -324,7 +321,7 @@
         <span class="k">return</span> <span class="n">retlist</span></div>
 
 <div class="viewcode-block" id="Linkcell.are_cellndx_neighbors"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.are_cellndx_neighbors">[docs]</a>    <span class="k">def</span> <span class="nf">are_cellndx_neighbors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Ci</span><span class="p">,</span><span class="n">Cj</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;are_cellndx_neighbors returns True if cells with (i,j,k) indices Ci and Cj are neighbors</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;are_cellndx_neighbors returns True if cells with (i,j,k) indices Ci and Cj are neighbors</span>
 
 <span class="sd">        :param Ci: cell index</span>
 <span class="sd">        :type Ci: np.ndarray(3,int)</span>
@@ -342,7 +339,7 @@
         <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dij</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="Linkcell.are_ldx_neighbors"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.are_ldx_neighbors">[docs]</a>    <span class="k">def</span> <span class="nf">are_ldx_neighbors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ildx</span><span class="p">,</span><span class="n">jldx</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;are_ldx_neighbors returns True if cells with scalar indices ildx and jldx are neighbors</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;are_ldx_neighbors returns True if cells with scalar indices ildx and jldx are neighbors</span>
 
 <span class="sd">        :param ildx: scalar cell index</span>
 <span class="sd">        :type ildx: int</span>
@@ -417,7 +414,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

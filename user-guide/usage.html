@@ -10,9 +10,6 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -38,7 +35,7 @@
   <section id="usage">
 <h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h1>
 <p>Installation of the <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> package gives access to the <code class="docutils literal notranslate"><span class="pre">htpolynet</span></code> command.  Invoking <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">--help</span></code> shows basic usage of the command, which always involves providing a <em>subcommand</em>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet --help
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>--help
 <span class="go">usage: htpolynet [-h] {run,parameterize,info,plots,fetch-example,input-check} ...</span>
 
 <span class="go">HTPolyNet 0.0.1</span>
@@ -97,7 +94,7 @@
 <section id="htpolynet-parameterize">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code><a class="headerlink" href="#htpolynet-parameterize" title="Permalink to this heading">¶</a></h2>
 <p>This is the command for only performing molecular parameterizations and checking the results into a library:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet parameterize --help
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>parameterize<span class="w"> </span>--help
 <span class="go">usage: htpolynet parameterize [-h] [-lib LIB] [-diag DIAG] [-restart] [--force-parameterization] [--force-checkin] [--loglevel LOGLEVEL] config</span>
 
 <span class="go">positional arguments:</span>
@@ -119,7 +116,7 @@
 <section id="htpolynet-info">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">info</span></code><a class="headerlink" href="#htpolynet-info" title="Permalink to this heading">¶</a></h2>
 <p>This simply outputs some information about <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet info
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>info
 <span class="go">This is some information on your installed version of HTPolyNet</span>
 <span class="go">System library is /home/cfa/Git/HTPolyNet/Library</span>
 <span class="go">Ambertools:</span>
@@ -133,7 +130,7 @@
 <section id="htpolynet-plots">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code><a class="headerlink" href="#htpolynet-plots" title="Permalink to this heading">¶</a></h2>
 <p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet plots --help
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>--help
 <span class="go">usage: htpolynet plots [-h] [-logs LOGS [LOGS ...]] [-proj PROJ] [-o O] [--plotfile PLOTFILE]</span>
 
 <span class="go">options:</span>
@@ -150,7 +147,7 @@
 <section id="htpolynet-fetch-example">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code><a class="headerlink" href="#htpolynet-fetch-example" title="Permalink to this heading">¶</a></h2>
 <p>This will fetch one or more examples from the <code class="docutils literal notranslate"><span class="pre">example_depot</span></code> of the system <code class="docutils literal notranslate"><span class="pre">Library</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet fetch-example --help
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>fetch-example<span class="w"> </span>--help
 <span class="go">usage: htpolynet fetch-example [-h] [-n {0,1,2,3,4,5,6,all}] [-k]</span>
 
 <span class="go">options:</span>
@@ -164,10 +161,10 @@
 </pre></div>
 </div>
 <p>Fetching will copy the tarball for the requested system to the current directory and then untar it and remove it, leaving behind the directory.  For example to fetch the PACM-DGEBA epoxy thermoset example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet fetch-example -n <span class="m">4</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>fetch-example<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span>
 <span class="gp">$ </span>ls
 <span class="go">4-pacm-dgeba-epoxy-thermoset/</span>
-<span class="gp">$ </span><span class="nb">cd</span> <span class="m">4</span>-pacm-dgeba-epoxy-thermoset
+<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span><span class="m">4</span>-pacm-dgeba-epoxy-thermoset
 <span class="gp">$ </span>ls
 <span class="go">DGE-PAC-hi.yaml  DGE-PAC-lo.yaml  lib/  run.sh</span>
 </pre></div>
@@ -178,7 +175,7 @@
 <section id="htpolynet-input-check">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">input-check</span></code><a class="headerlink" href="#htpolynet-input-check" title="Permalink to this heading">¶</a></h2>
 <p>The purpose of this subcommand is to report the size of the initial system that <em>would</em> be created by the provided configuration file and monomer input structures.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet input-check DGE-PAC-hi.yaml
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>input-check<span class="w"> </span>DGE-PAC-hi.yaml
 <span class="go">Molecule DGE: 53 atoms, 200 molecules</span>
 <span class="go">Molecule PAC: 41 atoms, 100 molecules</span>
 <span class="go">DGE-PAC-hi.yaml: 14700 atoms in initial system</span>
@@ -258,7 +255,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

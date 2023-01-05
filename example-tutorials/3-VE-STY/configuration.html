@@ -10,9 +10,6 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-    <script src="../../_static/jquery.js"></script>
-    <script src="../../_static/underscore.js"></script>
-    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -38,22 +35,22 @@
   <section id="the-configuration-file">
 <span id="ve-configuration-file"></span><h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this heading">¶</a></h1>
 <p>We just presented the reactions in the configuration file.  The rest of the file is essentially the same as the original config file for the poly(methyl styrene) system, with the exception of the <code class="docutils literal notranslate"><span class="pre">contituents</span></code>  and <code class="docutils literal notranslate"><span class="pre">densification</span></code> directives:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">constituents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
-<span class="nt">  STY</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">150</span><span class="w"> </span><span class="p p-Indicator">},</span><span class="w"></span>
-<span class="nt">  GMA</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">75</span><span class="w"> </span><span class="p p-Indicator">},</span><span class="w"></span>
-<span class="nt">  HIE</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> stereocenters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">C3</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
-<span class="p p-Indicator">}</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">constituents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="nt">  STY</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">150</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="nt">  GMA</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">75</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="nt">  HIE</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> stereocenters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">C3</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="p p-Indicator">}</span>
 </pre></div>
 </div>
 <p>Importantly, we can specify GMA here, even though we are not providing an input <code class="docutils literal notranslate"><span class="pre">GMA.mol2</span></code> file because GMA is a product that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> recognizes that it will generate by itself.  Secondly, we know that there are two chiral carbons in HIE, which will result in a grand total of 16 distinct diastereromers of GMA being used to build the initial racemic system.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">densification</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="w"></span>
-<span class="nt">  initial_density</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="c1"># kg/m3</span><span class="w"></span>
-<span class="nt">  equilibration</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">min</span><span class="w"> </span><span class="p p-Indicator">},</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">nvt</span><span class="p p-Indicator">,</span><span class="nt"> temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> ps</span><span class="p">:</span><span class="w"> </span><span class="nv">10.0</span><span class="w"> </span><span class="p p-Indicator">},</span><span class="w"></span>
-<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">npt</span><span class="p p-Indicator">,</span><span class="nt"> temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> pressure</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> ps</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="nt"> repeat</span><span class="p">:</span><span class="w"> </span><span class="nv">8</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"></span>
-<span class="w">  </span><span class="p p-Indicator">]</span><span class="w"></span>
-<span class="p p-Indicator">}</span><span class="w"></span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">densification</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="nt">  initial_density</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="c1"># kg/m3</span>
+<span class="nt">  equilibration</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">min</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">nvt</span><span class="p p-Indicator">,</span><span class="nt"> temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> ps</span><span class="p">:</span><span class="w"> </span><span class="nv">10.0</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">npt</span><span class="p p-Indicator">,</span><span class="nt"> temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> pressure</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> ps</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="nt"> repeat</span><span class="p">:</span><span class="w"> </span><span class="nv">8</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">]</span>
+<span class="p p-Indicator">}</span>
 </pre></div>
 </div>
 <p>In the densification, we are stipulating a very low initial density, which is arrived at by trial-and-error because <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">insert-molecules</span></code> has problems reliably inserting all the required molecular instances at higher densities, presumably because of GMA’s rather long aspect ratio.  To fully densify, we specify that the NPT simulation be repeated 8 times in series, with each step taking 100 ps.  This ensures that gromacs will not complain about the box size changing too much during the densification.  (There may be a better way to do this in a single mdrun execution, but this works.)</p>
@@ -130,7 +127,7 @@
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
