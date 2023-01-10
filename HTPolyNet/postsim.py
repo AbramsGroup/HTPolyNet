@@ -296,7 +296,7 @@ class PostSimDeform(PostSimMD):
             strain_vel=box[0][0]*edot
             mod_dict['ref_p']='0.0 1.0 1.0 0 0 0'
             mod_dict['compressibility']='0.0 4.5e-5 4.5e-5 0 0 0'
-            mod_dict['deform']=f'{strain_vel:.3f} 0 0 0 0 0'
+            mod_dict['deform']=f'{strain_vel:.3e} 0 0 0 0 0'
             params['output_deffnm'] = 'deform-x'
             params['traces']=['Box-X','Pres-XX']
             params['scatter']=('Box-X',['Pres-XX'],'tension_v_xlength.png')
@@ -304,7 +304,7 @@ class PostSimDeform(PostSimMD):
             strain_vel=box[1][1]*edot
             mod_dict['ref_p']='1.0 0.0 1.0 0 0 0'
             mod_dict['compressibility']='4.5e-5 0.0 4.5e-5 0 0 0'
-            mod_dict['deform']=f'0 {strain_vel:.3f} 0 0 0 0'
+            mod_dict['deform']=f'0 {strain_vel:.3e} 0 0 0 0'
             params['output_deffnm'] = 'deform-y'
             params['traces']=['Box-Y','Pres-YY']
             params['scatter']=('Box-Y',['Pres-YY'],'tension_v_ylength.png')
@@ -312,7 +312,7 @@ class PostSimDeform(PostSimMD):
             strain_vel=box[2][2]*edot
             mod_dict['ref_p']='1.0 1.0 0.0 0 0 0'
             mod_dict['compressibility']='4.5e-5 4.5e-5 0.0 0 0 0'
-            mod_dict['deform']=f'0 0 {strain_vel:.3f} 0 0 0'
+            mod_dict['deform']=f'0 0 {strain_vel:.3e} 0 0 0'
             params['output_deffnm'] = 'deform-z'
             params['traces']=['Box-Z','Pres-ZZ']
             params['scatter']=('Box-Z',['Pres-ZZ'],'tension_v_zlength.png')

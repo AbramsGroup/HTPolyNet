@@ -9,6 +9,7 @@
 import shutil
 import logging
 import os
+import glob
 import importlib.resources
 logger=logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class RuntimeLibrary:
             depot=[x for x in self.subdirs if 'example_depot' in x][0]
             owd=os.getcwd()
             os.chdir(depot)
-            example_tarballs=os.listdir('.')
+            example_tarballs=glob.glob('*.tgz')
             basenames=[x.replace('.tgz','') for x in example_tarballs]
             os.chdir(owd)
             return basenames
