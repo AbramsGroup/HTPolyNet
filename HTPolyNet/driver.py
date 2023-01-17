@@ -172,6 +172,7 @@ def cli():
     command_parsers['plots'].add_argument('--cfg',type=str,nargs='+',default=[],help='name input config files')
     command_parsers['plots'].add_argument('--buildplot',type=str,nargs='+',default=['t'],choices=['t','g','n','c'],help='type of build plot to generate: t: traces (select using --traces); g: 2-D graph representations iteration by iteration; n: homo-N between crosslinks; c: cluster-size distributions')
     command_parsers['plots'].add_argument('--traces',type=str,nargs='+',default=['t','d','p'],choices=['t','d','p'],help='type of traces to plot from build: t: temperature; d: density; p: potential energy')
+    command_parsers['plots'].add_argument('--n_points',type=int,nargs=2,default=[10,20],help='number of [cold-side,hot-side] data points in the Tg analysis to fit lines to')
 
     # command_parsers['plots'].add_argument('-t',type=str,default='',help='Plot density and temperature traces for entire build in specified project directory to this file')
     # command_parsers['plots'].add_argument('-o',type=str,default='',help='dump density/temperature trace data to this file')

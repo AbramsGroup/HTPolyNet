@@ -344,28 +344,62 @@ def clusters(G:nx.Graph):
     df.sort_values(by='sizes',ascending=False,inplace=True)
     return df
 
-def compute_tg(T,v,r2_thresh=0.9,min_npoints=10):
+def compute_tg(T,v,n_points=[10,20]):
+    """compute_tg peforms a Tg determination from (volume or density) vs temperature data by fitting lines to the low-T region and another to the high-T region, taking Tg as the temperature at which they intersect.
+
+    :param T: temperature values
+    :type T: numpy.array
+    :param v: volume or density data
+    :type v: numpy.array
+    :param n_points: number of points on the low and high side to fit lines to, defaults to [10,20]
+    :type n_points: list, optional
+    """
     def func(x,a,b):
         return x*a+b
     hot_par=[]
     cold_par=[]
-    for i in range(min_npoints,len(T)):
-        popt,pcov = curve_fit(func,T[:i],v[:i])
-        sse=(v-func(T,*popt))**2
-        sst=(v-v.mean())**2
-        r2=1-sse.sum()/sst.sum()
-        if r2<r2_thresh:
-            cold_par=popt
-            break
-    for i in range(min_npoints,len(T)):
-        popt,pcov = curve_fit(func,T[-i:],v[-i:])
-        sse=(v-func(T,*popt))**2
-        sst=(v-v.mean())**2
-        r2=1-sse.sum()/sst.sum()
-        if r2<r2_thresh:
-            hot_par=popt
-            break
+    x=np.array(T)[:n_points[0]]
+    y=np.array(v)[:n_points[0]]
+    # logger.info(f'Tg: {len(x)} data points on cold side; begins at {x[0]}')
+    cold_par,pcov=curve_fit(func,x,y)
+    sse=(y-func(x,*cold_par))**2
+    sst=(y-x.mean())**2
+    r2=1-sse.sum()/sst.sum()
+    # logger.info(f'cold fit: {cold_par} {r2}')
+
+    x=np.array(T)[-n_points[1]:]
+    y=np.array(v)[-n_points[1]:]
+    # logger.info(f'Tg: {len(x)} data points on hot side; ends at {x[-1]}')
+    hot_par,pcov=curve_fit(func,x,y)
+    sse=(y-func(x,*hot_par))**2
+    sst=(y-x.mean())**2
+    r2=1-sse.sum()/sst.sum()
+    # logger.info(f'hot fit: {hot_par} {r2}')
     Tg=-1
     if len(hot_par)>0 and len(cold_par)>0:
         Tg=-(hot_par[1]-cold_par[1])/(hot_par[0]-cold_par[0])
     return Tg,cold_par,hot_par
+
+def compute_E(strain,stress,fit_domain=[10,100]):
+    """compute_E compute the Young's modulus by peforming a linear fit to an elastic regime in stress-vs-strain data
+
+    :param strain: strain values
+    :type strain: numpy.array
+    :param stress: stress values
+    :type stress: numpy.array
+    :param fit_domain: domain over which fit is made, defaults to [10,100]
+    :type fit_domain: list, optional
+    :return: _description_
+    :rtype: _type_
+    """
+    x=np.array(strain[fit_domain[0]:fit_domain[1]])
+    y=np.array(stress[fit_domain[0]:fit_domain[1]])
+    # logger.info(f'x: {x[0]} -> {x[-1]}')
+    # logger.info(f'y: {y[0]} -> {y[-1]}')
+    def func(x,a):
+        return a*x
+    popt,pcov=curve_fit(func,x,y,p0=(1000.0))
+    sse=(y-func(x,*popt))**2
+    sst=(y-y.mean())**2
+    r2=1-sse.sum()/sst.sum()
+    return popt[0],r2

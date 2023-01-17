@@ -461,7 +461,112 @@ def build_plots(args):
             logger.info(f'{os.path.join(p,"dist_bw_xlinks.csv")} created.')
             # dist_bw_xlinks_plot(am,os.path.join(p,"dist_bw_xlinks.png"))
 
+def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[10,20]):
+    res={}
+    means={}
+    stds={}
+    rate=[]
+    Tgs=[]
+    for i,phase in enumerate(phases):
+        p=phase['ladder']
+        rate.append(p['deltaT']/(p['ps_per_rise']+p['ps_per_run']))
+        res[i]=[]
+        for d in projdirs:
+            df=pd.read_csv(os.path.join(d,p['subdir'],'ladder.csv'),index_col=None,header=0)
+            t0=p['warmup_ps']
+            ps_per_step=p['ps_per_rise']+p['ps_per_run']
+            final_ps=df['time(ps)'].iloc[-1]
+            curr_ps=t0
+            T=[]
+            rho=[]
+            V=[]
+            Tstd=[]
+            rhostd=[]
+            Vstd=[]
+            while curr_ps<final_ps:
+                ll=curr_ps+p['ps_per_rise']+0.5*p['ps_per_run']
+                ul=ll+0.5*p['ps_per_run']
+                tdf=df[(df['time(ps)']>=ll)&(df['time(ps)']<=ul)]
+                T.append(tdf['Temperature'].mean())
+                rho.append(tdf['Density'].mean())
+                V.append(tdf['Volume'].mean())
+                Tstd.append(tdf['Temperature'].std())
+                rhostd.append(tdf['Density'].std())
+                Vstd.append(tdf['Volume'].std())
+                curr_ps+=ps_per_step
+
+            res[i].append(pd.DataFrame({'Temperature':T,'Volume':V,'Density':rho,'Temperature-std':Tstd,'Volume-std':Vstd,'Density-std':rhostd}))
+
+        df_concat0 = pd.concat(res[i], axis=1)
+        means[i]=df_concat0.stack().groupby(level=[0,1]).mean().unstack()
+        stds[i]=df_concat0.stack().groupby(level=[0,1]).std().unstack()
+        means[i]['Volume-std']=stds[i]['Volume']
+        means[i]['Density-std']=stds[i]['Density']
+
+    
+    fig,ax=plt.subplots(1,2,figsize=(10,6),sharex=True,sharey=True)
+    for i,v in enumerate(means.keys()):
+        m=means[v]
+        m.sort_values('Temperature',axis=0,inplace=True)
+        ax[i].set_xlabel('Temperature [K]')
+        ax[i].set_ylabel('Density [kg/m$^3$]')
+        ax[i].errorbar(m['Temperature'],m['Density'],stds[v]['Density'])
+        Tg,c,h=compute_tg(m['Temperature'],m['Density'],n_points=n_points)
+        Tgs.append(Tg)
+        if Tg!=-1:
+            ax[i].plot(m['Temperature'],c[0]*m['Temperature']+c[1],color='blue',alpha=0.5)
+            ax[i].plot(m['Temperature'],h[0]*m['Temperature']+h[1],color='red',alpha=0.5)
+            ax[i].scatter([Tg],[c[0]*Tg+c[1]],marker='o',color='black')
+            ax[i].text(Tg,c[0]*Tg+c[1],f'   {Tg:.2f} K',verticalalignment='top')
+            means[v]['glassy-line-Density']=c[0]*m['Temperature']+c[1]
+            means[v]['rubbery-line-Density']=h[0]*m['Temperature']+h[1]
+        means[v].to_csv(f'ladder{v}-{save_data}',index=False,header=True,sep=' ')
+        logger.info(f'ladder{v}-{save_data} created.')
+    plt.savefig(outfile,bbox_inches='tight')
+    plt.close(fig)
+    hTg=Tgs[0]
+    cTg=Tgs[1]
+    logger.info(f'{outfile} created.')
+    logger.info(f'heating Tg = {hTg:.2f} K ({(hTg-273.15):.2f} C) at {rate[0]:.5f} K/ps ({rate[0]*1.e12:.3e} K/s)')
+    logger.info(f'cooling Tg = {cTg:.2f} K ({(cTg-273.15):.2f} C) at {rate[1]:.5f} K/ps ({rate[1]*1.e12:.3e} K/s)')
+
+def do_E_plots(phases,projdirs,outfile='e.png',fit_domain=[10,200],save_data='E.csv'):
+    MPa_per_bar=1.e-1
+    # average over replicas and directions (here, phases)
+    all_stress_strains=[]
+    for p in phases:
+        params=p['deform']
+        dir=params['direction']
+        # Box-X-strain,Pres-XX-stress
+        strain_name=f'Box-{dir.upper()}-strain'
+        stress_name=f'Pres-{dir.upper()}{dir.upper()}-stress'
+        for d in projdirs:
+            df=pd.read_csv(os.path.join(d,params['subdir'],f'deform-{dir}.csv'),index_col=None,header=0)
+            all_stress_strains.append(pd.DataFrame({'strain':df[strain_name],'stress':(df[stress_name]*MPa_per_bar)}))
+    df_concat=pd.concat(all_stress_strains,axis=1)
+    mean_stress_strains=df_concat.stack().groupby(level=[0,1]).mean().unstack()
+    stds_stress_strains=df_concat.stack().groupby(level=[0,1]).std().unstack()
+    mean_stress_strains['stress-std']=stds_stress_strains['stress']
+    mean_stress_strains.to_csv(save_data,header=True,index=False,sep=' ')
+    fig,ax=plt.subplots(1,1,figsize=(8,6))
+
+    ax.set_ylabel('Stress, [MPa]')
+    ax.set_xlabel('Strain [*]')
+    ax.errorbar(mean_stress_strains['strain'],mean_stress_strains['stress'],stds_stress_strains['stress'],alpha=0.2)
+    ax.plot(mean_stress_strains['strain'],mean_stress_strains['stress'])
+    E,R2=compute_E(mean_stress_strains['strain'],mean_stress_strains['stress'],fit_domain=fit_domain)
+    fitline=E*mean_stress_strains['strain']
+    half_domain=int(mean_stress_strains['strain'].shape[0]/2)
+    line_domain=[0,fit_domain[1] if fit_domain[1]>half_domain else half_domain]
+    X=np.array(mean_stress_strains['strain'])[line_domain[0]:line_domain[1]]
+    Y=np.array(fitline)[line_domain[0]:line_domain[1]]
+    ax.plot(X,Y,'k--',alpha=0.7)
+    plt.savefig(outfile,bbox_inches='tight')
+    plt.close(fig)
+    logger.info(f'{outfile} and {save_data} created. E = {E/1000.0:.3f} GPa (R^2 {R2:.3f})')
+
 def post_plots(args):
+    n_points=args.n_points
     phases=[]
     # print(args.cfg)
     for c in args.cfg:
@@ -486,61 +591,9 @@ def post_plots(args):
 
     ladder_phases=[idx for idx, value in enumerate(phasenames) if value == 'ladder']
     # print(ladder_phases)
-    if len(ladder_phases)>0:
-        res={}
-        means={}
-        stds={}
-        rate=[]
-        Tgs=[]
-        for i in ladder_phases:
-            p=phases[i]['ladder']
-            rate.append(p['deltaT']/(p['ps_per_rise']+p['ps_per_run']))
-            res[i]=[]
-            for d in args.proj:
-                df=pd.read_csv(os.path.join(d,p['subdir'],'ladder.csv'),index_col=None,header=0)
-                t0=p['warmup_ps']
-                ps_per_step=p['ps_per_rise']+p['ps_per_run']
-                final_ps=df['time(ps)'].iloc[-1]
-                curr_ps=t0
-                T=[]
-                rho=[]
-                V=[]
-                Tstd=[]
-                rhostd=[]
-                Vstd=[]
-                while curr_ps<final_ps:
-                    ll=curr_ps+p['ps_per_rise']+0.5*p['ps_per_run']
-                    ul=ll+0.5*p['ps_per_run']
-                    tdf=df[(df['time(ps)']>=ll)&(df['time(ps)']<=ul)]
-                    T.append(tdf['Temperature'].mean())
-                    rho.append(tdf['Density'].mean())
-                    V.append(tdf['Volume'].mean())
-                    Tstd.append(tdf['Temperature'].std())
-                    rhostd.append(tdf['Density'].std())
-                    Vstd.append(tdf['Volume'].std())
-                    curr_ps+=ps_per_step
+    if len(ladder_phases)>0: # perform Tg calculations on each phase
+        do_tg_plots([phases[i] for i in ladder_phases],args.proj,n_points=n_points)
 
-                res[i].append(pd.DataFrame({'Temperature':T,'Volume':V,'Density':rho,'Temperature-std':Tstd,'Volume-std':Vstd,'Density-std':rhostd}))
-                df_concat0 = pd.concat(res[i], axis=1)
-                means[i]=df_concat0.stack().groupby(level=[0,1]).mean().unstack()
-                stds[i]=df_concat0.stack().groupby(level=[0,1]).std().unstack()
-        
-        fig,ax=plt.subplots(1,2,figsize=(10,6),sharex=True,sharey=True)
-        for i,v in enumerate(means.keys()):
-            m=means[v]
-            ax[i].set_xlabel('Temperature [K]')
-            ax[i].set_ylabel('Volume [nm$^3$]')
-            ax[i].errorbar(m['Temperature'],m['Volume'],stds[v]['Volume'])
-            Tg,c,h=compute_tg(m['Temperature'],m['Volume'],r2_thresh=0.9,min_npoints=10)
-            Tgs.append(Tg)
-            if Tg!=-1:
-                ax[i].plot(m['Temperature'],c[0]*m['Temperature']+c[1],color='blue',alpha=0.5)
-                ax[i].plot(m['Temperature'],h[0]*m['Temperature']+h[1],color='red',alpha=0.5)
-                ax[i].scatter([Tg],[c[0]*Tg+c[1]],marker='o',color='black')
-                ax[i].text(Tg,c[0]*Tg+c[1],f'   {Tg:.2f} K',verticalalignment='top')
-        plt.savefig('tg.png')
-        hTg=Tgs[0]
-        cTg=Tgs[1]
-        logger.info('tg.png created.')
-        logger.info(f'heating Tg = {hTg:.2f} K ({(hTg-273.15):.2f} C) at {rate[0]:.5f} K/ps ({rate[0]*1.e12:.3e} K/s)')
-        logger.info(f'cooling Tg = {cTg:.2f} K ({(cTg-273.15):.2f} C) at {rate[1]:.5f} K/ps ({rate[1]*1.e12:.3e} K/s)')
+    deform_phases=[idx for idx,value in enumerate(phasenames) if value == 'deform']
+    if len(deform_phases)>0:
+        do_E_plots([phases[i] for i in deform_phases],args.proj)
