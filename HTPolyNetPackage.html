@@ -1603,14 +1603,14 @@ from a Topology instance).</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>edr</strong> (<em>str</em>) – name of edr file</p></li>
-<li><p><strong>names</strong> (<em>list</em><em>, </em><em>optional</em>) – list of data names, defaults to []</p></li>
+<li><p><strong>names</strong> (<em>list</em>) – list of data names, defaults to []</p></li>
 </ul>
 </dd>
 </dl>
 <p>:param report_averages:flag to indicate if averages of all data are to be computed here, default False
 :type report_averages: bool, optional
 :param keep_files: flag indicating caller would like to keep the raw input and output files for gmx energy, default False
-:type keep_files: bool, optional
+:type keep_files: bool
 :return: dataframe of traces
 :rtype: pandas DataFrame</p>
 </dd></dl>
@@ -2562,6 +2562,16 @@ cutoff distance from each other</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.plot.do_E_plots">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.plot.</span></span><span class="sig-name descname"><span class="pre">do_E_plots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projdirs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'e.png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10,</span> <span class="pre">200]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'E.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/plot.html#do_E_plots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.plot.do_E_plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.plot.do_tg_plots">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.plot.</span></span><span class="sig-name descname"><span class="pre">do_tg_plots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">projdirs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outfile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tg.png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10,</span> <span class="pre">20]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/plot.html#do_tg_plots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.plot.do_tg_plots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="HTPolyNet.plot.global_trace">
@@ -5740,9 +5750,40 @@ symmetry equivalent.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="HTPolyNet.utils.compute_E">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.utils.</span></span><span class="sig-name descname"><span class="pre">compute_E</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stress</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_domain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10,</span> <span class="pre">100]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/utils.html#compute_E"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.utils.compute_E" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute_E compute the Young’s modulus by peforming a linear fit to an elastic regime in stress-vs-strain data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>strain</strong> (<em>numpy.array</em>) – strain values</p></li>
+<li><p><strong>stress</strong> (<em>numpy.array</em>) – stress values</p></li>
+<li><p><strong>fit_domain</strong> (<em>list</em><em>, </em><em>optional</em>) – domain over which fit is made, defaults to [10,100]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>_description_</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>_type_</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="HTPolyNet.utils.compute_tg">
-<span class="sig-prename descclassname"><span class="pre">HTPolyNet.utils.</span></span><span class="sig-name descname"><span class="pre">compute_tg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r2_thresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_npoints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/utils.html#compute_tg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.utils.compute_tg" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.utils.</span></span><span class="sig-name descname"><span class="pre">compute_tg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[10,</span> <span class="pre">20]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/utils.html#compute_tg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.utils.compute_tg" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute_tg peforms a Tg determination from (volume or density) vs temperature data by fitting lines to the low-T region and another to the high-T region, taking Tg as the temperature at which they intersect.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>numpy.array</em>) – temperature values</p></li>
+<li><p><strong>v</strong> (<em>numpy.array</em>) – volume or density data</p></li>
+<li><p><strong>n_points</strong> (<em>list</em><em>, </em><em>optional</em>) – number of points on the low and high side to fit lines to, defaults to [10,20]</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="HTPolyNet.utils.density_evolution">
@@ -5904,8 +5945,8 @@ in the ‘postsim’ subdirectories</p>
       &copy;2022, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.1.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
       <a href="_sources/HTPolyNetPackage.rst.txt"
