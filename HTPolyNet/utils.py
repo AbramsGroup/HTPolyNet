@@ -389,8 +389,8 @@ def compute_E(strain,stress,fit_domain=[10,100]):
     :type stress: numpy.array
     :param fit_domain: domain over which fit is made, defaults to [10,100]
     :type fit_domain: list, optional
-    :return: _description_
-    :rtype: _type_
+    :return: E and R2 from fit
+    :rtype: tuple(float,float)
     """
     x=np.array(strain[fit_domain[0]:fit_domain[1]])
     y=np.array(stress[fit_domain[0]:fit_domain[1]])
