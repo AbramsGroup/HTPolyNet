@@ -141,6 +141,7 @@ def cli():
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     # Subparsers, one per subcommand
     subparsers=parser.add_subparsers()
+    subparsers.required=True
     command_parsers={}
     for k in commands:
         command_parsers[k]=subparsers.add_parser(k,help=helps[k])
