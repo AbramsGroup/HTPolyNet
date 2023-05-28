@@ -130,18 +130,35 @@
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code><a class="headerlink" href="#htpolynet-plots" title="Permalink to this heading">¶</a></h2>
 <p>If invoked inside of a directory containing one or more project directories, this instructs <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to generate some plots.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>--help
-<span class="go">usage: htpolynet plots [-h] [-logs LOGS [LOGS ...]] [-proj PROJ] [-o O] [--plotfile PLOTFILE]</span>
+<span class="go">usage: htpolynet plots [-h] [--diags DIAGS [DIAGS ...]] [--proj PROJ [PROJ ...]] [--cfg CFG [CFG ...]]</span>
+<span class="go">                     [--buildplot {t,g,n,c} [{t,g,n,c} ...]] [--traces {t,d,p} [{t,d,p} ...]]</span>
+<span class="go">                     [--n_points N_POINTS N_POINTS] [--plotfile PLOTFILE] [--no-banner] [--loglevel LOGLEVEL]</span>
+<span class="go">                     {diag,build,post}</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">  {diag,build,post}     source of data to plot</span>
 
 <span class="go">options:</span>
 <span class="go">  -h, --help            show this help message and exit</span>
-<span class="go">  -logs LOGS [LOGS ...]</span>
+<span class="go">  --diags DIAGS [DIAGS ...]</span>
 <span class="go">                        names of diagnostic log files (1 or more)</span>
-<span class="go">  -proj PROJ            name of project directory</span>
-<span class="go">  -o O                  name of global trace output data file</span>
+<span class="go">  --proj PROJ [PROJ ...]</span>
+<span class="go">                        name of project director[y/ies]</span>
+<span class="go">  --cfg CFG [CFG ...]   name input config files</span>
+<span class="go">  --buildplot {t,g,n,c} [{t,g,n,c} ...]</span>
+<span class="go">                        type of build plot to generate: t: traces (select using --traces); g: 2-D graph</span>
+<span class="go">                        representations iteration by iteration; n: homo-N between crosslinks; c: cluster-size</span>
+<span class="go">                        distributions</span>
+<span class="go">  --traces {t,d,p} [{t,d,p} ...]</span>
+<span class="go">                        type of traces to plot from build: t: temperature; d: density; p: potential energy</span>
+<span class="go">  --n_points N_POINTS N_POINTS</span>
+<span class="go">                        number of [cold-side,hot-side] data points in the Tg analysis to fit lines to</span>
 <span class="go">  --plotfile PLOTFILE   name of plot file to generate</span>
+<span class="go">  --no-banner           turn off the banner</span>
+<span class="go">  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)</span>
 </pre></div>
 </div>
-<p>We explain detailed usage of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> in the tutorials.  Briefly, if a project directory is name via the <code class="docutils literal notranslate"><span class="pre">-proj</span></code> option, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will generate a set of plots tracing the system temperature, density, and number of polymerization bonds vs simulation time.  If one or more diagnostic log files is named in the <code class="docutils literal notranslate"><span class="pre">-logs</span></code> option, <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will generate a pair of plots of conversion vs. wall-clock time and iteration vs wall-clock time, with each diagnostic log getting its own curve on each plot.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">plots</span></code> subcommand manages plot generation from data from any of three sources: diagnostics, build, or post-build MD simulations.  (Post-build MD simulations are described below for the <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> subcommand.)  We demonstrate examples of all three types in the tutorials.</p>
 </section>
 <section id="htpolynet-fetch-example">
 <h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code><a class="headerlink" href="#htpolynet-fetch-example" title="Permalink to this heading">¶</a></h2>
@@ -180,6 +197,26 @@
 <span class="go">DGE-PAC-hi.yaml: 14700 atoms in initial system</span>
 </pre></div>
 </div>
+</section>
+<section id="htpolynet-postsim">
+<h2><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code><a class="headerlink" href="#htpolynet-postsim" title="Permalink to this heading">¶</a></h2>
+<p>The purpose of this subcommand is to control the execution of several types of post-build MD simulations.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>postsim<span class="w"> </span>-h
+<span class="go">usage: htpolynet postsim [-h] [-proj PROJ [PROJ ...]] [-lib LIB] [-ocfg OCFG] [-cfg CFG] [--no-banner]</span>
+<span class="go">                         [--loglevel LOGLEVEL]</span>
+
+<span class="go">options:</span>
+<span class="go">  -h, --help            show this help message and exit</span>
+<span class="go">  -proj PROJ [PROJ ...]</span>
+<span class="go">                        name of project directory</span>
+<span class="go">  -lib LIB              local user library of molecular structures and parameterizations</span>
+<span class="go">  -ocfg OCFG            original HTPolyNet config file used to generate project(s)</span>
+<span class="go">  -cfg CFG              config file for specifying the MD simulations to perform</span>
+<span class="go">  --no-banner           turn off the banner</span>
+<span class="go">  --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)</span>
+</pre></div>
+</div>
+<p>The simulations are controlled by the YAML-format config file, which is distinct from the cfg file used to generate the project(s).  The types of post-build MD simulations available are annealing, equilibration, temperature-ladder, and uniaxial deformation.  Demonstrations of how the ladder and deformation simulations are used to compute the glass-transition temperature and Young’s modulus are detailed in the tutorials.</p>
 </section>
 </section>
 

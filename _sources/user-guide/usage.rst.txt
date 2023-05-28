@@ -113,17 +113,34 @@ If invoked inside of a directory containing one or more project directories, thi
 .. code-block:: console
 
   $ htpolynet plots --help
-  usage: htpolynet plots [-h] [-logs LOGS [LOGS ...]] [-proj PROJ] [-o O] [--plotfile PLOTFILE]
+  usage: htpolynet plots [-h] [--diags DIAGS [DIAGS ...]] [--proj PROJ [PROJ ...]] [--cfg CFG [CFG ...]]
+                       [--buildplot {t,g,n,c} [{t,g,n,c} ...]] [--traces {t,d,p} [{t,d,p} ...]]
+                       [--n_points N_POINTS N_POINTS] [--plotfile PLOTFILE] [--no-banner] [--loglevel LOGLEVEL]
+                       {diag,build,post}
+
+  positional arguments:
+    {diag,build,post}     source of data to plot
 
   options:
     -h, --help            show this help message and exit
-    -logs LOGS [LOGS ...]
+    --diags DIAGS [DIAGS ...]
                           names of diagnostic log files (1 or more)
-    -proj PROJ            name of project directory
-    -o O                  name of global trace output data file
+    --proj PROJ [PROJ ...]
+                          name of project director[y/ies]
+    --cfg CFG [CFG ...]   name input config files
+    --buildplot {t,g,n,c} [{t,g,n,c} ...]
+                          type of build plot to generate: t: traces (select using --traces); g: 2-D graph
+                          representations iteration by iteration; n: homo-N between crosslinks; c: cluster-size
+                          distributions
+    --traces {t,d,p} [{t,d,p} ...]
+                          type of traces to plot from build: t: temperature; d: density; p: potential energy
+    --n_points N_POINTS N_POINTS
+                          number of [cold-side,hot-side] data points in the Tg analysis to fit lines to
     --plotfile PLOTFILE   name of plot file to generate
+    --no-banner           turn off the banner
+    --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)
 
-We explain detailed usage of ``htpolynet plots`` in the tutorials.  Briefly, if a project directory is name via the ``-proj`` option, ``HTPolyNet`` will generate a set of plots tracing the system temperature, density, and number of polymerization bonds vs simulation time.  If one or more diagnostic log files is named in the ``-logs`` option, ``HTPolyNet`` will generate a pair of plots of conversion vs. wall-clock time and iteration vs wall-clock time, with each diagnostic log getting its own curve on each plot.
+The ``plots`` subcommand manages plot generation from data from any of three sources: diagnostics, build, or post-build MD simulations.  (Post-build MD simulations are described below for the ``htpolynet postsim`` subcommand.)  We demonstrate examples of all three types in the tutorials.
 
 ``htpolynet fetch-example``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -170,3 +187,26 @@ The purpose of this subcommand is to report the size of the initial system that 
   Molecule DGE: 53 atoms, 200 molecules
   Molecule PAC: 41 atoms, 100 molecules
   DGE-PAC-hi.yaml: 14700 atoms in initial system
+
+``htpolynet postsim``
+^^^^^^^^^^^^^^^^^^^^^
+
+The purpose of this subcommand is to control the execution of several types of post-build MD simulations.
+
+.. code-block:: console
+
+  $ htpolynet postsim -h
+  usage: htpolynet postsim [-h] [-proj PROJ [PROJ ...]] [-lib LIB] [-ocfg OCFG] [-cfg CFG] [--no-banner]
+                           [--loglevel LOGLEVEL]  
+
+  options:
+    -h, --help            show this help message and exit
+    -proj PROJ [PROJ ...]
+                          name of project directory
+    -lib LIB              local user library of molecular structures and parameterizations
+    -ocfg OCFG            original HTPolyNet config file used to generate project(s)
+    -cfg CFG              config file for specifying the MD simulations to perform
+    --no-banner           turn off the banner
+    --loglevel LOGLEVEL   Log level for messages written to diagnostic log (debug|info)
+
+The simulations are controlled by the YAML-format config file, which is distinct from the cfg file used to generate the project(s).  The types of post-build MD simulations available are annealing, equilibration, temperature-ladder, and uniaxial deformation.  Demonstrations of how the ladder and deformation simulations are used to compute the glass-transition temperature and Young's modulus are detailed in the tutorials.
