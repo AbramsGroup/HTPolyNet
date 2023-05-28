@@ -15,6 +15,8 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
+* 1.0.5
+    * Post-build MD simulations and plotting functionalities added
 * 1.0.2
     * Enhanced molecule-network graph drawing in the plot subcommand
 * 1.0.1

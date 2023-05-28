@@ -148,7 +148,7 @@ def gmx_energy_trace(edr,names=[],report_averages=False,keep_files=False,**kwarg
     :type edr: str
     :param names: list of data names, defaults to []
     :type names: list
-    :param report_averages:flag to indicate if averages of all data are to be computed here, default False
+    :param report_averages: flag to indicate if averages of all data are to be computed here, default False
     :type report_averages: bool, optional
     :param keep_files: flag indicating caller would like to keep the raw input and output files for gmx energy, default False
     :type keep_files: bool
