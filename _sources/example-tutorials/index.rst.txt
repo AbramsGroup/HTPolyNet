@@ -7,7 +7,7 @@ We present here three tutorials to help illustrate usage of ``HTPolyNet``.  All 
 
 **IMPORTANT DISCLAIMER**
 
-These are not production MD runs.  The system sizes are *way too small* and the equilibration times are *way too short*.  You as a user are responsible for conduct the appropriate finite size effect tests and equilibration tests needed to guarantee robustness of you simulations.
+These are not production MD runs.  The system sizes are *way too small* and the equilibration times are *way too short*.  You as a user are responsible for conducting the appropriate finite-size-effect tests and equilibration tests needed to guarantee robustness of your simulations.
 
 .. toctree::
    :maxdepth: 2
