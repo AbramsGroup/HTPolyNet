@@ -7,17 +7,13 @@
 
 """
 import logging
-import shutil
-import numpy as np
 import os
 import json
 import yaml
 import HTPolyNet.projectfilesystem as pfs
-from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.gromacs import gmx_command
 import HTPolyNet.software as software
 from HTPolyNet.configuration import Configuration
-from HTPolyNet.plot import scatter
 from pathlib import Path
 
 logger=logging.getLogger(__name__)
@@ -121,8 +117,23 @@ class AnalyzeFFV(Analyze):
         'options': {
             'xvg': 'none',
             'b': 0.0
-        }
+        },
+        'outfile': 'ffv.dat',
+        'matchlines': ['Free volume','Total volume','Number of molecules','Average molar mass','Density','Molecular volume Vm assuming homogeneity:','Molecular van der Waals volume assuming homogeneity:','Fractional free volume']
     }
+
+    def parse_console_output(self):
+        p=self.params
+        svlns=[]
+        console_lines=self.console_output.split('\n')
+        for cl in console_lines:
+            for ml in p['matchlines']:
+                if ml in cl:
+                    svlns.append(cl)
+        with open(p['outfile'],'w') as f:
+            for s in svlns:
+                f.write(s+'\n')
+        logger.info(f'Created {p["outfile"]} in {p["subdir"]}')
 
 class AnalyzeConfiguration:
     """ handles reading and parsing an analysis input config file.

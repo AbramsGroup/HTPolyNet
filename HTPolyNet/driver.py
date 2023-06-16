@@ -205,8 +205,8 @@ def cli():
 
     ######## analyze ########
     command_parsers['analyze'].add_argument('-proj',type=str,default='',nargs='+',help='name of project directory')
-    # command_parsers['analyze'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
-    # command_parsers['analyze'].add_argument('-ocfg',type=str,default='',help='original HTPolyNet config file used to generate project(s)')
+    command_parsers['analyze'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+    command_parsers['analyze'].add_argument('-ocfg',type=str,default='',help='original HTPolyNet config file used to generate project(s)')
     command_parsers['analyze'].add_argument('-cfg',type=str,default='',help='config file for specifying the analyses to perform')
     command_parsers['analyze'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['analyze'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
