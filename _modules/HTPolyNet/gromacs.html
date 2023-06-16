@@ -340,7 +340,22 @@
             <span class="k">break</span>
     <span class="n">result</span><span class="o">=</span><span class="n">Result</span><span class="p">(</span><span class="n">nframes</span><span class="p">,(</span><span class="n">nframes</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">ts_ps</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">result</span></div>
-    
+
+<div class="viewcode-block" id="gmx_command"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.gromacs.gmx_command">[docs]</a><span class="k">def</span> <span class="nf">gmx_command</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">{},</span><span class="n">options</span><span class="o">=</span><span class="p">{},</span><span class="n">console_in</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="n">argstring</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">argstring</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;-</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1"> &#39;</span>
+    <span class="n">optstring</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">options</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">optstring</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39;-</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1"> &#39;</span>
+    <span class="n">cmdstr</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">sw</span><span class="o">.</span><span class="n">gmx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">sw</span><span class="o">.</span><span class="n">gmx_options</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">argstring</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">optstring</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="n">console_in</span><span class="p">:</span>
+        <span class="n">cmdstr</span><span class="o">+=</span><span class="sa">f</span><span class="s1">&#39; &lt; </span><span class="si">{</span><span class="n">console_in</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">c</span><span class="o">=</span><span class="n">Command</span><span class="p">(</span><span class="n">cmdstr</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">,</span><span class="n">err</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="n">out</span><span class="o">+=</span><span class="n">err</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
 <div class="viewcode-block" id="gro_from_trr"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.gromacs.gro_from_trr">[docs]</a><span class="k">def</span> <span class="nf">gro_from_trr</span><span class="p">(</span><span class="n">pfx</span><span class="p">,</span><span class="n">nzero</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">b</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">outpfx</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">outpfx</span><span class="p">:</span>
         <span class="n">outpfx</span><span class="o">=</span><span class="n">pfx</span>
