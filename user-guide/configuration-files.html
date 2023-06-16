@@ -35,7 +35,11 @@
 <span id="id1"></span><h1>Configuration Files<a class="headerlink" href="#configuration-files" title="Permalink to this heading">¶</a></h1>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
-<p>The configuration file is a YAML-format human-readable text file by which the user tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> expects at most ten distinct sections in a configuration file:</p>
+<p>YAML-format configuration files are used by several <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> subcommands, including <a class="reference internal" href="#configuration-run"><span class="std std-ref">run</span></a>, <a class="reference internal" href="#configuration-postsim"><span class="std std-ref">postsim</span></a>, and <a class="reference internal" href="#configuration-analyze"><span class="std std-ref">analyze</span></a>.  Each of these subcommands expects some keyword:value pairs to appear in the configuration file.</p>
+</section>
+<section id="configuration-files-for-htpolynet-run">
+<span id="configuration-run"></span><h2>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-run" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> configuration file tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> expects at most ten distinct sections in a configuration file:</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Section name</p></th>
@@ -76,9 +80,8 @@
 </tbody>
 </table>
 <p>Sections can appear in any order (since the whole YAML file is like a nested python dictionary).  The <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> and <code class="docutils literal notranslate"><span class="pre">ambertools</span></code> sections are mainly for specifying system-specific commands for running Gromacs and AmberTools executables; they have defaults that work for simple Linux workstations. <code class="docutils literal notranslate"><span class="pre">densification</span></code>, <code class="docutils literal notranslate"><span class="pre">precure</span></code>, and <code class="docutils literal notranslate"><span class="pre">postcure</span></code> all specify series of MD simulations on the system.  <code class="docutils literal notranslate"><span class="pre">constituents</span></code> specifies the initial make-up of the system, and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> describe both how to build those constituents from input monomers (if necessary) as well as the types of bonds that you want to occur during polymerization.  Both <code class="docutils literal notranslate"><span class="pre">constituents</span></code> and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> sections are where <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> extracts the names of molecular species in the system and how they are chemically interrelated.  <code class="docutils literal notranslate"><span class="pre">CURE</span></code> is the most complicated section, and it desribes how the CURE algorithm is to be run.  We consider each of these eight sections (minus <code class="docutils literal notranslate"><span class="pre">Title</span></code>) below.</p>
-</section>
 <section id="all-the-details">
-<h2>All the details<a class="headerlink" href="#all-the-details" title="Permalink to this heading">¶</a></h2>
+<h3>All the details<a class="headerlink" href="#all-the-details" title="Permalink to this heading">¶</a></h3>
 <p>In this section we show all subdirectives for each of the five main directives in the configuration file.  Please note that, although default values are quoted for some of these parameters, these default values are <em>not</em> guaranteed to be optimal or even functional in all possible scenarios.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code>:  This directive specifies parameters <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses when invoking the Gromacs executable.</p>
@@ -659,7 +662,7 @@
 </ul>
 </section>
 <section id="a-simple-configuration-example-polymerizing-styrene">
-<h2>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Permalink to this heading">¶</a></h2>
+<span id="configuration-run-example"></span><h3>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Permalink to this heading">¶</a></h3>
 <p>For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Title</span><span class="p">:</span> <span class="n">polystyrene</span>
 <span class="n">constituents</span><span class="p">:</span> <span class="p">{</span>
@@ -791,6 +794,19 @@
 </ol>
 <p>Prebond dragging is permitted if any newly identified bond is more than 0.6 nm in length, and the dragging happens in increments of 0.08 nm and each increment involves an energy minimization, an NVT MD simulation, and an NPT MD simulation, all at 600 K. (I find curing at elevated temperature keeps the system from jamming up, but don’t feel forced to use this temperature.)  Bond relaxation takes place using a similar series of MD stages.  Remember that dragging is performed on the system <strong>before</strong> bonds are formed and atoms deleted, while bond relaxation occurs <strong>after</strong> the bonds are formed and the sacrificial, valence-conserving H atoms are deleted.  Finally, when all new bonds are relaxed, a single NPT MD simulation is performed to end an iteration.  Postcure involves an annealing simulation much like the precure stage, followed by an NPT MD simulation.</p>
 <p>Finally, we stipulate the reactions.  In this system, there is really only one reaction: the one in which the C1 of one styrene bonds to the C2 of another.  The reaction named <code class="docutils literal notranslate"><span class="pre">sty1_1</span></code> specifies this reaction, and causes <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to parameterize the dimeric product named <code class="docutils literal notranslate"><span class="pre">STY~C1-C2~STY</span></code>.  This molecule provides a template for atom types, charges, and new bonded interactions that must be merged into a system if such a bond forms.  The other reaction, <code class="docutils literal notranslate"><span class="pre">styCC</span></code>, specifies a <code class="docutils literal notranslate"><span class="pre">cap</span></code> reaction that reverts any unreacted styrene back to its proper form (with the C-C double bond). Capping reactions are 100% optional; don’t feel forced to use them.</p>
+</section>
+</section>
+<section id="configuration-files-for-htpolynet-postsim">
+<span id="configuration-postsim"></span><h2>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-postsim" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">postsim</span></code> is a subcommand that provides for convenient post-build MD simulations for annealing, equilibration, and making measurements of properties, like Young’s modulus and glass transition temperature.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">postsim</span></code> configuration file is structured as a list of dictionaries, each entry of which is a <em>stage</em> and which together constitutes a <em>sequence</em> of stages.  Each stage involves an MD simulation for which you can specify the input coordinates and <code class="docutils literal notranslate"><span class="pre">mdp</span></code> parameters.  Because <code class="docutils literal notranslate"><span class="pre">postsim</span></code> executes a sequence of stages, the output of one stage can be the input for a later stage.</p>
+<p>more to come.</p>
+</section>
+<section id="configuration-files-for-htpolynet-analyze">
+<span id="configuration-analyze"></span><h2>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">analyze</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-analyze" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">analyze</span></code> is a subcommand that provides a shortcut interface to <code class="docutils literal notranslate"><span class="pre">gmx</span></code> subcommands for performing analyses of MD trajectories generated during <code class="docutils literal notranslate"><span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">postsim</span></code> phases.</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">analyze</span></code> configuration file is structured as a list of dictionaries, each entry of which is a <em>stage</em> of the analysis.</p>
+<p>(more to come)</p>
 </section>
 </section>
 
