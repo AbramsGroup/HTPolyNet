@@ -6,7 +6,14 @@ Configuration Files
 Overview
 ^^^^^^^^
 
-The configuration file is a YAML-format human-readable text file by which the user tells ``HTPolyNet`` what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``HTPolyNet`` expects at most ten distinct sections in a configuration file:
+YAML-format configuration files are used by several ``HTPolyNet`` subcommands, including :ref:`run <configuration_run>`, :ref:`postsim <configuration_postsim>`, and :ref:`analyze <configuration_analyze>`.  Each of these subcommands expects some keyword:value pairs to appear in the configuration file.
+
+.. _configuration_run:
+
+Configuration Files for ``htpolynet run``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``htpolynet run`` configuration file tells ``HTPolyNet`` what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.  ``htpolynet run`` expects at most ten distinct sections in a configuration file:
 
 =================   =====================  
 Section name        Role 
@@ -26,7 +33,7 @@ Section name        Role
 Sections can appear in any order (since the whole YAML file is like a nested python dictionary).  The ``gromacs`` and ``ambertools`` sections are mainly for specifying system-specific commands for running Gromacs and AmberTools executables; they have defaults that work for simple Linux workstations. ``densification``, ``precure``, and ``postcure`` all specify series of MD simulations on the system.  ``constituents`` specifies the initial make-up of the system, and ``reactions`` describe both how to build those constituents from input monomers (if necessary) as well as the types of bonds that you want to occur during polymerization.  Both ``constituents`` and ``reactions`` sections are where ``HTPolyNet`` extracts the names of molecular species in the system and how they are chemically interrelated.  ``CURE`` is the most complicated section, and it desribes how the CURE algorithm is to be run.  We consider each of these eight sections (minus ``Title``) below.
 
 All the details
-^^^^^^^^^^^^^^^
+!!!!!!!!!!!!!!!
 
 In this section we show all subdirectives for each of the five main directives in the configuration file.  Please note that, although default values are quoted for some of these parameters, these default values are *not* guaranteed to be optimal or even functional in all possible scenarios.
 
@@ -293,8 +300,10 @@ In this section we show all subdirectives for each of the five main directives i
 
     In the example here, we define two unique reactions.  One is the C1-C2 bond that links two styrene monomers, and the other is the *intramolecular* C1-C2 double bond that "reverts" the active form of a monomer back to its "proper" form.  Since that reaction's ``stage`` is ``cap``, this signifies that it is formed only **after** CURE has finished.
 
+.. _configuration_run_example:
+
 A Simple Configuration Example:  Polymerizing styrene
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 For example, a simple configuration file that describes building a system of polystyrene from a liquid of styrene monomers might look like::
 
@@ -428,3 +437,25 @@ Here is what this configuration specifies.  First, we are starting with 100 styr
 Prebond dragging is permitted if any newly identified bond is more than 0.6 nm in length, and the dragging happens in increments of 0.08 nm and each increment involves an energy minimization, an NVT MD simulation, and an NPT MD simulation, all at 600 K. (I find curing at elevated temperature keeps the system from jamming up, but don't feel forced to use this temperature.)  Bond relaxation takes place using a similar series of MD stages.  Remember that dragging is performed on the system **before** bonds are formed and atoms deleted, while bond relaxation occurs **after** the bonds are formed and the sacrificial, valence-conserving H atoms are deleted.  Finally, when all new bonds are relaxed, a single NPT MD simulation is performed to end an iteration.  Postcure involves an annealing simulation much like the precure stage, followed by an NPT MD simulation.
 
 Finally, we stipulate the reactions.  In this system, there is really only one reaction: the one in which the C1 of one styrene bonds to the C2 of another.  The reaction named ``sty1_1`` specifies this reaction, and causes ``HTPolyNet`` to parameterize the dimeric product named ``STY~C1-C2~STY``.  This molecule provides a template for atom types, charges, and new bonded interactions that must be merged into a system if such a bond forms.  The other reaction, ``styCC``, specifies a ``cap`` reaction that reverts any unreacted styrene back to its proper form (with the C-C double bond). Capping reactions are 100\% optional; don't feel forced to use them.
+
+.. _configuration_postsim:
+
+Configuration Files for ``htpolynet postsim``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``postsim`` is a subcommand that provides for convenient post-build MD simulations for annealing, equilibration, and making measurements of properties, like Young's modulus and glass transition temperature.
+
+A ``postsim`` configuration file is structured as a list of dictionaries, each entry of which is a *stage* and which together constitutes a *sequence* of stages.  Each stage involves an MD simulation for which you can specify the input coordinates and ``mdp`` parameters.  Because ``postsim`` executes a sequence of stages, the output of one stage can be the input for a later stage.
+
+more to come.
+
+.. _configuration_analyze:
+
+Configuration Files for ``htpolynet analyze``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``analyze`` is a subcommand that provides a shortcut interface to ``gmx`` subcommands for performing analyses of MD trajectories generated during ``run`` or ``postsim`` phases.
+
+An ``analyze`` configuration file is structured as a list of dictionaries, each entry of which is a *stage* of the analysis.  
+
+(more to come)
