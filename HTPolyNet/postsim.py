@@ -135,7 +135,7 @@ class PostSimAnneal(PostSimMD):
             'gmx': 'gmx',
             'mdrun': 'gmx mdrun',
             'options': '-quiet -nobackup',
-            'mdrun_single_molecule': 'gmx mdrun mdrun'
+            'mdrun_single_molecule': 'gmx mdrun'
         },
         'output_deffnm':'anneal',
         'traces': ['Temperature','Density','Volume'],
