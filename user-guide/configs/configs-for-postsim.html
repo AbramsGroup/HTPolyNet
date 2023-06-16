@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Configuration Files for htpolynet postsim &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Configuration Files for htpolynet analyze" href="configs-for-analyze.html" />
+    <link rel="prev" title="Configuration Files for htpolynet run" href="configs-for-run.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="configuration-files-for-htpolynet-postsim">
+<span id="configuration-postsim"></span><h1>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-postsim" title="Permalink to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">postsim</span></code> is a subcommand that provides for convenient post-build MD simulations for annealing, equilibration, and making measurements of properties, like Young’s modulus and glass transition temperature.  Its main advantage is that it understands the project file system structure and uses many sensible default values, making it easy to run post-build MD simulations.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">postsim</span></code> configuration file is written in YAML and structured as a list of dictionaries, each entry of which is a <em>stage</em> which together constitute a <em>sequence</em> of stages.  Each stage involves an MD simulation for which you can specify the input coordinates and <code class="docutils literal notranslate"><span class="pre">mdp</span></code> parameters.  Because <code class="docutils literal notranslate"><span class="pre">postsim</span></code> executes a sequence of stages, the output of one stage can be the input for a later stage.</p>
+<p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> recoginizes the following types of post-build MD simulations</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Simulation Type</p></th>
+<th class="head"><p>keyword</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Equilibration</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">equilibrate</span></code></p></td>
+<td><p>Plain MD in NVT or NPT</p></td>
+</tr>
+<tr class="row-odd"><td><p>Annealing</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">anneal</span></code></p></td>
+<td><p>Temperature annealing using a low T and a high T and a schedule for cycling between them</p></td>
+</tr>
+<tr class="row-even"><td><p>Temperature-ladder</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ladder</span></code></p></td>
+<td><p>Controlled change in T from one temperature to another over some number of stages of some duration</p></td>
+</tr>
+<tr class="row-odd"><td><p>Uniaxial deformation</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">deform</span></code></p></td>
+<td><p>Uniaxial strain at a constant rate in one direction for a specified duration</p></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><p>Equilibration directives</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code> directive allows specification of several parameters:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Keyword</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subdir</span></code></p></td>
+<td><p>Name of directory in which simulation is conducted
+relative to the project directory
+default: <code class="docutils literal notranslate"><span class="pre">postsim/equilibrate</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_top</span></code></p></td>
+<td><p>Input topology file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.top</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">input_gro</span></code></p></td>
+<td><p>Input coordinate file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.gro</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_grx</span></code></p></td>
+<td><p>Input extended atom attribute file relative to the
+project directory; default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.grx</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output_deffnm</span></code></p></td>
+<td><p>default gromacs output file basename;
+default: <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">traces</span></code></p></td>
+<td><p>List of trace types to generate output files for</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scatter</span></code></p></td>
+<td><p>Tuple specifying a scatter plot to generate based on the traces</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+<td><p>Gromacs directives; see <a class="reference internal" href="configs-for-run.html#gromacs-yaml-directive"><span class="std std-ref">here</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T</span></code></p></td>
+<td><p>Temperature in K
+default: 300</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">P</span></code></p></td>
+<td><p>Pressure in bar
+default: 1</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ps</span></code></p></td>
+<td><p>Duration of simulation in picoseconds;
+default: 1000</p></td>
+</tr>
+</tbody>
+</table>
+<p>A minimal post-build equilibration file for 100 ns at 310 K and 5 bar would contain:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">equilibrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100000</span>
+<span class="w">    </span><span class="nt">T</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">310</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+</pre></div>
+</div>
+<p>Here, it uses the topology and coordinate files at the end of the build, and runs for 100 ns, with the results in <code class="docutils literal notranslate"><span class="pre">&lt;proj-dir&gt;/postsim/equilibrate</span></code>.  Notice the <code class="docutils literal notranslate"><span class="pre">-</span></code> character at the left-most indent level; this indicates that the file is a list of items; the indentation of <code class="docutils literal notranslate"><span class="pre">ps:</span></code> indicates it that the identifier <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code> is a keyword whose value is a dictionary.</p>
+<ul>
+<li><p>Traces</p>
+<p><code class="docutils literal notranslate"><span class="pre">postsim</span></code> provides a shortcut approach to using <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">energy</span></code> to extract energy-like quantities from Gromacs energy file (<code class="docutils literal notranslate"><span class="pre">edr</span></code>).  For example, if we would like to extract traces of temperature and density:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">equilibrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">traces</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Temperature</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Density</span>
+</pre></div>
+</div>
+<p>Note we have to list the names of the energy-like quantities exactly how <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">energy</span></code> reports them.</p>
+</li>
+<li><p>Scatter plots</p>
+<p><code class="docutils literal notranslate"><span class="pre">postsim</span></code> also provides a shortcut interface to <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> to generate simple trace plots of any quantity extracted using <code class="docutils literal notranslate"><span class="pre">traces</span></code>.  The single argument of the <code class="docutils literal notranslate"><span class="pre">scatter</span></code> keyword is a tuple in which the first element is the name of the x-data (typically <code class="docutils literal notranslate"><span class="pre">time(ps)</span></code>), the second is a list of names of energy-like quantities to trace (e.g., <code class="docutils literal notranslate"><span class="pre">[Density,</span> <span class="pre">Temperature]</span></code>), and the third element is the name of an output image file to contain the plot.</p>
+<p>We can add a <code class="docutils literal notranslate"><span class="pre">scatter</span></code> directive thusly</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">equilibrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">T</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">310</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="nt">traces</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Temperature</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Density</span>
+<span class="w">    </span><span class="nt">scatter</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">time(ps)</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Density</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Temperature</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_plot.png</span>
+</pre></div>
+</div>
+</li>
+<li><p>Running <code class="docutils literal notranslate"><span class="pre">postsim</span></code></p>
+<p>Suppose we put the YAML shown above into the file <code class="docutils literal notranslate"><span class="pre">eq.yml</span></code>.  To use this input configuration to launch a new post-build equilibration in the project directory <code class="docutils literal notranslate"><span class="pre">proj-1</span></code>, one would issue the command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>htpolynet<span class="w"> </span>postsim<span class="w"> </span>-cfg<span class="w"> </span>eq.yml<span class="w"> </span>-proj<span class="w"> </span>proj-1<span class="w"> </span>-ocfg<span class="w"> </span>&lt;build.cfg&gt;
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">-ocfg</span></code> key identifies the YAML config file used for the actual build; <code class="docutils literal notranslate"><span class="pre">postsim</span></code> extracts some information about the monomer library and other inputs from here; it also uses the Gromacs configuration of the original build config unless overridded in the postsim config.</p>
+</li>
+</ul>
+</li>
+<li><p>Annealing</p>
+<p>Annealing simulations are useful to help in densifying amorphous systems; the idea is that cycles of heating and cooling help the atoms fall deeper into local potential energy wells.  It is usually a good idea to anneal a newly built system before measuring any properties.</p>
+<p>An <code class="docutils literal notranslate"><span class="pre">anneal</span></code> directive allows specification of several parameters:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Keyword</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subdir</span></code></p></td>
+<td><p>Name of directory in which simulation is conducted
+relative to the project directory
+default: <code class="docutils literal notranslate"><span class="pre">postsim/anneal</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_top</span></code></p></td>
+<td><p>Input topology file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.top</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">input_gro</span></code></p></td>
+<td><p>Input coordinate file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.gro</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_grx</span></code></p></td>
+<td><p>Input extended atom attribute file relative to the
+project directory; default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.grx</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output_deffnm</span></code></p></td>
+<td><p>default gromacs output file basename;
+default: <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">traces</span></code></p></td>
+<td><p>List of trace types to generate output files for</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scatter</span></code></p></td>
+<td><p>Tuple specifying a scatter plot to generate based on the traces</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+<td><p>Gromacs directives; see <a class="reference internal" href="configs-for-run.html#gromacs-yaml-directive"><span class="std std-ref">here</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">P</span></code></p></td>
+<td><p>Pressure (bar)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ncycles</span></code></p></td>
+<td><p>number of annealing cycles</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T0</span></code></p></td>
+<td><p>“low” temperature</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T1</span></code></p></td>
+<td><p>“high” temperature</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T0_to_T1_ps</span></code></p></td>
+<td><p>duration of T-change simulation for T0 to T1 in ps</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T1_ps</span></code></p></td>
+<td><p>duration of T-hold at T1 in ps</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">T1_to_T0_ps</span></code></p></td>
+<td><p>duration of T-change simulaiton for T1 to T0 in ps</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">T0_ps</span></code></p></td>
+<td><p>duration of T-hold at T0 in ps (completing a cycle)</p></td>
+</tr>
+</tbody>
+</table>
+<p>An example <code class="docutils literal notranslate"><span class="pre">anneal</span></code> postsim directive might look like:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">anneal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.gro&#39;</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">ncycles</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">T0_to_T1_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">    </span><span class="nt">T1_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">    </span><span class="nt">T1_to_T0_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">    </span><span class="nt">T0_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+</pre></div>
+</div>
+</li>
+<li><p>Temperature ladders</p>
+<p>Temperature-ladder simulations are useful in the response of system density to temperature over a wide temperature domain.  This can be useful for estimating the coefficient of thermal expansion and the glass transition temperature.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">ladder</span></code> directive allows specification of several parameters:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Keyword</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subdir</span></code></p></td>
+<td><p>Name of directory in which simulation is conducted
+relative to the project directory
+default: <code class="docutils literal notranslate"><span class="pre">postsim/anneal</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_top</span></code></p></td>
+<td><p>Input topology file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.top</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">input_gro</span></code></p></td>
+<td><p>Input coordinate file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.gro</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_grx</span></code></p></td>
+<td><p>Input extended atom attribute file relative to the
+project directory; default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.grx</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output_deffnm</span></code></p></td>
+<td><p>default gromacs output file basename;
+default: <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">traces</span></code></p></td>
+<td><p>List of trace types to generate output files for</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scatter</span></code></p></td>
+<td><p>Tuple specifying a scatter plot to generate based on the traces</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+<td><p>Gromacs directives; see <a class="reference internal" href="configs-for-run.html#gromacs-yaml-directive"><span class="std std-ref">here</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">P</span></code></p></td>
+<td><p>Pressure (bar)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Tlo</span></code></p></td>
+<td><p>“low” temperature (K)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Thi</span></code></p></td>
+<td><p>“high” temperature (K)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">deltaT</span></code></p></td>
+<td><p>change in temperature between subsequent simulations on the ladder</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ps_per_rise</span></code></p></td>
+<td><p>duration (ps) of T-change simulation beginning a new step on the ladder</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ps_per_run</span></code></p></td>
+<td><p>duration (ps) of T-hold simulation at each step</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warmup_ps</span></code></p></td>
+<td><p>duration (ps) of a warmup simulation before beginning T-changes</p></td>
+</tr>
+</tbody>
+</table>
+<p>An example <code class="docutils literal notranslate"><span class="pre">ladder</span></code> postsim directive might look like:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ladder</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/equilibrate/equilibrate.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/ladder-heat&#39;</span>
+<span class="w">    </span><span class="nt">Tlo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">Thi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">deltaT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="nt">ps_per_rise</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">ps_per_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">900</span>
+<span class="w">    </span><span class="nt">warmup_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+</pre></div>
+</div>
+<p>One can go either up or down a ladder.  If <code class="docutils literal notranslate"><span class="pre">deltaT</span></code> is specified as a postive number, the initial temperature is <code class="docutils literal notranslate"><span class="pre">Tlo</span></code>.  However, if <code class="docutils literal notranslate"><span class="pre">deltaT</span></code> is specified as a negative number, the intial temperature is <code class="docutils literal notranslate"><span class="pre">Thi</span></code> instead of <code class="docutils literal notranslate"><span class="pre">Tlo</span></code>.  One way I like to use ladders is as one big cycle, measuring thermal response in both directions:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ladder</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/equilibrate/equilibrate.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/ladder-heat&#39;</span>
+<span class="w">    </span><span class="nt">Tlo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">Thi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">deltaT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="nt">ps_per_rise</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">ps_per_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">900</span>
+<span class="w">    </span><span class="nt">warmup_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ladder</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/ladder-heat/ladder.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/ladder-cool&#39;</span>
+<span class="w">    </span><span class="nt">Tlo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">Thi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">deltaT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-5</span>
+<span class="w">    </span><span class="nt">ps_per_rise</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">ps_per_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">900</span>
+<span class="w">    </span><span class="nt">warmup_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+</pre></div>
+</div>
+<p>A measure of how well equilibrated your system is and how carefully you conducted the ladder simulations is agreement between the thermal responses in the T-up and T-down ladders.</p>
+<p>By default, a <code class="docutils literal notranslate"><span class="pre">ladder</span></code> generates a trace of both temperature and density from the associated <code class="docutils literal notranslate"><span class="pre">edr</span></code> files.  The <code class="docutils literal notranslate"><span class="pre">plots</span></code> subcommand can be used to read these files for a set of equivalent project directories and compute a glass transition temperature.</p>
+</li>
+<li><p>Uniaxial deformation</p>
+<p>Constant strain-rate uniaxial deformation MD simulations can be performed using <code class="docutils literal notranslate"><span class="pre">postsim</span></code> as well.  Such simulations are used to generate stress-strain curves from which moduli are extracted.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">deform</span></code> directive allows specification of several parameters:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Keyword</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subdir</span></code></p></td>
+<td><p>Name of directory in which simulation is conducted
+relative to the project directory
+default: <code class="docutils literal notranslate"><span class="pre">postsim/anneal</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_top</span></code></p></td>
+<td><p>Input topology file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.top</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">input_gro</span></code></p></td>
+<td><p>Input coordinate file relative to the project directory;
+default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.gro</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">input_grx</span></code></p></td>
+<td><p>Input extended atom attribute file relative to the
+project directory; default: <code class="docutils literal notranslate"><span class="pre">systems/final-results/final.grx</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">output_deffnm</span></code></p></td>
+<td><p>default gromacs output file basename;
+default: <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">traces</span></code></p></td>
+<td><p>List of trace types to generate output files for</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scatter</span></code></p></td>
+<td><p>Tuple specifying a scatter plot to generate based on the traces</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+<td><p>Gromacs directives; see <a class="reference internal" href="configs-for-run.html#gromacs-yaml-directive"><span class="std std-ref">here</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">direction</span></code></p></td>
+<td><p>Direction along with strain is applied; x, y, or z</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">edot</span></code></p></td>
+<td><p>Dimensionless strain rate in ps<sup>-1</sup>; 0.0001 = 10<sup>8</sup> s<sup>-1</sup></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ps</span></code></p></td>
+<td><p>Duration of the simulation in ps; product of <code class="docutils literal notranslate"><span class="pre">ps</span></code> and <code class="docutils literal notranslate"><span class="pre">edot</span></code> gives the strain at the end of the simulation.</p></td>
+</tr>
+</tbody>
+</table>
+<p>An example <code class="docutils literal notranslate"><span class="pre">deform</span></code> postsim directive might look like:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/equilibrate/equilibrate.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/deform-x&#39;</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">x</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w">  </span><span class="c1"># final strain 10%</span>
+</pre></div>
+</div>
+<p>For isotropic (bulk) systems, the x, y, and z directions are equivalent, and one should measure material response along all three directions.  One can use a single input configuration file to stipulate all three such simulations, each starting from a common initial condition:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/equilibrate/equilibrate.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/deform-x&#39;</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">x</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w">  </span><span class="c1"># final strain 10%</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/equilibrate/equilibrate.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/deform-y&#39;</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">y</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w">  </span><span class="c1"># final strain 10%</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;systems/final-results/final.top&#39;</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/equilibrate/equilibrate.gro&#39;</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;postsim/deform-z&#39;</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">z</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span><span class="w">  </span><span class="c1"># final strain 10%</span>
+</pre></div>
+</div>
+<p>By default, a <code class="docutils literal notranslate"><span class="pre">deform</span></code> block generates a traces of normal stress tensor components along the pulling direction and box size along that direction.  This allows the <code class="docutils literal notranslate"><span class="pre">plots</span></code> subcommand to estimate Young’s modulus.</p>
+</li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../program-flow.html">Program Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../program-flow.html#connect-update-relax-equilibrate-cure-algorithm">Connect-Update-Relax-Equilibrate (CURE) algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../program-flow.html#bondsearch-filters">Identifying allowable bonds:  Bondsearch filters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../molecular-structure-inputs.html">Molecular Structure Inputs</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../configuration-files.html">Configuration Files</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">User Guide</a><ul>
+  <li><a href="../configuration-files.html">Configuration Files</a><ul>
+      <li>Previous: <a href="configs-for-run.html" title="previous chapter">Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a></li>
+      <li>Next: <a href="configs-for-analyze.html" title="next chapter">Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">analyze</span></code></a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../_sources/user-guide/configs/configs-for-postsim.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
