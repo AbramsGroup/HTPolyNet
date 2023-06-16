@@ -53,6 +53,7 @@ class PostSimMD:
                     logger.info(f'Ignoring directive \'{p}\' in yaml input file')
                 else:
                     self.params[p]=v
+                    
     def do(self,mdp_pfx='npt',**gromacs_dict):
         """do handles executing the postsim MD simulation
 

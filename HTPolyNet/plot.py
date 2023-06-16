@@ -309,6 +309,7 @@ def _token_match(l,template,pat_idx):
     """
     if len(l.split())!=len(template.split()): return
     return all([l.split()[t]==template.split()[t] for t in pat_idx])
+
 def _parse_data(dat,l,idx_dict):
     """_parse_data parses data in a matching line
 

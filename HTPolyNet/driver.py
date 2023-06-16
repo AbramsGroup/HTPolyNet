@@ -19,6 +19,7 @@ from HTPolyNet.plot import plots
 from HTPolyNet.stringthings import my_logger
 from HTPolyNet.inputcheck import input_check
 from HTPolyNet.postsim import postsim
+from HTPolyNet.analyze import analyze
 
 logger=logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ def info(args):
     for p in possibles:
         if p[0].isdecimal():
             print(f'   {p}')
+
 def run(args):
     """run handles the run subcommand
 
@@ -129,6 +131,7 @@ def cli():
     commands['fetch-example']=fetch_example
     commands['input-check']=input_check
     commands['postsim']=postsim
+    commands['analyze']=analyze
     # declare subcommand helpstrings
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
@@ -138,6 +141,7 @@ def cli():
     helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
     helps['input-check']='reports number of atoms that would be in initial system based on config'
     helps['postsim']='perform specified postcure MD simulations on final results in one or more project directory'
+    helps['analyze']='perform \'gmx <command>\' style analyses specified in the cfg file'
     parser=ap.ArgumentParser(description=textwrap.dedent(banner_message),formatter_class=ap.RawDescriptionHelpFormatter)
     # Subparsers, one per subcommand
     subparsers=parser.add_subparsers()
@@ -193,12 +197,18 @@ def cli():
     command_parsers['input-check'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
     ######## postsim ########
     command_parsers['postsim'].add_argument('-proj',type=str,default='',nargs='+',help='name of project directory')
-    # command_parsers['postsim'].add_argument('-Tladder',type=tladder, default='',help='run a temperature-ladder simulation to measure density=f(T); format (T0,T1,Ntemps,ps_per_run,ps_per_rise,ps_warmup')
     command_parsers['postsim'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
     command_parsers['postsim'].add_argument('-ocfg',type=str,default='',help='original HTPolyNet config file used to generate project(s)')
     command_parsers['postsim'].add_argument('-cfg',type=str,default='',help='config file for specifying the MD simulations to perform')
     command_parsers['postsim'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['postsim'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
 
+    ######## analyze ########
+    command_parsers['analyze'].add_argument('-proj',type=str,default='',nargs='+',help='name of project directory')
+    # command_parsers['analyze'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
+    # command_parsers['analyze'].add_argument('-ocfg',type=str,default='',help='original HTPolyNet config file used to generate project(s)')
+    command_parsers['analyze'].add_argument('-cfg',type=str,default='',help='config file for specifying the analyses to perform')
+    command_parsers['analyze'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
+    command_parsers['analyze'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')
     args=parser.parse_args()
     args.func(args)

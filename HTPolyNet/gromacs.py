@@ -309,7 +309,22 @@ def gmx_traj_info(trr):
             break
     result=Result(nframes,(nframes-1)*ts_ps)
     return result
-    
+
+def gmx_command(name,args={},options={},console_in=''):
+    argstring=''
+    for a,v in args.items():
+        argstring+=f'-{a} {v} '
+    optstring=''
+    for a,v in options.items():
+        optstring+=f'-{a} {v} '
+    cmdstr=f'{sw.gmx} {sw.gmx_options} {name} {argstring} {optstring}'
+    if console_in:
+        cmdstr+=f' < {console_in}'
+    c=Command(cmdstr)
+    out,err=c.run()
+    out+=err
+    return out
+
 def gro_from_trr(pfx,nzero=2,b=0,outpfx=''):
     if not outpfx:
         outpfx=pfx
