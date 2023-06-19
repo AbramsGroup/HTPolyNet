@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.analyze &#8212; HTPolyNet 1.0.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.analyze</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: analyze</span>
+<span class="sd">   :synopsis: handles the analyze subcommand</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">HTPolyNet.projectfilesystem</span> <span class="k">as</span> <span class="nn">pfs</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.gromacs</span> <span class="kn">import</span> <span class="n">gmx_command</span>
+<span class="kn">import</span> <span class="nn">HTPolyNet.software</span> <span class="k">as</span> <span class="nn">software</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.configuration</span> <span class="kn">import</span> <span class="n">Configuration</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Analyze"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.Analyze">[docs]</a><span class="k">class</span> <span class="nc">Analyze</span><span class="p">:</span>
+    <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span> <span class="s1">&#39;analyze/density&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;postsim/equilibrate/equilibrate.tpr&#39;</span><span class="p">,</span><span class="s1">&#39;postsim/equilibrate/equilibrate.trr&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;gromacs&#39;</span> <span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;command&#39;</span><span class="p">:</span> <span class="s1">&#39;check&#39;</span>
+    <span class="p">}</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">indict</span><span class="p">,</span><span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">=</span><span class="p">{}</span>
+        <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">indict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">indict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_params</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Ignoring directive </span><span class="se">\&#39;</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="se">\&#39;</span><span class="s1"> in yaml input file&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">=</span><span class="s1">&#39;unset&#39;</span>
+
+<div class="viewcode-block" id="Analyze.do"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.Analyze.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">gromacs_dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;do handles executing the analysis</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="k">assert</span> <span class="s1">&#39;command&#39;</span> <span class="ow">in</span> <span class="n">p</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Error: no command&#39;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;do </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># if a gromacs dict is passed in, assume this overrides the one read in from the file</span>
+        <span class="k">if</span> <span class="n">gromacs_dict</span><span class="p">:</span>
+            <span class="n">software</span><span class="o">.</span><span class="n">set_gmx_preferences</span><span class="p">(</span><span class="n">gromacs_dict</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">software</span><span class="o">.</span><span class="n">set_gmx_preferences</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;gromacs&#39;</span><span class="p">])</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;going to </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;subdir&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">pfs</span><span class="o">.</span><span class="n">go_to</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;subdir&#39;</span><span class="p">])</span>
+        <span class="c1"># make symlinks to requested files</span>
+        <span class="k">for</span> <span class="n">input_file</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;links&#39;</span><span class="p">]:</span>
+            <span class="n">srcnm</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pfs</span><span class="o">.</span><span class="n">proj</span><span class="p">(),</span><span class="n">input_file</span><span class="p">)</span>
+            <span class="n">bsnm</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">srcnm</span><span class="p">)</span>
+            <span class="n">chk</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">bsnm</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">chk</span><span class="o">.</span><span class="n">is_symlink</span><span class="p">():</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">symlink</span><span class="p">(</span><span class="n">srcnm</span><span class="p">,</span><span class="n">bsnm</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Symlink </span><span class="si">{</span><span class="n">bsnm</span><span class="si">}</span><span class="s1"> already exists.&#39;</span><span class="p">)</span>
+        <span class="n">cfile</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="s1">&#39;console-input&#39;</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">cfile</span><span class="o">=</span><span class="s1">&#39;console-in.txt&#39;</span>
+            <span class="n">ci</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;console-input&#39;</span><span class="p">]</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cfile</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">ci</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ch</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">=</span><span class="n">gmx_command</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;command&#39;</span><span class="p">],</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;arguments&#39;</span><span class="p">,{}),</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;options&#39;</span><span class="p">,{}),</span><span class="n">console_in</span><span class="o">=</span><span class="n">cfile</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Command </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;command&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> completed.&#39;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Analyze.parse_console_output"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.Analyze.parse_console_output">[docs]</a>    <span class="k">def</span> <span class="nf">parse_console_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Here is the console output&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AnalyzeDensity"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeDensity">[docs]</a><span class="k">class</span> <span class="nc">AnalyzeDensity</span><span class="p">(</span><span class="n">Analyze</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Analyze class for handling trajectory density profile calculation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span> <span class="s1">&#39;analyze/density&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;postsim/equilibrate/equilibrate.tpr&#39;</span><span class="p">,</span><span class="s1">&#39;postsim/equilibrate/equilibrate.trr&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;gromacs&#39;</span> <span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;command&#39;</span><span class="p">:</span> <span class="s1">&#39;density&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;s&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.tpr&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;f&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.trr&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="s1">&#39;density.xvg&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;xvg&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s1">&#39;d&#39;</span><span class="p">:</span> <span class="s1">&#39;Z&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;sl&#39;</span><span class="p">:</span> <span class="mi">50</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;console-input&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">]</span>
+    <span class="p">}</span></div>
+
+<div class="viewcode-block" id="AnalyzeFFV"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeFFV">[docs]</a><span class="k">class</span> <span class="nc">AnalyzeFFV</span><span class="p">(</span><span class="n">Analyze</span><span class="p">):</span>
+    <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span> <span class="s1">&#39;analyze/ffv&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;postsim/equilibrate/equilibrate.tpr&#39;</span><span class="p">,</span><span class="s1">&#39;postsim/equilibrate/equilibrate.trr&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;gromacs&#39;</span> <span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;command&#39;</span><span class="p">:</span> <span class="s1">&#39;freevolume&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;s&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.tpr&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;f&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.trr&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="s1">&#39;ffv.xvg&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;xvg&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mf">0.0</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;outfile&#39;</span><span class="p">:</span> <span class="s1">&#39;ffv.dat&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;matchlines&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Free volume&#39;</span><span class="p">,</span><span class="s1">&#39;Total volume&#39;</span><span class="p">,</span><span class="s1">&#39;Number of molecules&#39;</span><span class="p">,</span><span class="s1">&#39;Average molar mass&#39;</span><span class="p">,</span><span class="s1">&#39;Density&#39;</span><span class="p">,</span><span class="s1">&#39;Molecular volume Vm assuming homogeneity:&#39;</span><span class="p">,</span><span class="s1">&#39;Molecular van der Waals volume assuming homogeneity:&#39;</span><span class="p">,</span><span class="s1">&#39;Fractional free volume&#39;</span><span class="p">]</span>
+    <span class="p">}</span>
+
+<div class="viewcode-block" id="AnalyzeFFV.parse_console_output"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeFFV.parse_console_output">[docs]</a>    <span class="k">def</span> <span class="nf">parse_console_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">svlns</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">console_lines</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cl</span> <span class="ow">in</span> <span class="n">console_lines</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ml</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;matchlines&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">ml</span> <span class="ow">in</span> <span class="n">cl</span><span class="p">:</span>
+                    <span class="n">svlns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cl</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;outfile&#39;</span><span class="p">],</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">svlns</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Created </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;outfile&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;subdir&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="AnalyzeConfiguration"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeConfiguration">[docs]</a><span class="k">class</span> <span class="nc">AnalyzeConfiguration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; handles reading and parsing an analysis input config file.</span>
+<span class="sd">        Config file format</span>
+<span class="sd">        </span>
+<span class="sd">        - { key1: {&lt;paramdict&gt;}}</span>
+<span class="sd">        - { key2: {&lt;paramdict&gt;}} </span>
+<span class="sd">        </span>
+<span class="sd">        ...</span>
+
+<span class="sd">        The config file is a list of single-element dictionaries, whose single keyword</span>
+<span class="sd">        indicates the type of analysis to be run; analyses are run in the order</span>
+<span class="sd">        they appear in the config file.</span>
+
+<span class="sd">        Currently allowed analysis types:</span>
+
+<span class="sd">        - &#39;ffv&#39;: computes fractional free volume on a trajectory via &#39;gmx freevolume&#39;;</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="n">default_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;check&#39;</span><span class="p">:</span><span class="n">Analyze</span><span class="p">,</span><span class="s1">&#39;density&#39;</span><span class="p">:</span><span class="n">AnalyzeDensity</span><span class="p">,</span><span class="s1">&#39;ffv&#39;</span><span class="p">:</span><span class="n">AnalyzeFFV</span><span class="p">}</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">=</span><span class="p">[]</span>
+
+<div class="viewcode-block" id="AnalyzeConfiguration.read"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeConfiguration.read">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;read generates a new PostsimConfiguration object by reading in the JSON or YAML file indicated by filename</span>
+
+<span class="sd">        :param filename: name of file from which to read new PostsimConfiguration object</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param parse: if True, parse the input configuration file, defaults to True</span>
+<span class="sd">        :type parse: bool, optional</span>
+<span class="sd">        :raises Exception: if extension of filename is not &#39;.json&#39; or &#39;.yaml&#39; or &#39;.yml&#39;</span>
+<span class="sd">        :return: a new PostsimConfiguration object</span>
+<span class="sd">        :rtype: PostsimConfiguration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">basename</span><span class="p">,</span><span class="n">extension</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">extension</span><span class="o">==</span><span class="s1">&#39;.json&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_json</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">extension</span><span class="o">==</span><span class="s1">&#39;.yaml&#39;</span> <span class="ow">or</span> <span class="n">extension</span><span class="o">==</span><span class="s1">&#39;.yml&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown config file extension </span><span class="si">{</span><span class="n">extension</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_read_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_read_json create a new PostsimConfiguration object by reading from JSON input</span>
+
+<span class="sd">        :param filename: name of JSON file</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param parse: if True, parse the JSON data, defaults to True</span>
+<span class="sd">        :type parse: bool, optional</span>
+<span class="sd">        :return: a new PostsimConfiguration object</span>
+<span class="sd">        :rtype: PostsimConfiguration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inst</span><span class="o">=</span><span class="bp">cls</span><span class="p">()</span>
+        <span class="n">inst</span><span class="o">.</span><span class="n">cfgFile</span><span class="o">=</span><span class="n">filename</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">inst</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">baselist</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Poorly formatted </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="n">parse</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">inst</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_read_yaml</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_read_yaml create a new PostsimConfiguration object by reading from YAML input</span>
+
+<span class="sd">        :param filename: name of YAML file</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param parse: if True, parse the YAML data, defaults to True</span>
+<span class="sd">        :type parse: bool, optional</span>
+<span class="sd">        :return: a new PostsimConfiguration object</span>
+<span class="sd">        :rtype: PostsimConfiguration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inst</span><span class="o">=</span><span class="bp">cls</span><span class="p">()</span>
+        <span class="n">inst</span><span class="o">.</span><span class="n">cfgFile</span><span class="o">=</span><span class="n">filename</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">inst</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">baselist</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Poorly formatted </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="n">parse</span><span class="p">:</span> <span class="n">inst</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">inst</span>
+
+<div class="viewcode-block" id="AnalyzeConfiguration.parse"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeConfiguration.parse">[docs]</a>    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;parse parses a PostsimConfiguration file to build the list of stages to run</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Poorly formatted </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="si">}</span><span class="s1">; each stanza may have only one keyword&#39;</span>
+            <span class="n">analysistype</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="n">analysistype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_classes</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Analysis type &quot;</span><span class="si">{</span><span class="n">analysistype</span><span class="si">}</span><span class="s1">&quot; in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="si">}</span><span class="s1"> not understood.&#39;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;passing in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="n">analysistype</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_classes</span><span class="p">[</span><span class="n">analysistype</span><span class="p">](</span><span class="n">p</span><span class="p">[</span><span class="n">analysistype</span><span class="p">]))</span></div></div>
+
+<div class="viewcode-block" id="analyze"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.analyze">[docs]</a><span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;postsim handles the analyze subcommand for managing gromacs-based trajectory analyses</span>
+
+<span class="sd">    :param args: command-line arguments</span>
+<span class="sd">    :type args: argparse.Namespace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">loglevel_numeric</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">loglevel</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(levelname)s</span><span class="s1">&gt; </span><span class="si">%(message)s</span><span class="s1">&#39;</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="n">loglevel_numeric</span><span class="p">)</span>
+    <span class="n">ess</span><span class="o">=</span><span class="s1">&#39;y&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">proj</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;ies&#39;</span>
+    <span class="n">ogromacs</span><span class="o">=</span><span class="p">{}</span>
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">ocfg</span><span class="p">:</span>
+        <span class="n">ocfg</span><span class="o">=</span><span class="n">Configuration</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">ocfg</span><span class="p">,</span><span class="n">parse</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">ogromacs</span><span class="o">=</span><span class="n">ocfg</span><span class="o">.</span><span class="n">basedict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;gromacs&#39;</span><span class="p">,{})</span>
+    <span class="n">cfg</span><span class="o">=</span><span class="n">AnalyzeConfiguration</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">baselist</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Project director</span><span class="si">{</span><span class="n">ess</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">proj</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">software</span><span class="o">.</span><span class="n">sw_setup</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ogromacs </span><span class="si">{</span><span class="n">ogromacs</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">proj</span><span class="p">:</span>
+        <span class="n">pfs</span><span class="o">.</span><span class="n">pfs_setup</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">topdirs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;molecules&#39;</span><span class="p">,</span><span class="s1">&#39;systems&#39;</span><span class="p">,</span><span class="s1">&#39;plots&#39;</span><span class="p">,</span><span class="s1">&#39;postsim&#39;</span><span class="p">,</span><span class="s1">&#39;analyze&#39;</span><span class="p">],</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">projdir</span><span class="o">=</span><span class="n">d</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">userlibrary</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">lib</span><span class="p">)</span>
+        <span class="n">pfs</span><span class="o">.</span><span class="n">go_to</span><span class="p">(</span><span class="s1">&#39;analyze&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">stage</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">stagelist</span><span class="p">:</span>
+            <span class="n">stage</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="o">**</span><span class="n">ogromacs</span><span class="p">)</span>
+            <span class="n">stage</span><span class="o">.</span><span class="n">parse_console_output</span><span class="p">()</span>
+        <span class="n">pfs</span><span class="o">.</span><span class="n">go_root</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
