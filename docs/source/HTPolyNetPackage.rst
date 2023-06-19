@@ -17,6 +17,11 @@ Submodules
    :show-inheritance:
 
 
+.. automodule:: HTPolyNet.analyze
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: HTPolyNet.banner
    :members:
    :undoc-members:

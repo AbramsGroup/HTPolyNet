@@ -7,9 +7,9 @@ User Guide
    :caption: Contents:
 
    usage
-   program-flow
-   molecular-structure-inputs
    configuration-files
+   molecular-structure-inputs
+   program-flow
 
 
 

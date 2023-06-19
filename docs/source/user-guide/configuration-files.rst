@@ -3,9 +3,6 @@
 Configuration Files
 -------------------
 
-Overview
-^^^^^^^^
-
 YAML-format configuration files are used by several ``HTPolyNet`` subcommands, including :ref:`run <configuration_run>`, :ref:`postsim <configuration_postsim>`, and :ref:`analyze <configuration_analyze>`.  Each of these subcommands expects some keyword:value pairs to appear in the configuration file.
 
 .. toctree::
