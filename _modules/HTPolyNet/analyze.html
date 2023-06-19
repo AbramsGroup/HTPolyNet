@@ -134,7 +134,7 @@
 
 <div class="viewcode-block" id="AnalyzeFFV"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeFFV">[docs]</a><span class="k">class</span> <span class="nc">AnalyzeFFV</span><span class="p">(</span><span class="n">Analyze</span><span class="p">):</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span> <span class="s1">&#39;analyze/ffv&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span> <span class="s1">&#39;analyze/freevolume&#39;</span><span class="p">,</span>
         <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;postsim/equilibrate/equilibrate.tpr&#39;</span><span class="p">,</span><span class="s1">&#39;postsim/equilibrate/equilibrate.trr&#39;</span><span class="p">],</span>
         <span class="s1">&#39;gromacs&#39;</span> <span class="p">:</span> <span class="p">{</span>
             <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
@@ -184,7 +184,7 @@
 <span class="sd">        - &#39;ffv&#39;: computes fractional free volume on a trajectory via &#39;gmx freevolume&#39;;</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-    <span class="n">default_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;check&#39;</span><span class="p">:</span><span class="n">Analyze</span><span class="p">,</span><span class="s1">&#39;density&#39;</span><span class="p">:</span><span class="n">AnalyzeDensity</span><span class="p">,</span><span class="s1">&#39;ffv&#39;</span><span class="p">:</span><span class="n">AnalyzeFFV</span><span class="p">}</span>
+    <span class="n">default_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;check&#39;</span><span class="p">:</span><span class="n">Analyze</span><span class="p">,</span><span class="s1">&#39;density&#39;</span><span class="p">:</span><span class="n">AnalyzeDensity</span><span class="p">,</span><span class="s1">&#39;freevolume&#39;</span><span class="p">:</span><span class="n">AnalyzeFFV</span><span class="p">}</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="p">[]</span>
