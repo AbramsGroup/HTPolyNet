@@ -15,6 +15,8 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
+* 1.0.6
+    * gmx-style analyze subcommand added
 * 1.0.5
     * Post-build MD simulations and plotting functionalities added
 * 1.0.2
