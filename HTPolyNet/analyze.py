@@ -103,7 +103,7 @@ class AnalyzeDensity(Analyze):
 
 class AnalyzeFFV(Analyze):
     default_params={
-        'subdir': 'analyze/ffv',
+        'subdir': 'analyze/freevolume',
         'links': ['postsim/equilibrate/equilibrate.tpr','postsim/equilibrate/equilibrate.trr'],
         'gromacs' : {
             'gmx': 'gmx'
@@ -153,7 +153,7 @@ class AnalyzeConfiguration:
         - 'ffv': computes fractional free volume on a trajectory via 'gmx freevolume';
         
         """
-    default_classes={'check':Analyze,'density':AnalyzeDensity,'ffv':AnalyzeFFV}
+    default_classes={'check':Analyze,'density':AnalyzeDensity,'freevolume':AnalyzeFFV}
     def __init__(self):
         self.cfgFile=''
         self.baselist=[]
