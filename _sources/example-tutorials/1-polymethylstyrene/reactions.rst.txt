@@ -7,20 +7,29 @@ In this system, the only *actual* reaction is between  a ``C1`` of one 4-methyls
 
 .. code-block:: yaml
 
- - {
-      name:        'EMB1_1',
-      stage:       cure,
-      reactants:   {1: EMB, 2: EMB},
-      product:     EMB~C1-C2~EMB,
-      probability: 1.0,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-    }
+  - name:        emb1_1
+    stage:       cure
+    reactants:
+      1: EMB
+      2: EMB
+    product:     EMB~C1-C2~EMB
+    probability: 1.0
+    atoms:
+        A:
+          reactant: 1
+          resid: 1
+          atom: C1
+          z: 1
+        B:
+          reactant: 2
+          resid: 1
+          atom: C2
+          z: 1
+    bonds:
+      - atoms:
+          - A
+          - B
+        order: 1
 
 Naturally, this generates a dimer:
 
@@ -75,19 +84,27 @@ Finally, we can choose to revert any fully unreacted monomers back to true doubl
 
 .. code-block:: yaml
 
- - {
-      name:         'EMBCC',
-      stage:        cap,
-      reactants:    {1: EMB},
-      product:      EMBCC,
-      probability:  1.0,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 1, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 2}
-      ]
-    }
+  - name:         embCC
+    stage:        cap
+    reactants:
+      1: EMB
+    product:      EMBCC
+    probability:  1.0
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B:
+        reactant: 1
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms:
+          - A
+          - B
+        order: 2
 
 The next thing we consider is the :ref:`configuration file <pms_configuration_file>` necessary to direct the build.

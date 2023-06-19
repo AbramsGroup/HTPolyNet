@@ -13,7 +13,7 @@
     <script src="../../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Reactions" href="reactions.html" />
+    <link rel="next" title="Introduction" href="introduction.html" />
     <link rel="prev" title="Results" href="../2-DGEBA-PACM/results.html" />
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
@@ -33,62 +33,10 @@
             
   <section id="bisgma-styrene-thermoset">
 <span id="ve-sty-tutorial"></span><h1>BisGMA-Styrene Thermoset<a class="headerlink" href="#bisgma-styrene-thermoset" title="Permalink to this heading">¶</a></h1>
-<p>he first step is to get to a clean working directory, and then use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> to setup this example.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir<span class="w"> </span>my_vinyl_ester
-<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>my_vinyl_ester
-<span class="gp">$ </span>htpolynet<span class="w"> </span>fetch-example<span class="w"> </span>-n<span class="w"> </span><span class="m">3</span>
-<span class="gp">$ </span>ls
-<span class="go">3-bisgma-styrene-thermoset/</span>
-<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span><span class="m">3</span>-bisgma-styrene-thermoset
-<span class="gp">$ </span>ls
-<span class="go">GMASTY-hi.yaml  GMASTY-lo.yaml  lib/  run.sh</span>
-</pre></div>
-</div>
-<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run both a low-cure and high-cure build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated bisGMA and styrene.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
-
-<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules&#39;</span>
-conda<span class="w"> </span>activate<span class="w"> </span>mol-env
-rm<span class="w"> </span>-rf<span class="w"> </span>proj-*<span class="w"> </span>*log<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/parameterized/*
-
-<span class="nv">STYRENE</span><span class="o">=</span><span class="s2">&quot;C1=CC=CC=C1CC&quot;</span>
-obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$STYRENE</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/STY.png
-obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$STYRENE</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>-omol2<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;Styrene-active&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>sed<span class="w"> </span>s/<span class="s2">&quot; 7 C &quot;</span>/<span class="s2">&quot; 7 C1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>sed<span class="w"> </span>s/<span class="s2">&quot; 8 C &quot;</span>/<span class="s2">&quot; 8 C2&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1&quot;</span>/<span class="s2">&quot;STY &quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/STY.mol2
-
-<span class="c1"># Components of BisGMA = HIE+GPA+HIE</span>
-<span class="c1"># Bisphenol-A</span>
-<span class="nv">PHENOL</span><span class="o">=</span><span class="s2">&quot;C1=CC=C(O)C=C1&quot;</span>
-<span class="nv">BPA</span><span class="o">=</span><span class="s2">&quot;CC(</span><span class="nv">$PHENOL</span><span class="s2">)(</span><span class="nv">$PHENOL</span><span class="s2">)C&quot;</span>
-obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$BPA</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/BPA.png<span class="w"> </span>-xp<span class="w"> </span><span class="m">600</span>
-obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$BPA</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen3d<span class="w"> </span>-h<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;Bisphenol A&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1&quot;</span>/<span class="s2">&quot;BPA &quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot; 7 O &quot;</span>/<span class="s2">&quot; 7 O1&quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot;14 O &quot;</span>/<span class="s2">&quot;14 O2&quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/BPA.mol2
-
-<span class="c1"># 2-hydroxypropyl isopropyl ester</span>
-<span class="nv">HIE</span><span class="o">=</span><span class="s2">&quot;CC(C(=O)OCC(O)C)C&quot;</span>
-obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$HIE</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/HIE.png<span class="w"> </span>-xp<span class="w"> </span><span class="m">600</span>
-obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$HIE</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen3d<span class="w"> </span>-h<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;2-hydroxypropyl isopropyl ester&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1&quot;</span>/<span class="s2">&quot;HIE &quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot;10 C &quot;</span>/<span class="s2">&quot;10 C2&quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot; 2 C &quot;</span>/<span class="s2">&quot; 2 C1&quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot; 7 C &quot;</span>/<span class="s2">&quot; 7 C3&quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot; 9 C &quot;</span>/<span class="s2">&quot; 9 C4&quot;</span>/<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/HIE.mol2
-
-htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-lo.log<span class="w"> </span>GMASTY-lo.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>lo.log
-htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-hi.log<span class="w"> </span>GMASTY-hi.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>hi.log
-</pre></div>
-</div>
-<p>Note that we are actually generating three different monomeric species: styrene, bisphenol A (BPA), and 2-hydroxypropyl isopropyl ester (HIE).  This is because we are going to tell <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to build the bisGMA molecule by reacting the esters onto they phenolic hydroxyls on BPA.</p>
-<p>As in the other two tutorials, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reactions.html">Reactions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="reactions.html#building-bisgma">Building bisGMA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reactions.html#cure-reactions">Cure reactions</a></li>
@@ -138,7 +86,7 @@ htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"
   <li><a href="../../index.html">Documentation overview</a><ul>
   <li><a href="../index.html">Example Tutorials</a><ul>
       <li>Previous: <a href="../2-DGEBA-PACM/results.html" title="previous chapter">Results</a></li>
-      <li>Next: <a href="reactions.html" title="next chapter">Reactions</a></li>
+      <li>Next: <a href="introduction.html" title="next chapter">Introduction</a></li>
   </ul></li>
   </ul></li>
 </ul>
