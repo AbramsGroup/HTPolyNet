@@ -3,7 +3,6 @@
 Introduction
 ============
 
-
 The first step is to get to a clean working directory, and then use ``htpolynet fetch-example`` to setup this example.
 
 .. code-block:: console
@@ -13,11 +12,17 @@ The first step is to get to a clean working directory, and then use ``htpolynet 
    $ htpolynet fetch-example -n 3
    $ ls
    3-bisgma-styrene-thermoset/
-   $ cd 3-bisgma-styrene-thermoset
-   $ ls
-   GMASTY-hi.yaml  GMASTY-lo.yaml  lib/  run.sh
+   $ tree 3-bisgma-styrene-thermoset
+   3-bisgma-styrene-thermoset
+   ├── GMASTY.yaml
+   ├── lib
+   │   └── molecules
+   │       ├── inputs
+   │       └── parameterized
+   ├── README.md
+   └── run.sh
 
-The bash script ``run.sh`` is a *suggested* way to run both a low-cure and high-cure build, and it contains the commands to generate the input ``mol2`` file for activated bisGMA and styrene.
+The bash script ``run.sh`` is a *suggested* way to run a build, and it contains the commands to generate the input ``mol2`` files for activated bisGMA and styrene.
 
 .. code-block:: bash
 
@@ -56,9 +61,8 @@ The bash script ``run.sh`` is a *suggested* way to run both a low-cure and high-
             | sed s/" 9 C "/" 9 C4"/ \
             > ${mollib}/inputs/HIE.mol2
 
-   htpolynet run -diag diagnostics-lo.log GMASTY-lo.yaml &> lo.log
-   htpolynet run -diag diagnostics-hi.log GMASTY-hi.yaml &> hi.log
+   htpolynet run -diag diagnostics.log GMASTY.yaml &> console.log
 
-Note that we are actually generating three different monomeric species: styrene, bisphenol A (BPA), and 2-hydroxypropyl isopropyl ester (HIE).  This is because we are going to tell ``HTPolyNet`` to build the bisGMA molecule by reacting the esters onto they phenolic hydroxyls on BPA.
+Note that we are actually generating three different monomeric species: styrene, bisphenol A (BPA), and 2-hydroxypropyl isopropyl ester (HIE).  This is because we are going to tell ``HTPolyNet`` to build the bisGMA molecule by reacting the esters onto the phenolic hydroxyls on BPA.
 
-As in the other two tutorials, if you have a ``mol-env`` conda enviroment, just issue ``./run.sh`` to start the builds.  The section "run" below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions' syntax.
+As in the other two tutorials, if you have a ``mol-env`` conda enviroment, just issue ``./run.sh`` to start the build.

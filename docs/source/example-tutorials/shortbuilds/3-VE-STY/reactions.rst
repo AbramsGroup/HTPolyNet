@@ -3,7 +3,7 @@
 Reactions
 =========
 
-There are three types of reactions defined in the YAML configuration files.  The first two describe how to build a bisGMA molecule, the next four describe the polymerization reactions, and the final two describe capping reactions for unreacted monomers. 
+There are three types of reactions defined in the YAML configuration file.  The first two describe how to build a bisGMA molecule, the next four describe the polymerization reactions, and the final two describe capping reactions for unreacted monomers. 
 
 Building bisGMA
 ^^^^^^^^^^^^^^^
@@ -26,37 +26,51 @@ Let's focus first on the reactions used to build bis GMA.  First, we react one H
 
 .. code-block:: yaml
 
-  - { 
-      name: B1,
-      stage: param,
-      reactants: {1: BPA, 2: HIE },
-      product: GM1,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: O1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C4, z: 2}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-  }
+  - name: B1
+    stage: param
+    reactants:
+      1: BPA
+      2: HIE
+    product: GM1
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: O1
+        z: 1
+      B:
+        reactant: 2
+        resid: 1
+        atom: C4
+        z: 2
+    bonds:
+      - atoms: [A, B]
+        order: 1
 
 This creates the intermediate GM1, which we then use to in the second reaction:
 
 .. code-block:: yaml
 
-  - { 
-      name: B2,
-      stage: param,
-      reactants: {1: GM1, 2: HIE },
-      product: GMA,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: O2, z: 1},
-        B: {reactant: 2, resid: 1, atom: C4, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-  }
+  - name: B2
+    stage: param
+    reactants:
+      1: GM1
+      2: HIE
+    product: GMA
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: O2
+        z: 1
+      B:
+        reactant: 2
+        resid: 1
+        atom: C4
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 1
 
 Note that both of these reactions are stage "param", since we know we need to GAFF-parameterize the results to arrive at a fully parameterized GMA molecule.
 
@@ -85,92 +99,131 @@ For each scenario above, we need only encode the ``C1``-attacks-``C2`` reaction.
 
 .. code-block:: yaml
 
-  - { 
-      name: dimer_xx,
-      stage: cure,
-      reactants: {1: STY, 2: STY },
-      product: STY~C1-C2~STY,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-  }
-  - { 
-      name: dimer_yy,
-      stage: cure,
-      reactants: {1: HIE, 2: HIE },
-      product: HIE~C1-C2~HIE,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-  }
-  - { 
-      name: dimer_xy,
-      stage: cure,
-      reactants: {1: STY, 2: HIE },
-      product: STY~C1-C2~HIE,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-  }
-  - { 
-      name: dimer_yx,
-      stage: cure,
-      reactants: {1: HIE, 2: STY },
-      product: HIE~C1-C2~STY,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 2, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 1}
-      ]
-  }
-
+  - name: dimer_xx
+    stage: cure
+    reactants:
+      1: STY
+      2: STY
+    product: STY~C1-C2~STY
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B:
+        reactant: 2
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 1
+  - name: dimer_yy
+    stage: cure
+    reactants: 
+      1: HIE
+      2: HIE
+    product: HIE~C1-C2~HIE
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B: 
+        reactant: 2
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 1
+  - name: dimer_xy
+    stage: cure
+    reactants:
+      1: STY
+      2: HIE
+    product: STY~C1-C2~HIE
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B:
+        reactant: 2
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 1
+  - name: dimer_yx
+    stage: cure
+    reactants:
+      1: HIE
+      2: STY
+    product: HIE~C1-C2~STY
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B:
+        reactant: 2
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 1
 
 Finally, we can include capping reactions that revert any completely unreacted double bonds back to actual double-bonds (notice the ``order`` specifications):
 
 .. code-block:: yaml
 
-  - {
-      name:         'styCC',
-      stage:        cap,
-      reactants:    {1: STY},
-      product:      STYCC,
-      probability:  1.0,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 1, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 2}
-      ]
-    }
-  - {
-      name:         'hieCC',
-      stage:        cap,
-      reactants:    {1: HIE},
-      product:      HIECC,
-      probability:  1.0,
-      atoms: {
-        A: {reactant: 1, resid: 1, atom: C1, z: 1},
-        B: {reactant: 1, resid: 1, atom: C2, z: 1}
-      },
-      bonds: [
-        {atoms: [A, B], order: 2}
-      ]
-    }
+  - name:         styCC
+    stage:        cap
+    reactants:
+      1: STY
+    product:      STYCC
+    probability:  1.0
+    atoms:
+      A:
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B: 
+        reactant: 1
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 2
+  - name:         hieCC
+    stage:        cap
+    reactants:    
+      1: HIE
+    product:      HIECC
+    probability:  1.0
+    atoms:
+      A: 
+        reactant: 1
+        resid: 1
+        atom: C1
+        z: 1
+      B:
+        reactant: 1
+        resid: 1
+        atom: C2
+        z: 1
+    bonds:
+      - atoms: [A, B]
+        order: 2
 
 As we will detail in the next section, there are no symmetry-equivalent atoms necessary in this system, even though bisGMA is a symmetric molecule.  This is because we need only address HIE monomers in the cure reactions; BPA's are "silent" with respect to cure.  There are no symmetry-equivalent atoms *within* a *single* HIE monomer.
 

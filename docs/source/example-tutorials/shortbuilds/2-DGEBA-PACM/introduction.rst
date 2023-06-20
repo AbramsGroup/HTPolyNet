@@ -16,14 +16,14 @@ The first step is to get to a clean working directory, and then use ``htpolynet 
    4-pacm-dgeba-epoxy-thermoset/
    ├── DGEPAC.yaml
    ├── lib
-   │   └── molecules
-   │       ├── inputs
-   │       └── parameterized
+   │   └── molecules
+   │       ├── inputs
+   │       └── parameterized
    ├── README.md
    └── run.sh
 
 
-The bash script ``run.sh`` is a *suggested* way to run both a build, and it contains the commands to generate the input ``mol2`` file for activated DGEBA and PACM.
+The bash script ``run.sh`` is a *suggested* way to run a build, and it contains the commands to generate the input ``mol2`` file for activated DGEBA and PACM.
 
 .. code-block:: bash
 

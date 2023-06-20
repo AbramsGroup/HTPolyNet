@@ -5,7 +5,7 @@ Monomer: 4-methylstyrene
 
 .. _fig_pmsty_polym:
 
-.. figure:: pics/pmsty_sys.png
+.. figure:: pics/pmsty_sys.png 
 
     Polymerization of methyl styrene.
 

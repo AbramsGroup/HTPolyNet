@@ -5,19 +5,29 @@ Results
 
 The :ref:`results section of the PMS tutorial <pms_results>` does a good job walking you through the project directory structure for any ``HTPolyNet`` run, so we'll skip that here.  
 
-First, if we look in either ``proj-0/plots`` (lo-cure) or ``proj-1/plots`` (hi-cure), we can see the density vs. time of the densification stage:
+First, if we look in ``proj-0/plots``, we can see the density vs. time of the densification stage:
 
 .. figure:: pics/densification-density.png 
 
     Density vs. time during the densification stage of the bisGMA/STY liquid.  Each of the nine distinct simulations in series is colored uniquely along a ``matplotlib`` ``plasma`` colomap.
 
-By using the ``plots`` subcommand, we can generate traces of temperature, density, and potential energy vs time for the entire course of the system build:
+As in the polymethylstyrene tutorial, we can make plots of the conversion vs. run time and the cure iteration vs. run time:
 
 .. code-block:: console
 
-    $ htpolynet plots -proj proj-1 -t p1-traces.png -o p1-traces.csv
+    $ htpolynet plots diag --diags diagnostics.log
+
+.. figure:: pics/cure_info.png
+
+With fewer atoms than the DGEBA/PACM tutorial, and fewer iterations needed to reach 95% conversion, it is not surprising this build took only an hour or so.  Again, we see that the first 25% or so of the run time gets 75% or so of the way to cured.
+
+Let's generate traces of temperature, density, and potential energy vs time for the entire course of the system build:
+
+.. code-block:: console
+
+    $ htpolynet plots build --proj proj-0 --buildplot t --traces t d p
     
-.. figure:: pics/p1-traces.png 
+.. figure:: pics/buildtraces.png 
 
     (Top) Temperature vs. time for 95% cure of bisGMA/STY (Middle) Density vs time.  The two topmost plots also report number of bonds; (Bottom) Potential energy vs. time.
 

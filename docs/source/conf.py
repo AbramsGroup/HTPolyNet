@@ -33,12 +33,15 @@ version = THIS_HTPOLYNET_VERSION
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon', 'sphinx.ext.githubpages']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon', 'sphinx.ext.githubpages',
+    'sphinxcontrib.bibtex',]
 # extensions.append('sphinx.ext.todo')
 # extensions.append('sphinx.ext.intersphinx')
 # extensions.append('sphinx.ext.mathjax')
 extensions.append('sphinx.ext.viewcode')
+
 # extensions.append('sphinx.ext.graphviz')
+bibtex_bibfiles = ['references.bib']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,3 +67,12 @@ html_static_path = ['_static']
 numfig = True
 autosummary_generate = True
 todo_include_todos = True
+
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'relations.html',
+        'searchbox.html',
+    ]
+}
