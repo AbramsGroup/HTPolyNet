@@ -30,11 +30,11 @@ This generates ``cure_info.png``:
 
 We can see here that the 95\% cure took about 8 and a half minutes of run time (which is not really impressive since this is a **very** small system).  Fully two-thirds of the run time is consumed realizing the final 15\% of the cure.
 
-Second, we can make plots that track the temperature and density throughout the entire build process:
+Second, we can make plots that track the temperature, density, and potential energy throughout the entire build process:
 
 .. code-block:: console
 
-    $ htpolynet plots build --proj proj-0 --buildplot t --traces t d
+    $ htpolynet plots build --proj proj-0 --buildplot t --traces t d p
 
 This command extracts temperature, density, and potential energy from all Gromacs ``edr`` output files in ``proj-0/`` in the order they were generated, plots them according to a default format, and stores the extracted data in a ``csv`` file.  By default, the plot is in ``proj-0/buildtraces.png`` and the corresponding data in ``proj-0/buildtraces.csv``.
 

@@ -12,11 +12,18 @@ The first step is to get to a clean working directory, and then use ``htpolynet 
    $ htpolynet fetch-example -n 4
    $ ls
    4-pacm-dgeba-epoxy-thermoset/
-   $ cd 4-pacm-dgeba-epoxy-thermoset
-   $ ls
-   DGE-PAC-hi.yaml  DGE-PAC-lo.yaml  lib/  run.sh
+   $ tree 4-pacm-dgeba-epoxy-thermoset
+   4-pacm-dgeba-epoxy-thermoset/
+   ├── DGEPAC.yaml
+   ├── lib
+   │   └── molecules
+   │       ├── inputs
+   │       └── parameterized
+   ├── README.md
+   └── run.sh
 
-The bash script ``run.sh`` is a *suggested* way to run both a low-cure and high-cure build, and it contains the commands to generate the input ``mol2`` file for activated DGEBA and PACM.
+
+The bash script ``run.sh`` is a *suggested* way to run both a build, and it contains the commands to generate the input ``mol2`` file for activated DGEBA and PACM.
 
 .. code-block:: bash
 
@@ -46,7 +53,6 @@ The bash script ``run.sh`` is a *suggested* way to run both a low-cure and high-
                sed s/"3 C "/"3 C1"/ | \
                sed s/"11 C "/"11 C1"/ > ${mollib}/PAC.mol2
    rm -rf proj-* *log lib/molecules/parameterized/*
-   htpolynet run -diag diagnostics-lo.log ${sysname}-lo.yaml &> lo.log
-   htpolynet run -diag diagnostics-hi.log ${sysname}-hi.yaml &> hi.log
+   htpolynet run -diag diagnostics-lo.log ${sysname}.yaml &> console.log
 
 So, if you have a ``mol-env`` conda enviroment, just issue ``./run.sh`` to start the builds.  The section "run" below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions' syntax.
