@@ -13,7 +13,7 @@
     <script src="../_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Poly(4-methyl styrene)" href="1-polymethylstyrene/index.html" />
+    <link rel="next" title="Example Tutorials for Short Builds" href="shortbuilds/index.html" />
     <link rel="prev" title="Program Flow" href="../user-guide/program-flow.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
@@ -33,38 +33,17 @@
             
   <section id="example-tutorials">
 <span id="id1"></span><h1>Example Tutorials<a class="headerlink" href="#example-tutorials" title="Permalink to this heading">¶</a></h1>
-<p>We present here three tutorials to help illustrate usage of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.  All are available via the <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> subcommand.</p>
-<p><strong>IMPORTANT DISCLAIMER</strong></p>
-<p>These are not production MD runs.  The system sizes are <em>way too small</em> and the equilibration times are <em>way too short</em>.  You as a user are responsible for conducting the appropriate finite-size-effect tests and equilibration tests needed to guarantee robustness of your simulations.</p>
+<p>We present here tutorials to help illustrate usage of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>.  We demonstrate three simple polymerizations, and we also show examples of using post-build simulations and analyses.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="1-polymethylstyrene/index.html">Poly(4-methyl styrene)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/introduction.html">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/monomer.html">Monomer: 4-methylstyrene</a></li>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/reactions.html">Reactions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/configuration.html">The Configuration File</a></li>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/run.html">Running the Build</a></li>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/results.html">Results</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shortbuilds/index.html">Example Tutorials for Short Builds</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="shortbuilds/1-polymethylstyrene/index.html">Poly(4-methyl styrene)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shortbuilds/2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shortbuilds/3-VE-STY/index.html">BisGMA-Styrene Thermoset</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/introduction.html">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/monomers.html">Monomers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/reactions.html">Reactions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/configuration.html">The Configuration File</a></li>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/run.html">Running the Build</a></li>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/results.html">Results</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="3-VE-STY/index.html">BisGMA-Styrene Thermoset</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="3-VE-STY/introduction.html">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="3-VE-STY/reactions.html">Reactions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="3-VE-STY/configuration.html">The Configuration File</a></li>
-<li class="toctree-l2"><a class="reference internal" href="3-VE-STY/run.html">Running the Build</a></li>
-<li class="toctree-l2"><a class="reference internal" href="3-VE-STY/results.html">Results</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
 </ul>
 </div>
 </section>
@@ -91,9 +70,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Example Tutorials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="1-polymethylstyrene/index.html">Poly(4-methyl styrene)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="2-DGEBA-PACM/index.html">DGEBA-PACM Thermoset</a></li>
-<li class="toctree-l2"><a class="reference internal" href="3-VE-STY/index.html">BisGMA-Styrene Thermoset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="shortbuilds/index.html">Example Tutorials for Short Builds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../reference-materials/index.html">Reference Materials</a></li>
@@ -105,7 +83,7 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
       <li>Previous: <a href="../user-guide/program-flow.html" title="previous chapter">Program Flow</a></li>
-      <li>Next: <a href="1-polymethylstyrene/index.html" title="next chapter">Poly(4-methyl styrene)</a></li>
+      <li>Next: <a href="shortbuilds/index.html" title="next chapter">Example Tutorials for Short Builds</a></li>
   </ul></li>
 </ul>
 </div>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Introduction &#8212; HTPolyNet 1.0.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Monomers" href="monomers.html" />
+    <link rel="prev" title="DGEBA-PACM Thermoset" href="index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="introduction">
+<span id="dgeba-pacm-introduction"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h1>
+<p>The first step is to get to a clean working directory, and then use <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">fetch-example</span></code> to setup this example.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir<span class="w"> </span>my_dgeba_pacm
+<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>my_dgeba_pacm
+<span class="gp">$ </span>htpolynet<span class="w"> </span>fetch-example<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span>
+<span class="gp">$ </span>ls
+<span class="go">4-pacm-dgeba-epoxy-thermoset/</span>
+<span class="gp">$ </span>tree<span class="w"> </span><span class="m">4</span>-pacm-dgeba-epoxy-thermoset
+<span class="go">4-pacm-dgeba-epoxy-thermoset/</span>
+<span class="go">├── DGEPAC.yaml</span>
+<span class="go">├── lib</span>
+<span class="go">│   └── molecules</span>
+<span class="go">│       ├── inputs</span>
+<span class="go">│       └── parameterized</span>
+<span class="go">├── README.md</span>
+<span class="go">└── run.sh</span>
+</pre></div>
+</div>
+<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run both a build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated DGEBA and PACM.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
+<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;DGE-PAC&quot;</span>
+conda<span class="w"> </span>activate<span class="w"> </span>mol-env
+<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/inputs&#39;</span>
+<span class="c1"># DGEBA</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/DGE.png
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;DGE&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;DGE    &quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;14 C &quot;</span>/<span class="s2">&quot;14 C1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;25 C &quot;</span>/<span class="s2">&quot;25 C2&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;12 C &quot;</span>/<span class="s2">&quot;12 C3&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;23 C &quot;</span>/<span class="s2">&quot;23 C4&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;13 O &quot;</span>/<span class="s2">&quot;13 O1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;24 O &quot;</span>/<span class="s2">&quot;24 O2&quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/DGE.mol2
+<span class="c1"># PACM</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/PAC.png
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;PAC&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;PAC    &quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;14 N &quot;</span>/<span class="s2">&quot;14 N1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;15 N &quot;</span>/<span class="s2">&quot;15 N1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;3 C &quot;</span>/<span class="s2">&quot;3 C1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/PAC.mol2
+rm<span class="w"> </span>-rf<span class="w"> </span>proj-*<span class="w"> </span>*log<span class="w"> </span>lib/molecules/parameterized/*
+htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-lo.log<span class="w"> </span><span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>console.log
+</pre></div>
+</div>
+<p>So, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Example Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Example Tutorials for Short Builds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../HTPolyNetPackage.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Example Tutorials</a><ul>
+  <li><a href="../index.html">Example Tutorials for Short Builds</a><ul>
+  <li><a href="index.html">DGEBA-PACM Thermoset</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">DGEBA-PACM Thermoset</a></li>
+      <li>Next: <a href="monomers.html" title="next chapter">Monomers</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../../_sources/example-tutorials/shortbuilds/2-DGEBA-PACM/introduction.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>The Configuration File &#8212; HTPolyNet 1.0.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Running the Build" href="run.html" />
+    <link rel="prev" title="Reactions" href="reactions.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="the-configuration-file">
+<span id="ve-configuration-file"></span><h1>The Configuration File<a class="headerlink" href="#the-configuration-file" title="Permalink to this heading">¶</a></h1>
+<p>We just presented the reactions in the configuration file.  The rest of the file is essentially the same as the original config file for the poly(methyl styrene) system, with the exception of the <code class="docutils literal notranslate"><span class="pre">contituents</span></code>  and <code class="docutils literal notranslate"><span class="pre">densification</span></code> directives:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">constituents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="nt">  STY</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">150</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="nt">  GMA</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">75</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="nt">  HIE</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> stereocenters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">C3</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+<p>Importantly, we can specify GMA here, even though we are not providing an input <code class="docutils literal notranslate"><span class="pre">GMA.mol2</span></code> file because GMA is a product that <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> recognizes that it will generate by itself.  Secondly, we know that there are two chiral carbons in HIE, which will result in a grand total of 16 distinct diastereromers of GMA being used to build the initial racemic system.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">densification</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="nt">  initial_density</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="c1"># kg/m3</span>
+<span class="nt">  equilibration</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">min</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">nvt</span><span class="p p-Indicator">,</span><span class="nt"> temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> ps</span><span class="p">:</span><span class="w"> </span><span class="nv">10.0</span><span class="w"> </span><span class="p p-Indicator">},</span>
+<span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> ensemble</span><span class="p">:</span><span class="w"> </span><span class="nv">npt</span><span class="p p-Indicator">,</span><span class="nt"> temperature</span><span class="p">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="nt"> pressure</span><span class="p">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="nt"> ps</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="p p-Indicator">,</span><span class="nt"> repeat</span><span class="p">:</span><span class="w"> </span><span class="nv">8</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">]</span>
+<span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+<p>In the densification, we are stipulating a very low initial density, which is arrived at by trial-and-error because <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">insert-molecules</span></code> has problems reliably inserting all the required molecular instances at higher densities, presumably because of GMA’s rather long aspect ratio.  To fully densify, we specify that the NPT simulation be repeated 8 times in series, with each step taking 100 ps.  This ensures that gromacs will not complain about the box size changing too much during the densification.  (There may be a better way to do this in a single mdrun execution, but this works.)</p>
+<p>Now we are ready to <a class="reference internal" href="run.html#ve-run"><span class="std std-ref">run the build</span></a>.</p>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Example Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Example Tutorials for Short Builds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../HTPolyNetPackage.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Example Tutorials</a><ul>
+  <li><a href="../index.html">Example Tutorials for Short Builds</a><ul>
+  <li><a href="index.html">BisGMA-Styrene Thermoset</a><ul>
+      <li>Previous: <a href="reactions.html" title="previous chapter">Reactions</a></li>
+      <li>Next: <a href="run.html" title="next chapter">Running the Build</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../../_sources/example-tutorials/shortbuilds/3-VE-STY/configuration.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
