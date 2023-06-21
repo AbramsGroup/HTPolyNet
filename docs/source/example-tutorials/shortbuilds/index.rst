@@ -1,7 +1,7 @@
 .. _example_tutorials_builds:
 
-Tutorials for ``htpolynet run``
-===============================
+Examples Using ``htpolynet run``
+================================
 
 We present here three tutorials to help illustrate usage of ``htpolynet run`` to build polymerized systems.
 
