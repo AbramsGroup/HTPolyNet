@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTPolyNet.projectfilesystem &#8212; HTPolyNet 1.0.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for HTPolyNet.projectfilesystem</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">.. module:: projectfilesystem</span>
+<span class="sd">   :synopsis: handles project filesystems</span>
+<span class="sd">   </span>
+<span class="sd">.. moduleauthor: Cameron F. Abrams, &lt;cfa22@drexel.edu&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">importlib.resources</span>
+<span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RuntimeLibrary"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary">[docs]</a><span class="k">class</span> <span class="nc">RuntimeLibrary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39; a library object -- default creation references the Library resource package. &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subdirs</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">designation</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+
+<div class="viewcode-block" id="RuntimeLibrary.system"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.system">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">system</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">libpackage</span><span class="o">=</span><span class="s1">&#39;Library&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;system generates a RuntimeLibrary object corresponding to the installed Library subpackage</span>
+
+<span class="sd">        :param libpackage: name of the HTPolyNet Library subpackage, defaults to &#39;Library&#39;</span>
+<span class="sd">        :type libpackage: str, optional</span>
+<span class="sd">        :raises ImportError: if the system library subpackage is not found</span>
+<span class="sd">        :return: a RuntimeLibrary object holding the system library subpackage</span>
+<span class="sd">        :rtype: RuntimeLibrary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inst</span><span class="o">=</span><span class="bp">cls</span><span class="p">()</span>
+        <span class="n">inst</span><span class="o">.</span><span class="n">designation</span><span class="o">=</span><span class="s1">&#39;System&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">importlib</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">path</span><span class="p">(</span><span class="n">libpackage</span><span class="p">,</span><span class="s1">&#39;__init__.py&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">inst</span><span class="o">.</span><span class="n">root</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">f</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">subdirs</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">xxx</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;__init__.py&#39;</span><span class="p">,</span><span class="s1">&#39;__pycache__&#39;</span><span class="p">,</span><span class="s1">&#39;README.md&#39;</span><span class="p">]:</span>
+                <span class="n">subdirs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">xxx</span><span class="p">)</span>
+            <span class="n">inst</span><span class="o">.</span><span class="n">subdirs</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">root</span><span class="p">,</span><span class="n">xxx</span><span class="p">)</span> <span class="k">for</span> <span class="n">xxx</span> <span class="ow">in</span> <span class="n">subdirs</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Could not find package </span><span class="si">{</span><span class="n">libpackage</span><span class="si">}</span><span class="s1">.  Your HTPolyNet installation is corrupt.&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">inst</span></div>
+
+<div class="viewcode-block" id="RuntimeLibrary.get_example_depot_location"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.get_example_depot_location">[docs]</a>    <span class="k">def</span> <span class="nf">get_example_depot_location</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get_example_depot_location reports the location of the examples in this RuntimeLibrary, if they exist</span>
+
+<span class="sd">        :return: name of depot directory</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="s1">&#39;example_depot&#39;</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subdirs</span><span class="p">]):</span>
+            <span class="n">depot</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subdirs</span> <span class="k">if</span> <span class="s1">&#39;example_depot&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">depot</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="RuntimeLibrary.get_example_names"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.get_example_names">[docs]</a>    <span class="k">def</span> <span class="nf">get_example_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;get_example_names returns the names of the example tarballs</span>
+
+<span class="sd">        :return: list of names of example tarballs</span>
+<span class="sd">        :rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="s1">&#39;example_depot&#39;</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subdirs</span><span class="p">]):</span>
+            <span class="n">depot</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subdirs</span> <span class="k">if</span> <span class="s1">&#39;example_depot&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">owd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">depot</span><span class="p">)</span>
+            <span class="n">example_tarballs</span><span class="o">=</span><span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">&#39;*.tgz&#39;</span><span class="p">)</span>
+            <span class="n">basenames</span><span class="o">=</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.tgz&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">example_tarballs</span><span class="p">]</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">owd</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">basenames</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="RuntimeLibrary.user"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.user">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">user</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pathname</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;user generates a new user-level RuntimeLibrary object</span>
+
+<span class="sd">        :param pathname: where to find the library, defaults to &#39;.&#39;</span>
+<span class="sd">        :type pathname: str, optional</span>
+<span class="sd">        :return: a new RuntimeLibrary object</span>
+<span class="sd">        :rtype: RuntimeLibrary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pathname</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pathname</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Cannot find </span><span class="si">{</span><span class="n">pathname</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">tt</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">pathname</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">tt</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Please ensure that </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span><span class="si">}</span><span class="s1"> is a directory&#39;</span>
+        <span class="n">inst</span><span class="o">=</span><span class="bp">cls</span><span class="p">()</span>
+        <span class="n">inst</span><span class="o">.</span><span class="n">designation</span><span class="o">=</span><span class="s1">&#39;User&#39;</span>
+        <span class="n">inst</span><span class="o">.</span><span class="n">root</span><span class="o">=</span><span class="n">tt</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;__init__.py&#39;</span><span class="p">,</span> <span class="s1">&#39;README.md&#39;</span><span class="p">,</span> <span class="s1">&#39;__pycache__&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tt</span><span class="p">:</span>
+                <span class="n">tt</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">inst</span><span class="o">.</span><span class="n">subdirs</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tt</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">inst</span></div>
+
+<div class="viewcode-block" id="RuntimeLibrary.checkin"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.checkin">[docs]</a>    <span class="k">def</span> <span class="nf">checkin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;checkin check filename into this RuntimeLibrary</span>
+
+<span class="sd">        :param filename: name of file to check in, ***relative to the top level directory in which the library is housed***</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param overwrite: if True, overwrite the file in the RuntimeLibrary if it exists, defaults to False</span>
+<span class="sd">        :type overwrite: bool, optional</span>
+<span class="sd">        :return: False if filename not found in cwd; True if check-in was successful</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">basefilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">basefilename</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">basefilename</span><span class="si">}</span><span class="s1"> not found in </span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span><span class="si">}</span><span class="s1">. No check-in performed.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">fullfilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">basefilename</span><span class="p">,</span><span class="n">fullfilename</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1"> already exists in system library. No check-in performed.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">basefilename</span><span class="p">,</span><span class="n">fullfilename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="RuntimeLibrary.checkout"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.checkout">[docs]</a>    <span class="k">def</span> <span class="nf">checkout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">searchpath</span><span class="o">=</span><span class="p">[],</span><span class="n">altpath</span><span class="o">=</span><span class="p">[]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;checkout check the file named by filename out of this RuntimeLibrary and copy it to the cwd</span>
+
+<span class="sd">        :param filename: name of file to checkout, relative to the top level directory in which the library is found</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :param searchpath: path of directories to search if the filename is not resolved, defaults to []</span>
+<span class="sd">        :type searchpath: list, optional</span>
+<span class="sd">        :param altpath: additional directories to add to the search path, defaults to []</span>
+<span class="sd">        :type altpath: list, optional</span>
+<span class="sd">        :return: True if file checkout was successful, False if not</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">basefilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">fullfilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">):</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">,</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">basefilename</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># logger.info(f&#39;No {filename} found in libraries; checking local data searchpath {searchpath}&#39;)</span>
+            <span class="k">if</span> <span class="n">altpath</span><span class="p">:</span>
+                <span class="n">searchpath</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">altpath</span><span class="p">)</span>
+                <span class="c1"># logger.info(f&#39;and alternative path {altpath}&#39;)</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">searchpath</span><span class="p">:</span>
+                <span class="c1"># logger.debug(f&#39;Searching {p}...&#39;)</span>
+                <span class="n">fullfilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">):</span>
+                    <span class="n">basefilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">,</span><span class="n">basefilename</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+            <span class="c1"># logger.debug(f&#39;Could not find {filename} anywhere in user library!&#39;)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+    
+<div class="viewcode-block" id="RuntimeLibrary.exists"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;exists checks to see if filename exists in this RuntimeLibrary</span>
+
+<span class="sd">        :param filename: name of file to check for, relative to toplevel directory of RuntimeLibrary</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :return: True if filename exists in RuntimeLibrary, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fullfilename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fullfilename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RuntimeLibrary.info"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.RuntimeLibrary.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;info returns a simple string describing this RuntimeLibrary</span>
+
+<span class="sd">        :return: the string</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">designation</span><span class="si">}</span><span class="s1"> library is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s1">&#39;</span></div></div>
+
+<span class="n">_SYSTEM_LIBRARY_</span><span class="o">=</span><span class="kc">None</span>
+<div class="viewcode-block" id="lib_setup"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.lib_setup">[docs]</a><span class="k">def</span> <span class="nf">lib_setup</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;lib_setup sets up the system RuntimeLibrary</span>
+
+<span class="sd">    :return: system RuntimeLibrary object</span>
+<span class="sd">    :rtype: RuntimeLibrary</span>
+<span class="sd">    &quot;&quot;&quot;</span>     
+    <span class="k">global</span> <span class="n">_SYSTEM_LIBRARY_</span>
+    <span class="k">if</span> <span class="n">_SYSTEM_LIBRARY_</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
+        <span class="n">_SYSTEM_LIBRARY_</span><span class="o">=</span><span class="n">RuntimeLibrary</span><span class="o">.</span><span class="n">system</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_SYSTEM_LIBRARY_</span></div>
+<div class="viewcode-block" id="system"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.system">[docs]</a><span class="k">def</span> <span class="nf">system</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;system returns the system RuntimeLibrary object</span>
+
+<span class="sd">    :return: system RuntimeLibrary object</span>
+<span class="sd">    :rtype: RuntimeLibrary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_SYSTEM_LIBRARY_</span></div>
+
+<div class="viewcode-block" id="ProjectFileSystem"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.ProjectFileSystem">[docs]</a><span class="k">class</span> <span class="nc">ProjectFileSystem</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Handles all aspects of the creation and organization of a project filesystem</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">topdirs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;molecules&#39;</span><span class="p">,</span><span class="s1">&#39;systems&#39;</span><span class="p">,</span><span class="s1">&#39;plots&#39;</span><span class="p">],</span><span class="n">projdir</span><span class="o">=</span><span class="s1">&#39;next&#39;</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">userlibrary</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">mock</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;__init__ Generates a new ProjectFilesystem object</span>
+
+<span class="sd">        :param root: path of root directory in which the project directory is to be housed, defaults to &#39;.&#39;</span>
+<span class="sd">        :type root: str, optional</span>
+<span class="sd">        :param topdirs: names of toplevel directories in the project directory, defaults to [&#39;molecules&#39;,&#39;systems&#39;,&#39;plots&#39;]</span>
+<span class="sd">        :type topdirs: list, optional</span>
+<span class="sd">        :param projdir: name of the project directory, or &#39;next&#39; if next available automatically generated name is to be used, defaults to &#39;next&#39;</span>
+<span class="sd">        :type projdir: str, optional</span>
+<span class="sd">        :param verbose: flag to turn on verbose output, defaults to False</span>
+<span class="sd">        :type verbose: bool, optional</span>
+<span class="sd">        :param reProject: flag indicating if this is a restarted project, defaults to False</span>
+<span class="sd">        :type reProject: bool, optional</span>
+<span class="sd">        :param userlibrary: name of user library toplevel directory, relative to root, defaults to None</span>
+<span class="sd">        :type userlibrary: str, optional</span>
+<span class="sd">        :param mock: flag indicating if this is a mock call, defaults to False</span>
+<span class="sd">        :type mock: bool, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="o">=</span><span class="n">lib_setup</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">userlibrary</span><span class="o">=</span><span class="kc">None</span>
+        <span class="k">if</span> <span class="n">userlibrary</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">userlibrary</span><span class="o">=</span><span class="n">RuntimeLibrary</span><span class="o">.</span><span class="n">user</span><span class="p">(</span><span class="n">userlibrary</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_next_project_dir</span><span class="p">(</span><span class="n">projdir</span><span class="o">=</span><span class="n">projdir</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="n">reProject</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup_project_dir</span><span class="p">(</span><span class="n">topdirs</span><span class="o">=</span><span class="n">topdirs</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="ProjectFileSystem.cdroot"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.ProjectFileSystem.cdroot">[docs]</a>    <span class="k">def</span> <span class="nf">cdroot</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;cdroot change the cwd to the root (parent directory of project directory)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span></div>
+
+<div class="viewcode-block" id="ProjectFileSystem.cdproj"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.ProjectFileSystem.cdproj">[docs]</a>    <span class="k">def</span> <span class="nf">cdproj</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;cdproj change the cwd to the toplevel project directory</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span></div>
+
+<div class="viewcode-block" id="ProjectFileSystem.go_to"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.ProjectFileSystem.go_to">[docs]</a>    <span class="k">def</span> <span class="nf">go_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">subPath</span><span class="p">,</span><span class="n">make</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;go_to change the cwd to the directory named by &#39;subPath&#39;</span>
+
+<span class="sd">        :param subPath: directory to change to, relative to project directory</span>
+<span class="sd">        :type subPath: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cdproj</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">subPath</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">subPath</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">make</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">subPath</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">subPath</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;root </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="si">}</span><span class="s1">: cwd </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cwd</span><span class="si">}</span><span class="s1">&#39;</span>
+
+    <span class="k">def</span> <span class="nf">_next_project_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">projdir</span><span class="o">=</span><span class="s1">&#39;next&#39;</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;proj-&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_next_project_dir sets the name of the current project directory and creates it if necessary</span>
+
+<span class="sd">        :param projdir: name of next project directory, defaults to &#39;next&#39;</span>
+<span class="sd">        :type projdir: str, optional</span>
+<span class="sd">        :param reProject: flag indicating if this is a restart, defaults to False</span>
+<span class="sd">        :type reProject: bool, optional</span>
+<span class="sd">        :param prefix: prefix for automatically generated project directories, defaults to &#39;proj-&#39;</span>
+<span class="sd">        :type prefix: str, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">projdir</span><span class="o">==</span><span class="s1">&#39;next&#39;</span><span class="p">:</span>  <span class="c1"># explicit project directory is named</span>
+            <span class="c1"># if os.path.exists(projdir) and not reProject:</span>
+            <span class="c1">#     raise Exception(f&#39;Project directory {projdir} exists but you did not indicate you wanted to restart with the &quot;-restart&quot; flag&#39;)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">projdir</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">projdir</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Working in existing project </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">projdir</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Working in new project </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+            <span class="n">lastprojdir</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+            <span class="n">currentprojdir</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+            <span class="k">while</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))):</span>
+                <span class="n">lastprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lastprojdir</span><span class="si">}</span><span class="s1"> exists&#39;</span><span class="p">)</span>
+                <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="k">assert</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">reProject</span> <span class="ow">or</span> <span class="n">lastprojdir</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="c1"># this is a fresh project</span>
+                <span class="k">if</span> <span class="n">lastprojdir</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">currentprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s1">0&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">currentprojdir</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">currentprojdir</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;New project in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">currentprojdir</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">lastprojdir</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Restarting project in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="si">}</span><span class="s1"> (latest project)&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_setup_project_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">topdirs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;molecules&#39;</span><span class="p">,</span><span class="s1">&#39;systems&#39;</span><span class="p">,</span><span class="s1">&#39;plots&#39;</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;_setup_project_dir sets up the project directory after it is created by creating the requested top-level subdirectories</span>
+
+<span class="sd">        :param topdirs: top-level subdirectories, defaults to [&#39;molecules&#39;,&#39;systems&#39;,&#39;plots&#39;]</span>
+<span class="sd">        :type topdirs: list, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projSubPaths</span><span class="o">=</span><span class="p">{}</span>
+        <span class="k">for</span> <span class="n">tops</span> <span class="ow">in</span> <span class="n">topdirs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">projSubPaths</span><span class="p">[</span><span class="n">tops</span><span class="p">]</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projPath</span><span class="p">,</span><span class="n">tops</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">projSubPaths</span><span class="p">[</span><span class="n">tops</span><span class="p">]):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">tops</span><span class="p">)</span></div>
+
+<span class="n">_PFS_</span><span class="p">:</span><span class="n">ProjectFileSystem</span><span class="o">=</span><span class="kc">None</span>
+
+<div class="viewcode-block" id="pfs_setup"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.pfs_setup">[docs]</a><span class="k">def</span> <span class="nf">pfs_setup</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">topdirs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;molecules&#39;</span><span class="p">,</span><span class="s1">&#39;systems&#39;</span><span class="p">,</span><span class="s1">&#39;plots&#39;</span><span class="p">],</span><span class="n">projdir</span><span class="o">=</span><span class="s1">&#39;next&#39;</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">userlibrary</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">mock</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;pfs_setup sets up the global ProjectFileSystem object</span>
+
+<span class="sd">    :param root: parent directory of this project file system, defaults to &#39;.&#39;</span>
+<span class="sd">    :type root: str, optional</span>
+<span class="sd">    :param topdirs: top-level subdirectories, defaults to [&#39;molecules&#39;,&#39;systems&#39;,&#39;plots&#39;]</span>
+<span class="sd">    :type topdirs: list, optional</span>
+<span class="sd">    :param projdir: name of the project directory itself, defaults to &#39;next&#39;</span>
+<span class="sd">    :type projdir: str, optional</span>
+<span class="sd">    :param verbose: flag indicating verbose output, defaults to False</span>
+<span class="sd">    :type verbose: bool, optional</span>
+<span class="sd">    :param reProject: flag indicating restart, defaults to False</span>
+<span class="sd">    :type reProject: bool, optional</span>
+<span class="sd">    :param userlibrary: name of user library relative to root, defaults to None</span>
+<span class="sd">    :type userlibrary: str, optional</span>
+<span class="sd">    :param mock: flag indicating this is a mock call, defaults to False</span>
+<span class="sd">    :type mock: bool, optional</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_PFS_</span>
+    <span class="n">_PFS_</span><span class="o">=</span><span class="n">ProjectFileSystem</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span><span class="n">topdirs</span><span class="o">=</span><span class="n">topdirs</span><span class="p">,</span><span class="n">projdir</span><span class="o">=</span><span class="n">projdir</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span><span class="n">reProject</span><span class="o">=</span><span class="n">reProject</span><span class="p">,</span><span class="n">userlibrary</span><span class="o">=</span><span class="n">userlibrary</span><span class="p">,</span><span class="n">mock</span><span class="o">=</span><span class="n">mock</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="checkout"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.checkout">[docs]</a><span class="k">def</span> <span class="nf">checkout</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">altpath</span><span class="o">=</span><span class="p">[]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;checkout handles checking files out of the library owned by the global ProjectFileSystem object; tries to checkout from user-level local library first before trying to check out from the global system Library subpackage</span>
+
+<span class="sd">    :param filename: name of file to check out relative to top-level of library</span>
+<span class="sd">    :type filename: str</span>
+<span class="sd">    :param altpath: list of alternate directories to search, defaults to []</span>
+<span class="sd">    :type altpath: list, optional</span>
+<span class="sd">    :return: True if checkout from user library successful, otherwise returns result of checkout from global system Library (also a bool)</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span> <span class="ow">and</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span><span class="o">.</span><span class="n">checkout</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">searchpath</span><span class="o">=</span><span class="p">[</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">projPath</span><span class="p">],</span><span class="n">altpath</span><span class="o">=</span><span class="n">altpath</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">library</span><span class="o">.</span><span class="n">checkout</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fetch_molecule_files"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.fetch_molecule_files">[docs]</a><span class="k">def</span> <span class="nf">fetch_molecule_files</span><span class="p">(</span><span class="n">mname</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;fetch_molecule_files fetches all relevant molecule data files for molecule named &#39;mname&#39;</span>
+
+<span class="sd">    :param mname: name of molecule</span>
+<span class="sd">    :type mname: str</span>
+<span class="sd">    :return: list of filetypes found and fetched</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ret_exts</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">dirname</span><span class="o">=</span><span class="s1">&#39;molecules/parameterized&#39;</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mol2&#39;</span><span class="p">,</span><span class="s1">&#39;pdb&#39;</span><span class="p">,</span><span class="s1">&#39;gro&#39;</span><span class="p">,</span><span class="s1">&#39;top&#39;</span><span class="p">,</span><span class="s1">&#39;itp&#39;</span><span class="p">,</span><span class="s1">&#39;grx&#39;</span><span class="p">]:</span>
+        <span class="n">prob_filename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exists</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">):</span>
+            <span class="n">ret_exts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="n">checkout</span><span class="p">(</span><span class="n">prob_filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ret_exts</span></div>
+
+<div class="viewcode-block" id="exists"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.exists">[docs]</a><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;exists checks for existence of filename in user-level local library, then in the system Library</span>
+
+<span class="sd">    :param filename: name of file</span>
+<span class="sd">    :type filename: str</span>
+<span class="sd">    :return: True if found in either library</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># check user library first</span>
+    <span class="k">if</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span> <span class="ow">and</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="c1"># check system library</span>
+    <span class="k">return</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">library</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="checkin"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.checkin">[docs]</a><span class="k">def</span> <span class="nf">checkin</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">priority</span><span class="o">=</span><span class="s1">&#39;user&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;checkin check the file named &#39;filename&#39; into either the user-level local library or the global system Library package (the latter requires write priveleges wherever Python packages are stored if HTPolyNet is installed without -e or from PyPI)</span>
+
+<span class="sd">    :param filename: name of file to check in </span>
+<span class="sd">    :type filename: str</span>
+<span class="sd">    :param overwrite: flag indicates whether file should overwrite file of same name in library, defaults to False</span>
+<span class="sd">    :type overwrite: bool, optional</span>
+<span class="sd">    :param priority: string indicating which library to check into, defaults to &#39;user&#39;</span>
+<span class="sd">    :type priority: str, optional</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span> <span class="ow">and</span> <span class="n">priority</span><span class="o">==</span><span class="s1">&#39;user&#39;</span><span class="p">:</span>
+        <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span><span class="o">.</span><span class="n">checkin</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_PFS_</span><span class="o">.</span><span class="n">library</span><span class="o">.</span><span class="n">checkin</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="subpath"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.subpath">[docs]</a><span class="k">def</span> <span class="nf">subpath</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;subpath returns the path of the project subdirectory with name &#39;name&#39;</span>
+
+<span class="sd">    :param name: name of subdirectory</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :return: path of subdirectory</span>
+<span class="sd">    :rtype: os.path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">projSubPaths</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="go_proj"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.go_proj">[docs]</a><span class="k">def</span> <span class="nf">go_proj</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;go_proj change the current working directory to the project directory</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_PFS_</span><span class="o">.</span><span class="n">cdproj</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="go_root"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.go_root">[docs]</a><span class="k">def</span> <span class="nf">go_root</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;go_root change the current working directory to the root directory</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_PFS_</span><span class="o">.</span><span class="n">cdroot</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="go_to"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.go_to">[docs]</a><span class="k">def</span> <span class="nf">go_to</span><span class="p">(</span><span class="n">pathstr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;go_to Change the current working directory to &quot;pathstr&quot; which is relative to the project root.</span>
+
+<span class="sd">    :param pathstr: pathname of directory relative to project root</span>
+<span class="sd">    :type pathstr: str</span>
+<span class="sd">    :return: absolute path of current working direcory</span>
+<span class="sd">    :rtype: os.path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_PFS_</span><span class="o">.</span><span class="n">cdproj</span><span class="p">()</span>
+    <span class="n">dirname</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">pathstr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dirname</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">dirname</span><span class="o">=</span><span class="n">pathstr</span> <span class="c1"># assume this is a topdir</span>
+    <span class="k">assert</span> <span class="n">dirname</span> <span class="ow">in</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">projSubPaths</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Error: cannot navigate using pathstring </span><span class="si">{</span><span class="n">pathstr</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">reentry</span><span class="o">=</span><span class="kc">True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
+        <span class="n">reentry</span><span class="o">=</span><span class="kc">False</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
+    <span class="n">basename</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">pathstr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">basename</span><span class="o">!=</span><span class="n">pathstr</span><span class="p">:</span>  <span class="c1"># this is not a topdir</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">basename</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;PFS: making </span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+    <span class="n">_PFS_</span><span class="o">.</span><span class="n">cwd</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">reentry</span></div>
+
+<div class="viewcode-block" id="root"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.root">[docs]</a><span class="k">def</span> <span class="nf">root</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;root returns name of root directory (parent of project directory)</span>
+
+<span class="sd">    :return: name of root directory</span>
+<span class="sd">    :rtype: os.path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">rootPath</span></div>
+
+<div class="viewcode-block" id="cwd"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.cwd">[docs]</a><span class="k">def</span> <span class="nf">cwd</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;cwd returns name of current working directory relative to the root path</span>
+
+<span class="sd">    :return: name of current working directory relative to the root path</span>
+<span class="sd">    :rtype: os.path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span><span class="n">start</span><span class="o">=</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">rootPath</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="proj"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.proj">[docs]</a><span class="k">def</span> <span class="nf">proj</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;proj returns name of project directory</span>
+
+<span class="sd">    :return: name of project directory</span>
+<span class="sd">    :rtype: os.path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">projPath</span></div>
+
+<div class="viewcode-block" id="local_data_searchpath"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.local_data_searchpath">[docs]</a><span class="k">def</span> <span class="nf">local_data_searchpath</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;local_data_searchpath returns container containing root path and project path</span>
+
+<span class="sd">    :return: list containing root path and project path</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">rootPath</span><span class="p">,</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">projPath</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="info"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.info">[docs]</a><span class="k">def</span> <span class="nf">info</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;info prints some summary information about Libraries to the console</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">userlibrary</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">library</span><span class="o">.</span><span class="n">info</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="proj_abspath"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.projectfilesystem.proj_abspath">[docs]</a><span class="k">def</span> <span class="nf">proj_abspath</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;proj_abspath returns the path of the file named filename relative to the project directory</span>
+
+<span class="sd">    :param filename: name of the probe file</span>
+<span class="sd">    :type filename: str</span>
+<span class="sd">    :return: name of probe file relative to the project directory</span>
+<span class="sd">    :rtype: os.path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">abf</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">abf</span><span class="p">,</span><span class="n">_PFS_</span><span class="o">.</span><span class="n">projPath</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">HTPolyNet</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation and Prerequisites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user-guide/index.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example-tutorials/index.html">Example Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../references/index.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HTPolyNetPackage.html">HTPolyNet package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Cameron Abrams, Ming Huang.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
