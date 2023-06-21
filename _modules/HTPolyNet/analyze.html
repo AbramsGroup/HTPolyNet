@@ -50,33 +50,35 @@
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Analyze"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.Analyze">[docs]</a><span class="k">class</span> <span class="nc">Analyze</span><span class="p">:</span>
+    <span class="n">allowed_keys</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;gromacs&#39;</span><span class="p">,</span><span class="s1">&#39;command&#39;</span><span class="p">,</span><span class="s1">&#39;subdir&#39;</span><span class="p">,</span><span class="s1">&#39;options&#39;</span><span class="p">,</span><span class="s1">&#39;links&#39;</span><span class="p">,</span><span class="s1">&#39;outfile&#39;</span><span class="p">,</span><span class="s1">&#39;console-input&#39;</span><span class="p">,</span><span class="s1">&#39;matchlines&#39;</span><span class="p">]</span>
+    <span class="n">required_keys</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;command&#39;</span><span class="p">,</span><span class="s1">&#39;subdir&#39;</span><span class="p">]</span>
     <span class="n">default_params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s1">&#39;subdir&#39;</span><span class="p">:</span> <span class="s1">&#39;analyze/density&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;links&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;postsim/equilibrate/equilibrate.tpr&#39;</span><span class="p">,</span><span class="s1">&#39;postsim/equilibrate/equilibrate.trr&#39;</span><span class="p">],</span>
         <span class="s1">&#39;gromacs&#39;</span> <span class="p">:</span> <span class="p">{</span>
             <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
         <span class="p">},</span>
-        <span class="s1">&#39;command&#39;</span><span class="p">:</span> <span class="s1">&#39;check&#39;</span>
     <span class="p">}</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">indict</span><span class="p">,</span><span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">=</span><span class="p">{}</span>
         <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">indict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">indict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_keys</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Ignoring directive </span><span class="se">\&#39;</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="se">\&#39;</span><span class="s1"> in yaml input file&#39;</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">v</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">=</span><span class="s1">&#39;unset&#39;</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_params</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Overwriting default </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1"> value&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">=</span><span class="n">v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">=</span><span class="kc">None</span>
 
 <div class="viewcode-block" id="Analyze.do"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.Analyze.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">gromacs_dict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;do handles executing the analysis</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span>
-        <span class="k">assert</span> <span class="s1">&#39;command&#39;</span> <span class="ow">in</span> <span class="n">p</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Error: no command&#39;</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;do </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_keys</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">rk</span> <span class="ow">in</span> <span class="n">p</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Error: no </span><span class="si">{</span><span class="n">rk</span><span class="si">}</span><span class="s1"> value found&#39;</span>
+        <span class="c1"># logger.info(f&#39;do {p}&#39;)</span>
         <span class="c1"># if a gromacs dict is passed in, assume this overrides the one read in from the file</span>
         <span class="k">if</span> <span class="n">gromacs_dict</span><span class="p">:</span>
             <span class="n">software</span><span class="o">.</span><span class="n">set_gmx_preferences</span><span class="p">(</span><span class="n">gromacs_dict</span><span class="p">)</span>
@@ -85,7 +87,8 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;going to </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;subdir&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">pfs</span><span class="o">.</span><span class="n">go_to</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;subdir&#39;</span><span class="p">])</span>
         <span class="c1"># make symlinks to requested files</span>
-        <span class="k">for</span> <span class="n">input_file</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;links&#39;</span><span class="p">]:</span>
+        <span class="n">symlinks</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;links&#39;</span><span class="p">,[])</span>
+        <span class="k">for</span> <span class="n">input_file</span> <span class="ow">in</span> <span class="n">symlinks</span><span class="p">:</span>
             <span class="n">srcnm</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pfs</span><span class="o">.</span><span class="n">proj</span><span class="p">(),</span><span class="n">input_file</span><span class="p">)</span>
             <span class="n">bsnm</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">srcnm</span><span class="p">)</span>
             <span class="n">chk</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">bsnm</span><span class="p">)</span>
@@ -100,13 +103,33 @@
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cfile</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">ci</span><span class="p">:</span>
                     <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ch</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">=</span><span class="n">gmx_command</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;command&#39;</span><span class="p">],</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;arguments&#39;</span><span class="p">,{}),</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;options&#39;</span><span class="p">,{}),</span><span class="n">console_in</span><span class="o">=</span><span class="n">cfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">=</span><span class="n">gmx_command</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;command&#39;</span><span class="p">],</span><span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;options&#39;</span><span class="p">,{}),</span><span class="n">console_in</span><span class="o">=</span><span class="n">cfile</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Command </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;command&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> completed.&#39;</span><span class="p">)</span></div>
     
 <div class="viewcode-block" id="Analyze.parse_console_output"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.Analyze.parse_console_output">[docs]</a>    <span class="k">def</span> <span class="nf">parse_console_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Here is the console output&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="p">)</span></div></div>
-
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;No console output&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="c1"># either we are grepping out lines from console output or putting it all out there</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;outfile&#39;</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Here is the console output&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;matchlines&#39;</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;outfile&#39;</span><span class="p">],</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">svlns</span><span class="o">=</span><span class="p">[]</span>
+                <span class="n">console_lines</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">cl</span> <span class="ow">in</span> <span class="n">console_lines</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">ml</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;matchlines&#39;</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="n">ml</span> <span class="ow">in</span> <span class="n">cl</span><span class="p">:</span>
+                            <span class="n">svlns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cl</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;outfile&#39;</span><span class="p">],</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">svlns</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Created </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;outfile&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;subdir&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="AnalyzeDensity"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeDensity">[docs]</a><span class="k">class</span> <span class="nc">AnalyzeDensity</span><span class="p">(</span><span class="n">Analyze</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Analyze class for handling trajectory density profile calculation</span>
@@ -118,12 +141,10 @@
             <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
         <span class="p">},</span>
         <span class="s1">&#39;command&#39;</span><span class="p">:</span> <span class="s1">&#39;density&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span>
             <span class="s1">&#39;s&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.tpr&#39;</span><span class="p">,</span>
             <span class="s1">&#39;f&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.trr&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="s1">&#39;density.xvg&#39;</span>
-        <span class="p">},</span>
-        <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="s1">&#39;density.xvg&#39;</span><span class="p">,</span>
             <span class="s1">&#39;xvg&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
             <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s1">&#39;d&#39;</span><span class="p">:</span> <span class="s1">&#39;Z&#39;</span><span class="p">,</span>
@@ -140,31 +161,17 @@
             <span class="s1">&#39;gmx&#39;</span><span class="p">:</span> <span class="s1">&#39;gmx&#39;</span>
         <span class="p">},</span>
         <span class="s1">&#39;command&#39;</span><span class="p">:</span> <span class="s1">&#39;freevolume&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span>
             <span class="s1">&#39;s&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.tpr&#39;</span><span class="p">,</span>
             <span class="s1">&#39;f&#39;</span><span class="p">:</span><span class="s1">&#39;equilibrate.trr&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="s1">&#39;ffv.xvg&#39;</span>
-        <span class="p">},</span>
-        <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="s1">&#39;ffv.xvg&#39;</span><span class="p">,</span>
             <span class="s1">&#39;xvg&#39;</span><span class="p">:</span> <span class="s1">&#39;none&#39;</span><span class="p">,</span>
             <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mf">0.0</span>
         <span class="p">},</span>
         <span class="s1">&#39;outfile&#39;</span><span class="p">:</span> <span class="s1">&#39;ffv.dat&#39;</span><span class="p">,</span>
         <span class="s1">&#39;matchlines&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Free volume&#39;</span><span class="p">,</span><span class="s1">&#39;Total volume&#39;</span><span class="p">,</span><span class="s1">&#39;Number of molecules&#39;</span><span class="p">,</span><span class="s1">&#39;Average molar mass&#39;</span><span class="p">,</span><span class="s1">&#39;Density&#39;</span><span class="p">,</span><span class="s1">&#39;Molecular volume Vm assuming homogeneity:&#39;</span><span class="p">,</span><span class="s1">&#39;Molecular van der Waals volume assuming homogeneity:&#39;</span><span class="p">,</span><span class="s1">&#39;Fractional free volume&#39;</span><span class="p">]</span>
-    <span class="p">}</span>
+    <span class="p">}</span></div>
 
-<div class="viewcode-block" id="AnalyzeFFV.parse_console_output"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeFFV.parse_console_output">[docs]</a>    <span class="k">def</span> <span class="nf">parse_console_output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span>
-        <span class="n">svlns</span><span class="o">=</span><span class="p">[]</span>
-        <span class="n">console_lines</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">console_output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">cl</span> <span class="ow">in</span> <span class="n">console_lines</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">ml</span> <span class="ow">in</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;matchlines&#39;</span><span class="p">]:</span>
-                <span class="k">if</span> <span class="n">ml</span> <span class="ow">in</span> <span class="n">cl</span><span class="p">:</span>
-                    <span class="n">svlns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cl</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;outfile&#39;</span><span class="p">],</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">svlns</span><span class="p">:</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Created </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;outfile&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;subdir&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="AnalyzeConfiguration"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeConfiguration">[docs]</a><span class="k">class</span> <span class="nc">AnalyzeConfiguration</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; handles reading and parsing an analysis input config file.</span>
@@ -178,13 +185,10 @@
 <span class="sd">        The config file is a list of single-element dictionaries, whose single keyword</span>
 <span class="sd">        indicates the type of analysis to be run; analyses are run in the order</span>
 <span class="sd">        they appear in the config file.</span>
-
-<span class="sd">        Currently allowed analysis types:</span>
-
-<span class="sd">        - &#39;ffv&#39;: computes fractional free volume on a trajectory via &#39;gmx freevolume&#39;;</span>
 <span class="sd">        </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-    <span class="n">default_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;check&#39;</span><span class="p">:</span><span class="n">Analyze</span><span class="p">,</span><span class="s1">&#39;density&#39;</span><span class="p">:</span><span class="n">AnalyzeDensity</span><span class="p">,</span><span class="s1">&#39;freevolume&#39;</span><span class="p">:</span><span class="n">AnalyzeFFV</span><span class="p">}</span>
+    <span class="n">default_class</span><span class="o">=</span><span class="n">Analyze</span>
+    <span class="n">predefined_classes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;density&#39;</span><span class="p">:</span><span class="n">AnalyzeDensity</span><span class="p">,</span><span class="s1">&#39;freevolume&#39;</span><span class="p">:</span><span class="n">AnalyzeFFV</span><span class="p">}</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="o">=</span><span class="p">[]</span>
@@ -252,11 +256,13 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;parse parses a PostsimConfiguration file to build the list of stages to run</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">baselist</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Poorly formatted </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="si">}</span><span class="s1">; each stanza may have only one keyword&#39;</span>
-            <span class="n">analysistype</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">assert</span> <span class="n">analysistype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_classes</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Analysis type &quot;</span><span class="si">{</span><span class="n">analysistype</span><span class="si">}</span><span class="s1">&quot; in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="si">}</span><span class="s1"> not understood.&#39;</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;passing in </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="n">analysistype</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_classes</span><span class="p">[</span><span class="n">analysistype</span><span class="p">](</span><span class="n">p</span><span class="p">[</span><span class="n">analysistype</span><span class="p">]))</span></div></div>
+            <span class="n">content</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;analysis&#39;</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Poorly formatted </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cfgFile</span><span class="si">}</span><span class="s1">; each stanza may have only one keyword </span><span class="se">\&#39;</span><span class="s1">analysis</span><span class="se">\&#39;</span><span class="s1">&#39;</span>
+            <span class="n">analysistype</span><span class="o">=</span><span class="n">content</span><span class="p">[</span><span class="s1">&#39;command&#39;</span><span class="p">]</span><span class="c1">#list(p.keys())[0]</span>
+            <span class="k">if</span> <span class="n">analysistype</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predefined_classes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predefined_classes</span><span class="p">[</span><span class="n">analysistype</span><span class="p">](</span><span class="n">content</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stagelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_class</span><span class="p">(</span><span class="n">content</span><span class="p">))</span></div></div>
 
 <div class="viewcode-block" id="analyze"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.analyze.analyze">[docs]</a><span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;postsim handles the analyze subcommand for managing gromacs-based trajectory analyses</span>
