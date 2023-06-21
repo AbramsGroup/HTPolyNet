@@ -35,33 +35,8 @@
 <span id="configuration-analyze"></span><h1>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">analyze</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-analyze" title="Permalink to this heading">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">analyze</span></code> is a subcommand that provides a shortcut interface to <code class="docutils literal notranslate"><span class="pre">gmx</span></code> subcommands for performing analyses of MD trajectories generated during <code class="docutils literal notranslate"><span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">postsim</span></code> phases.</p>
 <p>An <code class="docutils literal notranslate"><span class="pre">analyze</span></code> configuration file is structured as a list of dictionaries, each entry of which is a <em>stage</em> of the analysis.  Each stage consists of execution of a <code class="docutils literal notranslate"><span class="pre">gmx</span></code> analysis and parsing/reporting of its output.</p>
-<p>HTPolyNet recognizes the following analyses:</p>
-<table class="docutils align-default">
-<thead>
-<tr class="row-odd"><th class="head"><p>Analysis</p></th>
-<th class="head"><p>keyword</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Trajectory info</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">check</span></code></p></td>
-<td><p>Runs <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">check</span></code> on the indicated trajectory file and reports console output</p></td>
-</tr>
-<tr class="row-odd"><td><p>Local density</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">density</span></code></p></td>
-<td><p>Runs <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">density</span></code> to measure density profiles</p></td>
-</tr>
-<tr class="row-even"><td><p>Fractional free volume</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">freevolume</span></code></p></td>
-<td><p>Runs <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">freevolume</span></code> and reports selected console results</p></td>
-</tr>
-</tbody>
-</table>
-<p>All analyses</p>
-<ul>
-<li><p>Check directives</p>
-<p>A <code class="docutils literal notranslate"><span class="pre">check</span></code> directive allows specification of several parameters:</p>
+<p><code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">analyze</span></code> is a <em>generic</em> way to interface with the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> subcommands, and its main advantage is that it is aware of the HTPolyNet project directory structure.</p>
+<p>A stage dictionary must have values for the <code class="docutils literal notranslate"><span class="pre">command</span></code> and <code class="docutils literal notranslate"><span class="pre">subdir</span></code> keywords; all others are optional.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>Keyword</p></th>
@@ -69,27 +44,140 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">subdir</span></code></p></td>
-<td><p>Name of directory in which analysis is conducted relative to the <em>project</em> directory</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">command</span></code></p></td>
+<td><p>Gromacs subcommand (required)</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">links</span></code></p></td>
-<td><p>List of files to make symlinks to in the analysis directory.  By default, only <code class="docutils literal notranslate"><span class="pre">poststim/equilibrate/equilibrate.trr</span></code> is linked</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">subdir</span></code></p></td>
+<td><p>Name of directory in which analysis is conducted relative to the <em>project</em> directory (required)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
-<td><p>Gromacs directives; see <a class="reference internal" href="configs-for-run.html#gromacs-yaml-directive"><span class="std std-ref">here</span></a></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">links</span></code></p></td>
+<td><p>List of files to make symlinks to in the analysis directory, with pathnames relative to the project directory</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">command</span></code></p></td>
-<td><p>Gromacs subcommand; by default, this is <code class="docutils literal notranslate"><span class="pre">check</span></code>, but any other subcommand that needs only</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code></p></td>
+<td><p>Gromacs directives; see <a class="reference internal" href="configs-for-run.html#gromacs-yaml-directive"><span class="std std-ref">here</span></a>; default is the stipulation that the Gromacs command-line is <code class="docutils literal notranslate"><span class="pre">gmx</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><a href="#id1"><span class="problematic" id="id2">``</span></a></p></td>
-<td></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">options</span></code></p></td>
+<td><p>Keyword:value pairs for any options to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> subcommand.  Options with no values must be explicitly given an empty string value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">outfile</span></code></p></td>
+<td><p>Name of text file to create and report any output of the command in.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">matchlines</span></code></p></td>
+<td><p>List of greppable strings; only lines matching one or more of these strings are output, if set</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">console-input</span></code></p></td>
+<td><p>List of console inputs one would provide if running the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> subcommand interactively, as strings</p></td>
 </tr>
 </tbody>
 </table>
+<section id="simple-examples">
+<h2>Simple examples<a class="headerlink" href="#simple-examples" title="Permalink to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">check</span></code></p></li>
+</ol>
+<blockquote>
+<div><p>Suppose you wanted to run <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">check</span></code> on <code class="docutils literal notranslate"><span class="pre">proj-0/systems/densification/densified-npt.trr</span></code> from the base directory.  At the command line, you could simply issue</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>gmx<span class="w"> </span>check<span class="w"> </span>-f<span class="w"> </span>proj-0/systems/densification/densified-npt.trr
+</pre></div>
+</div>
+<p>This is of course very simple.  If you want HTPolyNet to do the same thing, and put the output in a particular place, you could create the YAML input file <code class="docutils literal notranslate"><span class="pre">my-analysis.yaml</span></code>:abbr:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check</span>
+<span class="w">  </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze/check</span>
+<span class="w">  </span><span class="nt">links</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/densification/densified-npt.trr</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">f</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">densified-npt.trr</span>
+<span class="w">  </span><span class="nt">outfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check.out</span>
+<span class="w">  </span><span class="nt">matchlines</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;Last</span><span class="nv"> </span><span class="s">frame&#39;</span><span class="p p-Indicator">,</span><span class="s">&#39;Coords&#39;</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<p>This will generate <code class="docutils literal notranslate"><span class="pre">check.out</span></code> in the <code class="docutils literal notranslate"><span class="pre">analyze/check</span></code> subdirectory, and it will only contains lines in the console output of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">check</span></code> that match “Last frame” and “Coords”.  Then, issuing the command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>analyze<span class="w"> </span>-cfg<span class="w"> </span>my-analysis.yaml<span class="w"> </span>-proj<span class="w"> </span>proj-0
+</pre></div>
+</div>
+<p>will perform the execution.  Note the ease with which you can reuse this file for all project directories by simply appending project directory names to the <code class="docutils literal notranslate"><span class="pre">-proj</span></code> option.  For example, if you have project directories <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, <code class="docutils literal notranslate"><span class="pre">proj-1</span></code>, <code class="docutils literal notranslate"><span class="pre">proj-2</span></code>, <code class="docutils literal notranslate"><span class="pre">proj-3</span></code>, and <code class="docutils literal notranslate"><span class="pre">proj-4</span></code>, you could simply issue the <em>single</em> command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>analyze<span class="w"> </span>-cfg<span class="w"> </span>my-analysis.yaml<span class="w"> </span>-proj<span class="w"> </span>proj-?
+</pre></div>
+</div>
+<p>to run the analysis in each project directory.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">report-methods</span></code></p></li>
+</ol>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">report-methods</span></code> is a nifty subcommand that generates readable text describing the MD methods used in a given <code class="docutils literal notranslate"><span class="pre">tpr</span></code> file.  Suppose you want to use this to remind yourself of the methods used in the densification stage of a particular build, say in project directory <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>.  You could just issue the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>gmx<span class="w"> </span>report-methods<span class="w"> </span>-s<span class="w"> </span>proj-0/systems/densification/densified-npt.tpr
+</pre></div>
+</div>
+<p>Again, very simple.  However, using HTPolyNet, you could make a YAML input file <code class="docutils literal notranslate"><span class="pre">another-analysis.yaml</span></code></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">report-methods</span>
+<span class="w">  </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze/report-methods</span>
+<span class="w">  </span><span class="nt">links</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/densification/densified-npt.tpr</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">densified-npt.tpr</span>
+<span class="w">    </span><span class="nt">m</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">report.tex</span>
+</pre></div>
+</div>
+<p>This will generate the tex file <code class="docutils literal notranslate"><span class="pre">report.tex</span></code> in the <code class="docutils literal notranslate"><span class="pre">analyze/report-methods</span></code> subdirectory of <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, if you issue the command</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>analyze<span class="w"> </span>-cfg<span class="w"> </span>another-analysis.yaml<span class="w"> </span>-proj<span class="w"> </span>proj-0
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic" start="3">
+<li><p>Composites:  You can put as many analysis dictionaries in the single YAML input file.  For example, concatentating the above together would give the single file <code class="docutils literal notranslate"><span class="pre">two-analyses.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check</span>
+<span class="w">  </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze/check</span>
+<span class="w">  </span><span class="nt">links</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/densification/densified-npt.trr</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">f</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">densified-npt.trr</span>
+<span class="w">  </span><span class="nt">outfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check.out</span>
+<span class="w">  </span><span class="nt">matchlines</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;Last</span><span class="nv"> </span><span class="s">frame&#39;</span><span class="p p-Indicator">,</span><span class="s">&#39;Coords&#39;</span><span class="p p-Indicator">]</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">report-methods</span>
+<span class="w">  </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyze/report-methods</span>
+<span class="w">  </span><span class="nt">links</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/densification/densified-npt.tpr</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">densified-npt.tpr</span>
+<span class="w">    </span><span class="nt">m</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">report.tex</span>
+</pre></div>
+</div>
 </li>
-<li><p>Density directives</p></li>
-<li><p>Freevolume directives</p></li>
-</ul>
+</ol>
+<blockquote>
+<div><p>And then issuing</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>analyze<span class="w"> </span>-cfg<span class="w"> </span>two-analyses.yaml<span class="w"> </span>-proj<span class="w"> </span>proj-0
+</pre></div>
+</div>
+<p>will run both in series.</p>
+</div></blockquote>
+<p>These examples should illustrate how powerful <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">analyze</span></code> is for working with large numbers of parallel systems.</p>
+</section>
+<section id="shortcut-analyses">
+<h2>Shortcut analyses<a class="headerlink" href="#shortcut-analyses" title="Permalink to this heading">¶</a></h2>
+<p>HTPolyNet provides a small number of shortcut analysis dictionaries prepopulated with default values.</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">density</span></code></p></li>
+</ol>
+<blockquote>
+<div><p>If an analysis dictionary just contains the lines</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">density</span>
+</pre></div>
+</div>
+<p>then HTPolyNet assumes the user wants to measure a density profile of all atoms (interative menu option <code class="docutils literal notranslate"><span class="pre">0</span></code>) along the <em>z</em> direction (<code class="docutils literal notranslate"><span class="pre">-d</span> <span class="pre">Z</span></code>) in 50 slices (<code class="docutils literal notranslate"><span class="pre">-sl</span> <span class="pre">50</span></code>) by analyzing the trajectory <code class="docutils literal notranslate"><span class="pre">equilibrate.trr</span></code> in the subdirectory <code class="docutils literal notranslate"><span class="pre">poststim/equilibrate</span></code>, generating the free-format output file <code class="docutils literal notranslate"><span class="pre">density.xvg</span></code> in the <code class="docutils literal notranslate"><span class="pre">analyze/density</span></code> subdirectory.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p><code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">freevolume</span></code></p></li>
+</ol>
+<blockquote>
+<div><p>If an analysis dictionary just contains the lines</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freevolume</span>
+</pre></div>
+</div>
+<p>then HTPolyNet assumes the user wants to measure the fractional free volume by analyzing the trajectory <code class="docutils literal notranslate"><span class="pre">equilibrate.trr</span></code> and input file <code class="docutils literal notranslate"><span class="pre">equilibrate.tpr</span></code> in the subdirectory <code class="docutils literal notranslate"><span class="pre">poststim/equilibrate</span></code>, generating the free-format output file <code class="docutils literal notranslate"><span class="pre">ffv.xvg</span></code> in the <code class="docutils literal notranslate"><span class="pre">analyze/freevolume</span></code> subdirectory, and reporting console output matching the following: “Free volume”, “Total volume”, “Number of molecules”, “Density”, “Molecular volume Vm assuming homogeneity”, “Molecular van der Waals volume assuming homogeneity”, and “Fractional free volume”.</p>
+</div></blockquote>
+</section>
 </section>
 
 
