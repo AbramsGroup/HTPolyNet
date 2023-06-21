@@ -49,7 +49,7 @@
 <figure class="align-default" id="id1">
 <img alt="../../../_images/cure_info.png" src="../../../_images/cure_info.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 6 </span><span class="caption-text">(Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 7 </span><span class="caption-text">(Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>We can see here that the 95% cure took about 8 and a half minutes of run time (which is not really impressive since this is a <strong>very</strong> small system).  Fully two-thirds of the run time is consumed realizing the final 15% of the cure.</p>
@@ -61,7 +61,7 @@
 <figure class="align-default" id="id2">
 <img alt="../../../_images/buildtraces.png" src="../../../_images/buildtraces.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 7 </span><span class="caption-text">(Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 8 </span><span class="caption-text">(Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top plot shows temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I’m showing one transition for each drag/relax stage.  The middle plot shows the density trace’ note how the density begins at the stipulated low value of 300 kg/m3<sup>3</sup>.  The bottom plot shows the potential energy trace.</p>
@@ -71,14 +71,14 @@
 <tr class="row-odd"><td><figure class="align-default" id="id3">
 <img alt="../../../_images/hi-pre.png" src="../../../_images/hi-pre.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8 </span><span class="caption-text">Methystyrene liquid before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 9 </span><span class="caption-text">Methystyrene liquid before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
 <td><figure class="align-default" id="id4">
 <img alt="../../../_images/hi.png" src="../../../_images/hi.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 9 </span><span class="caption-text">Poly(methyl styrene) after 95% cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 10 </span><span class="caption-text">Poly(methyl styrene) after 95% cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
@@ -247,7 +247,7 @@
 <figure class="align-default" id="id5">
 <img alt="../../../_images/densification-density.png" src="../../../_images/densification-density.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 10 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 11 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>We can check that the annealing cycles were correctly performed from <code class="docutils literal notranslate"><span class="pre">precure-anneal-T.png</span></code> <code class="docutils literal notranslate"><span class="pre">postcure-anneal-T.png</span></code>:</p>
@@ -256,14 +256,14 @@
 <tr class="row-odd"><td><figure class="align-default" id="id6">
 <img alt="../../../_images/precure-anneal-T.png" src="../../../_images/precure-anneal-T.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 11 </span><span class="caption-text">Temperature during pre-cure annealing.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 12 </span><span class="caption-text">Temperature during pre-cure annealing.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
 <td><figure class="align-default" id="id7">
 <img alt="../../../_images/postcure-anneal-T.png" src="../../../_images/postcure-anneal-T.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 12 </span><span class="caption-text">Temperature during post-cure annealing.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 13 </span><span class="caption-text">Temperature during post-cure annealing.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
@@ -274,7 +274,7 @@
 <figure class="align-default" id="id8">
 <img alt="../../../_images/postcure-postequilibration-density.png" src="../../../_images/postcure-postequilibration-density.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 13 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 14 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
 <div class="legend">
 <p>Density during post-cure annealing of the 95% cured system.</p>
 </div>

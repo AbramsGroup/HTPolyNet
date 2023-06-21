@@ -24,6 +24,17 @@ Subcommand        Description
 
 ``htpolynet <subcommand> -h`` provides subcommand-level help. 
 
+Typical Usage
+^^^^^^^^^^^^^
+
+HTPolyNet is designed to allow one to easily simulate many system replicas of a given polymerization recipe.  A typical use of HTPolyNet to measure thermomechanical properties of a polymerized system is shown below.
+
+.. figure:: TypicalUsageFlow.png
+
+  Example of a typical workflow for using HTPolyNet to measure a system density, fractional free volume, Young's modulus *E* and glass-transition temperature *T*:sub:`g`.  
+
+One typically begins in a clean base directory, and generates any necessary input :ref:`molecular structure files <molecular_structure_inputs>`, either in ``mol2`` or ``pdb`` format.  One then creates the main :ref:`configuration file <configuration_files>` for the polymerization.  One can then launch as many instances of ``htpolynet run`` as one likes; each creates a unique system.  Once all the systems are built, one can then use ``htpolynet postsim`` to run post-build MD simulations, and then use ``htpolynet plots`` to extract *E* and *T*:sub:`g`.  If one of the post-build simulations is a long equilibration, one can then use ``htpolynet analyze`` to extract observables from that simulation's trajectory file; here, we indicate that one can extract density and fractional free volume.
+
 The HTPolyNet Directory Structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

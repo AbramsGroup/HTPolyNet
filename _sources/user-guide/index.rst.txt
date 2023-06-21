@@ -7,8 +7,8 @@ User Guide
    :caption: Contents:
 
    usage
-   configuration-files
    molecular-structure-inputs
+   configuration-files
    program-flow
 
 
