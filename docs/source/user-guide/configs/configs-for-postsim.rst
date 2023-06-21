@@ -26,7 +26,7 @@ Uniaxial deformation            ``deform``       Uniaxial strain at a constant r
   Keyword            Description
   ================== ===========
   ``subdir``         Name of directory in which simulation is conducted
-                     relative to the project directory
+                     relative to the *project* directory
                      default: ``postsim/equilibrate``
   ``input_top``      Input topology file relative to the project directory;
                      default: ``systems/final-results/final.top``

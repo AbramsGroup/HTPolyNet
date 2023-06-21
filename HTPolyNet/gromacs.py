@@ -310,14 +310,11 @@ def gmx_traj_info(trr):
     result=Result(nframes,(nframes-1)*ts_ps)
     return result
 
-def gmx_command(name,args={},options={},console_in=''):
-    argstring=''
-    for a,v in args.items():
-        argstring+=f'-{a} {v} '
+def gmx_command(name,options={},console_in=''):
     optstring=''
     for a,v in options.items():
         optstring+=f'-{a} {v} '
-    cmdstr=f'{sw.gmx} {sw.gmx_options} {name} {argstring} {optstring}'
+    cmdstr=f'{sw.gmx} {sw.gmx_options} {name} {optstring}'
     if console_in:
         cmdstr+=f' < {console_in}'
     c=Command(cmdstr)

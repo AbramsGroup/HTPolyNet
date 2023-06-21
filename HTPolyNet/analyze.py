@@ -19,33 +19,35 @@ from pathlib import Path
 logger=logging.getLogger(__name__)
 
 class Analyze:
+    allowed_keys=['gromacs','command','subdir','options','links','outfile','console-input','matchlines']
+    required_keys=['command','subdir']
     default_params={
-        'subdir': 'analyze/density',
-        'links': ['postsim/equilibrate/equilibrate.tpr','postsim/equilibrate/equilibrate.trr'],
         'gromacs' : {
             'gmx': 'gmx'
         },
-        'command': 'check'
     }
     def __init__(self,indict,strict=True):
         self.params={}
         for p,v in self.default_params.items():
             self.params[p]=indict.get(p,v)
         for p,v in indict.items():
-            if not p in self.default_params:
+            if not p in self.allowed_keys:
                 if strict:
                     logger.info(f'Ignoring directive \'{p}\' in yaml input file')
-                else:
-                    self.params[p]=v
-        self.console_output='unset'
+            if p in self.default_params:
+                logger.info(f'Overwriting default {p} value')
+            self.params[p]=v
+        self.console_output=None
 
     def do(self,**gromacs_dict):
         """do handles executing the analysis
 
         """
         p=self.params
-        assert 'command' in p,f'Error: no command'
-        logger.info(f'do {p}')
+        print(p)
+        for rk in self.required_keys:
+            assert rk in p, f'Error: no {rk} value found'
+        # logger.info(f'do {p}')
         # if a gromacs dict is passed in, assume this overrides the one read in from the file
         if gromacs_dict:
             software.set_gmx_preferences(gromacs_dict)
@@ -54,7 +56,8 @@ class Analyze:
         logger.info(f'going to {p["subdir"]}')
         pfs.go_to(p['subdir'])
         # make symlinks to requested files
-        for input_file in p['links']:
+        symlinks=p.get('links',[])
+        for input_file in symlinks:
             srcnm=os.path.join(pfs.proj(),input_file)
             bsnm=os.path.basename(srcnm)
             chk=Path(bsnm)
@@ -69,13 +72,33 @@ class Analyze:
             with open(cfile,'w') as f:
                 for ch in ci:
                     f.write(ch+'\n')
-        self.console_output=gmx_command(p['command'],p.get('arguments',{}),p.get('options',{}),console_in=cfile)
+        self.console_output=gmx_command(p['command'],p.get('options',{}),console_in=cfile)
         logger.info(f'Command {p["command"]} completed.')
     
     def parse_console_output(self):
-        logger.info(f'Here is the console output')
-        logger.info(self.console_output)
-
+        if not self.console_output:
+            logger.info(f'No console output')
+            return
+        p=self.params
+        # either we are grepping out lines from console output or putting it all out there
+        if not 'outfile' in p:
+            logger.info(f'Here is the console output')
+            logger.info(self.console_output)
+        else:
+            if not 'matchlines' in p:
+                with open(p['outfile'],'w') as f:
+                    f.write(self.console_output)
+            else:
+                svlns=[]
+                console_lines=self.console_output.split('\n')
+                for cl in console_lines:
+                    for ml in p['matchlines']:
+                        if ml in cl:
+                            svlns.append(cl)
+                with open(p['outfile'],'w') as f:
+                    for s in svlns:
+                        f.write(s+'\n')
+            logger.info(f'Created {p["outfile"]} in {p["subdir"]}')
 
 class AnalyzeDensity(Analyze):
     """ Analyze class for handling trajectory density profile calculation
@@ -87,12 +110,10 @@ class AnalyzeDensity(Analyze):
             'gmx': 'gmx'
         },
         'command': 'density',
-        'arguments': {
+        'options': {
             's':'equilibrate.tpr',
             'f':'equilibrate.trr',
-            'o':'density.xvg'
-        },
-        'options': {
+            'o':'density.xvg',
             'xvg': 'none',
             'b': 0,
             'd': 'Z',
@@ -109,12 +130,10 @@ class AnalyzeFFV(Analyze):
             'gmx': 'gmx'
         },
         'command': 'freevolume',
-        'arguments': {
+        'options': {
             's':'equilibrate.tpr',
             'f':'equilibrate.trr',
-            'o':'ffv.xvg'
-        },
-        'options': {
+            'o':'ffv.xvg',
             'xvg': 'none',
             'b': 0.0
         },
@@ -122,18 +141,6 @@ class AnalyzeFFV(Analyze):
         'matchlines': ['Free volume','Total volume','Number of molecules','Average molar mass','Density','Molecular volume Vm assuming homogeneity:','Molecular van der Waals volume assuming homogeneity:','Fractional free volume']
     }
 
-    def parse_console_output(self):
-        p=self.params
-        svlns=[]
-        console_lines=self.console_output.split('\n')
-        for cl in console_lines:
-            for ml in p['matchlines']:
-                if ml in cl:
-                    svlns.append(cl)
-        with open(p['outfile'],'w') as f:
-            for s in svlns:
-                f.write(s+'\n')
-        logger.info(f'Created {p["outfile"]} in {p["subdir"]}')
 
 class AnalyzeConfiguration:
     """ handles reading and parsing an analysis input config file.
@@ -147,13 +154,10 @@ class AnalyzeConfiguration:
         The config file is a list of single-element dictionaries, whose single keyword
         indicates the type of analysis to be run; analyses are run in the order
         they appear in the config file.
-
-        Currently allowed analysis types:
-
-        - 'ffv': computes fractional free volume on a trajectory via 'gmx freevolume';
         
         """
-    default_classes={'check':Analyze,'density':AnalyzeDensity,'freevolume':AnalyzeFFV}
+    default_class=Analyze
+    predefined_classes={'density':AnalyzeDensity,'freevolume':AnalyzeFFV}
     def __init__(self):
         self.cfgFile=''
         self.baselist=[]
@@ -221,11 +225,13 @@ class AnalyzeConfiguration:
         """parse parses a PostsimConfiguration file to build the list of stages to run
         """
         for p in self.baselist:
-            assert len(p)==1,f'Poorly formatted {self.cfgFile}; each stanza may have only one keyword'
-            analysistype=list(p.keys())[0]
-            assert analysistype in self.default_classes,f'Analysis type "{analysistype}" in {self.cfgFile} not understood.'
-            logger.info(f'passing in {p[analysistype]}')
-            self.stagelist.append(self.default_classes[analysistype](p[analysistype]))
+            content=p['analysis']
+            assert len(p)==1,f'Poorly formatted {self.cfgFile}; each stanza may have only one keyword \'analysis\''
+            analysistype=content['command']#list(p.keys())[0]
+            if analysistype in self.predefined_classes:
+                self.stagelist.append(self.predefined_classes[analysistype](content))
+            else:
+                self.stagelist.append(self.default_class(content))
 
 def analyze(args):
     """postsim handles the analyze subcommand for managing gromacs-based trajectory analyses
