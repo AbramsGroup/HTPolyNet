@@ -33,7 +33,87 @@
             
   <section id="examples-using-htpolynet-postsim-and-analyze">
 <span id="tutorials-postsim-analyses"></span><h1>Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code><a class="headerlink" href="#examples-using-htpolynet-postsim-and-analyze" title="Permalink to this heading">¶</a></h1>
-<p>(under construction)</p>
+<p>Here, we will return to the DGEBA/PACM build we did in the earlier tutorials.  Navigate into that base directory and create the file <code class="docutils literal notranslate"><span class="pre">postsim.yaml</span></code> with these contents:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">anneal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.gro</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">ncycles</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">T0_to_T1_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">T1_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">T1_to_T0_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">T0_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">equilibrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/anneal/anneal.gro</span>
+<span class="w">    </span><span class="nt">T</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ladder</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/equilibrate/equilibrate.gro</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/ladder-heat</span>
+<span class="w">    </span><span class="nt">Tlo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">Thi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">deltaT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="nt">ps_per_rise</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">ps_per_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90</span>
+<span class="w">    </span><span class="nt">warmup_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ladder</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/ladder-heat/ladder.gro</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/ladder-cool</span>
+<span class="w">    </span><span class="nt">Tlo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">Thi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+<span class="w">    </span><span class="nt">deltaT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-5</span>
+<span class="w">    </span><span class="nt">ps_per_rise</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">ps_per_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90</span>
+<span class="w">    </span><span class="nt">warmup_ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/equilibrate/equilibrate.gro</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/deform-x</span>
+<span class="w">    </span><span class="nt">T</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">x</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">gromacs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">gmx</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gmx</span>
+<span class="w">      </span><span class="nt">mdrun</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gmx mdrun -ntmpi 1</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-quiet -nobackup</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/equilibrate/equilibrate.gro</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/deform-y</span>
+<span class="w">    </span><span class="nt">T</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">y</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">gromacs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">gmx</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gmx</span>
+<span class="w">      </span><span class="nt">mdrun</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gmx mdrun -ntmpi 1</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-quiet -nobackup</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">deform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
+<span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/equilibrate/equilibrate.gro</span>
+<span class="w">    </span><span class="nt">subdir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postsim/deform-z</span>
+<span class="w">    </span><span class="nt">T</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">    </span><span class="nt">P</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">z</span>
+<span class="w">    </span><span class="nt">edot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">    </span><span class="nt">ps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">gromacs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">gmx</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gmx</span>
+<span class="w">      </span><span class="nt">mdrun</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gmx mdrun -ntmpi 1</span>
+<span class="w">      </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-quiet -nobackup</span>
+</pre></div>
+</div>
+<p>This file will instruct HTPolyNet to use Gromacs to conduct several MD simulations.  First, the final results of the build are annealed for two cycles between 300 and 600 K.  Then the result of the annealing is equilibrated at 300 K.  Following, both an increasing and then decreasing temperature ladders are run; in parallel (using the equilibrated output), three uniaxial deformations are run.</p>
+<p><em>Important disclaimer</em>:  Although <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> is meant to facilitate production-grade MD simulations, those illustrated here are NOT; they are WAY TOO SHORT.  It is your responsibility to determine how long a simulation is needed for each kind of simulation.</p>
+<p>(in progress)</p>
 </section>
 
 

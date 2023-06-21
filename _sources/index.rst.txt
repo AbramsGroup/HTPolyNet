@@ -25,7 +25,7 @@ using Gromacs.
 Citation
 ========
 
-When using HTPolyNet in published work, please cite :cite:t:`Huang2023`.
+When using HTPolyNet in published work, please cite :cite:t:`Huang2023`, along with the main GAFF paper :cite:t:`Wang2004DevelopmentField` and the two main Gromacs papers :cite:t:`Berendsen1995` and :cite:t:`Abraham2015`.
 
 
 Indices and tables
