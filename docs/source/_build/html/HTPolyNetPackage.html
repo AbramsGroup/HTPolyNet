@@ -429,6 +429,11 @@ of atom indices indicating bond partners of the key atom</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HTPolyNet.checkpoint.</span></span><span class="sig-name descname"><span class="pre">Checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/checkpoint.html#Checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.checkpoint.Checkpoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py attribute">
+<dt class="sig sig-object py" id="HTPolyNet.checkpoint.Checkpoint.calls">
+<span class="sig-name descname"><span class="pre">calls</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><a class="headerlink" href="#HTPolyNet.checkpoint.Checkpoint.calls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.checkpoint.Checkpoint.default_filename">
 <span class="sig-name descname"><span class="pre">default_filename</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'checkpoint_state.yaml'</span></em><a class="headerlink" href="#HTPolyNet.checkpoint.Checkpoint.default_filename" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -436,6 +441,16 @@ of atom indices indicating bond partners of the key atom</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.checkpoint.Checkpoint.from_yaml">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_yaml</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/checkpoint.html#Checkpoint.from_yaml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.checkpoint.Checkpoint.from_yaml" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="HTPolyNet.checkpoint.Checkpoint.narrative">
+<span class="sig-name descname"><span class="pre">narrative</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><a class="headerlink" href="#HTPolyNet.checkpoint.Checkpoint.narrative" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="HTPolyNet.checkpoint.Checkpoint.results">
+<span class="sig-name descname"><span class="pre">results</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#HTPolyNet.checkpoint.Checkpoint.results" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -1388,6 +1403,11 @@ from a Topology instance).</p>
 <dt class="sig sig-object py" id="HTPolyNet.curecontroller.CureController">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">HTPolyNet.curecontroller.</span></span><span class="sig-name descname"><span class="pre">CureController</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">curedict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/curecontroller.html#CureController"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.curecontroller.CureController" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="HTPolyNet.curecontroller.CureController.bonds_df">
+<span class="sig-name descname"><span class="pre">bonds_df</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">DataFrame</span></em><a class="headerlink" href="#HTPolyNet.curecontroller.CureController.bonds_df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.curecontroller.CureController.curedict_defaults">
 <span class="sig-name descname"><span class="pre">curedict_defaults</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'controls':</span> <span class="pre">{'desired_conversion':</span> <span class="pre">0.5,</span> <span class="pre">'late_threshold':</span> <span class="pre">0.85,</span> <span class="pre">'max_conversion_per_iteration':</span> <span class="pre">1.0,</span> <span class="pre">'max_iterations':</span> <span class="pre">100,</span> <span class="pre">'ncpu':</span> <span class="pre">16,</span> <span class="pre">'radial_increment':</span> <span class="pre">0.05,</span> <span class="pre">'search_radius':</span> <span class="pre">0.5},</span> <span class="pre">'drag':</span> <span class="pre">{'cutoff_pad':</span> <span class="pre">0.2,</span> <span class="pre">'equilibration':</span> <span class="pre">[{'ensemble':</span> <span class="pre">'min'},</span> <span class="pre">{'ensemble':</span> <span class="pre">'nvt',</span> <span class="pre">'temperature':</span> <span class="pre">600,</span> <span class="pre">'nsteps':</span> <span class="pre">1000},</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'temperature':</span> <span class="pre">600,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'nsteps':</span> <span class="pre">2000}],</span> <span class="pre">'increment':</span> <span class="pre">0.0,</span> <span class="pre">'kb':</span> <span class="pre">300000.0,</span> <span class="pre">'limit':</span> <span class="pre">0.0,</span> <span class="pre">'nstages':</span> <span class="pre">0,</span> <span class="pre">'trigger_distance':</span> <span class="pre">0.0},</span> <span class="pre">'equilibrate':</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">50000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">300},</span> <span class="pre">'gromacs':</span> <span class="pre">{'rdefault':</span> <span class="pre">0.9},</span> <span class="pre">'output':</span> <span class="pre">{'bonds_file':</span> <span class="pre">'bonds.csv'},</span> <span class="pre">'relax':</span> <span class="pre">{'cutoff_pad':</span> <span class="pre">0.2,</span> <span class="pre">'equilibration':</span> <span class="pre">[{'ensemble':</span> <span class="pre">'min'},</span> <span class="pre">{'ensemble':</span> <span class="pre">'nvt',</span> <span class="pre">'temperature':</span> <span class="pre">600,</span> <span class="pre">'nsteps':</span> <span class="pre">1000},</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'temperature':</span> <span class="pre">600,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'nsteps':</span> <span class="pre">2000}],</span> <span class="pre">'increment':</span> <span class="pre">0.0,</span> <span class="pre">'nstages':</span> <span class="pre">6}}</span></em><a class="headerlink" href="#HTPolyNet.curecontroller.CureController.curedict_defaults" title="Permalink to this definition">¶</a></dt>
@@ -3791,6 +3811,11 @@ and oligomer templates</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="HTPolyNet.runtime.Runtime.molecules">
+<span class="sig-name descname"><span class="pre">molecules</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#HTPolyNet.molecule.Molecule" title="HTPolyNet.molecule.Molecule"><span class="pre">HTPolyNet.molecule.Molecule</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#HTPolyNet.runtime.Runtime.molecules" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.runtime.Runtime.runtime_defaults">

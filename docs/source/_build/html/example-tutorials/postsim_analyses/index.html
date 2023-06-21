@@ -33,7 +33,19 @@
             
   <section id="examples-using-htpolynet-postsim-and-analyze">
 <span id="tutorials-postsim-analyses"></span><h1>Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code><a class="headerlink" href="#examples-using-htpolynet-postsim-and-analyze" title="Permalink to this heading">¶</a></h1>
-<p>Here, we will return to the DGEBA/PACM build we did in the earlier tutorials.  Navigate into that base directory and create the file <code class="docutils literal notranslate"><span class="pre">postsim.yaml</span></code> with these contents:</p>
+<p>Here, we will return to the DGEBA/PACM build we did in the earlier tutorials.  Let us do the following:</p>
+<ol class="arabic simple">
+<li><p>Using the final results of the build as inputs, anneal the system for two cycles of heating and cooling between 300 and 600 K, using 10 ps rise-times and 10 ps hold-times.</p></li>
+<li><p>Equilibrate at 300 K for an additional 10 ps.</p></li>
+<li><p>Perform temperature ladder up to 600 K at 5 K per 100 ps, beginning with a 10 ps warmup.</p></li>
+<li><p>Perform temperature ladder down to 300 K at 5 K per 100 ps, also beginning with a 10 ps warmup.</p></li>
+<li><p>Using the result of 2, perform independent uniaxial deformations along the x, y, and z directions at a strain rate of 0.01 ps<sup>-1</sup> (10<sup>10</sup> s<sup>-1</sup>) to 0.1% strain.</p></li>
+</ol>
+<p>The flowchart below illustrates:</p>
+<figure class="align-default">
+<img alt="../../_images/postsim-typical.png" src="../../_images/postsim-typical.png" />
+</figure>
+<p>Navigate into that base directory and create the file <code class="docutils literal notranslate"><span class="pre">postsim.yaml</span></code> with these contents:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">anneal</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">input_top</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.top</span>
 <span class="w">    </span><span class="nt">input_gro</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">systems/final-results/final.gro</span>
@@ -113,7 +125,194 @@
 </div>
 <p>This file will instruct HTPolyNet to use Gromacs to conduct several MD simulations.  First, the final results of the build are annealed for two cycles between 300 and 600 K.  Then the result of the annealing is equilibrated at 300 K.  Following, both an increasing and then decreasing temperature ladders are run; in parallel (using the equilibrated output), three uniaxial deformations are run.</p>
 <p><em>Important disclaimer</em>:  Although <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> is meant to facilitate production-grade MD simulations, those illustrated here are NOT; they are WAY TOO SHORT.  It is your responsibility to determine how long a simulation is needed for each kind of simulation.</p>
-<p>(in progress)</p>
+<p>Now, we can launch these simulations using</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>postsim<span class="w"> </span>-cfg<span class="w"> </span>postsim.yaml<span class="w"> </span>-ocfg<span class="w"> </span>DGEPAC.yaml<span class="w"> </span>-proj<span class="w"> </span>proj-0
+</pre></div>
+</div>
+<p><em>Important note</em>: Because these runs are ridiculously short for illustration purposes, it is not unreasonable to put all their <code class="docutils literal notranslate"><span class="pre">postsim</span></code> directives in one long file.  However, if one imagines requiring several hours of supercomputer time to do each one, it makes sense to split them into separate files and submit a series of batch jobs.</p>
+<p>The result of this action is first that the <code class="docutils literal notranslate"><span class="pre">postsim</span></code> directory is added to the project directory, with <code class="docutils literal notranslate"><span class="pre">anneal</span></code>, <code class="docutils literal notranslate"><span class="pre">equilibrate</span></code>, <code class="docutils literal notranslate"><span class="pre">ladder-heat</span></code>, and <code class="docutils literal notranslate"><span class="pre">ladder-cool</span></code> subdirectories:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">.</span>
+<span class="go">├── lib</span>
+<span class="go">│   └── molecules</span>
+<span class="go">│       ├── inputs</span>
+<span class="go">│       └── parameterized</span>
+<span class="go">└── proj-0</span>
+<span class="go">    ├── molecules</span>
+<span class="go">    │   └── parameterized</span>
+<span class="go">    ├── plots</span>
+<span class="go">    ├── postsim</span>
+<span class="go">    │   ├── anneal</span>
+<span class="go">    │   ├── equilibrate</span>
+<span class="go">    │   ├── ladder-cool</span>
+<span class="go">    │   └── ladder-heat</span>
+<span class="go">    └── systems</span>
+<span class="go">        ├── capping</span>
+<span class="go">        ├── densification</span>
+<span class="go">        ├── final-results</span>
+<span class="go">        ├── init</span>
+<span class="go">        ├── iter-1</span>
+<span class="go">        ├── iter-10</span>
+<span class="go">        ├── iter-11</span>
+<span class="go">        .</span>
+<span class="go">        .</span>
+<span class="go">        .</span>
+<span class="go">        ├── postcure</span>
+<span class="go">        └── precure</span>
+</pre></div>
+</div>
+<p>If we look inside the <code class="docutils literal notranslate"><span class="pre">anneal</span></code> subdirectory, we see several files:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">proj-0/postsim/anneal/</span>
+<span class="go">├── anneal.cpt</span>
+<span class="go">├── anneal.csv</span>
+<span class="go">├── anneal.edr</span>
+<span class="go">├── anneal.gro</span>
+<span class="go">├── anneal.log</span>
+<span class="go">├── anneal.tpr</span>
+<span class="go">├── anneal.trr</span>
+<span class="go">├── final.gro</span>
+<span class="go">├── final.grx</span>
+<span class="go">├── final.top</span>
+<span class="go">├── local.mdp</span>
+<span class="go">├── mdout.mdp</span>
+<span class="go">└── rho_v_ns.png</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">final</span></code> files were copied directly from the <code class="docutils literal notranslate"><span class="pre">systems/final-results</span></code> directory, and the <code class="docutils literal notranslate"><span class="pre">anneal</span></code> files are the result of the run.  If we look inside <code class="docutils literal notranslate"><span class="pre">mdout.mdp</span></code>, we can see in particular the lines that control the heating:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">.</span>
+<span class="go">.</span>
+<span class="go">.</span>
+<span class="go">dt                       = 0.002</span>
+<span class="go">nsteps                   = 40000</span>
+<span class="go">.</span>
+<span class="go">.</span>
+<span class="go">.</span>
+<span class="go">; SIMULATED ANNEALING</span>
+<span class="go">; Type of annealing for each temperature group (no/single/periodic)</span>
+<span class="go">annealing                = periodic</span>
+<span class="go">; Number of time points to use for specifying annealing in each group</span>
+<span class="go">annealing-npoints        = 5</span>
+<span class="go">; List of times at the annealing points for each group</span>
+<span class="go">annealing-time           = 0.0 10.0 20.0 30.0 40.0</span>
+<span class="go">; Temp. at each annealing point, for each group.</span>
+<span class="go">annealing-temp           = 300 600 600 300 300</span>
+<span class="go">.</span>
+<span class="go">.</span>
+<span class="go">.</span>
+</pre></div>
+</div>
+<p>A quick look at the plot of density vs. time that was generated on the fly:</p>
+<figure class="align-default" id="id1">
+<img alt="../../_images/rho_v_ns.png" src="../../_images/rho_v_ns.png" />
+<figcaption>
+<p><span class="caption-text">Density vs. time in the annealing stage.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>This shows that two cycles were done, but unfortunately, we see that intention of the annealing was not met – the density did not increase as a result; in fact, it looks like it decreased.  AGAIN: this are stupidly short simulations just for illustration.</p>
+<p>Below is an example of an analogous plot from a production simulation:</p>
+<figure class="align-default" id="id2">
+<img alt="../../_images/prod-rho_v_ns.png" src="../../_images/prod-rho_v_ns.png" />
+<figcaption>
+<p><span class="caption-text">Density vs. time in the annealing stage of a production MD simulation.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>In this case, the much longer annealing did in fact increase the system density, as intended.  This is a three-cycle anneal lasting a total of 120 ns.</p>
+<p>The equilibration stage also produces such a plot:</p>
+<figure class="align-default" id="id3">
+<img alt="../../_images/equil-rho_v_ns.png" src="../../_images/equil-rho_v_ns.png" />
+<figcaption>
+<p><span class="caption-text">Density vs. time in the equilibration stage.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>This is a silly plot, since the equilibration is so short.  An example of an analogous post-anneal equilibration (from the same example as above) is this one:</p>
+<figure class="align-default" id="id4">
+<img alt="../../_images/prod-equil-rho_v_ns.png" src="../../_images/prod-equil-rho_v_ns.png" />
+<figcaption>
+<p><span class="caption-text">Density vs. time in the equilibration stage of the production MD simulation.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>That equilibration lasted 100 ns and resulted in a significant densification.  This type of plot is important since it reveals a transient in the first 60% or so of the simulation, meaning that equilibrium measurements should be averages over only the last 40 ns or so of the trajectory.</p>
+<p>Now, with a single invocation of <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code>, we can compute T<sub>g</sub> and E.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>post<span class="w"> </span>--cfg<span class="w"> </span>postsim.yaml<span class="w"> </span>--proj<span class="w"> </span>proj-0
+INFO&gt;
+INFO&gt;<span class="w">     </span>HTPolyNet<span class="w"> </span><span class="m">1</span>.0.6
+INFO&gt;<span class="w">     </span>https://abramsgroup.github.io/HTPolyNet/
+INFO&gt;
+INFO&gt;<span class="w">     </span>Ming<span class="w"> </span>Huang
+INFO&gt;<span class="w">     </span>mh3429@dragons.drexel.edu
+INFO&gt;
+INFO&gt;<span class="w">     </span>Cameron<span class="w"> </span>F.<span class="w"> </span>Abrams
+INFO&gt;<span class="w">     </span>cfa22@drexel.edu
+INFO&gt;
+INFO&gt;<span class="w">     </span>Supported<span class="w"> </span><span class="k">in</span><span class="w"> </span>part<span class="w"> </span>by<span class="w"> </span>Grants<span class="w"> </span>W911NF-17-2-0227
+INFO&gt;<span class="w">     </span>and<span class="w"> </span>W911NF-12-R-0011<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>US<span class="w"> </span>Army<span class="w"> </span>Research<span class="w"> </span>Lab
+INFO&gt;
+INFO&gt;<span class="w"> </span>anneal-equilibrate-ladder-ladder-deform-deform-deform-density.png<span class="w"> </span>created.
+INFO&gt;<span class="w"> </span>mean<span class="w"> </span>density<span class="w"> </span><span class="m">1069</span><span class="w"> </span>kg/m^3<span class="w"> </span><span class="o">(</span><span class="m">1</span>.069<span class="w"> </span>g/cc<span class="o">)</span>
+INFO&gt;<span class="w"> </span>ladder0-data.csv<span class="w"> </span>created.
+INFO&gt;<span class="w"> </span>ladder1-data.csv<span class="w"> </span>created.
+INFO&gt;<span class="w"> </span>tg.png<span class="w"> </span>created.
+INFO&gt;<span class="w"> </span>heating<span class="w"> </span><span class="nv">Tg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">394</span>.91<span class="w"> </span>K<span class="w"> </span><span class="o">(</span><span class="m">121</span>.76<span class="w"> </span>C<span class="o">)</span><span class="w"> </span>at<span class="w"> </span><span class="m">0</span>.05000<span class="w"> </span>K/ps<span class="w"> </span><span class="o">(</span><span class="m">5</span>.000e+10<span class="w"> </span>K/s<span class="o">)</span>
+INFO&gt;<span class="w"> </span>cooling<span class="w"> </span><span class="nv">Tg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">451</span>.03<span class="w"> </span>K<span class="w"> </span><span class="o">(</span><span class="m">177</span>.88<span class="w"> </span>C<span class="o">)</span><span class="w"> </span>at<span class="w"> </span>-0.05000<span class="w"> </span>K/ps<span class="w"> </span><span class="o">(</span>-5.000e+10<span class="w"> </span>K/s<span class="o">)</span>
+/home/cfa/anaconda3/envs/mol-env/lib/python3.10/site-packages/scipy/optimize/_minpack_py.py:906:<span class="w"> </span>OptimizeWarning:<span class="w"> </span>Covariance<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>parameters<span class="w"> </span>could<span class="w"> </span>not<span class="w"> </span>be<span class="w"> </span>estimated
+warnings.warn<span class="o">(</span><span class="s1">&#39;Covariance of the parameters could not be estimated&#39;</span>,
+/home/cfa/Git/HTPolyNet/HTPolyNet/utils.py:404:<span class="w"> </span>RuntimeWarning:<span class="w"> </span>invalid<span class="w"> </span>value<span class="w"> </span>encountered<span class="w"> </span><span class="k">in</span><span class="w"> </span>scalar<span class="w"> </span>divide
+<span class="nv">r2</span><span class="o">=</span><span class="m">1</span>-sse.sum<span class="o">()</span>/sst.sum<span class="o">()</span>
+INFO&gt;<span class="w"> </span>e.png<span class="w"> </span>and<span class="w"> </span>E.csv<span class="w"> </span>created.<span class="w"> </span><span class="nv">E</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">7</span>.120<span class="w"> </span>GPa<span class="w"> </span><span class="o">(</span>R^2<span class="w"> </span>nan<span class="o">)</span>
+</pre></div>
+</div>
+<p>We see the troubling result that T<sub>g</sub> is different between the heating and cooling ladders; this of course is because these AGAIN ARE VERY SHORT simulations. This also generates a nice plot:</p>
+<figure class="align-default" id="id5">
+<img alt="../../_images/short-tg.png" src="../../_images/short-tg.png" />
+<figcaption>
+<p><span class="caption-text">Density vs. temperature in the heating (left) and cooling (right) simulations in this example.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>In practice, we should run much longer simulations and average over replicas.  Below is the analogous plot for a production MD simulation:</p>
+<figure class="align-default" id="id6">
+<img alt="../../_images/prod-tg.png" src="../../_images/prod-tg.png" />
+<figcaption>
+<p><span class="caption-text">Density vs. temperature in the heating (left) and cooling (right) simulations in production simulations, averaged over five replicas, with a heating rate of 5 K per 100 ns.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>We also note a ridiculous value for the Young’s modulus of 7.1 GPa.  The plot of stress vs strain shows this is meaningless from such a short simulation:</p>
+<figure class="align-default" id="id7">
+<img alt="../../_images/short-e.png" src="../../_images/short-e.png" />
+<figcaption>
+<p><span class="caption-text">Stress vs. strain, averaged over deformations along x, y, and z, for our short simulation.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Again, in practice, this should be the result of much longer simulations and averaging over replicas.  If done correctly, we see something like this:</p>
+<figure class="align-default" id="id8">
+<img alt="../../_images/prod-e.png" src="../../_images/prod-e.png" />
+<figcaption>
+<p><span class="caption-text">Stress vs. strain, averaged over deformations along x, y, and z, and over five replicas and a strain rate of 10<sup>8</sup> s<sup>-1</sup>.</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Finally, let’s use <code class="docutils literal notranslate"><span class="pre">analyze</span></code> to measure fractional free volume in the equilibration stage.  Using the shortcut approach, we need an input YAML file <code class="docutils literal notranslate"><span class="pre">fv.yaml</span></code> that just has one line:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freevolume</span>
+</pre></div>
+</div>
+<p>Then</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>analyze<span class="w"> </span>-cfg<span class="w"> </span>fv.yaml<span class="w"> </span>-proj<span class="w"> </span>proj-0
+</pre></div>
+</div>
+<p>So we can look at <code class="docutils literal notranslate"><span class="pre">analyze/freevolume/ffv.dat</span></code>:abbr:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">Free volume 37.82 +/- 0.15 %</span>
+<span class="go">Total volume 138.40 +/- 0.33 nm^3</span>
+<span class="go">Number of molecules 1 total mass 89116.20 Dalton</span>
+<span class="go">Average molar mass: 89116.20 Dalton</span>
+<span class="go">Density rho: 1069.20 +/- 19.54 nm^3</span>
+<span class="go">Molecular volume Vm assuming homogeneity: 138.4034 +/- 0.3274 nm^3</span>
+<span class="go">Molecular van der Waals volume assuming homogeneity:  86.0656 +/- 0.0000 nm^3</span>
+<span class="go">Fractional free volume 0.192 +/- 0.001</span>
+</pre></div>
+</div>
+<p>If we wanted to perform this on the production example, we would probably like to begin at 60,000 ps or so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freevolume</span>
+<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">b</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60000</span>
+</pre></div>
+</div>
 </section>
 
 

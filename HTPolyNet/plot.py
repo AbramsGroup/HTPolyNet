@@ -468,6 +468,7 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
     stds={}
     rate=[]
     Tgs=[]
+    nproj=len(projdirs)
     for i,phase in enumerate(phases):
         p=phase['ladder']
         rate.append(p['deltaT']/(p['ps_per_rise']+p['ps_per_run']))
@@ -508,10 +509,16 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
     fig,ax=plt.subplots(1,2,figsize=(10,6),sharex=True,sharey=True)
     for i,v in enumerate(means.keys()):
         m=means[v]
+        std=stds[v]
+        if np.isnan(np.sum(std['Density'])):
+            std['Density']=np.zeros(len(std['Density']))
         m.sort_values('Temperature',axis=0,inplace=True)
         ax[i].set_xlabel('Temperature [K]')
         ax[i].set_ylabel('Density [kg/m$^3$]')
-        ax[i].errorbar(m['Temperature'],m['Density'],stds[v]['Density'])
+        if nproj<2:
+            ax[i].scatter(m['Temperature'],m['Density'])
+        else:
+            ax[i].errorbar(m['Temperature'],m['Density'],std['Density'])
         Tg,c,h=compute_tg(m['Temperature'],m['Density'],n_points=n_points)
         Tgs.append(Tg)
         if Tg!=-1:
@@ -580,7 +587,7 @@ def post_plots(args):
         if 'anneal' in phasenames and 'equilibrate' in phasenames:
             mdf.append(postsim_density_evolution(p))
     if mdf:
-        multi_trace(mdf,xnames=['time(ps)']*len(mdf),ynames=['Density']*len(mdf),labels=args.proj,ylabel='Density [kg/m$^3$]',outfile='-'.join(phasenames)+'-density.png')
+        multi_trace(mdf,xnames=['time(ps)']*len(mdf),ynames=['Density']*len(mdf),labels=args.proj,ylabel='Density [kg/m$^3$]',outfile='anneal-equil-density.png')
         logger.info('-'.join(phasenames)+'-density.png created.')
         m=[]
         for d in mdf:
