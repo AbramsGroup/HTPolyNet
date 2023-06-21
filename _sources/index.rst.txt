@@ -11,6 +11,7 @@ HTPolyNet is a command-line tool for building atomic configurations of amorphous
 It uses the General Amber Force Field and produces output that can be simulated 
 using Gromacs.
 
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -18,8 +19,13 @@ using Gromacs.
    install
    user-guide/index
    example-tutorials/index
-   reference-materials/index
+   references/index
    HTPolyNetPackage
+
+Citation
+========
+
+When using HTPolyNet in published work, please cite :cite:t:`Huang2023`.
 
 
 Indices and tables

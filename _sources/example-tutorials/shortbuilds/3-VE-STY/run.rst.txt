@@ -9,14 +9,12 @@ Now, in our working directory ``my_vinyl_ester/3-bisgma-styrene-thermoset/``, if
 
     $ ./run.sh
 
-As the two ``htpolynet run`` commands indicate, standard output is being redirected from the console to the file ``lo.log`` for the low-cure run and ``hi.log`` for the high-cure run.  Let's consider the contents of ``lo.log``.
-
-First the banner and the runtime initialization messages:
+As the two ``htpolynet run`` commands indicate, standard output is being redirected from the console to the file ``console.log``:
 
 .. code-block:: console
 
     INFO>                                                                    
-    INFO>     HTPolyNet 0.0.1                                                
+    INFO>     HTPolyNet 1.0.6                                                
     INFO>     https://abramsgroup.github.io/HTPolyNet/                       
     INFO>                                                                    
     INFO>     Ming Huang                                                     
@@ -29,23 +27,23 @@ First the banner and the runtime initialization messages:
     INFO>     and W911NF-12-R-0011 from the US Army Research Lab             
     INFO>                                                                    
     INFO> ******************** HTPolyNet runtime begins *********************
-    INFO> User library is /home/cfa/htpolynet-tests/testset/3-bisgma-styrene-thermoset/lib
-    INFO> New project in /home/cfa/htpolynet-tests/testset/3-bisgma-styrene-thermoset/proj-0
+    INFO> User library is /home/cfa/htpolynet-tutorials/v1.0.6/3-bisgma-styrene-thermoset/lib
+    INFO> New project in /home/cfa/htpolynet-tutorials/v1.0.6/3-bisgma-styrene-thermoset/proj-0
     INFO> *************************** Ambertools: ***************************
-    INFO>   antechamber (ver. 22.0) at antechamber                                        
-    INFO>         tleap (ver. 22.0) at tleap                                              
-    INFO>      parmchk2 (ver. 22.0) at parmchk2                                           
-    INFO> Configuration: GMASTY-lo.yaml
+    INFO> ********************  antechamber (ver. 22.0) *********************
+    INFO> ********************        tleap (ver. 22.0) *********************
+    INFO> ********************     parmchk2 (ver. 22.0) *********************
+    INFO> Configuration: GMASTY.yaml
 
 Then a description of all the molecules that need to be created:
 
 .. code-block:: console
 
     INFO> *********** Templates in proj-0/molecules/parameterized ***********
-    INFO> 32 molecules detected in GMASTY-lo.yaml
+    INFO> 32 molecules detected in GMASTY.yaml
     INFO>                       explicit: 11   
     INFO>     implied by stereochemistry: 21   
-    INFO>            implied by symmetry: 0    
+    INFO>            implied by symmetry: 0       
 
 First are the molecules that are explicit in the configuration file:
 
@@ -207,142 +205,164 @@ Now the creation and densification of the initial liquid:
     INFO> Running Gromacs: minimization
     INFO> Running Gromacs: nvt ensemble;  10.00 ps,  300.00 K
     INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,  10.00 bar
-    INFO> Current box side lengths: 9.256 nm x 9.256 nm x 9.256 nm
-    INFO> Density                      114.46
-    INFO> Running-average-Density      106.81
-    INFO> Rolling-10-average-Density   113.66
+    INFO> Current box side lengths: 9.240 nm x 9.240 nm x 9.240 nm
+    INFO> Density                      115.07
+    INFO> Running-average-Density      107.18
+    INFO> Rolling-10-average-Density   114.32
     INFO> Repeat 1 out of 8
-    INFO> Current box side lengths: 8.773 nm x 8.773 nm x 8.773 nm
-    INFO> Density                      134.47
-    INFO> Running-average-Density      123.99
-    INFO> Rolling-10-average-Density   133.40
+    INFO> Current box side lengths: 8.761 nm x 8.761 nm x 8.761 nm
+    INFO> Density                      135.00
+    INFO> Running-average-Density      124.69
+    INFO> Rolling-10-average-Density   133.93
     INFO> Repeat 2 out of 8
-    INFO> Current box side lengths: 8.242 nm x 8.242 nm x 8.242 nm
-    INFO> Density                      162.15
-    INFO> Running-average-Density      147.43
-    INFO> Rolling-10-average-Density   160.62
+    INFO> Current box side lengths: 8.215 nm x 8.215 nm x 8.215 nm
+    INFO> Density                      163.72
+    INFO> Running-average-Density      148.41
+    INFO> Rolling-10-average-Density   162.23
     INFO> Repeat 3 out of 8
-    INFO> Current box side lengths: 7.573 nm x 7.573 nm x 7.573 nm
-    INFO> Density                      209.06
-    INFO> Running-average-Density      183.17
-    INFO> Rolling-10-average-Density   206.17
+    INFO> Current box side lengths: 7.565 nm x 7.565 nm x 7.565 nm
+    INFO> Density                      209.65
+    INFO> Running-average-Density      184.25
+    INFO> Rolling-10-average-Density   206.68
     INFO> Repeat 4 out of 8
-    INFO> Current box side lengths: 6.589 nm x 6.589 nm x 6.589 nm
-    INFO> Density                      317.36
-    INFO> Running-average-Density      254.44
-    INFO> Rolling-10-average-Density   310.28
+    INFO> Current box side lengths: 6.544 nm x 6.544 nm x 6.544 nm
+    INFO> Density                      323.89
+    INFO> Running-average-Density      257.92
+    INFO> Rolling-10-average-Density   316.64
     INFO> Repeat 5 out of 8
-    INFO> Current box side lengths: 4.569 nm x 4.569 nm x 4.569 nm
-    INFO> Density                      952.04
-    INFO> Running-average-Density      547.44
-    INFO> Rolling-10-average-Density   921.37
+    INFO> Current box side lengths: 4.533 nm x 4.533 nm x 4.533 nm
+    INFO> Density                      974.55
+    INFO> Running-average-Density      572.15
+    INFO> Rolling-10-average-Density   949.96
     INFO> Repeat 6 out of 8
-    INFO> Current box side lengths: 4.482 nm x 4.482 nm x 4.482 nm
-    INFO> Density                      1008.60
-    INFO> Running-average-Density      1001.76
-    INFO> Rolling-10-average-Density   1006.40
-    INFO> Repeat 7 out of 8
     INFO> Current box side lengths: 4.475 nm x 4.475 nm x 4.475 nm
-    INFO> Density                      1013.33
-    INFO> Running-average-Density      1013.13
-    INFO> Rolling-10-average-Density   1017.67
+    INFO> Density                      1012.95
+    INFO> Running-average-Density      1007.48
+    INFO> Rolling-10-average-Density   1015.49
+    INFO> Repeat 7 out of 8
+    INFO> Current box side lengths: 4.473 nm x 4.473 nm x 4.473 nm
+    INFO> Density                      1014.68
+    INFO> Running-average-Density      1014.93
+    INFO> Rolling-10-average-Density   1016.80
     INFO> Repeat 8 out of 8
-    INFO> Current box side lengths: 4.469 nm x 4.469 nm x 4.469 nm
-    INFO> Density                      1016.87
-    INFO> Running-average-Density      1016.31
-    INFO> Rolling-10-average-Density   1018.33
+    INFO> Current box side lengths: 4.463 nm x 4.463 nm x 4.463 nm
+    INFO> Density                      1021.02
+    INFO> Running-average-Density      1019.14
+    INFO> Rolling-10-average-Density   1022.00
     INFO> Densified coordinates in proj-0/systems/densification/densified-repeat-8-npt.gro
 
-Now the precure equilibration and annealing:
-
-.. code-block:: console
-
-    INFO> **************** Precure in proj-0/systems/precure ****************
-    INFO> Running Gromacs: npt ensemble; 300.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.465 nm x 4.465 nm x 4.465 nm
-    INFO> Density                      1019.94
-    INFO> Running-average-Density      1018.01
-    INFO> Rolling-10-average-Density   1019.32
-    INFO> Annealing: 5 points for 2 cycles over 160 ps
-    INFO> Annealed coordinates in annealed.gro
-    INFO> Running Gromacs: npt ensemble; 200.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.463 nm x 4.463 nm x 4.463 nm
-    INFO> Density                      1021.26
-    INFO> Running-average-Density      1016.82
-    INFO> Rolling-10-average-Density   1020.27
-
-
-Note that we achieve a pretty good initial density for this liquid of about 1.02 g/cc.  Now the CURE algorithm begins, seeking to form 150 out of the total possible 300 bonds:
+Note that we achieve a pretty good initial density for this liquid of about 1.02 g/cc.  Now the CURE algorithm begins, seeking to form 285 out of the total possible 300 bonds.  The console output shows that 161 bonds form in just the first two iterations:
 
 .. code-block:: console
 
     INFO> ********* Connect-Update-Relax-Equilibrate (CURE) begins **********
-    INFO> Attempting to form 150 bonds
+    INFO> Attempting to form 285 bonds
     INFO> ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 1 begins ~~~~~~~~~~~~~~~~~~~~~~~~
     INFO> Bond search using radius 0.5 nm initiated
-    INFO> Iteration 1 will generate 77 new bonds
-    INFO> Cure_relax initiated on 77 distances (max 0.483 nm)
+    INFO> Iteration 1 will generate 90 new bonds
+    INFO> Step "cure_relax" initiated on 90 distances (max 0.489 nm)
     INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
-    INFO>          1              0.426                  0.651
-    INFO>          2              0.385                  0.611
-    INFO>          3              0.330                  0.551
-    INFO>          4              0.278                  0.507
-    INFO>          5              0.215                  0.464
-    INFO>          6              0.166                  0.419
+    INFO>          1              0.440                  0.672
+    INFO>          2              0.387                  0.602
+    INFO>          3              0.328                  0.561
+    INFO>          4              0.267                  0.508
+    INFO>          5              0.216                  0.458
+    INFO>          6              0.168                  0.418
     INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.424 nm x 4.424 nm x 4.424 nm
-    INFO> Density                      1045.51
-    INFO> Running-average-Density      1012.53
-    INFO> Rolling-10-average-Density   1046.27
-    INFO> Iteration 1 current conversion 0.257 or 77 bonds
+    INFO> Current box side lengths: 4.417 nm x 4.417 nm x 4.417 nm
+    INFO> Density                      1049.89
+    INFO> Running-average-Density      1021.21
+    INFO> Rolling-10-average-Density   1049.73
+    INFO> Iteration 1 current conversion 0.300 or 90 bonds
     INFO> ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 2 begins ~~~~~~~~~~~~~~~~~~~~~~~~
     INFO> Bond search using radius 0.5 nm initiated
-    INFO> Iteration 2 will generate 64 new bonds
-    INFO> Cure_relax initiated on 64 distances (max 0.492 nm)
+    INFO> Iteration 2 will generate 71 new bonds
+    INFO> Step "cure_relax" initiated on 71 distances (max 0.499 nm)
     INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
-    INFO>          1              0.431                  0.665
-    INFO>          2              0.386                  0.617
-    INFO>          3              0.328                  0.565
-    INFO>          4              0.272                  0.507
-    INFO>          5              0.214                  0.469
-    INFO>          6              0.169                  0.430
+    INFO>          1              0.434                  0.656
+    INFO>          2              0.389                  0.625
+    INFO>          3              0.334                  0.574
+    INFO>          4              0.271                  0.516
+    INFO>          5              0.215                  0.459
+    INFO>          6              0.169                  0.426
     INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.391 nm x 4.391 nm x 4.391 nm
-    INFO> Density                      1066.64
-    INFO> Running-average-Density      1038.46
-    INFO> Rolling-10-average-Density   1065.77
-    INFO> Iteration 2 current conversion 0.470 or 141 bonds
-    INFO> ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 3 begins ~~~~~~~~~~~~~~~~~~~~~~~~
-    INFO> Bond search using radius 0.5 nm initiated
-    INFO> Iteration 3 will generate 10 new bonds
-    INFO> Cure_relax initiated on 10 distances (max 0.410 nm)
-    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
-    INFO>          1              0.365                  0.596
-    INFO>          2              0.315                  0.544
-    INFO>          3              0.261                  0.513
-    INFO>          4              0.221                  0.452
-    INFO>          5              0.166                  0.410
-    INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.390 nm x 4.390 nm x 4.390 nm
-    INFO> Density                      1066.85
-    INFO> Running-average-Density      1044.10
-    INFO> Rolling-10-average-Density   1070.23
-    INFO> Iteration 3 current conversion 0.503 or 151 bonds
+    INFO> Current box side lengths: 4.384 nm x 4.384 nm x 4.384 nm
+    INFO> Density                      1071.08
+    INFO> Running-average-Density      1038.69
+    INFO> Rolling-10-average-Density   1067.55
+    INFO> Iteration 2 current conversion 0.537 or 161 bonds
 
-We see here that only three CURE iterations were required.  Now comes capping of the 55 activated doule-bonds that neither attacked nor were attacked:
+For this build, a total of 22 CURE iterations were required to reach 95% conversion.  Here is the console output for the last two iterations, and we see they each generated only one bond, and both required pre-bond dragging before bond formation and relaxation:
+
+.. code-block:: console
+
+    INFO> ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 21 begins ~~~~~~~~~~~~~~~~~~~~~~~
+    INFO> Bond search using radius 0.5 nm initiated
+    INFO> Radius increased to 0.75 nm
+    INFO> Radius increased to 1.0 nm
+    INFO> Iteration 21 will generate 1 new bond
+    INFO> Step "cure_drag" initiated on 1 distance (max 0.961 nm)
+    INFO>      Stage  Max-distance (nm)
+    INFO>          1              0.942
+    INFO>          2              0.854
+    INFO>          3              0.786
+    INFO>          4              0.743
+    INFO>          5              0.689
+    INFO>          6              0.631
+    INFO>          7              0.576
+    INFO>          8              0.523
+    INFO>          9              0.462
+    INFO>         10              0.418
+    INFO>         11              0.359
+    INFO>         12              0.310
+    INFO> Step "cure_relax" initiated on 1 distance (max 0.310 nm)
+    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
+    INFO>          1              0.262                  0.499
+    INFO>          2              0.218                  0.461
+    INFO>          3              0.161                  0.405
+    INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
+    INFO> Current box side lengths: 4.393 nm x 4.393 nm x 4.393 nm
+    INFO> Density                      1059.61
+    INFO> Running-average-Density      1049.49
+    INFO> Rolling-10-average-Density   1062.18
+    INFO> Iteration 21 current conversion 0.947 or 284 bonds
+    INFO> ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 22 begins ~~~~~~~~~~~~~~~~~~~~~~~
+    INFO> Bond search using radius 0.5 nm initiated
+    INFO> Radius increased to 0.75 nm
+    INFO> Radius increased to 1.0 nm
+    INFO> Iteration 22 will generate 1 new bond
+    INFO> Step "cure_drag" initiated on 1 distance (max 0.977 nm)
+    INFO>      Stage  Max-distance (nm)
+    INFO>          1              0.926
+    INFO>          2              0.860
+    INFO>          3              0.807
+    INFO>          4              0.747
+    INFO>          5              0.691
+    INFO>          6              0.631
+    INFO>          7              0.580
+    INFO>          8              0.533
+    INFO>          9              0.475
+    INFO>         10              0.424
+    INFO>         11              0.359
+    INFO>         12              0.308
+    INFO> Step "cure_relax" initiated on 1 distance (max 0.308 nm)
+    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
+    INFO>          1              0.274                  0.508
+    INFO>          2              0.208                  0.438
+    INFO>          3              0.161                  0.415
+    INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
+    INFO> Current box side lengths: 4.389 nm x 4.389 nm x 4.389 nm
+    INFO> Density                      1062.66
+    INFO> Running-average-Density      1047.72
+    INFO> Rolling-10-average-Density   1060.33
+    INFO> Iteration 22 current conversion 0.950 or 285 bonds
+
+And since there are apparently no unreactd double bonds, there are no capping reactions necessary:
 
 .. code-block:: console
 
     INFO> ************************* Capping begins **************************
-    INFO> Capping will generate 55 new bonds
-    INFO> Cap_relax initiated on 55 distances (max 0.155 nm)
-    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
-    INFO>          1              0.145                  0.382
-    INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.367 nm x 4.367 nm x 4.367 nm
-    INFO> Density                      1082.01
-    INFO> Running-average-Density      1074.59
-    INFO> Rolling-10-average-Density   1082.57
+    INFO> Capping will generate 0 new bonds
     INFO> ********** Connect-Update-Relax-Equilibrate (CURE) ends ***********
 
 And finally, postcure equilibration and annealing:
@@ -353,51 +373,13 @@ And finally, postcure equilibration and annealing:
     INFO> Annealing: 5 points for 2 cycles over 160 ps
     INFO> Annealed coordinates in annealed.gro
     INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.357 nm x 4.357 nm x 4.357 nm
-    INFO> Density                      1089.52
-    INFO> Running-average-Density      1087.44
-    INFO> Rolling-10-average-Density   1087.69
+    INFO> Current box side lengths: 4.362 nm x 4.362 nm x 4.362 nm
+    INFO> Density                      1082.56
+    INFO> Running-average-Density      1080.87
+    INFO> Rolling-10-average-Density   1083.25
     INFO> *********** Final data to proj-0/systems/final-results ************
     INFO> ********************* HTPolyNet runtime ends **********************
 
-So we see our 50% cured system reached about 1.09 g/cc.  I am not claiming any of these equilibration runs are long enough or the system is big enough, but this example just serves to illustrate how ``HTPolyNet`` works.
-
-If we consider the ``hi``-cure system, we see that it took 19 iterations to reach 95% cure.  Below is the end of the console output for that run:
-
-.. code-block:: console
-
-    INFO> ~~~~~~~~~~~~~~~~~~~~~~~ Iteration 19 begins ~~~~~~~~~~~~~~~~~~~~~~~
-    INFO> Bond search using radius 0.5 nm initiated
-    INFO> Radius increased to 0.75 nm
-    INFO> Iteration 19 will generate 1 new bond
-    INFO> Cure_relax initiated on 1 distance (max 0.554 nm)
-    INFO>      Stage  Max-distance (nm)  Max-1-4-distance (nm)
-    INFO>          1              0.487                  0.692
-    INFO>          2              0.420                  0.607
-    INFO>          3              0.355                  0.569
-    INFO>          4              0.284                  0.503
-    INFO>          5              0.230                  0.446
-    INFO>          6              0.159                  0.408
-    INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.398 nm x 4.398 nm x 4.398 nm
-    INFO> Density                      1055.67
-    INFO> Running-average-Density      1039.04
-    INFO> Rolling-10-average-Density   1052.93
-    INFO> Iteration 19 current conversion 0.950 or 285 bonds
-    INFO> ************************* Capping begins **************************
-    INFO> Capping will generate 0 new bonds
-    INFO> ********** Connect-Update-Relax-Equilibrate (CURE) ends ***********
-    INFO> *************** Postcure in proj-1/systems/postcure ***************
-    INFO> Annealing: 5 points for 2 cycles over 160 ps
-    INFO> Annealed coordinates in annealed.gro
-    INFO> Running Gromacs: npt ensemble; 100.00 ps,  300.00 K,   1.00 bar
-    INFO> Current box side lengths: 4.366 nm x 4.366 nm x 4.366 nm
-    INFO> Density                      1079.18
-    INFO> Running-average-Density      1077.62
-    INFO> Rolling-10-average-Density   1080.11
-    INFO> *********** Final data to proj-1/systems/final-results ************
-    INFO> ********************* HTPolyNet runtime ends **********************
-
-Notice that no capping reactions happen since all activated double-bonds are either attacked or attackers or both.
+So we see our 95% cured system reached about 1.08 g/cc.  I am not claiming any of these equilibration runs are long enough or the system is big enough, but this example just serves to illustrate how ``HTPolyNet`` works.
 
 Let's now take a look at some selected :ref:`results <ve_results>`.

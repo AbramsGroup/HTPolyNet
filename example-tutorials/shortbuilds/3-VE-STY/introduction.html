@@ -39,12 +39,18 @@
 <span class="gp">$ </span>htpolynet<span class="w"> </span>fetch-example<span class="w"> </span>-n<span class="w"> </span><span class="m">3</span>
 <span class="gp">$ </span>ls
 <span class="go">3-bisgma-styrene-thermoset/</span>
-<span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span><span class="m">3</span>-bisgma-styrene-thermoset
-<span class="gp">$ </span>ls
-<span class="go">GMASTY-hi.yaml  GMASTY-lo.yaml  lib/  run.sh</span>
+<span class="gp">$ </span>tree<span class="w"> </span><span class="m">3</span>-bisgma-styrene-thermoset
+<span class="go">3-bisgma-styrene-thermoset</span>
+<span class="go">├── GMASTY.yaml</span>
+<span class="go">├── lib</span>
+<span class="go">│   └── molecules</span>
+<span class="go">│       ├── inputs</span>
+<span class="go">│       └── parameterized</span>
+<span class="go">├── README.md</span>
+<span class="go">└── run.sh</span>
 </pre></div>
 </div>
-<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run both a low-cure and high-cure build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated bisGMA and styrene.</p>
+<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run a build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> files for activated bisGMA and styrene.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
 
 <span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules&#39;</span>
@@ -80,12 +86,11 @@ obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$
 <span class="w">         </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>s/<span class="s2">&quot; 9 C &quot;</span>/<span class="s2">&quot; 9 C4&quot;</span>/<span class="w"> </span><span class="se">\</span>
 <span class="w">         </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/HIE.mol2
 
-htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-lo.log<span class="w"> </span>GMASTY-lo.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>lo.log
-htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-hi.log<span class="w"> </span>GMASTY-hi.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>hi.log
+htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics.log<span class="w"> </span>GMASTY.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>console.log
 </pre></div>
 </div>
-<p>Note that we are actually generating three different monomeric species: styrene, bisphenol A (BPA), and 2-hydroxypropyl isopropyl ester (HIE).  This is because we are going to tell <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to build the bisGMA molecule by reacting the esters onto they phenolic hydroxyls on BPA.</p>
-<p>As in the other two tutorials, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
+<p>Note that we are actually generating three different monomeric species: styrene, bisphenol A (BPA), and 2-hydroxypropyl isopropyl ester (HIE).  This is because we are going to tell <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> to build the bisGMA molecule by reacting the esters onto the phenolic hydroxyls on BPA.</p>
+<p>As in the other two tutorials, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the build.</p>
 </section>
 
 
@@ -110,11 +115,11 @@ htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"
 <li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Example Tutorials</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Example Tutorials for Short Builds</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Tutorials for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">References</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
@@ -123,7 +128,7 @@ htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"
 <ul>
   <li><a href="../../../index.html">Documentation overview</a><ul>
   <li><a href="../../index.html">Example Tutorials</a><ul>
-  <li><a href="../index.html">Example Tutorials for Short Builds</a><ul>
+  <li><a href="../index.html">Tutorials for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a><ul>
   <li><a href="index.html">BisGMA-Styrene Thermoset</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">BisGMA-Styrene Thermoset</a></li>
       <li>Next: <a href="reactions.html" title="next chapter">Reactions</a></li>
@@ -143,14 +148,6 @@ htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"
     </div>
 </div>
 <script>document.getElementById('searchbox').style.display = "block"</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>

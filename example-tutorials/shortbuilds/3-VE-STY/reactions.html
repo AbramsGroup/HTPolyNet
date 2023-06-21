@@ -33,7 +33,7 @@
             
   <section id="reactions">
 <span id="ve-reaction-dictionaries"></span><h1>Reactions<a class="headerlink" href="#reactions" title="Permalink to this heading">¶</a></h1>
-<p>There are three types of reactions defined in the YAML configuration files.  The first two describe how to build a bisGMA molecule, the next four describe the polymerization reactions, and the final two describe capping reactions for unreacted monomers.</p>
+<p>There are three types of reactions defined in the YAML configuration file.  The first two describe how to build a bisGMA molecule, the next four describe the polymerization reactions, and the final two describe capping reactions for unreacted monomers.</p>
 <section id="building-bisgma">
 <h2>Building bisGMA<a class="headerlink" href="#building-bisgma" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
@@ -63,35 +63,49 @@
 </tbody>
 </table>
 <p>Let’s focus first on the reactions used to build bis GMA.  First, we react one HIE to one hydroxyl on BPA:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">B1</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">param</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">BPA</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="w"> </span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">GM1</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">O1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C4</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">B1</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">param</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BPA</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GM1</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">O1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C4</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 </pre></div>
 </div>
 <p>This creates the intermediate GM1, which we then use to in the second reaction:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">B2</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">param</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">GM1</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="w"> </span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">GMA</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">O2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C4</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">B2</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">param</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GM1</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GMA</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">O2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C4</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 </pre></div>
 </div>
 <p>Note that both of these reactions are stage “param”, since we know we need to GAFF-parameterize the results to arrive at a fully parameterized GMA molecule.</p>
@@ -124,89 +138,129 @@
 </tbody>
 </table>
 <p>For each scenario above, we need only encode the <code class="docutils literal notranslate"><span class="pre">C1</span></code>-attacks-<code class="docutils literal notranslate"><span class="pre">C2</span></code> reaction.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">dimer_xx</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">cure</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">STY</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">STY</span><span class="w"> </span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">STY~C1-C2~STY</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="p p-Indicator">}</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">dimer_yy</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">cure</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="w"> </span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE~C1-C2~HIE</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="p p-Indicator">}</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">dimer_xy</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">cure</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">STY</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="w"> </span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">STY~C1-C2~HIE</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="p p-Indicator">}</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w"> </span><span class="nv">dimer_yx</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w"> </span><span class="nv">cure</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="p p-Indicator">,</span><span class="nt"> 2</span><span class="p">:</span><span class="w"> </span><span class="nv">STY</span><span class="w"> </span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE~C1-C2~STY</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dimer_xx</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cure</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY~C1-C2~STY</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dimer_yy</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cure</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE~C1-C2~HIE</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dimer_xy</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cure</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY~C1-C2~HIE</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dimer_yx</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cure</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE~C1-C2~STY</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 </pre></div>
 </div>
 <p>Finally, we can include capping reactions that revert any completely unreacted double bonds back to actual double-bonds (notice the <code class="docutils literal notranslate"><span class="pre">order</span></code> specifications):</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w">         </span><span class="s">&#39;styCC&#39;</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w">        </span><span class="nv">cap</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">STY</span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w">      </span><span class="nv">STYCC</span><span class="p p-Indicator">,</span>
-<span class="nt">    probability</span><span class="p">:</span><span class="w">  </span><span class="nv">1.0</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="p p-Indicator">}</span>
-<span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">    name</span><span class="p">:</span><span class="w">         </span><span class="s">&#39;hieCC&#39;</span><span class="p p-Indicator">,</span>
-<span class="nt">    stage</span><span class="p">:</span><span class="w">        </span><span class="nv">cap</span><span class="p p-Indicator">,</span>
-<span class="nt">    reactants</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="nv">HIE</span><span class="p p-Indicator">},</span>
-<span class="nt">    product</span><span class="p">:</span><span class="w">      </span><span class="nv">HIECC</span><span class="p p-Indicator">,</span>
-<span class="nt">    probability</span><span class="p">:</span><span class="w">  </span><span class="nv">1.0</span><span class="p p-Indicator">,</span>
-<span class="nt">    atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
-<span class="nt">      A</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C1</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">},</span>
-<span class="nt">      B</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> resid</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> atom</span><span class="p">:</span><span class="w"> </span><span class="nv">C2</span><span class="p p-Indicator">,</span><span class="nt"> z</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">},</span>
-<span class="nt">    bonds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
-<span class="w">      </span><span class="p p-Indicator">{</span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">],</span><span class="nt"> order</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="p p-Indicator">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w">         </span><span class="l l-Scalar l-Scalar-Plain">styCC</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">cap</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">STY</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">STYCC</span>
+<span class="w">  </span><span class="nt">probability</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w">         </span><span class="l l-Scalar l-Scalar-Plain">hieCC</span>
+<span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w">        </span><span class="l l-Scalar l-Scalar-Plain">cap</span>
+<span class="w">  </span><span class="nt">reactants</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HIE</span>
+<span class="w">  </span><span class="nt">product</span><span class="p">:</span><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">HIECC</span>
+<span class="w">  </span><span class="nt">probability</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">  </span><span class="nt">atoms</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">A</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C1</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">    </span><span class="nt">B</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">reactant</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">resid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">atom</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C2</span>
+<span class="w">      </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">bonds</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">atoms</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">A</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">B</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 </pre></div>
 </div>
 <p>As we will detail in the next section, there are no symmetry-equivalent atoms necessary in this system, even though bisGMA is a symmetric molecule.  This is because we need only address HIE monomers in the cure reactions; BPA’s are “silent” with respect to cure.  There are no symmetry-equivalent atoms <em>within</em> a <em>single</em> HIE monomer.</p>
@@ -278,11 +332,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Example Tutorials</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Example Tutorials for Short Builds</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Tutorials for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">References</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
@@ -291,7 +345,7 @@
 <ul>
   <li><a href="../../../index.html">Documentation overview</a><ul>
   <li><a href="../../index.html">Example Tutorials</a><ul>
-  <li><a href="../index.html">Example Tutorials for Short Builds</a><ul>
+  <li><a href="../index.html">Tutorials for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a><ul>
   <li><a href="index.html">BisGMA-Styrene Thermoset</a><ul>
       <li>Previous: <a href="introduction.html" title="previous chapter">Introduction</a></li>
       <li>Next: <a href="configuration.html" title="next chapter">The Configuration File</a></li>
@@ -311,14 +365,6 @@
     </div>
 </div>
 <script>document.getElementById('searchbox').style.display = "block"</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>

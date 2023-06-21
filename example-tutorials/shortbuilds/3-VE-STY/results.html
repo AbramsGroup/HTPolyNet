@@ -34,19 +34,27 @@
   <section id="results">
 <span id="ve-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this heading">¶</a></h1>
 <p>The <a class="reference internal" href="../1-polymethylstyrene/results.html#pms-results"><span class="std std-ref">results section of the PMS tutorial</span></a> does a good job walking you through the project directory structure for any <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> run, so we’ll skip that here.</p>
-<p>First, if we look in either <code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code> (lo-cure) or <code class="docutils literal notranslate"><span class="pre">proj-1/plots</span></code> (hi-cure), we can see the density vs. time of the densification stage:</p>
+<p>First, if we look in <code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code>, we can see the density vs. time of the densification stage:</p>
 <figure class="align-default" id="id1">
 <img alt="../../../_images/densification-density2.png" src="../../../_images/densification-density2.png" />
 <figcaption>
 <p><span class="caption-number">Fig. 22 </span><span class="caption-text">Density vs. time during the densification stage of the bisGMA/STY liquid.  Each of the nine distinct simulations in series is colored uniquely along a <code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> <code class="docutils literal notranslate"><span class="pre">plasma</span></code> colomap.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
-<p>By using the <code class="docutils literal notranslate"><span class="pre">plots</span></code> subcommand, we can generate traces of temperature, density, and potential energy vs time for the entire course of the system build:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>-proj<span class="w"> </span>proj-1<span class="w"> </span>-t<span class="w"> </span>p1-traces.png<span class="w"> </span>-o<span class="w"> </span>p1-traces.csv
+<p>As in the polymethylstyrene tutorial, we can make plots of the conversion vs. run time and the cure iteration vs. run time:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>diag<span class="w"> </span>--diags<span class="w"> </span>diagnostics.log
+</pre></div>
+</div>
+<figure class="align-default">
+<img alt="../../../_images/cure_info2.png" src="../../../_images/cure_info2.png" />
+</figure>
+<p>With fewer atoms than the DGEBA/PACM tutorial, and fewer iterations needed to reach 95% conversion, it is not surprising this build took only an hour or so.  Again, we see that the first 25% or so of the run time gets 75% or so of the way to cured.</p>
+<p>Let’s generate traces of temperature, density, and potential energy vs time for the entire course of the system build:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>htpolynet<span class="w"> </span>plots<span class="w"> </span>build<span class="w"> </span>--proj<span class="w"> </span>proj-0<span class="w"> </span>--buildplot<span class="w"> </span>t<span class="w"> </span>--traces<span class="w"> </span>t<span class="w"> </span>d<span class="w"> </span>p
 </pre></div>
 </div>
 <figure class="align-default" id="id2">
-<img alt="../../../_images/p1-traces.png" src="../../../_images/p1-traces.png" />
+<img alt="example-tutorials/shortbuilds/3-VE-STY/pics/buildtraces.png" src="example-tutorials/shortbuilds/3-VE-STY/pics/buildtraces.png" />
 <figcaption>
 <p><span class="caption-number">Fig. 23 </span><span class="caption-text">(Top) Temperature vs. time for 95% cure of bisGMA/STY (Middle) Density vs time.  The two topmost plots also report number of bonds; (Bottom) Potential energy vs. time.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
@@ -95,11 +103,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation and Prerequisites</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../user-guide/index.html">User Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Example Tutorials</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Example Tutorials for Short Builds</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Tutorials for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../postsim_analyses/index.html">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../../reference-materials/index.html">Reference Materials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../references/index.html">References</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../HTPolyNetPackage.html">HTPolyNet package</a></li>
 </ul>
 
@@ -108,7 +116,7 @@
 <ul>
   <li><a href="../../../index.html">Documentation overview</a><ul>
   <li><a href="../../index.html">Example Tutorials</a><ul>
-  <li><a href="../index.html">Example Tutorials for Short Builds</a><ul>
+  <li><a href="../index.html">Tutorials for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code></a><ul>
   <li><a href="index.html">BisGMA-Styrene Thermoset</a><ul>
       <li>Previous: <a href="run.html" title="previous chapter">Running the Build</a></li>
       <li>Next: <a href="../../postsim_analyses/index.html" title="next chapter">Examples Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">postsim</span></code> and <code class="docutils literal notranslate"><span class="pre">analyze</span></code></a></li>
@@ -128,14 +136,6 @@
     </div>
 </div>
 <script>document.getElementById('searchbox').style.display = "block"</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
       <div class="clearer"></div>
