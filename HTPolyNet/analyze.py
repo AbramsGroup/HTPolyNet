@@ -224,10 +224,8 @@ class AnalyzeConfiguration:
     def parse(self,**kwargs):
         """parse parses a PostsimConfiguration file to build the list of stages to run
         """
-        for p in self.baselist:
-            content=p['analysis']
-            assert len(p)==1,f'Poorly formatted {self.cfgFile}; each stanza may have only one keyword \'analysis\''
-            analysistype=content['command']#list(p.keys())[0]
+        for content in self.baselist:
+            analysistype=content['command']
             if analysistype in self.predefined_classes:
                 self.stagelist.append(self.predefined_classes[analysistype](content))
             else:
