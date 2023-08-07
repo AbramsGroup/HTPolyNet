@@ -25,7 +25,10 @@ class Software:
             if CP.returncode!=0:
                 passes=False
                 cnf.append(c)
-        assert passes,f'Could not find {cnf}'
+        try:
+            assert passes,f'Could not find {cnf}'
+        except AssertionError:
+            print('It seems like you do not have an accessible installation of ambertools.')
 
     def set_gmx_preferences(self,parameters):
         """set_gmx_preferences set the necessary resolution of gromacs executables based on directives in the parameters parameter
