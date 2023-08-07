@@ -62,6 +62,7 @@ class RuntimeLibrary:
         os.chdir(depot)
         example_tarballs=glob.glob('*.tgz')
         basenames=[x.replace('.tgz','') for x in example_tarballs]
+        basenames.sort()
         os.chdir(owd)
         return basenames
 
@@ -81,6 +82,7 @@ class RuntimeLibrary:
         assert os.path.isdir(tt),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
         inst.designation='User'
+        inst.root=tt
         ResourceFullPaths=glob.glob(inst.root+'/*')
         for l in ResourceFullPaths:
             bn=os.path.basename(l)

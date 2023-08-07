@@ -11,15 +11,17 @@ import os
 import argparse as ap
 import textwrap
 import shutil
-from HTPolyNet.banner import banner, banner_message
-from HTPolyNet.runtime import Runtime,logrotate
+import glob
+from .banner import banner, banner_message
+from .runtime import Runtime,logrotate
+from .command import Command
 import HTPolyNet.projectfilesystem as pfs
 import HTPolyNet.software as software
-from HTPolyNet.plot import plots
-from HTPolyNet.stringthings import my_logger
-from HTPolyNet.inputcheck import input_check
-from HTPolyNet.postsim import postsim
-from HTPolyNet.analyze import analyze
+from .plot import plots
+from .stringthings import my_logger
+from .inputcheck import input_check
+from .postsim import postsim
+from .analyze import analyze
 
 logger=logging.getLogger(__name__)
 
@@ -111,10 +113,46 @@ def fetch_example(args):
                     os.remove(f'{fullname}.tgz')
             return
         fullname=nm
-    shutil.copy(os.path.join(l.get_example_depot_location(),f'{fullname}.tgz'),'.')
+    fullpath=os.path.join(l.get_example_depot_location(),f'{fullname}.tgz')
+    assert os.path.exists(fullpath),f'{fullpath}: not found.'
+    shutil.copy(fullpath,'.')
     os.system(f'tar zxf {fullname}.tgz')
     if not kp:
         os.remove(f'{fullname}.tgz')
+
+def pack_example(args):
+    l=pfs.system()
+    requires=['README.md','run.sh','lib/molecules']
+    for r in requires:
+        assert os.path.exists(r),f'{r}: not found.'
+    ls=glob.glob('*.yaml')+glob.glob('*.yml')
+    assert len(ls)>0,f'No yaml config file found.'
+    bn=os.path.basename(os.getcwd())
+    inspectname=bn.split('-')
+    if len(inspectname)>0:
+        firstfield=inspectname[0]
+        if firstfield.isdigit():
+            existing_n=int(firstfield)
+            use_n=False
+        else:
+            use_n=True
+    n=args.n
+    existing_examples=l.get_example_names()
+    numbers=[int(x.split('-')[0]) for x in existing_examples]
+    assert not n in numbers,f'Choose an index other than {n}; an example with this index already exists.'
+    if not use_n:
+        assert not existing_n in numbers,f'Choose an index other than {n}; an example with this index already exists. To do this, rename the directory.'
+    if n==-1:
+        n=str(max(numbers)+1)
+    if use_n:
+        newname=f'{n}-{os.path.basename(os.getcwd())}'
+    else:
+        newname=f'{os.path.basename(os.getcwd())}'
+    depot_location=l.get_example_depot_location()
+    c=Command(f'tar --exclude="*/*/*/*/*" -zvcf {depot_location}/{newname}.tgz README.md run.sh *.yaml lib/molecules/')
+    o,e=c.run()
+    print(o)
+    print(e)
 
 def cli():
     """cli Command-line interface
@@ -132,13 +170,15 @@ def cli():
     commands['input-check']=input_check
     commands['postsim']=postsim
     commands['analyze']=analyze
+    commands['pack-example']=pack_example
     # declare subcommand helpstrings
     helps={}
     helps['run']='build a system using instructions in the config file and any required molecular structure inputs'
     helps['parameterize']='parameterize monomers and oligomer templates using instructions in the config file'
     helps['info']='print some information to the console'
     helps['plots']='generate some plots that summarize aspects of the current completed build'
-    helps['fetch-example']='fetch and unpack example(s) from the HTPolyNet.Library: '+', '.join([f'"{x}"' for x in l.get_example_names()])
+    helps['fetch-example']='fetch and unpack example(s) from HTPolyNet.HTPolyNet.resources: '+', '.join([f'"{x}"' for x in l.get_example_names()])
+    helps['pack-example']='pack current directory as a tarball to the resources/example_depot'
     helps['input-check']='reports number of atoms that would be in initial system based on config'
     helps['postsim']='perform specified postcure MD simulations on final results in one or more project directory'
     helps['analyze']='perform \'gmx <command>\' style analyses specified in the cfg file'
@@ -185,6 +225,8 @@ def cli():
     ######## fetch-example ########
     command_parsers['fetch-example'].add_argument('-n',type=str,choices=example_ids+['all'],help='number of example tarball to unpack from '+', '.join(example_names))
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
+    ######## pack-example
+    command_parsers['pack-example'].add_argument('-n',type=int,default=-1,help='desired index (integer) for this example')
     ######## input-check ########
     command_parsers['input-check'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['input-check'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')

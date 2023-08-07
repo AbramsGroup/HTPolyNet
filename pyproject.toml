@@ -38,5 +38,5 @@ dependencies = [
 log_cli = true
 
 [project.scripts]
-cli-name = "HTPolyNet.driver:cli"
+htpolynet = "HTPolyNet.driver:cli"
 

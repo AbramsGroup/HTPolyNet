@@ -15,6 +15,8 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
+* 1.0.7
+    * moved Library package to resources subpackage of HTPolyNet.HTPolyNet
 * 1.0.6
     * gmx-style analyze subcommand added
 * 1.0.5
@@ -29,8 +31,6 @@ Once installed, the user has access to the main `htpolynet` command.
     * Initial beta version
 
 ## Meta
-
-Ming Huang – mh3429@drexel.edu
 
 Cameron F. Abrams – cfa22@drexel.edu
 
