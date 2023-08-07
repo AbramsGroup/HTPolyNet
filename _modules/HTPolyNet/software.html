@@ -56,7 +56,10 @@
             <span class="k">if</span> <span class="n">CP</span><span class="o">.</span><span class="n">returncode</span><span class="o">!=</span><span class="mi">0</span><span class="p">:</span>
                 <span class="n">passes</span><span class="o">=</span><span class="kc">False</span>
                 <span class="n">cnf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">passes</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Could not find </span><span class="si">{</span><span class="n">cnf</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">passes</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;Could not find </span><span class="si">{</span><span class="n">cnf</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;It seems like you do not have an accessible installation of ambertools.&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Software.set_gmx_preferences"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.software.Software.set_gmx_preferences">[docs]</a>    <span class="k">def</span> <span class="nf">set_gmx_preferences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parameters</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_gmx_preferences set the necessary resolution of gromacs executables based on directives in the parameters parameter</span>
