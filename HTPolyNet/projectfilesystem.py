@@ -10,18 +10,18 @@ import shutil
 import logging
 import os
 import glob
-import importlib.resources
+from . import resources
 logger=logging.getLogger(__name__)
-
+excludes=['__pycache__','__init__.py']
 class RuntimeLibrary:
     ''' a library object -- default creation references the Library resource package. '''
     def __init__(self):
         self.root=''
-        self.subdirs=[]
+        # self.subdirs=[]
         self.designation=''
-
+        self.ResourcePaths={}
     @classmethod
-    def system(cls,libpackage='Library'):
+    def system(cls):
         """system generates a RuntimeLibrary object corresponding to the installed Library subpackage
 
         :param libpackage: name of the HTPolyNet Library subpackage, defaults to 'Library'
@@ -32,15 +32,12 @@ class RuntimeLibrary:
         """
         inst=cls()
         inst.designation='System'
-        try:
-            with importlib.resources.path(libpackage,'__init__.py') as f:
-                inst.root=os.path.split(os.path.abspath(f))[0]
-            subdirs=os.listdir(inst.root)
-            for xxx in ['__init__.py','__pycache__','README.md']:
-                subdirs.remove(xxx)
-            inst.subdirs=[os.path.join(inst.root,xxx) for xxx in subdirs]
-        except:
-            raise ImportError(f'Could not find package {libpackage}.  Your HTPolyNet installation is corrupt.')
+        inst.root=os.path.dirname(resources.__file__)
+        ResourceFullPaths=glob.glob(inst.root+'/*')
+        for l in ResourceFullPaths:
+            bn=os.path.basename(l)
+            if not bn in excludes:
+                inst.ResourcePaths[bn]=l
         logger.info(inst.info())
         return inst
 
@@ -50,10 +47,8 @@ class RuntimeLibrary:
         :return: name of depot directory
         :rtype: str
         """
-        if any(['example_depot' in x for x in self.subdirs]):
-            depot=[x for x in self.subdirs if 'example_depot' in x][0]
-            return depot
-        return None
+        assert 'example_depot' in self.ResourcePaths,f'No example depot found in {self.root} -- your installation is corrupt.'
+        return self.ResourcePaths['example_depot']
 
     def get_example_names(self):
         """get_example_names returns the names of the example tarballs
@@ -61,15 +56,14 @@ class RuntimeLibrary:
         :return: list of names of example tarballs
         :rtype: list
         """
-        if any(['example_depot' in x for x in self.subdirs]):
-            depot=[x for x in self.subdirs if 'example_depot' in x][0]
-            owd=os.getcwd()
-            os.chdir(depot)
-            example_tarballs=glob.glob('*.tgz')
-            basenames=[x.replace('.tgz','') for x in example_tarballs]
-            os.chdir(owd)
-            return basenames
-        return []
+        depot=self.get_example_depot_location()
+        assert os.path.exists(depot) and os.path.isdir(depot),f'Depot not found or not a directory -- your installation is corrupt.'
+        owd=os.getcwd()
+        os.chdir(depot)
+        example_tarballs=glob.glob('*.tgz')
+        basenames=[x.replace('.tgz','') for x in example_tarballs]
+        os.chdir(owd)
+        return basenames
 
     @classmethod
     def user(cls,pathname='.'):
@@ -87,14 +81,13 @@ class RuntimeLibrary:
         assert os.path.isdir(tt),f'Please ensure that {str(tt)} is a directory'
         inst=cls()
         inst.designation='User'
-        inst.root=tt
-        for x in ['__init__.py', 'README.md', '__pycache__']:
-            if x in tt:
-                tt.remove(x)
-        inst.subdirs=[x for x in tt if os.path.isdir(x)]
-        logger.info(inst.info())
+        ResourceFullPaths=glob.glob(inst.root+'/*')
+        for l in ResourceFullPaths:
+            bn=os.path.basename(l)
+            if not bn in excludes:
+                inst.ResourcePaths[bn]=l
         return inst
-
+    
     def checkin(self,filename,overwrite=False):
         """checkin check filename into this RuntimeLibrary
 

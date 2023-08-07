@@ -179,13 +179,6 @@ def cli():
     command_parsers['plots'].add_argument('--traces',type=str,nargs='+',default=['t','d','p'],choices=['t','d','p'],help='type of traces to plot from build: t: temperature; d: density; p: potential energy')
     command_parsers['plots'].add_argument('--n_points',type=int,nargs=2,default=[10,20],help='number of [cold-side,hot-side] data points in the Tg analysis to fit lines to')
 
-    # command_parsers['plots'].add_argument('-t',type=str,default='',help='Plot density and temperature traces for entire build in specified project directory to this file')
-    # command_parsers['plots'].add_argument('-o',type=str,default='',help='dump density/temperature trace data to this file')
-    # command_parsers['plots'].add_argument('-postsim',type=str,default='',help='Plot density traces for post-build anneal/equilibration simulations in specified project directory to this file')
-    # command_parsers['plots'].add_argument('-g',type=str,default='',help='Plot graph network of resids and save to this file name')
-    # command_parsers['plots'].add_argument('-byiter',default=False,action='store_true',help='Plot graph network of resids for each iter separately')
-    # command_parsers['plots'].add_argument('-mwbxl',default='',help='Compute home-N between crosslinks, save to this file')
-    # command_parsers['plots'].add_argument('-clusters',default='',help='Save cluster size distribution to this file')
     command_parsers['plots'].add_argument('--plotfile',type=str,default='',help='name of plot file to generate')
     command_parsers['plots'].add_argument('--no-banner',default=False,action='store_true',help='turn off the banner')
     command_parsers['plots'].add_argument('--loglevel',type=str,default='info',help='Log level for messages written to diagnostic log (debug|info)')

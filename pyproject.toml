@@ -1,3 +1,42 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+[project]
+name = "HTPolyNet"
+version = "1.0.7"
+authors = [
+  { name="Cameron F Abrams", email="cfa22@drexel.edu" },
+]
+description = "Automated MD System Builder for Amorphous Network Polymers"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Chemistry',
+    'Operating System :: POSIX :: Linux',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: 3',
+]
+dependencies = [
+    "numpy>=1.24",
+    "pyyaml>=6",
+    "requests>=2.28",
+    "pandas>=2",
+    "scipy>=1.10",
+    "parmed>=4",
+    "networkx>=2.8",
+    "gputil>=1.4"
+]
+
+[project.urls]
+"Source" = "https://github.com/AbramsGroup/HTPolyNet"
+"Documentation" = "https://abramsgroup.github.io/HTPolyNet/"
+"Bug Tracker" = "https://github.com/AbramsGroup/HTPolyNet/issues"
+
+[tool.pytest.ini_options]
+log_cli = true
+
+[project.scripts]
+cli-name = "HTPolyNet.driver:cli"
+

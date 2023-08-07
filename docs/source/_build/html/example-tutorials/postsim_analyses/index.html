@@ -204,7 +204,7 @@
 <figure class="align-default" id="id1">
 <img alt="../../_images/rho_v_ns.png" src="../../_images/rho_v_ns.png" />
 <figcaption>
-<p><span class="caption-text">Density vs. time in the annealing stage.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 27 </span><span class="caption-text">Density vs. time in the annealing stage.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>This shows that two cycles were done, but unfortunately, we see that intention of the annealing was not met – the density did not increase as a result; in fact, it looks like it decreased.  AGAIN: this are stupidly short simulations just for illustration.</p>
@@ -212,7 +212,7 @@
 <figure class="align-default" id="id2">
 <img alt="../../_images/prod-rho_v_ns.png" src="../../_images/prod-rho_v_ns.png" />
 <figcaption>
-<p><span class="caption-text">Density vs. time in the annealing stage of a production MD simulation.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 28 </span><span class="caption-text">Density vs. time in the annealing stage of a production MD simulation.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>In this case, the much longer annealing did in fact increase the system density, as intended.  This is a three-cycle anneal lasting a total of 120 ns.</p>
@@ -220,14 +220,14 @@
 <figure class="align-default" id="id3">
 <img alt="../../_images/equil-rho_v_ns.png" src="../../_images/equil-rho_v_ns.png" />
 <figcaption>
-<p><span class="caption-text">Density vs. time in the equilibration stage.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 29 </span><span class="caption-text">Density vs. time in the equilibration stage.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>This is a silly plot, since the equilibration is so short.  An example of an analogous post-anneal equilibration (from the same example as above) is this one:</p>
 <figure class="align-default" id="id4">
 <img alt="../../_images/prod-equil-rho_v_ns.png" src="../../_images/prod-equil-rho_v_ns.png" />
 <figcaption>
-<p><span class="caption-text">Density vs. time in the equilibration stage of the production MD simulation.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 30 </span><span class="caption-text">Density vs. time in the equilibration stage of the production MD simulation.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>That equilibration lasted 100 ns and resulted in a significant densification.  This type of plot is important since it reveals a transient in the first 60% or so of the simulation, meaning that equilibrium measurements should be averages over only the last 40 ns or so of the trajectory.</p>
@@ -264,28 +264,28 @@ INFO&gt;<span class="w"> </span>e.png<span class="w"> </span>and<span class="w">
 <figure class="align-default" id="id5">
 <img alt="../../_images/short-tg.png" src="../../_images/short-tg.png" />
 <figcaption>
-<p><span class="caption-text">Density vs. temperature in the heating (left) and cooling (right) simulations in this example.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 31 </span><span class="caption-text">Density vs. temperature in the heating (left) and cooling (right) simulations in this example.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>In practice, we should run much longer simulations and average over replicas.  Below is the analogous plot for a production MD simulation:</p>
 <figure class="align-default" id="id6">
 <img alt="../../_images/prod-tg.png" src="../../_images/prod-tg.png" />
 <figcaption>
-<p><span class="caption-text">Density vs. temperature in the heating (left) and cooling (right) simulations in production simulations, averaged over five replicas, with a heating rate of 5 K per 100 ns.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 32 </span><span class="caption-text">Density vs. temperature in the heating (left) and cooling (right) simulations in production simulations, averaged over five replicas, with a heating rate of 5 K per 100 ns.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>We also note a ridiculous value for the Young’s modulus of 7.1 GPa.  The plot of stress vs strain shows this is meaningless from such a short simulation:</p>
 <figure class="align-default" id="id7">
 <img alt="../../_images/short-e.png" src="../../_images/short-e.png" />
 <figcaption>
-<p><span class="caption-text">Stress vs. strain, averaged over deformations along x, y, and z, for our short simulation.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 33 </span><span class="caption-text">Stress vs. strain, averaged over deformations along x, y, and z, for our short simulation.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Again, in practice, this should be the result of much longer simulations and averaging over replicas.  If done correctly, we see something like this:</p>
 <figure class="align-default" id="id8">
 <img alt="../../_images/prod-e.png" src="../../_images/prod-e.png" />
 <figcaption>
-<p><span class="caption-text">Stress vs. strain, averaged over deformations along x, y, and z, and over five replicas and a strain rate of 10<sup>8</sup> s<sup>-1</sup>.</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 34 </span><span class="caption-text">Stress vs. strain, averaged over deformations along x, y, and z, and over five replicas and a strain rate of 10<sup>8</sup> s<sup>-1</sup>.</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Finally, let’s use <code class="docutils literal notranslate"><span class="pre">analyze</span></code> to measure fractional free volume in the equilibration stage.  Using the shortcut approach, we need an input YAML file <code class="docutils literal notranslate"><span class="pre">fv.yaml</span></code> that just has one line:</p>
