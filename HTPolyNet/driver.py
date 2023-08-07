@@ -149,7 +149,8 @@ def pack_example(args):
     else:
         newname=f'{os.path.basename(os.getcwd())}'
     depot_location=l.get_example_depot_location()
-    c=Command(f'tar --exclude="*/*/*/*/*" -zvcf {depot_location}/{newname}.tgz README.md run.sh *.yaml lib/molecules/')
+    os.chdir('..')
+    c=Command(f'tar --exclude="*/*/*/*/*" -zvcf {depot_location}/{newname}.tgz {bn}/README.md {bn}/run.sh {bn}/*.yaml {bn}/lib/molecules/')
     o,e=c.run()
     print(o)
     print(e)

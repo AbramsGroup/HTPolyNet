@@ -11,6 +11,8 @@ import os
 import logging
 logger=logging.getLogger(__name__)
 from HTPolyNet.projectfilesystem import RuntimeLibrary
+from HTPolyNet.software import Software
+
 class TestResources(unittest.TestCase):
     def test_runtime_library_system(self):
         s=RuntimeLibrary.system()

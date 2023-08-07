@@ -19,14 +19,14 @@ class Software:
         """__init__ generates a new Software object
         """
         cnf=[]
-        passes=True
+        self.passes=True
         for c in Software.ambertools:
             CP=subprocess.run(['which',c],capture_output=True,text=True)
             if CP.returncode!=0:
-                passes=False
+                self.passes=False
                 cnf.append(c)
         try:
-            assert passes,f'Could not find {cnf}'
+            assert self.passes,f'Could not find {cnf}'
         except AssertionError:
             print('It seems like you do not have an accessible installation of ambertools.')
 
@@ -57,16 +57,19 @@ class Software:
         self.getVersions()
         r=['Ambertools:']
         for c in self.ambertools:
-            r.append(f'{os.path.split(c)[1]:>12s} (ver. {self.versions["ambertools"]:>s})')
+            r.append(f'{os.path.split(c)[1]:>12s} ({self.versions["ambertools"]:>s})')
         return '\n'.join(r)
 
     def getVersions(self):
         """getVersions attempts to determine versions of AmberTools
         """
         self.versions={}
-        CP=subprocess.run(['antechamber','-h'],capture_output=True,text=True)
-        l=CP.stdout.split('\n')[1].split()[3].strip().strip(':')
-        self.versions['ambertools']=l
+        if self.passes:
+            CP=subprocess.run(['antechamber','-h'],capture_output=True,text=True)
+            l=CP.stdout.split('\n')[1].split()[3].strip().strip(':')
+            self.versions['ambertools']=f'ver. {l}'
+        else:
+            self.versions['ambertools']='Not installed.'
 
     def info(self):
         my_logger(str(self),logger.info)

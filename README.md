@@ -23,7 +23,7 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
-* 1.0.7.1
+* 1.0.7.2
     * moved Library package to resources subpackage of HTPolyNet.HTPolyNet
 * 1.0.6
     * gmx-style analyze subcommand added
