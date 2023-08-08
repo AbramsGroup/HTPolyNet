@@ -29,7 +29,13 @@ Once this environment is created and activated, you can optionally install some 
 Installation
 ------------
 
-Because ``HTPolyNet`` is under active development, we recommend installing from a freshly cloned Github repository:
+The current stable version of ``HTPolyNet`` is available at PyPI:
+
+.. code-block:: console
+
+    $ pip install htpolynet
+
+To install a development version of ``HTPolyNet`` you can instal from a freshly cloned Github repository:
 
 .. code-block:: console
 
