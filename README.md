@@ -23,6 +23,8 @@ Once installed, the user has access to the main `htpolynet` command.
 
 ## Release History
 
+* 1.0.7.3
+    * in progress
 * 1.0.7.2
     * moved Library package to resources subpackage of HTPolyNet.HTPolyNet
 * 1.0.6
