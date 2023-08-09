@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Automated MD System Builder for Amorphous Network Polymers"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Science/Research',
