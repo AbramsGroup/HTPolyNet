@@ -5,8 +5,6 @@ HTPolyNet is a Python utility for generating atomistic models of cross-linked po
 
 ## Installation
 
-The programs ``antechamber``, ``parmchk2`` and ``tleap`` from AmberTools must be in your path.
-
 From PyPI:
 ```bash
 pip install htpolynet
@@ -20,6 +18,9 @@ pip install -e .
 ```
 
 Once installed, the user has access to the main `htpolynet` command.
+
+The programs ``antechamber``, ``parmchk2`` and ``tleap`` from AmberTools must be in your path.  These can be installed using the ``ambertools`` package from ``conda-forge`` or compiled from source.
+
 
 ## Release History
 
