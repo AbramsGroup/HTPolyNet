@@ -11,6 +11,9 @@ The following commands should be in your path:
 2. ``gmx`` or ``gmx_mpi`` (`Gromacs <https://manual.gromacs.org/documentation/current/index.html>`_, version 2022.1 or higher); preferred installation via compiling from source.
 3. ``obabel`` (`OpenBabel <https://github.com/openbabel/openbabel>`_); preferred installation via Linux distribution package.
 
+Installation
+------------
+
 If you use conda/anaconda, we recommended that you create a separate Python environment running ``HTPolyNet``:
 
 .. code-block:: console
@@ -18,22 +21,20 @@ If you use conda/anaconda, we recommended that you create a separate Python envi
     $ conda create --name mol-env python
     $ conda activate mol-env
 
-Once this environment is created and activated, you can optionally install some prequisites:
+Once this environment is created and activated, you can install both ``ambertools`` and ``HTPolyNet`` from ``conda-forge``:
 
 .. code-block:: console
 
-    $ conda install numpy scipy pandas ambertools
+    $ conda install -c conda-forge ambertools
+    $ conda install -c conda-forge htpolynet
 
-(``ambertools`` is available from the ``conda-forge`` channel.)  If you don't do this, ``setup.cfg`` in ``HTPolyNet`` will do it for you, which might take a bit.
-
-Installation
-------------
-
-The current stable version of ``HTPolyNet`` is available at PyPI:
+If you are not a conda user, you can install ``HTPolyNet`` from PyPI.
 
 .. code-block:: console
 
     $ pip install htpolynet
+
+Note that you will have to install ``ambertools`` some other way.
 
 To install a development version of ``HTPolyNet`` you can instal from a freshly cloned Github repository:
 
@@ -42,8 +43,6 @@ To install a development version of ``HTPolyNet`` you can instal from a freshly 
     $ git clone git@github.com:AbramsGroup/HTPolyNet.git
     $ cd HTPolyNet
     $ pip install -e .
-
-If you created the recommended python environment, make sure it is activated before running ``pip install``!
 
 
 Notes

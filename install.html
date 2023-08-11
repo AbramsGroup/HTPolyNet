@@ -41,30 +41,30 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">gmx</span></code> or <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code> (<a class="reference external" href="https://manual.gromacs.org/documentation/current/index.html">Gromacs</a>, version 2022.1 or higher); preferred installation via compiling from source.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">obabel</span></code> (<a class="reference external" href="https://github.com/openbabel/openbabel">OpenBabel</a>); preferred installation via Linux distribution package.</p></li>
 </ol>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
 <p>If you use conda/anaconda, we recommended that you create a separate Python environment running <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>mol-env<span class="w"> </span>python
 <span class="gp">$ </span>conda<span class="w"> </span>activate<span class="w"> </span>mol-env
 </pre></div>
 </div>
-<p>Once this environment is created and activated, you can optionally install some prequisites:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda<span class="w"> </span>install<span class="w"> </span>numpy<span class="w"> </span>scipy<span class="w"> </span>pandas<span class="w"> </span>ambertools
+<p>Once this environment is created and activated, you can install both <code class="docutils literal notranslate"><span class="pre">ambertools</span></code> and <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> from <code class="docutils literal notranslate"><span class="pre">conda-forge</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>ambertools
+<span class="gp">$ </span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>htpolynet
 </pre></div>
 </div>
-<p>(<code class="docutils literal notranslate"><span class="pre">ambertools</span></code> is available from the <code class="docutils literal notranslate"><span class="pre">conda-forge</span></code> channel.)  If you don’t do this, <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> in <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> will do it for you, which might take a bit.</p>
-</section>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
-<p>The current stable version of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> is available at PyPI:</p>
+<p>If you are not a conda user, you can install <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> from PyPI.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>htpolynet
 </pre></div>
 </div>
+<p>Note that you will have to install <code class="docutils literal notranslate"><span class="pre">ambertools</span></code> some other way.</p>
 <p>To install a development version of <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> you can instal from a freshly cloned Github repository:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:AbramsGroup/HTPolyNet.git
 <span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>HTPolyNet
 <span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </pre></div>
 </div>
-<p>If you created the recommended python environment, make sure it is activated before running <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>!</p>
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading">¶</a></h2>
