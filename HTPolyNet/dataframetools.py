@@ -11,6 +11,16 @@ import logging
 
 logger=logging.getLogger(__name__)
 
+def get_row(df:pd.DataFrame,attributes:dict): 
+    """return a pandas Series of the row that matches the attribute dict"""
+    assert all([k in df for k in attributes.keys()]),f'One or more keys not in dataframe'
+    ga={k:v for k,v in attributes.items() if k in df}
+    assert len(ga)>0,f'Cannot find row with attributes {attributes} in dataframe with {df.columns}'
+    sdf=df
+    for k,v in attributes.items():
+        sdf=sdf[sdf[k]==v]
+    return pd.Series(sdf.iloc[0,:])
+
 def get_row_attribute(df:pd.DataFrame,name,attributes):
     """get_row_attribute returns a scalar value of attribute "name" in row
         expected to be uniquely defined by attributes dict
@@ -24,19 +34,8 @@ def get_row_attribute(df:pd.DataFrame,name,attributes):
     :return: value of attribute name
     :rtype: scalar
     """
-    ga={k:v for k,v in attributes.items() if k in df}
-    assert len(ga)>0,f'Cannot find row with attributes {attributes}'
-    if type(name)==list:
-        name_in_df=all([n in df for n in name])
-    else:
-        name_in_df= name in df
-    assert name_in_df,f'Attribute(s) {name} not found'
-    c=[df[k] for k in ga]
-    V=list(ga.values())
-    l=[True]*df.shape[0]
-    for i in range(len(c)):
-        l = (l) & (c[i]==V[i])
-    return df[list(l)][name].values[0]
+    row=get_row(df,attributes)
+    return row[name]
 
 def get_row_as_string(df:pd.DataFrame,attributes):
     """get_row_as_string returns a scalar value of attribute "name" in row
@@ -51,8 +50,8 @@ def get_row_as_string(df:pd.DataFrame,attributes):
     """
     ga={k:v for k,v in attributes.items() if k in df}
     c=[df[k] for k in ga]
-    V=list(ga.values())
-    l=[True]*df.shape[0]
+    V=pd.Series(list(ga.values()))
+    l=pd.Series([True]*df.shape[0])
     for i in range(len(c)):
         l = (l) & (c[i]==V[i])
     return df[list(l)].to_string()
@@ -73,8 +72,8 @@ def get_rows_w_attribute(df:pd.DataFrame,name,attributes:dict):
         name_in_df= name in df
     assert name_in_df,f'Attribute(s) {name} not found'
     c=[df[k] for k in ga]
-    V=list(ga.values())
-    l=[True]*df.shape[0]
+    V=pd.Series(list(ga.values()))
+    l=pd.Series([True]*df.shape[0])
     for i in range(len(c)):
         l = (l) & (c[i]==V[i])
     return df[list(l)][name].values
@@ -97,8 +96,8 @@ def set_row_attribute(df:pd.DataFrame,name,value,attributes):
         logger.warning(f'Caller attempts to use unrecognized attributes to refer to row: {exla}')
     if name in df and len(ga)>0:
         c=[df[k] for k in ga]
-        V=list(ga.values())
-        l=[True]*df.shape[0]
+        V=pd.Series(list(ga.values()))
+        l=pd.Series([True]*df.shape[0])
         for i in range(len(c)):
             l = (l) & (c[i]==V[i])
         cidx=[c==name for c in df.columns]
@@ -121,8 +120,8 @@ def set_rows_attributes_from_dict(df:pd.DataFrame,valdict,attributes):
         logger.warning(f'using unknown attributes to refer to atom: {exla}')
     if all([x in df for x in valdict]) and len(ga)>0:
         c=[df[k] for k in ga]
-        V=list(ga.values())
-        l=[True]*df.shape[0]
+        V=pd.Series(list(ga.values()))
+        l=pd.Series([True]*df.shape[0])
         for i in range(len(c)):
             l = (l) & (c[i]==V[i])
         for k,v in valdict.items():

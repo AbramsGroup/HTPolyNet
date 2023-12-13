@@ -197,9 +197,9 @@ class Bondlist:
         :return: a networkx DiGraph object
         :rtype: networkx.DiGraph
         """
-        g=nx.DiGraph()
+        g=nx.Graph()
         N=len(self.B)
-        g.add_nodes_from(list(range(N)))
+        # g.add_nodes_from(list(range(N)))
         for i,n in self.B.items():
             for j in n:
                 g.add_edge(i,j)

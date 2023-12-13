@@ -103,7 +103,7 @@ def _get_unique_cycles_dict(G,min_length=-1):
     """
     ucycles={}
     counts_by_length={}
-    for u in nx.simple_cycles(G):
+    for u in nx.chordless_cycles(G):
         sl=len(u)
         if min_length<=sl:
             # logger.debug(f'a cycle {u}')

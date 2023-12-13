@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "HTPolyNet"
-version = "1.0.7.3"
+version = "1.0.8"
 authors = [
   { name="Cameron F Abrams", email="cfa22@drexel.edu" },
 ]
@@ -26,7 +26,7 @@ dependencies = [
     "pandas>=2",
     "scipy>=1.10",
     "parmed>=4",
-    "networkx>=2.8",
+    "networkx>=3.2s",
     "gputil>=1.4"
 ]
 

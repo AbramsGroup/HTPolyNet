@@ -24,8 +24,8 @@ The programs ``antechamber``, ``parmchk2`` and ``tleap`` from AmberTools must be
 
 ## Release History
 
-* 1.0.7.3
-    * in progress
+* 1.0.8
+    * uses `chordless_cycles` to find rings
 * 1.0.7.2
     * moved Library package to resources subpackage of HTPolyNet.HTPolyNet
 * 1.0.6
