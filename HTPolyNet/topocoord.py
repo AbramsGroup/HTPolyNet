@@ -14,9 +14,11 @@ from enum import Enum
 import os
 import shutil
 from copy import deepcopy
+import networkx as nx
 from HTPolyNet.coordinates import Coordinates, GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
 from HTPolyNet.topology import Topology
 from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
+from HTPolyNet.matrix4 import Matrix4
 from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 import HTPolyNet.projectfilesystem as pfs
 
@@ -1834,6 +1836,131 @@ class TopoCoord:
         print(pdf.sort_values(by='dy').head(3).to_string())
         print(pdf.sort_values(by='dz').head(3).to_string())
         self.write_top('checked.top')
+
+    def flip_stereocenters(self,idxlist):
+        """flip_stereocenters flips stereochemistry of atoms in idxlist
+
+        :param idxlist: global indices of chiral atoms
+        :type idxlist: list
+        """
+        A=self.Coordinates.A
+        g=self.Topology.bondlist.graph()
+        for idx in idxlist:
+            ligand_idx=self.Topology.bondlist.partners_of(idx)
+            O=self.get_R(idx)
+            name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':idx})
+            if len(ligand_idx)!=4:
+                logger.debug(f'Atom {idx} cannot be a stereocenter; it only has {len(ligand_idx)} ligands.')
+            else:
+                logger.debug(f'Flipping stereochemistry at atom {idx}')
+                # do stuff
+                cg=g.copy()
+                # remove the stereocenter and see what unconnected components are generated
+                cg.remove_node(idx)
+                cc=[cg.subgraph(c).copy() for c in nx.connected_components(cg)]
+                ncc=len(cc)
+                logger.debug(f'At stereocenter {idx} there are {ncc} unconnected ligands')
+                # for each ligand-group, assign one or more stereocenter ligand atoms
+                associates={k:[] for k in range(ncc)}
+                for i in ligand_idx:
+                    for icc in range(ncc):
+                        tcc=cc[icc]
+                        if i in tcc:
+                            associates[icc].append(i)
+                sizes=[]
+                for icc in range(ncc):
+                    sizes.append(len(cc[icc]))
+                sizes=np.array(sizes)
+                sarg=sizes.argsort()
+                logger.debug(f'Atom {idx} grouped associate ligand subgraphs {associates}')
+                logger.debug(f'Subgroups sorted by size:')
+                for sa in sarg:
+                    logger.debug(f'  {sa}: {" ".join([self.get_gro_attribute_by_attributes("atomName",{"globalIdx":x}) for x in cc[sa]])}')
+
+                # The flip is a 180-degree rotation of "half" of the atoms connected to the stereocenter
+                # about an axis defined by (a) the location of the stereocenter and (b) the midpoint on
+                # the vector connecting two specially-selected ligand atoms.
+                #
+                # How the two ligand atoms are selected:
+                # 1. If there are four unconnected ligand groups, then the two groups with the fewest atoms
+                #    are selected.
+                # 2. If there are three unconnected groups, then one of them has two ligand atoms.
+                #    These two atoms are selected if that group is smaller than the union of
+                #    the other two groups.  If that group is not smaller than the union of the
+                #    other two groups, then the ligand atoms of those other two groups are selected.
+                # 3. If there are two unconnected groups, AND both have two ligand atoms, the group with
+                #    the smaller number of atoms has its ligand atoms selected.  If one group has three and
+                #    the other has one, we cannot flip this stereocenter using this method.  However,
+                #    we could perform a reflection of all atoms in this group through the plane defined by
+                #    (a) the stereocenter, (b) one of three ligand atoms, and (c) the midpoint between the
+                #    the other two.  However, this would also flip all stereocenters in that group.
+                #    So for now, we throw an error.
+                # 4. If there is only one unconnected group, there is no way we can do this.
+                if ncc==4:
+                    l1idx=associates[sarg[0]][0]
+                    l2idx=associates[sarg[1]][0]
+                    l1name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':l1idx})
+                    l2name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':l1idx})
+                    logger.debug(f'ncc {ncc}: Atoms {l1name} and {l2name} are the selected ligands of stereocenter {name}')
+                    p1=self.get_R(l1idx)
+                    p2=self.get_R(l2idx)
+                    mp=0.5*(p1+p2)
+                    ax=O-mp
+                    g1idx=list(cc[sarg[0]])
+                    g2idx=list(cc[sarg[1]])
+                    gidx=g1idx+g2idx # set of indices of rotating group
+                    M=Matrix4()
+                    M.translate(-O).rotate_axis(180.0,ax).translate(O)
+                    self.Coordinates.homog_trans(M,indices=gidx)
+                elif ncc==3:
+                    # largest group must have the two connected atoms?  not necessarily.
+                    the_idx_of_the_double=[x for x in sarg if len(associates[x])==2][0]
+                    other_idx=[x for x in sarg if len(associates[x])==1]
+                    assert len(other_idx)==2
+                    double_size=len(cc[the_idx_of_the_double])
+                    joint_size=sum([len(cc[x]) for x in other_idx])
+                    logger.debug(f'ncc {ncc}: Size of UG with two ligands: {double_size}; side of union of UGs with one ligand each: {joint_size}')
+                    if joint_size<double_size:
+                        l1idx=associates[other_idx[0]][0]
+                        l2idx=associates[other_idx[1]][0]
+                        gidx=list(cc[other_idx[0]])+list(cc[other_idx[1]])
+                    else:
+                        l1idx=associates[the_idx_of_the_double][0]
+                        l1idx=associates[the_idx_of_the_double][1]
+                        gidx=list(cc[the_idx_of_the_double])
+                    l1name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':l1idx})
+                    l2name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':l2idx})
+                    logger.debug(f'ncc {ncc}: Atoms {l1name} and {l2name} are the selected ligands of stereocenter {name}')
+                    p1=self.get_R(l1idx)
+                    p2=self.get_R(l2idx)
+                    mp=0.5*(p1+p2)
+                    ax=O-mp
+                    M=Matrix4()
+                    M.translate(-O).rotate_axis(180.0,ax).translate(O)
+                    self.Coordinates.homog_trans(M,indices=gidx)
+                elif ncc==2:
+                    if all([len(x)==2 for x in associates.values()]):
+                        l1idx=associates[sarg[0]][0]
+                        l2idx=associates[sarg[0]][1]
+                        l1name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':l1idx})
+                        l2name=self.get_gro_attribute_by_attributes('atomName',{'globalIdx':l2idx})
+                        logger.debug(f'ncc {ncc}: Atoms {l1name} and {l2name} are the selected ligands of stereocenter {name}')
+                        p1=self.get_R(l1idx)
+                        p2=self.get_R(l2idx)
+                        mp=0.5*(p1+p2)
+                        ax=mp-O
+                        logger.debug(f'p1 {p1} p2 {p2} mp {mp} ax {ax} O {O}')
+                        gidx=list(cc[sarg[0]])
+                        logger.debug(f'The rotating group is {" ".join([self.get_gro_attribute_by_attributes("atomName",{"globalIdx":x}) for x in gidx])}')
+                        M=Matrix4()
+                        M.translate(-O).rotate_axis(180.0,ax).translate(O)
+                        self.Coordinates.homog_trans(M,indices=gidx)
+                    else:
+                        logger.debug(f'Arrangment of unconnected ligand groups at stereocenter {idx} does not permit rotation.')
+                    pass
+                elif ncc==4:
+                    logger.debug(f'Cannot flip at stereocenter {idx}.')
+
 
 def find_template(BT:BondTemplate,moldict):
     """find_template searches the dictionary of available molecules to identify a bond template that matches the passed-in template, returning the corresponding template molecule and reaction-bond

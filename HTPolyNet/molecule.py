@@ -19,6 +19,7 @@ import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
 from HTPolyNet.coordinates import dfrotate, GRX_ATTRIBUTES
+from HTPolyNet.matrix4 import Matrix4
 from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.gromacs import mdp_modify,gro_from_trr
 from HTPolyNet.command import Command
@@ -949,74 +950,7 @@ class Molecule:
         :param idxlist: global indices of chiral atoms
         :type idxlist: list
         """
-        TC=self.TopoCoord
-        A=TC.Coordinates.A
-        g=self.TopoCoord.Topology.bondlist.graph()
-        for idx in idxlist:
-            ligand_idx=self.TopoCoord.Topology.bondlist.partners_of(idx)
-            if len(ligand_idx)!=4:
-                logger.debug(f'Atom {idx} cannot be a stereocenter; it only has {len(ligand_idx)} ligands.')
-            else:
-                logger.debug(f'Flipping stereochemistry at atom {idx}')
-                # do stuff
-                cg=g.copy()
-                cg.remove_node(idx)
-                cc=[cg.subgraph(c).copy() for c in nx.connected_components(cg)]
-                ncc=len(cc)
-                associates={k:[] for k in range(ncc)}
-                for i in ligand_idx:
-                    for icc in range(ncc):
-                        tcc=cc[icc]
-                        if i in tcc:
-                            associates[icc].append(i)
-                logger.debug(f'Atom {idx} grouped associate ligands {associates}')
-
-                O=TC.get_R(idx)
-                TC.translate(-1*O)
-                r0=TC.get_R(idx)
-                # define the rotation axis
-                # define the rotating group
-                # rotate that group
-                TC.translate(O)
-        # determine the two lightest ligands
-        # branches={}
-        # for n in ligand_idx:
-        #     bl=deepcopy(self.TopoCoord.Topology.bondlist)
-        #     branches[n]=bl.half_as_list([idx,n],3)
-        # ligand_idx.sort(key=lambda x: len(branches[x]))
-        # a=ligand_idx[0]
-        # aset=list(set(list(chain.from_iterable(branches[a]))))
-        # b=ligand_idx[1]
-        # bset=list(set(list(chain.from_iterable(branches[b]))))
-        # # translate origin to location of stereocenter
-        # O=TC.get_R(idx)
-        # TC.translate(-1*O)
-        # rO=TC.get_R(idx)
-        # ra=TC.get_R(a)
-        # rb=TC.get_R(b)
-        # adf=A[A['globalIdx'].isin(aset)]
-        # bdf=A[A['globalIdx'].isin(bset)]
-        # # rotate the two branches to swap them
-        # rOa=rO-ra
-        # rOa*=1.0/np.linalg.norm(rOa)
-        # rOb=rO-rb
-        # rOb*=1.0/np.linalg.norm(rOb)
-        # cp=np.cross(rOa,rOb)
-        # c=np.dot(rOa,rOb)
-        # v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
-        # v2=np.dot(v,v)
-        # I=np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
-        # R=I+v+v2/(1.+c)
-        # dfrotate(adf,R)
-        # A.loc[A['globalIdx'].isin(aset),['posX','posY','posZ']]=adf[['posX','posY','posZ']]
-        # cp=np.cross(rOb,rOa)
-        # v=np.array([[0,-cp[2],cp[1]],[cp[2],0,-cp[0]],[-cp[1],cp[0],0]])
-        # v2=np.dot(v,v)
-        # R=I+v+v2/(1.+c)
-        # dfrotate(bdf,R)
-        # A.loc[A['globalIdx'].isin(bset),['posX','posY','posZ']]=bdf[['posX','posY','posZ']]
-        # # translate back to original coordinate frame
-        # TC.translate(O)
+        self.TopoCoord.flip_stereocenters(idxlist)
 
     def rotate_bond(self,a,b,deg):
         """rotate_bond rotates all atoms in molecule on b-side of a-b bond by deg degrees

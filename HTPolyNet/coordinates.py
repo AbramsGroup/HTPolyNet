@@ -18,6 +18,7 @@ from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.linkcell import Linkcell
 from HTPolyNet.ring import Ring,Segment
 from HTPolyNet.dataframetools import *
+from HTPolyNet.matrix4 import Matrix4
 
 logger=logging.getLogger(__name__)
 
@@ -675,6 +676,18 @@ class Coordinates:
                 if D<minD:
                     minD=D
         return minD
+    
+    def homog_trans(self,M:Matrix4,indices=[]):
+        """dfrotate applies homogeneous transformation matrix M [4x4] to coordinates
+
+        :param M: homogeneous transformation matrix
+        :type M: Matrix4
+        """
+        df=self.A
+        for i,srow in df.iterrows():
+            if len(indices)==0 or (srow['globalIdx'] in indices):
+                ri=np.array(list(srow[['posX','posY','posZ']].values))
+                df.loc[i,'posX':'posZ']=M.transform(ri)
 
     def rotate(self,R):
         """rotate Rotates all coordinate vectors by rotation matrix R
@@ -752,7 +765,7 @@ class Coordinates:
         :rtype: numpy.ndarray(3,float)
         """
         df=self.A
-        return get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})
+        return np.array(get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx}))
     
     def get_atom_attribute(self,name,attributes):
         """get_atom_attribute return values of attributes listed in name from atoms specified by attribute:value pairs in attributes
