@@ -91,27 +91,28 @@ def treadmills(L):
         nL=nnL
     return r
 
-def _get_unique_cycles_dict(G,min_length=-1):
-    """_get_unique_cycles_dict generates dictionary identifying all unique covalent cycles from the digraph G
+def _get_unique_rings_dict(G,min_length=-1):
+    """_get_unique_rings_dict generates dictionary identifying all unique covalent rings (chordless cycles) 
+    from the graph G
 
-    :param G: a digraph representing atomic connectivity
-    :type G: networkx.DiGraph
-    :param min_length: minimum length cycle length, defaults to -1 (no limit; 3 would be a better choice)
+    :param G: a graph representing atomic connectivity
+    :type G: networkx.Graph
+    :param min_length: minimum ring length, defaults to -1 (no limit; 3 would be a better choice)
     :type min_length: int, optional
-    :return: dictionary of cycles keyed on cycle length with values being lists of lists of indices
+    :return: dictionary of ring keyed on ring length with values being lists of lists of atom globalIdx's
     :rtype: dict
     """
-    ucycles={}
+    urings={}
     counts_by_length={}
     for u in nx.chordless_cycles(G):
         sl=len(u)
         if min_length<=sl:
-            # logger.debug(f'a cycle {u}')
+            # logger.debug(f'a ring {u}')
             if not sl in counts_by_length:
                 counts_by_length[sl]=0
             counts_by_length[sl]+=1
-            if not sl in ucycles:
-                ucycles[sl]=[]
+            if not sl in urings:
+                urings[sl]=[]
             utl=treadmills(u)
             ur=list(reversed(u))
             urtl=treadmills(ur)
@@ -122,12 +123,12 @@ def _get_unique_cycles_dict(G,min_length=-1):
                 if len(u)==l:
                     found=False
                     for e in eqv:
-                        if e in ucycles[l]:
+                        if e in urings[l]:
                             found=True
                             break
                     if not found:
-                        ucycles[l].append(u)
-    return ucycles
+                        urings[l].append(u)
+    return urings
 
 def _present_and_contiguous(subL,L):
     """_present_and_contiguous returns True is elements in subL appear as a contiguous sub-block in 
@@ -394,14 +395,14 @@ class Topology:
             cols=self.D[directive].columns.get_indexer(idxlabels)
             self.D[directive].iloc[rows[0]:rows[1],cols]+=idxshift
 
-    def detect_cycles(self):
-        """detect_cycles detect unique cycles in the topology
+    def detect_rings(self):
+        """detect_rings detect unique rings in the topology
 
-        :return: cycle dict (length:list-of-cycles-by-atom-indices)
+        :return: ring dict (length:list-of-rings-by-atom-indices)
         :rtype: dict
         """
         g=self.bondlist.graph()
-        cycles=_get_unique_cycles_dict(g,min_length=3)
+        cycles=_get_unique_rings_dict(g,min_length=3)
         return cycles
 
     def rep_ex(self,count=0):

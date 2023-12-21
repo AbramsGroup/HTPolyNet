@@ -22,22 +22,20 @@ from HTPolyNet.matrix4 import Matrix4
 
 logger=logging.getLogger(__name__)
 
-GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','cycle','cycle_idx','chain','chain_idx','molecule','molecule_name']
+GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','chain','chain_idx','molecule','molecule_name']
 """Extended atom attributes
 
     - 'z' number of sacrificial H's on atom 
     - 'nreactions' number of H's sacrificed so far to form bonds
     - 'reactantName' name of most recent reactant to which atom belonged
     - 'sea_idx' index of the group of symmetry-related atoms this atom belongs to (atoms with the same sea_idx in the same resid are considered symmetry-equivalent)
-    - 'cycle' index of the unique cycle this atom belongs to
-    - 'cycle_idx' index of this atom within this cycle
     - 'chain' index of the unique chain this atom belongs to
     - 'chain_idx' index of this atom within this chain
     - 'molecule' index of the unique molecule this atom belongs to
     - 'molecule_name' name of that molecule
 """
-GRX_GLOBALLY_UNIQUE=[False,       False,         False,     True,  True,       False,   True,      False,      True,          False]
-GRX_UNSET_DEFAULTS =[    0,           0,       'UNSET',       -1,    -1,          -1,     -1,          -1,       -1,        'UNSET']
+GRX_GLOBALLY_UNIQUE=[False,       False,         False,     True,  True,      False,      True,          False]
+GRX_UNSET_DEFAULTS =[    0,           0,       'UNSET',       -1,    -1,          -1,       -1,        'UNSET']
 
 def dfrotate(df:pd.DataFrame,R):
     """dfrotate applies rotation matrix R to coordinates in dataframe
@@ -97,6 +95,7 @@ class Coordinates:
         self.empty=True
         self.box=np.zeros((3,3))
         self.grx_attributes=GRX_ATTRIBUTES
+        self.parent=None
         
     @classmethod
     def read_gro(cls,filename,wrap_coords=True):
@@ -249,6 +248,9 @@ class Coordinates:
         inst.N=N
         return inst
 
+    def claim_parent(self,parent):
+        self.parent=parent
+
     def set_box(self,box:np.ndarray):
         """set_box Set the box size from box
 
@@ -382,7 +384,9 @@ class Coordinates:
                 self.linkcell.make_memberlists(self.A)
             else:
                 self.set_atomset_attribute('linkcell_idx',-1*np.ones(self.A.shape[0]).astype(int))
-                sc=self.subcoords(self.A[(self.A['cycle_idx']>0)|(self.A['z']>0)].copy())
+                # we only populate with atoms whose positions will be needed in interatomic
+                # distance calculations; these are those (a) in rings, or (b) are reactive
+                sc=self.subcoords(self.A[(self.A['globalIdx'].isin(self.parent.rings.all_atoms()))|(self.A['z']>0)].copy())
                 self.linkcell.populate(sc,ncpu=ncpu)
                 self.reconcile_subcoords(sc,'linkcell_idx')
                 if save:

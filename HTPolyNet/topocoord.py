@@ -77,6 +77,7 @@ class TopoCoord:
             self.read_mol2(mol2filename,**kwargs)
         if grxfilename!='':
             self.read_gro_attributes(grxfilename)
+        self.Coordinates.claim_parent(self)
 
     @classmethod
     def from_top_gro(cls,top,gro):

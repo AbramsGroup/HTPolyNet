@@ -192,14 +192,12 @@ class Bondlist:
         return red    
 
     def graph(self):
-        """graph generate a networkx Directed Graph object from the bondlist
+        """graph generate a networkx Graph object from the bondlist
 
-        :return: a networkx DiGraph object
-        :rtype: networkx.DiGraph
+        :return: a networkx Graph object
+        :rtype: networkx.Graph
         """
         g=nx.Graph()
-        N=len(self.B)
-        # g.add_nodes_from(list(range(N)))
         for i,n in self.B.items():
             for j in n:
                 g.add_edge(i,j)

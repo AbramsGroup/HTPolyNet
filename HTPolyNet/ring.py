@@ -41,6 +41,11 @@
 # periodic image!
 #
 import numpy as np
+from collections import UserList
+from functools import singledispatchmethod
+import networkx as nx
+import logging
+logger=logging.getLogger(__name__)
 
 def lawofcos(a,b):
     """lawofcos return the cosine of the angle defined by vectors a and b if they share a vertex (the LAW OF COSINES)
@@ -68,48 +73,95 @@ class Segment:
         self.V=self.P[1]-self.P[0] # p1=p0+t*(p1-p0)
 
 class Ring:
-    def __init__(self,P):
-        """__init__ generates a Ring object from the list of N points P
+    def __init__(self,idx):
+        """__init__ generates a Ring object from the list of atom globalIdx
 
-        :param P: listlike container of N points defining an N-membered ring
+        A ring is a sequence of integers that is treated as cyclic and bidirectional.
+
+        So, the list [1,2,3,4,5] is "equal" to the following lists:
+
+        [2,3,4,5,1]
+        [3,4,5,1,2]
+        [4,5,1,2,3]
+        [5,1,2,3,4]
+        [5,4,3,2,1]
+        [4,3,2,1,5]
+        [3,2,1,5,4]
+        [2,1,5,4,3]
+        [1,5,4,3,2]
+
+        The first four elements in the list above are "treadmilled" versions of the
+        parent list.  The final five elements are the reverse of the parent list
+        and all treadmilled version of that reversed list.
+
+        :param P: list of ints
         :type P: list
         """
-        self.V=P.copy() # Nx3 np array P[i] is point-i (x,y,z)
-    def analyze(self):
-        """analyze computes some geometric features of a Ring object
-        """
-        # geometric center
-        self.O=np.zeros(shape=(3))
-        for i in self.V:
-            self.O=self.O+i
-        self.O=self.O/len(self.V)
-        self.B=[] # list of bond vectors
-        self.C=[] # list of bond-i-bond-i+1 cross produts
-        for i,j in zip(self.V[:-1],self.V[1:]):
-            self.B.append(i-j)
-        self.B.append(self.V[-1]-self.V[0])
-        for bi,bj in zip(self.B[:-1],self.B[1:]):
-            self.C.append(np.cross(bi,bj))
-        self.C.append(np.cross(self.B[-1],self.B[0]))
-        # compute unit normal vector as average
-        # of all bond-i-bond-i+1 crosses
-        n=np.zeros(shape=(3))
-        for c in self.C:
-            n=n+c
-        self.n=n/np.sqrt(np.dot(n,n))
+        self.idx=idx.copy()
+        assert(all([type(x)==int for x in self.idx]))
+
+    def injest_coordinates(self,A,idx_key='globalIdx',pos_key=['posX','posY','posZ']):
+        self.P=np.array(A[A[idx_key].isin(self.idx)][pos_key].values)
+        logger.debug(f'P {self.P}')
+        self.O=np.mean(self.P,axis=0)
+        logger.debug(f'O {self.O}')
+        iR=Ring(list(range(len(self.idx))))
+        a=iR.treadmill()
+        self.B=[]
+        for i,j in zip(iR.idx,next(a)):
+            b=self.P[i]-self.P[j]
+            logger.debug(f'R-{self.idx[i]}-{self.idx[j]}: {b}')
+            self.B.append(b)
+            # logger.debug(f'R-{self.idx[i]}-{self.idx[j]}: {self.B[-1]}')
+        self.B=np.array(self.B)
+        logger.debug(f'B {self.B}')
+        a=iR.treadmill()
+        self.C=[]
+        for i,j in zip(iR.idx,next(a)):
+            c=np.cross(self.B[i],self.B[j])
+            logger.debug(f'C-{self.idx[i]}-{self.idx[j]}: {c}')
+            self.C.append(c)
+        self.C=np.array(self.C)
+        logger.debug(f'C {self.C}')
+        n=np.sum(self.C,axis=0)
+        self.n=n/np.linalg.norm(n)
+        logger.debug(f'n {self.n}')
         # compute planarity as average of all
         # cross-i-cross-i+1 dot products
+        a=iR.treadmill()
         self.planarity=0
-        for ci,cj in zip(self.C[:-1],self.C[1:]):
+        for i,j in zip(iR.idx,next(a)):
+            ci=self.C[i]
+            cj=self.C[j]
             self.planarity+=lawofcos(ci,cj)
-        self.planarity+=lawofcos(self.C[-1],self.C[0])
-        self.planarity/=6
+        self.planarity/=len(iR.idx)
         # get the d for n-dot-r + d = 0 equation of the plane
         # n[0]*(x-O[0])+n[1]*(y-O[1])+n[2]*(z-O[2])=0
         # n[0]*x + n[1]*y + n[2]*z - (n[0]*O[0]+n[1]*O[1]+n[2]*O[2]) = 0
-        self.d=-np.dot(self.n,self.O)
+        self.d=-np.dot(self.n,self.O)        
+        self.vP=[]
+        for v in self.P:
+            r=v-self.O
+            p=r-np.dot(r,self.n)*self.n
+            newv=p+self.O
+            self.vP.append(newv)
+        self.vP=np.array(self.vP)
+        logger.debug(f'vP {self.vP}')
+
+    def treadmill(self):
+        """ yield the treadmilled versions of the list """
+        for i in range(1,len(self.idx)):
+            yield self.idx[i:]+self.idx[:i]
+
+    def __eq__(self,other):
+        check1=any([self.idx==other.idx] + [self.idx==x for x in other.treadmill()])
+        check2=any([self.idx==other.idx[::-1]]+[self.idx==x[::-1] for x in other.treadmill()])
+        # logger.debug(f'checking ring eq: {str(self)}=={str(other)}? {check1} and {check2}')
+        return check1 or check2
+    
     def __str__(self):
-        return str(self.V)
+        return '-'.join([str(x) for x in self.idx])
+    
     def self_planarize(self):
         """self_planarize projects points in P into plane -> vP
         """
@@ -153,3 +205,16 @@ class Ring:
             return inside, P
         return False, np.zeros(3)*np.nan
 
+class RingList(UserList):
+    @singledispatchmethod
+    def __init__(self,input_obj):
+        self.data=input_obj
+    @__init__.register(nx.Graph)
+    def _from_graph(self,G):
+        L=[]
+        for ll in nx.chordless_cycles(G):
+            L.append(Ring(ll))
+        super().__init__(L)
+    
+    def __str__(self):
+        return ';'.join([str(x) for x in self])

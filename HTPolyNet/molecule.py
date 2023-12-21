@@ -11,15 +11,13 @@ import pandas as pd
 import numpy as np
 import logging
 import shutil
-from itertools import chain, product
-import networkx as nx
+from itertools import product
 from copy import deepcopy
 
 import HTPolyNet.projectfilesystem as pfs
 from HTPolyNet.topocoord import TopoCoord
 from HTPolyNet.bondtemplate import BondTemplate,BondTemplateList,ReactionBond,ReactionBondList
-from HTPolyNet.coordinates import dfrotate, GRX_ATTRIBUTES
-from HTPolyNet.matrix4 import Matrix4
+from HTPolyNet.coordinates import GRX_ATTRIBUTES
 from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.gromacs import mdp_modify,gro_from_trr
 from HTPolyNet.command import Command
@@ -279,8 +277,10 @@ class Molecule:
             self.stereoisomers[mname]=Molecule.New(mname,None)
             self.stereoisomers[mname].parentname=self.name
             
-    def initialize_molecule_cycles(self):
-        """initialize_molecule_cycles assigns cycle indexes to all atoms
+    def initialize_molecule_rings(self):
+        """initialize_molecule_rings generates the dictionary of rings
+
+        the dictionary of rings is keyed on ring size
         """
         TC=self.TopoCoord
         TC.idx_lists['cycle']=[]
@@ -301,7 +301,7 @@ class Molecule:
         TC.set_gro_attribute('nreactions',0)
         TC.set_gro_attribute('molecule',1)
         TC.set_gro_attribute('molecule_name',self.name)
-        for att in ['sea_idx','chain','chain_idx','cycle','cycle_idx']:
+        for att in ['sea_idx','chain','chain_idx']:
             TC.set_gro_attribute(att,-1)
         # set symmetry class indices
         sea_idx=1
