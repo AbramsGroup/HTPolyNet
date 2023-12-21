@@ -283,13 +283,15 @@ class Molecule:
         the dictionary of rings is keyed on ring size
         """
         TC=self.TopoCoord
-        TC.idx_lists['cycle']=[]
-        cycle_dict=TC.Topology.detect_cycles()
-        logger.debug(f'Cycle dict: {cycle_dict}')
-        for l,cs_of_l in cycle_dict.items():
-            TC.idx_lists['cycle'].extend(cs_of_l)
-        logger.debug('Resetting cycle and cycle_idx')
-        TC.reset_grx_attributes_from_idx_list('cycle')
+        TC.Topology.detect_rings()
+
+        # TC.idx_lists['cycle']=[]
+        # cycle_dict=TC.Topology.detect_cycles()
+        # logger.debug(f'Cycle dict: {cycle_dict}')
+        # for l,cs_of_l in cycle_dict.items():
+        #     TC.idx_lists['cycle'].extend(cs_of_l)
+        # logger.debug('Resetting cycle and cycle_idx')
+        # TC.reset_grx_attributes_from_idx_list('cycle')
         logger.debug('Done')
 
     def initialize_monomer_grx_attributes(self):

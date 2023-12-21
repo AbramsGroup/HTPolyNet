@@ -64,7 +64,6 @@ class TopoCoord:
         self.grxattr=[]
         self.idx_lists={}
         self.idx_lists['chain']=[]
-        self.idx_lists['cycle']=[]
         if grofilename!='':
             self.read_gro(grofilename,wrap_coords=wrap_coords)
         else:
@@ -131,7 +130,7 @@ class TopoCoord:
         idx_mapper=self.Topology.delete_atoms(atomlist)
         assert type(idx_mapper)==dict
         # logger.debug(f'idx_mapper: {idx_mapper}')
-        for list_name in ['chain','cycle']:
+        for list_name in ['chain']:
             # logger.debug(f'remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}')
             self.reset_idx_list_from_grx_attributes(list_name)
             # self.remap_idx_list(list_name,idx_mapper)
@@ -746,8 +745,6 @@ class TopoCoord:
         attributes_read=self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
         if 'chain' in attributes_read and 'chain_idx' in attributes_read:
             self.reset_idx_list_from_grx_attributes('chain')
-        if 'cycle' in attributes_read and 'cycle_idx' in attributes_read:
-            self.reset_idx_list_from_grx_attributes('cycle')
         if attributes_read!=self.grxattr:
             self.grxattr=attributes_read
 
@@ -1197,6 +1194,7 @@ class TopoCoord:
         """
         if df.empty:
             return df
+        self.Topology.rings.injest_coordinates(self.Coordinates.A)
         results=[]
         for r in df.itertuples():
             result,dummy=self.bondtest((r.ai,r.aj,r.r),pbc=pbc,show_piercings=show_piercings)
@@ -1259,26 +1257,27 @@ class TopoCoord:
         for idx in LC.neighborlists[i_lcidx]+LC.neighborlists[j_lcidx]+[i_lcidx,j_lcidx]:
             if not idx in joint_idx:
                 joint_idx.append(idx)
-        cycle_tags=list(set(adf[(adf['cycle']!=-1)&(adf['linkcell_idx'].isin(joint_idx))]['cycle'].to_list()))
+        nearby_rings=self.Topology.rings.filter(joint_idx)
         B=adf.iloc[[i-1,j-1]].copy()
-        saveB=B.copy()
+        seg=np.array(B[['posX','posY','posZ']].values)
+        # saveB=B.copy()
         # logger.debug(f'bond {i} {j} subframe')
         # for ln in B.to_string().split('\n'):
         #     logger.debug(ln)
-        for c in cycle_tags:
-            C=adf[adf['cycle']==c].copy()
-            # logging.debug(f'ring {c} has {C.shape[0]} members')
-            # assert 4<C.shape[0]<7
-            saveC=C.copy()
-            if self.Coordinates.pierces(B,C,pbc):
+        for r in nearby_rings:
+            ru=r.unwrap(seg[0],pbc=pbc,unwrapf=self.Coordinates.unwrap)
+            seg[1]=self.Coordinates.unwrap(seg[1],seg[0],pbc=pbc)
+            if ru.pierced_by(seg):
                 if show_piercings:
-                    sub=self.Coordinates.subcoords(pd.concat([B,C]))
-                    sub.write_gro(f'ring-{i}-{j}'+'.gro')
-                    sub=self.Coordinates.subcoords(pd.concat([saveB,saveC]))
-                    sub.write_gro(f'ring-orig-{i}-{j}'+'.gro')
-                    logger.debug(f'Cycle {c} pierced by bond candidate {i}-{j}')
-                    for ln in sub.A.to_string().split('\n'):
-                        logger.debug(ln)
+                    C=adf[adf['globalIdx'].isin(r.idx)].copy()
+                    J=pd.concat([B,C])
+                    sub=self.Coordinates.subcoords(J)
+                    sub.write_gro(f'ring-{str(r)}=bond-{i}-{j}'+'.gro')
+                #     sub=self.Coordinates.subcoords(pd.concat([saveB,saveC]))
+                #     sub.write_gro(f'ring-orig-{i}-{j}'+'.gro')
+                #     logger.debug(f'Cycle {str} pierced by bond candidate {i}-{j}')
+                #     for ln in sub.A.to_string().split('\n'):
+                #         logger.debug(ln)
                 return True
         return False
 

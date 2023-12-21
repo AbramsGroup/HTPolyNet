@@ -12,6 +12,19 @@ logger=logging.getLogger(__name__)
 from HTPolyNet.ring import *
 import networkx as nx
 import pandas as pd
+import numpy as np
+
+def hexagon(a):
+    b=a*np.cos(30.0/180.0*np.pi)
+    c=a*np.sin(30.0/180.0*np.pi)
+    return np.array([
+        [ 0, a, 0],
+        [-b, c, 0],
+        [-b,-c, 0],
+        [ 0,-a, 0],
+        [ b,-c, 0],
+        [ b, c, 0]
+    ])
 
 class TestRings(unittest.TestCase):
     def test_ring_treadmill(self):
@@ -68,3 +81,14 @@ class TestRings(unittest.TestCase):
         r.injest_coordinates(df)
         self.assertTrue(np.all(r.P[0]==np.array([1.,0.,0.])))
         self.assertEqual(r.planarity,1.0)
+
+    def test_ring_pierce(self):
+        b=Ring([1,2,3,4,5,6])
+        P=hexagon(1.5)
+        df=pd.DataFrame({
+            'globalIdx':[1,2,3,4,5,6],
+            'posX':np.array([x[0] for x in P]),
+            'posY':np.array([x[1] for x in P]),
+            'posZ':np.array([x[2] for x in P])
+        })
+        b.injest_coordinates(df)

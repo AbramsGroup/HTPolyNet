@@ -44,6 +44,7 @@ import numpy as np
 from collections import UserList
 from functools import singledispatchmethod
 import networkx as nx
+from copy import deepcopy
 import logging
 logger=logging.getLogger(__name__)
 
@@ -99,6 +100,10 @@ class Ring:
         """
         self.idx=idx.copy()
         assert(all([type(x)==int for x in self.idx]))
+
+    def copy(self):
+        newring=deepcopy(self)
+        return newring
 
     def injest_coordinates(self,A,idx_key='globalIdx',pos_key=['posX','posY','posZ']):
         self.P=np.array(A[A[idx_key].isin(self.idx)][pos_key].values)
@@ -161,49 +166,63 @@ class Ring:
     
     def __str__(self):
         return '-'.join([str(x) for x in self.idx])
-    
-    def self_planarize(self):
-        """self_planarize projects points in P into plane -> vP
-        """
-        self.vP=[]
-        for v in self.V:
-            r=v-self.O
-            p=r-np.dot(r,self.n)*self.n
-            newv=p+self.O
-            self.vP.append(newv)
-    def segint(self,S):
-        """segint determines if segment S pierces ring; uses ray projection method
-        and fact that scaled length must be between 0 and 1 for a plane intersection
 
-        :param S: a Segment object
-        :type S: Segment
-        :return: True if S pierces self's ring, along with the intersection point
-        :rtype: tuple (boolean, Point)
+    def shift(self,shift):
+        self.idx=[x+shift for x in self.idx]
+
+    def unwrap(self,P,unwrapf=None,pbc=[1,1,1]):
+        r=self.copy()
+        for i in range(len(r.P)):
+            r.P[i]=unwrapf(r.P[i],P,pbc=pbc)
+        return r
+
+    def pierced_by(self,P,thresh=0.1):
+        """determines if segment with endpoints P[0] and P[1] pierces ring; 
+        uses ray projection method and fact that scaled length must be between 
+        0 and 1 for a plane intersection
+
+        :param P: a 2-element numpy array of 3-space points
+        :type S: numpy.ndarray
+        :return: True if P[0]-P[1] pierces self's ring, along with the intersection point
+        :rtype: tuple (boolean, numpy.ndarray(3))
         """
-        # 
-        t=-(np.dot(S.P[0],self.n)+self.d)/(np.dot(S.V,self.n))
+        V=P[0]-P[1]
+        t=-(np.dot(P[0],self.n)+self.d)/(np.dot(V,self.n))
         if 0<t<1:
             # compute point in ring plane that marks intersection with this vector
-            P=S.P[0]+t*S.V
-            # determine if P is inside ring:
-            # 1. project every ring vertex into the common plane (if necessary)
-            self.self_planarize()
-            OP=self.O-P
-            inside=True
-            # 2. for every vertex vi: angle O-vi-P must be
-            #    more acute than angle O-vi-v(i+1) in order
-            #    for point P to be inside the ring
-            for i in range(len(self.vP)):
-                vi=self.vP[i]
-                vii=self.vP[np.mod((i+1),len(self.vP))]
-                r=self.O-vi
-                e=vii-vi
-                vp=P-vi
-                cp=lawofcos(vp,r)
-                ce=lawofcos(e,r)
-                inside = inside and cp > ce
-            return inside, P
-        return False, np.zeros(3)*np.nan
+            PP=P[0]+t*V
+            # determine if PP is inside ring:
+            # compute the series of unit-vector cross-products v(i)-PP-v((i+1)%N)
+            # sum will have a large component along normal vector if yes, essentially 0 if no
+            iR=Ring(list(range(len(self.idx))))
+            a=iR.treadmill()
+            sumC=np.zeros(3)
+            for i,j in zip(iR.idx,next(a)):
+                V1=PP-self.P[i]
+                V2=PP-self.P[j]
+                c=np.cross(V1/np.linalg.norm(V1),V2/np.linalg.norm(V2))
+                sumC+=c
+            tst=np.dot(self.n,sumC)
+            return tst>thresh,PP
+        return False,np.ones(3)*np.nan
+        #     # 1. project every ring vertex into the common plane (if necessary)
+        #     self.self_planarize()
+        #     # OP=self.O-PP
+        #     inside=True
+        #     # 2. for every vertex vi: angle O-vi-PP must be
+        #     #    more acute than angle O-vi-v(i+1) in order
+        #     #    for point PP to be inside the ring
+        #     for i in range(len(self.vP)):
+        #         vi=self.vP[i]
+        #         vii=self.vP[np.mod((i+1),len(self.vP))]
+        #         r=self.O-vi
+        #         e=vii-vi
+        #         vp=P-vi
+        #         cp=lawofcos(vp,r)
+        #         ce=lawofcos(e,r)
+        #         inside = inside and cp > ce
+        #     return inside,PP
+        # return False,np.zeros(3)*np.nan
 
 class RingList(UserList):
     @singledispatchmethod
@@ -215,6 +234,22 @@ class RingList(UserList):
         for ll in nx.chordless_cycles(G):
             L.append(Ring(ll))
         super().__init__(L)
+
+    def shift(self,shift):
+        for item in self:
+            item.shift(shift)
+        return self
     
+    def injest_coordinates(self,A,idx_key='globalIdx',pos_key=['posX','posY','posZ']):
+        for item in self:
+            item.injest_coordinates(A,idx_key=idx_key,pos_key=pos_key)
+    
+    def filter(self,idxlist):
+        retL=RingList([])
+        for item in self:
+            if any([x in idxlist for x in item.idx]):
+                retL.append(item)
+        return retL
+
     def __str__(self):
         return ';'.join([str(x) for x in self])
