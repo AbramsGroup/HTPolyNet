@@ -40,27 +40,28 @@ class TopoCoord:
     """Container for Topology and Coordinates, along with methods that
         use either or both of them
     """
-    def __init__(self,topfilename='',grofilename='',grxfilename='',mol2filename='',system_name='htpolynet',**kwargs):
+    def __init__(self,topfilename='',tpxfilename='',grofilename='',grxfilename='',mol2filename='',system_name='htpolynet',**kwargs):
         """Constructor method for TopoCoord.
 
         :param topfilename: name of Gromacs-format topology file (top), defaults to ''
         :type topfilename: str, optional
+        :param tpxfilename: name of custom-format extended topology file (tpx), defaults to ''
+        :type topfilename: str, optional
         :param grofilename: name of Gromacs-format coordinate file (gro), defaults to ''
         :type grofilename: str, optional
+        :param grxfilename: name of custom-format extended coordinate file (grx), defaults to ''
+        :type grxfilename: str, optional
         :param mol2filename: name of SYBYL MOL2-format coordinate/bonds file, defaults to ''
         :type mol2filename: str, optional
         """
         wrap_coords=kwargs.get('wrap_coords',False)
         # self.basefilenames={}
         self.files={}
-        self.files['gro']=os.path.abspath(grofilename)
         self.files['top']=os.path.abspath(topfilename)
+        self.files['tpx']=os.path.abspath(tpxfilename)
+        self.files['gro']=os.path.abspath(grofilename)
         self.files['grx']=os.path.abspath(grxfilename)
         self.files['mol2']=os.path.abspath(mol2filename)
-        # self.basefilenames['gro']=grofilename
-        # self.basefilenames['top']=topfilename
-        # self.basefilenames['grx']=grxfilename
-        # self.basefilenames['mol2']=mol2filename
         self.grxattr=[]
         self.idx_lists={}
         self.idx_lists['chain']=[]
@@ -72,6 +73,8 @@ class TopoCoord:
             self.read_top(topfilename)
         else:
             self.Topology=Topology(system_name=system_name) # empty
+        if tpxfilename!='':
+            self.read_tpx(tpxfilename)
         if mol2filename!='':
             self.read_mol2(mol2filename,**kwargs)
         if grxfilename!='':
@@ -443,7 +446,6 @@ class TopoCoord:
         pi_df.drop_duplicates(inplace=True,ignore_index=True)
         return pi_df
 
-
     def update_topology_and_coordinates(self,bdf,template_dict={},write_mapper_to=None,**kwargs):
         """update_topology_and_coordinates updates global topology and necessary atom attributes in the configuration to reflect formation of all bonds listed in `keepbonds`
 
@@ -501,6 +503,15 @@ class TopoCoord:
         """
         self.files['top']=os.path.abspath(topfilename)
         self.Topology=Topology.read_gro(topfilename)
+
+    def read_tpx(self,tpxfilename):
+        """reads in extended topology information
+        
+        :param tpxfilename: name of tpx file
+        :type tpxfilename: str
+        """
+        self.files['tpx']=os.path.abspath(tpxfilename)
+        self.Topology.read_tpx(tpxfilename)
 
     def read_gro(self,grofilename,preserve_box=False,wrap_coords=False):
         """read_gro Creates a new Coordinates member by reading from a Gromacs-style coordinates
@@ -586,6 +597,10 @@ class TopoCoord:
         self.Topology.to_file(topfilename)
         self.files['top']=os.path.abspath(topfilename)
 
+    def write_tpx(self,tpxfilename):
+        self.Topology.write_tpx(tpxfilename)
+        self.files['tpx']=os.path.apbspath(tpxfilename)
+
     def write_gro(self,grofilename,grotitle=''):
         """write_gro Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()
 
@@ -595,16 +610,16 @@ class TopoCoord:
         self.Coordinates.write_gro(grofilename,grotitle=grotitle)
         self.files['gro']=os.path.abspath(grofilename)
 
-    def write_top_gro(self,topfilename,grofilename):
-        """write_top_gro Writes both a Gromacs top file and Gromacs coordinate file
+    # def write_top_gro(self,topfilename,grofilename):
+    #     """write_top_gro Writes both a Gromacs top file and Gromacs coordinate file
 
-        :param topfilename: name of topology file to write
-        :type topfilename: str
-        :param grofilename: name of coordinate file to write
-        :type grofilename: str
-        """
-        self.write_top(topfilename)
-        self.write_gro(grofilename)
+    #     :param topfilename: name of topology file to write
+    #     :type topfilename: str
+    #     :param grofilename: name of coordinate file to write
+    #     :type grofilename: str
+    #     """
+    #     self.write_top(topfilename)
+    #     self.write_gro(grofilename)
 
     def return_bond_lengths(self,bdf):
         """return_bond_lengths Return the length of all bonds in list bonds
@@ -1646,11 +1661,12 @@ class TopoCoord:
         :type filenames: dict
         """
         for e,n in filenames.items():
-            if not e in ['gro','top','grx','mol2']: continue
+            if not e in ['gro','top','grx','tpx','mol2']: continue
             bn,ext=os.path.splitext(n)
             logger.debug(f'bn {bn} ext {ext}')
             if   ext=='.gro':  self.read_gro(n)
             elif ext=='.top':  self.read_top(n)
+            elif ext=='.tpx':  self.read_tpx(n)
             elif ext=='.grx':  self.read_gro_attributes(n)
             elif ext=='.mol2': self.read_mol2(n)
             else:

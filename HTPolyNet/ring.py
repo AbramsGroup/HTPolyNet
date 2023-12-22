@@ -120,6 +120,12 @@ class Ring:
             # logger.debug(f'R-{self.idx[i]}-{self.idx[j]}: {self.B[-1]}')
         self.B=np.array(self.B)
         logger.debug(f'B {self.B}')
+        # Approximate the normal unit vector of the plane of the ring
+        # by averaging cross-products of all adjacent origin-to-vertex
+        # vectors.  This orients the unit vector such that it is 
+        # in the +z direction in the local coordinate system defined
+        # by the ring with vertices ordered in the counter-clockwise
+        # direction in the plane.
         a=iR.treadmill()
         self.C=[]
         for i,j in zip(iR.idx,next(a)):
@@ -144,14 +150,14 @@ class Ring:
         # n[0]*(x-O[0])+n[1]*(y-O[1])+n[2]*(z-O[2])=0
         # n[0]*x + n[1]*y + n[2]*z - (n[0]*O[0]+n[1]*O[1]+n[2]*O[2]) = 0
         self.d=-np.dot(self.n,self.O)        
-        self.vP=[]
-        for v in self.P:
-            r=v-self.O
-            p=r-np.dot(r,self.n)*self.n
-            newv=p+self.O
-            self.vP.append(newv)
-        self.vP=np.array(self.vP)
-        logger.debug(f'vP {self.vP}')
+        # self.vP=[]
+        # for v in self.P:
+        #     r=v-self.O
+        #     p=r-np.dot(r,self.n)*self.n
+        #     newv=p+self.O
+        #     self.vP.append(newv)
+        # self.vP=np.array(self.vP)
+        # logger.debug(f'vP {self.vP}')
 
     def treadmill(self):
         """ yield the treadmilled versions of the list """
@@ -176,7 +182,7 @@ class Ring:
             r.P[i]=unwrapf(r.P[i],P,pbc=pbc)
         return r
 
-    def pierced_by(self,P,thresh=0.1):
+    def pierced_by(self,P):
         """determines if segment with endpoints P[0] and P[1] pierces ring; 
         uses ray projection method and fact that scaled length must be between 
         0 and 1 for a plane intersection
@@ -187,10 +193,25 @@ class Ring:
         :rtype: tuple (boolean, numpy.ndarray(3))
         """
         V=P[0]-P[1]
-        t=-(np.dot(P[0],self.n)+self.d)/(np.dot(V,self.n))
+        # If these two points are on either side of the ring plane,
+        # then the length of the normal vector from P[0] to the plane
+        # will be less than the length of the vector from P[1] to P[0] projected
+        # onto the plane normal. 
+        denom=np.linalg.norm(np.dot(self.n,V)*self.n) # length of vector from P[1] to P[0] projected onto normal
+        OP=np.dot(self.n,P[0]-self.O)*self.n # normal vector from plane to P[0]
+        numer=np.linalg.norm(OP) # length of normal vector from plane to P[0]
+        logger.debug(f'numer {numer} denom {denom}')
+        t=-1.0
+        if denom>1.e-13:
+            t=numer/denom # a fraction if P[0] and P[1] are on either side of the plane
+        logger.debug(f't {t}')
         if 0<t<1:
             # compute point in ring plane that marks intersection with this vector
-            PP=P[0]+t*V
+            # V=P[0]-P[1]
+            # P[1]=P[0]-V
+            # intersection point = P[0]-t*V
+            PP=P[0]-t*V
+            logger.debug(f'PP {PP}')
             # determine if PP is inside ring:
             # compute the series of unit-vector cross-products v(i)-PP-v((i+1)%N)
             # sum will have a large component along normal vector if yes, essentially 0 if no
@@ -201,9 +222,11 @@ class Ring:
                 V1=PP-self.P[i]
                 V2=PP-self.P[j]
                 c=np.cross(V1/np.linalg.norm(V1),V2/np.linalg.norm(V2))
-                sumC+=c
-            tst=np.dot(self.n,sumC)
-            return tst>thresh,PP
+                sumC+=c/np.linalg.norm(c)
+            tst=np.dot(self.n,sumC/len(iR.idx))
+            is_inside=np.all(np.isclose([tst],[1.0]))
+            logger.debug(f'tst {tst} is_inside {is_inside}')
+            return is_inside,PP
         return False,np.ones(3)*np.nan
         #     # 1. project every ring vertex into the common plane (if necessary)
         #     self.self_planarize()

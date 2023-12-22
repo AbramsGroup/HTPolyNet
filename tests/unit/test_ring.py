@@ -13,18 +13,24 @@ from HTPolyNet.ring import *
 import networkx as nx
 import pandas as pd
 import numpy as np
+from HTPolyNet.matrix4 import Matrix4
+
+def regular_polygon(nsides,a):
+    dangle=2*np.pi/nsides
+    v=[]
+    angle=0.0
+    for s in range(nsides):
+        x=a*np.cos(angle)
+        y=a*np.sin(angle)
+        v.append(np.array([x,y,0.0]))
+        angle+=dangle
+    return np.array(v)
 
 def hexagon(a):
-    b=a*np.cos(30.0/180.0*np.pi)
-    c=a*np.sin(30.0/180.0*np.pi)
-    return np.array([
-        [ 0, a, 0],
-        [-b, c, 0],
-        [-b,-c, 0],
-        [ 0,-a, 0],
-        [ b,-c, 0],
-        [ b, c, 0]
-    ])
+    return regular_polygon(6,a)
+
+def pentagon(a):
+    return regular_polygon(5,a)
 
 class TestRings(unittest.TestCase):
     def test_ring_treadmill(self):
@@ -83,12 +89,87 @@ class TestRings(unittest.TestCase):
         self.assertEqual(r.planarity,1.0)
 
     def test_ring_pierce(self):
-        b=Ring([1,2,3,4,5,6])
-        P=hexagon(1.5)
-        df=pd.DataFrame({
-            'globalIdx':[1,2,3,4,5,6],
-            'posX':np.array([x[0] for x in P]),
-            'posY':np.array([x[1] for x in P]),
-            'posZ':np.array([x[2] for x in P])
-        })
-        b.injest_coordinates(df)
+        # some true tests for rings of various sizes
+        for nsides in range(3,8):
+            # ring in x-y plane
+            b=Ring(list(range(1,nsides+1)))
+            P=regular_polygon(nsides,1.5)
+            B=np.array([[0.,0.,1.],[0.,0.,-1.]])
+            b.injest_coordinates(pd.DataFrame({
+                'globalIdx':b.idx,
+                'posX':np.array([x[0] for x in P]),
+                'posY':np.array([x[1] for x in P]),
+                'posZ':np.array([x[2] for x in P])
+            }))
+            didit,point=b.pierced_by(B)
+            self.assertTrue(didit)
+
+            # ring and bond rotated/translated quasi-randomly
+            M=Matrix4()
+            M.rotate_axis(45.0,np.array([1,-2,1.5])).translate(np.array([10.0,10.0,11.0]))
+            P=np.array([M.transform(p) for p in P])
+            B=np.array([M.transform(p) for p in B])
+            b.injest_coordinates(pd.DataFrame({
+                'globalIdx':b.idx,
+                'posX':np.array([x[0] for x in P]),
+                'posY':np.array([x[1] for x in P]),
+                'posZ':np.array([x[2] for x in P])
+            }))
+            didit,point=b.pierced_by(B)
+            self.assertTrue(didit)
+
+        # false tests: both ends on same side of plane
+        for nsides in range(3,8):
+            b=Ring(list(range(1,nsides+1)))
+            P=regular_polygon(nsides,1.5)
+            B=np.array([[-1.,0.,1.],[0.,1.,1.]])
+            b.injest_coordinates(pd.DataFrame({
+                'globalIdx':b.idx,
+                'posX':np.array([x[0] for x in P]),
+                'posY':np.array([x[1] for x in P]),
+                'posZ':np.array([x[2] for x in P])
+            }))
+            didit,point=b.pierced_by(B)
+            self.assertFalse(didit)
+
+            # ring and bond rotated/translated quasi-randomly
+            M=Matrix4()
+            M.rotate_axis(45.0,np.array([1,-2,1.5])).translate(np.array([10.0,10.0,11.0]))
+            P=np.array([M.transform(p) for p in P])
+            B=np.array([M.transform(p) for p in B])
+            b.injest_coordinates(pd.DataFrame({
+                'globalIdx':b.idx,
+                'posX':np.array([x[0] for x in P]),
+                'posY':np.array([x[1] for x in P]),
+                'posZ':np.array([x[2] for x in P])
+            }))
+            didit,point=b.pierced_by(B)
+            self.assertFalse(didit)
+
+        # false tests: bond intersection point on plane not inside ring
+        for nsides in range(3,8):
+            b=Ring(list(range(1,nsides+1)))
+            P=regular_polygon(nsides,1.5)
+            B=np.array([[1.7,1.7,1.],[1.7,1.7,-1.]])
+            b.injest_coordinates(pd.DataFrame({
+                'globalIdx':b.idx,
+                'posX':np.array([x[0] for x in P]),
+                'posY':np.array([x[1] for x in P]),
+                'posZ':np.array([x[2] for x in P])
+            }))
+            didit,point=b.pierced_by(B)
+            self.assertFalse(didit)
+
+            # ring and bond rotated/translated quasi-randomly
+            M=Matrix4()
+            M.rotate_axis(45.0,np.array([1,-2,1.5])).translate(np.array([10.0,10.0,11.0]))
+            P=np.array([M.transform(p) for p in P])
+            B=np.array([M.transform(p) for p in B])
+            b.injest_coordinates(pd.DataFrame({
+                'globalIdx':b.idx,
+                'posX':np.array([x[0] for x in P]),
+                'posY':np.array([x[1] for x in P]),
+                'posZ':np.array([x[2] for x in P])
+            }))
+            didit,point=b.pierced_by(B)
+            self.assertFalse(didit)

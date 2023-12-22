@@ -261,9 +261,9 @@ class Runtime:
         :rtype: dict
         """
         my_logger(f'Initialization in {pfs.cwd()}',logger.info)
-        top=self._initialize_topology(inpfnm)
+        top,tpx=self._initialize_topology(inpfnm)
         gro,grx=self._initialize_coordinates(inpfnm)
-        return {'top':top,'gro':gro,'grx':grx}
+        return {'top':top,'tpx':tpx,'gro':gro,'grx':grx}
 
     @cp.enableCheckpoint
     def do_densification(self,deffnm='densified'):
@@ -366,6 +366,7 @@ class Runtime:
         TC.write_grx_attributes(f'{result_name}.grx')
         TC.write_gro(f'{result_name}.gro')
         TC.write_top(f'{result_name}.top')
+        TC.write_tpx(f'{result_name}.tpx')
         return {c:os.path.basename(x) for c,x in TC.files.items() if c!='mol2'}
 
     def do_workflow(self,**kwargs):
@@ -515,6 +516,7 @@ class Runtime:
                 TC.Topology.merge_types(M.TopoCoord.Topology)
         logger.info(f'Topology "{inpfnm}.top" in {pfs.cwd()}')
         TC.write_top(f'{inpfnm}.top')
+        TC.write_tpx(f'{inpfnm}.tpx')
         return f'{inpfnm}.top'
 
     def _initialize_coordinates(self,inpfnm='init'):
@@ -597,7 +599,7 @@ class Runtime:
         TC.atom_count()
         TC.set_grx_attributes()
         TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition)
-        for list_name in ['cycle','chain']:
+        for list_name in ['chain']:
             TC.reset_idx_list_from_grx_attributes(list_name)
         TC.make_resid_graph()
         TC.write_grx_attributes(f'{inpfnm}.grx')

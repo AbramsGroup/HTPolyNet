@@ -682,7 +682,7 @@ class Coordinates:
         return minD
     
     def homog_trans(self,M:Matrix4,indices=[]):
-        """dfrotate applies homogeneous transformation matrix M [4x4] to coordinates
+        """applies homogeneous transformation matrix M [4x4] to coordinates
 
         :param M: homogeneous transformation matrix
         :type M: Matrix4
@@ -699,11 +699,13 @@ class Coordinates:
         :param R: rotation matrix (3x3)
         :type R: numpy.ndarray
         """
-        sp=self.A[['posX','posY','posZ']]
-        for i,srow in sp.iterrows():
-            ri=srow.values
-            newri=np.matmul(R,ri)
-            self.A.loc[i,'posX':'posZ']=newri
+        M=Matrix4(R)
+        self.homog_trans(M)
+    #     sp=self.A[['posX','posY','posZ']]
+    #     for i,srow in sp.iterrows():
+    #         ri=srow.values
+    #         newri=np.matmul(R,ri)
+    #         self.A.loc[i,'posX':'posZ']=newri
 
     def translate(self,L):
         """translate Translates all coordinate vectors by displacement vector L
@@ -711,9 +713,11 @@ class Coordinates:
         :param L: displacement vector (nm)
         :type L: numpy.ndarray
         """
-        sp=self.A[['posX','posY','posZ']]
-        for i,srow in sp.iterrows():
-            self.A.loc[i,'posX':'posZ']=srow.values+L
+        M=Matrix4(L)
+        self.homog_trans(M)
+    #     sp=self.A[['posX','posY','posZ']]
+    #     for i,srow in sp.iterrows():
+    #         self.A.loc[i,'posX':'posZ']=srow.values+L
 
     def maxspan(self):
         """Returns dimensions of orthorhombic convex hull enclosing Coordinates

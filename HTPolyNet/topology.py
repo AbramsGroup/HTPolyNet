@@ -63,97 +63,6 @@ def df_typeorder(df,typs):
     for i in df.index:
         df.loc[i,typs]=typeorder(tuple(df.loc[i,typs]))
 
-# def treadmill(L):
-#     """treadmill Move first element of list L to end and return new list
-
-#     :param L: a list
-#     :type L: list
-#     :return: a new list
-#     :rtype: list
-#     """
-#     nL=L[1:]
-#     nL.append(L[0])
-#     return nL
-
-# def treadmills(L):
-#     """treadmills perform one complete cycle of treadmilling increments and store each increment as its own list and return list of such lists
-
-#     :param L: a list
-#     :type L: list
-#     :return: list of new lists, each a treadmill increment of passed-in list
-#     :rtype: list of lists
-#     """
-#     N=len(L)
-#     nL=L
-#     r=[]
-#     for i in range(1,N):
-#         nnL=treadmill(nL)
-#         r.append(nnL)
-#         nL=nnL
-#     return r
-
-# def _get_unique_rings_dict(G,min_length=-1):
-#     """_get_unique_rings_dict generates dictionary identifying all unique covalent rings (chordless cycles) 
-#     from the graph G
-
-#     :param G: a graph representing atomic connectivity
-#     :type G: networkx.Graph
-#     :param min_length: minimum ring length, defaults to -1 (no limit; 3 would be a better choice)
-#     :type min_length: int, optional
-#     :return: dictionary of ring keyed on ring length with values being lists of lists of atom globalIdx's
-#     :rtype: dict
-#     """
-#     urings={}
-#     counts_by_length={}
-#     for u in nx.chordless_cycles(G):
-#         sl=len(u)
-#         if min_length<=sl:
-#             # logger.debug(f'a ring {u}')
-#             if not sl in counts_by_length:
-#                 counts_by_length[sl]=0
-#             counts_by_length[sl]+=1
-#             if not sl in urings:
-#                 urings[sl]=[]
-#             utl=treadmills(u)
-#             ur=list(reversed(u))
-#             urtl=treadmills(ur)
-#             eqv=utl+[ur]+urtl
-#             ll=min_length if min_length!=-1 else min(counts_by_length.keys())
-#             uu=max(counts_by_length.keys())
-#             for l in range(ll,uu+1):
-#                 if len(u)==l:
-#                     found=False
-#                     for e in eqv:
-#                         if e in urings[l]:
-#                             found=True
-#                             break
-#                     if not found:
-#                         urings[l].append(u)
-#     return urings
-
-# def _present_and_contiguous(subL,L):
-#     """_present_and_contiguous returns True is elements in subL appear as a contiguous sub-block in 
-#        periodic and bidirectional list L
-
-#     :param subL: a sublist
-#     :type subL: list
-#     :param L: a list, treated as periodic and bidirectional
-#     :type L: list
-#     :return: True if sublist appears as part L
-#     :rtype: boolean
-#     """
-#     pretest=all([x in L for x in subL])
-#     if not pretest:
-#         return False
-#     for A in [L,L[::-1]]:
-#         T=treadmills(A)
-#         for t in T:
-#             testL=t[:len(subL)]
-#             # logger.debug(f'___ {subL} {testL}')
-#             if all([x==y for x,y in zip(subL,testL)]):
-#                 return True
-#     return False
-
 _GromacsIntegers_=('nr','atnum','resnr','ai','aj','ak','al','#mols','nrexcl','funct','func','nbfunc','comb-rule')
 _GromacsFloats_=('charge','mass','chargeB','massB',*tuple([f'c{i}' for i in range(5)]),
                  'b0','kb','th0','cth','rub','kub','phase','kd','pn','fudgeLJ','fudgeQQ')
@@ -405,6 +314,28 @@ class Topology:
         self.rings=RingList([])
         for c in nx.chordless_cycles(g):
             self.rings.append(Ring(c))
+
+    def read_tpx(self,filename):
+        assert os.path.exists(filename), f'Error: {filename} not found.'
+        with open(filename,'r') as f:
+            data=f.read().split('[')
+            stanzas=[('['+x).split('\n') for x in data][1:]
+            for s in stanzas:
+                directive=s[0].split()[1].strip()
+                contentlines=[l for l in s[1:] if not (len(l.strip())==0 or l.strip().startswith(';'))]
+                if directive=='rings':
+                    # each line is a space-delimited list of global atom indices that identifies one ring
+                    self.rings=RingList([])
+                    for line in contentlines:
+                        self.rings.append(Ring([int(x) for x in line.split()]))
+                else:
+                    logger.debug(f'tpx directive {directive} in {filename} is not recognized.')
+    
+    def write_tpx(self,filename):
+        with open(filename,'w') as f:
+            f.write('[rings]\n')
+            for r in self.rings:
+                f.write(' '.join([str(x) for x in r.idx])+'\n')
 
     def rep_ex(self,count=0):
         """Replicate extensive topology components (atoms, pairs, bonds, angles, dihedrals)
