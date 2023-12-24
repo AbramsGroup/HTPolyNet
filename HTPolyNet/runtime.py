@@ -517,7 +517,7 @@ class Runtime:
         logger.info(f'Topology "{inpfnm}.top" in {pfs.cwd()}')
         TC.write_top(f'{inpfnm}.top')
         TC.write_tpx(f'{inpfnm}.tpx')
-        return f'{inpfnm}.top'
+        return f'{inpfnm}.top',f'{inpfnm}.tpx'
 
     def _initialize_coordinates(self,inpfnm='init'):
         """_initialize_coordinates builds initial top and gro files for initial liquid simulation

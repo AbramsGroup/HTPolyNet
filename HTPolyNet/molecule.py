@@ -284,7 +284,7 @@ class Molecule:
         """
         TC=self.TopoCoord
         TC.Topology.detect_rings()
-
+        logger.debug(f'Detected {len(TC.Topology.rings)} unique rings.')
         # TC.idx_lists['cycle']=[]
         # cycle_dict=TC.Topology.detect_cycles()
         # logger.debug(f'Cycle dict: {cycle_dict}')
@@ -362,7 +362,7 @@ class Molecule:
                     TC.idx_lists['chain'].append(entry)
         TC.reset_grx_attributes_from_idx_list('chain')
         # set cycle, cycle_idx
-        self.initialize_molecule_cycles()
+        self.initialize_molecule_rings()
 
     def previously_parameterized(self):
         """previously_parameterized if a gro file exists in the project molecule/parameterized directory for this molecule, return True
@@ -835,7 +835,7 @@ class Molecule:
         else:
             template_source='internal'  # signals that a template molecule should be identified to parameterize this bond
         TC.update_topology_and_coordinates(bdf,moldict,explicit_sacH=explicit_sacrificial_Hs,template_source=template_source)
-        self.initialize_molecule_cycles()
+        self.initialize_molecule_rings()
 
     def transrot(self,at_idx,at_resid,from_idx,from_resid,connected_resids=[]):
         """transrot given a composite molecule, translate and rotate the piece downstream of the yet-to-be created bond specified by (at_idx,at_resid) and (from_idx,from_resid) to minimize steric overlaps and identify the best two sacrificial hydrogens
@@ -888,21 +888,25 @@ class Molecule:
 
         Ri=TC.get_R(at_idx)
         Rj=TC.get_R(from_idx)
+        logger.debug(f'Ri {at_idx} {Ri} {type(Ri)} {Ri.dtype}')
+        logger.debug(f'Rj {from_idx} {Rj} {type(Rj)} {Rj.dtype}')
         overall_maximum=(-1.e9,-1,-1)
         coord_trials={}
         for myH,myHnm in myHpartners.items():  # keys are globalIdx's, values are names
             coord_trials[myH]:dict[TopoCoord]={}
             Rh=TC.get_R(myH)
+            logger.debug(f'  Rh {myH} {Rh} {Rh.dtype}')
             Rih=Ri-Rh
             Rih*=1.0/np.linalg.norm(Rih)
             for otH,otHnm in otHpartners.items():
-                # logger.debug(f'{self.name}: Considering {myH} {otH}')
+                logger.debug(f'{self.name}: Considering {myH} {otH}')
                 coord_trials[myH][otH]=deepcopy(BTC)
-                # logger.debug(f'\n{coord_trials[myH][otH].Coordinates.A.to_string()}')
+                logger.debug(f'\n{coord_trials[myH][otH].Coordinates.A.to_string()}')
                 Rk=coord_trials[myH][otH].get_R(otH)
-                # logger.debug(f'{self.name}:    otH {otH} Rk {Rk}')
+                logger.debug(f'{self.name}:    otH {otH} Rk {Rk} {Rk.dtype}')
                 Rkj=Rk-Rj
                 Rkj*=1.0/np.linalg.norm(Rkj)
+                logger.debug(f'Rkj {Rkj} {Rkj.dtype} Rih {Rih} {Rih.dtype}')
                 #Rhk=Rh-Rk
                 #rhk=np.linalg.norm(Rhk)
                 cp=np.cross(Rkj,Rih)

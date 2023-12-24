@@ -161,6 +161,7 @@ class Coordinates:
         #     logger.debug(ln)
         if wrap_coords:
             inst.wrap_coords()
+        logger.debug(inst.A.dtypes)
         return inst
 
     @classmethod
@@ -773,7 +774,14 @@ class Coordinates:
         :rtype: numpy.ndarray(3,float)
         """
         df=self.A
-        return np.array(get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx}))
+        assert df['posX'].dtypes==float
+        assert df['posY'].dtypes==float
+        assert df['posZ'].dtypes==float
+        res=get_row_attribute(df,['posX','posY','posZ'],{'globalIdx':idx})
+        # logger.debug(f'get_R result from get_row_attribute is {res} with type {type(res)} dtype {res.dtype}')
+        res=res.to_numpy(dtype=float)
+        # logger.debug(f'...and after to_numpy(), it is {res} type {type(res)} dtype {res.dtype}')
+        return res
     
     def get_atom_attribute(self,name,attributes):
         """get_atom_attribute return values of attributes listed in name from atoms specified by attribute:value pairs in attributes

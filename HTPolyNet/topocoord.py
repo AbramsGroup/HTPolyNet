@@ -599,7 +599,7 @@ class TopoCoord:
 
     def write_tpx(self,tpxfilename):
         self.Topology.write_tpx(tpxfilename)
-        self.files['tpx']=os.path.apbspath(tpxfilename)
+        self.files['tpx']=os.path.abspath(tpxfilename)
 
     def write_gro(self,grofilename,grotitle=''):
         """write_gro Write a Gromacs-format coordinate file; wrapper for Coordinates.write_gro()

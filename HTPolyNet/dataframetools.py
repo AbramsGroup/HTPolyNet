@@ -19,6 +19,9 @@ def get_row(df:pd.DataFrame,attributes:dict):
     sdf=df
     for k,v in attributes.items():
         sdf=sdf[sdf[k]==v]
+    # res=pd.Series(sdf.iloc[0,:])
+    # logger.debug(f'sdf dtypes {sdf.dtypes}')
+    # logger.debug(f'get_row returns series {res.to_string()} with dtypes {res.dtypes}')
     return pd.Series(sdf.iloc[0,:])
 
 def get_row_attribute(df:pd.DataFrame,name,attributes):
@@ -35,6 +38,8 @@ def get_row_attribute(df:pd.DataFrame,name,attributes):
     :rtype: scalar
     """
     row=get_row(df,attributes)
+    # res=row[name]
+    # logger.debug(f'get_row_attribute of {name} returns {res} with type {type(res)}')
     return row[name]
 
 def get_row_as_string(df:pd.DataFrame,attributes):
