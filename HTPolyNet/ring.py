@@ -107,19 +107,19 @@ class Ring:
 
     def injest_coordinates(self,A,idx_key='globalIdx',pos_key=['posX','posY','posZ']):
         self.P=np.array(A[A[idx_key].isin(self.idx)][pos_key].values)
-        logger.debug(f'P {self.P}')
+        # logger.debug(f'P {self.P}')
         self.O=np.mean(self.P,axis=0)
-        logger.debug(f'O {self.O}')
+        # logger.debug(f'O {self.O}')
         iR=Ring(list(range(len(self.idx))))
         a=iR.treadmill()
         self.B=[]
         for i,j in zip(iR.idx,next(a)):
             b=self.P[i]-self.P[j]
-            logger.debug(f'R-{self.idx[i]}-{self.idx[j]}: {b}')
+            # logger.debug(f'R-{self.idx[i]}-{self.idx[j]}: {b}')
             self.B.append(b)
             # logger.debug(f'R-{self.idx[i]}-{self.idx[j]}: {self.B[-1]}')
         self.B=np.array(self.B)
-        logger.debug(f'B {self.B}')
+        # logger.debug(f'B {self.B}')
         # Approximate the normal unit vector of the plane of the ring
         # by averaging cross-products of all adjacent origin-to-vertex
         # vectors.  This orients the unit vector such that it is 
@@ -130,13 +130,13 @@ class Ring:
         self.C=[]
         for i,j in zip(iR.idx,next(a)):
             c=np.cross(self.B[i],self.B[j])
-            logger.debug(f'C-{self.idx[i]}-{self.idx[j]}: {c}')
+            # logger.debug(f'C-{self.idx[i]}-{self.idx[j]}: {c}')
             self.C.append(c)
         self.C=np.array(self.C)
-        logger.debug(f'C {self.C}')
+        # logger.debug(f'C {self.C}')
         n=np.sum(self.C,axis=0)
         self.n=n/np.linalg.norm(n)
-        logger.debug(f'n {self.n}')
+        # logger.debug(f'n {self.n}')
         # compute planarity as average of all
         # cross-i-cross-i+1 dot products
         a=iR.treadmill()
@@ -175,6 +175,11 @@ class Ring:
 
     def shift(self,shift):
         self.idx=[x+shift for x in self.idx]
+        return self
+
+    def remap(self,mapper):
+        new_idx=[mapper[x] for x in self.idx]
+        self.idx=new_idx
 
     def unwrap(self,P,unwrapf=None,pbc=[1,1,1]):
         r=self.copy()
@@ -200,18 +205,18 @@ class Ring:
         denom=np.linalg.norm(np.dot(self.n,V)*self.n) # length of vector from P[1] to P[0] projected onto normal
         OP=np.dot(self.n,P[0]-self.O)*self.n # normal vector from plane to P[0]
         numer=np.linalg.norm(OP) # length of normal vector from plane to P[0]
-        logger.debug(f'numer {numer} denom {denom}')
+        # logger.debug(f'numer {numer} denom {denom}')
         t=-1.0
         if denom>1.e-13:
             t=numer/denom # a fraction if P[0] and P[1] are on either side of the plane
-        logger.debug(f't {t}')
+        # logger.debug(f't {t}')
         if 0<t<1:
             # compute point in ring plane that marks intersection with this vector
             # V=P[0]-P[1]
             # P[1]=P[0]-V
             # intersection point = P[0]-t*V
             PP=P[0]-t*V
-            logger.debug(f'PP {PP}')
+            # logger.debug(f'PP {PP}')
             # determine if PP is inside ring:
             # compute the series of unit-vector cross-products v(i)-PP-v((i+1)%N)
             # sum will have a large component along normal vector if yes, essentially 0 if no
@@ -225,7 +230,7 @@ class Ring:
                 sumC+=c/np.linalg.norm(c)
             tst=np.dot(self.n,sumC/len(iR.idx))
             is_inside=np.all(np.isclose([tst],[1.0]))
-            logger.debug(f'tst {tst} is_inside {is_inside}')
+            # logger.debug(f'tst {tst} is_inside {is_inside}')
             return is_inside,PP
         return False,np.ones(3)*np.nan
         #     # 1. project every ring vertex into the common plane (if necessary)
@@ -263,6 +268,12 @@ class RingList(UserList):
             item.shift(shift)
         return self
     
+    def all_atoms(self):
+        retlist=[]
+        for item in self:
+            retlist.extend(item.idx)
+        return retlist
+
     def injest_coordinates(self,A,idx_key='globalIdx',pos_key=['posX','posY','posZ']):
         for item in self:
             item.injest_coordinates(A,idx_key=idx_key,pos_key=pos_key)
@@ -273,6 +284,10 @@ class RingList(UserList):
             if any([x in idxlist for x in item.idx]):
                 retL.append(item)
         return retL
+
+    def remap(self,mapper):
+        for item in self:
+            item.remap(mapper)
 
     def __str__(self):
         return ';'.join([str(x) for x in self])

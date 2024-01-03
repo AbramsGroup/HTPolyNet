@@ -284,7 +284,7 @@ class Runtime:
         equilibration=densification_dict.get('equilibration',[])
         assert len(equilibration)>0,'equilibration directives missing'
         TC=self.TopoCoord
-        infiles=[TC.files[x] for x in ['gro','top','grx']]
+        infiles=[TC.files[x] for x in ['gro','top','tpx','grx']]
         assert all([os.path.exists(x) for x in infiles]),f'One or more of {infiles} not found'
         self._do_equilibration_series(equilibration,deffnm=f'{deffnm}',plot_pfx='densification')
         logger.info(f'Densified coordinates in {pfs.cwd()}/{os.path.basename(TC.files["gro"])}')
@@ -354,7 +354,7 @@ class Runtime:
 
     @cp.enableCheckpoint
     def save_data(self,result_name='final'):
-        """save_data writes 'gro', 'top', and 'grx' files for system
+        """save_data writes 'gro', 'top', 'tpx', and 'grx' files for system
 
         :param result_name: output file basename, defaults to 'final'
         :type result_name: str, optional
@@ -409,14 +409,14 @@ class Runtime:
         checkin=pfs.checkin
         force_parameterization=kwargs.get('force_parameterization',False)
         force_checkin=kwargs.get('force_checkin',False)
-        ''' Either perform a fresh parameterization or fetch parameterization files '''
+        # Either perform a fresh parameterization or fetch parameterization files
         if force_parameterization or not M.previously_parameterized():
             logger.debug(f'Parameterization of {mname} requested -- can we generate {mname}?')
             generatable=(not M.generator) or (all([m in self.molecules for m in M.generator.reactants.values()]))
             if generatable:
                 logger.debug(f'Generating {mname}')
                 M.generate(available_molecules=self.molecules,**self.cfg.parameters)
-                for ex in ['mol2','top','itp','gro','grx']:
+                for ex in ['mol2','top','tpx','itp','gro','grx']:
                     checkin(f'molecules/parameterized/{mname}.{ex}',overwrite=force_checkin)
                 M.set_origin('newly parameterized')
             else:

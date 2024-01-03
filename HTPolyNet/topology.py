@@ -12,6 +12,7 @@ import os
 import pandas as pd
 import numpy as np
 import networkx as nx
+from copy import deepcopy
 from scipy.constants import physical_constants
 from networkx.readwrite import json_graph
 from itertools import product
@@ -19,6 +20,8 @@ from HTPolyNet.bondlist import Bondlist
 from HTPolyNet.ring import Ring, RingList
 
 logger=logging.getLogger(__name__)
+
+_PAD_=-99.99
 
 def typeorder(a):
     """typeorder correctly order the tuple of atom types for particular
@@ -90,9 +93,9 @@ _GromacsTopologyDirectiveHeaders_={
     'system':['Name'],
     'molecules':['Compound','#mols'],
     'defaults':['nbfunc','comb-rule','gen-pairs','fudgeLJ','fudgeQQ']
-    }
+}
 
-_GromacsTopologyHashables_={
+_GromacsTopologyHashables_={ # attributes/columns that should always have values, no NaNs; these are how each item is sorted
     'atoms':['nr'],
     'pairs':['ai', 'aj'],
     'bonds':['ai', 'aj'],
@@ -102,7 +105,7 @@ _GromacsTopologyHashables_={
     'bondtypes':['i','j'],
     'angletypes':['i','j','k'],
     'dihedraltypes':['i','j','k','l']
-    }
+}
 
 _GromacsTopologyDirectiveDefaults_={
     'system':['A_generic_system'],
@@ -165,8 +168,8 @@ class Topology:
         self.empty=True
 
     @classmethod
-    def read_gro(cls,filename):
-        """read_gro Reads a Gromacs-style topology file 'filename' and returns a dictionary keyed on directive names.
+    def read_top(cls,filename,pad=_PAD_):
+        """read_top Reads a Gromacs-style topology file 'filename' and returns a dictionary keyed on directive names.
         Each value in the dictionary is a pandas dataframe.  Each
         dataframe represents an individual section found with its directive in the file, with columns corresponding to the fields in the section.  Note that the we allow for input topology/itp files to have two 'dihedrals' and 'dihedraltypes' sections; these
         are merged in the result.
@@ -204,9 +207,10 @@ class Topology:
                     else:
                         tokens=[line]
                     padded=[typedata(k,_) for _,k in zip(tokens,header)]
-                    # pad with NaN's so that it is same length as series
+                    # pad row so that it is same length as series
                     for _ in range(len(tokens),len(header)):
-                        padded.append(pd.NA)
+                        padded.append(pad)
+                    # logger.debug(f'padded row: {padded}')
                     assert len(padded)==len(header), f'Error: Padding solution does not work! {directive} {len(tokens)}:{len(padded)}!={len(header)} {",".join(tokens)} {",".join(header)}'
                     for k,v in zip(header,padded):
                         series[k].append(v)
@@ -234,39 +238,29 @@ class Topology:
             inst.null_check(msg=f'read from {filename}')
             if 'atomtypes' in inst.D:
                 inst.D['atomtypes']=inst.D['atomtypes'].sort_values(by='name').reset_index(drop=True)
-#                inst.D['atomtypes'].sort_values(by='name',inplace=True)
             if 'bonds' in inst.D:
                 inst.D['bonds']=inst.D['bonds'].sort_values(by=['ai','aj']).reset_index(drop=True)
                 inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
             if 'bondtypes' in inst.D:
                 df_typeorder(inst.D['bondtypes'],typs=['i','j'])
-#                inst.D['bondtypes'].sort_values(by=['i','j'],inplace=True)
                 inst.D['bondtypes']=inst.D['bondtypes'].sort_values(by=['i','j']).reset_index(drop=True)
             if 'pairs' in inst.D:
                 inst.D['pairs']=inst.D['pairs'].sort_values(by=['ai','aj']).reset_index(drop=True)
             if 'pairtypes' in inst.D:
                 df_typeorder(inst.D['pairtypes'],typs=['i','j'])
-#                inst.D['pairtypes'].sort_values(by=['i','j'],inplace=True)
                 inst.D['pairtypes']=inst.D['pairtypes'].sort_values(by=['i','j']).reset_index(drop=True)
             if 'angles' in inst.D:
-                # central atom (aj) is the primary index
                 inst.D['angles']=inst.D['angles'].sort_values(by=['aj','ai','ak']).reset_index(drop=True)
             if 'angletypes' in inst.D:
                 df_typeorder(inst.D['angletypes'],typs=['i','j','k'])
-#                inst.D['angletypes'].sort_values(by=['j','i','k'],inplace=True)
                 inst.D['angletypes']=inst.D['angletypes'].sort_values(by=['j','i','k']).reset_index(drop=True)
             if 'dihedrals' in inst.D:
-                # central atoms (aj,ak) are the primary index
                 inst.D['dihedrals']=inst.D['dihedrals'].sort_values(by=['aj','ak','ai','al']).reset_index(drop=True)
             if 'dihedraltypes' in inst.D:
                 df_typeorder(inst.D['dihedraltypes'],typs=['i','j','k','l'])
-                # print(f'    -> pre sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
-#                inst.D['dihedraltypes'].sort_values(by=['j','k','i','l'],inplace=True)
                 inst.D['dihedraltypes']=inst.D['dihedraltypes'].sort_values(by=['j','k','i','l']).reset_index(drop=True)
-                # print(f'    -> post sort: now there are {len(inst.D["dihedraltypes"])} dihedral types.')
             for f in inst.includes:
-                # print(f'reading included topology {f}')
-                inst.merge(Topology.read_gro(os.path.join(dirname,f)))
+                inst.merge(Topology.read_top(os.path.join(dirname,f)))
             inst.empty=False
             return inst
 
@@ -333,7 +327,7 @@ class Topology:
     
     def write_tpx(self,filename):
         with open(filename,'w') as f:
-            f.write('[rings]\n')
+            f.write('[ rings ]\n')
             for r in self.rings:
                 f.write(' '.join([str(x) for x in r.idx])+'\n')
 
@@ -359,29 +353,28 @@ class Topology:
                 raise Exception(f'Error: expected an "atoms" dataframe')
             for t in _GromacsExtensiveDirectives_:
                 if t in self.D:
-                    # print(f'replicating {t} by {count}')
                     self.D[t]=pd.concat([self.D[t]]*count,ignore_index=True)
-            # print(f'new raw atom count (pre-index-shifted) {len(self.D["atoms"])}')
+            new_rings=RingList([])
             for c in range(1,count):
-                # if c%100 == 0:
-                # print(f'  -> shifting indices in replica {c}...')
-                # print(f'     -> atoms')
                 self.shiftatomsidx(idxshift*c,'atoms',rows=[(c*counts['atoms']),((c+1)*counts['atoms'])],idxlabels=['nr'])
                 self.shiftatomsidx(c,'atoms',rows=[(c*counts['atoms']),((c+1)*counts['atoms'])],idxlabels=['resnr'])
-                # print(f'     -> bonds')
                 self.shiftatomsidx(idxshift*c,'bonds',rows=[(c*counts['bonds']),((c+1)*counts['bonds'])],idxlabels=['ai','aj'])
                 self.shiftatomsidx(idxshift*c,'mol2_bonds',rows=[(c*counts['mol2_bonds']),((c+1)*counts['mol2_bonds'])],idxlabels=['ai','aj'])
-                # print(f'     -> pairs')
                 self.shiftatomsidx(idxshift*c,'pairs',rows=[(c*counts['pairs']),((c+1)*counts['pairs'])],idxlabels=['ai','aj'])
                 self.shiftatomsidx(idxshift*c,'angles',rows=[(c*counts['angles']),((c+1)*counts['angles'])],idxlabels=['ai','aj','ak'])
                 self.shiftatomsidx(idxshift*c,'dihedrals',rows=[(c*counts['dihedrals']),((c+1)*counts['dihedrals'])],idxlabels=['ai','aj','ak','al'])
+                new_ringblock=RingList([])
+                for r in self.rings:
+                    new_ringblock.append(r.copy().shift(idxshift*c))
+                new_rings.extend(new_ringblock)
+            self.rings.extend(new_rings)
             if 'bonds' in self.D:
                 self.bondlist=Bondlist.fromDataFrame(self.D['bonds'])
 
     @classmethod
     def from_ex(cls,other):
         """from_ex make a new Topology instance by copying only the extensive dataframes
-            from an existing topology 
+            from an existing topology, plust the bondlist and ringlist
 
         :param other: the other topology
         :type other: Topology
@@ -393,10 +386,13 @@ class Topology:
         for t in _GromacsExtensiveDirectives_:
             if t in other.D:
                 inst.D[t]=other.D[t].copy()
+        if 'bonds' in inst.D:
+            inst.bondlist=Bondlist.fromDataFrame(inst.D['bonds'])
+        inst.rings=deepcopy(other.rings)
         return inst
 
-    def to_file(self,filename):
-        """to_file Write topology to a gromacs-format file
+    def write_top(self,filename):
+        """Write topology to a gromacs-format top file
 
         :param filename: name of top file to write
         :type filename: str
@@ -409,6 +405,7 @@ class Topology:
         for k in _GromacsTopologyDirectiveOrder_:
             if k in self.D:
                 # columns=_GromacsTopologyDirectiveHeaders_[k]
+                self.D[k].replace(_PAD_,pd.NA,inplace=True)
                 with open(filename,'a') as f:
                     f.write(f'[ {k} ]\n; ')
                 if k in _GromacsTopologyHashables_:
@@ -416,6 +413,7 @@ class Topology:
                     odf.to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
                 else:
                     self.D[k].to_csv(filename,sep=' ',mode='a',index=False,header=True,doublequote=False)
+                self.D[k].replace(pd.NA,_PAD_,inplace=True)
                 with open(filename,'a') as f:
                     f.write('\n')
         with open(filename,'a') as f:
@@ -986,7 +984,7 @@ class Topology:
             self._myconcat(other,directive=t,drop_duplicates=True)
 
     def merge_ex(self,other):
-        # print('   extensive merging...')
+        logger.debug(f'   extensive merging...')
         ''' merge EXTENSIVE quantities '''
         idxshift=0 if 'atoms' not in self.D else len(self.D['atoms'])
         rdxshift=0 if 'atoms' not in self.D else self.D['atoms'].iloc[-1]['resnr']
@@ -1002,6 +1000,7 @@ class Topology:
         self._myconcat(other,directive='pairs',idxlabel=['ai','aj'],idxshift=idxshift)
         self._myconcat(other,directive='angles',idxlabel=['ai','aj','ak'],idxshift=idxshift)
         self._myconcat(other,directive='dihedrals',idxlabel=['ai','aj','ak','al'],idxshift=idxshift)
+        logger.debug(f'merging {len(other.rings)} rings into base list of {len(self.rings)} with idxshift {idxshift}')
         other.rings.shift(idxshift)
         self.rings.extend(other.rings)
 
@@ -1105,8 +1104,6 @@ class Topology:
                     logger.debug(str(msg))
                     logger.debug(f'writing resid graph to JSON not currently supported')
                     f.write(str(the_data)+'\n')
-        # if draw:
-        #     network_graph(self.residue_network,draw)
 
     def copy_bond_parameters(self,bonds):
         """Generate and return a copy of a bonds dataframe that contains all bonds
@@ -1118,11 +1115,19 @@ class Topology:
         :rtype: pandas.DataFrame
         """
         bdf=self.D['bonds']
-        saveme=pd.DataFrame(columns=bdf.columns)
+        assert not(any(bdf['c0'].isna()))
+        saveme=pd.DataFrame()
         for b in bonds.itertuples():
             ai,aj=idxorder((b.ai,b.aj))
+            subframe=bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()
+            for c in bdf.columns:
+                if not c in subframe:
+                    subframe[c]=_PAD_
+            if saveme.empty:
+                saveme=subframe
+            else:
             # logger.debug(f'copy parameters for ai {ai} aj {aj}')
-            saveme=pd.concat((saveme,bdf[(bdf['ai']==ai)&(bdf['aj']==aj)].copy()),ignore_index=True)
+                saveme=pd.concat((saveme,subframe),ignore_index=True)
         # logger.info(f'saved bond override params\n{saveme.to_string()}')
         return saveme
 

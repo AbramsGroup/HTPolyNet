@@ -402,6 +402,7 @@ class CureController:
         self._register_bonds(bonds_df,pairs_df,f'{opfx}-bonds.csv',bonds_are='unrelaxed')
         TC.write_gro(f'{opfx}.gro')
         TC.write_top(f'{opfx}.top')
+        TC.write_tpx(f'{opfx}.tpx')
         TC.write_grx_attributes(f'{opfx}.grx')
         if self.state.step==cure_step.cure_update:
             self.state.step=cure_step.cure_relax

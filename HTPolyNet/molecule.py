@@ -361,7 +361,6 @@ class Molecule:
                     # logger.debug(f'Adding {entry} to chainlist of {self.name}')
                     TC.idx_lists['chain'].append(entry)
         TC.reset_grx_attributes_from_idx_list('chain')
-        # set cycle, cycle_idx
         self.initialize_molecule_rings()
 
     def previously_parameterized(self):
@@ -388,6 +387,8 @@ class Molecule:
             outname=f'{self.name}'
         GAFFParameterize(self.name,outname,input_structure_format=input_structure_format,**kwargs)
         self.load_top_gro(f'{outname}.top',f'{outname}.gro',mol2filename=f'{outname}.mol2',wrap_coords=False)
+        self.initialize_molecule_rings()
+        self.TopoCoord.write_tpx(f'{outname}.tpx')
 
     def minimize(self,outname='',**kwargs):
         """minimize manages invocation of vacuum minimization
@@ -500,9 +501,10 @@ class Molecule:
         else:
             if self.name!=self.parentname:
                 logger.info(f'Built {self.name} using topology of {self.parentname}; copying {self.parentname}.top to {self.name}.top')
-                self.load_top_gro(f'{self.parentname}.top',f'{self.name}.gro',wrap_coords=False)
+                self.load_top_gro(f'{self.parentname}.top',f'{self.name}.gro',tpxfilename=f'{self.name}.tpx',wrap_coords=False)
                 shutil.copy(f'{self.parentname}.top',f'{self.name}.top')
                 shutil.copy(f'{self.parentname}.grx',f'{self.name}.grx')
+                shutil.copy(f'{self.parentname}.tpx',f'{self.name}.tpx')
 
         if do_minimization:
             self.minimize(outname,**kwargs)
@@ -519,6 +521,7 @@ class Molecule:
                 #self.reset_chains_from_attributes()
         # logger.debug(f'{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}')
         self.prepare_new_bonds(available_molecules=available_molecules)
+
         # for ln in self.TopoCoord.Coordinates.A.head().to_string().split('\n'): logger.debug(ln)
         logger.info(f'{self.name}: {self.get_molecular_weight():.2f} g/mol')
         logger.debug('Done.')
@@ -769,17 +772,19 @@ class Molecule:
         shifts=self.TopoCoord.merge(other.TopoCoord)
         return shifts
 
-    def load_top_gro(self,topfilename,grofilename,mol2filename='',**kwargs):
+    def load_top_gro(self,topfilename,grofilename,tpxfilename='',mol2filename='',**kwargs):
         """load_top_gro generate a new TopoCoord member object for this molecule by reading in a Gromacs topology file and a Gromacs gro file
 
         :param topfilename: Gromacs topology file
         :type topfilename: str
         :param grofilename: Gromacs gro file
         :type grofilename: str
+        :param tpxfilename: extended topology file, defaults to ''
+        :type tpxfilename: str, optional
         :param mol2filename: alternative coordinate mol2 file, defaults to ''
         :type mol2filename: str, optional
         """
-        self.TopoCoord=TopoCoord(topfilename=topfilename,grofilename=grofilename,mol2filename=mol2filename,**kwargs)
+        self.TopoCoord=TopoCoord(topfilename=topfilename,grofilename=grofilename,tpxfilename=tpxfilename,mol2filename=mol2filename,**kwargs)
 
     def set_gro_attribute(self,attribute,srs):
         """set_gro_attribute sets attribute of atoms to srs (drillst through to Coordinates.set_atomset_attributes())
@@ -901,7 +906,7 @@ class Molecule:
             for otH,otHnm in otHpartners.items():
                 logger.debug(f'{self.name}: Considering {myH} {otH}')
                 coord_trials[myH][otH]=deepcopy(BTC)
-                logger.debug(f'\n{coord_trials[myH][otH].Coordinates.A.to_string()}')
+                # logger.debug(f'\n{coord_trials[myH][otH].Coordinates.A.to_string()}')
                 Rk=coord_trials[myH][otH].get_R(otH)
                 logger.debug(f'{self.name}:    otH {otH} Rk {Rk} {Rk.dtype}')
                 Rkj=Rk-Rj

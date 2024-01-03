@@ -105,6 +105,10 @@ Submodules
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: HTPolyNet.matrix4
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 .. automodule:: HTPolyNet.molecule
    :members:

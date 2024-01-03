@@ -161,7 +161,7 @@ class Coordinates:
         #     logger.debug(ln)
         if wrap_coords:
             inst.wrap_coords()
-        logger.debug(inst.A.dtypes)
+        # logger.debug(inst.A.dtypes)
         return inst
 
     @classmethod
@@ -387,7 +387,7 @@ class Coordinates:
                 self.set_atomset_attribute('linkcell_idx',-1*np.ones(self.A.shape[0]).astype(int))
                 # we only populate with atoms whose positions will be needed in interatomic
                 # distance calculations; these are those (a) in rings, or (b) are reactive
-                sc=self.subcoords(self.A[(self.A['globalIdx'].isin(self.parent.rings.all_atoms()))|(self.A['z']>0)].copy())
+                sc=self.subcoords(self.A[(self.A['globalIdx'].isin(self.parent.Topology.rings.all_atoms()))|(self.A['z']>0)].copy())
                 self.linkcell.populate(sc,ncpu=ncpu)
                 self.reconcile_subcoords(sc,'linkcell_idx')
                 if save:
@@ -564,10 +564,10 @@ class Coordinates:
         else:
             df=pd.read_csv(filename,sep='\s+',names=['globalIdx']+attributes,header=0)
             attributes_read=attributes
-            logger.debug(f'Read from {filename}\n{df.head().to_string()}')
-        logger.debug(f'Merge:\n{self.A.head().to_string()}\nand\n{df.head().to_string()}')
+            # logger.debug(f'Read from {filename}\n{df.head().to_string()}')
+        # logger.debug(f'Merge:\n{self.A.head().to_string()}\nand\n{df.head().to_string()}')
         self.A=self.A.merge(df,how='outer',on='globalIdx')
-        logger.debug(f'Result:\n{self.A.head().to_string()}')
+        # logger.debug(f'Result:\n{self.A.head().to_string()}')
         return attributes_read
 
     def set_atomset_attribute(self,attribute,srs):

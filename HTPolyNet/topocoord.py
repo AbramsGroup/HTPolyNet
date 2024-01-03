@@ -492,17 +492,19 @@ class TopoCoord:
                 tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
                 tdf.to_csv(write_mapper_to,sep=' ',index=False)
             logger.debug('finished')
+            # TODO: must rebuild the ring list since indexes have changed?  or just remap
+            self.Topology.rings.remap(idx_mapper)
             return ri_bdf,pi_df
 
     def read_top(self,topfilename):
         """read_top Creates a new Topology member by reading from a Gromacs-style top file.
-            Just a wrapper for the read_gro method of Topology
+            Just a wrapper for the read_top method of the Topology class
 
         :param topfilename: name of topology file
         :type topfilename: str
         """
         self.files['top']=os.path.abspath(topfilename)
-        self.Topology=Topology.read_gro(topfilename)
+        self.Topology=Topology.read_top(topfilename)
 
     def read_tpx(self,tpxfilename):
         """reads in extended topology information
@@ -524,6 +526,7 @@ class TopoCoord:
         if preserve_box:
             savebox=self.Coordinates.box.copy()
         self.Coordinates=Coordinates.read_gro(grofilename,wrap_coords=wrap_coords)
+        self.Coordinates.claim_parent(self)
         if preserve_box:
             self.Coordinates.box=savebox
         # logger.debug(f'box: {self.Coordinates.box}')
@@ -589,12 +592,12 @@ class TopoCoord:
 
     def write_top(self,topfilename):
         """write_top Write a Gromacs-format topology file; this will only write an in-line version,
-            no itp; wrapper for Topology.to_file()
+            no itp; wrapper for Topology.write_top()
 
         :param topfilename: name of file to write
         :type topfilename: str
         """
-        self.Topology.to_file(topfilename)
+        self.Topology.write_top(topfilename)
         self.files['top']=os.path.abspath(topfilename)
 
     def write_tpx(self,tpxfilename):
@@ -1273,6 +1276,7 @@ class TopoCoord:
             if not idx in joint_idx:
                 joint_idx.append(idx)
         nearby_rings=self.Topology.rings.filter(joint_idx)
+        logger.debug(f'Ring-pierce check for bond {i}-{j} will consider {len(nearby_rings)} rings')
         B=adf.iloc[[i-1,j-1]].copy()
         seg=np.array(B[['posX','posY','posZ']].values)
         # saveB=B.copy()
@@ -1282,7 +1286,8 @@ class TopoCoord:
         for r in nearby_rings:
             ru=r.unwrap(seg[0],pbc=pbc,unwrapf=self.Coordinates.unwrap)
             seg[1]=self.Coordinates.unwrap(seg[1],seg[0],pbc=pbc)
-            if ru.pierced_by(seg):
+            is_pierced,pierce_point=ru.pierced_by(seg)
+            if is_pierced:
                 if show_piercings:
                     C=adf[adf['globalIdx'].isin(r.idx)].copy()
                     J=pd.concat([B,C])
@@ -1621,7 +1626,7 @@ class TopoCoord:
         """grab_files using absolute pathname information, grab the most up-to-date gromacs files for this system and deposit them into the cwd
         """
         cwd=os.getcwd()
-        for ext in ['top','gro','grx']:
+        for ext in ['top','tpx','gro','grx']:
             filename=self.files[ext]
             logger.debug(f'{ext} grabbing {pfs.proj_abspath(filename)} into {pfs.cwd()}')  
             if os.path.commonprefix([cwd,filename])!=cwd:

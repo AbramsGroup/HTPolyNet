@@ -348,7 +348,7 @@ def fetch_molecule_files(mname):
     """
     ret_exts=[]
     dirname='molecules/parameterized'
-    for e in ['mol2','pdb','gro','top','itp','grx']:
+    for e in ['mol2','pdb','gro','top','tpx','itp','grx']:
         prob_filename=os.path.join(dirname,f'{mname}.{e}')
         if exists(prob_filename):
             ret_exts.append(e)
