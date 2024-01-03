@@ -11,7 +11,7 @@ jobs:
     - name: Install package
       run: |
           python3 -m pip install -e .
-          python3 -m pip install sphinx matplotlib pytrr sphinxcontrib-bibtex
+          python3 -m pip install setuptools sphinx matplotlib pytrr sphinxcontrib-bibtex
           cd docs
           make html
           cd ..
