@@ -137,11 +137,13 @@ def pack_example(args):
         else:
             use_n=True
     n=args.n
+    overwrite=args.overwrite
     existing_examples=l.get_example_names()
     numbers=[int(x.split('-')[0]) for x in existing_examples]
-    assert not n in numbers,f'Choose an index other than {n}; an example with this index already exists.'
-    if not use_n:
-        assert not existing_n in numbers,f'Choose an index other than {n}; an example with this index already exists. To do this, rename the directory.'
+    if not overwrite:
+        assert not n in numbers,f'Choose an index other than {n}; an example with this index already exists.'
+        if not use_n:
+            assert not existing_n in numbers,f'Choose an index other than {n}; an example with this index already exists. To do this, rename the directory.'
     if n==-1:
         n=str(max(numbers)+1)
     if use_n:
@@ -149,6 +151,8 @@ def pack_example(args):
     else:
         newname=f'{os.path.basename(os.getcwd())}'
     depot_location=l.get_example_depot_location()
+    if overwrite and os.path.exists(f'{depot_location}/{newname}.tgz'):
+        logger.debug(f'Warning: overwriting example {depot_location}/{newname}.tgz')
     os.chdir('..')
     c=Command(f'tar --exclude="*/*/*/*/*" -zvcf {depot_location}/{newname}.tgz {bn}/README.md {bn}/run.sh {bn}/*.yaml {bn}/lib/molecules/')
     o,e=c.run()
@@ -228,6 +232,7 @@ def cli():
     command_parsers['fetch-example'].add_argument('-k',default=False,action='store_true',help='keep tarballs')
     ######## pack-example
     command_parsers['pack-example'].add_argument('-n',type=int,default=-1,help='desired index (integer) for this example')
+    command_parsers['pack-example'].add_argument('--overwrite',default=False,action='store_true',help='overwrite any existing example in the depot with this number')
     ######## input-check ########
     command_parsers['input-check'].add_argument('config',type=str,default=None,help='input configuration file in YAML format')
     command_parsers['input-check'].add_argument('-lib',type=str,default='lib',help='local user library of molecular structures and parameterizations')
