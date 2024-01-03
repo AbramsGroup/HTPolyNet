@@ -501,7 +501,7 @@ class Molecule:
         else:
             if self.name!=self.parentname:
                 logger.info(f'Built {self.name} using topology of {self.parentname}; copying {self.parentname}.top to {self.name}.top')
-                self.load_top_gro(f'{self.parentname}.top',f'{self.name}.gro',tpxfilename=f'{self.name}.tpx',wrap_coords=False)
+                self.load_top_gro(f'{self.parentname}.top',f'{self.name}.gro',tpxfilename=f'{self.parentname}.tpx',wrap_coords=False)
                 shutil.copy(f'{self.parentname}.top',f'{self.name}.top')
                 shutil.copy(f'{self.parentname}.grx',f'{self.name}.grx')
                 shutil.copy(f'{self.parentname}.tpx',f'{self.name}.tpx')
