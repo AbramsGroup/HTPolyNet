@@ -156,8 +156,10 @@ def pack_example(args):
     os.chdir('..')
     c=Command(f'tar --exclude="*/*/*/*/*" -zvcf {depot_location}/{newname}.tgz {bn}/README.md {bn}/run.sh {bn}/*.yaml {bn}/lib/molecules/')
     o,e=c.run()
-    print(o)
-    print(e)
+    logger.debug(f'STDOUT')
+    logger.debug(o)
+    logger.debug(f'STDERR')
+    logger.debug(e)
 
 def cli():
     """cli Command-line interface
