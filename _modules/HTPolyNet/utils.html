@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HTPolyNet.utils &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="../../_static/documentation_options.js?v=3763423d"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -50,7 +50,9 @@
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="density_from_gro"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.density_from_gro">[docs]</a><span class="k">def</span> <span class="nf">density_from_gro</span><span class="p">(</span><span class="n">gro</span><span class="p">,</span><span class="n">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/parameterized&#39;</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;SI&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="density_from_gro">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.density_from_gro">[docs]</a>
+<span class="k">def</span> <span class="nf">density_from_gro</span><span class="p">(</span><span class="n">gro</span><span class="p">,</span><span class="n">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/parameterized&#39;</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;SI&#39;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;density_from_gro computes density from a Gromacs gro file</span>
 
 <span class="sd">    :param gro: name of gro file</span>
@@ -87,6 +89,7 @@
         <span class="n">vfac</span><span class="o">=</span><span class="n">lfac</span><span class="o">**</span><span class="mi">3</span>
         <span class="n">fac</span><span class="o">=</span><span class="n">mfac</span><span class="o">/</span><span class="n">vfac</span>
     <span class="k">return</span> <span class="n">fac</span><span class="o">*</span><span class="n">mass</span><span class="o">/</span><span class="n">volume</span></div>
+
 
 <span class="sd">&quot;&quot;&quot; These globals are used in traversing a project directory to extract data from edr files &quot;&quot;&quot;</span>
 <span class="n">_system_dirs</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;densification&#39;</span><span class="p">,</span><span class="s1">&#39;precure&#39;</span><span class="p">,</span><span class="sa">r</span><span class="s1">&#39;iter-</span><span class="si">{iter:d}</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;capping&#39;</span><span class="p">,</span><span class="s1">&#39;postcure&#39;</span><span class="p">]</span>
@@ -130,7 +133,9 @@
     <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">df</span><span class="p">,</span><span class="n">this_df</span><span class="p">),</span><span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">df</span><span class="p">,</span><span class="n">xshift</span>
 
-<div class="viewcode-block" id="postsim_density_evolution"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.postsim_density_evolution">[docs]</a><span class="k">def</span> <span class="nf">postsim_density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">,</span><span class="n">append_dirname</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="postsim_density_evolution">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.postsim_density_evolution">[docs]</a>
+<span class="k">def</span> <span class="nf">postsim_density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">,</span><span class="n">append_dirname</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;postsim_density_evolution returns a single dataframe that is a concatenation of the csv files</span>
 <span class="sd">    in the &#39;postsim&#39; subdirectories</span>
 
@@ -154,7 +159,10 @@
         <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">proj_dir</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="density_evolution"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.density_evolution">[docs]</a><span class="k">def</span> <span class="nf">density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">):</span>
+
+<div class="viewcode-block" id="density_evolution">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.density_evolution">[docs]</a>
+<span class="k">def</span> <span class="nf">density_evolution</span><span class="p">(</span><span class="n">proj_dir</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;density_evolution returns a single dataframe containing density, temperture, number of bonds vs time by reading all edrs in the correct order from a complete project directory</span>
 
 <span class="sd">    :param proj_dir: name of complete project directory</span>
@@ -267,7 +275,10 @@
                         <span class="n">interval_labels</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">edr_pfx</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">df</span><span class="p">,</span><span class="n">transition_times</span><span class="p">,</span><span class="n">markers</span><span class="p">,</span><span class="n">interval_labels</span></div>
 
-<div class="viewcode-block" id="graph_from_bondsfile"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.graph_from_bondsfile">[docs]</a><span class="k">def</span> <span class="nf">graph_from_bondsfile</span><span class="p">(</span><span class="n">bondsfile</span><span class="p">):</span>
+
+<div class="viewcode-block" id="graph_from_bondsfile">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.graph_from_bondsfile">[docs]</a>
+<span class="k">def</span> <span class="nf">graph_from_bondsfile</span><span class="p">(</span><span class="n">bondsfile</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;graph_from_bondsfile generates a networkx Graph in which each node is a molecule (from &#39;mi&#39; and &#39;mj&#39; records in the bondsfile) and edges indicate two molecules are joined by a covalent bond</span>
 
 <span class="sd">    :param bondsfile: name of bondsfile</span>
@@ -281,7 +292,10 @@
         <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;mi&#39;</span><span class="p">],</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;mj&#39;</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">G</span></div>
 
-<div class="viewcode-block" id="mwbxl"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.mwbxl">[docs]</a><span class="k">def</span> <span class="nf">mwbxl</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">,</span><span class="n">crosslinker</span><span class="o">=</span><span class="s1">&#39;GMA&#39;</span><span class="p">,</span><span class="n">monomer</span><span class="o">=</span><span class="s1">&#39;STY&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="mwbxl">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.mwbxl">[docs]</a>
+<span class="k">def</span> <span class="nf">mwbxl</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">,</span><span class="n">crosslinker</span><span class="o">=</span><span class="s1">&#39;GMA&#39;</span><span class="p">,</span><span class="n">monomer</span><span class="o">=</span><span class="s1">&#39;STY&#39;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;mwbxl computes the histogram of monomer counts &#39;n&#39; between crosslinking sites using a molecular connectivity graph; used mainly for vinyl-based polymerizations</span>
 
 <span class="sd">    :param G: molecular connectivity graph</span>
@@ -352,7 +366,10 @@
     <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;n&#39;</span><span class="p">:</span><span class="n">mw</span><span class="p">,</span><span class="s1">&#39;counts&#39;</span><span class="p">:</span><span class="n">counts</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="clusters"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.clusters">[docs]</a><span class="k">def</span> <span class="nf">clusters</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">):</span>
+
+<div class="viewcode-block" id="clusters">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.clusters">[docs]</a>
+<span class="k">def</span> <span class="nf">clusters</span><span class="p">(</span><span class="n">G</span><span class="p">:</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;clusters performs a clustering analysis and returns a histgram of cluster sizes (in numbers of molecules) as a pandas DataFrame</span>
 
 <span class="sd">    :param G: molecular connectivity graph</span>
@@ -375,7 +392,10 @@
     <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s1">&#39;sizes&#39;</span><span class="p">,</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="compute_tg"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.compute_tg">[docs]</a><span class="k">def</span> <span class="nf">compute_tg</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">n_points</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">]):</span>
+
+<div class="viewcode-block" id="compute_tg">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.compute_tg">[docs]</a>
+<span class="k">def</span> <span class="nf">compute_tg</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">n_points</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;compute_tg peforms a Tg determination from (volume or density) vs temperature data by fitting lines to the low-T region and another to the high-T region, taking Tg as the temperature at which they intersect.</span>
 
 <span class="sd">    :param T: temperature values</span>
@@ -411,7 +431,10 @@
         <span class="n">Tg</span><span class="o">=-</span><span class="p">(</span><span class="n">hot_par</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cold_par</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="n">hot_par</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">cold_par</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="k">return</span> <span class="n">Tg</span><span class="p">,</span><span class="n">cold_par</span><span class="p">,</span><span class="n">hot_par</span></div>
 
-<div class="viewcode-block" id="compute_E"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.compute_E">[docs]</a><span class="k">def</span> <span class="nf">compute_E</span><span class="p">(</span><span class="n">strain</span><span class="p">,</span><span class="n">stress</span><span class="p">,</span><span class="n">fit_domain</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">]):</span>
+
+<div class="viewcode-block" id="compute_E">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.utils.compute_E">[docs]</a>
+<span class="k">def</span> <span class="nf">compute_E</span><span class="p">(</span><span class="n">strain</span><span class="p">,</span><span class="n">stress</span><span class="p">,</span><span class="n">fit_domain</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;compute_E compute the Young&#39;s modulus by peforming a linear fit to an elastic regime in stress-vs-strain data</span>
 
 <span class="sd">    :param strain: strain values</span>
@@ -434,6 +457,7 @@
     <span class="n">sst</span><span class="o">=</span><span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">y</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span><span class="o">**</span><span class="mi">2</span>
     <span class="n">r2</span><span class="o">=</span><span class="mi">1</span><span class="o">-</span><span class="n">sse</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="n">sst</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">popt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">r2</span></div>
+
 </pre></div>
 
           </div>
@@ -488,7 +512,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
     </div>

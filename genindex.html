@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Index &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="_static/documentation_options.js?v=3763423d"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" />
    
@@ -84,6 +84,8 @@
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.adjust_charges">(HTPolyNet.topology.Topology method)</a>
 </li>
       </ul></li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.RingList.all_atoms">all_atoms() (HTPolyNet.ring.RingList method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.analyze.Analyze.allowed_keys">allowed_keys (HTPolyNet.analyze.Analyze attribute)</a>
 </li>
       <li>
@@ -104,14 +106,10 @@
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.analyze.Analyze">Analyze (class in HTPolyNet.analyze)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.analyze">analyze() (HTPolyNet.ring.Ring method)</a>
-
-      <ul>
-        <li><a href="HTPolyNetPackage.html#HTPolyNet.analyze.analyze">(in module HTPolyNet.analyze)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.analyze.analyze">analyze() (in module HTPolyNet.analyze)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.unused_symmetry_stuff.analyze_sea">analyze_sea() (in module HTPolyNet.unused_symmetry_stuff)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.analyze.AnalyzeConfiguration">AnalyzeConfiguration (class in HTPolyNet.analyze)</a>
@@ -286,6 +284,8 @@
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.checkpoint.Checkpoint">Checkpoint (class in HTPolyNet.checkpoint)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.claim_parent">claim_parent() (HTPolyNet.coordinates.Coordinates method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.driver.cli">cli() (in module HTPolyNet.driver)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.utils.clusters">clusters() (in module HTPolyNet.utils)</a>
@@ -324,6 +324,8 @@
 </li>
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates">Coordinates (class in HTPolyNet.coordinates)</a>
+</li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.copy">copy() (HTPolyNet.ring.Ring method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.copy_bond_parameters">copy_bond_parameters() (HTPolyNet.topocoord.TopoCoord method)</a>
 
@@ -452,7 +454,7 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.utils.density_from_gro">density_from_gro() (in module HTPolyNet.utils)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.detect_cycles">detect_cycles() (HTPolyNet.topology.Topology method)</a>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.detect_rings">detect_rings() (HTPolyNet.topology.Topology method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.determine_sequence">determine_sequence() (HTPolyNet.molecule.Molecule method)</a>
 </li>
@@ -548,6 +550,8 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.projectfilesystem.fetch_molecule_files">fetch_molecule_files() (in module HTPolyNet.projectfilesystem)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.RingList.filter">filter() (HTPolyNet.ring.RingList method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.find_sacrificial_H">find_sacrificial_H() (HTPolyNet.coordinates.Coordinates method)</a>
 </li>
   </ul></td>
@@ -556,8 +560,12 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.curecontroller.cure_step.finished">finished (HTPolyNet.curecontroller.cure_step attribute)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.flip_stereocenter">flip_stereocenter() (HTPolyNet.molecule.Molecule method)</a>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.flip_stereocenters">flip_stereocenters() (HTPolyNet.molecule.Molecule method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.flip_stereocenters">(HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
+      </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.from_ex">from_ex() (HTPolyNet.topology.Topology class method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.from_top_gro">from_top_gro() (HTPolyNet.topocoord.TopoCoord class method)</a>
@@ -642,6 +650,8 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_resname">get_resname() (HTPolyNet.molecule.Molecule method)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.dataframetools.get_row">get_row() (in module HTPolyNet.dataframetools)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.dataframetools.get_row_as_string">get_row_as_string() (in module HTPolyNet.dataframetools)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.dataframetools.get_row_attribute">get_row_attribute() (in module HTPolyNet.dataframetools)</a>
@@ -706,6 +716,8 @@
       <li><a href="HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.half_as_list">half_as_list() (HTPolyNet.bondlist.Bondlist method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.has_atom_attributes">has_atom_attributes() (HTPolyNet.coordinates.Coordinates method)</a>
+</li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.homog_trans">homog_trans() (HTPolyNet.coordinates.Coordinates method)</a>
 </li>
       <li>
     HTPolyNet.ambertools
@@ -829,6 +841,13 @@
 </li>
       </ul></li>
       <li>
+    HTPolyNet.matrix4
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#module-HTPolyNet.matrix4">module</a>
+</li>
+      </ul></li>
+      <li>
     HTPolyNet.molecule
 
       <ul>
@@ -947,14 +966,20 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.plot.init_molecule_graph">init_molecule_graph() (in module HTPolyNet.plot)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.configuration.Configuration.initial_composition">initial_composition (HTPolyNet.configuration.Configuration attribute)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_molecule_cycles">initialize_molecule_cycles() (HTPolyNet.molecule.Molecule method)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_molecule_rings">initialize_molecule_rings() (HTPolyNet.molecule.Molecule method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_monomer_grx_attributes">initialize_monomer_grx_attributes() (HTPolyNet.molecule.Molecule method)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.injest_coordinates">injest_coordinates() (HTPolyNet.ring.Ring method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.RingList.injest_coordinates">(HTPolyNet.ring.RingList method)</a>
+</li>
+      </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.inputcheck.input_check">input_check() (in module HTPolyNet.inputcheck)</a>
 </li>
       <li>
@@ -1046,6 +1071,8 @@
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.makes_shortcircuit">makes_shortcircuit() (HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.map_from_templates">map_from_templates() (HTPolyNet.topocoord.TopoCoord method)</a>
+</li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4">Matrix4 (class in HTPolyNet.matrix4)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.maxspan">maxspan() (HTPolyNet.coordinates.Coordinates method)</a>
 
@@ -1156,6 +1183,8 @@
         <li><a href="HTPolyNetPackage.html#module-HTPolyNet.inputcheck">HTPolyNet.inputcheck</a>
 </li>
         <li><a href="HTPolyNetPackage.html#module-HTPolyNet.linkcell">HTPolyNet.linkcell</a>
+</li>
+        <li><a href="HTPolyNetPackage.html#module-HTPolyNet.matrix4">HTPolyNet.matrix4</a>
 </li>
         <li><a href="HTPolyNetPackage.html#module-HTPolyNet.molecule">HTPolyNet.molecule</a>
 </li>
@@ -1307,6 +1336,8 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.projectfilesystem.pfs_setup">pfs_setup() (in module HTPolyNet.projectfilesystem)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.pierced_by">pierced_by() (HTPolyNet.ring.Ring method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.pierces">pierces() (HTPolyNet.coordinates.Coordinates method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.pierces_ring">pierces_ring() (HTPolyNet.topocoord.TopoCoord method)</a>
@@ -1322,10 +1353,10 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.point_in_cellndx">point_in_cellndx() (HTPolyNet.linkcell.Linkcell method)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.populate">populate() (HTPolyNet.linkcell.Linkcell method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.populate">populate() (HTPolyNet.linkcell.Linkcell method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.populate_par">populate_par() (HTPolyNet.linkcell.Linkcell method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.plot.post_plots">post_plots() (in module HTPolyNet.plot)</a>
@@ -1412,8 +1443,6 @@
       <ul>
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.read_gro">(HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
-        <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.read_gro">(HTPolyNet.topology.Topology class method)</a>
-</li>
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.read_gro_attributes">read_gro_attributes() (HTPolyNet.molecule.Molecule method)</a>
 
@@ -1428,13 +1457,29 @@
 </li>
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.read_top">read_top() (HTPolyNet.topocoord.TopoCoord method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.read_top">(HTPolyNet.topology.Topology class method)</a>
 </li>
+      </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.read_top_gro">read_top_gro() (HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.read_tpx">read_tpx() (HTPolyNet.topocoord.TopoCoord method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.read_tpx">(HTPolyNet.topology.Topology method)</a>
+</li>
+      </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.reconcile_subcoords">reconcile_subcoords() (HTPolyNet.coordinates.Coordinates method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.relax">relax() (HTPolyNet.molecule.Molecule method)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.remap">remap() (HTPolyNet.ring.Ring method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.RingList.remap">(HTPolyNet.ring.RingList method)</a>
+</li>
+      </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.remove_restraints">remove_restraints() (HTPolyNet.topocoord.TopoCoord method)</a>
 
       <ul>
@@ -1447,10 +1492,10 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.report_duplicate_types">report_duplicate_types() (HTPolyNet.topology.Topology method)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.report_type">report_type() (HTPolyNet.topology.Topology method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.report_type">report_type() (HTPolyNet.topology.Topology method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.analyze.Analyze.required_keys">required_keys (HTPolyNet.analyze.Analyze attribute)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.curecontroller.CureController.reset">reset() (HTPolyNet.curecontroller.CureController method)</a>
@@ -1498,7 +1543,11 @@
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring">Ring (class in HTPolyNet.ring)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.RingList">RingList (class in HTPolyNet.ring)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.projectfilesystem.root">root() (in module HTPolyNet.projectfilesystem)</a>
+</li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4.rot">rot() (HTPolyNet.matrix4.Matrix4 method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.rotate">rotate() (HTPolyNet.coordinates.Coordinates method)</a>
 
@@ -1506,6 +1555,8 @@
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.rotate">(HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
       </ul></li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4.rotate_axis">rotate_axis() (HTPolyNet.matrix4.Matrix4 method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.rotate_bond">rotate_bond() (HTPolyNet.molecule.Molecule method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.command.Command.run">run() (HTPolyNet.command.Command method)</a>
@@ -1541,13 +1592,9 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.linkcell.Linkcell.searchlist_of_ldx">searchlist_of_ldx() (HTPolyNet.linkcell.Linkcell method)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.segint">segint() (HTPolyNet.ring.Ring method)</a>
-</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Segment">Segment (class in HTPolyNet.ring)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.select_topology_type_option">select_topology_type_option() (in module HTPolyNet.topology)</a>
-</li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.self_planarize">self_planarize() (HTPolyNet.ring.Ring method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_atom_attribute">set_atom_attribute() (HTPolyNet.coordinates.Coordinates method)</a>
 </li>
@@ -1575,16 +1622,22 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.dataframetools.set_row_attribute">set_row_attribute() (in module HTPolyNet.dataframetools)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.dataframetools.set_rows_attributes_from_dict">set_rows_attributes_from_dict() (in module HTPolyNet.dataframetools)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_coordinates">set_sequence_from_coordinates() (HTPolyNet.molecule.Molecule method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_moldict">set_sequence_from_moldict() (HTPolyNet.molecule.Molecule method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.curecontroller.CureController.setup">setup() (HTPolyNet.curecontroller.CureController method)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.shift">shift() (HTPolyNet.ring.Ring method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.RingList.shift">(HTPolyNet.ring.RingList method)</a>
+</li>
+      </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.shiftatomsidx">shiftatomsidx() (HTPolyNet.topology.Topology method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.show_z_report">show_z_report() (HTPolyNet.coordinates.Coordinates method)</a>
@@ -1631,8 +1684,6 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.configuration.Configuration.Title">Title (HTPolyNet.configuration.Configuration attribute)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.to_file">to_file() (HTPolyNet.topology.Topology method)</a>
-</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.software.to_string">to_string() (in module HTPolyNet.software)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.checkpoint.Checkpoint.to_yaml">to_yaml() (HTPolyNet.checkpoint.Checkpoint method)</a>
@@ -1657,14 +1708,14 @@
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.total_charge">total_charge() (HTPolyNet.topology.Topology method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.total_mass">total_mass() (HTPolyNet.topocoord.TopoCoord method)</a>
 
       <ul>
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.total_mass">(HTPolyNet.topology.Topology method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.total_volume">total_volume() (HTPolyNet.coordinates.Coordinates method)</a>
 
       <ul>
@@ -1673,17 +1724,23 @@
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.plot.trace">trace() (in module HTPolyNet.plot)</a>
 </li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4.transform">transform() (HTPolyNet.matrix4.Matrix4 method)</a>
+</li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4.transinvec">transinvec() (HTPolyNet.matrix4.Matrix4 method)</a>
+</li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.translate">translate() (HTPolyNet.coordinates.Coordinates method)</a>
 
       <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4.translate">(HTPolyNet.matrix4.Matrix4 method)</a>
+</li>
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.translate">(HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.transrot">transrot() (HTPolyNet.molecule.Molecule method)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.treadmill">treadmill() (in module HTPolyNet.topology)</a>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.matrix4.Matrix4.transvec">transvec() (HTPolyNet.matrix4.Matrix4 method)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.treadmills">treadmills() (in module HTPolyNet.topology)</a>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.treadmill">treadmill() (HTPolyNet.ring.Ring method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.typedata">typedata() (in module HTPolyNet.topology)</a>
 </li>
@@ -1711,7 +1768,11 @@
 </li>
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.unwrap">unwrap() (HTPolyNet.coordinates.Coordinates method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.ring.Ring.unwrap">(HTPolyNet.ring.Ring method)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.bondlist.Bondlist.update">update() (HTPolyNet.bondlist.Bondlist method)</a>
@@ -1763,14 +1824,14 @@
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.write_gro">(HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.write_gro_attributes">write_gro_attributes() (HTPolyNet.molecule.Molecule method)</a>
 
       <ul>
         <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.write_gro_attributes">(HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.write_grx_attributes">write_grx_attributes() (HTPolyNet.topocoord.TopoCoord method)</a>
 </li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_mol2">write_mol2() (HTPolyNet.coordinates.Coordinates method)</a>
@@ -1780,9 +1841,17 @@
 </li>
       </ul></li>
       <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.write_top">write_top() (HTPolyNet.topocoord.TopoCoord method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.write_top">(HTPolyNet.topology.Topology method)</a>
 </li>
-      <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.write_top_gro">write_top_gro() (HTPolyNet.topocoord.TopoCoord method)</a>
+      </ul></li>
+      <li><a href="HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.write_tpx">write_tpx() (HTPolyNet.topocoord.TopoCoord method)</a>
+
+      <ul>
+        <li><a href="HTPolyNetPackage.html#HTPolyNet.topology.Topology.write_tpx">(HTPolyNet.topology.Topology method)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -1850,7 +1919,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
     </div>

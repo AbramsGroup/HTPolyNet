@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,9 +8,9 @@
     <title>Installation and Prerequisites &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="_static/documentation_options.js?v=3763423d"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="User Guide" href="user-guide/index.html" />
@@ -32,9 +32,9 @@
           <div class="body" role="main">
             
   <section id="installation-and-prerequisites">
-<h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Permalink to this heading">¶</a></h1>
+<h1>Installation and Prerequisites<a class="headerlink" href="#installation-and-prerequisites" title="Link to this heading">¶</a></h1>
 <section id="software-prequisites">
-<h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Permalink to this heading">¶</a></h2>
+<h2>Software Prequisites<a class="headerlink" href="#software-prequisites" title="Link to this heading">¶</a></h2>
 <p>The following commands should be in your path:</p>
 <ol class="arabic simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">antechamber</span></code>, <code class="docutils literal notranslate"><span class="pre">parmchk2</span></code>, and <code class="docutils literal notranslate"><span class="pre">tleap</span></code> (<a class="reference external" href="https://ambermd.org/GetAmber.php#ambertools">AmberTools</a>, version 22 or higher); preferred installation via <code class="docutils literal notranslate"><span class="pre">conda</span></code>.</p></li>
@@ -43,7 +43,7 @@
 </ol>
 </section>
 <section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">¶</a></h2>
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h2>
 <p>If you use conda/anaconda, we recommended that you create a separate Python environment running <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>mol-env<span class="w"> </span>python
 <span class="gp">$ </span>conda<span class="w"> </span>activate<span class="w"> </span>mol-env
@@ -67,10 +67,10 @@
 </div>
 </section>
 <section id="notes">
-<h2>Notes<a class="headerlink" href="#notes" title="Permalink to this heading">¶</a></h2>
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h2>
 <p>If you prefer to use more recent versions of AmberTools, Gromacs, or OpenBabel than your system currently provides, you can compile the latest versions from source.  <strong>It is recommended that you deactivate any conda environment before performing any of these compilations.</strong></p>
 <section id="compilation-of-ambertools">
-<h3>Compilation of AmberTools<a class="headerlink" href="#compilation-of-ambertools" title="Permalink to this heading">¶</a></h3>
+<h3>Compilation of AmberTools<a class="headerlink" href="#compilation-of-ambertools" title="Link to this heading">¶</a></h3>
 <p>Compilation of AmberTools requires <code class="docutils literal notranslate"><span class="pre">csh</span></code>, <code class="docutils literal notranslate"><span class="pre">flex</span></code>, and <code class="docutils literal notranslate"><span class="pre">bison</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar<span class="w"> </span>jxf<span class="w"> </span>AmberTools21.tar.bz2
 <span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>amber_src
@@ -81,7 +81,7 @@
 </div>
 </section>
 <section id="compilation-of-gromacs">
-<h3>Compilation of Gromacs<a class="headerlink" href="#compilation-of-gromacs" title="Permalink to this heading">¶</a></h3>
+<h3>Compilation of Gromacs<a class="headerlink" href="#compilation-of-gromacs" title="Link to this heading">¶</a></h3>
 <p>You can also compile Gromacs from source, if your Linux distibution doesn’t include it in its package management, or you are on a big supercomputer.  The example below builds Gromacs with CUDA but without MPI (assuming you have CUDA installed):</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>tar<span class="w"> </span>xfz<span class="w"> </span>gromacs-2022.1.tar.gz
 <span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>gromacs-2022.1
@@ -100,7 +100,7 @@
 <p>This should provide access to the <code class="docutils literal notranslate"><span class="pre">gmx</span></code> command.  If you additionally compiled an MPI version (using <code class="docutils literal notranslate"><span class="pre">-DGMX_MPI=on</span></code> in the <code class="docutils literal notranslate"><span class="pre">cmake</span></code> command), you will also have access to <code class="docutils literal notranslate"><span class="pre">gmx_mpi</span></code>; either of these commands can be used by HTPolyNet.  Note that Gromacs 2016 and below have a version of <code class="docutils literal notranslate"><span class="pre">gmx</span> <span class="pre">distance</span></code> that limits the number of distances that can be calculated, so we (always) recommend using the latest Gromacs.</p>
 </section>
 <section id="compilation-of-obabel">
-<h3>Compilation of <code class="docutils literal notranslate"><span class="pre">obabel</span></code><a class="headerlink" href="#compilation-of-obabel" title="Permalink to this heading">¶</a></h3>
+<h3>Compilation of <code class="docutils literal notranslate"><span class="pre">obabel</span></code><a class="headerlink" href="#compilation-of-obabel" title="Link to this heading">¶</a></h3>
 <p>If your system does not have <code class="docutils literal notranslate"><span class="pre">obabel</span></code> installed and your Linux distribution doesn’t offer a package for it (or you are not root!), you can compile it from source.  Be sure to unpack <a class="reference external" href="https://eigen.tuxfamily.org/index.php?title=Main_Page">Eigen</a> first so that the <code class="docutils literal notranslate"><span class="pre">conformer</span></code> plug-in for <code class="docutils literal notranslate"><span class="pre">obabel</span></code> will work.  Below I demonstrate a session in which both the Eigen and OpenBabel source packages are downloaded to <code class="docutils literal notranslate"><span class="pre">~/Downloads</span></code> and are unpacked in the directory <code class="docutils literal notranslate"><span class="pre">~/build/</span></code>, and the OpenBabel installation directory is <code class="docutils literal notranslate"><span class="pre">~/opt/obabel</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>~/build
 <span class="gp">$ </span>tar<span class="w"> </span>jxf<span class="w"> </span>~/Downloads/eigen-3.4.0.tar.bz2<span class="w">  </span><span class="c1"># unpack only -- no need to compile</span>
@@ -118,7 +118,7 @@
 </section>
 </section>
 <section id="other-prequisites">
-<h2>Other Prequisites<a class="headerlink" href="#other-prequisites" title="Permalink to this heading">¶</a></h2>
+<h2>Other Prequisites<a class="headerlink" href="#other-prequisites" title="Link to this heading">¶</a></h2>
 <p>In order to use <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> effectively, it is recommended that you have good working knowledge of the following:</p>
 <ol class="arabic simple">
 <li><p>MD simulation in general and Gromacs specifically;</p></li>
@@ -192,7 +192,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

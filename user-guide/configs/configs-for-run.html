@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,9 +8,9 @@
     <title>Configuration Files for htpolynet run &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="../../_static/documentation_options.js?v=3763423d"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Configuration Files for htpolynet postsim" href="configs-for-postsim.html" />
@@ -32,7 +32,7 @@
           <div class="body" role="main">
             
   <section id="configuration-files-for-htpolynet-run">
-<span id="configuration-run"></span><h1>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-run" title="Permalink to this heading">¶</a></h1>
+<span id="configuration-run"></span><h1>Configuration Files for <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code><a class="headerlink" href="#configuration-files-for-htpolynet-run" title="Link to this heading">¶</a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> configuration file tells <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> what it needs in order to generate a polymerized system, beginning with structures of the individual monomers and a description of the polymerization chemistry.   <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> expects at most ten distinct sections in a configuration file:</p>
 <table class="docutils align-default">
 <thead>
@@ -75,7 +75,7 @@
 </table>
 <p>Sections can appear in any order (since the whole YAML file is like a nested python dictionary).  The <code class="docutils literal notranslate"><span class="pre">gromacs</span></code> and <code class="docutils literal notranslate"><span class="pre">ambertools</span></code> sections are mainly for specifying system-specific commands for running Gromacs and AmberTools executables; they have defaults that work for simple Linux workstations. <code class="docutils literal notranslate"><span class="pre">densification</span></code>, <code class="docutils literal notranslate"><span class="pre">precure</span></code>, and <code class="docutils literal notranslate"><span class="pre">postcure</span></code> all specify series of MD simulations on the system.  <code class="docutils literal notranslate"><span class="pre">constituents</span></code> specifies the initial make-up of the system, and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> describe both how to build those constituents from input monomers (if necessary) as well as the types of bonds that you want to occur during polymerization.  Both <code class="docutils literal notranslate"><span class="pre">constituents</span></code> and <code class="docutils literal notranslate"><span class="pre">reactions</span></code> sections are where <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> extracts the names of molecular species in the system and how they are chemically interrelated.  <code class="docutils literal notranslate"><span class="pre">CURE</span></code> is the most complicated section, and it desribes how the CURE algorithm is to be run.  We consider each of these eight sections (minus <code class="docutils literal notranslate"><span class="pre">Title</span></code>) below.</p>
 <section id="all-the-details">
-<span id="configuration-details"></span><h2>All the details<a class="headerlink" href="#all-the-details" title="Permalink to this heading">¶</a></h2>
+<span id="configuration-details"></span><h2>All the details<a class="headerlink" href="#all-the-details" title="Link to this heading">¶</a></h2>
 <p>In this section we show all subdirectives for each of the five main directives in the configuration file.  Please note that, although default values are quoted for some of these parameters, these default values are <em>not</em> guaranteed to be optimal or even functional in all possible scenarios.</p>
 <ul id="gromacs-yaml-directive">
 <li><p><code class="docutils literal notranslate"><span class="pre">gromacs</span></code>:  This directive specifies parameters <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> uses when invoking the Gromacs executable.</p>
@@ -656,7 +656,7 @@
 </ul>
 </section>
 <section id="a-simple-configuration-example-polymerizing-styrene">
-<span id="configuration-run-example"></span><h2>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Permalink to this heading">¶</a></h2>
+<span id="configuration-run-example"></span><h2>A Simple Configuration Example:  Polymerizing styrene<a class="headerlink" href="#a-simple-configuration-example-polymerizing-styrene" title="Link to this heading">¶</a></h2>
 <p>Consider the following methodological description:</p>
 <p>A system of 100 molecules of styrene was prepared by initially placing 100 styrene molecules in a box at a density of 0.3 g/cc.  This system was minimized and subjected to 10 ps of NVT MD at 300 K and then 200 ps of NPT MD at 300 K and 10 bar.  The pressure was reduced to 1 bar and NPT MD was run for an additional 200 ps.  The system was then put through two cycles of constant-pressure annealing at 1 bar in which a cycle is 20 ps at 300 K, 20 ps of linear temperature increase to 600 K, 20 ps at 600 K, and 20 ps of linear temperature decrease back to 300 K.  This is followed by 100 ps of equilibration at 1 bar and 300 K.  The the CURE algorithm was used with an initial search radius of 0.5 nm and increment of 0.25 nm to create new intermonomer bonds until a conversion of 95% was reached.  At each CURE iteration, the system is driven using a series of steered MD simulations to first fist all pairs of atoms designated to be bonded but are more than 0.6 nm apart to approach one another to within 0.3 nm. When all such designated pairs are within 0.3 nm of each other, any sacrificial H’s are deleted and new bonds and accompanying angles and dihedrals are introduced into the topology.  The bond lengths are then linearly reduced to their equilibrium values through a series of MD simulations.  Once all bonds are at their equilibrium lengths, the iteration is completed by a 100 ps NPT MD simulation at 1 bar and 300 K, before beginning the next CURE iteration.Following CURE, the system was again annealed following the previous protocol and then NPT equilibrated at 1 bar and 300 K for 200 ps.</p>
 <p>A simple YAML <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> configuration file that encodes this description might look like this.</p>
@@ -875,7 +875,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

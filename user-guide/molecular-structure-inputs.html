@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,9 +8,9 @@
     <title>Molecular Structure Inputs &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="../_static/documentation_options.js?v=3763423d"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
-    <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Configuration Files" href="configuration-files.html" />
@@ -32,7 +32,7 @@
           <div class="body" role="main">
             
   <section id="molecular-structure-inputs">
-<span id="id1"></span><h1>Molecular Structure Inputs<a class="headerlink" href="#molecular-structure-inputs" title="Permalink to this heading">¶</a></h1>
+<span id="id1"></span><h1>Molecular Structure Inputs<a class="headerlink" href="#molecular-structure-inputs" title="Link to this heading">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> requires molecular structures in order to generate systems.  It recognizes <code class="docutils literal notranslate"><span class="pre">mol2</span></code> and <code class="docutils literal notranslate"><span class="pre">pdb</span></code> format files, and it is up to you to make these for your system.  Any <code class="docutils literal notranslate"><span class="pre">mol2</span></code> or <code class="docutils literal notranslate"><span class="pre">pdb</span></code> file you wish to use as a monomer template should be in the <code class="docutils literal notranslate"><span class="pre">./lib/molecules/inputs/</span></code> relative to the current directory in which you issue <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> or <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">parameterize</span></code>.  There are several ways to make such files from other (e.g., 2-dimensional) structural information, and we will cover two here.  There are also two <strong>very important</strong> things to keep in mind when generating your molecular structure files.</p>
 <p>The first <strong>very important</strong> thing is this:  <code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> requires <strong>valence-conservation</strong> when polymerizing.  This means that when two atoms are identified as bonding partners (each of which is on a separate molecule, most likely), they each must own at least one <strong>sacrificial hydrogen</strong> atom that is deleted when the bond is formed, thus keeping the valence of each atom constant.  We refer to the <strong>valence-conserving</strong> form of a monomer as its <strong>active</strong> form.</p>
 <p>To illustrate how to handle this, let’s consider the simple monomer styrene.  The “inactive” form of styrene is its “actual” structure:</p>
@@ -44,7 +44,7 @@
 <figure class="align-default" id="id2">
 <img alt="../_images/chemdoodle-2dsketcher-emb.png" src="../_images/chemdoodle-2dsketcher-emb.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 2 </span><span class="caption-text">Example of a Chemdoodle 2d-sketcher session for creating an input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for styrene (ahem, actually ethylbenzene).</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 2 </span><span class="caption-text">Example of a Chemdoodle 2d-sketcher session for creating an input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for styrene (ahem, actually ethylbenzene).</span><a class="headerlink" href="#id2" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Another way is to use <a class="reference external" href="https://openbabel.org/wiki/Main_Page">OpenBabel</a>’s <code class="docutils literal notranslate"><span class="pre">obabel</span></code> command.  For example, we can use the <a class="reference external" href="https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system">SMILES string</a> for ethylbenzene to tell <code class="docutils literal notranslate"><span class="pre">openbabel</span></code> to generate 3-D coordinates and save to a <code class="docutils literal notranslate"><span class="pre">mol2</span></code> (or, alternatively, a <code class="docutils literal notranslate"><span class="pre">pdb</span></code>) file:</p>
@@ -116,7 +116,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

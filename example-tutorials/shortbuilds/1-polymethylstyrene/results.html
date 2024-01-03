@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,9 +8,9 @@
     <title>Results &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="../../../_static/documentation_options.js?v=3763423d"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
     <link rel="next" title="DGEBA-PACM Thermoset" href="../2-DGEBA-PACM/index.html" />
@@ -32,9 +32,9 @@
           <div class="body" role="main">
             
   <section id="results">
-<span id="pms-results"></span><h1>Results<a class="headerlink" href="#results" title="Permalink to this heading">¶</a></h1>
+<span id="pms-results"></span><h1>Results<a class="headerlink" href="#results" title="Link to this heading">¶</a></h1>
 <section id="overall-behavior">
-<h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Permalink to this heading">¶</a></h2>
+<h2>Overall behavior<a class="headerlink" href="#overall-behavior" title="Link to this heading">¶</a></h2>
 <p>Using <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">plots</span></code> we can generate a few interesting graphics that help characterize a build.  In this tutorial, we generated a 95%-cure build under <code class="docutils literal notranslate"><span class="pre">proj-0</span></code>, with diagnostic output in <code class="docutils literal notranslate"><span class="pre">diagnostics.log</span></code> and console output to <code class="docutils literal notranslate"><span class="pre">console.log</span></code>.</p>
 <p>As an exercise, copy <code class="docutils literal notranslate"><span class="pre">pMSTY.yaml</span></code> to <code class="docutils literal notranslate"><span class="pre">pMSTY-low.yaml</span></code> and in it, change the desired cure to 0.50 instead of 0.95.  Then launch a second build:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-low.log<span class="w"> </span>pMSTY-low.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>console-low.log
@@ -49,7 +49,7 @@
 <figure class="align-default" id="id1">
 <img alt="../../../_images/cure_info.png" src="../../../_images/cure_info.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 7 </span><span class="caption-text">(Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 7 </span><span class="caption-text">(Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.</span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>We can see here that the 95% cure took about 8 and a half minutes of run time (which is not really impressive since this is a <strong>very</strong> small system).  Fully two-thirds of the run time is consumed realizing the final 15% of the cure.</p>
@@ -61,7 +61,7 @@
 <figure class="align-default" id="id2">
 <img alt="../../../_images/buildtraces.png" src="../../../_images/buildtraces.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 8 </span><span class="caption-text">(Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 8 </span><span class="caption-text">(Top) Temperature vs. run time; (middle) Density vs. run time; (bottom) Potential energy vs. run time.  In all panels, vertical lines designate initiations of Gromacs simulations.</span><a class="headerlink" href="#id2" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>From these traces, we can see how little MD time is actually devoted to forming the bonds as compared to relaxing both before and after.  The top plot shows temperature in K vs. time in ps througout the build process.  Vertical lines denote transitions from one step to the next; transitions are very close together in time during the CURE iterations since I’m showing one transition for each drag/relax stage.  The middle plot shows the density trace’ note how the density begins at the stipulated low value of 300 kg/m3<sup>3</sup>.  The bottom plot shows the potential energy trace.</p>
@@ -71,14 +71,14 @@
 <tr class="row-odd"><td><figure class="align-default" id="id3">
 <img alt="../../../_images/hi-pre.png" src="../../../_images/hi-pre.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 9 </span><span class="caption-text">Methystyrene liquid before cure.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 9 </span><span class="caption-text">Methystyrene liquid before cure.</span><a class="headerlink" href="#id3" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
 <td><figure class="align-default" id="id4">
 <img alt="../../../_images/hi.png" src="../../../_images/hi.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 10 </span><span class="caption-text">Poly(methyl styrene) after 95% cure.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 10 </span><span class="caption-text">Poly(methyl styrene) after 95% cure.</span><a class="headerlink" href="#id4" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
@@ -87,7 +87,7 @@
 </table>
 </section>
 <section id="details">
-<h2>Details<a class="headerlink" href="#details" title="Permalink to this heading">¶</a></h2>
+<h2>Details<a class="headerlink" href="#details" title="Link to this heading">¶</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">htpolynet</span> <span class="pre">run</span></code> invocation in <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> runs a high-cure build (95% conversion) in the <code class="docutils literal notranslate"><span class="pre">proj-0</span></code> subdirectory, generating and populating the following directory structure:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>proj-0
 <span class="gp">$ </span>tree<span class="w"> </span>-d<span class="w"> </span>.
@@ -129,7 +129,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code>: This directory contains some plots generated on the fly.</p></li>
 </ul>
 <section id="proj-0-systems">
-<h3><code class="docutils literal notranslate"><span class="pre">proj-0/systems</span></code><a class="headerlink" href="#proj-0-systems" title="Permalink to this heading">¶</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">proj-0/systems</span></code><a class="headerlink" href="#proj-0-systems" title="Link to this heading">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">init/</span></code> directory is where the initial topology and coordinates are generated.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>systems/init
 <span class="go">EMB.gro  init.gro  init.grx  init.top</span>
@@ -218,7 +218,7 @@
 <p>Here we see the <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">gro</span></code>, and <code class="docutils literal notranslate"><span class="pre">grx</span></code> files of the final system; the <code class="docutils literal notranslate"><span class="pre">top</span></code> and <code class="docutils literal notranslate"><span class="pre">gro</span></code> files can be used right away for Gromacs MD simulations.</p>
 </section>
 <section id="proj-0-plots">
-<h3><code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code><a class="headerlink" href="#proj-0-plots" title="Permalink to this heading">¶</a></h3>
+<h3><code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code><a class="headerlink" href="#proj-0-plots" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">HTPolyNet</span></code> generates several plots on the fly during a system build.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>plots
 <span class="go">densification-density.png</span>
@@ -247,7 +247,7 @@
 <figure class="align-default" id="id5">
 <img alt="../../../_images/densification-density.png" src="../../../_images/densification-density.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 11 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 11 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">densification-density.png</span></code> for the high-cure build of polymethylstyrene.</span><a class="headerlink" href="#id5" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>We can check that the annealing cycles were correctly performed from <code class="docutils literal notranslate"><span class="pre">precure-anneal-T.png</span></code> <code class="docutils literal notranslate"><span class="pre">postcure-anneal-T.png</span></code>:</p>
@@ -256,14 +256,14 @@
 <tr class="row-odd"><td><figure class="align-default" id="id6">
 <img alt="../../../_images/precure-anneal-T.png" src="../../../_images/precure-anneal-T.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 12 </span><span class="caption-text">Temperature during pre-cure annealing.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 12 </span><span class="caption-text">Temperature during pre-cure annealing.</span><a class="headerlink" href="#id6" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
 <td><figure class="align-default" id="id7">
 <img alt="../../../_images/postcure-anneal-T.png" src="../../../_images/postcure-anneal-T.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 13 </span><span class="caption-text">Temperature during post-cure annealing.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 13 </span><span class="caption-text">Temperature during post-cure annealing.</span><a class="headerlink" href="#id7" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 </td>
@@ -274,7 +274,7 @@
 <figure class="align-default" id="id8">
 <img alt="../../../_images/postcure-postequilibration-density.png" src="../../../_images/postcure-postequilibration-density.png" />
 <figcaption>
-<p><span class="caption-number">Fig. 14 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+<p><span class="caption-number">Fig. 14 </span><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">postcure-postequilibration-density.png</span></code></span><a class="headerlink" href="#id8" title="Link to this image">¶</a></p>
 <div class="legend">
 <p>Density during post-cure annealing of the 95% cured system.</p>
 </div>
@@ -348,7 +348,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |

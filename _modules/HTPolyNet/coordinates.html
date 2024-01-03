@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HTPolyNet.coordinates &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="../../_static/documentation_options.js?v=3763423d"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -49,27 +49,28 @@
 <span class="kn">from</span> <span class="nn">HTPolyNet.linkcell</span> <span class="kn">import</span> <span class="n">Linkcell</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.ring</span> <span class="kn">import</span> <span class="n">Ring</span><span class="p">,</span><span class="n">Segment</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.dataframetools</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.matrix4</span> <span class="kn">import</span> <span class="n">Matrix4</span>
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="n">GRX_ATTRIBUTES</span>     <span class="o">=</span><span class="p">[</span>  <span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="s1">&#39;nreactions&#39;</span><span class="p">,</span><span class="s1">&#39;reactantName&#39;</span><span class="p">,</span><span class="s1">&#39;sea_idx&#39;</span><span class="p">,</span><span class="s1">&#39;cycle&#39;</span><span class="p">,</span><span class="s1">&#39;cycle_idx&#39;</span><span class="p">,</span><span class="s1">&#39;chain&#39;</span><span class="p">,</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,</span><span class="s1">&#39;molecule&#39;</span><span class="p">,</span><span class="s1">&#39;molecule_name&#39;</span><span class="p">]</span>
+<span class="n">GRX_ATTRIBUTES</span>     <span class="o">=</span><span class="p">[</span>  <span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="s1">&#39;nreactions&#39;</span><span class="p">,</span><span class="s1">&#39;reactantName&#39;</span><span class="p">,</span><span class="s1">&#39;sea_idx&#39;</span><span class="p">,</span><span class="s1">&#39;chain&#39;</span><span class="p">,</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,</span><span class="s1">&#39;molecule&#39;</span><span class="p">,</span><span class="s1">&#39;molecule_name&#39;</span><span class="p">]</span>
 <span class="sd">&quot;&quot;&quot;Extended atom attributes</span>
 
 <span class="sd">    - &#39;z&#39; number of sacrificial H&#39;s on atom </span>
 <span class="sd">    - &#39;nreactions&#39; number of H&#39;s sacrificed so far to form bonds</span>
 <span class="sd">    - &#39;reactantName&#39; name of most recent reactant to which atom belonged</span>
 <span class="sd">    - &#39;sea_idx&#39; index of the group of symmetry-related atoms this atom belongs to (atoms with the same sea_idx in the same resid are considered symmetry-equivalent)</span>
-<span class="sd">    - &#39;cycle&#39; index of the unique cycle this atom belongs to</span>
-<span class="sd">    - &#39;cycle_idx&#39; index of this atom within this cycle</span>
 <span class="sd">    - &#39;chain&#39; index of the unique chain this atom belongs to</span>
 <span class="sd">    - &#39;chain_idx&#39; index of this atom within this chain</span>
 <span class="sd">    - &#39;molecule&#39; index of the unique molecule this atom belongs to</span>
 <span class="sd">    - &#39;molecule_name&#39; name of that molecule</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="n">GRX_GLOBALLY_UNIQUE</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span>       <span class="kc">False</span><span class="p">,</span>         <span class="kc">False</span><span class="p">,</span>     <span class="kc">True</span><span class="p">,</span>  <span class="kc">True</span><span class="p">,</span>       <span class="kc">False</span><span class="p">,</span>   <span class="kc">True</span><span class="p">,</span>      <span class="kc">False</span><span class="p">,</span>      <span class="kc">True</span><span class="p">,</span>          <span class="kc">False</span><span class="p">]</span>
-<span class="n">GRX_UNSET_DEFAULTS</span> <span class="o">=</span><span class="p">[</span>    <span class="mi">0</span><span class="p">,</span>           <span class="mi">0</span><span class="p">,</span>       <span class="s1">&#39;UNSET&#39;</span><span class="p">,</span>       <span class="o">-</span><span class="mi">1</span><span class="p">,</span>    <span class="o">-</span><span class="mi">1</span><span class="p">,</span>          <span class="o">-</span><span class="mi">1</span><span class="p">,</span>     <span class="o">-</span><span class="mi">1</span><span class="p">,</span>          <span class="o">-</span><span class="mi">1</span><span class="p">,</span>       <span class="o">-</span><span class="mi">1</span><span class="p">,</span>        <span class="s1">&#39;UNSET&#39;</span><span class="p">]</span>
+<span class="n">GRX_GLOBALLY_UNIQUE</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span>       <span class="kc">False</span><span class="p">,</span>         <span class="kc">False</span><span class="p">,</span>     <span class="kc">True</span><span class="p">,</span>  <span class="kc">True</span><span class="p">,</span>      <span class="kc">False</span><span class="p">,</span>      <span class="kc">True</span><span class="p">,</span>          <span class="kc">False</span><span class="p">]</span>
+<span class="n">GRX_UNSET_DEFAULTS</span> <span class="o">=</span><span class="p">[</span>    <span class="mi">0</span><span class="p">,</span>           <span class="mi">0</span><span class="p">,</span>       <span class="s1">&#39;UNSET&#39;</span><span class="p">,</span>       <span class="o">-</span><span class="mi">1</span><span class="p">,</span>    <span class="o">-</span><span class="mi">1</span><span class="p">,</span>          <span class="o">-</span><span class="mi">1</span><span class="p">,</span>       <span class="o">-</span><span class="mi">1</span><span class="p">,</span>        <span class="s1">&#39;UNSET&#39;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="dfrotate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.dfrotate">[docs]</a><span class="k">def</span> <span class="nf">dfrotate</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">R</span><span class="p">):</span>
+<div class="viewcode-block" id="dfrotate">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.dfrotate">[docs]</a>
+<span class="k">def</span> <span class="nf">dfrotate</span><span class="p">(</span><span class="n">df</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">R</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;dfrotate applies rotation matrix R to coordinates in dataframe</span>
 
 <span class="sd">    :param df: coordinates dataframe; must have &#39;posX&#39;, &#39;posY&#39;, and &#39;posZ&#39; columns</span>
@@ -82,7 +83,10 @@
         <span class="n">newri</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">ri</span><span class="p">)</span>
         <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="s1">&#39;posX&#39;</span><span class="p">:</span><span class="s1">&#39;posZ&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">newri</span></div>
 
-<div class="viewcode-block" id="Coordinates"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates">[docs]</a><span class="k">class</span> <span class="nc">Coordinates</span><span class="p">:</span>
+
+<div class="viewcode-block" id="Coordinates">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates">[docs]</a>
+<span class="k">class</span> <span class="nc">Coordinates</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Handles atom coordinates.</span>
 
 <span class="sd">    The primary object is `A`, a pandas DataFrame with one row per atom.  Each atom has attributes that may be found in a `gro` file and/or a `mol2` file, along with so-called extended attributes, which are used solely  by HTPolyNet.  </span>
@@ -127,8 +131,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">empty</span><span class="o">=</span><span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">grx_attributes</span><span class="o">=</span><span class="n">GRX_ATTRIBUTES</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">=</span><span class="kc">None</span>
         
-<div class="viewcode-block" id="Coordinates.read_gro"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.read_gro">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Coordinates.read_gro">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.read_gro">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read_gro</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;read_gro Read a Gromacs gro file</span>
 
@@ -192,9 +199,13 @@
         <span class="c1">#     logger.debug(ln)</span>
         <span class="k">if</span> <span class="n">wrap_coords</span><span class="p">:</span>
             <span class="n">inst</span><span class="o">.</span><span class="n">wrap_coords</span><span class="p">()</span>
+        <span class="c1"># logger.debug(inst.A.dtypes)</span>
         <span class="k">return</span> <span class="n">inst</span></div>
 
-<div class="viewcode-block" id="Coordinates.read_mol2"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.read_mol2">[docs]</a>    <span class="nd">@classmethod</span>
+
+<div class="viewcode-block" id="Coordinates.read_mol2">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.read_mol2">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read_mol2</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;read_mol2 Reads in a Sybyl MOL2 file into a Coordinates instance. </span>
 <span class="sd">            Note that this method only reads in</span>
@@ -243,7 +254,10 @@
         <span class="n">inst</span><span class="o">.</span><span class="n">empty</span><span class="o">=</span><span class="kc">False</span>
         <span class="k">return</span> <span class="n">inst</span></div>
 
-<div class="viewcode-block" id="Coordinates.fcc"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.fcc">[docs]</a>    <span class="nd">@classmethod</span>
+
+<div class="viewcode-block" id="Coordinates.fcc">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.fcc">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">fcc</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">nc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;fcc generates a Coordinates object that represents an FCC crystal</span>
 
@@ -279,7 +293,16 @@
         <span class="n">inst</span><span class="o">.</span><span class="n">N</span><span class="o">=</span><span class="n">N</span>
         <span class="k">return</span> <span class="n">inst</span></div>
 
-<div class="viewcode-block" id="Coordinates.set_box"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_box">[docs]</a>    <span class="k">def</span> <span class="nf">set_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">box</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.claim_parent">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.claim_parent">[docs]</a>
+    <span class="k">def</span> <span class="nf">claim_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parent</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">=</span><span class="n">parent</span></div>
+
+
+<div class="viewcode-block" id="Coordinates.set_box">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_box">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">box</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_box Set the box size from box</span>
 
 <span class="sd">        :param box: 3-by-1 or 3-by-3 box size matrix</span>
@@ -291,7 +314,10 @@
         <span class="k">elif</span> <span class="n">box</span><span class="o">.</span><span class="n">shape</span><span class="o">==</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">box</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.total_volume"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.total_volume">[docs]</a>    <span class="k">def</span> <span class="nf">total_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;gromacs&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.total_volume">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.total_volume">[docs]</a>
+    <span class="k">def</span> <span class="nf">total_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;gromacs&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns total volume of box.</span>
 
 <span class="sd">        :param units: unit system designation; if &#39;SI&#39; returns m^3, defaults to &#39;gromacs&#39;</span>
@@ -303,7 +329,10 @@
         <span class="n">vol</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">.</span><span class="n">diagonal</span><span class="p">())</span>  <span class="c1"># nm^3</span>
         <span class="k">return</span> <span class="n">vol</span> <span class="k">if</span> <span class="n">units</span><span class="o">!=</span><span class="s1">&#39;SI&#39;</span> <span class="k">else</span> <span class="n">vol</span><span class="o">/</span><span class="p">(</span><span class="n">nm_per_m</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.copy_coords"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.copy_coords">[docs]</a>    <span class="k">def</span> <span class="nf">copy_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.copy_coords">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.copy_coords">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;copy_coords copy_coords copy the posX, posY, and posZ atom attributes, and the box size, </span>
 <span class="sd">        from other.A to self.A</span>
 
@@ -316,7 +345,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">=</span><span class="n">otherpos</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">box</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.subcoords"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.subcoords">[docs]</a>    <span class="k">def</span> <span class="nf">subcoords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sub_adf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.subcoords">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.subcoords">[docs]</a>
+    <span class="k">def</span> <span class="nf">subcoords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sub_adf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;subcoords generates a new Coordinates object to hold the atoms dataframe in &#39;sub_adf&#39; parameter</span>
 
 <span class="sd">        :param sub_adf: an atom dataframe</span>
@@ -329,8 +361,11 @@
         <span class="n">newC</span><span class="o">.</span><span class="n">A</span><span class="o">=</span><span class="n">sub_adf</span>
         <span class="n">newC</span><span class="o">.</span><span class="n">N</span><span class="o">=</span><span class="n">sub_adf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">newC</span></div>
+
     
-<div class="viewcode-block" id="Coordinates.reconcile_subcoords"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.reconcile_subcoords">[docs]</a>    <span class="k">def</span> <span class="nf">reconcile_subcoords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">subc</span><span class="p">,</span><span class="n">attr</span><span class="p">):</span>
+<div class="viewcode-block" id="Coordinates.reconcile_subcoords">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.reconcile_subcoords">[docs]</a>
+    <span class="k">def</span> <span class="nf">reconcile_subcoords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">subc</span><span class="p">,</span><span class="n">attr</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;moves all values of attribute name contained in attr from Coordinates object subc to self</span>
 
 <span class="sd">        :param subc: A separate, independent Coordinates object</span>
@@ -344,7 +379,10 @@
             <span class="n">lc_idx</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="n">jdx</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">attr</span><span class="p">]</span><span class="o">=</span><span class="n">lc_idx</span></div>
 
-<div class="viewcode-block" id="Coordinates.unwrap"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.unwrap">[docs]</a>    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">O</span><span class="p">,</span><span class="n">pbc</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.unwrap">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">P</span><span class="p">,</span><span class="n">O</span><span class="p">,</span><span class="n">pbc</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;unwrap shifts point P to its unwrapped closest periodic image to point O</span>
 
 <span class="sd">        :param P: a point</span>
@@ -360,7 +398,10 @@
         <span class="n">PCPI</span><span class="o">=</span><span class="n">O</span><span class="o">-</span><span class="n">ROP</span>
         <span class="k">return</span> <span class="n">PCPI</span></div>
 
-<div class="viewcode-block" id="Coordinates.pierces"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.pierces">[docs]</a>    <span class="k">def</span> <span class="nf">pierces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">B</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">C</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">pbc</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.pierces">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.pierces">[docs]</a>
+    <span class="k">def</span> <span class="nf">pierces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">B</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">C</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">pbc</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;pierces determines whether or not bond represented by two points in B pierces ring represented by N points in C</span>
 
 <span class="sd">        :param B: two points defining a bond</span>
@@ -387,7 +428,10 @@
         <span class="n">do_it</span><span class="p">,</span><span class="n">point</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">segint</span><span class="p">(</span><span class="n">S</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">do_it</span></div>
 
-<div class="viewcode-block" id="Coordinates.linkcell_initialize"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.linkcell_initialize">[docs]</a>    <span class="k">def</span> <span class="nf">linkcell_initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cutoff</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">populate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">force_repopulate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.linkcell_initialize">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.linkcell_initialize">[docs]</a>
+    <span class="k">def</span> <span class="nf">linkcell_initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cutoff</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">ncpu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">populate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">force_repopulate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">save</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;linkcell_initialize initializes link-cell structure for ring-pierce testing</span>
 
 <span class="sd">        :param cutoff: cutoff radius for link-cell structure, defaults to 0.0</span>
@@ -412,13 +456,18 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">linkcell</span><span class="o">.</span><span class="n">make_memberlists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">set_atomset_attribute</span><span class="p">(</span><span class="s1">&#39;linkcell_idx&#39;</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
-                <span class="n">sc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcoords</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;cycle_idx&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span><span class="o">|</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                <span class="c1"># we only populate with atoms whose positions will be needed in interatomic</span>
+                <span class="c1"># distance calculations; these are those (a) in rings, or (b) are reactive</span>
+                <span class="n">sc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">subcoords</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">rings</span><span class="o">.</span><span class="n">all_atoms</span><span class="p">()))</span><span class="o">|</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">linkcell</span><span class="o">.</span><span class="n">populate</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span><span class="n">ncpu</span><span class="o">=</span><span class="n">ncpu</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">reconcile_subcoords</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span><span class="s1">&#39;linkcell_idx&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">write_atomset_attributes</span><span class="p">([</span><span class="s1">&#39;linkcell_idx&#39;</span><span class="p">],</span><span class="n">lc_file</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.linkcelltest"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.linkcelltest">[docs]</a>    <span class="k">def</span> <span class="nf">linkcelltest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.linkcelltest">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.linkcelltest">[docs]</a>
+    <span class="k">def</span> <span class="nf">linkcelltest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;linkcelltest returns True if atoms i and j are within potential interaction</span>
 <span class="sd">            range based on current link-cell structure</span>
 
@@ -437,7 +486,10 @@
             <span class="k">return</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="Coordinates.geometric_center"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.geometric_center">[docs]</a>    <span class="k">def</span> <span class="nf">geometric_center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.geometric_center">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.geometric_center">[docs]</a>
+    <span class="k">def</span> <span class="nf">geometric_center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;geometric_center computes and returns the geometric center of the atoms in self&#39;s A dataframe</span>
 
 <span class="sd">        :return: geometric center</span>
@@ -446,7 +498,10 @@
         <span class="n">a</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">a</span><span class="o">.</span><span class="n">posX</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span><span class="n">a</span><span class="o">.</span><span class="n">posY</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span><span class="n">a</span><span class="o">.</span><span class="n">posZ</span><span class="o">.</span><span class="n">mean</span><span class="p">()])</span></div>
 
-<div class="viewcode-block" id="Coordinates.rij"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.rij">[docs]</a>    <span class="k">def</span> <span class="nf">rij</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">pbc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
+
+<div class="viewcode-block" id="Coordinates.rij">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.rij">[docs]</a>
+    <span class="k">def</span> <span class="nf">rij</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">pbc</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;rij compute distance between atoms i and j</span>
 
 <span class="sd">        :return: distance between i and j</span>
@@ -459,7 +514,10 @@
         <span class="n">Rij</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mic</span><span class="p">(</span><span class="n">ri</span><span class="o">-</span><span class="n">rj</span><span class="p">,</span><span class="n">pbc</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Rij</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Rij</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Coordinates.mic"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.mic">[docs]</a>    <span class="k">def</span> <span class="nf">mic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">r</span><span class="p">,</span><span class="n">pbc</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.mic">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.mic">[docs]</a>
+    <span class="k">def</span> <span class="nf">mic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">r</span><span class="p">,</span><span class="n">pbc</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;mic applies minimum image convention to displacement vector r</span>
 
 <span class="sd">        :param r: displacement vector</span>
@@ -479,7 +537,10 @@
                     <span class="n">r</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">-=</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">c</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">r</span></div>
 
-<div class="viewcode-block" id="Coordinates.wrap_point"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.wrap_point">[docs]</a>    <span class="k">def</span> <span class="nf">wrap_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ri</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.wrap_point">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.wrap_point">[docs]</a>
+    <span class="k">def</span> <span class="nf">wrap_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ri</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;wrap_point wraps point ri into the central periodic image</span>
 
 <span class="sd">        :param ri: a point</span>
@@ -498,7 +559,10 @@
                 <span class="n">box_lengths</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-=</span><span class="mi">1</span>
         <span class="k">return</span> <span class="n">R</span><span class="p">,</span><span class="n">box_lengths</span></div>
 
-<div class="viewcode-block" id="Coordinates.wrap_coords"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.wrap_coords">[docs]</a>    <span class="k">def</span> <span class="nf">wrap_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.wrap_coords">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.wrap_coords">[docs]</a>
+    <span class="k">def</span> <span class="nf">wrap_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;wrap_coords Wraps all atomic coordinates into box</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Cannot wrap if boxsize is not set: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="si">}</span><span class="s1">&#39;</span>
@@ -512,9 +576,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;boxLx&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">boxL</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;boxLy&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">boxL</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;boxLz&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">boxL</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span></div>
+
         <span class="c1"># logger.debug(f&#39;Wrapped {self._nwrap}/{self.A.shape[0]*3} coordinates.&#39;)</span>
 
-<div class="viewcode-block" id="Coordinates.merge"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Coordinates.merge">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.merge">[docs]</a>
+    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;merge Merge two Coordinates objects</span>
 
 <span class="sd">        :param other: the other Coordinates object</span>
@@ -550,8 +617,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">metadat</span><span class="p">[</span><span class="s1">&#39;nBonds&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">nOtherBonds</span>
         
         <span class="k">return</span> <span class="p">(</span><span class="n">idxshift</span><span class="p">,</span><span class="n">bdxshift</span><span class="p">,</span><span class="n">rdxshift</span><span class="p">)</span></div>
+
             
-<div class="viewcode-block" id="Coordinates.write_atomset_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_atomset_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">write_atomset_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">formatters</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="Coordinates.write_atomset_attributes">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_atomset_attributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_atomset_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">formatters</span><span class="o">=</span><span class="p">[]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;write_atomset_attributes Writes atom attributes to a file</span>
 
 <span class="sd">        :param attributes: List of attribute names to write</span>
@@ -571,7 +641,10 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">attributes</span><span class="p">]</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.read_atomset_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.read_atomset_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">read_atomset_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">attributes</span><span class="o">=</span><span class="p">[]):</span>
+
+<div class="viewcode-block" id="Coordinates.read_atomset_attributes">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.read_atomset_attributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_atomset_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">attributes</span><span class="o">=</span><span class="p">[]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads atomic attributes from input file</span>
 
 <span class="sd">        :param filename: name of file</span>
@@ -589,13 +662,16 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">df</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">attributes</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">attributes_read</span><span class="o">=</span><span class="n">attributes</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Read from </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Merge:</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">and</span><span class="se">\n</span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># logger.debug(f&#39;Read from {filename}\n{df.head().to_string()}&#39;)</span>
+        <span class="c1"># logger.debug(f&#39;Merge:\n{self.A.head().to_string()}\nand\n{df.head().to_string()}&#39;)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">how</span><span class="o">=</span><span class="s1">&#39;outer&#39;</span><span class="p">,</span><span class="n">on</span><span class="o">=</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Result:</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># logger.debug(f&#39;Result:\n{self.A.head().to_string()}&#39;)</span>
         <span class="k">return</span> <span class="n">attributes_read</span></div>
 
-<div class="viewcode-block" id="Coordinates.set_atomset_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_atomset_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">set_atomset_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.set_atomset_attribute">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_atomset_attribute">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_atomset_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_atomset_attribute sets attribute of atoms to srs</span>
 
 <span class="sd">        :param attribute: name of attribute</span>
@@ -605,7 +681,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="n">attribute</span><span class="p">]</span><span class="o">=</span><span class="n">srs</span></div>
 
-<div class="viewcode-block" id="Coordinates.atomcount"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.atomcount">[docs]</a>    <span class="k">def</span> <span class="nf">atomcount</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.atomcount">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.atomcount">[docs]</a>
+    <span class="k">def</span> <span class="nf">atomcount</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;atomcount returns the number of atoms in the Coordinates object</span>
 
 <span class="sd">        :return: number of atoms</span>
@@ -613,7 +692,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span></div>
 
-<div class="viewcode-block" id="Coordinates.decrement_z"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.decrement_z">[docs]</a>    <span class="k">def</span> <span class="nf">decrement_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pairs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.decrement_z">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.decrement_z">[docs]</a>
+    <span class="k">def</span> <span class="nf">decrement_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pairs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;decrement_z decrements value of z attributes of all atoms found in pairs</span>
 
 <span class="sd">        :param pairs: list of atom index pairs, interpreted as new bonds that just formed</span>
@@ -637,8 +719,11 @@
             <span class="c1"># logger.debug(f&#39;Setting z of {ajn}-{aj} to {jz}&#39;)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_atom_attribute</span><span class="p">(</span><span class="s1">&#39;nreactions&#39;</span><span class="p">,</span><span class="n">inr</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">ai</span><span class="p">})</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_atom_attribute</span><span class="p">(</span><span class="s1">&#39;nreactions&#39;</span><span class="p">,</span><span class="n">jnr</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aj</span><span class="p">})</span></div>
+
             
-<div class="viewcode-block" id="Coordinates.show_z_report"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.show_z_report">[docs]</a>    <span class="k">def</span> <span class="nf">show_z_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Coordinates.show_z_report">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.show_z_report">[docs]</a>
+    <span class="k">def</span> <span class="nf">show_z_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;show_z_report generates a little text-based histogram displaying number of atoms with each value of z between 0 and 3; atoms are keyed by resname:atomname.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">zhists</span><span class="o">=</span><span class="p">{}</span>
@@ -656,7 +741,10 @@
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s1">&gt;5d</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">zhists</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s1">&gt;6d</span><span class="si">}</span><span class="s1">): &#39;</span><span class="o">+</span><span class="s1">&#39;*&#39;</span><span class="o">*</span><span class="p">(</span><span class="n">zhists</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">//</span><span class="mi">10</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Coordinates.return_bond_lengths"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.return_bond_lengths">[docs]</a>    <span class="k">def</span> <span class="nf">return_bond_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.return_bond_lengths">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.return_bond_lengths">[docs]</a>
+    <span class="k">def</span> <span class="nf">return_bond_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;return_bond_lengths returns an ordered list of bond lengths computed based on bonds indicated by the parallel &#39;ai&#39; and &#39;aj&#39; columns of the parameter dataframe bdf</span>
 
 <span class="sd">        :param bdf: a pandas dataframe with &#39;ai&#39; and &#39;aj&#39; columns of atom indices indicating bonds</span>
@@ -669,7 +757,10 @@
             <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rij</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">ai</span><span class="p">,</span><span class="n">b</span><span class="o">.</span><span class="n">aj</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">lengths</span></div>
 
-<div class="viewcode-block" id="Coordinates.add_length_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.add_length_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">add_length_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">,</span><span class="n">attr_name</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.add_length_attribute">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.add_length_attribute">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_length_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">,</span><span class="n">attr_name</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;add_length_attribute computes bond lengths based on bonds indicated by the parallel &#39;ai&#39; and &#39;aj&#39; columns of the parameter dataframe bdf and stores result in a new column called attr_name</span>
 
 <span class="sd">        :param bdf: a pandas dataframe with &#39;ai&#39; and &#39;aj&#39; columns of atom indices indicating bonds</span>
@@ -682,7 +773,10 @@
             <span class="n">lengths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rij</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">ai</span><span class="p">,</span><span class="n">b</span><span class="o">.</span><span class="n">aj</span><span class="p">))</span>
         <span class="n">bdf</span><span class="p">[</span><span class="n">attr_name</span><span class="p">]</span><span class="o">=</span><span class="n">lengths</span></div>
 
-<div class="viewcode-block" id="Coordinates.minimum_distance"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.minimum_distance">[docs]</a>    <span class="k">def</span> <span class="nf">minimum_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">,</span><span class="n">self_excludes</span><span class="o">=</span><span class="p">[],</span><span class="n">other_excludes</span><span class="o">=</span><span class="p">[]):</span>
+
+<div class="viewcode-block" id="Coordinates.minimum_distance">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.minimum_distance">[docs]</a>
+    <span class="k">def</span> <span class="nf">minimum_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">,</span><span class="n">self_excludes</span><span class="o">=</span><span class="p">[],</span><span class="n">other_excludes</span><span class="o">=</span><span class="p">[]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;minimum_distance Computes and returns distance of closest approach between two sets of atoms</span>
 
 <span class="sd">        :param other: other Coordinates instance</span>
@@ -707,29 +801,57 @@
                     <span class="n">minD</span><span class="o">=</span><span class="n">D</span>
         <span class="k">return</span> <span class="n">minD</span></div>
 
-<div class="viewcode-block" id="Coordinates.rotate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.rotate">[docs]</a>    <span class="k">def</span> <span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">R</span><span class="p">):</span>
+    
+<div class="viewcode-block" id="Coordinates.homog_trans">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.homog_trans">[docs]</a>
+    <span class="k">def</span> <span class="nf">homog_trans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="n">Matrix4</span><span class="p">,</span><span class="n">indices</span><span class="o">=</span><span class="p">[]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;applies homogeneous transformation matrix M [4x4] to coordinates</span>
+
+<span class="sd">        :param M: homogeneous transformation matrix</span>
+<span class="sd">        :type M: Matrix4</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">srow</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">srow</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">):</span>
+                <span class="n">ri</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">srow</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="s1">&#39;posX&#39;</span><span class="p">:</span><span class="s1">&#39;posZ&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">M</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Coordinates.rotate">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.rotate">[docs]</a>
+    <span class="k">def</span> <span class="nf">rotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">R</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;rotate Rotates all coordinate vectors by rotation matrix R</span>
 
 <span class="sd">        :param R: rotation matrix (3x3)</span>
 <span class="sd">        :type R: numpy.ndarray</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">srow</span> <span class="ow">in</span> <span class="n">sp</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="n">ri</span><span class="o">=</span><span class="n">srow</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">newri</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">ri</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="s1">&#39;posX&#39;</span><span class="p">:</span><span class="s1">&#39;posZ&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">newri</span></div>
+        <span class="n">M</span><span class="o">=</span><span class="n">Matrix4</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">homog_trans</span><span class="p">(</span><span class="n">M</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.translate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.translate">[docs]</a>    <span class="k">def</span> <span class="nf">translate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">L</span><span class="p">):</span>
+    <span class="c1">#     sp=self.A[[&#39;posX&#39;,&#39;posY&#39;,&#39;posZ&#39;]]</span>
+    <span class="c1">#     for i,srow in sp.iterrows():</span>
+    <span class="c1">#         ri=srow.values</span>
+    <span class="c1">#         newri=np.matmul(R,ri)</span>
+    <span class="c1">#         self.A.loc[i,&#39;posX&#39;:&#39;posZ&#39;]=newri</span>
+
+<div class="viewcode-block" id="Coordinates.translate">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.translate">[docs]</a>
+    <span class="k">def</span> <span class="nf">translate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">L</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;translate Translates all coordinate vectors by displacement vector L</span>
 
 <span class="sd">        :param L: displacement vector (nm)</span>
 <span class="sd">        :type L: numpy.ndarray</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">srow</span> <span class="ow">in</span> <span class="n">sp</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="s1">&#39;posX&#39;</span><span class="p">:</span><span class="s1">&#39;posZ&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">srow</span><span class="o">.</span><span class="n">values</span><span class="o">+</span><span class="n">L</span></div>
+        <span class="n">M</span><span class="o">=</span><span class="n">Matrix4</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">homog_trans</span><span class="p">(</span><span class="n">M</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.maxspan"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.maxspan">[docs]</a>    <span class="k">def</span> <span class="nf">maxspan</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="c1">#     sp=self.A[[&#39;posX&#39;,&#39;posY&#39;,&#39;posZ&#39;]]</span>
+    <span class="c1">#     for i,srow in sp.iterrows():</span>
+    <span class="c1">#         self.A.loc[i,&#39;posX&#39;:&#39;posZ&#39;]=srow.values+L</span>
+
+<div class="viewcode-block" id="Coordinates.maxspan">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.maxspan">[docs]</a>
+    <span class="k">def</span> <span class="nf">maxspan</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns dimensions of orthorhombic convex hull enclosing Coordinates</span>
 
 <span class="sd">        :return: array of x-span, y-span, z-span</span>
@@ -744,7 +866,10 @@
             <span class="p">]</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.minmax"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.minmax">[docs]</a>    <span class="k">def</span> <span class="nf">minmax</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.minmax">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.minmax">[docs]</a>
+    <span class="k">def</span> <span class="nf">minmax</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;minmax returns the coordinates of the atoms at the lower-leftmost and upper-rightmost positions in the constellation of points in the atoms dataframe</span>
 
 <span class="sd">        :return: tuple of two points, lower-leftmost and upper-rightmost, respectively</span>
@@ -753,7 +878,10 @@
         <span class="n">sp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sp</span><span class="o">.</span><span class="n">posX</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span><span class="n">sp</span><span class="o">.</span><span class="n">posY</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span><span class="n">sp</span><span class="o">.</span><span class="n">posZ</span><span class="o">.</span><span class="n">min</span><span class="p">()]),</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sp</span><span class="o">.</span><span class="n">posX</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span><span class="n">sp</span><span class="o">.</span><span class="n">posY</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span><span class="n">sp</span><span class="o">.</span><span class="n">posZ</span><span class="o">.</span><span class="n">max</span><span class="p">()])</span></div>
 
-<div class="viewcode-block" id="Coordinates.checkbox"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.checkbox">[docs]</a>    <span class="k">def</span> <span class="nf">checkbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.checkbox">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.checkbox">[docs]</a>
+    <span class="k">def</span> <span class="nf">checkbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;checkbox checks that the entire constellation of points in the atoms dataframe fits within the designated box for this Configuration object</span>
 
 <span class="sd">        :return: True,True if both lower-leftmost and upper-rightmost points are within the box</span>
@@ -763,7 +891,10 @@
         <span class="n">bb</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">mm</span><span class="o">&lt;</span><span class="n">bb</span><span class="p">,</span><span class="n">MM</span><span class="o">&gt;</span><span class="n">bb</span></div>
 
-<div class="viewcode-block" id="Coordinates.get_idx"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_idx">[docs]</a>    <span class="k">def</span> <span class="nf">get_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.get_idx">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_idx">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_idx returns the global atom index of the atom in the atoms dataframe which has the attribute:value pairs indicated in the parameter attributes</span>
 
 <span class="sd">        :param attributes: dictionary of attribute:value pairs that identify the atom</span>
@@ -773,8 +904,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
         <span class="k">return</span> <span class="n">get_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">,</span><span class="n">attributes</span><span class="p">)</span></div>
+
     
-<div class="viewcode-block" id="Coordinates.get_R"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_R">[docs]</a>    <span class="k">def</span> <span class="nf">get_R</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
+<div class="viewcode-block" id="Coordinates.get_R">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_R">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_R</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_R return the cartesian position of atom with global index idx</span>
 
 <span class="sd">        :param idx: global index of atom</span>
@@ -783,9 +917,19 @@
 <span class="sd">        :rtype: numpy.ndarray(3,float)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
-        <span class="k">return</span> <span class="n">get_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">,[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">],{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">idx</span><span class="p">})</span></div>
+        <span class="k">assert</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;posX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtypes</span><span class="o">==</span><span class="nb">float</span>
+        <span class="k">assert</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;posY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtypes</span><span class="o">==</span><span class="nb">float</span>
+        <span class="k">assert</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;posZ&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dtypes</span><span class="o">==</span><span class="nb">float</span>
+        <span class="n">res</span><span class="o">=</span><span class="n">get_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">,[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">],{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">idx</span><span class="p">})</span>
+        <span class="c1"># logger.debug(f&#39;get_R result from get_row_attribute is {res} with type {type(res)} dtype {res.dtype}&#39;)</span>
+        <span class="n">res</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c1"># logger.debug(f&#39;...and after to_numpy(), it is {res} type {type(res)} dtype {res.dtype}&#39;)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
     
-<div class="viewcode-block" id="Coordinates.get_atom_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_atom_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">get_atom_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+<div class="viewcode-block" id="Coordinates.get_atom_attribute">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_atom_attribute">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_atom_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_atom_attribute return values of attributes listed in name from atoms specified by attribute:value pairs in attributes</span>
 
 <span class="sd">        :param name: list of attributes whose values are to be returned</span>
@@ -801,8 +945,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> not found in attributes</span><span class="se">\n</span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">return</span> <span class="n">get_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">)</span></div>
+
     
-<div class="viewcode-block" id="Coordinates.spew_atom"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.spew_atom">[docs]</a>    <span class="k">def</span> <span class="nf">spew_atom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+<div class="viewcode-block" id="Coordinates.spew_atom">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.spew_atom">[docs]</a>
+    <span class="k">def</span> <span class="nf">spew_atom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;spew_atom outputs all attributes of atom identified by the attributes dict</span>
 
 <span class="sd">        :param attributes: dictionary of attribute:value pairs that specify the set of atoms to be considered</span>
@@ -813,7 +960,10 @@
         <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
         <span class="k">return</span> <span class="n">get_row_as_string</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">attributes</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.get_atoms_w_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_atoms_w_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">get_atoms_w_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.get_atoms_w_attribute">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.get_atoms_w_attribute">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_atoms_w_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_atoms_w_attribute returns all rows of atoms dataframe and columns named in names of atoms identified by the attributes dict</span>
 
 <span class="sd">        :param name: list of attributes to be in the rows that are returned</span>
@@ -826,7 +976,10 @@
         <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
         <span class="k">return</span> <span class="n">get_rows_w_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">attributes</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.set_atom_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_atom_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">set_atom_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.set_atom_attribute">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.set_atom_attribute">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_atom_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_atom_attribute set the attributes named in name to values named in values (names||values) for the set of atoms specified in the attributes dict</span>
 
 <span class="sd">        :param name: list of names of attributes</span>
@@ -839,7 +992,10 @@
         <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
         <span class="n">set_row_attribute</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">value</span><span class="p">,</span><span class="n">attributes</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.has_atom_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.has_atom_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">has_atom_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.has_atom_attributes">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.has_atom_attributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">has_atom_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;has_atom_attributes returns True if all atoms in atoms dataframe have the attribute named in attributes</span>
 
 <span class="sd">        :param attributes: list of attribute names to look for</span>
@@ -850,7 +1006,10 @@
         <span class="n">df</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span>
         <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">name</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">attributes</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="Coordinates.find_sacrificial_H"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.find_sacrificial_H">[docs]</a>    <span class="k">def</span> <span class="nf">find_sacrificial_H</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pairs</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">explicit_sacH</span><span class="o">=</span><span class="p">{}):</span>
+
+<div class="viewcode-block" id="Coordinates.find_sacrificial_H">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.find_sacrificial_H">[docs]</a>
+    <span class="k">def</span> <span class="nf">find_sacrificial_H</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pairs</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">explicit_sacH</span><span class="o">=</span><span class="p">{}):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;find_sacrificial_H identifies all appropriate sacrificial hydrogen atoms determined by the bonds indicated in the pairs list of 3-tuples (ai,aj,order)</span>
 
 <span class="sd">        :param pairs: list of atom pairs/order tuples</span>
@@ -873,7 +1032,10 @@
                 <span class="n">idx_to_delete</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">explicit_sacH</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">idx_to_delete</span></div>
 
-<div class="viewcode-block" id="Coordinates.sacH"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.sacH">[docs]</a>    <span class="k">def</span> <span class="nf">sacH</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ai</span><span class="p">,</span><span class="n">aj</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.sacH">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.sacH">[docs]</a>
+    <span class="k">def</span> <span class="nf">sacH</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ai</span><span class="p">,</span><span class="n">aj</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;sacH Find the two H&#39;s, one bound to ai, the other to aj, that are closest to each other</span>
 
 <span class="sd">        :param ai: index of one atom in bond</span>
@@ -929,7 +1091,10 @@
         <span class="c1"># this makes sure that it always looks like the same atom was deleted</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">ih</span><span class="p">,</span><span class="n">jh</span><span class="p">]</span> <span class="c1"># return the globalIdx&#39;s of the two sacrificial H&#39;s</span></div>
 
-<div class="viewcode-block" id="Coordinates.delete_atoms"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.delete_atoms">[docs]</a>    <span class="k">def</span> <span class="nf">delete_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="o">=</span><span class="p">[],</span><span class="n">reindex</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.delete_atoms">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.delete_atoms">[docs]</a>
+    <span class="k">def</span> <span class="nf">delete_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="o">=</span><span class="p">[],</span><span class="n">reindex</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;delete_atoms Deletes atoms whose global indices appear in the list idx.</span>
 <span class="sd">        If parameter &#39;reindex&#39; is true, then the global indices </span>
 <span class="sd">        are recalculated so that they are sequential starting at 1 with no</span>
@@ -966,7 +1131,10 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">metadat</span><span class="p">[</span><span class="s1">&#39;nBonds&#39;</span><span class="p">]</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol2_bonds</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bondlist</span><span class="o">=</span><span class="n">Bondlist</span><span class="o">.</span><span class="n">fromDataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mol2_bonds</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.write_gro"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_gro">[docs]</a>    <span class="k">def</span> <span class="nf">write_gro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">grotitle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Coordinates.write_gro">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_gro">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_gro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">grotitle</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;write_gro Write coordinates and if present, velocities, to a Gromacs-format coordinate file</span>
 
 <span class="sd">        :param filename: name of file to write</span>
@@ -1002,7 +1170,10 @@
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s1">10.5f</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">box</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s1">10.5f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Coordinates.write_mol2"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_mol2">[docs]</a>    <span class="k">def</span> <span class="nf">write_mol2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">bondsDF</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span><span class="n">molname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">other_attributes</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()):</span>
+
+<div class="viewcode-block" id="Coordinates.write_mol2">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.coordinates.Coordinates.write_mol2">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_mol2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">bondsDF</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span><span class="n">molname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">other_attributes</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;write_mol2 Write a mol2-format file from coordinates, and optionally, a bonds DataFrame</span>
 <span class="sd">            provided externally and passed in as &quot;bondsDF&quot; (typically this would be</span>
 <span class="sd">            from a Topology instance).</span>
@@ -1098,7 +1269,9 @@
 <span class="w">                </span><span class="sd">&#39;&#39;&#39; write substructure section &#39;&#39;&#39;</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;@&lt;TRIPOS&gt;SUBSTRUCTURE</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rdf</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">formatters</span><span class="o">=</span><span class="n">substructureformatters</span><span class="p">))</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+</div>
+
    
 </pre></div>
 
@@ -1154,7 +1327,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
     </div>

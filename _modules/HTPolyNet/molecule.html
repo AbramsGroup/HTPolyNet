@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="../../">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HTPolyNet.molecule &#8212; HTPolyNet 1.0.7.2 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
-    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=6073d2ab"></script>
+    <script src="../../_static/documentation_options.js?v=3763423d"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
-    <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -42,13 +42,13 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">shutil</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">product</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 
 <span class="kn">import</span> <span class="nn">HTPolyNet.projectfilesystem</span> <span class="k">as</span> <span class="nn">pfs</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.topocoord</span> <span class="kn">import</span> <span class="n">TopoCoord</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.bondtemplate</span> <span class="kn">import</span> <span class="n">BondTemplate</span><span class="p">,</span><span class="n">BondTemplateList</span><span class="p">,</span><span class="n">ReactionBond</span><span class="p">,</span><span class="n">ReactionBondList</span>
-<span class="kn">from</span> <span class="nn">HTPolyNet.coordinates</span> <span class="kn">import</span> <span class="n">dfrotate</span><span class="p">,</span> <span class="n">GRX_ATTRIBUTES</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.coordinates</span> <span class="kn">import</span> <span class="n">GRX_ATTRIBUTES</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.ambertools</span> <span class="kn">import</span> <span class="n">GAFFParameterize</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.gromacs</span> <span class="kn">import</span> <span class="n">mdp_modify</span><span class="p">,</span><span class="n">gro_from_trr</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.command</span> <span class="kn">import</span> <span class="n">Command</span>
@@ -86,7 +86,9 @@
         <span class="n">R</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">cr</span>
     <span class="k">return</span> <span class="n">R</span>
 
-<div class="viewcode-block" id="yield_bonds"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.yield_bonds">[docs]</a><span class="k">def</span> <span class="nf">yield_bonds</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
+<div class="viewcode-block" id="yield_bonds">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.yield_bonds">[docs]</a>
+<span class="k">def</span> <span class="nf">yield_bonds</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;yield_bonds for each bond pattern in the reaction R, yield the specific bond represented by this pattern in the molecule&#39;s topology</span>
 
 <span class="sd">    :param R: a Reaction</span>
@@ -115,7 +117,10 @@
         <span class="n">oneaway_resids</span><span class="p">,</span><span class="n">oneaway_resnames</span><span class="p">,</span><span class="n">oneaway_atomidx</span><span class="p">,</span><span class="n">onewaway_atomnames</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_oneaways</span><span class="p">(</span><span class="n">atom_idx</span><span class="p">)</span>
         <span class="k">yield</span> <span class="n">ReactionBond</span><span class="p">(</span><span class="n">atom_idx</span><span class="p">,</span><span class="n">in_product_resids</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystander_resids</span><span class="p">,</span><span class="n">bystander_atomidx</span><span class="p">,</span><span class="n">oneaway_resids</span><span class="p">,</span><span class="n">oneaway_atomidx</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="yield_bonds_as_df"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.yield_bonds_as_df">[docs]</a><span class="k">def</span> <span class="nf">yield_bonds_as_df</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
+
+<div class="viewcode-block" id="yield_bonds_as_df">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.yield_bonds_as_df">[docs]</a>
+<span class="k">def</span> <span class="nf">yield_bonds_as_df</span><span class="p">(</span><span class="n">R</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">TC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">resid_mapper</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;yield_bonds_as_df returns a pandas DataFrame identifying all reaction bonds obtained by matching the reaction template bonds to instances in the molecule topology</span>
 
 <span class="sd">    :param R: a Reaction</span>
@@ -146,7 +151,10 @@
         <span class="n">bdf</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">bdf</span><span class="p">,</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">row_dict</span><span class="p">)),</span><span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">bdf</span></div>
 
-<div class="viewcode-block" id="Molecule"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule">[docs]</a><span class="k">class</span> <span class="nc">Molecule</span><span class="p">:</span>
+
+<div class="viewcode-block" id="Molecule">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule">[docs]</a>
+<span class="k">class</span> <span class="nc">Molecule</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">generator</span><span class="p">:</span><span class="n">Reaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">origin</span><span class="p">:</span><span class="nb">str</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="o">=</span><span class="n">name</span> <span class="c1"># stereoisomer parent</span>
@@ -165,7 +173,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">zrecs</span><span class="o">=</span><span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">is_reactant</span><span class="o">=</span><span class="kc">False</span>
 
-<div class="viewcode-block" id="Molecule.New"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.New">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Molecule.New">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.New">[docs]</a>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">New</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">mol_name</span><span class="p">,</span><span class="n">generator</span><span class="p">:</span><span class="n">Reaction</span><span class="p">,</span><span class="n">molrec</span><span class="o">=</span><span class="p">{}):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;New generates a new, partially populated Molecule based on directives in the configuration input</span>
 
@@ -201,7 +211,10 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">M</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> conformers_dict </span><span class="si">{</span><span class="n">M</span><span class="o">.</span><span class="n">conformers_dict</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">M</span></div>
 
-<div class="viewcode-block" id="Molecule.set_origin"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_origin">[docs]</a>    <span class="k">def</span> <span class="nf">set_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.set_origin">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_origin">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_origin sets the value of the origin member</span>
 
 <span class="sd">        :param value: value</span>
@@ -209,7 +222,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">origin</span><span class="o">=</span><span class="n">value</span></div>
 
-<div class="viewcode-block" id="Molecule.get_origin"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_origin">[docs]</a>    <span class="k">def</span> <span class="nf">get_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.get_origin">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_origin">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_origin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_origin returns the value of the origin member</span>
 
 <span class="sd">        :return: value of origin member</span>
@@ -217,7 +233,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">origin</span></div>
 
-<div class="viewcode-block" id="Molecule.update_zrecs"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.update_zrecs">[docs]</a>    <span class="k">def</span> <span class="nf">update_zrecs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zrecs</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.update_zrecs">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.update_zrecs">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_zrecs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zrecs</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;update_zrecs updates the &quot;z-records&quot; based on z&#39;s declared in the input configuration file</span>
 
 <span class="sd">        :param zrecs: zrecs extracted from configuration file for this molecule</span>
@@ -247,7 +266,10 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span> <span class="n">target</span><span class="o">.</span><span class="n">zrecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">zr</span><span class="p">)</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-&gt; </span><span class="si">{</span><span class="n">target</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">target</span><span class="o">.</span><span class="n">zrecs</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.determine_sequence"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.determine_sequence">[docs]</a>    <span class="k">def</span> <span class="nf">determine_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.determine_sequence">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.determine_sequence">[docs]</a>
+    <span class="k">def</span> <span class="nf">determine_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;determine_sequence recursively determine the sequence of a molecule using the network of reactions that must be executed to generate it from primitives</span>
 
 <span class="sd">        :param moldict: dictionary of available molecules</span>
@@ -263,8 +285,11 @@
             <span class="n">thisseq</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">moldict</span><span class="p">[</span><span class="n">parentname</span><span class="p">]</span><span class="o">.</span><span class="n">determine_sequence</span><span class="p">(</span><span class="n">moldict</span><span class="p">))</span>
             <span class="c1"># logger.debug(thisseq)</span>
         <span class="k">return</span> <span class="n">thisseq</span></div>
+
     
-<div class="viewcode-block" id="Molecule.set_sequence_from_moldict"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_moldict">[docs]</a>    <span class="k">def</span> <span class="nf">set_sequence_from_moldict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.set_sequence_from_moldict">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_moldict">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_sequence_from_moldict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">moldict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_sequence_from_moldict set the sequence of this molecule using the recursive determine_sequence method</span>
 
 <span class="sd">        :param moldict: dictionary of available molecules</span>
@@ -275,7 +300,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">determine_sequence</span><span class="p">(</span><span class="n">moldict</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="Molecule.set_sequence_from_coordinates"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_coordinates">[docs]</a>    <span class="k">def</span> <span class="nf">set_sequence_from_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.set_sequence_from_coordinates">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_sequence_from_coordinates">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_sequence_from_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_sequence Establish the sequence-list (residue names in order) based on resNum attributes in atom list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">adf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">gro_DataFrame</span><span class="p">(</span><span class="s1">&#39;atoms&#39;</span><span class="p">)</span>
@@ -290,7 +318,10 @@
         <span class="k">assert</span> <span class="n">trial_sequence</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;trial </span><span class="si">{</span><span class="n">trial_sequence</span><span class="si">}</span><span class="s1"> seq </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="Molecule.create_new_stereoisomers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.create_new_stereoisomers">[docs]</a>    <span class="k">def</span> <span class="nf">create_new_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.create_new_stereoisomers">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.create_new_stereoisomers">[docs]</a>
+    <span class="k">def</span> <span class="nf">create_new_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;create_new_stereoisomers generate new molecules to hold stereoisomers of self</span>
 
 <span class="sd">        :return: None if no action taken</span>
@@ -307,20 +338,31 @@
             <span class="n">mname</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">basename</span><span class="si">}{</span><span class="n">s</span><span class="si">}</span><span class="s1">&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stereoisomers</span><span class="p">[</span><span class="n">mname</span><span class="p">]</span><span class="o">=</span><span class="n">Molecule</span><span class="o">.</span><span class="n">New</span><span class="p">(</span><span class="n">mname</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stereoisomers</span><span class="p">[</span><span class="n">mname</span><span class="p">]</span><span class="o">.</span><span class="n">parentname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+
             
-<div class="viewcode-block" id="Molecule.initialize_molecule_cycles"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_molecule_cycles">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_molecule_cycles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;initialize_molecule_cycles assigns cycle indexes to all atoms</span>
+<div class="viewcode-block" id="Molecule.initialize_molecule_rings">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_molecule_rings">[docs]</a>
+    <span class="k">def</span> <span class="nf">initialize_molecule_rings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;initialize_molecule_rings generates the dictionary of rings</span>
+
+<span class="sd">        the dictionary of rings is keyed on ring size</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">TC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span>
-        <span class="n">TC</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;cycle&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
-        <span class="n">cycle_dict</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">detect_cycles</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">l</span><span class="p">,</span><span class="n">cs_of_l</span> <span class="ow">in</span> <span class="n">cycle_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">TC</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;cycle&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">cs_of_l</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Resetting cycle and cycle_idx&#39;</span><span class="p">)</span>
-        <span class="n">TC</span><span class="o">.</span><span class="n">reset_grx_attributes_from_idx_list</span><span class="p">(</span><span class="s1">&#39;cycle&#39;</span><span class="p">)</span>
+        <span class="n">TC</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">detect_rings</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Detected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">TC</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">rings</span><span class="p">)</span><span class="si">}</span><span class="s1"> unique rings.&#39;</span><span class="p">)</span>
+        <span class="c1"># TC.idx_lists[&#39;cycle&#39;]=[]</span>
+        <span class="c1"># cycle_dict=TC.Topology.detect_cycles()</span>
+        <span class="c1"># logger.debug(f&#39;Cycle dict: {cycle_dict}&#39;)</span>
+        <span class="c1"># for l,cs_of_l in cycle_dict.items():</span>
+        <span class="c1">#     TC.idx_lists[&#39;cycle&#39;].extend(cs_of_l)</span>
+        <span class="c1"># logger.debug(&#39;Resetting cycle and cycle_idx&#39;)</span>
+        <span class="c1"># TC.reset_grx_attributes_from_idx_list(&#39;cycle&#39;)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Done&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.initialize_monomer_grx_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_monomer_grx_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_monomer_grx_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.initialize_monomer_grx_attributes">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.initialize_monomer_grx_attributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">initialize_monomer_grx_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;initialize_monomer_grx_attributes initializes all GRX attributes of atoms in molecule</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -329,7 +371,7 @@
         <span class="n">TC</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="s1">&#39;nreactions&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">TC</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="s1">&#39;molecule&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">TC</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="s1">&#39;molecule_name&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sea_idx&#39;</span><span class="p">,</span><span class="s1">&#39;chain&#39;</span><span class="p">,</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,</span><span class="s1">&#39;cycle&#39;</span><span class="p">,</span><span class="s1">&#39;cycle_idx&#39;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sea_idx&#39;</span><span class="p">,</span><span class="s1">&#39;chain&#39;</span><span class="p">,</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">]:</span>
             <span class="n">TC</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="n">att</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="c1"># set symmetry class indices</span>
         <span class="n">sea_idx</span><span class="o">=</span><span class="mi">1</span>
@@ -387,10 +429,12 @@
                     <span class="c1"># logger.debug(f&#39;Adding {entry} to chainlist of {self.name}&#39;)</span>
                     <span class="n">TC</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
         <span class="n">TC</span><span class="o">.</span><span class="n">reset_grx_attributes_from_idx_list</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">)</span>
-        <span class="c1"># set cycle, cycle_idx</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_cycles</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_rings</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Molecule.previously_parameterized"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.previously_parameterized">[docs]</a>    <span class="k">def</span> <span class="nf">previously_parameterized</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.previously_parameterized">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.previously_parameterized">[docs]</a>
+    <span class="k">def</span> <span class="nf">previously_parameterized</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;previously_parameterized if a gro file exists in the project molecule/parameterized directory for this molecule, return True</span>
 
 <span class="sd">        :return: True if gro file found</span>
@@ -401,7 +445,10 @@
             <span class="n">rval</span><span class="o">=</span><span class="n">rval</span> <span class="ow">and</span> <span class="n">pfs</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;molecules/parameterized&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">rval</span></div>
 
-<div class="viewcode-block" id="Molecule.parameterize"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.parameterize">[docs]</a>    <span class="k">def</span> <span class="nf">parameterize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">input_structure_format</span><span class="o">=</span><span class="s1">&#39;mol2&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.parameterize">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.parameterize">[docs]</a>
+    <span class="k">def</span> <span class="nf">parameterize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">input_structure_format</span><span class="o">=</span><span class="s1">&#39;mol2&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;parameterize manages GAFF parameterization of this molecule</span>
 
 <span class="sd">        :param outname: output file basename, defaults to &#39;&#39;</span>
@@ -413,9 +460,14 @@
         <span class="k">if</span> <span class="n">outname</span><span class="o">==</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
             <span class="n">outname</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="n">GAFFParameterize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span><span class="n">outname</span><span class="p">,</span><span class="n">input_structure_format</span><span class="o">=</span><span class="n">input_structure_format</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">load_top_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.mol2&#39;</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_top_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.mol2&#39;</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_rings</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">write_tpx</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outname</span><span class="si">}</span><span class="s1">.tpx&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.minimize"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.minimize">[docs]</a>    <span class="k">def</span> <span class="nf">minimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.minimize">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.minimize">[docs]</a>
+    <span class="k">def</span> <span class="nf">minimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;minimize manages invocation of vacuum minimization</span>
 
 <span class="sd">        :param outname: output file basename, defaults to &#39;&#39;</span>
@@ -425,7 +477,10 @@
             <span class="n">outname</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">vacuum_minimize</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.relax"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.relax">[docs]</a>    <span class="k">def</span> <span class="nf">relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">relax_dict</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.relax">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.relax">[docs]</a>
+    <span class="k">def</span> <span class="nf">relax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">relax_dict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;relax manages invocation of MD relaxations</span>
 
 <span class="sd">        :param relax_dict: dictionary of simulation directives</span>
@@ -443,7 +498,10 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;In vacuo equilibration of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.gro for </span><span class="si">{</span><span class="n">nsteps</span><span class="si">}</span><span class="s1"> steps at </span><span class="si">{</span><span class="n">temperature</span><span class="si">}</span><span class="s1"> K&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">grompp_and_mdrun</span><span class="p">(</span><span class="n">out</span><span class="o">=</span><span class="n">deffnm</span><span class="p">,</span><span class="n">mdp</span><span class="o">=</span><span class="n">mdp_prefix</span><span class="p">,</span><span class="n">boxSize</span><span class="o">=</span><span class="n">boxsize</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.center_coords"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.center_coords">[docs]</a>    <span class="k">def</span> <span class="nf">center_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_boxsize</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.center_coords">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.center_coords">[docs]</a>
+    <span class="k">def</span> <span class="nf">center_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_boxsize</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;center_coords wrapper for the TopoCoord.center_coords method</span>
 
 <span class="sd">        :param new_boxsize: new box size, defaults to None</span>
@@ -451,7 +509,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">center_coords</span><span class="p">(</span><span class="n">new_boxsize</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.generate"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate">[docs]</a>    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{},</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.generate">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{},</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;generate manages generating topology and coordinates for self</span>
 
 <span class="sd">        :param outname: output file basename, defaults to &#39;&#39;</span>
@@ -526,9 +587,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">!=</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Built </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> using topology of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">; copying </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">.top to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">load_top_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">load_top_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">,</span><span class="n">tpxfilename</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.tpx&#39;</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
                 <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.top&#39;</span><span class="p">)</span>
                 <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">.grx&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.grx&#39;</span><span class="p">)</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parentname</span><span class="si">}</span><span class="s1">.tpx&#39;</span><span class="p">,</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">.tpx&#39;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">do_minimization</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -545,11 +607,15 @@
                 <span class="c1">#self.reset_chains_from_attributes()</span>
         <span class="c1"># logger.debug(f&#39;{self.name} gro\n{self.TopoCoord.Coordinates.A.to_string()}&#39;)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prepare_new_bonds</span><span class="p">(</span><span class="n">available_molecules</span><span class="o">=</span><span class="n">available_molecules</span><span class="p">)</span>
+
         <span class="c1"># for ln in self.TopoCoord.Coordinates.A.head().to_string().split(&#39;\n&#39;): logger.debug(ln)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_molecular_weight</span><span class="p">()</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> g/mol&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Done.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.get_molecular_weight"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_molecular_weight">[docs]</a>    <span class="k">def</span> <span class="nf">get_molecular_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.get_molecular_weight">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_molecular_weight">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_molecular_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_molecular_weight returns the molecular weight of self</span>
 
 <span class="sd">        :return: _description_</span>
@@ -558,7 +624,10 @@
         <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">total_mass</span><span class="p">(</span><span class="n">units</span><span class="o">=</span><span class="s1">&#39;gromacs&#39;</span><span class="p">)</span> <span class="c1"># g</span>
         <span class="k">return</span> <span class="n">mass</span></div>
 
-<div class="viewcode-block" id="Molecule.prepare_new_bonds"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.prepare_new_bonds">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_new_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{}):</span>
+
+<div class="viewcode-block" id="Molecule.prepare_new_bonds">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.prepare_new_bonds">[docs]</a>
+    <span class="k">def</span> <span class="nf">prepare_new_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">available_molecules</span><span class="o">=</span><span class="p">{}):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;prepare_new_bonds populates the bond templates and reaction bonds for self</span>
 
 <span class="sd">        :param available_molecules: dictionary of available molecules, defaults to {}</span>
@@ -605,7 +674,10 @@
             <span class="n">intraresidue</span><span class="o">=</span><span class="n">in_product_resids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">in_product_resids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bond_templates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BondTemplate</span><span class="p">(</span><span class="n">atom_names</span><span class="p">,</span><span class="n">in_product_resnames</span><span class="p">,</span><span class="n">intraresidue</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">bystander_resnames</span><span class="p">,</span><span class="n">bystander_atomnames</span><span class="p">,</span><span class="n">oneaway_resnames</span><span class="p">,</span><span class="n">oneaway_atomnames</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Molecule.idx_mappers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.idx_mappers">[docs]</a>    <span class="k">def</span> <span class="nf">idx_mappers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">otherTC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">other_bond</span><span class="p">,</span><span class="n">bystanders</span><span class="p">,</span><span class="n">oneaways</span><span class="p">,</span><span class="n">uniq_atom_idx</span><span class="p">:</span><span class="nb">set</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.idx_mappers">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.idx_mappers">[docs]</a>
+    <span class="k">def</span> <span class="nf">idx_mappers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">otherTC</span><span class="p">:</span><span class="n">TopoCoord</span><span class="p">,</span><span class="n">other_bond</span><span class="p">,</span><span class="n">bystanders</span><span class="p">,</span><span class="n">oneaways</span><span class="p">,</span><span class="n">uniq_atom_idx</span><span class="p">:</span><span class="nb">set</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;idx_mappers computes the mapping dictionary from molecule template index to instance index in the other TopoCoord</span>
 
 <span class="sd">        :param otherTC: the other TopoCoord</span>
@@ -685,7 +757,10 @@
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst2temp</span><span class="p">)</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">temp2inst</span><span class="p">),</span><span class="sa">f</span><span class="s1">&#39;Error: could not establish two-way dict of atom globalIdx&#39;</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">inst2temp</span><span class="p">,</span><span class="n">temp2inst</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.get_angles_dihedrals"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_angles_dihedrals">[docs]</a>    <span class="k">def</span> <span class="nf">get_angles_dihedrals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bond</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.get_angles_dihedrals">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_angles_dihedrals">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_angles_dihedrals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bond</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_angles_dihedrals returns copies of selections from the Topology interaction-type dataframes that contain the two atoms indicated in the bond</span>
 
 <span class="sd">        :param bond: 2-element list-like container of ints</span>
@@ -728,7 +803,10 @@
             <span class="k">raise</span> <span class="ne">Exception</span>
         <span class="k">return</span> <span class="n">ad</span><span class="p">,</span><span class="n">td</span><span class="p">,</span><span class="n">paird</span></div>
 
-<div class="viewcode-block" id="Molecule.get_resname"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_resname">[docs]</a>    <span class="k">def</span> <span class="nf">get_resname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">internal_resid</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.get_resname">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.get_resname">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_resname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">internal_resid</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get_resname returns the residue name at position internal_resid in the molecule&#39;s sequence</span>
 
 <span class="sd">        :param internal_resid: molecule-internal residue index</span>
@@ -737,6 +815,7 @@
 <span class="sd">        :rtype: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="p">[</span><span class="n">internal_resid</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
 
     <span class="c1"># def inherit_attribute_from_reactants(self,attribute,available_molecules,increment=True,no_increment_if_negative=True):</span>
     <span class="c1">#     &quot;&quot;&quot;inherit_attribute_from_reactants populate certain atom attributes in molecule from its constituent reactants</span>
@@ -784,7 +863,9 @@
     <span class="c1">#     assert len(ordered_attribute_idx)==adf.shape[0]</span>
     <span class="c1">#     adf[attribute]=ordered_attribute_idx</span>
 
-<div class="viewcode-block" id="Molecule.merge"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.merge">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.merge">[docs]</a>
+    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;merge merges TopoCoord from other into self&#39;s TopoCoord</span>
 
 <span class="sd">        :param other: another Molecule</span>
@@ -795,19 +876,27 @@
         <span class="n">shifts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">TopoCoord</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">shifts</span></div>
 
-<div class="viewcode-block" id="Molecule.load_top_gro"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.load_top_gro">[docs]</a>    <span class="k">def</span> <span class="nf">load_top_gro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.load_top_gro">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.load_top_gro">[docs]</a>
+    <span class="k">def</span> <span class="nf">load_top_gro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="p">,</span><span class="n">tpxfilename</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;load_top_gro generate a new TopoCoord member object for this molecule by reading in a Gromacs topology file and a Gromacs gro file</span>
 
 <span class="sd">        :param topfilename: Gromacs topology file</span>
 <span class="sd">        :type topfilename: str</span>
 <span class="sd">        :param grofilename: Gromacs gro file</span>
 <span class="sd">        :type grofilename: str</span>
+<span class="sd">        :param tpxfilename: extended topology file, defaults to &#39;&#39;</span>
+<span class="sd">        :type tpxfilename: str, optional</span>
 <span class="sd">        :param mol2filename: alternative coordinate mol2 file, defaults to &#39;&#39;</span>
 <span class="sd">        :type mol2filename: str, optional</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">=</span><span class="n">TopoCoord</span><span class="p">(</span><span class="n">topfilename</span><span class="o">=</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="o">=</span><span class="n">grofilename</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="n">mol2filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">=</span><span class="n">TopoCoord</span><span class="p">(</span><span class="n">topfilename</span><span class="o">=</span><span class="n">topfilename</span><span class="p">,</span><span class="n">grofilename</span><span class="o">=</span><span class="n">grofilename</span><span class="p">,</span><span class="n">tpxfilename</span><span class="o">=</span><span class="n">tpxfilename</span><span class="p">,</span><span class="n">mol2filename</span><span class="o">=</span><span class="n">mol2filename</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.set_gro_attribute"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_gro_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">set_gro_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.set_gro_attribute">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.set_gro_attribute">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_gro_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;set_gro_attribute sets attribute of atoms to srs (drillst through to Coordinates.set_atomset_attributes())</span>
 
 <span class="sd">        :param attribute: name of attribute</span>
@@ -817,7 +906,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span><span class="n">srs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.read_gro_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.read_gro_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">read_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attribute_list</span><span class="o">=</span><span class="p">[]):</span>
+
+<div class="viewcode-block" id="Molecule.read_gro_attributes">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.read_gro_attributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">read_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attribute_list</span><span class="o">=</span><span class="p">[]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Read attributes from file into self.TopoCoord.Coordinates.A</span>
 
 <span class="sd">        :param grxfilename: name of input file</span>
@@ -827,7 +919,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">read_gro_attributes</span><span class="p">(</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attribute_list</span><span class="o">=</span><span class="n">attribute_list</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.write_gro_attributes"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.write_gro_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">write_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute_list</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.write_gro_attributes">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.write_gro_attributes">[docs]</a>
+    <span class="k">def</span> <span class="nf">write_gro_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">attribute_list</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes atomic attributes to a file</span>
 
 <span class="sd">        :param attributes_list: list of attributes to write</span>
@@ -837,7 +932,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">write_gro_attributes</span><span class="p">(</span><span class="n">attribute_list</span><span class="p">,</span><span class="n">grxfilename</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.make_bonds"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.make_bonds">[docs]</a>    <span class="k">def</span> <span class="nf">make_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">moldict</span><span class="p">,</span><span class="n">stage</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.make_bonds">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.make_bonds">[docs]</a>
+    <span class="k">def</span> <span class="nf">make_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span><span class="n">moldict</span><span class="p">,</span><span class="n">stage</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;make_bonds adds new bonds to the molecule&#39;s topology and deletes any sacrificial hydrogens</span>
 
 <span class="sd">        :param bdf: pandas dataframe identifying new bonds</span>
@@ -861,9 +959,12 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">template_source</span><span class="o">=</span><span class="s1">&#39;internal&#39;</span>  <span class="c1"># signals that a template molecule should be identified to parameterize this bond</span>
         <span class="n">TC</span><span class="o">.</span><span class="n">update_topology_and_coordinates</span><span class="p">(</span><span class="n">bdf</span><span class="p">,</span><span class="n">moldict</span><span class="p">,</span><span class="n">explicit_sacH</span><span class="o">=</span><span class="n">explicit_sacrificial_Hs</span><span class="p">,</span><span class="n">template_source</span><span class="o">=</span><span class="n">template_source</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_cycles</span><span class="p">()</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_rings</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Molecule.transrot"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.transrot">[docs]</a>    <span class="k">def</span> <span class="nf">transrot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">at_idx</span><span class="p">,</span><span class="n">at_resid</span><span class="p">,</span><span class="n">from_idx</span><span class="p">,</span><span class="n">from_resid</span><span class="p">,</span><span class="n">connected_resids</span><span class="o">=</span><span class="p">[]):</span>
+
+<div class="viewcode-block" id="Molecule.transrot">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.transrot">[docs]</a>
+    <span class="k">def</span> <span class="nf">transrot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">at_idx</span><span class="p">,</span><span class="n">at_resid</span><span class="p">,</span><span class="n">from_idx</span><span class="p">,</span><span class="n">from_resid</span><span class="p">,</span><span class="n">connected_resids</span><span class="o">=</span><span class="p">[]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;transrot given a composite molecule, translate and rotate the piece downstream of the yet-to-be created bond specified by (at_idx,at_resid) and (from_idx,from_resid) to minimize steric overlaps and identify the best two sacrificial hydrogens</span>
 
 <span class="sd">        :param at_idx: global index of left-hand atom in new bond</span>
@@ -914,21 +1015,25 @@
 
         <span class="n">Ri</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">at_idx</span><span class="p">)</span>
         <span class="n">Rj</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">from_idx</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Ri </span><span class="si">{</span><span class="n">at_idx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Ri</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">Ri</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Ri</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Rj </span><span class="si">{</span><span class="n">from_idx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rj</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">Rj</span><span class="p">)</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rj</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">overall_maximum</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">1.e9</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">coord_trials</span><span class="o">=</span><span class="p">{}</span>
         <span class="k">for</span> <span class="n">myH</span><span class="p">,</span><span class="n">myHnm</span> <span class="ow">in</span> <span class="n">myHpartners</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>  <span class="c1"># keys are globalIdx&#39;s, values are names</span>
             <span class="n">coord_trials</span><span class="p">[</span><span class="n">myH</span><span class="p">]:</span><span class="nb">dict</span><span class="p">[</span><span class="n">TopoCoord</span><span class="p">]</span><span class="o">=</span><span class="p">{}</span>
             <span class="n">Rh</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">myH</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Rh </span><span class="si">{</span><span class="n">myH</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rh</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rh</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="n">Rih</span><span class="o">=</span><span class="n">Ri</span><span class="o">-</span><span class="n">Rh</span>
             <span class="n">Rih</span><span class="o">*=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Rih</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">otH</span><span class="p">,</span><span class="n">otHnm</span> <span class="ow">in</span> <span class="n">otHpartners</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="c1"># logger.debug(f&#39;{self.name}: Considering {myH} {otH}&#39;)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">: Considering </span><span class="si">{</span><span class="n">myH</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">otH</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="n">coord_trials</span><span class="p">[</span><span class="n">myH</span><span class="p">][</span><span class="n">otH</span><span class="p">]</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">BTC</span><span class="p">)</span>
                 <span class="c1"># logger.debug(f&#39;\n{coord_trials[myH][otH].Coordinates.A.to_string()}&#39;)</span>
                 <span class="n">Rk</span><span class="o">=</span><span class="n">coord_trials</span><span class="p">[</span><span class="n">myH</span><span class="p">][</span><span class="n">otH</span><span class="p">]</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">otH</span><span class="p">)</span>
-                <span class="c1"># logger.debug(f&#39;{self.name}:    otH {otH} Rk {Rk}&#39;)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">:    otH </span><span class="si">{</span><span class="n">otH</span><span class="si">}</span><span class="s1"> Rk </span><span class="si">{</span><span class="n">Rk</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rk</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="n">Rkj</span><span class="o">=</span><span class="n">Rk</span><span class="o">-</span><span class="n">Rj</span>
                 <span class="n">Rkj</span><span class="o">*=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Rkj</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Rkj </span><span class="si">{</span><span class="n">Rkj</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rkj</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s1"> Rih </span><span class="si">{</span><span class="n">Rih</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">Rih</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="c1">#Rhk=Rh-Rk</span>
                 <span class="c1">#rhk=np.linalg.norm(Rhk)</span>
                 <span class="n">cp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">Rkj</span><span class="p">,</span><span class="n">Rih</span><span class="p">)</span>
@@ -957,7 +1062,10 @@
         <span class="n">TC</span><span class="o">.</span><span class="n">swap_atom_names</span><span class="p">(</span><span class="n">otH</span><span class="p">,</span><span class="nb">list</span><span class="p">(</span><span class="n">otHighestH</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">myH</span><span class="p">,</span><span class="n">otH</span></div>
 
-<div class="viewcode-block" id="Molecule.atoms_w_same_attribute_as"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.atoms_w_same_attribute_as">[docs]</a>    <span class="k">def</span> <span class="nf">atoms_w_same_attribute_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">find_dict</span><span class="o">=</span><span class="p">{},</span><span class="n">same_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">return_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.atoms_w_same_attribute_as">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.atoms_w_same_attribute_as">[docs]</a>
+    <span class="k">def</span> <span class="nf">atoms_w_same_attribute_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">find_dict</span><span class="o">=</span><span class="p">{},</span><span class="n">same_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">return_attribute</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;atoms_w_same_attribute_as returns a list of atom attributes named in the return_attribute parameter from atoms that share an attribute named in the same_attribute parameter with the atom identified by the find_dict parameter</span>
 
 <span class="sd">        :param find_dict: dictionary of attribute:value pairs that should uniquely identify an atom, defaults to {}</span>
@@ -972,60 +1080,21 @@
         <span class="n">att_val</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="n">same_attribute</span><span class="p">,</span><span class="n">find_dict</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">get_gro_attributelist_by_attributes</span><span class="p">(</span><span class="n">return_attribute</span><span class="p">,{</span><span class="n">same_attribute</span><span class="p">:</span><span class="n">att_val</span><span class="p">})</span></div>
 
-<div class="viewcode-block" id="Molecule.flip_stereocenter"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.flip_stereocenter">[docs]</a>    <span class="k">def</span> <span class="nf">flip_stereocenter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idx</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;flip_stereocenter flips stereochemistry of atom at idx</span>
 
-<span class="sd">        :param idx: global index of atom</span>
-<span class="sd">        :type idx: int</span>
+<div class="viewcode-block" id="Molecule.flip_stereocenters">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.flip_stereocenters">[docs]</a>
+    <span class="k">def</span> <span class="nf">flip_stereocenters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">idxlist</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;flip_stereocenters flips stereochemistry of atoms in idxlist</span>
+
+<span class="sd">        :param idxlist: global indices of chiral atoms</span>
+<span class="sd">        :type idxlist: list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">TC</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span>
-        <span class="n">A</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> flipping on </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="n">ligand_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">bondlist</span><span class="o">.</span><span class="n">partners_of</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ligand_idx</span><span class="p">)</span><span class="o">!=</span><span class="mi">4</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Atom </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s1"> cannot be a stereocenter; it only has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ligand_idx</span><span class="p">)</span><span class="si">}</span><span class="s1"> ligands.&#39;</span><span class="p">)</span>
-            <span class="k">return</span>
-        <span class="c1"># determine the two lightest ligands</span>
-        <span class="n">branches</span><span class="o">=</span><span class="p">{}</span>
-        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">ligand_idx</span><span class="p">:</span>
-            <span class="n">bl</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">bondlist</span><span class="p">)</span>
-            <span class="n">branches</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">=</span><span class="n">bl</span><span class="o">.</span><span class="n">half_as_list</span><span class="p">([</span><span class="n">idx</span><span class="p">,</span><span class="n">n</span><span class="p">],</span><span class="mi">3</span><span class="p">)</span>
-        <span class="n">ligand_idx</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">branches</span><span class="p">[</span><span class="n">x</span><span class="p">]))</span>
-        <span class="n">a</span><span class="o">=</span><span class="n">ligand_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">aset</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">branches</span><span class="p">[</span><span class="n">a</span><span class="p">]))))</span>
-        <span class="n">b</span><span class="o">=</span><span class="n">ligand_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">bset</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span><span class="n">branches</span><span class="p">[</span><span class="n">b</span><span class="p">]))))</span>
-        <span class="c1"># translate origin to location of stereocenter</span>
-        <span class="n">O</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-        <span class="n">TC</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">O</span><span class="p">)</span>
-        <span class="n">rO</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-        <span class="n">ra</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-        <span class="n">rb</span><span class="o">=</span><span class="n">TC</span><span class="o">.</span><span class="n">get_R</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-        <span class="n">adf</span><span class="o">=</span><span class="n">A</span><span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">aset</span><span class="p">)]</span>
-        <span class="n">bdf</span><span class="o">=</span><span class="n">A</span><span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bset</span><span class="p">)]</span>
-        <span class="c1"># rotate the two branches to swap them</span>
-        <span class="n">rOa</span><span class="o">=</span><span class="n">rO</span><span class="o">-</span><span class="n">ra</span>
-        <span class="n">rOa</span><span class="o">*=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rOa</span><span class="p">)</span>
-        <span class="n">rOb</span><span class="o">=</span><span class="n">rO</span><span class="o">-</span><span class="n">rb</span>
-        <span class="n">rOb</span><span class="o">*=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rOb</span><span class="p">)</span>
-        <span class="n">cp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">rOa</span><span class="p">,</span><span class="n">rOb</span><span class="p">)</span>
-        <span class="n">c</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rOa</span><span class="p">,</span><span class="n">rOb</span><span class="p">)</span>
-        <span class="n">v</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">cp</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">cp</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">cp</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">cp</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="o">-</span><span class="n">cp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">cp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">0</span><span class="p">]])</span>
-        <span class="n">v2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
-        <span class="n">I</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">,</span><span class="mf">0.</span><span class="p">],[</span><span class="mf">0.</span><span class="p">,</span><span class="mf">0.</span><span class="p">,</span><span class="mf">1.</span><span class="p">]])</span>
-        <span class="n">R</span><span class="o">=</span><span class="n">I</span><span class="o">+</span><span class="n">v</span><span class="o">+</span><span class="n">v2</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">c</span><span class="p">)</span>
-        <span class="n">dfrotate</span><span class="p">(</span><span class="n">adf</span><span class="p">,</span><span class="n">R</span><span class="p">)</span>
-        <span class="n">A</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">aset</span><span class="p">),[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span><span class="o">=</span><span class="n">adf</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span>
-        <span class="n">cp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">rOb</span><span class="p">,</span><span class="n">rOa</span><span class="p">)</span>
-        <span class="n">v</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">cp</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">cp</span><span class="p">[</span><span class="mi">1</span><span class="p">]],[</span><span class="n">cp</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">cp</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="o">-</span><span class="n">cp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">cp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">0</span><span class="p">]])</span>
-        <span class="n">v2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
-        <span class="n">R</span><span class="o">=</span><span class="n">I</span><span class="o">+</span><span class="n">v</span><span class="o">+</span><span class="n">v2</span><span class="o">/</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">c</span><span class="p">)</span>
-        <span class="n">dfrotate</span><span class="p">(</span><span class="n">bdf</span><span class="p">,</span><span class="n">R</span><span class="p">)</span>
-        <span class="n">A</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bset</span><span class="p">),[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span><span class="o">=</span><span class="n">bdf</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span>
-        <span class="c1"># translate back to original coordinate frame</span>
-        <span class="n">TC</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">O</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">flip_stereocenters</span><span class="p">(</span><span class="n">idxlist</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.rotate_bond"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.rotate_bond">[docs]</a>    <span class="k">def</span> <span class="nf">rotate_bond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">deg</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.rotate_bond">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.rotate_bond">[docs]</a>
+    <span class="k">def</span> <span class="nf">rotate_bond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">deg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;rotate_bond rotates all atoms in molecule on b-side of a-b bond by deg degrees</span>
 
 <span class="sd">        :param a: index of a</span>
@@ -1069,13 +1138,16 @@
         <span class="n">A</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">branchidx</span><span class="p">),[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span><span class="o">=</span><span class="n">bdf</span><span class="p">[[</span><span class="s1">&#39;posX&#39;</span><span class="p">,</span><span class="s1">&#39;posY&#39;</span><span class="p">,</span><span class="s1">&#39;posZ&#39;</span><span class="p">]]</span>
         <span class="n">TC</span><span class="o">.</span><span class="n">translate</span><span class="p">(</span><span class="n">O</span><span class="p">)</span></div>
 
+
     <span class="c1"># def sea_of(self,idx):</span>
     <span class="c1">#     clu=self.atoms_w_same_attribute_as(find_dict={&#39;globalIdx&#39;:idx},</span>
     <span class="c1">#                                             same_attribute=&#39;sea_idx&#39;,</span>
     <span class="c1">#                                             return_attribute=&#39;globalIdx&#39;)</span>
     <span class="c1">#     return list(clu)</span>
 
-<div class="viewcode-block" id="Molecule.generate_stereoisomers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate_stereoisomers">[docs]</a>    <span class="k">def</span> <span class="nf">generate_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Molecule.generate_stereoisomers">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate_stereoisomers">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate_stereoisomers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;generate_stereoisomers generates list of Molecule shells, one for each stereoisomer</span>
 
 <span class="sd">        :return: only returns if no stereoisomers need to be generated</span>
@@ -1096,11 +1168,13 @@
             <span class="n">M</span><span class="o">.</span><span class="n">origin</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">origin</span>
             <span class="n">M</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="p">)</span>
             <span class="n">fsc</span><span class="o">=</span><span class="p">[</span><span class="n">st_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stereocenters</span><span class="p">))</span> <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
-            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fsc</span><span class="p">:</span>
-                <span class="n">M</span><span class="o">.</span><span class="n">flip_stereocenter</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">M</span><span class="o">.</span><span class="n">flip_stereocenters</span><span class="p">(</span><span class="n">fsc</span><span class="p">)</span>
             <span class="n">M</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">write_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">si_name</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Molecule.generate_conformers"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate_conformers">[docs]</a>    <span class="k">def</span> <span class="nf">generate_conformers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="Molecule.generate_conformers">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.Molecule.generate_conformers">[docs]</a>
+    <span class="k">def</span> <span class="nf">generate_conformers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;generate_conformers generates this molecule&#39;s conformer instances using either gromacs or obabel</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># only generates gro files</span>
@@ -1153,12 +1227,16 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">read_gro</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s1">.gro&#39;</span><span class="p">)</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Minimizing conformer </span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">.</span><span class="n">vacuum_minimize</span><span class="p">(</span><span class="n">outname</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mname</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">=</span><span class="n">saveTC</span></div></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">TopoCoord</span><span class="o">=</span><span class="n">saveTC</span></div>
+</div>
+
 
 <span class="n">MoleculeDict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Molecule</span><span class="p">]</span>
 <span class="n">MoleculeList</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="n">Molecule</span><span class="p">]</span>
 
-<div class="viewcode-block" id="generate_stereo_reactions"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.generate_stereo_reactions">[docs]</a><span class="k">def</span> <span class="nf">generate_stereo_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
+<div class="viewcode-block" id="generate_stereo_reactions">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.generate_stereo_reactions">[docs]</a>
+<span class="k">def</span> <span class="nf">generate_stereo_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;generate_stereo_reactions scans the list of reactions and generates any additional reactions in which all possible stereoisomers are reactants</span>
 
 <span class="sd">    :param RL: list of Reactions</span>
@@ -1207,7 +1285,10 @@
     <span class="n">RL</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">terminal_reactions</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">adds</span></div>
 
-<div class="viewcode-block" id="generate_symmetry_reactions"><a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.generate_symmetry_reactions">[docs]</a><span class="k">def</span> <span class="nf">generate_symmetry_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
+
+<div class="viewcode-block" id="generate_symmetry_reactions">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.molecule.generate_symmetry_reactions">[docs]</a>
+<span class="k">def</span> <span class="nf">generate_symmetry_reactions</span><span class="p">(</span><span class="n">RL</span><span class="p">:</span><span class="n">ReactionList</span><span class="p">,</span><span class="n">MD</span><span class="p">:</span><span class="n">MoleculeDict</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;generate_symmetry_reactions scans reaction list to generate any new reactions implied by symmetry-equivalent atoms</span>
 
 <span class="sd">    :param RL: list of Reactions</span>
@@ -1308,6 +1389,7 @@
 
     <span class="n">RL</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">terminal_reactions</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">terminal_reactions</span><span class="p">)</span><span class="o">+</span><span class="n">tail_adds</span></div>
+
 </pre></div>
 
           </div>
@@ -1362,7 +1444,7 @@
       &copy;2023, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.1.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
     </div>
