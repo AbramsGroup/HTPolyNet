@@ -73,4 +73,4 @@ So, you could build multiple replicas by simply issuing more ``htpolynet run`` c
 
 These will generate three new replicas in ``proj-1/``, ``proj-2/``, and ``proj-3/``, respectively.
 
-Although this makes it seem quite simple to run ``htpolynet``, the aim of the tutorial is to show `how` it works to a level of detail sufficient to allow a user to develop their own new systems.  The remainder of this tutorial considers the major elements of ``htpolynet run`` and its usage.
+Although this makes it seem quite simple to run ``htpolynet``, the aim of the tutorial is to show `how` it works to a level of detail sufficient to allow a user to develop their own new systems.  The remainder of this tutorial considers the major elements of ``htpolynet run`` and its usage.  Next we consider how to generate the :ref:`monomer inputs <tutorial_pms_monomer>`.

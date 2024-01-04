@@ -27,6 +27,8 @@ Let's generate traces of temperature, density, and potential energy vs time for 
 
     $ htpolynet plots build --proj proj-0 --buildplot t --traces t d p
     
+This command will read all ``edr`` files in order to construct the overall traces.  This will take a few minutes.
+
 .. figure:: pics/buildtraces.png 
 
     (Top) Temperature vs. time for 95% cure of bisGMA/STY (Middle) Density vs time.  The two topmost plots also report number of bonds; (Bottom) Potential energy vs. time.

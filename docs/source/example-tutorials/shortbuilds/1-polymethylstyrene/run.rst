@@ -19,7 +19,7 @@ In this section, let's go section by section through the console log ``console.l
 .. code-block:: console
 
     INFO>                                                                    
-    INFO>     HTPolyNet 1.0.6                                                
+    INFO>     HTPolyNet 1.0.8                                                
     INFO>     https://abramsgroup.github.io/HTPolyNet/                       
     INFO>                                                                    
     INFO>     Ming Huang                                                     
@@ -31,9 +31,15 @@ In this section, let's go section by section through the console log ``console.l
     INFO>     Supported in part by Grants W911NF-17-2-0227                   
     INFO>     and W911NF-12-R-0011 from the US Army Research Lab             
     INFO>                                                                    
+    INFO>     Please cite the HTPolyNet paper:                               
+    INFO>                                                                    
+    INFO>     Ming Huang and Cameron F. Abrams, HTPolyNet: A general         
+    INFO>     system generator for all-atom molecular simulations of         
+    INFO>     amorphous crosslinked polymers, SoftwareX, vol. 21,            
+    INFO>     pp. 101303, 2023 (doi:10.1016/j.softx.2022.101303) 
+    INFO>                                                                    
     INFO> ******************** HTPolyNet runtime begins *********************
-    INFO> User library is /home/cfa/htpolynet-tutorials/v1.0.6/2-polymethylstyrene/lib
-    INFO> New project in /home/cfa/htpolynet-tutorials/v1.0.6/2-polymethylstyrene/proj-0
+    INFO> New project in /home/cfa/htpolynet-tutorials/1.0.8/2-polymethylstyrene/proj-0
     INFO> *************************** Ambertools: ***************************
     INFO> ********************  antechamber (ver. 22.0) *********************
     INFO> ********************        tleap (ver. 22.0) *********************
@@ -66,7 +72,7 @@ Next comes the monomer and oligomer template parameterizations.  ``HTPolyNet`` f
     INFO> Initial composition is EMB 127
     INFO> 100% conversion is 127 bonds
 
-If we look in ``proj-0/molecules/parameterized`` we'll see the ``gro``, ``itp``, ``top`` and ``grx`` files for each molecule.  (The full parameterizations here were done in the low-cure run since that ``htpolynet`` invocation was first in ``run.sh``.) The first three are Gromacs-specific.  The ``grx`` file contains "extended attributes" of each atom that ``HTPolyNet`` uses internally and are **not** needed for Gromacs.
+If we look in ``proj-0/molecules/parameterized`` we'll see the ``gro``, ``itp``, ``top``, ``grx``, and ``tpx`` files for each molecule. The first three are Gromacs-specific.  The ``grx`` file contains "extended attributes" of each atom that ``HTPolyNet`` uses internally and are **not** needed for Gromacs.  The ``tpx`` file indentifies topological features of interest for ``HTPolyNet`` but not necessary for Gromacs; for now, this is limited to identification of ring systems via atom indices.
 
 Next comes initialization of the system topology and coordinates.  Here, using the ``constituents`` directive, ``HTPolyNet`` generates a full system topology and simulation box. The box is filled according to the ``initial_density`` subdirective of the ``densification`` directive.
 
@@ -81,7 +87,7 @@ Next comes initialization of the system topology and coordinates.  Here, using t
     INFO> Coordinates "init.gro" in proj-0/systems/init
     INFO> Extended attributes "init.grx" in proj-0/systems/init
 
-Next comes a report of the densification of the system.
+Next comes a report of the densification of the system. Note that because of the stochastic nature of initializing and equilibrating, your numbers for density and box side lengths may be a little different from those shown below.
 
 .. code-block:: console
 
@@ -364,3 +370,17 @@ and not finding any cappable bonds, proceeds to the postcure:
     INFO> ********************* HTPolyNet runtime ends **********************
 
 This just tells us the final density and where the final results are found. 
+Let's now take a look at the :ref:`final results <pms_results>`.
+
+
+A Note About ``FutureWarnings``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Depending on your versions of ``numpy`` and ``pandas``, your console may report messages like this:
+
+.. code-block:: console
+
+    /home/cfa/anaconda3/envs/mol-env/lib/python3.10/site-packages/numpy/core/fromnumeric.py:59: FutureWarning: 'DataFrame.swapaxes' is deprecated and will be removed in a future version. Please use 'DataFrame.transpose' instead.
+      return bound(*args, **kwds)
+
+This happens because I use ``numpy.split()`` to partition the set of potential bonds into chunks that are processed in parallel through the bond-check algorithm, and ``numpy.split()`` calls the ``.swapaxes()`` method on its argument.  Since the argument is a ``pandas`` DataFrame, and the ``pandas`` team is apparently unhappy about their ``swapaxes`` method being named ``swapaxes`` and prefers the name ``transpose`` (which I agree is a better name), they have the ``DataFrame.swapaxes`` method throw this little warning.  It is nothing to worry about, as far as I can see.  It will likely one day be resolved by the ``numpy`` team. 

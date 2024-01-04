@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath('../../'))
 # dnw:
 #from HTPolyNet.__init__.py import HTPOLYNET_VERSION
-THIS_HTPOLYNET_VERSION='1.0.7.2'
+THIS_HTPOLYNET_VERSION='1.0.8'
 # -- Project information -----------------------------------------------------
 
 project = 'HTPolyNet'

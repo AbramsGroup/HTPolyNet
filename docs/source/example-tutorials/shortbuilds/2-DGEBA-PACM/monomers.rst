@@ -8,7 +8,7 @@ DGEBA
 
 .. image:: pics/DGE-epoxy.png
 
-`Bisphenol A diglycidyl ether <https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether>`_, which we refer to as DGEBA for historical reasons, is an epoxidized form of BPA.  Here we'll consider how to build the input ``*.mol2`` file for DGEBA.  It is quite easy to generate a 3D structure from a SMILES representation.  The canonical SMILES string for DGEBA is::
+`Bisphenol A diglycidyl ether <https://en.wikipedia.org/wiki/Bisphenol_A_diglycidyl_ether>`_, which we refer to as ``DGEBA`` for historical reasons, is an epoxidized form of bisphenol A (BPA).  Here we'll consider how to build the input ``.mol2`` file for DGEBA.  It is quite easy to generate a 3D structure from a SMILES representation.  The canonical SMILES string for DGEBA is::
     
     CC(C)(C1=CC=C(C=C1)OCC2CO2)C3=CC=C(C=C3)OCC4CO4
 
@@ -16,7 +16,7 @@ However, as described in the user guide, HTPolyNet uses the concept of "sacrific
 
     CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C
     
-Using `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ (or any of a variety of molecular builders), we can generate a baseline 3D structure of DGEBA in ``*.mol2`` format at the command-line, referring to it as "DGE"  (three-letter monomer names are customary, though not required; they need only be unique identifiers):
+Using `OpenBabel <https://openbabel.org/wiki/Main_Page>`_ (or any of a variety of molecular builders), we can generate a baseline 3D structure of DGEBA in ``.mol2`` format at the command-line, referring to it as "DGE"  (three-letter monomer names are customary, though not required; they need only be unique identifiers):
 
 .. code-block:: console
 
