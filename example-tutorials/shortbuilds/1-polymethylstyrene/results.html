@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Results &#8212; HTPolyNet 1.0.7.2 documentation</title>
+    <title>Results &#8212; HTPolyNet 1.0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=039e1c02" />
-    <script src="../../../_static/documentation_options.js?v=3763423d"></script>
+    <script src="../../../_static/documentation_options.js?v=aec50437"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -124,7 +124,7 @@
 </div>
 <p>There are three main subdirectories in all project directories:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">molecules/</span></code>: This directory has one subdirectory, <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> that contains all files associated with generation and parameterization of all molecules and oligomer templates.  The important files here are those with <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">itr</span></code>, and <code class="docutils literal notranslate"><span class="pre">grx</span></code> extensions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">molecules/</span></code>: This directory has one subdirectory, <code class="docutils literal notranslate"><span class="pre">molecules/parameterized</span></code> that contains all files associated with generation and parameterization of all molecules and oligomer templates.  The important files here are those with <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">itr</span></code>, <code class="docutils literal notranslate"><span class="pre">tpx</span></code>, and <code class="docutils literal notranslate"><span class="pre">grx</span></code> extensions.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">systems/</span></code>:  This directory contains all directories where Gromacs runs are conducted.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">plots/</span></code>: This directory contains some plots generated on the fly.</p></li>
 </ul>
@@ -139,11 +139,11 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>systems/densification
 <span class="go">densified-min.edr  densified-npt.edr  densified-nvt.edr  init.grx</span>
 <span class="go">densified-min.gro  densified-npt.gro  densified-nvt.gro  init.top</span>
-<span class="go">densified-min.log  densified-npt.log  densified-nvt.log  mdout.mdp</span>
-<span class="go">densified-min.mdp  densified-npt.mdp  densified-nvt.mdp  min.mdp</span>
-<span class="go">densified-min.tpr  densified-npt.tpr  densified-nvt.tpr  npt.mdp</span>
-<span class="go">densified-min.trr  densified-npt.trr  densified-nvt.trr  nvt.mdp</span>
-<span class="go">densified-npt.cpt  densified-nvt.cpt  init.gro</span>
+<span class="go">densified-min.log  densified-npt.log  densified-nvt.log  init.tpx</span>
+<span class="go">densified-min.mdp  densified-npt.mdp  densified-nvt.mdp  mdout.mdp</span>
+<span class="go">densified-min.tpr  densified-npt.tpr  densified-nvt.tpr  min.mdp</span>
+<span class="go">densified-min.trr  densified-npt.trr  densified-nvt.trr  npt.mdp</span>
+<span class="go">densified-npt.cpt  densified-nvt.cpt  init.gro           nvt.mdp</span>
 </pre></div>
 </div>
 <p>The files with <code class="docutils literal notranslate"><span class="pre">init</span></code> basenames are copied from the <code class="docutils literal notranslate"><span class="pre">systems/init</span></code> directory.  You can note output from three separate Gromacs <code class="docutils literal notranslate"><span class="pre">mdrun</span></code> invocations: 1. a minimization; 2. an NVT equilibration, and 3. an NPT equilibration.</p>
@@ -158,38 +158,40 @@
 <span class="go">densified-npt.gro          preequilibration-npt.cpt</span>
 <span class="go">init.grx                   preequilibration-npt.edr</span>
 <span class="go">init.top                   preequilibration-npt.gro</span>
-<span class="go">mdout.mdp                  preequilibration-npt.log</span>
-<span class="go">npt.mdp                    preequilibration-npt.mdp</span>
-<span class="go">nvt.mdp                    preequilibration-npt.tpr</span>
-<span class="go">postequilibration-npt.cpt  preequilibration-npt.trr</span>
+<span class="go">init.tpx                   preequilibration-npt.log</span>
+<span class="go">mdout.mdp                  preequilibration-npt.mdp</span>
+<span class="go">npt.mdp                    preequilibration-npt.tpr</span>
+<span class="go">nvt.mdp                    preequilibration-npt.trr</span>
+<span class="go">postequilibration-npt.cpt</span>
 </pre></div>
 </div>
-<p>Here, <code class="docutils literal notranslate"><span class="pre">init.top</span></code> and <code class="docutils literal notranslate"><span class="pre">init.grx</span></code> are copied from <code class="docutils literal notranslate"><span class="pre">systems/densification</span></code>, as is coordinate file <code class="docutils literal notranslate"><span class="pre">densified-npt.gro</span></code>.  These are input to the pre-annealing equilibration (<code class="docutils literal notranslate"><span class="pre">preequilibration-npt.*</span></code>), which then serves as input to the annealing simulation (<code class="docutils literal notranslate"><span class="pre">annealed.*</span></code>), which in turn serves as input to the post-annealing equilibration (<code class="docutils literal notranslate"><span class="pre">postequilibration-npt.*</span></code>).</p>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">init.top</span></code>, <code class="docutils literal notranslate"><span class="pre">init.tpx</span></code>, and <code class="docutils literal notranslate"><span class="pre">init.grx</span></code> are copied from <code class="docutils literal notranslate"><span class="pre">systems/densification</span></code>, as is coordinate file <code class="docutils literal notranslate"><span class="pre">densified-npt.gro</span></code>.  These are input to the pre-annealing equilibration (<code class="docutils literal notranslate"><span class="pre">preequilibration-npt.*</span></code>), which then serves as input to the annealing simulation (<code class="docutils literal notranslate"><span class="pre">annealed.*</span></code>), which in turn serves as input to the post-annealing equilibration (<code class="docutils literal notranslate"><span class="pre">postequilibration-npt.*</span></code>).</p>
 <p>Next come the iteration directories; here, thirteen CURE iterations were run.  Below we show just a listing of the <code class="docutils literal notranslate"><span class="pre">iter-1</span></code> directory.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>systems/iter-1
-<span class="go">0-cure_bondsearch-bonds.csv   3-cure_relax-stage-1-nvt.tpr  3-cure_relax-stage-3-min.log  3-cure_relax-stage-4-npt.gro  3-cure_relax-stage-5-nvt.edr</span>
-<span class="go">2-cure_update-bonds.csv       3-cure_relax-stage-1-nvt.trr  3-cure_relax-stage-3-min.tpr  3-cure_relax-stage-4-npt.log  3-cure_relax-stage-5-nvt.gro</span>
-<span class="go">2-cure_update.gro             3-cure_relax-stage-1.top      3-cure_relax-stage-3-min.trr  3-cure_relax-stage-4-npt.tpr  3-cure_relax-stage-5-nvt.log</span>
-<span class="go">2-cure_update.grx             3-cure_relax-stage-2-min.edr  3-cure_relax-stage-3-npt.cpt  3-cure_relax-stage-4-npt.trr  3-cure_relax-stage-5-nvt.tpr</span>
-<span class="go">2-cure_update-idx-mapper.csv  3-cure_relax-stage-2-min.gro  3-cure_relax-stage-3-npt.edr  3-cure_relax-stage-4-nvt.cpt  3-cure_relax-stage-5-nvt.trr</span>
-<span class="go">2-cure_update.top             3-cure_relax-stage-2-min.log  3-cure_relax-stage-3-npt.gro  3-cure_relax-stage-4-nvt.edr  3-cure_relax-stage-5.top</span>
-<span class="go">3-cure_relax-complete.top     3-cure_relax-stage-2-min.tpr  3-cure_relax-stage-3-npt.log  3-cure_relax-stage-4-nvt.gro  4-cure_equilibrate-npt.cpt</span>
-<span class="go">3-cure_relax-relax-bonds.csv  3-cure_relax-stage-2-min.trr  3-cure_relax-stage-3-npt.tpr  3-cure_relax-stage-4-nvt.log  4-cure_equilibrate-npt.edr</span>
-<span class="go">3-cure_relax-stage-1-min.edr  3-cure_relax-stage-2-npt.cpt  3-cure_relax-stage-3-npt.trr  3-cure_relax-stage-4-nvt.tpr  4-cure_equilibrate-npt.gro</span>
-<span class="go">3-cure_relax-stage-1-min.gro  3-cure_relax-stage-2-npt.edr  3-cure_relax-stage-3-nvt.cpt  3-cure_relax-stage-4-nvt.trr  4-cure_equilibrate-npt.log</span>
-<span class="go">3-cure_relax-stage-1-min.log  3-cure_relax-stage-2-npt.gro  3-cure_relax-stage-3-nvt.edr  3-cure_relax-stage-4.top      4-cure_equilibrate-npt.mdp</span>
-<span class="go">3-cure_relax-stage-1-min.tpr  3-cure_relax-stage-2-npt.log  3-cure_relax-stage-3-nvt.gro  3-cure_relax-stage-5-min.edr  4-cure_equilibrate-npt.tpr</span>
-<span class="go">3-cure_relax-stage-1-min.trr  3-cure_relax-stage-2-npt.tpr  3-cure_relax-stage-3-nvt.log  3-cure_relax-stage-5-min.gro  4-cure_equilibrate-npt.trr</span>
-<span class="go">3-cure_relax-stage-1-npt.cpt  3-cure_relax-stage-2-npt.trr  3-cure_relax-stage-3-nvt.tpr  3-cure_relax-stage-5-min.log  init.grx</span>
-<span class="go">3-cure_relax-stage-1-npt.edr  3-cure_relax-stage-2-nvt.cpt  3-cure_relax-stage-3-nvt.trr  3-cure_relax-stage-5-min.tpr  init.top</span>
-<span class="go">3-cure_relax-stage-1-npt.gro  3-cure_relax-stage-2-nvt.edr  3-cure_relax-stage-3.top      3-cure_relax-stage-5-min.trr  linkcell-0.50.grx</span>
-<span class="go">3-cure_relax-stage-1-npt.log  3-cure_relax-stage-2-nvt.gro  3-cure_relax-stage-4-min.edr  3-cure_relax-stage-5-npt.cpt  mdout.mdp</span>
-<span class="go">3-cure_relax-stage-1-npt.tpr  3-cure_relax-stage-2-nvt.log  3-cure_relax-stage-4-min.gro  3-cure_relax-stage-5-npt.edr  npt.mdp</span>
-<span class="go">3-cure_relax-stage-1-npt.trr  3-cure_relax-stage-2-nvt.tpr  3-cure_relax-stage-4-min.log  3-cure_relax-stage-5-npt.gro  postequilibration-npt.gro</span>
-<span class="go">3-cure_relax-stage-1-nvt.cpt  3-cure_relax-stage-2-nvt.trr  3-cure_relax-stage-4-min.tpr  3-cure_relax-stage-5-npt.log  relax-min.mdp</span>
-<span class="go">3-cure_relax-stage-1-nvt.edr  3-cure_relax-stage-2.top      3-cure_relax-stage-4-min.trr  3-cure_relax-stage-5-npt.tpr  relax-npt.mdp</span>
-<span class="go">3-cure_relax-stage-1-nvt.gro  3-cure_relax-stage-3-min.edr  3-cure_relax-stage-4-npt.cpt  3-cure_relax-stage-5-npt.trr  relax-nvt.mdp</span>
-<span class="go">3-cure_relax-stage-1-nvt.log  3-cure_relax-stage-3-min.gro  3-cure_relax-stage-4-npt.edr  3-cure_relax-stage-5-nvt.cpt</span>
+<span class="go">0-cure_bondsearch-bonds.csv   3-cure_relax-stage-1-nvt.tpr  3-cure_relax-stage-3-min.tpr  3-cure_relax-stage-4-npt.tpr  3-cure_relax-stage-5-nvt.tpr</span>
+<span class="go">2-cure_update-bonds.csv       3-cure_relax-stage-1-nvt.trr  3-cure_relax-stage-3-min.trr  3-cure_relax-stage-4-npt.trr  3-cure_relax-stage-5-nvt.trr</span>
+<span class="go">2-cure_update.gro             3-cure_relax-stage-1.top      3-cure_relax-stage-3-npt.cpt  3-cure_relax-stage-4-nvt.cpt  3-cure_relax-stage-5.top</span>
+<span class="go">2-cure_update.grx             3-cure_relax-stage-2-min.edr  3-cure_relax-stage-3-npt.edr  3-cure_relax-stage-4-nvt.edr  4-cure_equilibrate-npt.cpt</span>
+<span class="go">2-cure_update-idx-mapper.csv  3-cure_relax-stage-2-min.gro  3-cure_relax-stage-3-npt.gro  3-cure_relax-stage-4-nvt.gro  4-cure_equilibrate-npt.edr</span>
+<span class="go">2-cure_update.top             3-cure_relax-stage-2-min.log  3-cure_relax-stage-3-npt.log  3-cure_relax-stage-4-nvt.log  4-cure_equilibrate-npt.gro</span>
+<span class="go">2-cure_update.tpx             3-cure_relax-stage-2-min.tpr  3-cure_relax-stage-3-npt.tpr  3-cure_relax-stage-4-nvt.tpr  4-cure_equilibrate-npt.log</span>
+<span class="go">3-cure_relax-complete.top     3-cure_relax-stage-2-min.trr  3-cure_relax-stage-3-npt.trr  3-cure_relax-stage-4-nvt.trr  4-cure_equilibrate-npt.mdp</span>
+<span class="go">3-cure_relax-relax-bonds.csv  3-cure_relax-stage-2-npt.cpt  3-cure_relax-stage-3-nvt.cpt  3-cure_relax-stage-4.top      4-cure_equilibrate-npt.tpr</span>
+<span class="go">3-cure_relax-stage-1-min.edr  3-cure_relax-stage-2-npt.edr  3-cure_relax-stage-3-nvt.edr  3-cure_relax-stage-5-min.edr  4-cure_equilibrate-npt.trr</span>
+<span class="go">3-cure_relax-stage-1-min.gro  3-cure_relax-stage-2-npt.gro  3-cure_relax-stage-3-nvt.gro  3-cure_relax-stage-5-min.gro  init.grx</span>
+<span class="go">3-cure_relax-stage-1-min.log  3-cure_relax-stage-2-npt.log  3-cure_relax-stage-3-nvt.log  3-cure_relax-stage-5-min.log  init.top</span>
+<span class="go">3-cure_relax-stage-1-min.tpr  3-cure_relax-stage-2-npt.tpr  3-cure_relax-stage-3-nvt.tpr  3-cure_relax-stage-5-min.tpr  init.tpx</span>
+<span class="go">3-cure_relax-stage-1-min.trr  3-cure_relax-stage-2-npt.trr  3-cure_relax-stage-3-nvt.trr  3-cure_relax-stage-5-min.trr  linkcell-0.50.grx</span>
+<span class="go">3-cure_relax-stage-1-npt.cpt  3-cure_relax-stage-2-nvt.cpt  3-cure_relax-stage-3.top      3-cure_relax-stage-5-npt.cpt  mdout.mdp</span>
+<span class="go">3-cure_relax-stage-1-npt.edr  3-cure_relax-stage-2-nvt.edr  3-cure_relax-stage-4-min.edr  3-cure_relax-stage-5-npt.edr  npt.mdp</span>
+<span class="go">3-cure_relax-stage-1-npt.gro  3-cure_relax-stage-2-nvt.gro  3-cure_relax-stage-4-min.gro  3-cure_relax-stage-5-npt.gro  postequilibration-npt.gro</span>
+<span class="go">3-cure_relax-stage-1-npt.log  3-cure_relax-stage-2-nvt.log  3-cure_relax-stage-4-min.log  3-cure_relax-stage-5-npt.log  relax-min.mdp</span>
+<span class="go">3-cure_relax-stage-1-npt.tpr  3-cure_relax-stage-2-nvt.tpr  3-cure_relax-stage-4-min.tpr  3-cure_relax-stage-5-npt.tpr  relax-npt.mdp</span>
+<span class="go">3-cure_relax-stage-1-npt.trr  3-cure_relax-stage-2-nvt.trr  3-cure_relax-stage-4-min.trr  3-cure_relax-stage-5-npt.trr  relax-nvt.mdp</span>
+<span class="go">3-cure_relax-stage-1-nvt.cpt  3-cure_relax-stage-2.top      3-cure_relax-stage-4-npt.cpt  3-cure_relax-stage-5-nvt.cpt</span>
+<span class="go">3-cure_relax-stage-1-nvt.edr  3-cure_relax-stage-3-min.edr  3-cure_relax-stage-4-npt.edr  3-cure_relax-stage-5-nvt.edr</span>
+<span class="go">3-cure_relax-stage-1-nvt.gro  3-cure_relax-stage-3-min.gro  3-cure_relax-stage-4-npt.gro  3-cure_relax-stage-5-nvt.gro</span>
+<span class="go">3-cure_relax-stage-1-nvt.log  3-cure_relax-stage-3-min.log  3-cure_relax-stage-4-npt.log  3-cure_relax-stage-5-nvt.log</span>
 </pre></div>
 </div>
 <p>Files in iteration directories are prepended with a number that corresponds to their order.  Here we have files that begin with 0, 2, and 3.  “0” refers to the initial search for possible bonds; these are reported in the <code class="docutils literal notranslate"><span class="pre">csv</span></code> file.  “1” (which is missing here) refers to pre-bond dragging; since no new bonds were longer than 0.8 nm, pre-bond dragging was not triggered.  “2” refers to the generation of the new bonded topology.  “3” refers to post-bond-formation relaxation to allow new bonds to relax to their equilibrium lengths.  These relaxations progress through five iterations of minimization-NVT-NPT simulations to relax the new bonds.</p>
@@ -197,7 +199,8 @@
 <p>Then comes the <code class="docutils literal notranslate"><span class="pre">capping</span></code> directory where the final topology updates are performed to cap any unreacted monomers (reverting them from their “active” forms to their “proper” forms).  In this run, this directory is empty, since no unreacted monomers exist at the end of the CURE.</p>
 <p>Then comes <code class="docutils literal notranslate"><span class="pre">postcure</span></code> equilibration and relaxation.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>systems/postcure
-<span class="go">2-cure_update.grx           npt.mdp</span>
+<span class="go">2-cure_update.grx           mdout.mdp</span>
+<span class="go">2-cure_update.tpx           npt.mdp</span>
 <span class="go">3-cure_relax-complete.top   nvt.mdp</span>
 <span class="go">4-cure_equilibrate-npt.gro  postequilibration-npt.cpt</span>
 <span class="go">annealed.cpt                postequilibration-npt.edr</span>
@@ -206,16 +209,15 @@
 <span class="go">annealed.log                postequilibration-npt.mdp</span>
 <span class="go">annealed.tpr                postequilibration-npt.tpr</span>
 <span class="go">annealed.trr                postequilibration-npt.trr</span>
-<span class="go">mdout.mdp</span>
 </pre></div>
 </div>
 <p>The files beginning with digits are copied either from the last <code class="docutils literal notranslate"><span class="pre">iter</span></code> directory or the <code class="docutils literal notranslate"><span class="pre">capping</span></code> directory (here, since no capping was necessary, they came from <code class="docutils literal notranslate"><span class="pre">iter-13</span></code>).  As stipulated in the configuration file, we first run annealing, and then a post-annealing NPT equilibration.</p>
 <p>Finally, HTPolyNet copies the results of the postcure, with new file names, into <code class="docutils literal notranslate"><span class="pre">final-results</span></code>.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>final-results
-<span class="go">final.gro  final.grx  final.top</span>
+<span class="go">final.gro  final.grx  final.top  final.tpx</span>
 </pre></div>
 </div>
-<p>Here we see the <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">gro</span></code>, and <code class="docutils literal notranslate"><span class="pre">grx</span></code> files of the final system; the <code class="docutils literal notranslate"><span class="pre">top</span></code> and <code class="docutils literal notranslate"><span class="pre">gro</span></code> files can be used right away for Gromacs MD simulations.</p>
+<p>Here we see the <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">gro</span></code>, <code class="docutils literal notranslate"><span class="pre">tpx</span></code>, and <code class="docutils literal notranslate"><span class="pre">grx</span></code> files of the final system; the <code class="docutils literal notranslate"><span class="pre">top</span></code> and <code class="docutils literal notranslate"><span class="pre">gro</span></code> files can be used right away for Gromacs MD simulations.</p>
 </section>
 <section id="proj-0-plots">
 <h3><code class="docutils literal notranslate"><span class="pre">proj-0/plots</span></code><a class="headerlink" href="#proj-0-plots" title="Link to this heading">¶</a></h3>
@@ -280,7 +282,7 @@
 </div>
 </figcaption>
 </figure>
-<p>Note that the final equilibrated density is about 950 kg/m<sup>3</sup>at 300 K and 1 bar, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.  This result is outside the range expected for <a class="reference external" href="https://polymerdatabase.com/polymers/poly4-methylstyrene.html">poly(4-methyl styrene)</a> of about 1.01 g/cc, but it’s not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated.</p>
+<p>Note that the final equilibrated density at 300 K and 1 bar is about 935 kg/m<sup>3</sup>. This is quite a bit higher than the density of liquid styrene at 10 bar and 300 K from the densification simulations (about 800 kg/m<sup>3</sup>).  However, this result is outside the range expected for <a class="reference external" href="https://polymerdatabase.com/polymers/poly4-methylstyrene.html">poly(4-methyl styrene)</a> of about 1.01 g/cc, but it’s not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated.</p>
 </section>
 </section>
 </section>

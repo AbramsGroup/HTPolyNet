@@ -98,7 +98,7 @@ The ``htpolynet run`` invocation in ``run.sh`` runs a high-cure build (95\% conv
 
 There are three main subdirectories in all project directories:
 
-* ``molecules/``: This directory has one subdirectory, ``molecules/parameterized`` that contains all files associated with generation and parameterization of all molecules and oligomer templates.  The important files here are those with ``gro``, ``top``, ``itr``, and ``grx`` extensions.
+* ``molecules/``: This directory has one subdirectory, ``molecules/parameterized`` that contains all files associated with generation and parameterization of all molecules and oligomer templates.  The important files here are those with ``gro``, ``top``, ``itr``, ``tpx``, and ``grx`` extensions.
 
 * ``systems/``:  This directory contains all directories where Gromacs runs are conducted.
 
@@ -121,11 +121,11 @@ Then in ``densification`` are the files associated with the MD simulations used 
     $ ls systems/densification
     densified-min.edr  densified-npt.edr  densified-nvt.edr  init.grx
     densified-min.gro  densified-npt.gro  densified-nvt.gro  init.top
-    densified-min.log  densified-npt.log  densified-nvt.log  mdout.mdp
-    densified-min.mdp  densified-npt.mdp  densified-nvt.mdp  min.mdp
-    densified-min.tpr  densified-npt.tpr  densified-nvt.tpr  npt.mdp
-    densified-min.trr  densified-npt.trr  densified-nvt.trr  nvt.mdp
-    densified-npt.cpt  densified-nvt.cpt  init.gro
+    densified-min.log  densified-npt.log  densified-nvt.log  init.tpx
+    densified-min.mdp  densified-npt.mdp  densified-nvt.mdp  mdout.mdp
+    densified-min.tpr  densified-npt.tpr  densified-nvt.tpr  min.mdp
+    densified-min.trr  densified-npt.trr  densified-nvt.trr  npt.mdp
+    densified-npt.cpt  densified-nvt.cpt  init.gro           nvt.mdp
 
 The files with ``init`` basenames are copied from the ``systems/init`` directory.  You can note output from three separate Gromacs ``mdrun`` invocations: 1. a minimization; 2. an NVT equilibration, and 3. an NPT equilibration.
 
@@ -143,41 +143,43 @@ Next comes the ``precure`` directory, which contains all the results of the prec
     densified-npt.gro          preequilibration-npt.cpt
     init.grx                   preequilibration-npt.edr
     init.top                   preequilibration-npt.gro
-    mdout.mdp                  preequilibration-npt.log
-    npt.mdp                    preequilibration-npt.mdp
-    nvt.mdp                    preequilibration-npt.tpr
-    postequilibration-npt.cpt  preequilibration-npt.trr
+    init.tpx                   preequilibration-npt.log
+    mdout.mdp                  preequilibration-npt.mdp
+    npt.mdp                    preequilibration-npt.tpr
+    nvt.mdp                    preequilibration-npt.trr
+    postequilibration-npt.cpt
 
-Here, ``init.top`` and ``init.grx`` are copied from ``systems/densification``, as is coordinate file ``densified-npt.gro``.  These are input to the pre-annealing equilibration (``preequilibration-npt.*``), which then serves as input to the annealing simulation (``annealed.*``), which in turn serves as input to the post-annealing equilibration (``postequilibration-npt.*``).
+Here, ``init.top``, ``init.tpx``, and ``init.grx`` are copied from ``systems/densification``, as is coordinate file ``densified-npt.gro``.  These are input to the pre-annealing equilibration (``preequilibration-npt.*``), which then serves as input to the annealing simulation (``annealed.*``), which in turn serves as input to the post-annealing equilibration (``postequilibration-npt.*``).
 
 Next come the iteration directories; here, thirteen CURE iterations were run.  Below we show just a listing of the ``iter-1`` directory.
 
 .. code-block:: console
 
     $ ls systems/iter-1
-    0-cure_bondsearch-bonds.csv   3-cure_relax-stage-1-nvt.tpr  3-cure_relax-stage-3-min.log  3-cure_relax-stage-4-npt.gro  3-cure_relax-stage-5-nvt.edr
-    2-cure_update-bonds.csv       3-cure_relax-stage-1-nvt.trr  3-cure_relax-stage-3-min.tpr  3-cure_relax-stage-4-npt.log  3-cure_relax-stage-5-nvt.gro
-    2-cure_update.gro             3-cure_relax-stage-1.top      3-cure_relax-stage-3-min.trr  3-cure_relax-stage-4-npt.tpr  3-cure_relax-stage-5-nvt.log
-    2-cure_update.grx             3-cure_relax-stage-2-min.edr  3-cure_relax-stage-3-npt.cpt  3-cure_relax-stage-4-npt.trr  3-cure_relax-stage-5-nvt.tpr
-    2-cure_update-idx-mapper.csv  3-cure_relax-stage-2-min.gro  3-cure_relax-stage-3-npt.edr  3-cure_relax-stage-4-nvt.cpt  3-cure_relax-stage-5-nvt.trr
-    2-cure_update.top             3-cure_relax-stage-2-min.log  3-cure_relax-stage-3-npt.gro  3-cure_relax-stage-4-nvt.edr  3-cure_relax-stage-5.top
-    3-cure_relax-complete.top     3-cure_relax-stage-2-min.tpr  3-cure_relax-stage-3-npt.log  3-cure_relax-stage-4-nvt.gro  4-cure_equilibrate-npt.cpt
-    3-cure_relax-relax-bonds.csv  3-cure_relax-stage-2-min.trr  3-cure_relax-stage-3-npt.tpr  3-cure_relax-stage-4-nvt.log  4-cure_equilibrate-npt.edr
-    3-cure_relax-stage-1-min.edr  3-cure_relax-stage-2-npt.cpt  3-cure_relax-stage-3-npt.trr  3-cure_relax-stage-4-nvt.tpr  4-cure_equilibrate-npt.gro
-    3-cure_relax-stage-1-min.gro  3-cure_relax-stage-2-npt.edr  3-cure_relax-stage-3-nvt.cpt  3-cure_relax-stage-4-nvt.trr  4-cure_equilibrate-npt.log
-    3-cure_relax-stage-1-min.log  3-cure_relax-stage-2-npt.gro  3-cure_relax-stage-3-nvt.edr  3-cure_relax-stage-4.top      4-cure_equilibrate-npt.mdp
-    3-cure_relax-stage-1-min.tpr  3-cure_relax-stage-2-npt.log  3-cure_relax-stage-3-nvt.gro  3-cure_relax-stage-5-min.edr  4-cure_equilibrate-npt.tpr
-    3-cure_relax-stage-1-min.trr  3-cure_relax-stage-2-npt.tpr  3-cure_relax-stage-3-nvt.log  3-cure_relax-stage-5-min.gro  4-cure_equilibrate-npt.trr
-    3-cure_relax-stage-1-npt.cpt  3-cure_relax-stage-2-npt.trr  3-cure_relax-stage-3-nvt.tpr  3-cure_relax-stage-5-min.log  init.grx
-    3-cure_relax-stage-1-npt.edr  3-cure_relax-stage-2-nvt.cpt  3-cure_relax-stage-3-nvt.trr  3-cure_relax-stage-5-min.tpr  init.top
-    3-cure_relax-stage-1-npt.gro  3-cure_relax-stage-2-nvt.edr  3-cure_relax-stage-3.top      3-cure_relax-stage-5-min.trr  linkcell-0.50.grx
-    3-cure_relax-stage-1-npt.log  3-cure_relax-stage-2-nvt.gro  3-cure_relax-stage-4-min.edr  3-cure_relax-stage-5-npt.cpt  mdout.mdp
-    3-cure_relax-stage-1-npt.tpr  3-cure_relax-stage-2-nvt.log  3-cure_relax-stage-4-min.gro  3-cure_relax-stage-5-npt.edr  npt.mdp
-    3-cure_relax-stage-1-npt.trr  3-cure_relax-stage-2-nvt.tpr  3-cure_relax-stage-4-min.log  3-cure_relax-stage-5-npt.gro  postequilibration-npt.gro
-    3-cure_relax-stage-1-nvt.cpt  3-cure_relax-stage-2-nvt.trr  3-cure_relax-stage-4-min.tpr  3-cure_relax-stage-5-npt.log  relax-min.mdp
-    3-cure_relax-stage-1-nvt.edr  3-cure_relax-stage-2.top      3-cure_relax-stage-4-min.trr  3-cure_relax-stage-5-npt.tpr  relax-npt.mdp
-    3-cure_relax-stage-1-nvt.gro  3-cure_relax-stage-3-min.edr  3-cure_relax-stage-4-npt.cpt  3-cure_relax-stage-5-npt.trr  relax-nvt.mdp
-    3-cure_relax-stage-1-nvt.log  3-cure_relax-stage-3-min.gro  3-cure_relax-stage-4-npt.edr  3-cure_relax-stage-5-nvt.cpt
+    0-cure_bondsearch-bonds.csv   3-cure_relax-stage-1-nvt.tpr  3-cure_relax-stage-3-min.tpr  3-cure_relax-stage-4-npt.tpr  3-cure_relax-stage-5-nvt.tpr
+    2-cure_update-bonds.csv       3-cure_relax-stage-1-nvt.trr  3-cure_relax-stage-3-min.trr  3-cure_relax-stage-4-npt.trr  3-cure_relax-stage-5-nvt.trr
+    2-cure_update.gro             3-cure_relax-stage-1.top      3-cure_relax-stage-3-npt.cpt  3-cure_relax-stage-4-nvt.cpt  3-cure_relax-stage-5.top
+    2-cure_update.grx             3-cure_relax-stage-2-min.edr  3-cure_relax-stage-3-npt.edr  3-cure_relax-stage-4-nvt.edr  4-cure_equilibrate-npt.cpt
+    2-cure_update-idx-mapper.csv  3-cure_relax-stage-2-min.gro  3-cure_relax-stage-3-npt.gro  3-cure_relax-stage-4-nvt.gro  4-cure_equilibrate-npt.edr
+    2-cure_update.top             3-cure_relax-stage-2-min.log  3-cure_relax-stage-3-npt.log  3-cure_relax-stage-4-nvt.log  4-cure_equilibrate-npt.gro
+    2-cure_update.tpx             3-cure_relax-stage-2-min.tpr  3-cure_relax-stage-3-npt.tpr  3-cure_relax-stage-4-nvt.tpr  4-cure_equilibrate-npt.log
+    3-cure_relax-complete.top     3-cure_relax-stage-2-min.trr  3-cure_relax-stage-3-npt.trr  3-cure_relax-stage-4-nvt.trr  4-cure_equilibrate-npt.mdp
+    3-cure_relax-relax-bonds.csv  3-cure_relax-stage-2-npt.cpt  3-cure_relax-stage-3-nvt.cpt  3-cure_relax-stage-4.top      4-cure_equilibrate-npt.tpr
+    3-cure_relax-stage-1-min.edr  3-cure_relax-stage-2-npt.edr  3-cure_relax-stage-3-nvt.edr  3-cure_relax-stage-5-min.edr  4-cure_equilibrate-npt.trr
+    3-cure_relax-stage-1-min.gro  3-cure_relax-stage-2-npt.gro  3-cure_relax-stage-3-nvt.gro  3-cure_relax-stage-5-min.gro  init.grx
+    3-cure_relax-stage-1-min.log  3-cure_relax-stage-2-npt.log  3-cure_relax-stage-3-nvt.log  3-cure_relax-stage-5-min.log  init.top
+    3-cure_relax-stage-1-min.tpr  3-cure_relax-stage-2-npt.tpr  3-cure_relax-stage-3-nvt.tpr  3-cure_relax-stage-5-min.tpr  init.tpx
+    3-cure_relax-stage-1-min.trr  3-cure_relax-stage-2-npt.trr  3-cure_relax-stage-3-nvt.trr  3-cure_relax-stage-5-min.trr  linkcell-0.50.grx
+    3-cure_relax-stage-1-npt.cpt  3-cure_relax-stage-2-nvt.cpt  3-cure_relax-stage-3.top      3-cure_relax-stage-5-npt.cpt  mdout.mdp
+    3-cure_relax-stage-1-npt.edr  3-cure_relax-stage-2-nvt.edr  3-cure_relax-stage-4-min.edr  3-cure_relax-stage-5-npt.edr  npt.mdp
+    3-cure_relax-stage-1-npt.gro  3-cure_relax-stage-2-nvt.gro  3-cure_relax-stage-4-min.gro  3-cure_relax-stage-5-npt.gro  postequilibration-npt.gro
+    3-cure_relax-stage-1-npt.log  3-cure_relax-stage-2-nvt.log  3-cure_relax-stage-4-min.log  3-cure_relax-stage-5-npt.log  relax-min.mdp
+    3-cure_relax-stage-1-npt.tpr  3-cure_relax-stage-2-nvt.tpr  3-cure_relax-stage-4-min.tpr  3-cure_relax-stage-5-npt.tpr  relax-npt.mdp
+    3-cure_relax-stage-1-npt.trr  3-cure_relax-stage-2-nvt.trr  3-cure_relax-stage-4-min.trr  3-cure_relax-stage-5-npt.trr  relax-nvt.mdp
+    3-cure_relax-stage-1-nvt.cpt  3-cure_relax-stage-2.top      3-cure_relax-stage-4-npt.cpt  3-cure_relax-stage-5-nvt.cpt
+    3-cure_relax-stage-1-nvt.edr  3-cure_relax-stage-3-min.edr  3-cure_relax-stage-4-npt.edr  3-cure_relax-stage-5-nvt.edr
+    3-cure_relax-stage-1-nvt.gro  3-cure_relax-stage-3-min.gro  3-cure_relax-stage-4-npt.gro  3-cure_relax-stage-5-nvt.gro
+    3-cure_relax-stage-1-nvt.log  3-cure_relax-stage-3-min.log  3-cure_relax-stage-4-npt.log  3-cure_relax-stage-5-nvt.log
 
 Files in iteration directories are prepended with a number that corresponds to their order.  Here we have files that begin with 0, 2, and 3.  "0" refers to the initial search for possible bonds; these are reported in the ``csv`` file.  "1" (which is missing here) refers to pre-bond dragging; since no new bonds were longer than 0.8 nm, pre-bond dragging was not triggered.  "2" refers to the generation of the new bonded topology.  "3" refers to post-bond-formation relaxation to allow new bonds to relax to their equilibrium lengths.  These relaxations progress through five iterations of minimization-NVT-NPT simulations to relax the new bonds.
 
@@ -190,7 +192,8 @@ Then comes ``postcure`` equilibration and relaxation.
 .. code-block:: console
 
     $ ls systems/postcure
-    2-cure_update.grx           npt.mdp
+    2-cure_update.grx           mdout.mdp
+    2-cure_update.tpx           npt.mdp
     3-cure_relax-complete.top   nvt.mdp
     4-cure_equilibrate-npt.gro  postequilibration-npt.cpt
     annealed.cpt                postequilibration-npt.edr
@@ -199,7 +202,6 @@ Then comes ``postcure`` equilibration and relaxation.
     annealed.log                postequilibration-npt.mdp
     annealed.tpr                postequilibration-npt.tpr
     annealed.trr                postequilibration-npt.trr
-    mdout.mdp
 
 The files beginning with digits are copied either from the last ``iter`` directory or the ``capping`` directory (here, since no capping was necessary, they came from ``iter-13``).  As stipulated in the configuration file, we first run annealing, and then a post-annealing NPT equilibration.  
 
@@ -208,9 +210,9 @@ Finally, HTPolyNet copies the results of the postcure, with new file names, into
 .. code-block:: console
 
     $ ls final-results
-    final.gro  final.grx  final.top
+    final.gro  final.grx  final.top  final.tpx
 
-Here we see the ``top``, ``gro``, and ``grx`` files of the final system; the ``top`` and ``gro`` files can be used right away for Gromacs MD simulations.
+Here we see the ``top``, ``gro``, ``tpx``, and ``grx`` files of the final system; the ``top`` and ``gro`` files can be used right away for Gromacs MD simulations.
 
 ``proj-0/plots``
 ~~~~~~~~~~~~~~~~
@@ -269,4 +271,4 @@ Finally, we can take a look at the density after the postcure-anneal in ``postcu
 
     Density during post-cure annealing of the 95% cured system.
 
-Note that the final equilibrated density is about 950 kg/m\ :sup:`3`\ at 300 K and 1 bar, quite a bit higher than the density of about 800 kb/m^3 liquid styrene at 10 bar and 300 K from the densification simulations.  This result is outside the range expected for `poly(4-methyl styrene) <https://polymerdatabase.com/polymers/poly4-methylstyrene.html>`_ of about 1.01 g/cc, but it's not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated. 
+Note that the final equilibrated density at 300 K and 1 bar is about 935 kg/m\ :sup:`3`\. This is quite a bit higher than the density of liquid styrene at 10 bar and 300 K from the densification simulations (about 800 kg/m\ :sup:`3`\).  However, this result is outside the range expected for `poly(4-methyl styrene) <https://polymerdatabase.com/polymers/poly4-methylstyrene.html>`_ of about 1.01 g/cc, but it's not too suprising given that this is a very small system with a low molecular weight, and it was not very extensively equilibrated. 

@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Introduction &#8212; HTPolyNet 1.0.7.2 documentation</title>
+    <title>Introduction &#8212; HTPolyNet 1.0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=4f649999" />
     <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=039e1c02" />
-    <script src="../../../_static/documentation_options.js?v=3763423d"></script>
+    <script src="../../../_static/documentation_options.js?v=aec50437"></script>
     <script src="../../../_static/doctools.js?v=888ff710"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
@@ -50,37 +50,48 @@
 <span class="go">└── run.sh</span>
 </pre></div>
 </div>
-<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run a build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> file for activated DGEBA and PACM.</p>
+<p>The bash script <code class="docutils literal notranslate"><span class="pre">run.sh</span></code> is a <em>suggested</em> way to run a build, and it contains the commands to generate the input <code class="docutils literal notranslate"><span class="pre">mol2</span></code> files for activated DGEBA and PACM.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash -l</span>
-<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;DGE-PAC&quot;</span>
+<span class="c1"># A simple driver to demonstrate usage of HTPolyNet</span>
+<span class="c1">#</span>
+<span class="c1"># Cameron F. Abrams cfa22@drexel.edu</span>
+
+<span class="c1"># activate the conda environment we configured to run htpolynet</span>
 conda<span class="w"> </span>activate<span class="w"> </span>mol-env
-<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules/inputs&#39;</span>
+
+<span class="nv">sysname</span><span class="o">=</span><span class="s2">&quot;DGEPAC&quot;</span>
+<span class="nv">mollib</span><span class="o">=</span><span class="s1">&#39;./lib/molecules&#39;</span>
+
+<span class="c1"># clean out any existing project directories and the library</span>
+rm<span class="w"> </span>-rf<span class="w"> </span>proj-*<span class="w"> </span>*log<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/parameterized/*
+
+<span class="c1"># Monomer structures:</span>
 <span class="c1"># DGEBA</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">            </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/DGE.png
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">            </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;DGE&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="nv">DGEBA</span><span class="o">=</span><span class="s2">&quot;CC(C)(C1=CC=C(C=C1)OCC(O)C)C3=CC=C(C=C3)OCC(O)C&quot;</span>
+obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$DGEBA</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/DGE.png
+obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$DGEBA</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;DGE&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;DGE    &quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;14 C &quot;</span>/<span class="s2">&quot;14 C1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;25 C &quot;</span>/<span class="s2">&quot;25 C2&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;12 C &quot;</span>/<span class="s2">&quot;12 C3&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;23 C &quot;</span>/<span class="s2">&quot;23 C4&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;13 O &quot;</span>/<span class="s2">&quot;13 O1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;24 O &quot;</span>/<span class="s2">&quot;24 O2&quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/DGE.mol2
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;24 O &quot;</span>/<span class="s2">&quot;24 O2&quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/DGE.mol2
 <span class="c1"># PACM</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">            </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/PAC.png
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>obabel<span class="w"> </span>-ismi<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;PAC&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="nv">PACM</span><span class="o">=</span><span class="s2">&quot;C1CC(CCC1CC2CCC(CC2)N)N&quot;</span>
+obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$PACM</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>--gen2d<span class="w"> </span>-opng<span class="w"> </span>-O<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/PAC.png
+obabel<span class="w"> </span>-:<span class="s2">&quot;</span><span class="nv">$PACM</span><span class="s2">&quot;</span><span class="w"> </span>-ismi<span class="w"> </span>-h<span class="w"> </span>--gen3d<span class="w"> </span>-omol2<span class="w"> </span>--title<span class="w"> </span><span class="s2">&quot;PAC&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;UNL1   &quot;</span>/<span class="s2">&quot;PAC    &quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;14 N &quot;</span>/<span class="s2">&quot;14 N1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;15 N &quot;</span>/<span class="s2">&quot;15 N1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
 <span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;3 C &quot;</span>/<span class="s2">&quot;3 C1&quot;</span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/PAC.mol2
-rm<span class="w"> </span>-rf<span class="w"> </span>proj-*<span class="w"> </span>*log<span class="w"> </span>lib/molecules/parameterized/*
-htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics-lo.log<span class="w"> </span><span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>console.log
+<span class="w">            </span>sed<span class="w"> </span>s/<span class="s2">&quot;11 C &quot;</span>/<span class="s2">&quot;11 C1&quot;</span>/<span class="w"> </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">mollib</span><span class="si">}</span>/inputs/PAC.mol2
+
+<span class="c1"># launch the build</span>
+htpolynet<span class="w"> </span>run<span class="w"> </span>-diag<span class="w"> </span>diagnostics.log<span class="w"> </span><span class="si">${</span><span class="nv">sysname</span><span class="si">}</span>.yaml<span class="w"> </span><span class="p">&amp;</span>&gt;<span class="w"> </span>console.log
 </pre></div>
 </div>
-<p>So, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the monomer input and configuration file, with a special emphasis on explaining the reactions’ syntax.</p>
+<p>So, if you have a <code class="docutils literal notranslate"><span class="pre">mol-env</span></code> conda enviroment, just issue <code class="docutils literal notranslate"><span class="pre">./run.sh</span></code> to start the builds.  The section “run” below walks through the build process, while the first three sections describe in detail how to create the <a class="reference internal" href="monomers.html#dgeba-pacm-monomers"><span class="std std-ref">monomer inputs</span></a> and <a class="reference internal" href="configuration.html#dgeba-configuration-file"><span class="std std-ref">configuration file</span></a>, with a special emphasis on explaining the <a class="reference internal" href="reactions.html#dgeba-reaction-dictionaries"><span class="std std-ref">syntax of the reactions</span></a>.</p>
 </section>
 
 

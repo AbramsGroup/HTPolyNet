@@ -21,7 +21,7 @@ As in the polymethylstyrene tutorial, we can make plots of the conversion vs. ru
 
     (Left) Conversion vs. wall-clock time; (right) Iteration number vs wall-clock time.
 
-This build was run on a standalone workstation with a very outdated GPU, so it is not surprising it took almost four hours.  The behavior is typical of a build like this:  almost 75% cure is achieved in the first hour of run time, and then nearly *three more hours* are needed to get that last 20%.
+This build was run on a standalone workstation with a very outdated GPU, so it is not surprising it took almost two hours.  The behavior is typical of a build like this:  about 80% cure is achieved in the first hour of run time, and then another hour or so is needed to get that last 20%.
 
 Let's generate traces of temperature, density, and potential energy vs time for the entire course of the system build:
 
