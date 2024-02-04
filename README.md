@@ -23,7 +23,8 @@ The programs ``antechamber``, ``parmchk2`` and ``tleap`` from AmberTools must be
 
 
 ## Release History
-
+* 1.0.9
+   * `minimum_bondcycle_length` parameter added to allow for cyclic polymerization above a certain threshold length
 * 1.0.8
     * uses `chordless_cycles` to find rings; ringidx no long unique atom attribute; improved ring-pierce detection
 * 1.0.7.2

@@ -285,13 +285,6 @@ class Molecule:
         TC=self.TopoCoord
         TC.Topology.detect_rings()
         logger.debug(f'Detected {len(TC.Topology.rings)} unique rings.')
-        # TC.idx_lists['cycle']=[]
-        # cycle_dict=TC.Topology.detect_cycles()
-        # logger.debug(f'Cycle dict: {cycle_dict}')
-        # for l,cs_of_l in cycle_dict.items():
-        #     TC.idx_lists['cycle'].extend(cs_of_l)
-        # logger.debug('Resetting cycle and cycle_idx')
-        # TC.reset_grx_attributes_from_idx_list('cycle')
         logger.debug('Done')
 
     def initialize_monomer_grx_attributes(self):
@@ -303,7 +296,7 @@ class Molecule:
         TC.set_gro_attribute('nreactions',0)
         TC.set_gro_attribute('molecule',1)
         TC.set_gro_attribute('molecule_name',self.name)
-        for att in ['sea_idx','chain','chain_idx']:
+        for att in ['sea_idx','bondchain','bondchain_idx']:
             TC.set_gro_attribute(att,-1)
         # set symmetry class indices
         sea_idx=1
@@ -333,8 +326,7 @@ class Molecule:
                         idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':bn,'resNum':rnum}))
                         TC.set_gro_attribute_by_attributes('z',z,{'atomName':bn,'resNum':rnum})
 
-        # set chain, chain_idx
-        TC.idx_lists['chain']=[]
+        TC.idx_lists['bondchain']=[]
         pairs=product(idx,idx)
         for i,j in pairs:
             if i<j:
@@ -359,8 +351,8 @@ class Molecule:
                         logger.warning(f'In molecule {self.name}, cannot identify bonded reactive head and tail atoms\nAssuming {j} is head and {i} is tail')
                         entry=[j,i]
                     # logger.debug(f'Adding {entry} to chainlist of {self.name}')
-                    TC.idx_lists['chain'].append(entry)
-        TC.reset_grx_attributes_from_idx_list('chain')
+                    TC.idx_lists['bondchain'].append(entry)
+        TC.reset_grx_attributes_from_idx_list('bondchain')
         self.initialize_molecule_rings()
 
     def previously_parameterized(self):
@@ -548,7 +540,7 @@ class Molecule:
         self.reaction_bonds=[]
         self.bond_templates=[]
         TC=self.TopoCoord
-        # logger.debug(f'prepare_new_bonds {self.name}: chainlists {TC.idx_lists["chain"]}')
+        # logger.debug(f'prepare_new_bonds {self.name}: chainlists {TC.idx_lists["bondchain"]}')
         for bondrec in R.bonds:
             atom_keys=bondrec['atoms']
             order=bondrec['order']

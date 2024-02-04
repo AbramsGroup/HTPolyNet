@@ -22,15 +22,15 @@ from HTPolyNet.matrix4 import Matrix4
 
 logger=logging.getLogger(__name__)
 
-GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','chain','chain_idx','molecule','molecule_name']
+GRX_ATTRIBUTES     =[  'z','nreactions','reactantName','sea_idx','bondchain','bondchain_idx','molecule','molecule_name']
 """Extended atom attributes
 
     - 'z' number of sacrificial H's on atom 
     - 'nreactions' number of H's sacrificed so far to form bonds
     - 'reactantName' name of most recent reactant to which atom belonged
     - 'sea_idx' index of the group of symmetry-related atoms this atom belongs to (atoms with the same sea_idx in the same resid are considered symmetry-equivalent)
-    - 'chain' index of the unique chain this atom belongs to
-    - 'chain_idx' index of this atom within this chain
+    - 'bondchain' index of the unique bondchain this atom belongs to; a bondchain is a continuous linear chain of C-C bonds
+    - 'bondchain_idx' index of this atom within this chain
     - 'molecule' index of the unique molecule this atom belongs to
     - 'molecule_name' name of that molecule
 """

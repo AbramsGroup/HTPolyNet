@@ -15,11 +15,11 @@ import sys
 sys.path.insert(0, os.path.abspath('../../'))
 # dnw:
 #from HTPolyNet.__init__.py import HTPOLYNET_VERSION
-THIS_HTPOLYNET_VERSION='1.0.8'
+THIS_HTPOLYNET_VERSION='1.0.9'
 # -- Project information -----------------------------------------------------
 
 project = 'HTPolyNet'
-copyright = '2023, Cameron Abrams, Ming Huang'
+copyright = '2024, Cameron Abrams, Ming Huang'
 author = 'Cameron Abrams, Ming Huang'
 
 # The full version, including alpha/beta/rc tags

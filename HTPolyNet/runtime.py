@@ -22,7 +22,7 @@ import HTPolyNet.checkpoint as cp
 from HTPolyNet.plot import trace
 from HTPolyNet.molecule import Molecule, MoleculeDict
 from HTPolyNet.reaction import is_reactant
-from HTPolyNet.expandreactions import chain_expand_reactions
+from HTPolyNet.expandreactions import bondchain_expand_reactions
 from HTPolyNet.reaction import reaction_stage
 from HTPolyNet.curecontroller import CureController, CureState
 from HTPolyNet.stringthings import my_logger
@@ -196,10 +196,10 @@ class Runtime:
             self.molecules[mname]=M
         ''' Generate any required template products that result from reactions in which the bond generated creates
             dihedrals that span more than just the two monomers that are connected '''
-        new_reactions,new_molecules=chain_expand_reactions(self.molecules)
+        new_reactions,new_molecules=bondchain_expand_reactions(self.molecules)
         if len(new_molecules)>0:
             ess='' if len(new_molecules)==1 else 's'
-            logger.info(f'{len(new_molecules)} molecule{ess} implied by chaining')
+            logger.info(f'{len(new_molecules)} molecule{ess} implied by C-C bondchains')
             ml=list(new_molecules.keys())
             # logger.info(ml)
             self.cfg.reactions.extend(new_reactions)
@@ -599,7 +599,7 @@ class Runtime:
         TC.atom_count()
         TC.set_grx_attributes()
         TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition)
-        for list_name in ['chain']:
+        for list_name in ['bondchain']:
             TC.reset_idx_list_from_grx_attributes(list_name)
         TC.make_resid_graph()
         TC.write_grx_attributes(f'{inpfnm}.grx')

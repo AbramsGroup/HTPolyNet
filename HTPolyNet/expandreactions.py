@@ -13,8 +13,8 @@ from HTPolyNet.reaction import reaction_stage, Reaction, ReactionList
 
 logger=logging.getLogger(__name__)
 
-def chain_expand_reactions(molecules:MoleculeDict):
-    """chain_expand_reactions handles generation of new reactions and molecular templates implied by any C-C chaining
+def bondchain_expand_reactions(molecules:MoleculeDict):
+    """bondchain_expand_reactions handles generation of new reactions and molecular templates implied by any C-C bondchains
 
     Note
     ----
@@ -31,43 +31,43 @@ def chain_expand_reactions(molecules:MoleculeDict):
     dimer_lefts:MoleculeList=[]
     dimer_rights:MoleculeList=[]
     for mname,M in molecules.items():
-        if len(M.sequence)==1 and len(M.TopoCoord.idx_lists['chain'])>0 and M.generator==None and M.parentname==M.name:
+        if len(M.sequence)==1 and len(M.TopoCoord.idx_lists['bondchain'])>0 and M.generator==None and M.parentname==M.name:
             monomers.append(M)
         elif len(M.sequence)==2:
             A=molecules[M.sequence[0]]
-            if len(A.TopoCoord.idx_lists['chain'])>0:
+            if len(A.TopoCoord.idx_lists['bondchain'])>0:
                 dimer_lefts.append(M)
             A=molecules[M.sequence[1]]
-            if len(A.TopoCoord.idx_lists['chain'])>0:
+            if len(A.TopoCoord.idx_lists['bondchain'])>0:
                 dimer_rights.append(M)
     for mon in monomers:
         cnms=[]
-        for c in mon.TopoCoord.idx_lists['chain']:
+        for c in mon.TopoCoord.idx_lists['bondchain']:
             cnms.append([mon.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
-        logger.debug(f'Monomer {mon.name} has {len(mon.TopoCoord.idx_lists["chain"])} 2-chains: {mon.TopoCoord.idx_lists["chain"]} {cnms}')
+        logger.debug(f'Monomer {mon.name} has {len(mon.TopoCoord.idx_lists["bondchain"])} 2-chains: {mon.TopoCoord.idx_lists["bondchain"]} {cnms}')
 
     for dim in dimer_lefts:
         logger.debug(f'Dimer_left {dim.name} has sequence {dim.sequence}')
-        logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
-        for cl in dim.TopoCoord.idx_lists['chain']:
+        logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["bondchain"]}')
+        for cl in dim.TopoCoord.idx_lists['bondchain']:
             nl=[dim.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
             logger.debug(f'  -> {nl}')
     for dim in dimer_rights:
         logger.debug(f'Dimer_right {dim.name} has sequence {dim.sequence}')
-        logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["chain"]}')
-        for cl in dim.TopoCoord.idx_lists['chain']:
+        logger.debug(f'-> chains: {dim.TopoCoord.idx_lists["bondchain"]}')
+        for cl in dim.TopoCoord.idx_lists['bondchain']:
             nl=[dim.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in cl]
             logger.debug(f'  -> {nl}')
 
     # monomer head attacks dimer tail
     MD=product(monomers,dimer_lefts)
     for m,d in MD:
-        for mb in m.TopoCoord.idx_lists['chain']:
+        for mb in m.TopoCoord.idx_lists['bondchain']:
             h_idx=mb[0]
             h_name=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})
-            # by definition, the dimer must have one chain of length 4
+            # by definition, the dimer must have one C-C bondchain of length 4
             D4=[]
-            for dc in d.TopoCoord.idx_lists['chain']:
+            for dc in d.TopoCoord.idx_lists['bondchain']:
                 if len(dc)==4:
                     D4.append(dc)
             for DC in D4:
@@ -93,12 +93,12 @@ def chain_expand_reactions(molecules:MoleculeDict):
     # dimer head attacks monomer tail
     MD=product(monomers,dimer_rights)
     for m,d in MD:
-        for mb in m.TopoCoord.idx_lists['chain']:
-            assert len(mb)==2,f'monomer {m.name} has a chain that is not length-2 -- this is IMPOSSIBLE'
+        for mb in m.TopoCoord.idx_lists['bondchain']:
+            assert len(mb)==2,f'monomer {m.name} has a bondchain that is not length-2 -- this is IMPOSSIBLE'
             t_idx=mb[-1]
             t_name=m.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':t_idx})
             D4=[]
-            for dc in d.TopoCoord.idx_lists['chain']:
+            for dc in d.TopoCoord.idx_lists['bondchain']:
                 if len(dc)==4:
                     D4.append(dc)
             for DC in D4:
@@ -126,7 +126,7 @@ def chain_expand_reactions(molecules:MoleculeDict):
     DD=product(dimer_rights,dimer_lefts)
     for dr,dl in DD:
         ''' head of dr attacks tail of dl '''
-        for cr,cl in product(dr.TopoCoord.idx_lists['chain'],dl.TopoCoord.idx_lists['chain']):
+        for cr,cl in product(dr.TopoCoord.idx_lists['bondchain'],dl.TopoCoord.idx_lists['bondchain']):
             if len(cr)==4 and len(cl)==4:
                 h_idx=cr[0]
                 h_name=dr.TopoCoord.get_gro_attribute_by_attributes('atomName',{'globalIdx':h_idx})

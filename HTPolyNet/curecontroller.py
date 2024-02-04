@@ -123,6 +123,7 @@ class CureController:
             'late_threshold': 0.85,
             'max_iterations': 100,
             'desired_conversion': 0.5,
+            'min_allowable_bondcycle_length':-1, # not set
             'ncpu' : os.cpu_count()
         },
         'drag': {
@@ -296,6 +297,7 @@ class CureController:
         if self.state.step!=cure_step.cure_bondsearch: return
         opfx=self._pfx()
         d=self.dicts['controls']
+        TC.min_bondcycle_length=d['min_allowable_bondcycle_length']
         self.state.current_radius=d['search_radius']+self.state.current_radidx*d['radial_increment']
         logger.info(f'Bond search using radius {self.state.current_radius} nm initiated')
         curr_conversion=self._curr_conversion()
@@ -732,7 +734,7 @@ class CureController:
             # for ln in bdf.to_string().split('\n'):
             #     logger.debug(ln)
 
-            bdf=TC.cycle_collective(bdf)
+            bdf=TC.bondcycle_collective(bdf)
             logger.debug(f'{bdf[bdf["remove-to-uncyclize"]==True].shape[0]} out of {bdf.shape[0]} bonds removed to break nascent cycles')
             bdf=bdf[bdf['remove-to-uncyclize']==False].copy().reset_index(drop=True)
             # logger.debug('Non-cyclizing bonds:')
