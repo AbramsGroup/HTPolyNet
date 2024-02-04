@@ -4,10 +4,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HTPolyNet.topocoord &#8212; HTPolyNet 1.0.8 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=4f649999" />
-    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=039e1c02" />
-    <script src="../../_static/documentation_options.js?v=aec50437"></script>
+    <title>HTPolyNet.topocoord &#8212; HTPolyNet 1.0.9 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=0abd802e"></script>
     <script src="../../_static/doctools.js?v=888ff710"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
@@ -15,8 +15,9 @@
    
   <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
   
+
   
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  
 
   </head><body>
   
@@ -64,9 +65,9 @@
 <span class="sd">    :type Enum: class</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">passed</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">failed_pierce_ring</span> <span class="o">=</span> <span class="mi">1</span>        <span class="c1"># does this bond-candidate pierce a ring?</span>
-    <span class="n">failed_short_circuit</span> <span class="o">=</span> <span class="mi">2</span>      <span class="c1"># does this bond-candidate result in short-circuit?</span>
-    <span class="n">failed_bond_cycle</span> <span class="o">=</span> <span class="mi">3</span>         <span class="c1"># does this bond-candidate create a bondcycle on its own?</span>
+    <span class="n">failed_pierced_ring</span> <span class="o">=</span> <span class="mi">1</span>       <span class="c1"># does this bond-candidate pierce a ring?</span>
+    <span class="n">failed_shortcircuit</span> <span class="o">=</span> <span class="mi">2</span>       <span class="c1"># does this bond-candidate result in short-circuit?</span>
+    <span class="n">failed_bondcycle</span> <span class="o">=</span> <span class="mi">3</span>          <span class="c1"># does this bond-candidate create a bondcycle on its own?</span>
     <span class="n">unset</span> <span class="o">=</span> <span class="mi">99</span></div>
 
 
@@ -100,7 +101,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;mol2&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">mol2filename</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">grxattr</span><span class="o">=</span><span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="o">=</span><span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
         <span class="k">if</span> <span class="n">grofilename</span><span class="o">!=</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">read_gro</span><span class="p">(</span><span class="n">grofilename</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="n">wrap_coords</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -143,7 +144,7 @@
         <span class="n">idx_to_ignore</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">find_sacrificial_H</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Topology</span><span class="p">,</span><span class="n">explicit_sacH</span><span class="o">=</span><span class="n">explicit_sacH</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;idx_to_ignore </span><span class="si">{</span><span class="n">idx_to_ignore</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">add_bonds</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">chainlist_update</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span><span class="n">msg</span><span class="o">=</span><span class="s1">&#39;TopoCoord.make_bonds&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bondchainlist_update</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span><span class="n">msg</span><span class="o">=</span><span class="s1">&#39;TopoCoord.make_bonds&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">null_check</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s1">&#39;add_bonds&#39;</span><span class="p">)</span>
         <span class="n">rename</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">explicit_sacH</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span>
         <span class="n">idx_to_delete</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">find_sacrificial_H</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">Topology</span><span class="p">,</span><span class="n">explicit_sacH</span><span class="o">=</span><span class="n">explicit_sacH</span><span class="p">,</span><span class="n">rename</span><span class="o">=</span><span class="n">rename</span><span class="p">)</span>
@@ -180,7 +181,7 @@
         <span class="n">idx_mapper</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Topology</span><span class="o">.</span><span class="n">delete_atoms</span><span class="p">(</span><span class="n">atomlist</span><span class="p">)</span>
         <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="n">idx_mapper</span><span class="p">)</span><span class="o">==</span><span class="nb">dict</span>
         <span class="c1"># logger.debug(f&#39;idx_mapper: {idx_mapper}&#39;)</span>
-        <span class="k">for</span> <span class="n">list_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">list_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]:</span>
             <span class="c1"># logger.debug(f&#39;remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}&#39;)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">reset_idx_list_from_grx_attributes</span><span class="p">(</span><span class="n">list_name</span><span class="p">)</span>
             <span class="c1"># self.remap_idx_list(list_name,idx_mapper)</span>
@@ -883,8 +884,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;grx&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">grxfilename</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Reading </span><span class="si">{</span><span class="n">grxfilename</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="n">attributes_read</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">read_atomset_attributes</span><span class="p">(</span><span class="n">grxfilename</span><span class="p">,</span><span class="n">attributes</span><span class="o">=</span><span class="n">attribute_list</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s1">&#39;chain&#39;</span> <span class="ow">in</span> <span class="n">attributes_read</span> <span class="ow">and</span> <span class="s1">&#39;chain_idx&#39;</span> <span class="ow">in</span> <span class="n">attributes_read</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">reset_idx_list_from_grx_attributes</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;bondchain&#39;</span> <span class="ow">in</span> <span class="n">attributes_read</span> <span class="ow">and</span> <span class="s1">&#39;bondchain_idx&#39;</span> <span class="ow">in</span> <span class="n">attributes_read</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_idx_list_from_grx_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">attributes_read</span><span class="o">!=</span><span class="bp">self</span><span class="o">.</span><span class="n">grxattr</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">grxattr</span><span class="o">=</span><span class="n">attributes_read</span></div>
 
@@ -1461,11 +1462,11 @@
         <span class="c1"># i=int(i)</span>
         <span class="c1"># j=int(j)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">makes_shortcircuit</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_short_circuit</span><span class="p">,</span><span class="mi">0</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">makes_cycle</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_bond_cycle</span><span class="p">,</span><span class="mi">0</span>
+            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_shortcircuit</span><span class="p">,</span><span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">makes_bondcycle</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_bondcycle</span><span class="p">,</span><span class="mi">0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pierces_ring</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">pbc</span><span class="o">=</span><span class="n">pbc</span><span class="p">,</span><span class="n">show_piercings</span><span class="o">=</span><span class="n">show_piercings</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_pierce_ring</span><span class="p">,</span><span class="mi">0</span>
+            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_pierced_ring</span><span class="p">,</span><span class="mi">0</span>
         <span class="c1"># logger.debug(f&#39;passed: {i:&gt;7d} {j:&gt;7d} {rij:&gt;6.3f} nm&#39;)</span>
         <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">passed</span><span class="p">,</span><span class="n">rij</span></div>
 
@@ -1578,9 +1579,9 @@
 <div class="viewcode-block" id="TopoCoord.reset_grx_attributes_from_idx_list">
 <a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.reset_grx_attributes_from_idx_list">[docs]</a>
     <span class="k">def</span> <span class="nf">reset_grx_attributes_from_idx_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">list_name</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;reset_grx_attributes_from_idx_list uses information in the &quot;index lists&quot; to repopulate appropriate GRX attributes.  There are two index lists:  one for cycles and the other for chains.  Each index list is a list of lists; each element corresponds to a unique structure (cycle or chain) and is a list of global atom indices for atoms that make up that structural instance.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;reset_grx_attributes_from_idx_list uses information in the &quot;index lists&quot; to repopulate appropriate GRX attributes.  Currently, there is only one index list, for bondchains.  Each index list is a list of lists; each element corresponds to a unique structure (bondchain) and is a list of global atom indices for atoms that make up that structural instance.</span>
 
-<span class="sd">        :param list_name: either &#39;cycle&#39; or &#39;chain&#39;</span>
+<span class="sd">        :param list_name: only allowed value currently is &#39;bondchain&#39;</span>
 <span class="sd">        :type list_name: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_gro_attribute</span><span class="p">(</span><span class="n">list_name</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -1596,7 +1597,7 @@
     <span class="k">def</span> <span class="nf">reset_idx_list_from_grx_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">list_name</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;reset_idx_list_from_grx_attributes is the inverse of reset_grx_attributes_from_idx_list: it uses the GRX attributes to rebuild index lists.</span>
 
-<span class="sd">        :param list_name: either &#39;cycle&#39; or &#39;chain&#39;</span>
+<span class="sd">        :param list_name: either only allowed value currently is &#39;bondchain&#39;</span>
 <span class="sd">        :type list_name: str</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">adf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span>
@@ -1624,17 +1625,17 @@
 
         <span class="c1"># logger.debug(f&#39;-&gt; idx_lists[{list_name}]: {self.idx_lists[list_name]}&#39;)</span>
 
-<div class="viewcode-block" id="TopoCoord.chainlist_update">
-<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.chainlist_update">[docs]</a>
-    <span class="k">def</span> <span class="nf">chainlist_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_bond_recs</span><span class="p">,</span><span class="n">msg</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;chainlist_update updates the chain index lists due to generation of new bonds</span>
+<div class="viewcode-block" id="TopoCoord.bondchainlist_update">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.bondchainlist_update">[docs]</a>
+    <span class="k">def</span> <span class="nf">bondchainlist_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_bond_recs</span><span class="p">,</span><span class="n">msg</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;bondchainlist_update updates the bondchain index lists due to generation of new bonds</span>
 
 <span class="sd">        :param new_bond_recs: list of bond records, each a tuple of two ints corresponding to atom indices</span>
 <span class="sd">        :type new_bond_recs: list</span>
 <span class="sd">        :param msg: a nice message (unused), defaults to &#39;&#39;</span>
 <span class="sd">        :type msg: str, optional</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">chainlists</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]</span>
+        <span class="n">chainlists</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="k">return</span>
         <span class="c1"># logger.debug(f&#39;pre {msg} chainlists&#39;)</span>
         <span class="c1"># for i,c in enumerate(chainlists):</span>
@@ -1644,33 +1645,33 @@
             <span class="n">ar</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;resNum&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
             <span class="n">br</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;resNum&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">bidx</span><span class="p">})</span>
             <span class="k">if</span> <span class="n">ar</span><span class="o">==</span><span class="n">br</span><span class="p">:</span> <span class="k">continue</span> <span class="c1"># ignore intramolecular bonds</span>
-            <span class="c1"># logger.debug(f&#39;chainlist_update pair {aidx} {bidx}&#39;)</span>
-            <span class="n">ac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
-            <span class="n">bc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">bidx</span><span class="p">})</span>
+            <span class="c1"># logger.debug(f&#39;bondchainlist_update pair {aidx} {bidx}&#39;)</span>
+            <span class="n">ac</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
+            <span class="n">bc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">bidx</span><span class="p">})</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ac </span><span class="si">{</span><span class="n">ac</span><span class="si">}</span><span class="s1"> bc </span><span class="si">{</span><span class="n">bc</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ac</span><span class="o">==-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">bc</span><span class="o">==-</span><span class="mi">1</span><span class="p">:</span>
-                <span class="c1"># neither of these newly bonded atoms is already in a chain, so</span>
+                <span class="c1"># neither of these newly bonded atoms is already in a bondchain, so</span>
                 <span class="c1"># there is no possibility that this new bond can join two chains.</span>
                 <span class="k">continue</span>
-            <span class="c1"># logger.debug(f&#39;chain of bidx {bidx}: {chainlists[bc]}&#39;)</span>
-            <span class="c1"># logger.debug(f&#39;chain of aidx {aidx}: {chainlists[ac]}&#39;)</span>
-            <span class="n">aci</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
-            <span class="n">bci</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">bidx</span><span class="p">})</span>
+            <span class="c1"># logger.debug(f&#39;bondchain of bidx {bidx}: {chainlists[bc]}&#39;)</span>
+            <span class="c1"># logger.debug(f&#39;bondchain of aidx {aidx}: {chainlists[ac]}&#39;)</span>
+            <span class="n">aci</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain_idx&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
+            <span class="n">bci</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain_idx&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">bidx</span><span class="p">})</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39; -&gt; </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1">: ac </span><span class="si">{</span><span class="n">ac</span><span class="si">}</span><span class="s1"> #</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">])</span><span class="si">}</span><span class="s1"> aci </span><span class="si">{</span><span class="n">aci</span><span class="si">}</span><span class="s1"> bc </span><span class="si">{</span><span class="n">bc</span><span class="si">}</span><span class="s1"> #</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">])</span><span class="si">}</span><span class="s1"> bci </span><span class="si">{</span><span class="n">bci</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="c1"># one must be a head and the other a tail</span>
             <span class="k">if</span> <span class="n">aci</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="c1"># a is a head</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="o">!=</span><span class="n">bci</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Atom </span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1"> has index </span><span class="si">{</span><span class="n">bci</span><span class="si">}</span><span class="s1"> in chain </span><span class="si">{</span><span class="n">bc</span><span class="si">}</span><span class="s1"> but that chain has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">])</span><span class="si">}</span><span class="s1"> elements, so it cannot be the tail of the chain. The tail appears to be atom </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">. So something is wrong, and I am not merging these chains.&#39;</span><span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;chain of </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;chain of </span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Atom </span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1"> has index </span><span class="si">{</span><span class="n">bci</span><span class="si">}</span><span class="s1"> in bondchain </span><span class="si">{</span><span class="n">bc</span><span class="si">}</span><span class="s1"> but that bondchain has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">])</span><span class="si">}</span><span class="s1"> elements, so it cannot be the tail of the bondchain. The tail appears to be atom </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">. So something is wrong, and I am not merging these chains.&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain of </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain of </span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                     <span class="k">continue</span>
                 <span class="n">c1</span><span class="o">=</span><span class="n">ac</span>
                 <span class="n">c2</span><span class="o">=</span><span class="n">bc</span>
             <span class="k">elif</span> <span class="n">bci</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="c1"># b is a head</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="o">!=</span><span class="n">aci</span><span class="p">:</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Atom </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1"> has index </span><span class="si">{</span><span class="n">aci</span><span class="si">}</span><span class="s1"> in chain </span><span class="si">{</span><span class="n">ac</span><span class="si">}</span><span class="s1"> but that chain has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">])</span><span class="si">}</span><span class="s1"> elements, so it cannot be the tail of the chain. The tail appears to be atom </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">. So something is wrong, and I am not merging these chains.&#39;</span><span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;chain of </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;chain of </span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Atom </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1"> has index </span><span class="si">{</span><span class="n">aci</span><span class="si">}</span><span class="s1"> in bondchain </span><span class="si">{</span><span class="n">ac</span><span class="si">}</span><span class="s1"> but that bondchain has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">])</span><span class="si">}</span><span class="s1"> elements, so it cannot be the tail of the bondchain. The tail appears to be atom </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">. So something is wrong, and I am not merging these chains.&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain of </span><span class="si">{</span><span class="n">aidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">ac</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain of </span><span class="si">{</span><span class="n">bidx</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">chainlists</span><span class="p">[</span><span class="n">bc</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                     <span class="k">continue</span>
                 <span class="n">c1</span><span class="o">=</span><span class="n">bc</span>
                 <span class="n">c2</span><span class="o">=</span><span class="n">ac</span>
@@ -1681,52 +1682,53 @@
                 <span class="k">continue</span>
             <span class="n">chainlists</span><span class="p">[</span><span class="n">c2</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">c1</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">aidx</span> <span class="ow">in</span> <span class="n">chainlists</span><span class="p">[</span><span class="n">c1</span><span class="p">]:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">set_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">,</span><span class="n">c2</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">set_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,</span><span class="n">chainlists</span><span class="p">[</span><span class="n">c2</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">aidx</span><span class="p">),{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
-            <span class="c1"># logger.debug(f&#39;removing chain {c1}&#39;)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain&#39;</span><span class="p">,</span><span class="n">c2</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain_idx&#39;</span><span class="p">,</span><span class="n">chainlists</span><span class="p">[</span><span class="n">c2</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">aidx</span><span class="p">),{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">aidx</span><span class="p">})</span>
+            <span class="c1"># logger.debug(f&#39;removing bondchain {c1}&#39;)</span>
             <span class="n">chainlists</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">chainlists</span><span class="p">[</span><span class="n">c1</span><span class="p">])</span>
             <span class="c1"># since we remove c1, all indices greater than c1 must decrement</span>
-            <span class="n">dec_us</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">])</span>
+            <span class="n">dec_us</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">])</span>
             <span class="n">bad_chain_idx</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dec_us</span><span class="o">&gt;</span><span class="n">c1</span><span class="p">)</span>
             <span class="c1"># logger.debug(f&#39;bad_chain_idx: {bad_chain_idx}&#39;)</span>
             <span class="c1"># logger.debug(f&#39;{dec_us[bad_chain_idx]}&#39;)</span>
             <span class="n">dec_us</span><span class="p">[</span><span class="n">bad_chain_idx</span><span class="p">]</span><span class="o">-=</span><span class="mi">1</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">dec_us</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]</span><span class="o">=</span><span class="n">dec_us</span>
         <span class="n">cnms</span><span class="o">=</span><span class="p">[]</span>
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]:</span>
             <span class="n">cnms</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;atomName&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">x</span><span class="p">})</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">c</span><span class="p">])</span></div>
 
-        <span class="c1"># logger.debug(f&#39;post {msg} chains {self.idx_lists[&quot;chain&quot;]} {cnms}&#39;)</span>
+        <span class="c1"># logger.debug(f&#39;post {msg} chains {self.idx_lists[&quot;bondchain&quot;]} {cnms}&#39;)</span>
 
-<div class="viewcode-block" id="TopoCoord.makes_cycle">
-<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.makes_cycle">[docs]</a>
-    <span class="k">def</span> <span class="nf">makes_cycle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">aidx</span><span class="p">,</span><span class="n">bidx</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;makes_cycle checks the current chain index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C&#39; cycle</span>
+<div class="viewcode-block" id="TopoCoord.makes_bondcycle">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.makes_bondcycle">[docs]</a>
+    <span class="k">def</span> <span class="nf">makes_bondcycle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">aidx</span><span class="p">,</span><span class="n">bidx</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;makes_bondcycle checks the current &#39;bondchain&#39; index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C&#39; bondcycle, which they do if they have the same &#39;bondchain&#39; attribute, shorter than the minimum allowable bondcycle length, if this is not -1</span>
 
 <span class="sd">        :param aidx: global index of an atom</span>
 <span class="sd">        :type aidx: int</span>
 <span class="sd">        :param bidx: global index of another atom</span>
 <span class="sd">        :type bidx: int</span>
-<span class="sd">        :return: True if a bond betwen aidx and bidx would form a C-C&#39; cycle</span>
+<span class="sd">        :return: True if a bond betwen aidx and bidx would form a C-C&#39; bondcycle</span>
 <span class="sd">        :rtype: bool</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># is there a chain with aidx as head and bidx as tail, or vice versa?</span>
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">]:</span>
+        <span class="c1"># is there a bondchain with aidx as head and bidx as tail, or vice versa?</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]:</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">aidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">bidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span> <span class="p">(</span><span class="n">aidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">bidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-                <span class="k">return</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="o">==-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="TopoCoord.cycle_collective">
-<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.cycle_collective">[docs]</a>
-    <span class="k">def</span> <span class="nf">cycle_collective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;cycle_collective Check to see if, when considered as a collective, this</span>
-<span class="sd">        set of bondrecs leads to one or more cyclic chain; if so, longest bonds that </span>
-<span class="sd">        break cycles are removed from bondrecs list and resulting list is returned</span>
+<div class="viewcode-block" id="TopoCoord.bondcycle_collective">
+<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.bondcycle_collective">[docs]</a>
+    <span class="k">def</span> <span class="nf">bondcycle_collective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;bondcycle_collective Check to see if, when considered as a collective, this</span>
+<span class="sd">        set of bondrecs leads to one or more cyclic bondchain; if so, longest bonds that </span>
+<span class="sd">        break bondcycles are removed from bondrecs list and resulting list is returned</span>
 
 <span class="sd">        :param bdf: bonds data frame</span>
 <span class="sd">        :type bdf: pandas.DataFrame</span>
-<span class="sd">        :return: list of bond records that results in no new cycles</span>
+<span class="sd">        :return: list of bond records that results in no new bondcycles</span>
 <span class="sd">        :rtype: list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">def</span> <span class="nf">addlink</span><span class="p">(</span><span class="n">chainlist</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
@@ -1739,33 +1741,33 @@
                     <span class="n">j_cidx</span><span class="o">=</span><span class="p">(</span><span class="n">cidx</span><span class="p">,</span><span class="n">c</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">j</span><span class="p">))</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;i </span><span class="si">{</span><span class="n">i_cidx</span><span class="si">}</span><span class="s1"> j </span><span class="si">{</span><span class="n">j_cidx</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">i_cidx</span><span class="o">==</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">j_cidx</span><span class="o">==</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))):</span>
-                <span class="c1"># logger.debug(f&#39;cycle_collective: {i} is in chain {i_cidx[0]} at {i_cidx[1]}&#39;)</span>
-                <span class="c1"># logger.debug(f&#39;cycle_collective: {j} is in chain {j_cidx[0]} at {j_cidx[1]}&#39;)</span>
+                <span class="c1"># logger.debug(f&#39;bondcycle_collective: {i} is in bondchain {i_cidx[0]} at {i_cidx[1]}&#39;)</span>
+                <span class="c1"># logger.debug(f&#39;bondcycle_collective: {j} is in bondchain {j_cidx[0]} at {j_cidx[1]}&#39;)</span>
                 <span class="k">if</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">j_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                     <span class="c1"># cyclized!</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;chain </span><span class="si">{</span><span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> is cyclized!&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain </span><span class="si">{</span><span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> is cyclized!&#39;</span><span class="p">)</span>
                     <span class="k">return</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="kc">True</span>
                 <span class="n">old_head</span><span class="p">,</span><span class="n">old_tail</span><span class="o">=</span><span class="p">(</span><span class="n">i_cidx</span><span class="p">,</span><span class="n">j_cidx</span><span class="p">)</span> <span class="k">if</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="n">j_cidx</span><span class="p">,</span><span class="n">i_cidx</span><span class="p">)</span>
                 <span class="n">chainlist</span><span class="p">[</span><span class="n">old_tail</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chainlist</span><span class="p">[</span><span class="n">old_head</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-                <span class="c1"># logger.debug(f&#39;new chain {old_tail[0]} {chainlist[old_tail[0]]}&#39;)</span>
+                <span class="c1"># logger.debug(f&#39;new bondchain {old_tail[0]} {chainlist[old_tail[0]]}&#39;)</span>
                 <span class="n">chainlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">chainlist</span><span class="p">[</span><span class="n">old_head</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
                 <span class="k">return</span> <span class="n">old_tail</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="kc">False</span>
-            <span class="k">else</span><span class="p">:</span> <span class="c1"># this bond involves one atom in a chain and another that is not; no way this can be a cyclization, but we have to return somthing</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># this bond involves one atom in a bondchain and another that is not; no way this can be a cyclization, but we have to return somthing</span>
                 <span class="k">return</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">!=-</span><span class="mi">1</span> <span class="k">else</span> <span class="n">j_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="kc">False</span>
 
         <span class="c1"># kb=bondrecs.copy()</span>
         <span class="c1"># logger.debug(f&#39;checking set of {bdf.shape[0]} bonds for nascent cycles&#39;)</span>
         <span class="n">new_bdf</span><span class="o">=</span><span class="n">bdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">new_bdf</span><span class="p">[</span><span class="s1">&#39;remove-to-uncyclize&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_bdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-        <span class="n">chains</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">])</span>
-        <span class="k">assert</span> <span class="nb">id</span><span class="p">(</span><span class="n">chains</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">])</span>
+        <span class="n">chains</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="nb">id</span><span class="p">(</span><span class="n">chains</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">chains</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">new_bdf</span>
         <span class="n">cyclized_chains</span><span class="o">=</span><span class="p">{}</span>
         <span class="n">chains_of_bonds</span><span class="o">=</span><span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="n">bdf</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
             <span class="n">chain_idx</span><span class="p">,</span><span class="n">cyclized</span><span class="o">=</span><span class="n">addlink</span><span class="p">(</span><span class="n">chains</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">ai</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">aj</span><span class="p">)</span>
-            <span class="c1"># logger.debug(f&#39;bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to chain {chain_idx}&#39;)</span>
+            <span class="c1"># logger.debug(f&#39;bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to bondchain {chain_idx}&#39;)</span>
             <span class="n">chains_of_bonds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chain_idx</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cyclized</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">chain_idx</span> <span class="ow">in</span> <span class="n">cyclized_chains</span><span class="p">:</span>
                 <span class="n">cyclized_chains</span><span class="p">[</span><span class="n">chain_idx</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
@@ -1777,8 +1779,9 @@
             <span class="k">if</span> <span class="n">cidx</span> <span class="ow">in</span> <span class="n">cyclized_chains</span><span class="p">:</span>
                 <span class="n">cyclized_chains</span><span class="p">[</span><span class="n">cidx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">cyclized_chains</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">lb</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># last bondrec in list</span>
-            <span class="n">new_bdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">lb</span><span class="p">,</span><span class="s1">&#39;remove-to-uncyclize&#39;</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="o">==-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="p">:</span>
+                <span class="n">lb</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># last bondrec in list</span>
+                <span class="n">new_bdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">lb</span><span class="p">,</span><span class="s1">&#39;remove-to-uncyclize&#39;</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
         <span class="k">return</span> <span class="n">new_bdf</span></div>
 
 
@@ -1817,8 +1820,8 @@
 <span class="sd">        :rtype: tuple</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">resids</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;resNum&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">x</span><span class="p">})</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">atom_idx</span><span class="p">]</span>
-        <span class="n">chains</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">x</span><span class="p">})</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">atom_idx</span><span class="p">]</span>
-        <span class="n">chain_idx</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;chain_idx&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">x</span><span class="p">})</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">atom_idx</span><span class="p">]</span>
+        <span class="n">chains</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">x</span><span class="p">})</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">atom_idx</span><span class="p">]</span>
+        <span class="n">chain_idx</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;bondchain_idx&#39;</span><span class="p">,{</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">:</span><span class="n">x</span><span class="p">})</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">atom_idx</span><span class="p">]</span>
         <span class="c1"># logger.debug(f&#39;chains {chains} chain_idx {chain_idx}&#39;)</span>
         <span class="n">oneaway_resids</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]</span>
         <span class="n">oneaway_resnames</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]</span>
@@ -1826,7 +1829,7 @@
         <span class="n">oneaway_atomnames</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]</span>
         <span class="c1"># assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head</span>
         <span class="k">if</span> <span class="n">chains</span><span class="o">!=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">chainlists_idx</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;chain&#39;</span><span class="p">][</span><span class="n">chains</span><span class="p">[</span><span class="n">x</span><span class="p">]]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">chainlists_idx</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">][</span><span class="n">chains</span><span class="p">[</span><span class="n">x</span><span class="p">]]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span>
             <span class="n">chainlists_atomnames</span><span class="o">=</span><span class="p">[]</span>
             <span class="n">chainlists_resids</span><span class="o">=</span><span class="p">[]</span>
             <span class="n">chainlists_resnames</span><span class="o">=</span><span class="p">[]</span>
@@ -2357,11 +2360,11 @@
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2023, Cameron Abrams, Ming Huang.
+      &#169;2024, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
       
     </div>
 

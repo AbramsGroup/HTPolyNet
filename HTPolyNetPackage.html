@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>HTPolyNet package &#8212; HTPolyNet 1.0.8 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=4f649999" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=039e1c02" />
-    <script src="_static/documentation_options.js?v=aec50437"></script>
+    <title>HTPolyNet package &#8212; HTPolyNet 1.0.9 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=0abd802e"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -17,8 +17,9 @@
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
+
   
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+  
 
   </head><body>
   
@@ -1370,15 +1371,15 @@ from a Topology instance).</p>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="HTPolyNet.coordinates.GRX_ATTRIBUTES">
-<span class="sig-prename descclassname"><span class="pre">HTPolyNet.coordinates.</span></span><span class="sig-name descname"><span class="pre">GRX_ATTRIBUTES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['z',</span> <span class="pre">'nreactions',</span> <span class="pre">'reactantName',</span> <span class="pre">'sea_idx',</span> <span class="pre">'chain',</span> <span class="pre">'chain_idx',</span> <span class="pre">'molecule',</span> <span class="pre">'molecule_name']</span></em><a class="headerlink" href="#HTPolyNet.coordinates.GRX_ATTRIBUTES" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.coordinates.</span></span><span class="sig-name descname"><span class="pre">GRX_ATTRIBUTES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['z',</span> <span class="pre">'nreactions',</span> <span class="pre">'reactantName',</span> <span class="pre">'sea_idx',</span> <span class="pre">'bondchain',</span> <span class="pre">'bondchain_idx',</span> <span class="pre">'molecule',</span> <span class="pre">'molecule_name']</span></em><a class="headerlink" href="#HTPolyNet.coordinates.GRX_ATTRIBUTES" title="Link to this definition">¶</a></dt>
 <dd><p>Extended atom attributes</p>
 <ul class="simple">
 <li><p>‘z’ number of sacrificial H’s on atom</p></li>
 <li><p>‘nreactions’ number of H’s sacrificed so far to form bonds</p></li>
 <li><p>‘reactantName’ name of most recent reactant to which atom belonged</p></li>
 <li><p>‘sea_idx’ index of the group of symmetry-related atoms this atom belongs to (atoms with the same sea_idx in the same resid are considered symmetry-equivalent)</p></li>
-<li><p>‘chain’ index of the unique chain this atom belongs to</p></li>
-<li><p>‘chain_idx’ index of this atom within this chain</p></li>
+<li><p>‘bondchain’ index of the unique bondchain this atom belongs to; a bondchain is a continuous linear chain of C-C bonds</p></li>
+<li><p>‘bondchain_idx’ index of this atom within this chain</p></li>
 <li><p>‘molecule’ index of the unique molecule this atom belongs to</p></li>
 <li><p>‘molecule_name’ name of that molecule</p></li>
 </ul>
@@ -1409,7 +1410,7 @@ from a Topology instance).</p>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.curecontroller.CureController.curedict_defaults">
-<span class="sig-name descname"><span class="pre">curedict_defaults</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'controls':</span> <span class="pre">{'desired_conversion':</span> <span class="pre">0.5,</span> <span class="pre">'late_threshold':</span> <span class="pre">0.85,</span> <span class="pre">'max_conversion_per_iteration':</span> <span class="pre">1.0,</span> <span class="pre">'max_iterations':</span> <span class="pre">100,</span> <span class="pre">'ncpu':</span> <span class="pre">4,</span> <span class="pre">'radial_increment':</span> <span class="pre">0.05,</span> <span class="pre">'search_radius':</span> <span class="pre">0.5},</span> <span class="pre">'drag':</span> <span class="pre">{'cutoff_pad':</span> <span class="pre">0.2,</span> <span class="pre">'equilibration':</span> <span class="pre">[{'ensemble':</span> <span class="pre">'min'},</span> <span class="pre">{'ensemble':</span> <span class="pre">'nvt',</span> <span class="pre">'nsteps':</span> <span class="pre">1000,</span> <span class="pre">'temperature':</span> <span class="pre">600},</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">2000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">600}],</span> <span class="pre">'increment':</span> <span class="pre">0.0,</span> <span class="pre">'kb':</span> <span class="pre">300000.0,</span> <span class="pre">'limit':</span> <span class="pre">0.0,</span> <span class="pre">'nstages':</span> <span class="pre">0,</span> <span class="pre">'trigger_distance':</span> <span class="pre">0.0},</span> <span class="pre">'equilibrate':</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">50000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">300},</span> <span class="pre">'gromacs':</span> <span class="pre">{'rdefault':</span> <span class="pre">0.9},</span> <span class="pre">'output':</span> <span class="pre">{'bonds_file':</span> <span class="pre">'bonds.csv'},</span> <span class="pre">'relax':</span> <span class="pre">{'cutoff_pad':</span> <span class="pre">0.2,</span> <span class="pre">'equilibration':</span> <span class="pre">[{'ensemble':</span> <span class="pre">'min'},</span> <span class="pre">{'ensemble':</span> <span class="pre">'nvt',</span> <span class="pre">'nsteps':</span> <span class="pre">1000,</span> <span class="pre">'temperature':</span> <span class="pre">600},</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">2000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">600}],</span> <span class="pre">'increment':</span> <span class="pre">0.0,</span> <span class="pre">'nstages':</span> <span class="pre">6}}</span></em><a class="headerlink" href="#HTPolyNet.curecontroller.CureController.curedict_defaults" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">curedict_defaults</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'controls':</span> <span class="pre">{'desired_conversion':</span> <span class="pre">0.5,</span> <span class="pre">'late_threshold':</span> <span class="pre">0.85,</span> <span class="pre">'max_conversion_per_iteration':</span> <span class="pre">1.0,</span> <span class="pre">'max_iterations':</span> <span class="pre">100,</span> <span class="pre">'min_allowable_bondcycle_length':</span> <span class="pre">-1,</span> <span class="pre">'ncpu':</span> <span class="pre">4,</span> <span class="pre">'radial_increment':</span> <span class="pre">0.05,</span> <span class="pre">'search_radius':</span> <span class="pre">0.5},</span> <span class="pre">'drag':</span> <span class="pre">{'cutoff_pad':</span> <span class="pre">0.2,</span> <span class="pre">'equilibration':</span> <span class="pre">[{'ensemble':</span> <span class="pre">'min'},</span> <span class="pre">{'ensemble':</span> <span class="pre">'nvt',</span> <span class="pre">'nsteps':</span> <span class="pre">1000,</span> <span class="pre">'temperature':</span> <span class="pre">600},</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">2000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">600}],</span> <span class="pre">'increment':</span> <span class="pre">0.0,</span> <span class="pre">'kb':</span> <span class="pre">300000.0,</span> <span class="pre">'limit':</span> <span class="pre">0.0,</span> <span class="pre">'nstages':</span> <span class="pre">0,</span> <span class="pre">'trigger_distance':</span> <span class="pre">0.0},</span> <span class="pre">'equilibrate':</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">50000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">300},</span> <span class="pre">'gromacs':</span> <span class="pre">{'rdefault':</span> <span class="pre">0.9},</span> <span class="pre">'output':</span> <span class="pre">{'bonds_file':</span> <span class="pre">'bonds.csv'},</span> <span class="pre">'relax':</span> <span class="pre">{'cutoff_pad':</span> <span class="pre">0.2,</span> <span class="pre">'equilibration':</span> <span class="pre">[{'ensemble':</span> <span class="pre">'min'},</span> <span class="pre">{'ensemble':</span> <span class="pre">'nvt',</span> <span class="pre">'nsteps':</span> <span class="pre">1000,</span> <span class="pre">'temperature':</span> <span class="pre">600},</span> <span class="pre">{'ensemble':</span> <span class="pre">'npt',</span> <span class="pre">'nsteps':</span> <span class="pre">2000,</span> <span class="pre">'pressure':</span> <span class="pre">1,</span> <span class="pre">'temperature':</span> <span class="pre">600}],</span> <span class="pre">'increment':</span> <span class="pre">0.0,</span> <span class="pre">'nstages':</span> <span class="pre">6}}</span></em><a class="headerlink" href="#HTPolyNet.curecontroller.CureController.curedict_defaults" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -1701,9 +1702,9 @@ from a Topology instance).</p>
 </dd></dl>
 
 <span class="target" id="module-expandreactions"><span id="module-HTPolyNet.expandreactions"></span></span><dl class="py function">
-<dt class="sig sig-object py" id="HTPolyNet.expandreactions.chain_expand_reactions">
-<span class="sig-prename descclassname"><span class="pre">HTPolyNet.expandreactions.</span></span><span class="sig-name descname"><span class="pre">chain_expand_reactions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">molecules</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#HTPolyNet.molecule.Molecule" title="HTPolyNet.molecule.Molecule"><span class="pre">Molecule</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/expandreactions.html#chain_expand_reactions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.expandreactions.chain_expand_reactions" title="Link to this definition">¶</a></dt>
-<dd><p>chain_expand_reactions handles generation of new reactions and molecular templates implied by any C-C chaining</p>
+<dt class="sig sig-object py" id="HTPolyNet.expandreactions.bondchain_expand_reactions">
+<span class="sig-prename descclassname"><span class="pre">HTPolyNet.expandreactions.</span></span><span class="sig-name descname"><span class="pre">bondchain_expand_reactions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">molecules</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#HTPolyNet.molecule.Molecule" title="HTPolyNet.molecule.Molecule"><span class="pre">Molecule</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/expandreactions.html#bondchain_expand_reactions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.expandreactions.bondchain_expand_reactions" title="Link to this definition">¶</a></dt>
+<dd><p>bondchain_expand_reactions handles generation of new reactions and molecular templates implied by any C-C bondchains</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>must be called after all grx attributes are set for all molecules</p>
@@ -4021,18 +4022,18 @@ prevents overwriting any old logs</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_bond_cycle">
-<span class="sig-name descname"><span class="pre">failed_bond_cycle</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_bond_cycle" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_bondcycle">
+<span class="sig-name descname"><span class="pre">failed_bondcycle</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_bondcycle" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_pierce_ring">
-<span class="sig-name descname"><span class="pre">failed_pierce_ring</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_pierce_ring" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_pierced_ring">
+<span class="sig-name descname"><span class="pre">failed_pierced_ring</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_pierced_ring" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_short_circuit">
-<span class="sig-name descname"><span class="pre">failed_short_circuit</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_short_circuit" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_shortcircuit">
+<span class="sig-name descname"><span class="pre">failed_shortcircuit</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_shortcircuit" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -4178,6 +4179,39 @@ and the ratio stage/max_stages.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.bondchainlist_update">
+<span class="sig-name descname"><span class="pre">bondchainlist_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_bond_recs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.bondchainlist_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.bondchainlist_update" title="Link to this definition">¶</a></dt>
+<dd><p>bondchainlist_update updates the bondchain index lists due to generation of new bonds</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_bond_recs</strong> (<em>list</em>) – list of bond records, each a tuple of two ints corresponding to atom indices</p></li>
+<li><p><strong>msg</strong> (<em>str</em><em>, </em><em>optional</em>) – a nice message (unused), defaults to ‘’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.bondcycle_collective">
+<span class="sig-name descname"><span class="pre">bondcycle_collective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.bondcycle_collective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.bondcycle_collective" title="Link to this definition">¶</a></dt>
+<dd><p>bondcycle_collective Check to see if, when considered as a collective, this
+set of bondrecs leads to one or more cyclic bondchain; if so, longest bonds that
+break bondcycles are removed from bondrecs list and resulting list is returned</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bdf</strong> (<em>pandas.DataFrame</em>) – bonds data frame</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of bond records that results in no new bondcycles</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.bondtest">
 <span class="sig-name descname"><span class="pre">bondtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pbc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_piercings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.bondtest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.bondtest" title="Link to this definition">¶</a></dt>
 <dd><dl class="simple">
@@ -4230,20 +4264,6 @@ pierced rings</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>new_boxsize</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – new boxsize if desired, defaults to None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.chainlist_update">
-<span class="sig-name descname"><span class="pre">chainlist_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_bond_recs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.chainlist_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.chainlist_update" title="Link to this definition">¶</a></dt>
-<dd><p>chainlist_update updates the chain index lists due to generation of new bonds</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>new_bond_recs</strong> (<em>list</em>) – list of bond records, each a tuple of two ints corresponding to atom indices</p></li>
-<li><p><strong>msg</strong> (<em>str</em><em>, </em><em>optional</em>) – a nice message (unused), defaults to ‘’</p></li>
-</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -4313,25 +4333,6 @@ any atom whose name begins with the character ‘H’ or ‘h’ is assumed to b
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.cycle_collective">
-<span class="sig-name descname"><span class="pre">cycle_collective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.cycle_collective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.cycle_collective" title="Link to this definition">¶</a></dt>
-<dd><p>cycle_collective Check to see if, when considered as a collective, this
-set of bondrecs leads to one or more cyclic chain; if so, longest bonds that
-break cycles are removed from bondrecs list and resulting list is returned</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>bdf</strong> (<em>pandas.DataFrame</em>) – bonds data frame</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>list of bond records that results in no new cycles</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4706,9 +4707,9 @@ to []</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.makes_cycle">
-<span class="sig-name descname"><span class="pre">makes_cycle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aidx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bidx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.makes_cycle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.makes_cycle" title="Link to this definition">¶</a></dt>
-<dd><p>makes_cycle checks the current chain index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C’ cycle</p>
+<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.makes_bondcycle">
+<span class="sig-name descname"><span class="pre">makes_bondcycle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aidx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bidx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.makes_bondcycle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.makes_bondcycle" title="Link to this definition">¶</a></dt>
+<dd><p>makes_bondcycle checks the current ‘bondchain’ index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C’ bondcycle, which they do if they have the same ‘bondchain’ attribute, shorter than the minimum allowable bondcycle length, if this is not -1</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -4717,7 +4718,7 @@ to []</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if a bond betwen aidx and bidx would form a C-C’ cycle</p>
+<dd class="field-even"><p>True if a bond betwen aidx and bidx would form a C-C’ bondcycle</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
@@ -4996,10 +4997,10 @@ not influence angles or dihedrals</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.reset_grx_attributes_from_idx_list">
 <span class="sig-name descname"><span class="pre">reset_grx_attributes_from_idx_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.reset_grx_attributes_from_idx_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.reset_grx_attributes_from_idx_list" title="Link to this definition">¶</a></dt>
-<dd><p>reset_grx_attributes_from_idx_list uses information in the “index lists” to repopulate appropriate GRX attributes.  There are two index lists:  one for cycles and the other for chains.  Each index list is a list of lists; each element corresponds to a unique structure (cycle or chain) and is a list of global atom indices for atoms that make up that structural instance.</p>
+<dd><p>reset_grx_attributes_from_idx_list uses information in the “index lists” to repopulate appropriate GRX attributes.  Currently, there is only one index list, for bondchains.  Each index list is a list of lists; each element corresponds to a unique structure (bondchain) and is a list of global atom indices for atoms that make up that structural instance.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>list_name</strong> (<em>str</em>) – either ‘cycle’ or ‘chain’</p>
+<dd class="field-odd"><p><strong>list_name</strong> (<em>str</em>) – only allowed value currently is ‘bondchain’</p>
 </dd>
 </dl>
 </dd></dl>
@@ -5010,7 +5011,7 @@ not influence angles or dihedrals</p>
 <dd><p>reset_idx_list_from_grx_attributes is the inverse of reset_grx_attributes_from_idx_list: it uses the GRX attributes to rebuild index lists.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>list_name</strong> (<em>str</em>) – either ‘cycle’ or ‘chain’</p>
+<dd class="field-odd"><p><strong>list_name</strong> (<em>str</em>) – either only allowed value currently is ‘bondchain’</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6159,11 +6160,11 @@ in the ‘postsim’ subdirectories</p>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2023, Cameron Abrams, Ming Huang.
+      &#169;2024, Cameron Abrams, Ming Huang.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
       
       |
       <a href="_sources/HTPolyNetPackage.rst.txt"
