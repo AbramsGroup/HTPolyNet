@@ -127,7 +127,7 @@ class Molecule:
         self.bond_templates:BondTemplateList=[]
         self.symmetry_relateds=[]
         self.stereocenters=[] # list of atomnames
-        self.stereoisomers:dict(str,Molecule)={}
+        self.stereoisomers={}
         self.nconformers=0
         self.conformers_dict={}
         self.conformers=[] # just a list of gro file basenames
@@ -890,7 +890,7 @@ class Molecule:
         overall_maximum=(-1.e9,-1,-1)
         coord_trials={}
         for myH,myHnm in myHpartners.items():  # keys are globalIdx's, values are names
-            coord_trials[myH]:dict[TopoCoord]={}
+            coord_trials[myH]={}
             Rh=TC.get_R(myH)
             logger.debug(f'  Rh {myH} {Rh} {Rh.dtype}')
             Rih=Ri-Rh

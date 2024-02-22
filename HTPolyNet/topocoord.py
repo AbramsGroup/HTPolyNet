@@ -21,6 +21,7 @@ from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
 from HTPolyNet.matrix4 import Matrix4
 from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 import HTPolyNet.projectfilesystem as pfs
+# import HTPolyNet.polybonds as pb
 
 logger=logging.getLogger(__name__)
 
@@ -31,9 +32,9 @@ class BTRC(Enum):
     :type Enum: class
     """
     passed = 0
-    failed_pierced_ring = 1       # does this bond-candidate pierce a ring?
-    failed_shortcircuit = 2       # does this bond-candidate result in short-circuit?
-    failed_bondcycle = 3          # does this bond-candidate create a bondcycle on its own?
+    failed_pierced_ring = 1       # candidate bond pierces a ring
+    failed_shortcircuit = 2       # candidate bond creates a short-circuit
+    # failed_bondcycle = 3          # Bondcycles are handled collectively
     unset = 99
 
 class TopoCoord:
@@ -65,6 +66,7 @@ class TopoCoord:
         self.grxattr=[]
         self.idx_lists={}
         self.idx_lists['bondchain']=[]
+        # self.polybondchainmanager=pb.PolyBondChainManager()
         if grofilename!='':
             self.read_gro(grofilename,wrap_coords=wrap_coords)
         else:
@@ -1241,8 +1243,8 @@ class TopoCoord:
         # j=int(j)
         if self.makes_shortcircuit(i,j):
             return BTRC.failed_shortcircuit,0
-        if self.makes_bondcycle(i,j):
-            return BTRC.failed_bondcycle,0
+        # if self.makes_bondcycle(i,j):
+        #     return BTRC.failed_bondcycle,0
         if self.pierces_ring(i,j,pbc=pbc,show_piercings=show_piercings):
             return BTRC.failed_pierced_ring,0
         # logger.debug(f'passed: {i:>7d} {j:>7d} {rij:>6.3f} nm')
@@ -1461,84 +1463,148 @@ class TopoCoord:
             cnms.append([self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
         # logger.debug(f'post {msg} chains {self.idx_lists["bondchain"]} {cnms}')
 
-    def makes_bondcycle(self,aidx,bidx):
-        """makes_bondcycle checks the current 'bondchain' index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C' bondcycle, which they do if they have the same 'bondchain' attribute, shorter than the minimum allowable bondcycle length, if this is not -1
+    # def makes_bondcycle(self,aidx,bidx):
+    #     """makes_bondcycle checks the current 'bondchain' index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C' bondcycle, which they do if they have the same 'bondchain' attribute, shorter than the minimum allowable bondcycle length, if this is not 0
 
-        :param aidx: global index of an atom
-        :type aidx: int
-        :param bidx: global index of another atom
-        :type bidx: int
-        :return: True if a bond betwen aidx and bidx would form a C-C' bondcycle
-        :rtype: bool
-        """
-        # is there a bondchain with aidx as head and bidx as tail, or vice versa?
-        for c in self.idx_lists['bondchain']:
-            if (aidx==c[0] and bidx==c[-1]) or (aidx==c[-1] and bidx==c[0]):
-                if self.min_bondcycle_length==-1 or len(c)<self.min_bondcycle_length:
-                    return True
-        return False
+    #     :param aidx: global index of an atom
+    #     :type aidx: int
+    #     :param bidx: global index of another atom
+    #     :type bidx: int
+    #     :return: True if a bond betwen aidx and bidx would form a C-C' bondcycle
+    #     :rtype: bool
+    #     """
+    #     # is there a bondchain with aidx as head and bidx as tail, or vice versa?
+    #     for c in self.idx_lists['bondchain']:
+    #         if (aidx==c[0] and bidx==c[-1]) or (aidx==c[-1] and bidx==c[0]):
+    #             if self.min_bondcycle_length<=0 or len(c)<self.min_bondcycle_length:
+    #                 return True
+    #     return False
 
     def bondcycle_collective(self,bdf:pd.DataFrame):
         """bondcycle_collective Check to see if, when considered as a collective, this
-        set of bondrecs leads to one or more cyclic bondchain; if so, longest bonds that 
+        set of bondrecs leads to one or more cyclic bondchains; if so, longest bonds that 
         break bondcycles are removed from bondrecs list and resulting list is returned
 
-        :param bdf: bonds data frame
+        :param bdf: bonds data frame, sorted in ascending order by bondlength
         :type bdf: pandas.DataFrame
         :return: list of bond records that results in no new bondcycles
         :rtype: list
         """
-        def addlink(chainlist,i,j):
-            i_cidx=(-1,-1)
-            j_cidx=(-1,-1)
-            for cidx,c in enumerate(chainlist):
-                if i in c:
-                    i_cidx=(cidx,c.index(i))
-                if j in c:
-                    j_cidx=(cidx,c.index(j))
-            logger.debug(f'i {i_cidx} j {j_cidx}')
-            if not (i_cidx==(-1,-1) or (j_cidx==(-1,-1))):
-                # logger.debug(f'bondcycle_collective: {i} is in bondchain {i_cidx[0]} at {i_cidx[1]}')
-                # logger.debug(f'bondcycle_collective: {j} is in bondchain {j_cidx[0]} at {j_cidx[1]}')
-                if i_cidx[0]==j_cidx[0]:
-                    # cyclized!
-                    logger.debug(f'bondchain {i_cidx[0]} is cyclized!')
-                    return i_cidx[0],True
-                old_head,old_tail=(i_cidx,j_cidx) if i_cidx[1]==0 else (j_cidx,i_cidx)
-                chainlist[old_tail[0]].extend(chainlist[old_head[0]])
-                # logger.debug(f'new bondchain {old_tail[0]} {chainlist[old_tail[0]]}')
-                chainlist.remove(chainlist[old_head[0]])
-                return old_tail[0],False
-            else: # this bond involves one atom in a bondchain and another that is not; no way this can be a cyclization, but we have to return somthing
-                return i_cidx[0] if i_cidx[0]!=-1 else j_cidx[0],False
+        class working_bondlist:
+            def __init__(self,my_idx,idx_list):
+                self.idx=my_idx
+                self.atidx_list=idx_list
+                self.added_bonds=[]
+                self.is_new_cycle=False
+            def idx_of(self,ai):
+                return self.atidx_list.index(ai)
+            def is_head(self,ai):
+                return self.idx_of(ai)==0
+            def len(self):
+                return len(self.atidx_list)
+            def is_tail(self,ai):
+                return self.idx_of(ai)==self.len()-1
+            def addbond(self,bidx):
+                self.added_bonds.append(bidx)
+            def cycletag(self):
+                self.is_new_cycle=True
+            def merge(self,other):
+                self.atidx_list.extend(other.atidx_list)
+                other.atidx_list=[]
+                self.added_bonds.extend(other.added_bonds)
+                other.added_bonds=[]
+                other.absorber=self
 
-        # kb=bondrecs.copy()
-        # logger.debug(f'checking set of {bdf.shape[0]} bonds for nascent cycles')
+        def addlink(bondchains,b_idx,ai,aj):
+            ibl=None
+            jbl=None
+            for bl in bondchains:
+                if ai in bl.idx_list:
+                    ibl=bl
+                if aj in bl.idx_list:
+                    jbl=bl
+            if not ibl or not jbl:
+                # must not be a system that can form bondchains
+                return
+            logger.debug(f'i-atom {ai} is in bondchain {ibl.idx} (length {len(ibl)}) at index {ibl.idx_of(ai)}')
+            logger.debug(f'j-atom {aj} is in bondchain {jbl.idx} (length {len(jbl)}) at index {jbl.idx_of(aj)}')
+            if ibl==jbl:
+                # same bondchain
+                assert (ibl.is_head(ai) and ibl.is_tail(aj)) or (ibl.is_tail(ai) and ibl.is_head(aj))
+                ibl.cycletag()
+                ibl.addbond(b_idx)
+                logger.debug(f'bondchain {ibl.idx} is cyclized!')
+                # return dict(makescycle=True,cyclizedchain=i_cidx["bondchainidx"])
+            # otherwise, we unify the two bondchains
+            # case 1: atom i is the head of its bondchain
+            else:
+                if ibl.is_head(ai):
+                    assert jbl.is_tail(aj)
+                    jbl.addbond(b_idx)
+                    jbl.merge(ibl)
+                else:
+                    assert ibl.is_tail(ai) and jbl.is_head(aj)
+                    ibl.addbond(b_idx)
+                    ibl.merge(jbl)
+
+        logger.debug(f'Checking set of {bdf.shape[0]} bonds for C-C bondcycles')
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
-        chains=deepcopy(self.idx_lists['bondchain'])
-        assert id(chains) != id(self.idx_lists['bondchain'])
-        if not chains:
+        if len(self.idx_lists['bondchain'])==0:
             return new_bdf
-        cyclized_chains={}
-        chains_of_bonds=[]
+        # make a working copy of the bondchains structure from its snapshot
+        bondchains=[working_bondlist(i,self.idx_lists['bondchain'][i]) for i in range(len(self.idx_lists['bondchain']))]
+        # add links to placeholder bondchain structure one at a time and note any cyclization that occurs along the way
         for i,r in bdf.iterrows():
-            chain_idx,cyclized=addlink(chains,r.ai,r.aj)
-            # logger.debug(f'bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to bondchain {chain_idx}')
-            chains_of_bonds.append(chain_idx)
-            if cyclized and not chain_idx in cyclized_chains:
-                cyclized_chains[chain_idx]=[]
-        assert len(chains_of_bonds)==bdf.shape[0]
-        for i,r in bdf.iterrows():
-            # logger.debug(f'compiling bonds of cyclized chains: bond {i}')
-            cidx=chains_of_bonds[i]
-            # logger.debug(f'compiling bonds of cyclized chains: cidx {chains_of_bonds[i]}')
-            if cidx in cyclized_chains:
-                cyclized_chains[cidx].append(i)
-        for k,v in cyclized_chains.items():
-            if self.min_bondcycle_length==-1 or len(v)<self.min_bondcycle_length:
-                lb=v[-1]  # last bondrec in list
-                new_bdf.loc[lb,'remove-to-uncyclize']=True
+            addlink(bondchains,i,r.ai,r.aj)
+        for bl in bondchains:
+            if bl.is_new_cycle:
+                logger.debug(f'Bondchain {bl.idx} ({"-".join([str(x) for x in bl.atidx_list])}) is a new cycle')
+                logger.debug(f'-> Cycle length is {bl.len()} reacted C=C bonds')
+                if self.min_bondcycle_length<=0 or bl.len()<self.min_bondcycle_length:
+                    longest_bond_index=max(bl.added_bonds) # remember, bdf is sorted by bondlength
+                    logger.debug(f'-> limit is {self.min_bondcycle_length}, so we will break the longest added bond')
+                    logger.debug(f'-> bond index {longest_bond_index} is the longest added bond in the cycle')
+                    new_bdf.loc[longest_bond_index,'remove-to-uncyclize']=True
+
+        #     if rdict.get('makescycle',False):
+        #         chains_of_bonds[i]=rdict["cyclizedchain"]
+        #         cyclized_chains.append(rdict["cyclizedchain"])
+        #     else:
+        #         if rdict.get('retainedchain',-1)>-1:
+        #             # a chain merger happened
+        #             chains_of_bonds[i]=rdict["retainedchain"]
+        #             for k in chains_of_bonds.keys():
+        #                 if chains_of_bonds[k]==rdict["removedchain"]:
+        #                     chains_of_bonds[k]=rdict["retainedchain"]
+        #         else:
+        #             # no chain merger happened; do nothing
+        #             pass
+        # # for each bondcycle, identify the new bonds that collectively cause the cyclization
+        # cyclizing_bonds={}
+        # for k,v in chains_of_bonds.items():
+        #     if v in cyclized_chains:
+        #         if not v in cyclizing_bonds:
+        #             cyclizing_bonds[v]=[]
+        #         cyclizing_bonds[v].append(k)
+        
+        # for cycleidx,newbonds in cyclizing_bonds.items():
+        #     cyclelength=len(chains[cycleidx])
+        # #     # logger.debug(f'bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to bondchain {chain_idx}')
+        # #     chains_of_bonds.append(chain_idx)
+        # #     if cyclized and not chain_idx in cyclized_chains:
+        # #         cyclized_chains[chain_idx]=[]
+        # # assert len(chains_of_bonds)==bdf.shape[0]
+        # for i,r in bdf.iterrows():
+        #     # logger.debug(f'compiling bonds of cyclized chains: bond {i}')
+        #     cidx=chains_of_bonds[i]
+        #     # logger.debug(f'compiling bonds of cyclized chains: cidx {chains_of_bonds[i]}')
+        #     if cidx in cyclized_chains:
+        #         cyclized_chains[cidx].append(i)
+        # for k,v in cyclized_chains.items():
+        #     if self.min_bondcycle_length<=0 or len(v)<self.min_bondcycle_length:
+        #         lb=v[-1]  # last bondrec in list
+        #         new_bdf.loc[lb,'remove-to-uncyclize']=True
         return new_bdf
 
     def get_bystanders(self,atom_idx):

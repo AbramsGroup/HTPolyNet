@@ -10,7 +10,6 @@ import subprocess
 import logging
 import os
 from HTPolyNet.stringthings import my_logger
-# from GPUtil import getGPUs
 logger=logging.getLogger(__name__)
 
 class Software:
