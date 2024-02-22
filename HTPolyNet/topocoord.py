@@ -1519,15 +1519,15 @@ class TopoCoord:
             ibl=None
             jbl=None
             for bl in bondchains:
-                if ai in bl.idx_list:
+                if ai in bl.atidx_list:
                     ibl=bl
-                if aj in bl.idx_list:
+                if aj in bl.atidx_list:
                     jbl=bl
             if not ibl or not jbl:
-                # must not be a system that can form bondchains
+                # evidently this is a system that cannot form bondchains
                 return
-            logger.debug(f'i-atom {ai} is in bondchain {ibl.idx} (length {len(ibl)}) at index {ibl.idx_of(ai)}')
-            logger.debug(f'j-atom {aj} is in bondchain {jbl.idx} (length {len(jbl)}) at index {jbl.idx_of(aj)}')
+            logger.debug(f'i-atom {ai} is in bondchain {ibl.idx} (length {ibl.len()}) at index {ibl.idx_of(ai)}')
+            logger.debug(f'j-atom {aj} is in bondchain {jbl.idx} (length {jbl.len()}) at index {jbl.idx_of(aj)}')
             if ibl==jbl:
                 # same bondchain
                 assert (ibl.is_head(ai) and ibl.is_tail(aj)) or (ibl.is_tail(ai) and ibl.is_head(aj))
@@ -1536,7 +1536,6 @@ class TopoCoord:
                 logger.debug(f'bondchain {ibl.idx} is cyclized!')
                 # return dict(makescycle=True,cyclizedchain=i_cidx["bondchainidx"])
             # otherwise, we unify the two bondchains
-            # case 1: atom i is the head of its bondchain
             else:
                 if ibl.is_head(ai):
                     assert jbl.is_tail(aj)
@@ -1547,24 +1546,26 @@ class TopoCoord:
                     ibl.addbond(b_idx)
                     ibl.merge(jbl)
 
-        logger.debug(f'Checking set of {bdf.shape[0]} bonds for C-C bondcycles')
+        logger.debug(f'Checking set of {bdf.shape[0]} bonds for cyclic C-C bondchains')
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
         if len(self.idx_lists['bondchain'])==0:
+            logger.debug(f'System has no bondchain idx_lists; cyclic C-C bondchain checking is skipped')
             return new_bdf
         # make a working copy of the bondchains structure from its snapshot
-        bondchains=[working_bondlist(i,self.idx_lists['bondchain'][i]) for i in range(len(self.idx_lists['bondchain']))]
-        # add links to placeholder bondchain structure one at a time and note any cyclization that occurs along the way
+        bondchains=[working_bondlist(i,self.idx_lists['bondchain'][i][:]) for i in range(len(self.idx_lists['bondchain']))]
         for i,r in bdf.iterrows():
             addlink(bondchains,i,r.ai,r.aj)
         for bl in bondchains:
             if bl.is_new_cycle:
                 logger.debug(f'Bondchain {bl.idx} ({"-".join([str(x) for x in bl.atidx_list])}) is a new cycle')
-                logger.debug(f'-> Cycle length is {bl.len()} reacted C=C bonds')
+                logger.debug(f'-> New bonds added: {",".join([str(x) for x in bl.added_bonds])}')
+                logger.debug(f'-> Cycle length is {bl.len()} atoms')
                 if self.min_bondcycle_length<=0 or bl.len()<self.min_bondcycle_length:
                     longest_bond_index=max(bl.added_bonds) # remember, bdf is sorted by bondlength
                     logger.debug(f'-> limit is {self.min_bondcycle_length}, so we will break the longest added bond')
-                    logger.debug(f'-> bond index {longest_bond_index} is the longest added bond in the cycle')
+                    longest_bond_length=new_bdf.loc[longest_bond_index,'r']
+                    logger.debug(f'-> bond index {longest_bond_index} (length {longest_bond_length:.3f} nm) is the longest added bond in the cycle')
                     new_bdf.loc[longest_bond_index,'remove-to-uncyclize']=True
 
         #     if rdict.get('makescycle',False):

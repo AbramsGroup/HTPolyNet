@@ -201,15 +201,18 @@ In this section we show all subdirectives for each of the five main directives i
 
     * ``CURE.controls`` parameters
 
-        =================================    =================   ======================
-        ``CURE.controls`` parameter          Type                Description (default)
-        =================================    =================   ======================
-        ``initial_search_radius``            float               initial search radius in nm (default 0.5)
-        ``radial_increment``                 float               increment by which search radius is increased if no bonds are found at current radius (default 0.25 nm)
-        ``max_iterations``                   int                 absolute maximum number of allowed iterations (default 150), 
-        ``desired_conversion``               float [0-1]         target conversion between 0 and 1.0 (default 0.95)
-        ``late_threshhold``                  float [0-1]         conversion above which bond probabilities are ignored
-        =================================    =================   ======================
+        ==================================    =================   ======================
+        ``CURE.controls`` parameter           Type                Description (default)
+        ==================================    =================   ======================
+        ``initial_search_radius``             float               initial search radius in nm (default 0.5)
+        ``radial_increment``                  float               increment in nm by which search radius is increased if no bonds are found at current radius (default 0.25)
+        ``max_iterations``                    int                 absolute maximum number of allowed iterations (default 150), 
+        ``desired_conversion``                float [0-1]         target conversion between 0 and 1.0 (default 0.95)
+        ``late_threshhold``                   float [0-1]         conversion above which bond probabilities are ignored
+        ``min_allowable_bondcycle_length``    int                 minimum number of C atoms allowed in a cycle of C-C bonds that form via polymerization (default 0)
+        ==================================    =================   ======================
+
+      The ``min_allowable_bondcycle_length`` refers to the fact that in systems that polymerize via activation of carbon-carbon double bonds, it is possible in the HTPolyNet implementation that the "head" of a chain of C-C bonds can attack the "tail" and form a cycle, because those represent atom types that can react.  It is unclear whether such cycles actually form; if a monomer remains bound to a radical initiator it is hard to see how the head of the growing chain could attack it, but maybe it could.  Setting ``min_allowable_bondcycle_length`` to zero (the default) disallows any bonds that would form cycles involving only atoms that were once part of C=C double bonds.  (Think about the backbone of polystyrene, for example.)  In a given CURE iteration, HTPolyNet tests the full set of suggested bonds to see if together they result in any cycles, and for each nascent cycle longer than ``min_allowable_bondcycle_length``, HTPolyNet will disallow the nascent bond that has the longest initial length.
 
 .. _cure.drag:
 

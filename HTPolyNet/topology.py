@@ -397,7 +397,8 @@ class Topology:
         :param filename: name of top file to write
         :type filename: str
         """
-        # prevent buggy writing of NaNs
+        # This is required as of pandas v 2.2.0 to suppress an annoying warning
+        pd.set_option('future.no_silent_downcasting', True)
         self.null_check(msg=f'writing {filename}')
         with open(filename,'w') as f:
             f.write('; Gromacs-format topology written by HTPolyNet\n')
@@ -405,6 +406,7 @@ class Topology:
         for k in _GromacsTopologyDirectiveOrder_:
             if k in self.D:
                 # columns=_GromacsTopologyDirectiveHeaders_[k]
+                # replace pads with NA so that no bytes are written by to_csv for these fields
                 self.D[k].replace(_PAD_,pd.NA,inplace=True)
                 with open(filename,'a') as f:
                     f.write(f'[ {k} ]\n; ')
