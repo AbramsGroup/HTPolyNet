@@ -4022,11 +4022,6 @@ prevents overwriting any old logs</p>
 </dd>
 </dl>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_bondcycle">
-<span class="sig-name descname"><span class="pre">failed_bondcycle</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_bondcycle" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="HTPolyNet.topocoord.BTRC.failed_pierced_ring">
 <span class="sig-name descname"><span class="pre">failed_pierced_ring</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#HTPolyNet.topocoord.BTRC.failed_pierced_ring" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -4196,11 +4191,11 @@ and the ratio stage/max_stages.</p>
 <dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.bondcycle_collective">
 <span class="sig-name descname"><span class="pre">bondcycle_collective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.bondcycle_collective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.bondcycle_collective" title="Link to this definition">¶</a></dt>
 <dd><p>bondcycle_collective Check to see if, when considered as a collective, this
-set of bondrecs leads to one or more cyclic bondchain; if so, longest bonds that
+set of bondrecs leads to one or more cyclic bondchains; if so, longest bonds that
 break bondcycles are removed from bondrecs list and resulting list is returned</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>bdf</strong> (<em>pandas.DataFrame</em>) – bonds data frame</p>
+<dd class="field-odd"><p><strong>bdf</strong> (<em>pandas.DataFrame</em>) – bonds data frame, sorted in ascending order by bondlength</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>list of bond records that results in no new bondcycles</p>
@@ -4702,26 +4697,6 @@ to []</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>json_file</strong> (<em>str</em><em>, </em><em>optional</em>) – name of output JSON file to write, defaults to None</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="HTPolyNet.topocoord.TopoCoord.makes_bondcycle">
-<span class="sig-name descname"><span class="pre">makes_bondcycle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aidx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bidx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/HTPolyNet/topocoord.html#TopoCoord.makes_bondcycle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#HTPolyNet.topocoord.TopoCoord.makes_bondcycle" title="Link to this definition">¶</a></dt>
-<dd><p>makes_bondcycle checks the current ‘bondchain’ index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C’ bondcycle, which they do if they have the same ‘bondchain’ attribute, shorter than the minimum allowable bondcycle length, if this is not -1</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>aidx</strong> (<em>int</em>) – global index of an atom</p></li>
-<li><p><strong>bidx</strong> (<em>int</em>) – global index of another atom</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if a bond betwen aidx and bidx would form a C-C’ bondcycle</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>

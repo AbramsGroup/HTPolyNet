@@ -53,6 +53,7 @@
 <span class="kn">from</span> <span class="nn">HTPolyNet.matrix4</span> <span class="kn">import</span> <span class="n">Matrix4</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.gromacs</span> <span class="kn">import</span> <span class="n">grompp_and_mdrun</span><span class="p">,</span><span class="n">mdp_get</span><span class="p">,</span> <span class="n">mdp_modify</span><span class="p">,</span> <span class="n">gmx_energy_trace</span>
 <span class="kn">import</span> <span class="nn">HTPolyNet.projectfilesystem</span> <span class="k">as</span> <span class="nn">pfs</span>
+<span class="c1"># import HTPolyNet.polybonds as pb</span>
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -65,9 +66,9 @@
 <span class="sd">    :type Enum: class</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">passed</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">failed_pierced_ring</span> <span class="o">=</span> <span class="mi">1</span>       <span class="c1"># does this bond-candidate pierce a ring?</span>
-    <span class="n">failed_shortcircuit</span> <span class="o">=</span> <span class="mi">2</span>       <span class="c1"># does this bond-candidate result in short-circuit?</span>
-    <span class="n">failed_bondcycle</span> <span class="o">=</span> <span class="mi">3</span>          <span class="c1"># does this bond-candidate create a bondcycle on its own?</span>
+    <span class="n">failed_pierced_ring</span> <span class="o">=</span> <span class="mi">1</span>       <span class="c1"># candidate bond pierces a ring</span>
+    <span class="n">failed_shortcircuit</span> <span class="o">=</span> <span class="mi">2</span>       <span class="c1"># candidate bond creates a short-circuit</span>
+    <span class="c1"># failed_bondcycle = 3          # Bondcycles are handled collectively</span>
     <span class="n">unset</span> <span class="o">=</span> <span class="mi">99</span></div>
 
 
@@ -102,6 +103,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">grxattr</span><span class="o">=</span><span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="o">=</span><span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
+        <span class="c1"># self.polybondchainmanager=pb.PolyBondChainManager()</span>
         <span class="k">if</span> <span class="n">grofilename</span><span class="o">!=</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">read_gro</span><span class="p">(</span><span class="n">grofilename</span><span class="p">,</span><span class="n">wrap_coords</span><span class="o">=</span><span class="n">wrap_coords</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1463,8 +1465,8 @@
         <span class="c1"># j=int(j)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">makes_shortcircuit</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_shortcircuit</span><span class="p">,</span><span class="mi">0</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">makes_bondcycle</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_bondcycle</span><span class="p">,</span><span class="mi">0</span>
+        <span class="c1"># if self.makes_bondcycle(i,j):</span>
+        <span class="c1">#     return BTRC.failed_bondcycle,0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pierces_ring</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">pbc</span><span class="o">=</span><span class="n">pbc</span><span class="p">,</span><span class="n">show_piercings</span><span class="o">=</span><span class="n">show_piercings</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">BTRC</span><span class="o">.</span><span class="n">failed_pierced_ring</span><span class="p">,</span><span class="mi">0</span>
         <span class="c1"># logger.debug(f&#39;passed: {i:&gt;7d} {j:&gt;7d} {rij:&gt;6.3f} nm&#39;)</span>
@@ -1699,89 +1701,150 @@
 
         <span class="c1"># logger.debug(f&#39;post {msg} chains {self.idx_lists[&quot;bondchain&quot;]} {cnms}&#39;)</span>
 
-<div class="viewcode-block" id="TopoCoord.makes_bondcycle">
-<a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.makes_bondcycle">[docs]</a>
-    <span class="k">def</span> <span class="nf">makes_bondcycle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">aidx</span><span class="p">,</span><span class="n">bidx</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;makes_bondcycle checks the current &#39;bondchain&#39; index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C&#39; bondcycle, which they do if they have the same &#39;bondchain&#39; attribute, shorter than the minimum allowable bondcycle length, if this is not -1</span>
+    <span class="c1"># def makes_bondcycle(self,aidx,bidx):</span>
+    <span class="c1">#     &quot;&quot;&quot;makes_bondcycle checks the current &#39;bondchain&#39; index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C&#39; bondcycle, which they do if they have the same &#39;bondchain&#39; attribute, shorter than the minimum allowable bondcycle length, if this is not 0</span>
 
-<span class="sd">        :param aidx: global index of an atom</span>
-<span class="sd">        :type aidx: int</span>
-<span class="sd">        :param bidx: global index of another atom</span>
-<span class="sd">        :type bidx: int</span>
-<span class="sd">        :return: True if a bond betwen aidx and bidx would form a C-C&#39; bondcycle</span>
-<span class="sd">        :rtype: bool</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># is there a bondchain with aidx as head and bidx as tail, or vice versa?</span>
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">aidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">bidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span> <span class="p">(</span><span class="n">aidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">bidx</span><span class="o">==</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="o">==-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
-
+    <span class="c1">#     :param aidx: global index of an atom</span>
+    <span class="c1">#     :type aidx: int</span>
+    <span class="c1">#     :param bidx: global index of another atom</span>
+    <span class="c1">#     :type bidx: int</span>
+    <span class="c1">#     :return: True if a bond betwen aidx and bidx would form a C-C&#39; bondcycle</span>
+    <span class="c1">#     :rtype: bool</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     # is there a bondchain with aidx as head and bidx as tail, or vice versa?</span>
+    <span class="c1">#     for c in self.idx_lists[&#39;bondchain&#39;]:</span>
+    <span class="c1">#         if (aidx==c[0] and bidx==c[-1]) or (aidx==c[-1] and bidx==c[0]):</span>
+    <span class="c1">#             if self.min_bondcycle_length&lt;=0 or len(c)&lt;self.min_bondcycle_length:</span>
+    <span class="c1">#                 return True</span>
+    <span class="c1">#     return False</span>
 
 <div class="viewcode-block" id="TopoCoord.bondcycle_collective">
 <a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.topocoord.TopoCoord.bondcycle_collective">[docs]</a>
     <span class="k">def</span> <span class="nf">bondcycle_collective</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bdf</span><span class="p">:</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;bondcycle_collective Check to see if, when considered as a collective, this</span>
-<span class="sd">        set of bondrecs leads to one or more cyclic bondchain; if so, longest bonds that </span>
+<span class="sd">        set of bondrecs leads to one or more cyclic bondchains; if so, longest bonds that </span>
 <span class="sd">        break bondcycles are removed from bondrecs list and resulting list is returned</span>
 
-<span class="sd">        :param bdf: bonds data frame</span>
+<span class="sd">        :param bdf: bonds data frame, sorted in ascending order by bondlength</span>
 <span class="sd">        :type bdf: pandas.DataFrame</span>
 <span class="sd">        :return: list of bond records that results in no new bondcycles</span>
 <span class="sd">        :rtype: list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">def</span> <span class="nf">addlink</span><span class="p">(</span><span class="n">chainlist</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">):</span>
-            <span class="n">i_cidx</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">j_cidx</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">cidx</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chainlist</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">c</span><span class="p">:</span>
-                    <span class="n">i_cidx</span><span class="o">=</span><span class="p">(</span><span class="n">cidx</span><span class="p">,</span><span class="n">c</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">c</span><span class="p">:</span>
-                    <span class="n">j_cidx</span><span class="o">=</span><span class="p">(</span><span class="n">cidx</span><span class="p">,</span><span class="n">c</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">j</span><span class="p">))</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;i </span><span class="si">{</span><span class="n">i_cidx</span><span class="si">}</span><span class="s1"> j </span><span class="si">{</span><span class="n">j_cidx</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">i_cidx</span><span class="o">==</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">j_cidx</span><span class="o">==</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))):</span>
-                <span class="c1"># logger.debug(f&#39;bondcycle_collective: {i} is in bondchain {i_cidx[0]} at {i_cidx[1]}&#39;)</span>
-                <span class="c1"># logger.debug(f&#39;bondcycle_collective: {j} is in bondchain {j_cidx[0]} at {j_cidx[1]}&#39;)</span>
-                <span class="k">if</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">j_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
-                    <span class="c1"># cyclized!</span>
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain </span><span class="si">{</span><span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> is cyclized!&#39;</span><span class="p">)</span>
-                    <span class="k">return</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="kc">True</span>
-                <span class="n">old_head</span><span class="p">,</span><span class="n">old_tail</span><span class="o">=</span><span class="p">(</span><span class="n">i_cidx</span><span class="p">,</span><span class="n">j_cidx</span><span class="p">)</span> <span class="k">if</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="n">j_cidx</span><span class="p">,</span><span class="n">i_cidx</span><span class="p">)</span>
-                <span class="n">chainlist</span><span class="p">[</span><span class="n">old_tail</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">chainlist</span><span class="p">[</span><span class="n">old_head</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-                <span class="c1"># logger.debug(f&#39;new bondchain {old_tail[0]} {chainlist[old_tail[0]]}&#39;)</span>
-                <span class="n">chainlist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">chainlist</span><span class="p">[</span><span class="n">old_head</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-                <span class="k">return</span> <span class="n">old_tail</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="kc">False</span>
-            <span class="k">else</span><span class="p">:</span> <span class="c1"># this bond involves one atom in a bondchain and another that is not; no way this can be a cyclization, but we have to return somthing</span>
-                <span class="k">return</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">i_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">!=-</span><span class="mi">1</span> <span class="k">else</span> <span class="n">j_cidx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="kc">False</span>
+        <span class="k">class</span> <span class="nc">working_bondlist</span><span class="p">:</span>
+            <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">my_idx</span><span class="p">,</span><span class="n">idx_list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">idx</span><span class="o">=</span><span class="n">my_idx</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">atidx_list</span><span class="o">=</span><span class="n">idx_list</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">added_bonds</span><span class="o">=</span><span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_new_cycle</span><span class="o">=</span><span class="kc">False</span>
+            <span class="k">def</span> <span class="nf">idx_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ai</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">atidx_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">is_head</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ai</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_of</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span>
+            <span class="k">def</span> <span class="nf">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atidx_list</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">is_tail</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">ai</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx_of</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span><span class="o">==</span><span class="bp">self</span><span class="o">.</span><span class="n">len</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span>
+            <span class="k">def</span> <span class="nf">addbond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bidx</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">added_bonds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">bidx</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">cycletag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">is_new_cycle</span><span class="o">=</span><span class="kc">True</span>
+            <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">other</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">atidx_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">atidx_list</span><span class="p">)</span>
+                <span class="n">other</span><span class="o">.</span><span class="n">atidx_list</span><span class="o">=</span><span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">added_bonds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">added_bonds</span><span class="p">)</span>
+                <span class="n">other</span><span class="o">.</span><span class="n">added_bonds</span><span class="o">=</span><span class="p">[]</span>
+                <span class="n">other</span><span class="o">.</span><span class="n">absorber</span><span class="o">=</span><span class="bp">self</span>
 
-        <span class="c1"># kb=bondrecs.copy()</span>
-        <span class="c1"># logger.debug(f&#39;checking set of {bdf.shape[0]} bonds for nascent cycles&#39;)</span>
+        <span class="k">def</span> <span class="nf">addlink</span><span class="p">(</span><span class="n">bondchains</span><span class="p">,</span><span class="n">b_idx</span><span class="p">,</span><span class="n">ai</span><span class="p">,</span><span class="n">aj</span><span class="p">):</span>
+            <span class="n">ibl</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">jbl</span><span class="o">=</span><span class="kc">None</span>
+            <span class="k">for</span> <span class="n">bl</span> <span class="ow">in</span> <span class="n">bondchains</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ai</span> <span class="ow">in</span> <span class="n">bl</span><span class="o">.</span><span class="n">idx_list</span><span class="p">:</span>
+                    <span class="n">ibl</span><span class="o">=</span><span class="n">bl</span>
+                <span class="k">if</span> <span class="n">aj</span> <span class="ow">in</span> <span class="n">bl</span><span class="o">.</span><span class="n">idx_list</span><span class="p">:</span>
+                    <span class="n">jbl</span><span class="o">=</span><span class="n">bl</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ibl</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">jbl</span><span class="p">:</span>
+                <span class="c1"># must not be a system that can form bondchains</span>
+                <span class="k">return</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;i-atom </span><span class="si">{</span><span class="n">ai</span><span class="si">}</span><span class="s1"> is in bondchain </span><span class="si">{</span><span class="n">ibl</span><span class="o">.</span><span class="n">idx</span><span class="si">}</span><span class="s1"> (length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ibl</span><span class="p">)</span><span class="si">}</span><span class="s1">) at index </span><span class="si">{</span><span class="n">ibl</span><span class="o">.</span><span class="n">idx_of</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;j-atom </span><span class="si">{</span><span class="n">aj</span><span class="si">}</span><span class="s1"> is in bondchain </span><span class="si">{</span><span class="n">jbl</span><span class="o">.</span><span class="n">idx</span><span class="si">}</span><span class="s1"> (length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">jbl</span><span class="p">)</span><span class="si">}</span><span class="s1">) at index </span><span class="si">{</span><span class="n">jbl</span><span class="o">.</span><span class="n">idx_of</span><span class="p">(</span><span class="n">aj</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ibl</span><span class="o">==</span><span class="n">jbl</span><span class="p">:</span>
+                <span class="c1"># same bondchain</span>
+                <span class="k">assert</span> <span class="p">(</span><span class="n">ibl</span><span class="o">.</span><span class="n">is_head</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ibl</span><span class="o">.</span><span class="n">is_tail</span><span class="p">(</span><span class="n">aj</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="n">ibl</span><span class="o">.</span><span class="n">is_tail</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ibl</span><span class="o">.</span><span class="n">is_head</span><span class="p">(</span><span class="n">aj</span><span class="p">))</span>
+                <span class="n">ibl</span><span class="o">.</span><span class="n">cycletag</span><span class="p">()</span>
+                <span class="n">ibl</span><span class="o">.</span><span class="n">addbond</span><span class="p">(</span><span class="n">b_idx</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;bondchain </span><span class="si">{</span><span class="n">ibl</span><span class="o">.</span><span class="n">idx</span><span class="si">}</span><span class="s1"> is cyclized!&#39;</span><span class="p">)</span>
+                <span class="c1"># return dict(makescycle=True,cyclizedchain=i_cidx[&quot;bondchainidx&quot;])</span>
+            <span class="c1"># otherwise, we unify the two bondchains</span>
+            <span class="c1"># case 1: atom i is the head of its bondchain</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ibl</span><span class="o">.</span><span class="n">is_head</span><span class="p">(</span><span class="n">ai</span><span class="p">):</span>
+                    <span class="k">assert</span> <span class="n">jbl</span><span class="o">.</span><span class="n">is_tail</span><span class="p">(</span><span class="n">aj</span><span class="p">)</span>
+                    <span class="n">jbl</span><span class="o">.</span><span class="n">addbond</span><span class="p">(</span><span class="n">b_idx</span><span class="p">)</span>
+                    <span class="n">jbl</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">ibl</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">ibl</span><span class="o">.</span><span class="n">is_tail</span><span class="p">(</span><span class="n">ai</span><span class="p">)</span> <span class="ow">and</span> <span class="n">jbl</span><span class="o">.</span><span class="n">is_head</span><span class="p">(</span><span class="n">aj</span><span class="p">)</span>
+                    <span class="n">ibl</span><span class="o">.</span><span class="n">addbond</span><span class="p">(</span><span class="n">b_idx</span><span class="p">)</span>
+                    <span class="n">ibl</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">jbl</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Checking set of </span><span class="si">{</span><span class="n">bdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> bonds for C-C bondcycles&#39;</span><span class="p">)</span>
         <span class="n">new_bdf</span><span class="o">=</span><span class="n">bdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">new_bdf</span><span class="p">[</span><span class="s1">&#39;remove-to-uncyclize&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">new_bdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-        <span class="n">chains</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">])</span>
-        <span class="k">assert</span> <span class="nb">id</span><span class="p">(</span><span class="n">chains</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">chains</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">])</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">new_bdf</span>
-        <span class="n">cyclized_chains</span><span class="o">=</span><span class="p">{}</span>
-        <span class="n">chains_of_bonds</span><span class="o">=</span><span class="p">[]</span>
+        <span class="c1"># make a working copy of the bondchains structure from its snapshot</span>
+        <span class="n">bondchains</span><span class="o">=</span><span class="p">[</span><span class="n">working_bondlist</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]))]</span>
+        <span class="c1"># add links to placeholder bondchain structure one at a time and note any cyclization that occurs along the way</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="n">bdf</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="n">chain_idx</span><span class="p">,</span><span class="n">cyclized</span><span class="o">=</span><span class="n">addlink</span><span class="p">(</span><span class="n">chains</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">ai</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">aj</span><span class="p">)</span>
-            <span class="c1"># logger.debug(f&#39;bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to bondchain {chain_idx}&#39;)</span>
-            <span class="n">chains_of_bonds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chain_idx</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">cyclized</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">chain_idx</span> <span class="ow">in</span> <span class="n">cyclized_chains</span><span class="p">:</span>
-                <span class="n">cyclized_chains</span><span class="p">[</span><span class="n">chain_idx</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">chains_of_bonds</span><span class="p">)</span><span class="o">==</span><span class="n">bdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="n">bdf</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
-            <span class="c1"># logger.debug(f&#39;compiling bonds of cyclized chains: bond {i}&#39;)</span>
-            <span class="n">cidx</span><span class="o">=</span><span class="n">chains_of_bonds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="c1"># logger.debug(f&#39;compiling bonds of cyclized chains: cidx {chains_of_bonds[i]}&#39;)</span>
-            <span class="k">if</span> <span class="n">cidx</span> <span class="ow">in</span> <span class="n">cyclized_chains</span><span class="p">:</span>
-                <span class="n">cyclized_chains</span><span class="p">[</span><span class="n">cidx</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">cyclized_chains</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="o">==-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="p">:</span>
-                <span class="n">lb</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># last bondrec in list</span>
-                <span class="n">new_bdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">lb</span><span class="p">,</span><span class="s1">&#39;remove-to-uncyclize&#39;</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+            <span class="n">addlink</span><span class="p">(</span><span class="n">bondchains</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">ai</span><span class="p">,</span><span class="n">r</span><span class="o">.</span><span class="n">aj</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">bl</span> <span class="ow">in</span> <span class="n">bondchains</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bl</span><span class="o">.</span><span class="n">is_new_cycle</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Bondchain </span><span class="si">{</span><span class="n">bl</span><span class="o">.</span><span class="n">idx</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="s2">&quot;-&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">bl</span><span class="o">.</span><span class="n">atidx_list</span><span class="p">])</span><span class="si">}</span><span class="s1">) is a new cycle&#39;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-&gt; Cycle length is </span><span class="si">{</span><span class="n">bl</span><span class="o">.</span><span class="n">len</span><span class="p">()</span><span class="si">}</span><span class="s1"> reacted C=C bonds&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="o">&lt;=</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">bl</span><span class="o">.</span><span class="n">len</span><span class="p">()</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="p">:</span>
+                    <span class="n">longest_bond_index</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">bl</span><span class="o">.</span><span class="n">added_bonds</span><span class="p">)</span> <span class="c1"># remember, bdf is sorted by bondlength</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-&gt; limit is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_bondcycle_length</span><span class="si">}</span><span class="s1">, so we will break the longest added bond&#39;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-&gt; bond index </span><span class="si">{</span><span class="n">longest_bond_index</span><span class="si">}</span><span class="s1"> is the longest added bond in the cycle&#39;</span><span class="p">)</span>
+                    <span class="n">new_bdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">longest_bond_index</span><span class="p">,</span><span class="s1">&#39;remove-to-uncyclize&#39;</span><span class="p">]</span><span class="o">=</span><span class="kc">True</span>
+
+        <span class="c1">#     if rdict.get(&#39;makescycle&#39;,False):</span>
+        <span class="c1">#         chains_of_bonds[i]=rdict[&quot;cyclizedchain&quot;]</span>
+        <span class="c1">#         cyclized_chains.append(rdict[&quot;cyclizedchain&quot;])</span>
+        <span class="c1">#     else:</span>
+        <span class="c1">#         if rdict.get(&#39;retainedchain&#39;,-1)&gt;-1:</span>
+        <span class="c1">#             # a chain merger happened</span>
+        <span class="c1">#             chains_of_bonds[i]=rdict[&quot;retainedchain&quot;]</span>
+        <span class="c1">#             for k in chains_of_bonds.keys():</span>
+        <span class="c1">#                 if chains_of_bonds[k]==rdict[&quot;removedchain&quot;]:</span>
+        <span class="c1">#                     chains_of_bonds[k]=rdict[&quot;retainedchain&quot;]</span>
+        <span class="c1">#         else:</span>
+        <span class="c1">#             # no chain merger happened; do nothing</span>
+        <span class="c1">#             pass</span>
+        <span class="c1"># # for each bondcycle, identify the new bonds that collectively cause the cyclization</span>
+        <span class="c1"># cyclizing_bonds={}</span>
+        <span class="c1"># for k,v in chains_of_bonds.items():</span>
+        <span class="c1">#     if v in cyclized_chains:</span>
+        <span class="c1">#         if not v in cyclizing_bonds:</span>
+        <span class="c1">#             cyclizing_bonds[v]=[]</span>
+        <span class="c1">#         cyclizing_bonds[v].append(k)</span>
+        
+        <span class="c1"># for cycleidx,newbonds in cyclizing_bonds.items():</span>
+        <span class="c1">#     cyclelength=len(chains[cycleidx])</span>
+        <span class="c1"># #     # logger.debug(f&#39;bond {i} {r.ai}-{r.aj} ({r.reactantName}) adds to bondchain {chain_idx}&#39;)</span>
+        <span class="c1"># #     chains_of_bonds.append(chain_idx)</span>
+        <span class="c1"># #     if cyclized and not chain_idx in cyclized_chains:</span>
+        <span class="c1"># #         cyclized_chains[chain_idx]=[]</span>
+        <span class="c1"># # assert len(chains_of_bonds)==bdf.shape[0]</span>
+        <span class="c1"># for i,r in bdf.iterrows():</span>
+        <span class="c1">#     # logger.debug(f&#39;compiling bonds of cyclized chains: bond {i}&#39;)</span>
+        <span class="c1">#     cidx=chains_of_bonds[i]</span>
+        <span class="c1">#     # logger.debug(f&#39;compiling bonds of cyclized chains: cidx {chains_of_bonds[i]}&#39;)</span>
+        <span class="c1">#     if cidx in cyclized_chains:</span>
+        <span class="c1">#         cyclized_chains[cidx].append(i)</span>
+        <span class="c1"># for k,v in cyclized_chains.items():</span>
+        <span class="c1">#     if self.min_bondcycle_length&lt;=0 or len(v)&lt;self.min_bondcycle_length:</span>
+        <span class="c1">#         lb=v[-1]  # last bondrec in list</span>
+        <span class="c1">#         new_bdf.loc[lb,&#39;remove-to-uncyclize&#39;]=True</span>
         <span class="k">return</span> <span class="n">new_bdf</span></div>
 
 
