@@ -450,7 +450,7 @@
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">radial_increment</span></code></p></td>
 <td><p>float</p></td>
-<td><p>increment by which search radius is increased if no bonds are found at current radius (default 0.25 nm)</p></td>
+<td><p>increment in nm by which search radius is increased if no bonds are found at current radius (default 0.25)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_iterations</span></code></p></td>
 <td><p>int</p></td>
@@ -464,9 +464,14 @@
 <td><p>float [0-1]</p></td>
 <td><p>conversion above which bond probabilities are ignored</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">min_allowable_bondcycle_length</span></code></p></td>
+<td><p>int</p></td>
+<td><p>minimum number of C atoms allowed in a cycle of C-C bonds that form via polymerization (default 0)</p></td>
+</tr>
 </tbody>
 </table>
 </div></blockquote>
+<p>The <code class="docutils literal notranslate"><span class="pre">min_allowable_bondcycle_length</span></code> refers to the fact that in systems that polymerize via activation of carbon-carbon double bonds, it is possible in the HTPolyNet implementation that the “head” of a chain of C-C bonds can attack the “tail” and form a cycle, because those represent atom types that can react.  It is unclear whether such cycles actually form; if a monomer remains bound to a radical initiator it is hard to see how the head of the growing chain could attack it, but maybe it could.  Setting <code class="docutils literal notranslate"><span class="pre">min_allowable_bondcycle_length</span></code> to zero (the default) disallows any bonds that would form cycles involving only atoms that were once part of C=C double bonds.  (Think about the backbone of polystyrene, for example.)  In a given CURE iteration, HTPolyNet tests the full set of suggested bonds to see if together they result in any cycles, and for each nascent cycle longer than <code class="docutils literal notranslate"><span class="pre">min_allowable_bondcycle_length</span></code>, HTPolyNet will disallow the nascent bond that has the longest initial length.</p>
 </li>
 </ul>
 </div></blockquote>
