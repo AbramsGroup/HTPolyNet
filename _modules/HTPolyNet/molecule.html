@@ -54,6 +54,7 @@
 <span class="kn">from</span> <span class="nn">HTPolyNet.gromacs</span> <span class="kn">import</span> <span class="n">mdp_modify</span><span class="p">,</span><span class="n">gro_from_trr</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.command</span> <span class="kn">import</span> <span class="n">Command</span>
 <span class="kn">from</span> <span class="nn">HTPolyNet.reaction</span> <span class="kn">import</span> <span class="n">Reaction</span><span class="p">,</span> <span class="n">ReactionList</span><span class="p">,</span> <span class="n">reaction_stage</span><span class="p">,</span> <span class="n">generate_product_name</span><span class="p">,</span> <span class="n">reactant_resid_to_presid</span>
+<span class="kn">from</span> <span class="nn">HTPolyNet.chain</span> <span class="kn">import</span> <span class="n">ChainManager</span>
 
 <span class="n">logger</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -395,7 +396,8 @@
                         <span class="n">idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TC</span><span class="o">.</span><span class="n">get_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;globalIdx&#39;</span><span class="p">,{</span><span class="s1">&#39;atomName&#39;</span><span class="p">:</span><span class="n">bn</span><span class="p">,</span><span class="s1">&#39;resNum&#39;</span><span class="p">:</span><span class="n">rnum</span><span class="p">}))</span>
                         <span class="n">TC</span><span class="o">.</span><span class="n">set_gro_attribute_by_attributes</span><span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="n">z</span><span class="p">,{</span><span class="s1">&#39;atomName&#39;</span><span class="p">:</span><span class="n">bn</span><span class="p">,</span><span class="s1">&#39;resNum&#39;</span><span class="p">:</span><span class="n">rnum</span><span class="p">})</span>
 
-        <span class="n">TC</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
+        <span class="c1"># TC.idx_lists[&#39;bondchain&#39;]=[]</span>
+        <span class="n">TC</span><span class="o">.</span><span class="n">ChainManager</span><span class="o">=</span><span class="n">ChainManager</span><span class="p">(</span><span class="n">create_if_missing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">pairs</span><span class="o">=</span><span class="n">product</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span><span class="n">idx</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">j</span><span class="p">:</span>
@@ -420,8 +422,10 @@
                         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;In molecule </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">, cannot identify bonded reactive head and tail atoms</span><span class="se">\n</span><span class="s1">Assuming </span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s1"> is head and </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1"> is tail&#39;</span><span class="p">)</span>
                         <span class="n">entry</span><span class="o">=</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
                     <span class="c1"># logger.debug(f&#39;Adding {entry} to chainlist of {self.name}&#39;)</span>
-                    <span class="n">TC</span><span class="o">.</span><span class="n">idx_lists</span><span class="p">[</span><span class="s1">&#39;bondchain&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
-        <span class="n">TC</span><span class="o">.</span><span class="n">reset_grx_attributes_from_idx_list</span><span class="p">(</span><span class="s1">&#39;bondchain&#39;</span><span class="p">)</span>
+                    <span class="n">TC</span><span class="o">.</span><span class="n">ChainManager</span><span class="o">.</span><span class="n">injest_bond</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">entry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="c1"># TC.idx_lists[&#39;bondchain&#39;].append(entry)</span>
+        <span class="c1"># TC.reset_grx_attributes_from_idx_list(&#39;bondchain&#39;)</span>
+        <span class="n">TC</span><span class="o">.</span><span class="n">ChainManager</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">TC</span><span class="o">.</span><span class="n">Coordinates</span><span class="o">.</span><span class="n">A</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initialize_molecule_rings</span><span class="p">()</span></div>
 
 
