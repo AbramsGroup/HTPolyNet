@@ -17,16 +17,22 @@ cd HTPolyNet
 pip install -e .
 ```
 
-Once installed, the user has access to the main `htpolynet` command.
+Once installed, the user has access to the main ``htpolynet`` command.
 
-The programs ``antechamber``, ``parmchk2`` and ``tleap`` from AmberTools must be in your path.  These can be installed using the ``ambertools`` package from ``conda-forge`` or compiled from source.
+IMPORTANT NOTE: The programs ``antechamber``, ``parmchk2`` and ``tleap`` from AmberTools must be in your path.  These can be installed using the ``ambertools`` package from ``conda-forge`` or compiled from source.
 
+## Documentation
+
+Please consult documentation at [abramsgroup.github.io/HTPolyNet](https://abramsgroup.github.io/HTPolyNet/).
 
 ## Release History
 * 1.0.9
-   * `minimum_bondcycle_length` parameter added to allow for cyclic polymerization above a certain threshold length
+   * ``minimum_bondcycle_length`` parameter added to allow for cyclic polymerization above a certain threshold length
+   * bugfixes: 
+     * rings not transferred from monomer templates if they are pre-parameterized
+     * atom indexes in bondchain structure not remapped after atom deletion
 * 1.0.8
-    * uses `chordless_cycles` to find rings; ringidx no long unique atom attribute; improved ring-pierce detection
+    * uses ``chordless_cycles`` to find rings; ringidx no long unique atom attribute; improved ring-pierce detection
 * 1.0.7.2
     * moved Library package to resources subpackage of HTPolyNet.HTPolyNet
 * 1.0.6

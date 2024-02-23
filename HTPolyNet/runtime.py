@@ -429,7 +429,7 @@ class Runtime:
             logger.debug(f'Fetching parameterized {mname}')
             exts=pfs.fetch_molecule_files(mname)
             logger.debug(f'fetched {mname} exts {exts}')
-            M.load_top_gro(f'{mname}.top',f'{mname}.gro',mol2filename='',wrap_coords=False)
+            M.load_top_gro(f'{mname}.top',f'{mname}.gro',tpxfilename=f'{mname}.tpx',mol2filename='',wrap_coords=False)
             M.TopoCoord.read_gro_attributes(f'{mname}.grx')
             M.set_sequence_from_coordinates()
             if M.generator:
@@ -599,8 +599,7 @@ class Runtime:
         TC.atom_count()
         TC.set_grx_attributes()
         TC.inherit_grx_attributes_from_molecules(self.cfg.molecules,self.cfg.initial_composition)
-        for list_name in ['bondchain']:
-            TC.reset_idx_list_from_grx_attributes(list_name)
+        TC.ChainManager.from_dataframe(TC.Coordinates.A)
         TC.make_resid_graph()
         TC.write_grx_attributes(f'{inpfnm}.grx')
         logger.info(f'Coordinates "{inpfnm}.gro" in {pfs.cwd()}')

@@ -22,6 +22,7 @@ from HTPolyNet.ambertools import GAFFParameterize
 from HTPolyNet.gromacs import mdp_modify,gro_from_trr
 from HTPolyNet.command import Command
 from HTPolyNet.reaction import Reaction, ReactionList, reaction_stage, generate_product_name, reactant_resid_to_presid
+from HTPolyNet.chain import ChainManager
 
 logger=logging.getLogger(__name__)
 
@@ -326,7 +327,8 @@ class Molecule:
                         idx.append(TC.get_gro_attribute_by_attributes('globalIdx',{'atomName':bn,'resNum':rnum}))
                         TC.set_gro_attribute_by_attributes('z',z,{'atomName':bn,'resNum':rnum})
 
-        TC.idx_lists['bondchain']=[]
+        # TC.idx_lists['bondchain']=[]
+        TC.ChainManager=ChainManager(create_if_missing=True)
         pairs=product(idx,idx)
         for i,j in pairs:
             if i<j:
@@ -351,8 +353,10 @@ class Molecule:
                         logger.warning(f'In molecule {self.name}, cannot identify bonded reactive head and tail atoms\nAssuming {j} is head and {i} is tail')
                         entry=[j,i]
                     # logger.debug(f'Adding {entry} to chainlist of {self.name}')
-                    TC.idx_lists['bondchain'].append(entry)
-        TC.reset_grx_attributes_from_idx_list('bondchain')
+                    TC.ChainManager.injest_bond(entry[0],entry[1])
+                    # TC.idx_lists['bondchain'].append(entry)
+        # TC.reset_grx_attributes_from_idx_list('bondchain')
+        TC.ChainManager.to_dataframe(TC.Coordinates.A)
         self.initialize_molecule_rings()
 
     def previously_parameterized(self):

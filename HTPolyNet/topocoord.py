@@ -21,7 +21,7 @@ from HTPolyNet.bondtemplate import BondTemplate,ReactionBond
 from HTPolyNet.matrix4 import Matrix4
 from HTPolyNet.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 import HTPolyNet.projectfilesystem as pfs
-# import HTPolyNet.polybonds as pb
+from HTPolyNet.chain import ChainManager
 
 logger=logging.getLogger(__name__)
 
@@ -34,7 +34,6 @@ class BTRC(Enum):
     passed = 0
     failed_pierced_ring = 1       # candidate bond pierces a ring
     failed_shortcircuit = 2       # candidate bond creates a short-circuit
-    # failed_bondcycle = 3          # Bondcycles are handled collectively
     unset = 99
 
 class TopoCoord:
@@ -56,7 +55,6 @@ class TopoCoord:
         :type mol2filename: str, optional
         """
         wrap_coords=kwargs.get('wrap_coords',False)
-        # self.basefilenames={}
         self.files={}
         self.files['top']=os.path.abspath(topfilename)
         self.files['tpx']=os.path.abspath(tpxfilename)
@@ -64,9 +62,9 @@ class TopoCoord:
         self.files['grx']=os.path.abspath(grxfilename)
         self.files['mol2']=os.path.abspath(mol2filename)
         self.grxattr=[]
-        self.idx_lists={}
-        self.idx_lists['bondchain']=[]
-        # self.polybondchainmanager=pb.PolyBondChainManager()
+        self.ChainManager=ChainManager()
+        # self.idx_lists={}
+        # self.idx_lists['bondchain']=[]
         if grofilename!='':
             self.read_gro(grofilename,wrap_coords=wrap_coords)
         else:
@@ -81,6 +79,7 @@ class TopoCoord:
             self.read_mol2(mol2filename,**kwargs)
         if grxfilename!='':
             self.read_gro_attributes(grxfilename)
+            # done in read_gro_attributes self.ChainManager.from_dataframe(self.Coordinates.A)
         self.Coordinates.claim_parent(self)
 
     @classmethod
@@ -104,7 +103,11 @@ class TopoCoord:
         idx_to_ignore=self.Coordinates.find_sacrificial_H(pairs,self.Topology,explicit_sacH=explicit_sacH)
         logger.debug(f'idx_to_ignore {idx_to_ignore}')
         self.Topology.add_bonds(pairs)
-        self.bondchainlist_update(pairs,msg='TopoCoord.make_bonds')
+        logger.debug(f'Prior to injesting bonds, chainmanager reports {len(self.ChainManager.chains)} chains')
+        self.ChainManager.injest_bonds(pairs)
+        logger.debug(f'After injesting bonds, chainmanager reports {len(self.ChainManager.chains)} chains')
+        self.ChainManager.to_dataframe(self.Coordinates.A)
+        # self.bondchainlist_update(pairs,msg='TopoCoord.make_bonds')
         self.Topology.null_check(msg='add_bonds')
         rename=False if len(explicit_sacH)>0 else False
         idx_to_delete=self.Coordinates.find_sacrificial_H(pairs,self.Topology,explicit_sacH=explicit_sacH,rename=rename)
@@ -135,9 +138,9 @@ class TopoCoord:
         idx_mapper=self.Topology.delete_atoms(atomlist)
         assert type(idx_mapper)==dict
         # logger.debug(f'idx_mapper: {idx_mapper}')
-        for list_name in ['bondchain']:
-            # logger.debug(f'remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}')
-            self.reset_idx_list_from_grx_attributes(list_name)
+        # for list_name in ['bondchain']:
+        #     # logger.debug(f'remapping idxs in stale {list_name} lists: {self.idx_lists[list_name]}')
+        #     self.reset_idx_list_from_grx_attributes(list_name)
             # self.remap_idx_list(list_name,idx_mapper)
         # logger.debug(f'finished')
         return idx_mapper
@@ -473,6 +476,7 @@ class TopoCoord:
             logger.debug(f'Deleting {len(idx_to_delete)} atoms.')
             idx_mapper=self.delete_atoms(idx_to_delete) # will result in full reindexing
             # logger.debug(f'null check')
+            self.ChainManager.remap(idx_mapper)
             self.Topology.null_check(msg='delete_atoms')
             # reindex all atoms in the list of bonds sent in, and write it out
             logger.debug(f'z-decrement, nreactions increment')
@@ -494,8 +498,8 @@ class TopoCoord:
                 tdf=pd.DataFrame({'old':list(idx_mapper.keys()),'new':list(idx_mapper.values())})
                 tdf.to_csv(write_mapper_to,sep=' ',index=False)
             logger.debug('finished')
-            # TODO: must rebuild the ring list since indexes have changed?  or just remap
             self.Topology.rings.remap(idx_mapper)
+            # self.bondchainlist_remap(idx_mapper)
             return ri_bdf,pi_df
 
     def read_top(self,topfilename):
@@ -763,13 +767,12 @@ class TopoCoord:
         self.files['grx']=os.path.abspath(grxfilename)
         logger.debug(f'Reading {grxfilename}')
         attributes_read=self.Coordinates.read_atomset_attributes(grxfilename,attributes=attribute_list)
-        if 'bondchain' in attributes_read and 'bondchain_idx' in attributes_read:
-            self.reset_idx_list_from_grx_attributes('bondchain')
+        self.ChainManager.from_dataframe(self.Coordinates.A)
         if attributes_read!=self.grxattr:
             self.grxattr=attributes_read
 
     def set_gro_attribute(self,attribute,srs):
-        """set_gro_attribute sets attribute of atoms to srs (drillst through to Coordinates.set_atomset_attributes())
+        """set_gro_attribute sets attribute of atoms to srs (drills through to Coordinates.set_atomset_attributes())
 
         :param attribute: name of attribute
         :type attribute: str
@@ -1193,11 +1196,14 @@ class TopoCoord:
         """
         self.Topology.merge(other.Topology)
         shifts=self.Coordinates.merge(other.Coordinates)
-        for name,idx_lists in other.idx_lists.items():
-            # logger.debug(f'TopoCoord merge: list_name {name} lists {idx_lists}')
-            for a_list in idx_lists:
-                self.idx_lists[name].append([x+shifts[0] for x in a_list])
-            self.reset_grx_attributes_from_idx_list(name)
+        other.ChainManager.shift(shifts[0]) # updates atom idx only
+        self.ChainManager.injest_other(other.ChainManager)
+        self.ChainManager.to_dataframe(self.Coordinates.A)
+        # for name,idx_lists in other.idx_lists.items():
+        #     # logger.debug(f'TopoCoord merge: list_name {name} lists {idx_lists}')
+        #     for a_list in idx_lists:
+        #         self.idx_lists[name].append([x+shifts[0] for x in a_list])
+        #     self.reset_grx_attributes_from_idx_list(name)
         return shifts
 
     def bondtest_df(self,df:pd.DataFrame,pbc=[1,1,1],show_piercings=True):
@@ -1392,76 +1398,83 @@ class TopoCoord:
                     self.idx_lists[list_name][i].append(tmp_dict[i][j])
         # logger.debug(f'-> idx_lists[{list_name}]: {self.idx_lists[list_name]}')
 
-    def bondchainlist_update(self,new_bond_recs,msg=''):
-        """bondchainlist_update updates the bondchain index lists due to generation of new bonds
+    # def bondchainlist_remap(self,idx_mapper):
+    #     for c in self.idx_lists['bondchain']:
+    #         newlist=[idx_mapper[x] for x in c]
+            
+    #         for i in range(len(c)):
+    #             c[i]=idx_mapper.get(c[i],c[i])
 
-        :param new_bond_recs: list of bond records, each a tuple of two ints corresponding to atom indices
-        :type new_bond_recs: list
-        :param msg: a nice message (unused), defaults to ''
-        :type msg: str, optional
-        """
-        chainlists=self.idx_lists['bondchain']
-        if len(chainlists)==0: return
-        # logger.debug(f'pre {msg} chainlists')
-        # for i,c in enumerate(chainlists):
-        #     logger.debug(f'  {i} {c}')
-        for b in new_bond_recs:
-            aidx,bidx=b[0],b[1]
-            ar=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aidx})
-            br=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bidx})
-            if ar==br: continue # ignore intramolecular bonds
-            # logger.debug(f'bondchainlist_update pair {aidx} {bidx}')
-            ac=self.get_gro_attribute_by_attributes('bondchain',{'globalIdx':aidx})
-            bc=self.get_gro_attribute_by_attributes('bondchain',{'globalIdx':bidx})
-            logger.debug(f'ac {ac} bc {bc}')
-            if ac==-1 or bc==-1:
-                # neither of these newly bonded atoms is already in a bondchain, so
-                # there is no possibility that this new bond can join two chains.
-                continue
-            # logger.debug(f'bondchain of bidx {bidx}: {chainlists[bc]}')
-            # logger.debug(f'bondchain of aidx {aidx}: {chainlists[ac]}')
-            aci=self.get_gro_attribute_by_attributes('bondchain_idx',{'globalIdx':aidx})
-            bci=self.get_gro_attribute_by_attributes('bondchain_idx',{'globalIdx':bidx})
-            logger.debug(f' -> {aidx}-{bidx}: ac {ac} #{len(chainlists[ac])} aci {aci} bc {bc} #{len(chainlists[bc])} bci {bci}')
-            # one must be a head and the other a tail
-            if aci==0: # a is a head
-                if len(chainlists[bc])-1!=bci:
-                    logger.warning(f'Atom {bidx} has index {bci} in bondchain {bc} but that bondchain has {len(chainlists[bc])} elements, so it cannot be the tail of the bondchain. The tail appears to be atom {chainlists[bc][-1]}. So something is wrong, and I am not merging these chains.')
-                    logger.debug(f'bondchain of {aidx} {chainlists[ac]}')
-                    logger.debug(f'bondchain of {bidx} {chainlists[bc]}')
-                    continue
-                c1=ac
-                c2=bc
-            elif bci==0: # b is a head
-                if len(chainlists[ac])-1!=aci:
-                    logger.warning(f'Atom {aidx} has index {aci} in bondchain {ac} but that bondchain has {len(chainlists[ac])} elements, so it cannot be the tail of the bondchain. The tail appears to be atom {chainlists[ac][-1]}. So something is wrong, and I am not merging these chains.')
-                    logger.debug(f'bondchain of {aidx} {chainlists[ac]}')
-                    logger.debug(f'bondchain of {bidx} {chainlists[bc]}')
-                    continue
-                c1=bc
-                c2=ac
-            else:
-                logger.debug(f'Neither of {aidx} or {bidx} are heads of their respective chains.')
-                logger.debug(f'This is most likely happening because of branching, which is permitted but')
-                logger.debug(f'does not allow for merging of 1-D chains.')
-                continue
-            chainlists[c2].extend(chainlists[c1])
-            for aidx in chainlists[c1]:
-                self.set_gro_attribute_by_attributes('bondchain',c2,{'globalIdx':aidx})
-                self.set_gro_attribute_by_attributes('bondchain_idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
-            # logger.debug(f'removing bondchain {c1}')
-            chainlists.remove(chainlists[c1])
-            # since we remove c1, all indices greater than c1 must decrement
-            dec_us=np.array(self.Coordinates.A['bondchain'])
-            bad_chain_idx=np.where(dec_us>c1)
-            # logger.debug(f'bad_chain_idx: {bad_chain_idx}')
-            # logger.debug(f'{dec_us[bad_chain_idx]}')
-            dec_us[bad_chain_idx]-=1
-            self.Coordinates.A['bondchain']=dec_us
-        cnms=[]
-        for c in self.idx_lists['bondchain']:
-            cnms.append([self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
-        # logger.debug(f'post {msg} chains {self.idx_lists["bondchain"]} {cnms}')
+    # def bondchainlist_update(self,new_bond_recs,msg=''):
+    #     """bondchainlist_update updates the bondchain index lists due to generation of new bonds
+
+    #     :param new_bond_recs: list of bond records, each a tuple of two ints corresponding to atom indices
+    #     :type new_bond_recs: list
+    #     :param msg: a nice message (unused), defaults to ''
+    #     :type msg: str, optional
+    #     """
+    #     chainlists=self.idx_lists['bondchain']
+    #     if len(chainlists)==0: return
+    #     # logger.debug(f'pre {msg} chainlists')
+    #     # for i,c in enumerate(chainlists):
+    #     #     logger.debug(f'  {i} {c}')
+    #     for b in new_bond_recs:
+    #         aidx,bidx=b[0],b[1]
+    #         ar=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':aidx})
+    #         br=self.get_gro_attribute_by_attributes('resNum',{'globalIdx':bidx})
+    #         if ar==br: continue # ignore intramolecular bonds
+    #         # logger.debug(f'bondchainlist_update pair {aidx} {bidx}')
+    #         ac=self.get_gro_attribute_by_attributes('bondchain',{'globalIdx':aidx})
+    #         bc=self.get_gro_attribute_by_attributes('bondchain',{'globalIdx':bidx})
+    #         logger.debug(f'ac {ac} bc {bc}')
+    #         if ac==-1 or bc==-1:
+    #             # neither of these newly bonded atoms is already in a bondchain, so
+    #             # there is no possibility that this new bond can join two chains.
+    #             continue
+    #         # logger.debug(f'bondchain of bidx {bidx}: {chainlists[bc]}')
+    #         # logger.debug(f'bondchain of aidx {aidx}: {chainlists[ac]}')
+    #         aci=self.get_gro_attribute_by_attributes('bondchain_idx',{'globalIdx':aidx})
+    #         bci=self.get_gro_attribute_by_attributes('bondchain_idx',{'globalIdx':bidx})
+    #         logger.debug(f' -> {aidx}-{bidx}: ac {ac} #{len(chainlists[ac])} aci {aci} bc {bc} #{len(chainlists[bc])} bci {bci}')
+    #         # one must be a head and the other a tail
+    #         if aci==0: # a is a head
+    #             if len(chainlists[bc])-1!=bci:
+    #                 logger.warning(f'Atom {bidx} has index {bci} in bondchain {bc} but that bondchain has {len(chainlists[bc])} elements, so it cannot be the tail of the bondchain. The tail appears to be atom {chainlists[bc][-1]}. So something is wrong, and I am not merging these chains.')
+    #                 logger.debug(f'bondchain of {aidx} {chainlists[ac]}')
+    #                 logger.debug(f'bondchain of {bidx} {chainlists[bc]}')
+    #                 continue
+    #             c1=ac
+    #             c2=bc
+    #         elif bci==0: # b is a head
+    #             if len(chainlists[ac])-1!=aci:
+    #                 logger.warning(f'Atom {aidx} has index {aci} in bondchain {ac} but that bondchain has {len(chainlists[ac])} elements, so it cannot be the tail of the bondchain. The tail appears to be atom {chainlists[ac][-1]}. So something is wrong, and I am not merging these chains.')
+    #                 logger.debug(f'bondchain of {aidx} {chainlists[ac]}')
+    #                 logger.debug(f'bondchain of {bidx} {chainlists[bc]}')
+    #                 continue
+    #             c1=bc
+    #             c2=ac
+    #         else:
+    #             logger.debug(f'Neither of {aidx} or {bidx} are heads of their respective chains.')
+    #             logger.debug(f'This is most likely happening because of branching, which is permitted but')
+    #             logger.debug(f'does not allow for merging of 1-D chains.')
+    #             continue
+    #         chainlists[c2].extend(chainlists[c1])
+    #         for aidx in chainlists[c1]:
+    #             self.set_gro_attribute_by_attributes('bondchain',c2,{'globalIdx':aidx})
+    #             self.set_gro_attribute_by_attributes('bondchain_idx',chainlists[c2].index(aidx),{'globalIdx':aidx})
+    #         # logger.debug(f'removing bondchain {c1}')
+    #         chainlists.remove(chainlists[c1])
+    #         # since we remove c1, all indices greater than c1 must decrement
+    #         dec_us=np.array(self.Coordinates.A['bondchain'])
+    #         bad_chain_idx=np.where(dec_us>c1)
+    #         # logger.debug(f'bad_chain_idx: {bad_chain_idx}')
+    #         # logger.debug(f'{dec_us[bad_chain_idx]}')
+    #         dec_us[bad_chain_idx]-=1
+    #         self.Coordinates.A['bondchain']=dec_us
+    #     # cnms=[]
+    #     # for c in self.idx_lists['bondchain']:
+    #     #     cnms.append([self.get_gro_attribute_by_attributes('atomName',{'globalIdx':x}) for x in c])
+    #     # logger.debug(f'post {msg} chains {self.idx_lists["bondchain"]} {cnms}')
 
     # def makes_bondcycle(self,aidx,bidx):
     #     """makes_bondcycle checks the current 'bondchain' index lists to see if a bond between aidx and bidx (global atom indices) would generate a C-C' bondcycle, which they do if they have the same 'bondchain' attribute, shorter than the minimum allowable bondcycle length, if this is not 0
@@ -1490,79 +1503,87 @@ class TopoCoord:
         :return: list of bond records that results in no new bondcycles
         :rtype: list
         """
-        class working_bondlist:
-            def __init__(self,my_idx,idx_list):
-                self.idx=my_idx
-                self.atidx_list=idx_list
-                self.added_bonds=[]
-                self.is_new_cycle=False
-            def idx_of(self,ai):
-                return self.atidx_list.index(ai)
-            def is_head(self,ai):
-                return self.idx_of(ai)==0
-            def len(self):
-                return len(self.atidx_list)
-            def is_tail(self,ai):
-                return self.idx_of(ai)==self.len()-1
-            def addbond(self,bidx):
-                self.added_bonds.append(bidx)
-            def cycletag(self):
-                self.is_new_cycle=True
-            def merge(self,other):
-                self.atidx_list.extend(other.atidx_list)
-                other.atidx_list=[]
-                self.added_bonds.extend(other.added_bonds)
-                other.added_bonds=[]
-                other.absorber=self
+        # class working_bondlist:
+        #     def __init__(self,my_idx,idx_list):
+        #         self.idx=my_idx
+        #         self.atidx_list=idx_list
+        #         self.added_bonds=[]
+        #         self.is_new_cycle=False
+        #     def idx_of(self,ai):
+        #         return self.atidx_list.index(ai)
+        #     def is_head(self,ai):
+        #         return self.idx_of(ai)==0
+        #     def len(self):
+        #         return len(self.atidx_list)
+        #     def is_tail(self,ai):
+        #         return self.idx_of(ai)==self.len()-1
+        #     def addbond(self,bidx):
+        #         self.added_bonds.append(bidx)
+        #     def cycletag(self):
+        #         self.is_new_cycle=True
+        #     def merge(self,other):
+        #         self.atidx_list.extend(other.atidx_list)
+        #         other.atidx_list=[]
+        #         self.added_bonds.extend(other.added_bonds)
+        #         other.added_bonds=[]
+        #         other.absorber=self
 
-        def addlink(bondchains,b_idx,ai,aj):
-            ibl=None
-            jbl=None
-            for bl in bondchains:
-                if ai in bl.atidx_list:
-                    ibl=bl
-                if aj in bl.atidx_list:
-                    jbl=bl
-            if not ibl or not jbl:
-                # evidently this is a system that cannot form bondchains
-                return
-            logger.debug(f'i-atom {ai} is in bondchain {ibl.idx} (length {ibl.len()}) at index {ibl.idx_of(ai)}')
-            logger.debug(f'j-atom {aj} is in bondchain {jbl.idx} (length {jbl.len()}) at index {jbl.idx_of(aj)}')
-            if ibl==jbl:
-                # same bondchain
-                assert (ibl.is_head(ai) and ibl.is_tail(aj)) or (ibl.is_tail(ai) and ibl.is_head(aj))
-                ibl.cycletag()
-                ibl.addbond(b_idx)
-                logger.debug(f'bondchain {ibl.idx} is cyclized!')
-                # return dict(makescycle=True,cyclizedchain=i_cidx["bondchainidx"])
-            # otherwise, we unify the two bondchains
-            else:
-                if ibl.is_head(ai):
-                    assert jbl.is_tail(aj)
-                    jbl.addbond(b_idx)
-                    jbl.merge(ibl)
-                else:
-                    assert ibl.is_tail(ai) and jbl.is_head(aj)
-                    ibl.addbond(b_idx)
-                    ibl.merge(jbl)
+        # def addlink(bondchains,b_idx,ai,aj):
+        #     ibl=None
+        #     jbl=None
+        #     for bl in bondchains:
+        #         if ai in bl.atidx_list:
+        #             ibl=bl
+        #         if aj in bl.atidx_list:
+        #             jbl=bl
+        #     if not ibl or not jbl:
+        #         # evidently this is a system that cannot form bondchains
+        #         return
+        #     logger.debug(f'i-atom {ai} is in bondchain {ibl.idx} (length {ibl.len()}) at index {ibl.idx_of(ai)}')
+        #     logger.debug(f'j-atom {aj} is in bondchain {jbl.idx} (length {jbl.len()}) at index {jbl.idx_of(aj)}')
+        #     if ibl==jbl:
+        #         # same bondchain
+        #         assert (ibl.is_head(ai) and ibl.is_tail(aj)) or (ibl.is_tail(ai) and ibl.is_head(aj))
+        #         ibl.cycletag()
+        #         ibl.addbond(b_idx)
+        #         logger.debug(f'bondchain {ibl.idx} is cyclized!')
+        #         # return dict(makescycle=True,cyclizedchain=i_cidx["bondchainidx"])
+        #     # otherwise, we unify the two bondchains
+        #     else:
+        #         if ibl.is_head(ai):
+        #             assert jbl.is_tail(aj)
+        #             jbl.addbond(b_idx)
+        #             jbl.merge(ibl)
+        #         else:
+        #             assert ibl.is_tail(ai) and jbl.is_head(aj)
+        #             ibl.addbond(b_idx)
+        #             ibl.merge(jbl)
 
         logger.debug(f'Checking set of {bdf.shape[0]} bonds for cyclic C-C bondchains')
         new_bdf=bdf.copy()
         new_bdf['remove-to-uncyclize']=[False for _ in range(new_bdf.shape[0])]
-        if len(self.idx_lists['bondchain'])==0:
-            logger.debug(f'System has no bondchain idx_lists; cyclic C-C bondchain checking is skipped')
+        if len(self.ChainManager.chains)==0:
+            logger.debug(f'System has no bondchains; cyclic C-C bondchain checking is skipped')
             return new_bdf
-        # make a working copy of the bondchains structure from its snapshot
-        bondchains=[working_bondlist(i,self.idx_lists['bondchain'][i][:]) for i in range(len(self.idx_lists['bondchain']))]
+        # make a temporary working copy of the bondchains structure from its snapshot
+        tmp_local_cm=deepcopy(self.ChainManager)
+        existing_cycles=[x.idx for x in tmp_local_cm.chains if x.is_cyclic]
+        logger.debug(f'Existing cyclic C-C chains: {existing_cycles}')
+        # bondchains=[working_bondlist(i,self.idx_lists['bondchain'][i][:]) for i in range(len(self.idx_lists['bondchain']))]
         for i,r in bdf.iterrows():
-            addlink(bondchains,i,r.ai,r.aj)
-        for bl in bondchains:
-            if bl.is_new_cycle:
-                logger.debug(f'Bondchain {bl.idx} ({"-".join([str(x) for x in bl.atidx_list])}) is a new cycle')
-                logger.debug(f'-> New bonds added: {",".join([str(x) for x in bl.added_bonds])}')
-                logger.debug(f'-> Cycle length is {bl.len()} atoms')
-                if self.min_bondcycle_length<=0 or bl.len()<self.min_bondcycle_length:
-                    longest_bond_index=max(bl.added_bonds) # remember, bdf is sorted by bondlength
+            tmp_local_cm.injest_bond(r.ai,r.aj)
+            c=tmp_local_cm.chain_of(r.ai)
+            if not hasattr(c,'added_bonds'):
+                c.added_bonds=[]
+            c.added_bonds.append(i)
+            # addlink(bondchains,i,r.ai,r.aj)
+        for c in tmp_local_cm.chains:
+            if c.is_cyclic and not c.idx in existing_cycles:
+                logger.debug(f'Bondchain {c.idx} ({"-".join([str(x) for x in c.idx_list])}) is a new cycle')
+                logger.debug(f'-> New bonds added: {",".join([str(x) for x in c.added_bonds])}')
+                logger.debug(f'-> Cycle length is {len(c.idx_list)} atoms')
+                if self.min_bondcycle_length<=0 or len(c.idx_list)<self.min_bondcycle_length:
+                    longest_bond_index=max(c.added_bonds) # remember, bdf is sorted by bondlength
                     logger.debug(f'-> limit is {self.min_bondcycle_length}, so we will break the longest added bond')
                     longest_bond_length=new_bdf.loc[longest_bond_index,'r']
                     logger.debug(f'-> bond index {longest_bond_index} (length {longest_bond_length:.3f} nm) is the longest added bond in the cycle')
@@ -1640,14 +1661,18 @@ class TopoCoord:
         resids=[self.get_gro_attribute_by_attributes('resNum',{'globalIdx':x}) for x in atom_idx]
         chains=[self.get_gro_attribute_by_attributes('bondchain',{'globalIdx':x}) for x in atom_idx]
         chain_idx=[self.get_gro_attribute_by_attributes('bondchain_idx',{'globalIdx':x}) for x in atom_idx]
-        # logger.debug(f'chains {chains} chain_idx {chain_idx}')
+        logger.debug(f'atoms {atom_idx} chains {chains} chain_idx {chain_idx}')
+        cm=self.ChainManager
+        logger.debug(f'chain manager has {len(cm.chains)} chains')
         oneaway_resids=[None,None]
         oneaway_resnames=[None,None]
         oneaway_atomidx=[None,None]
         oneaway_atomnames=[None,None]
         # assert chain_idx[0]==0 or chain_idx[1]==0 # one must be a head
         if chains!=[-1,-1]:
-            chainlists_idx=[self.idx_lists['bondchain'][chains[x]] for x in [0,1]]
+            chainlists_idx=[self.ChainManager.chains[chains[x]].idx_list for x in [0,1]]
+            logger.debug(f'chainlists_idx {chainlists_idx}')
+            # chainlists_idx=[self.idx_lists['bondchain'][chains[x]] for x in [0,1]]
             chainlists_atomnames=[]
             chainlists_resids=[]
             chainlists_resnames=[]
