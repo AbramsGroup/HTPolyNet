@@ -1567,8 +1567,8 @@ class TopoCoord:
             return new_bdf
         # make a temporary working copy of the bondchains structure from its snapshot
         tmp_local_cm=deepcopy(self.ChainManager)
-        existing_cycles=[x.idx for x in tmp_local_cm.chains if x.is_cyclic]
-        logger.debug(f'Existing cyclic C-C chains: {existing_cycles}')
+        existing_cyclic_chains=[x for x in tmp_local_cm.chains if x.is_cyclic]
+        logger.debug(f'Existing cyclic C-C chains: {[c.idx for c in existing_cyclic_chains]}')
         # bondchains=[working_bondlist(i,self.idx_lists['bondchain'][i][:]) for i in range(len(self.idx_lists['bondchain']))]
         for i,r in bdf.iterrows():
             tmp_local_cm.injest_bond(r.ai,r.aj)
@@ -1578,7 +1578,7 @@ class TopoCoord:
             c.added_bonds.append(i)
             # addlink(bondchains,i,r.ai,r.aj)
         for c in tmp_local_cm.chains:
-            if c.is_cyclic and not c.idx in existing_cycles:
+            if c.is_cyclic and not c in existing_cyclic_chains:
                 logger.debug(f'Bondchain {c.idx} ({"-".join([str(x) for x in c.idx_list])}) is a new cycle')
                 logger.debug(f'-> New bonds added: {",".join([str(x) for x in c.added_bonds])}')
                 logger.debug(f'-> Cycle length is {len(c.idx_list)} atoms')
