@@ -131,7 +131,7 @@ class Linkcell:
         :rtype: int
         """
         nc=self.ncells
-        xc=C[0]*nc[1]*nc[2]+C[1]*nc[1]+C[2]
+        xc=C[0]*nc[1]*nc[2]+C[1]*nc[2]+C[2]
         return xc
 
     def cellndx_of_ldx(self,i):
