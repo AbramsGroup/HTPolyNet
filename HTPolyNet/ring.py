@@ -233,24 +233,6 @@ class Ring:
             # logger.debug(f'tst {tst} is_inside {is_inside}')
             return is_inside,PP
         return False,np.ones(3)*np.nan
-        #     # 1. project every ring vertex into the common plane (if necessary)
-        #     self.self_planarize()
-        #     # OP=self.O-PP
-        #     inside=True
-        #     # 2. for every vertex vi: angle O-vi-PP must be
-        #     #    more acute than angle O-vi-v(i+1) in order
-        #     #    for point PP to be inside the ring
-        #     for i in range(len(self.vP)):
-        #         vi=self.vP[i]
-        #         vii=self.vP[np.mod((i+1),len(self.vP))]
-        #         r=self.O-vi
-        #         e=vii-vi
-        #         vp=P-vi
-        #         cp=lawofcos(vp,r)
-        #         ce=lawofcos(e,r)
-        #         inside = inside and cp > ce
-        #     return inside,PP
-        # return False,np.zeros(3)*np.nan
 
 class RingList(UserList):
     @singledispatchmethod
