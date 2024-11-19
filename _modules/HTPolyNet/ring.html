@@ -296,24 +296,6 @@
         <span class="k">return</span> <span class="kc">False</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span></div>
 </div>
 
-        <span class="c1">#     # 1. project every ring vertex into the common plane (if necessary)</span>
-        <span class="c1">#     self.self_planarize()</span>
-        <span class="c1">#     # OP=self.O-PP</span>
-        <span class="c1">#     inside=True</span>
-        <span class="c1">#     # 2. for every vertex vi: angle O-vi-PP must be</span>
-        <span class="c1">#     #    more acute than angle O-vi-v(i+1) in order</span>
-        <span class="c1">#     #    for point PP to be inside the ring</span>
-        <span class="c1">#     for i in range(len(self.vP)):</span>
-        <span class="c1">#         vi=self.vP[i]</span>
-        <span class="c1">#         vii=self.vP[np.mod((i+1),len(self.vP))]</span>
-        <span class="c1">#         r=self.O-vi</span>
-        <span class="c1">#         e=vii-vi</span>
-        <span class="c1">#         vp=P-vi</span>
-        <span class="c1">#         cp=lawofcos(vp,r)</span>
-        <span class="c1">#         ce=lawofcos(e,r)</span>
-        <span class="c1">#         inside = inside and cp &gt; ce</span>
-        <span class="c1">#     return inside,PP</span>
-        <span class="c1"># return False,np.zeros(3)*np.nan</span>
 
 <div class="viewcode-block" id="RingList">
 <a class="viewcode-back" href="../../HTPolyNetPackage.html#HTPolyNet.ring.RingList">[docs]</a>
