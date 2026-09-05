@@ -439,6 +439,17 @@ Coverage as of the last measurement: **38.8%** overall.
   r(chi_bond, n/f) = +0.905; counts run 3 to 8, n/f 1.00 to 2.67. Docs cite
   the four-run evidence now.
 
+  **The deviation changes sign, 2026-09-03** (study session, 54 builds
+  audited at v2.6.2): near `chi_bond` 0.900 the observed crosslinker count
+  runs *above* the cube -- 180.60 against 175.39 predicted over 30 builds,
+  +2.17 pp at t = +10.8 against a replicate sd of 2.63 triazines -- while at
+  `chi_bond` <= 0.64 it runs below, 32.17 against 41.28 over 6 builds, -3.80
+  pp. The compact way to say it is that the effective exponent
+  `ln(chi_OCN)/ln(chi_bond)` is not 3 and is not constant: ~3.5 near
+  `chi_bond` 0.55, ~3.0 near 0.73, ~2.6--2.7 near 0.90. No single power law
+  fits, so the cube is a local estimate around 0.9 and nothing more. This is
+  consistent with the 1.020 +/- 0.029 above, and puts a significance on it.
+
 - **A config-time version of that warning, before any compute is spent.**
   Largely superseded by the completed-crosslinker check that shipped -- nothing
   needs a proxy for a quantity that is exactly known by the time the cure
@@ -527,7 +538,13 @@ Coverage as of the last measurement: **38.8%** overall.
   incrementally as caps land, or placing in order of how constrained each site
   is rather than in match order. Do it if the reported clearance warnings turn
   out to correlate with builds that still die -- the instrumentation to decide
-  that now exists, and did not before.
+  that now exists, and did not before. One thing the instrumentation still
+  does not report is how far a transferred cap actually travelled:
+  `_greedy_match` can reach the globally nearest free oxygen after ten radius
+  doublings, and one audited build transferred 72 of 177 caps, but
+  `repair-summary.yaml` carries clearance statistics only, so an external
+  audit could not bound the transfer distance. Report it alongside the
+  clearances.
 
 - **`bdf.loc[:abs_max]` takes one bond more than the limit.** In
   `curecontroller.py::_searchbonds`, the truncation that applies
@@ -546,6 +563,98 @@ Coverage as of the last measurement: **38.8%** overall.
   conversion-independent and closed-form, so any atom dropped or duplicated
   anywhere in cure or repair breaks it. Cheap to assert at the end of repair.
 
+- **`_distance_attenuation` runs an open-loop stage ladder.** In
+  `cure/curecontroller.py:606`, `this_nstages = int(maxL/d['increment'])` is
+  computed once from the initial maximum bond length, and the loop then runs
+  that many stages whatever happens. `maxL` *is* recomputed inside the loop,
+  but only to log it -- it never extends, shortens or aborts the ladder -- and
+  `restore_bond_parameters(saveT)` runs each stage whether or not the bonds
+  actually closed. So a stage schedule that fails to bring a bond in has no
+  way to say so. Robustness only; it was ruled out as the cause of the
+  halogen failure below (quadrupling the stage count made that *worse*).
+  The density-convergence entry below is the same shape of problem -- a
+  number computed once and trusted thereafter -- and if both are done, they
+  are one change to the same loop.
+
+- **`CURE.relax` should gate on measured density convergence, not on a fixed
+  step count.** Raised by Cameron 2026-09-05, from the observation that
+  pestifer has a gate system htpolynet does not.
+
+  Step zero is instrumentation, and it is missing: `_do_relax` delegates to
+  `_distance_attenuation`, which never calls `TopoCoord.equilibrate()` --
+  the only method that runs `gmx_energy_trace(..., ['Density'])`. So the
+  relax stages **do not observe density at all**, even though each one
+  already writes an `.edr` that contains it. Density is traced only in
+  `_do_equilibrate`, and that stage defaults to 300 K, below `Tg`, where the
+  box cannot densify.
+
+  The window is small. The default relax equilibration sequence ends in an
+  NPT segment of 2000 steps, and `relax-npt.mdp` runs `dt = 0.001`, so that
+  is 2 ps per stage; at the default `nstages: 6` over ~10 iterations it is
+  roughly **120 ps of above-`Tg` constant-pressure time across an entire
+  cure**, against a 39.2 ns production ladder.
+
+  Measured (study session, 4 replicates per chemistry, slope over the second
+  half of cure where the topology is nearly final): density is still climbing
+  when cure terminates -- bpa +1.29 +/- 0.62 and bpf +1.48 +/- 0.28 kg/m3 per
+  iteration, 2.1 and 5.3 sigma. Cure stops on a conversion criterion with no
+  reference to whether the box settled. The honest caveat is that a rising
+  density is *partly expected*, since crosslinking genuinely densifies, and
+  this slope cannot separate real densification from incomplete relaxation.
+  That inability is the argument: without an observed criterion there is no
+  way to tell which builds settled.
+
+  Why it is more than an equilibration nicety: if the box is under-relaxed
+  while bonds are forming, bonds form between whichever atoms happen to be
+  adjacent in a too-open configuration, and **the topology is then
+  permanent** -- a later remelt relaxes coordinates but cannot rewire bonds.
+  That one mechanism ties together three otherwise-awkward results from the
+  study's 64-build series: post-cure annealing is refuted as a cause of the
+  density deficit (the ladder opens 2 ns at `Tg`+112 K, erasing pre-ladder
+  history), the uncured monomer melt matches experimental dilatometry to
+  0.19 % while the cured network is 2.25 % low, and cure shrinkage is
+  strongly bridge-dependent (+0.033 to -0.004 ml/g) and anti-correlates with
+  monomer van der Waals volume -- which is what a *fixed* relaxation window
+  does when different chemistries have different relaxation times. A gate
+  fixes the bridge dependence for free, because bulkier networks simply get
+  more time.
+
+  **Scope it to relax.** The production ladder does not need this: two
+  structures with opposite histories held 5 ns at 480 K converge from
+  opposite sides and stall 4.25 kg/m3 apart with the ladder's own hold inside
+  that bracket; within-hold drift on the glassy branch is -0.35 to +0.53
+  kg/m3 per 667 ps across four replicates; and replicate scatter is
+  topological rather than equilibrative (sd 3.2 kg/m3 at high conversion
+  against 0.7 at `chi_OCN` 0).
+
+  What to port from `pestifer/util/density_convergence.py` is only the
+  criterion -- an **autocorrelation-corrected SEM**, `sigma/sqrt(N/tau_int)`,
+  because NPT cell density is autocorrelated over hundreds of steps and a
+  naive block-means SEM is optimistic by ~1.5x; this also makes the gate
+  size-aware for free, since `sigma/mean ~ 1/sqrt(N_atoms)` while tau is
+  roughly size-independent -- plus an explicit **ceiling outcome**, so a
+  build that never settled says so instead of silently reporting a density.
+  Do **not** port the chunking (`next_chunk_steps`, `is_patch_grid_crash`):
+  that exists because NAMD fixes its patch/PME grid at the start of each
+  `run`, and GROMACS rescales the box within one `mdrun` without that
+  failure mode. The chunking is most of pestifer's complexity and none of
+  its value here.
+
+  Minimal design, in shippable order: (1) read Density from each relax NPT
+  `.edr` and log it -- worth shipping on its own, since it makes the question
+  answerable for every existing user; (2) test the trailing window after each
+  relax stage and extend or repeat the last stage until it converges or hits
+  a ceiling; (3) record converged/ceiling plus residual drift in
+  `diagnostics.log` and the repair summary yaml. One optional block under
+  `CURE.relax`, defaulting to off, so existing results stay reproducible.
+
+  **Do not build the gate until the crude arm reports.** The study has a run
+  testing `CURE.relax` NPT `nsteps` 2000 -> 32000 (~120 ps -> ~1.9 ns of
+  above-`Tg` relaxation) on bpa, which reaches 47 % of experimental cure
+  shrinkage, and bpf, which already matches experiment and is therefore the
+  control that should *not* move. If bpa gains and bpf does not, the
+  mechanism above is confirmed. If both move, or bpf moves more, this whole
+  account is wrong and the gate would be solving the wrong problem.
 
 ## Simulation defaults
 
@@ -589,6 +698,18 @@ Coverage as of the last measurement: **38.8%** overall.
   leaving it, so it wants a release note and probably a config knob.
 
 ## Usability
+
+- **The atom-serial column in `final.gro` wraps modulo 10000, and nothing
+  says so.** That is the GROMACS `.gro` format, not an htpolynet bug -- atom
+  10000 prints as `0` -- but every htpolynet system large enough to matter
+  crosses it, and the natural analysis script joins `final.gro` to `final.top`
+  on that column. In one 12,600-atom build 2,601 atoms (21%) have a `.gro`
+  serial that differs from their `.top` index, so such a script is silently
+  wrong for a fifth of the box with no error anywhere. Worth a sentence in the
+  analysis docs saying to join on line order, not on the serial. Same family
+  as the existing trap that `min_clearance_nm` is a substring of
+  `blind_min_clearance_nm` while PyYAML emits keys alphabetically, so a naive
+  grep of `repair-summary.yaml` picks the wrong one.
 
 - **`gen-slurm-script` doesn't stage to scratch.** The emitted script
   runs in the submit directory. A cure run does heavy small-file I/O
