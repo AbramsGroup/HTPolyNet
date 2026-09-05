@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The per-iteration equilibration now constrains hydrogen bonds only, not
+  all bonds.**  The packaged `npt.mdp` and `nvt.mdp` paired `dt = 0.002` with
+  `constraints = all-bonds` and set no `lincs_order`, so GROMACS used its
+  default LINCS accuracy (order 4).  That is marginal whenever heavy-atom
+  bonds are constrained, and for a halogenated monomer it was fatal: a
+  fluorinated bisphenol died at `4-cure_equilibrate-npt` in **7 of 7** build
+  attempts, at cure iteration 5-7 of ~10, with exit codes 1 and 139.  `LINCS`
+  appeared 14 times in that bridge's `diagnostics.log` and **zero** times in
+  each of seven other bridges built identically -- a perfect discriminator
+  across eight chemistries.  In a melt of pristine, uncrosslinked monomers at
+  production density, with no cure at all, step-0 pressure was -1.34e5 bar;
+  `h-bonds` took it to -495 bar and the LINCS constraint rmsd from 4.5e-4 to
+  7.3e-7.  With the new settings the whole eight-bridge series rebuilt **32 of
+  32**, the fluorinated one reaching a bond conversion of 0.900 in all four
+  replicates.  `h-bonds` is also the conventional pairing with a 2 fs
+  timestep.
+
+  **This changes the sampled ensemble**, so structures and densities from
+  earlier versions are not strictly comparable with new ones, and because
+  `postsim` inherits `npt.mdp` it changes the production measurement too, not
+  just the cure.  The drag and relax ladders are unaffected -- they always ran
+  unconstrained at 1 fs.
+
+- **`lincs_order = 8` in the packaged `npt.mdp` and `nvt.mdp`.**  Independent
+  of the constraint change: it improves the accuracy of the constraint solve
+  without changing which bonds are constrained, so it does not itself alter
+  the ensemble.  On the diagnostic melt above, order 8 alone reduced the
+  pressure artifact 4.8-fold.
+
+### Documentation
+
+- **The constraint trap is documented where someone hitting it will look.**
+  The failure above surfaces at the equilibration step immediately after the
+  relax ladder, so the natural diagnosis is that the relax schedule is too
+  coarse.  It is not: the drag and relax ladders run unconstrained at a 1 fs
+  timestep and cannot be responsible, and refining them makes matters worse --
+  a three-variant array (increment 0.08 to 0.04 to 0.02, plus a double-MD arm)
+  confirmed that, with quadrupling the stage count degrading the result.  The
+  CURE section of the program-flow page now says which stages are constrained
+  and which are not, and says to look at the constraints rather than the
+  ladder when LINCS warnings appear at `cure_equilibrate`.
+
 ## [2.6.2] - 2026-08-31
 
 ### Fixed

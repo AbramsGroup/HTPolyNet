@@ -75,6 +75,24 @@ The Connect-Update-Relax-Equilibrate (CURE) algorithm
 
 The algorithm used to create new bonds and polymerize a system is called the CURE algorithm, depicted above.  This is just a slightly modified version of a standard search-radius-type algorithm, first used by Li and Strahan to study EPON/DETDA thermosets (:cite:t:`Li2010Crosslinking`).  The CURE algorithm begins by executing a search for new bonds on a frozen system configuration.  Bonds are downselected through a series of filters to arrive at a final set of bonds to form.  If the distance between any pair of "bond-designate" atoms is greater than some threshold (the ``trigger_distance`` parameter in the :ref:`drag subdirective <cure.drag>` of the ``CURE`` directive of a configuration file), a series of MD simulations that slowly bring all to-be-bound atom closer together is performed.  Then the topology is updated, where ``htpolynet`` applies the charges, atom type, and bonded interaction templates from the oligomer template set to each bond.  After the update, a series of relaxation MD simulations bring all bonds to their equilibrium lengths.  Then a short NPT MD simulation equilibrates the overall density before initiating the next CURE iteration.  CURE iterations continue until (a) a desired conversion is reached, or (b) no new allowable bonds are identified.
 
+.. note::
+
+   The drag and relax stages run **unconstrained**, at a 1 fs timestep, because
+   the bonds they are manipulating are deliberately far from equilibrium.  Only
+   the per-iteration equilibration (and, later, ``postsim``) uses a 2 fs
+   timestep with constraints, and as of v2.7.0 it constrains **hydrogen bonds
+   only**, with ``lincs_order = 8``.
+
+   Before v2.7.0 it constrained *all* bonds at 2 fs with the GROMACS default
+   LINCS accuracy, which is marginal whenever heavy-atom bonds are constrained
+   and was fatal for halogenated monomers: a fluorinated bisphenol failed every
+   build attempt, dying at the equilibration step several cure iterations in.
+   The trap was that the failure surfaces immediately after the relax ladder,
+   so the natural diagnosis is that the relax schedule is too coarse -- and it
+   is not, since that ladder is unconstrained and cannot be responsible.
+   Refining it makes matters worse.  If you see LINCS warnings at
+   ``cure_equilibrate``, look at the constraints, not at the ladder.
+
 .. _bondsearch_filters:
 
 Identifying allowable bonds:  Bondsearch filters

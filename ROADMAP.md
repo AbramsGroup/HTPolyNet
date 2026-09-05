@@ -531,6 +531,47 @@ Coverage as of the last measurement: **38.8%** overall.
   Worth doing at a version boundary where a small reproducibility break is
   already expected, not before.
 
+## Simulation defaults
+
+- **The halogen constraint failure is fixed but not explained.** v2.7.0
+  switched the per-iteration equilibration to `constraints = h-bonds` with
+  `lincs_order = 8`, which took a fluorinated bisphenol from 0 of 7 builds to
+  4 of 4, and the eight-bridge series from 7 failures to 32 of 32. What is
+  still not understood is the *timing*. The constraint artifact is present
+  from the very first NPT step -- a melt of pristine, uncrosslinked BAF
+  monomers at production density shows step-0 pressure of -1.34e5 bar, with
+  no cure involved at all -- yet the old builds survived densification,
+  precure and 4-6 cure iterations before dying. So it was a predisposing
+  cause plus a threshold in the network's tolerance for it, not a single
+  trigger, and nobody knows what sets the threshold. The failing structures
+  were not preserved, so the LINCS atom indices were never mapped to
+  residues; anyone chasing this should trap and keep them first. The
+  diagnostic that identified it is worth reusing: halving `dt` made the
+  artifact ~4x *worse*, and 1/dt^2 scaling is the signature of a one-shot
+  constraint start-up projection rather than a physical clash.
+
+- **`mdp_to_dict` crashes on any mdp line containing two `=` signs.** In
+  `external/gromacs.py:239` it does `k,v = l.split('=')`, which raises
+  `ValueError: too many values to unpack` rather than reporting anything
+  useful. No packaged template trips it today -- checked across all eleven --
+  but any comment containing an equals sign does, including the obvious one
+  someone would write next to a timestep. It also does not strip `;`
+  comments, so the comment text becomes part of the value and is re-emitted
+  attached to it; GROMACS tolerates that, but `mdp_get` on a commented
+  numeric key would not survive a `float()`. Split on the first `=` only,
+  and strip comments.
+
+- **`postsim` inherits `npt.mdp` wholesale, so cure defaults govern the
+  production measurement.** `analysis/postsim.py:81` checks out `npt` and
+  renames it; `build_mdp()` overrides `ref_t`, `ref_p`, `nsteps`, velocity
+  generation and `tcoupl` (to `v-rescale`) but never touches `dt`,
+  `constraints`, `lincs_*` or `pcoupl`. So whatever is chosen above also sets
+  the timestep and constraint scheme of every postsim run, and the barostat
+  there is still **Berendsen**, which does not sample a correct NPT ensemble
+  and is deprecated in modern GROMACS. Changing the barostat is a physics
+  change to published numbers; changing it silently would be worse than
+  leaving it, so it wants a release note and probably a config knob.
+
 ## Usability
 
 - **`gen-slurm-script` doesn't stage to scratch.** The emitted script
