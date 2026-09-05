@@ -656,26 +656,63 @@ Coverage as of the last measurement: **38.8%** overall.
   mechanism above is confirmed. If both move, or bpf moves more, this whole
   account is wrong and the gate would be solving the wrong problem.
 
-  **Steps 2-3 have a published competitor, and it may be the better
-  design.** Amended 2026-09-05 by the study session, which found it after
-  sending the note above. Schichtel & Chattopadhyay 2020, *Comput. Mater.
-  Sci.*, gate *bonding* on an Arrhenius reaction probability built from cure
-  temperature, cutoff distance and an activation energy -- kinetics-gated,
-  not density-gated. That attacks the cause, a bonding rate outrunning
-  relaxation, where a density gate monitors a symptom; it is also the
-  physically motivated knob, since the thing a real cure has and this one
-  does not is a reaction rate. Their sec 2.4 reportedly *demonstrates* the
-  failure mode described above rather than merely flagging it -- a density
-  trajectory they call "not physical", ending in a metastable configuration,
-  caused by accelerated reaction kinetics. That is the same mechanism as the
-  permanent-topology argument, arrived at independently and published, which
-  is worth more than the argument on its own.
+  **Steps 2-3 are not the empty design space the note assumed.** Amended
+  2026-09-05 by the study session after a literature audit, which withdrew
+  its own recommendation as overconfident. Three published points, none of
+  which we knew about:
 
-  Nobody here has read the paper yet; this is the study session's report of
-  it, and the citation should be checked before it is repeated anywhere
-  public. Read it before designing either gate -- the two are not exclusive,
-  and a kinetics gate would change what a density gate is even for. Step 1,
-  observe and log, is unaffected either way and still worth shipping alone.
+  - **Rejection on relaxation failure -- Moore et al. 2021**
+    (*Macromolecules* 54:6275), on di(cyanate ester)s, which is *our*
+    chemistry. Verbatim: "If a failure occurred during relaxation following
+    bond formation, the bond was removed and the crosslink cycle was
+    repeated with different bonds selected for crosslinking." That is bond
+    *acceptance* conditioned on a measured relaxation outcome. The same
+    paper caps bonds at **1 % of total per iteration** and terminates on
+    **stall** -- no new bonds in 20 iterations -- rather than on a step
+    count. Both are directly comparable to knobs we have:
+    `max_conversion_per_iteration` defaults to 1.0, i.e. no cap at all, and
+    we terminate on conversion or `max_iterations`.
+  - **Arrhenius kinetics gating -- Schichtel & Chattopadhyay 2020**
+    (*Comput. Mater. Sci.*): bonding probability from cure temperature,
+    cutoff distance and an activation energy. Their sec 2.4 *demonstrates*
+    the failure mode this entry argues for rather than merely flagging it --
+    a density trajectory they call "not physical", ending in a metastable
+    configuration, from "accelerated reaction kinetics caused by the usage
+    of higher probabilities."
+  - **Density convergence already used as a check -- Moore 2021 again**,
+    verifying their `Tg` protocol "by examining the density convergence at
+    each temperature step". The machinery exists in that workflow; it is
+    simply never applied to bonding.
+
+  The three are **complementary, not competing**: Arrhenius sets the rate,
+  rejection catches a bond that will not relax at all, a density criterion
+  verifies the outcome. Each misses what the others catch -- rejection does
+  not see gradual under-relaxation, where every bond relaxes acceptably and
+  the box still has not settled; the Arrhenius gate is open-loop on the
+  outcome, verifying only that bonds were added at a physically derived
+  rate; and only the density gate closes the loop on the observable the
+  deficit is actually measured in. If exactly one gets built, Schichtel's is
+  the more principled and Moore's is the cheaper.
+
+  **A calibration number worth having before anyone panics about our
+  deficit.** Moore uses a fixed 40 ps NPT relaxation window at 800 K -- the
+  same number Varshney chose in 2008, with the same stated rationale, to let
+  unreacted species diffuse between reactions -- and reports a **4.77 %**
+  density deficit in BADCy after 100 ns of post-cure equilibration at 293 K.
+  Ours is 2.25 %. So the fixed-window architecture is universal from 2008 to
+  a 2021 GPU workflow, the resulting deficit does not equilibrate away, and
+  htpolynet is not an outlier. That makes this a field-wide design question
+  rather than a bug, which raises the value of getting it right and lowers
+  the urgency.
+
+  Nobody here has read either paper; the quotations above are the study
+  session's, and both citations should be checked against the originals
+  before being repeated anywhere public. Read them before designing any
+  gate. **Step 1 -- observe and log density at each relax stage -- is
+  unaffected by all of this and still the change to make first.** It commits
+  to no gating philosophy, and none of the three designs can be evaluated,
+  by us or by a user, until htpolynet looks at density during relaxation at
+  all.
 
 ## Simulation defaults
 
