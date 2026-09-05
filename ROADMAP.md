@@ -74,15 +74,23 @@ Rough ordering within each section is by value, not by effort.
 
 Coverage as of the last measurement: **38.8%** overall.
 
-- **`repair/` has no tests at all** — `cyanate_cap.py` (208 statements)
-  and `topology_surgery.py` (125), both at 0%. This is the highest-value
-  gap: the postcure repair stage makes the strongest correctness claim in
-  the project ("atom conservation is exact"), and right now the only
-  thing checking it is reading a residue census at the end of a
-  multi-hour build. It is pure topology manipulation, so it can be tested
-  deterministically in milliseconds against a synthetic `TopoCoord`
-  carrying triazines at k=0,1,2,3 — assert atom counts, the residue
-  census, cap placement, and that no unreacted bridge -OH survives.
+- **`repair/`'s driver has no test.** `test_cap_placement.py` and
+  `test_repair_conversion.py` now cover the placement search and the
+  reported statistics, but `triazine_to_cyanate_cap` itself and all of
+  `topology_surgery.py` (125 statements) are still untouched. This is the
+  highest-value gap: the postcure repair stage makes the strongest
+  correctness claim in the project ("atom conservation is exact"), and
+  right now the only thing checking it in-tree is reading a residue census
+  at the end of a multi-hour build. (An external audit of 54 builds at
+  v2.6.2 found the accounting exact everywhere -- `3*TAZ_final + CYN ==
+  720` in all 54, every surviving triazine with exactly 3 aryl-ether bonds
+  across 7,501 examined, zero bare -OH -- and a six-defect negative control
+  was caught by 2-10 checks each. That is real evidence, but it is not a
+  test and it does not run on a PR.) It is pure topology manipulation, so
+  it can be tested deterministically in milliseconds against a synthetic
+  `TopoCoord` carrying triazines at k=0,1,2,3 — assert atom counts, the
+  residue census, cap placement, and that no unreacted bridge -OH
+  survives.
 - **An end-to-end example in CI.** A deliberately tiny build (a
   20-molecule, few-ps variant of example 0) run inside the container
   would cover `core/runtime.py` and `cure/curecontroller.py` — 1,056
@@ -530,6 +538,14 @@ Coverage as of the last measurement: **38.8%** overall.
   trajectory of every existing config by one bond per throttled iteration.
   Worth doing at a version boundary where a small reproducibility break is
   already expected, not before.
+
+- **An algebraic self-check that no build currently runs.** For an A2 monomer
+  of `A` atoms in the 360-bisphenol/240-triazine example, the total atom count
+  is `360*A + 2160 - 1440` regardless of conversion -- verified at 12600
+  (bpa, A = 33), 9720 (bpo, A = 25) and 14760 (tmb, A = 39). It is
+  conversion-independent and closed-form, so any atom dropped or duplicated
+  anywhere in cure or repair breaks it. Cheap to assert at the end of repair.
+
 
 ## Simulation defaults
 

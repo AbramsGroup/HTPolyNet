@@ -401,7 +401,8 @@ def _choose_cap_placement(o_xyz, ref_xyz, neighbors, box, oc_len=0.136,
 # ---------------------------------------------------------------------------
 
 
-def _completion_stats(residue_name, n_crosslinkers, n_incomplete, log=True, placement=None):
+def _completion_stats(residue_name, n_crosslinkers, n_incomplete, log=True, placement=None,
+                      bond_histogram=None):
     """Summarize crosslinker completion and log it.
 
     A crosslinker survives this repair only if every one of its sites is
@@ -417,9 +418,20 @@ def _completion_stats(residue_name, n_crosslinkers, n_incomplete, log=True, plac
         n_incomplete (int): how many of them are being dismantled
         log (bool): emit the summary message; False when there is nothing to summarize
         placement (dict): cap-placement summary from :func:`_report_placements`, merged into the result
+        bond_histogram (dict): how many crosslinkers carried 0, 1, ... bonds
+            *before* repair dismantled any of them, keyed by bond count.  This
+            is the distribution ``n_complete`` is the top bin of, and it is the
+            only record of it: repair rewrites the topology, and the final
+            structure does not say which cap came from which ring.  Without it
+            the independence assumption behind
+            ``crosslinker conversion = bond conversion ** f`` can only be
+            tested through its ``n_complete`` consequence.  Zero-filled
+            through the full bond count, so the top bin is always present
+            and always equals ``n_complete``; that is checked here.
 
     Returns:
-        dict: n_crosslinkers, n_complete, n_dismantled, crosslinker_conversion
+        dict: n_crosslinkers, n_complete, n_dismantled, crosslinker_conversion,
+        and prerepair_bond_counts when a histogram was supplied
     """
     n_complete = n_crosslinkers - n_incomplete
     chi = n_complete / n_crosslinkers if n_crosslinkers else 0.0
@@ -436,6 +448,24 @@ def _completion_stats(residue_name, n_crosslinkers, n_incomplete, log=True, plac
         'n_dismantled': n_incomplete,
         'crosslinker_conversion': chi,
     }
+    if bond_histogram is not None:
+        out['prerepair_bond_counts'] = {int(k): int(v) for k, v in sorted(bond_histogram.items())}
+        # the histogram and the completion count are computed independently, so
+        # they are each other's check: the top bin IS the surviving population
+        binned = sum(out['prerepair_bond_counts'].values())
+        top = out['prerepair_bond_counts'].get(max(out['prerepair_bond_counts'], default=0), 0)
+        if binned != n_crosslinkers or top != n_complete:
+            logger.warning(
+                f'triazine_to_cyanate_cap: pre-repair histogram disagrees with the '
+                f'completion count ({binned} binned vs {n_crosslinkers} residues, '
+                f'{top} in the top bin vs {n_complete} complete); one of the two '
+                f'is wrong and the reported conversion cannot be trusted'
+            )
+        if log:
+            spread = ', '.join(f'{k}:{v}' for k, v in out['prerepair_bond_counts'].items())
+            logger.info(
+                f'triazine_to_cyanate_cap: pre-repair bonds per {residue_name} -- {spread}'
+            )
     if placement:
         out.update(placement)
     return out
@@ -472,16 +502,22 @@ def triazine_to_cyanate_cap(TC, moldict, spec, reactions):
     cl_residues = _find_crosslinker_residues(TC, cl['residue'])
     if not cl_residues:
         logger.info(f'triazine_to_cyanate_cap: no {cl["residue"]} residues found; nothing to do')
-        return _completion_stats(cl['residue'], 0, 0, log=False)
+        return _completion_stats(cl['residue'], 0, 0, log=False,
+                                 bond_histogram={n: 0 for n in range(full_bond_count + 1)})
 
     incomplete_plans = []     # list of dicts, one per incomplete triazine
     h_to_delete = set()       # global H indices, batched for final deletion
+    # how many bonds each crosslinker carries before anything is dismantled;
+    # repair destroys this distribution, so it has to be counted here or not
+    # at all.  Zero-filled so the reported shape does not depend on the box.
+    bond_histogram = {n: 0 for n in range(full_bond_count + 1)}
 
     for resnum, atoms_by_name in cl_residues.items():
         ring_c = [atoms_by_name[n] for n in ring_c_names]
         ring_n = [atoms_by_name[n] for n in ring_n_names]
         bonded_o = [_bonded_bridge_o(TC, c, bridge_residue, bridge_o_names) for c in ring_c]
         k = sum(1 for o in bonded_o if o is not None)
+        bond_histogram[k] = bond_histogram.get(k, 0) + 1
         if k >= full_bond_count:
             continue
         # plan dismantle
@@ -511,7 +547,8 @@ def triazine_to_cyanate_cap(TC, moldict, spec, reactions):
             f'triazine_to_cyanate_cap: all {len(cl_residues)} {cl["residue"]} '
             f'residues are fully bonded; nothing to do'
         )
-        return _completion_stats(cl['residue'], len(cl_residues), 0)
+        return _completion_stats(cl['residue'], len(cl_residues), 0,
+                                 bond_histogram=bond_histogram)
 
     total_caps = sum(len(p['caps']) for p in incomplete_plans)
     free_caps_planned = sum(1 for p in incomplete_plans for c in p['caps'] if c['bonded_o'] is None)
@@ -679,7 +716,8 @@ def triazine_to_cyanate_cap(TC, moldict, spec, reactions):
             )
 
     return _completion_stats(cl['residue'], len(cl_residues), len(incomplete_plans),
-                             placement=placement_summary)
+                             placement=placement_summary,
+                             bond_histogram=bond_histogram)
 
 
 # ---------------------------------------------------------------------------

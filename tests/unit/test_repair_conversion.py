@@ -32,6 +32,61 @@ class TestCompletionStats(unittest.TestCase):
         self.assertEqual(st['residue'],'XYZ')
 
 
+class TestPreRepairBondHistogram(unittest.TestCase):
+    """The histogram is the only record of how many bonds each crosslinker
+    carried before repair; repair rewrites the topology and the final
+    structure does not say which cap came from which ring."""
+
+    def test_absent_when_not_supplied(self):
+        st=_completion_stats('TAZ',240,58)
+        self.assertNotIn('prerepair_bond_counts',st)
+
+    def test_reported_sorted_and_int_keyed(self):
+        st=_completion_stats('TAZ',240,58,log=False,
+                             bond_histogram={3:182,0:5,2:40,1:13})
+        self.assertEqual(list(st['prerepair_bond_counts'].keys()),[0,1,2,3])
+        self.assertEqual(st['prerepair_bond_counts'],{0:5,1:13,2:40,3:182})
+
+    def test_top_bin_is_the_surviving_population(self):
+        st=_completion_stats('TAZ',240,58,log=False,
+                             bond_histogram={0:5,1:13,2:40,3:182})
+        self.assertEqual(st['prerepair_bond_counts'][3],st['n_complete'])
+
+    def test_zero_bins_are_kept(self):
+        # a fully cured box still reports the empty bins, so the shape of
+        # repair-summary.yaml does not depend on the box
+        st=_completion_stats('TAZ',240,0,log=False,
+                             bond_histogram={0:0,1:0,2:0,3:240})
+        self.assertEqual(st['prerepair_bond_counts'],{0:0,1:0,2:0,3:240})
+
+    def test_disagreeing_total_warns(self):
+        with self.assertLogs('htpolynet.repair.cyanate_cap',level='WARNING'):
+            _completion_stats('TAZ',240,58,log=False,
+                              bond_histogram={0:5,1:13,2:40,3:181})
+
+    def test_disagreeing_top_bin_warns(self):
+        # right number of residues, wrong split: 183 in the top bin against
+        # 182 complete means one of the two counts is wrong
+        with self.assertLogs('htpolynet.repair.cyanate_cap',level='WARNING'):
+            _completion_stats('TAZ',240,58,log=False,
+                              bond_histogram={0:4,1:13,2:40,3:183})
+
+    def test_consistent_histogram_is_silent(self):
+        logger_name='htpolynet.repair.cyanate_cap'
+        with self.assertLogs(logger_name,level='INFO') as cm:
+            _completion_stats('TAZ',240,58,
+                              bond_histogram={0:5,1:13,2:40,3:182})
+        self.assertFalse([r for r in cm.records if r.levelname=='WARNING'])
+
+    def test_empty_box_does_not_warn(self):
+        logger_name='htpolynet.repair.cyanate_cap'
+        with self.assertLogs(logger_name,level='INFO') as cm:
+            logging.getLogger(logger_name).info('probe')
+            _completion_stats('TAZ',0,0,log=False,
+                              bond_histogram={0:0,1:0,2:0,3:0})
+        self.assertFalse([r for r in cm.records if r.levelname=='WARNING'])
+
+
 class TestRunRepairWiring(unittest.TestCase):
     """The (total, stats) contract between run_repair and the runtime is only
     otherwise exercised by a full build, so pin it here."""

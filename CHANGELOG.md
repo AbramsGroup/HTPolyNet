@@ -38,6 +38,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the ensemble.  On the diagnostic melt above, order 8 alone reduced the
   pressure artifact 4.8-fold.
 
+### Added
+
+- **`repair-summary.yaml` now reports the pre-repair bond histogram.**  A new
+  `prerepair_bond_counts` key gives how many crosslinkers carried 0, 1, ... up
+  to `full_bond_count` bonds *before* repair dismantled any of them.  Repair
+  rewrites the topology and the final structure does not record which cap came
+  from which ring, so this distribution was previously unrecoverable after the
+  fact -- only `n_complete`, its top bin, survived.  It is the statistic that
+  makes the independence assumption behind "crosslinker conversion = bond
+  conversion cubed" directly testable, and that relationship is now known to
+  be wrong in a way that matters: audited against 54 builds, the effective
+  exponent runs about 3.5 near a bond conversion of 0.55, 3.0 near 0.73 and
+  2.6-2.7 near 0.90, so the deviation from the cube changes sign and no single
+  power law fits.  The histogram is zero-filled, so the shape of the summary
+  does not depend on the box, and it is cross-checked against the completion
+  count on every build -- the two are computed independently, and a
+  disagreement now warns.
+
 ### Documentation
 
 - **The constraint trap is documented where someone hitting it will look.**
