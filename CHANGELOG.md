@@ -69,6 +69,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and which are not, and says to look at the constraints rather than the
   ladder when LINCS warnings appear at `cure_equilibrate`.
 
+- **Four defaults in the `CURE.controls` table were wrong.**  The table and
+  `curedict_defaults` had drifted apart: `radial_increment` is 0.05 and was
+  documented as 0.25, `max_iterations` is 100 and was documented as 150,
+  `desired_conversion` is 0.5 and was documented as 0.95, and
+  `min_allowable_bondcycle_length` is -1 rather than 0 (any value <= 0
+  disallows all cycles, so the documented *behavior* was right and only the
+  literal was wrong).  `desired_conversion` is the costly one: a user who
+  read "default 0.95" and omitted the key got a half-cure.  Every shipped
+  example that cures sets it explicitly, which is why nothing caught this.
+
 - **`desired_conversion` now says which conversion it means.**  The
   `CURE.controls` table described it as "target conversion", which every
   reader takes to be the crosslinker conversion an experiment measures.  It

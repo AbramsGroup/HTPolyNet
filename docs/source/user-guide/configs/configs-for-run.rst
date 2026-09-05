@@ -216,13 +216,13 @@ In this section we show all subdirectives for each of the five main directives i
         ``CURE.controls`` parameter           Type                Description (default)
         ==================================    =================   ======================
         ``search_radius``                     float               initial search radius in nm (default 0.5)
-        ``radial_increment``                  float               increment in nm by which search radius is increased if not enough bonds are found at current radius (default 0.25)
+        ``radial_increment``                  float               increment in nm by which search radius is increased if not enough bonds are found at current radius (default 0.05)
         ``min_bonds_per_iteration``           int                 grow the radius until at least this many bonds have been identified, then proceed with whatever the count is at the current radius (default 10). Effective floor is clamped against the remaining bonds needed to reach ``desired_conversion`` and against ``max_conversion_per_iteration``, so demanding e.g. 50 near end-of-cure never stalls the build. Setting to 1 reproduces the un-batched legacy behavior.
-        ``max_iterations``                    int                 absolute maximum number of allowed iterations (default 150)
-        ``desired_conversion``                float [0-1]         target **bond** conversion -- bonds formed over bonds possible -- between 0 and 1.0 (default 0.95). This is not the crosslinker conversion an experiment measures, which is lower; see :ref:`what repair reports <postcure_repair_reporting>`.
+        ``max_iterations``                    int                 absolute maximum number of allowed iterations (default 100)
+        ``desired_conversion``                float [0-1]         target **bond** conversion -- bonds formed over bonds possible -- between 0 and 1.0 (default 0.5). This is not the crosslinker conversion an experiment measures, which is lower; see :ref:`what repair reports <postcure_repair_reporting>`.  Note the default is a half-cure, not the 0.95 the examples use; every shipped example that cures sets the value explicitly rather than relying on it.
         ``late_threshold``                    float [0-1]         conversion above which bond probabilities are ignored (default 0.85)
         ``max_conversion_per_iteration``      float [0-1]         upper limit, as a fraction of total reactable bonds, on the new bonds formed in any single iteration (default 1.0)
-        ``min_allowable_bondcycle_length``    int                 minimum number of C atoms allowed in a cycle of C-C bonds that form via polymerization (default 0, disallow all such cycles)
+        ``min_allowable_bondcycle_length``    int                 minimum number of C atoms allowed in a cycle of C-C bonds that form via polymerization (default -1; any value <= 0 disallows all such cycles)
         ``completion_bias``                   bool                rank bond candidates by how many bonds their ``B``-side residue already carries, and only then by distance, so that partly-reacted crosslinkers are completed before untouched ones are started (default ``False``)
         ==================================    =================   ======================
 
