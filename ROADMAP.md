@@ -656,6 +656,27 @@ Coverage as of the last measurement: **38.8%** overall.
   mechanism above is confirmed. If both move, or bpf moves more, this whole
   account is wrong and the gate would be solving the wrong problem.
 
+  **Steps 2-3 have a published competitor, and it may be the better
+  design.** Amended 2026-09-05 by the study session, which found it after
+  sending the note above. Schichtel & Chattopadhyay 2020, *Comput. Mater.
+  Sci.*, gate *bonding* on an Arrhenius reaction probability built from cure
+  temperature, cutoff distance and an activation energy -- kinetics-gated,
+  not density-gated. That attacks the cause, a bonding rate outrunning
+  relaxation, where a density gate monitors a symptom; it is also the
+  physically motivated knob, since the thing a real cure has and this one
+  does not is a reaction rate. Their sec 2.4 reportedly *demonstrates* the
+  failure mode described above rather than merely flagging it -- a density
+  trajectory they call "not physical", ending in a metastable configuration,
+  caused by accelerated reaction kinetics. That is the same mechanism as the
+  permanent-topology argument, arrived at independently and published, which
+  is worth more than the argument on its own.
+
+  Nobody here has read the paper yet; this is the study session's report of
+  it, and the citation should be checked before it is repeated anywhere
+  public. Read it before designing either gate -- the two are not exclusive,
+  and a kinetics gate would change what a density gate is even for. Step 1,
+  observe and log, is unaffected either way and still worth shipping alone.
+
 ## Simulation defaults
 
 - **The halogen constraint failure is fixed but not explained.** v2.7.0
