@@ -69,6 +69,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and which are not, and says to look at the constraints rather than the
   ladder when LINCS warnings appear at `cure_equilibrate`.
 
+- **`desired_conversion` now says which conversion it means.**  The
+  `CURE.controls` table described it as "target conversion", which every
+  reader takes to be the crosslinker conversion an experiment measures.  It
+  is the *bond* conversion -- bonds formed over bonds possible -- and the
+  crosslinker conversion is lower: at a nominal 90 % cure, an audit of 30
+  builds found 75.2 triazines complete per 100, not 90.  The row now says
+  so and links to the fuller explanation under postcure repair.
+
 ## [2.6.2] - 2026-08-31
 
 ### Fixed
