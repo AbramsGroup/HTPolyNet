@@ -572,67 +572,62 @@ Coverage as of the last measurement: **38.8%** overall.
   actually closed. So a stage schedule that fails to bring a bond in has no
   way to say so. Robustness only; it was ruled out as the cause of the
   halogen failure below (quadrupling the stage count made that *worse*).
-  The density-convergence entry below is the same shape of problem -- a
-  number computed once and trusted thereafter -- and if both are done, they
-  are one change to the same loop.
+  The densification entry below is the same shape of problem -- a number
+  computed once and trusted thereafter.
 
-- **`CURE.relax` should gate on measured density convergence, not on a fixed
-  step count.** Raised by Cameron 2026-09-05, from the observation that
-  pestifer has a gate system htpolynet does not.
+- **Instrument `CURE.relax`: read Density from each relax NPT `.edr` and log
+  it.** `_do_relax` delegates to `_distance_attenuation`, which never calls
+  `TopoCoord.equilibrate()` -- the only method that runs
+  `gmx_energy_trace(..., ['Density'])`. So the relax stages **do not observe
+  density at all**, even though each one already writes an `.edr` that
+  contains it. Density is traced only in `_do_equilibrate`, and that stage
+  defaults to 300 K, below `Tg`, where the box cannot densify.
 
-  Step zero is instrumentation, and it is missing: `_do_relax` delegates to
-  `_distance_attenuation`, which never calls `TopoCoord.equilibrate()` --
-  the only method that runs `gmx_energy_trace(..., ['Density'])`. So the
-  relax stages **do not observe density at all**, even though each one
-  already writes an `.edr` that contains it. Density is traced only in
-  `_do_equilibrate`, and that stage defaults to 300 K, below `Tg`, where the
-  box cannot densify.
+  This began as step 1 of a gate proposal. The gate is now refuted (see the
+  decision record below) and the instrumentation is the whole remaining
+  value: it tells a user when a build has left the protocol's validity
+  range, it commits to no gating philosophy, and it is worth shipping alone.
 
-  The window is small. The default relax equilibration sequence ends in an
-  NPT segment of 2000 steps, and `relax-npt.mdp` runs `dt = 0.001`, so that
-  is 2 ps per stage; at the default `nstages: 6` over ~10 iterations it is
-  roughly **120 ps of above-`Tg` constant-pressure time across an entire
-  cure**, against a 39.2 ns production ladder.
+  Context for anyone reading such a trace. The default relax sequence ends
+  in an NPT segment of 2000 steps, and `relax-npt.mdp` runs `dt = 0.001`, so
+  that is 2 ps per stage; at the default `nstages: 6` over ~10 iterations it
+  is roughly **120 ps of above-`Tg` constant-pressure time across an entire
+  cure**, against a 39.2 ns production ladder. Density is still climbing when
+  cure terminates -- bpa +1.29 +/- 0.62 and bpf +1.48 +/- 0.28 kg/m3 per
+  iteration over the second half of cure, 2.1 and 5.3 sigma (study session,
+  4 replicates per chemistry). Cure stops on a conversion criterion with no
+  reference to whether the box settled. A rising density is *partly
+  expected*, since crosslinking genuinely densifies, and this slope cannot
+  separate real densification from incomplete relaxation.
 
-  Measured (study session, 4 replicates per chemistry, slope over the second
-  half of cure where the topology is nearly final): density is still climbing
-  when cure terminates -- bpa +1.29 +/- 0.62 and bpf +1.48 +/- 0.28 kg/m3 per
-  iteration, 2.1 and 5.3 sigma. Cure stops on a conversion criterion with no
-  reference to whether the box settled. The honest caveat is that a rising
-  density is *partly expected*, since crosslinking genuinely densifies, and
-  this slope cannot separate real densification from incomplete relaxation.
-  That inability is the argument: without an observed criterion there is no
-  way to tell which builds settled.
+- **Report Varshney's criterion per cure iteration -- a better diagnostic
+  than density for this loop.** Rmsd of unreacted reactive species across
+  the relax window, against `CURE.controls.search_radius`. It is cheaper
+  than a density-convergence test and it measures the quantity that actually
+  degrades rather than a downstream symptom. Varshney sized the original
+  40 ps window against exactly this criterion and noted its decay; a
+  per-iteration report would let any user see when their window has stopped
+  satisfying the criterion it was designed against. Implementation is small:
+  the relax NPT `.gro` files already exist per stage, and the reactive atom
+  names are already known to the cure controller. Measured decay over cure,
+  for calibration (study session, n = 4): bpa 18.1 -> 3.7 A, crossing
+  fraction 97 % -> 13 %; bpf 17.4 -> 4.4 A, 97 % -> 22 %.
 
-  Why it is more than an equilibration nicety: if the box is under-relaxed
-  while bonds are forming, bonds form between whichever atoms happen to be
-  adjacent in a too-open configuration, and **the topology is then
-  permanent** -- a later remelt relaxes coordinates but cannot rewire bonds.
-  That one mechanism ties together three otherwise-awkward results from the
-  study's 64-build series: post-cure annealing is refuted as a cause of the
-  density deficit (the ladder opens 2 ns at `Tg`+112 K, erasing pre-ladder
-  history), the uncured monomer melt matches experimental dilatometry to
-  0.19 % while the cured network is 2.25 % low, and cure shrinkage is
-  strongly bridge-dependent (+0.033 to -0.004 ml/g) and anti-correlates with
-  monomer van der Waals volume -- which is what a *fixed* relaxation window
-  does when different chemistries have different relaxation times. A gate
-  fixes the bridge dependence for free, because bulkier networks simply get
-  more time.
-
-  **Scope it to relax.** The production ladder does not need this: two
-  structures with opposite histories held 5 ns at 480 K converge from
-  opposite sides and stall 4.25 kg/m3 apart with the ladder's own hold inside
-  that bracket; within-hold drift on the glassy branch is -0.35 to +0.53
-  kg/m3 per 667 ps across four replicates; and replicate scatter is
-  topological rather than equilibrative (sd 3.2 kg/m3 at high conversion
-  against 0.7 at `chi_OCN` 0).
+- **If anything gates on density convergence, it should be densification,
+  not cure.** The initial 200 -> ~1100 kg/m3 compaction is one-shot,
+  involves a large volume change, and currently runs on fixed `nsteps`
+  (`runtime_defaults['densification']['equilibration']`,
+  `core/runtime.py:78-86`). That is the direct analogue of pestifer's use of
+  `density_equilibrate` -- a terminal, run-until-converged replacement for a
+  hand-written NPT ladder -- and it is cheap, because it happens once per
+  build rather than ~10 times.
 
   What to port from `pestifer/util/density_convergence.py` is only the
-  criterion -- an **autocorrelation-corrected SEM**, `sigma/sqrt(N/tau_int)`,
+  criterion: an **autocorrelation-corrected SEM**, `sigma/sqrt(N/tau_int)`,
   because NPT cell density is autocorrelated over hundreds of steps and a
-  naive block-means SEM is optimistic by ~1.5x; this also makes the gate
+  naive block-means SEM is optimistic by ~1.5x. That also makes the test
   size-aware for free, since `sigma/mean ~ 1/sqrt(N_atoms)` while tau is
-  roughly size-independent -- plus an explicit **ceiling outcome**, so a
+  roughly size-independent. Port the explicit **ceiling outcome** too, so a
   build that never settled says so instead of silently reporting a density.
   Do **not** port the chunking (`next_chunk_steps`, `is_patch_grid_crash`):
   that exists because NAMD fixes its patch/PME grid at the start of each
@@ -640,26 +635,71 @@ Coverage as of the last measurement: **38.8%** overall.
   failure mode. The chunking is most of pestifer's complexity and none of
   its value here.
 
-  Minimal design, in shippable order: (1) read Density from each relax NPT
-  `.edr` and log it -- worth shipping on its own, since it makes the question
-  answerable for every existing user; (2) test the trailing window after each
-  relax stage and extend or repeat the last stage until it converges or hits
-  a ceiling; (3) record converged/ceiling plus residual drift in
-  `diagnostics.log` and the repair summary yaml. One optional block under
-  `CURE.relax`, defaulting to off, so existing results stay reproducible.
+- **Decided against: gating and extending `CURE.relax` on density
+  convergence.** Raised by Cameron 2026-09-05 from the observation that
+  pestifer has a gate system htpolynet does not; recommended by the study
+  session, twice revised, then withdrawn 2026-09-07 once the experiment that
+  tested it had run. Recorded here so it is not re-proposed from the same
+  premises.
 
-  **Do not build the gate until the crude arm reports.** The study has a run
-  testing `CURE.relax` NPT `nsteps` 2000 -> 32000 (~120 ps -> ~1.9 ns of
-  above-`Tg` relaxation) on bpa, which reaches 47 % of experimental cure
-  shrinkage, and bpf, which already matches experiment and is therefore the
-  control that should *not* move. If bpa gains and bpf does not, the
-  mechanism above is confirmed. If both move, or bpf moves more, this whole
-  account is wrong and the gate would be solving the wrong problem.
+  **The experiment.** Arm R16 raised `CURE.relax` NPT `nsteps` 2000 ->
+  32000, i.e. above-`Tg` relaxation during cure from ~120 ps to ~1.9 ns, on
+  two chemistries at matched conversion, n = 4:
 
-  **Steps 2-3 are not the empty design space the note assumed.** Amended
-  2026-09-05 by the study session after a literature audit, which withdrew
-  its own recommendation as overconfident. Three published points, none of
-  which we knew about:
+      bpa   1187.52 -> 1192.19 kg/m3   +4.67 +/- 2.61   (+1.8 sigma)
+      bpf   1257.65 -> 1255.44         -2.21 +/- 2.15   (-1.0 sigma)
+
+  Sixteen times the relaxation closes **17 % of the density deficit, and not
+  significantly**; bpf, the control that should not move, did not. The
+  premise -- that the fixed relaxation window generates the deficit and a
+  gate would recover it -- survives only as a minor contributor.
+
+  **The stronger reason, which does not depend on that result.** R16 ran a
+  fixed multiple, never to convergence, so ask what convergence would cost.
+  Restoring the start-of-cure crossing fraction needs ~4.4x the displacement
+  of unreacted species, which under `sqrt(t)` is ~19x the time: ~37 ns of
+  relax per build against a 39.2 ns production ladder, roughly doubling
+  build cost. **And `sqrt(t)` does not hold.** Past the gel point the
+  unreacted species are bonded into the network -- topologically
+  constrained, not merely slow -- and no amount of NPT time restores a
+  capture-radius displacement to a covalently tethered fragment. So an
+  honestly implemented gate would hit its ceiling on every late-cure
+  iteration and report "may not have settled", correctly, with nothing to be
+  done about it. It detects a condition it cannot cure. (The study's rmsd
+  trace is still falling at the last iteration, 4.63 -> 4.08 -> 3.72 A,
+  consistent with approaching arrest but not proving a plateau; the arrest
+  argument leans partly on gelation physics, not purely on the measurement.)
+
+  **And a structural mismatch.** Pestifer uses `density_equilibrate` as a
+  terminal, one-shot replacement for a hand-written NPT ladder at the end of
+  a build -- somewhere you can afford to run until converged. The proposal
+  put the same machinery in an inner loop that executes ~10 times per build.
+  The economics are entirely different.
+
+  What does *not* change is the mechanism the proposal was built to explain,
+  which is still unexplained. If the box is under-relaxed while bonds are
+  forming, bonds form between whichever atoms happen to be adjacent in a
+  too-open configuration, and **the topology is then permanent** -- a later
+  remelt relaxes coordinates but cannot rewire bonds. That still ties
+  together three otherwise-awkward results from the study's 64-build series:
+  post-cure annealing is refuted as a cause of the density deficit (the
+  ladder opens 2 ns at `Tg`+112 K, erasing pre-ladder history), the uncured
+  monomer melt matches experimental dilatometry to 0.19 % while the cured
+  network is 2.25 % low, and cure shrinkage is strongly bridge-dependent
+  (+0.033 to -0.004 ml/g) and anti-correlates with monomer van der Waals
+  volume. R16 says more relax time is not the fix; it does not say the
+  mechanism is wrong.
+
+  **The production ladder does not need a gate either.** Two structures with
+  opposite histories held 5 ns at 480 K converge from opposite sides and
+  stall 4.25 kg/m3 apart with the ladder's own hold inside that bracket;
+  within-hold drift on the glassy branch is -0.35 to +0.53 kg/m3 per 667 ps
+  across four replicates; and replicate scatter is topological rather than
+  equilibrative (sd 3.2 kg/m3 at high conversion against 0.7 at `chi_OCN` 0).
+
+- **Published gating designs we have not evaluated.** Audited by the study
+  session 2026-09-05. These gate *bond acceptance*, not density, so R16's
+  refutation of the density gate leaves them untouched.
 
   - **Rejection on relaxation failure -- Moore et al. 2021**
     (*Macromolecules* 54:6275), on di(cyanate ester)s, which is *our*
@@ -675,24 +715,16 @@ Coverage as of the last measurement: **38.8%** overall.
   - **Arrhenius kinetics gating -- Schichtel & Chattopadhyay 2020**
     (*Comput. Mater. Sci.*): bonding probability from cure temperature,
     cutoff distance and an activation energy. Their sec 2.4 *demonstrates*
-    the failure mode this entry argues for rather than merely flagging it --
-    a density trajectory they call "not physical", ending in a metastable
-    configuration, from "accelerated reaction kinetics caused by the usage
-    of higher probabilities."
-  - **Density convergence already used as a check -- Moore 2021 again**,
-    verifying their `Tg` protocol "by examining the density convergence at
-    each temperature step". The machinery exists in that workflow; it is
-    simply never applied to bonding.
+    the failure mode rather than merely flagging it -- a density trajectory
+    they call "not physical", ending in a metastable configuration, from
+    "accelerated reaction kinetics caused by the usage of higher
+    probabilities."
 
-  The three are **complementary, not competing**: Arrhenius sets the rate,
-  rejection catches a bond that will not relax at all, a density criterion
-  verifies the outcome. Each misses what the others catch -- rejection does
-  not see gradual under-relaxation, where every bond relaxes acceptably and
-  the box still has not settled; the Arrhenius gate is open-loop on the
-  outcome, verifying only that bonds were added at a physically derived
-  rate; and only the density gate closes the loop on the observable the
-  deficit is actually measured in. If exactly one gets built, Schichtel's is
-  the more principled and Moore's is the cheaper.
+  Rejection catches a bond that will not relax at all; Arrhenius sets the
+  rate. Neither sees gradual under-relaxation, but neither costs what the
+  density gate would have, and both act where R16 says the leverage is not
+  -- on which bonds form, rather than on how long the box is given
+  afterwards.
 
   **A calibration number worth having before anyone panics about our
   deficit.** Moore uses a fixed 40 ps NPT relaxation window at 800 K -- the
@@ -707,12 +739,7 @@ Coverage as of the last measurement: **38.8%** overall.
 
   Nobody here has read either paper; the quotations above are the study
   session's, and both citations should be checked against the originals
-  before being repeated anywhere public. Read them before designing any
-  gate. **Step 1 -- observe and log density at each relax stage -- is
-  unaffected by all of this and still the change to make first.** It commits
-  to no gating philosophy, and none of the three designs can be evaluated,
-  by us or by a user, until htpolynet looks at density during relaxation at
-  all.
+  before being repeated anywhere public.
 
 ## Simulation defaults
 
