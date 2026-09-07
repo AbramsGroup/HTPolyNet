@@ -575,44 +575,6 @@ Coverage as of the last measurement: **38.8%** overall.
   The densification entry below is the same shape of problem -- a number
   computed once and trusted thereafter.
 
-- **Instrument `CURE.relax`: read Density from each relax NPT `.edr` and log
-  it.** `_do_relax` delegates to `_distance_attenuation`, which never calls
-  `TopoCoord.equilibrate()` -- the only method that runs
-  `gmx_energy_trace(..., ['Density'])`. So the relax stages **do not observe
-  density at all**, even though each one already writes an `.edr` that
-  contains it. Density is traced only in `_do_equilibrate`, and that stage
-  defaults to 300 K, below `Tg`, where the box cannot densify.
-
-  This began as step 1 of a gate proposal. The gate is now refuted (see the
-  decision record below) and the instrumentation is the whole remaining
-  value: it tells a user when a build has left the protocol's validity
-  range, it commits to no gating philosophy, and it is worth shipping alone.
-
-  Context for anyone reading such a trace. The default relax sequence ends
-  in an NPT segment of 2000 steps, and `relax-npt.mdp` runs `dt = 0.001`, so
-  that is 2 ps per stage; at the default `nstages: 6` over ~10 iterations it
-  is roughly **120 ps of above-`Tg` constant-pressure time across an entire
-  cure**, against a 39.2 ns production ladder. Density is still climbing when
-  cure terminates -- bpa +1.29 +/- 0.62 and bpf +1.48 +/- 0.28 kg/m3 per
-  iteration over the second half of cure, 2.1 and 5.3 sigma (study session,
-  4 replicates per chemistry). Cure stops on a conversion criterion with no
-  reference to whether the box settled. A rising density is *partly
-  expected*, since crosslinking genuinely densifies, and this slope cannot
-  separate real densification from incomplete relaxation.
-
-- **Report Varshney's criterion per cure iteration -- a better diagnostic
-  than density for this loop.** Rmsd of unreacted reactive species across
-  the relax window, against `CURE.controls.search_radius`. It is cheaper
-  than a density-convergence test and it measures the quantity that actually
-  degrades rather than a downstream symptom. Varshney sized the original
-  40 ps window against exactly this criterion and noted its decay; a
-  per-iteration report would let any user see when their window has stopped
-  satisfying the criterion it was designed against. Implementation is small:
-  the relax NPT `.gro` files already exist per stage, and the reactive atom
-  names are already known to the cure controller. Measured decay over cure,
-  for calibration (study session, n = 4): bpa 18.1 -> 3.7 A, crossing
-  fraction 97 % -> 13 %; bpf 17.4 -> 4.4 A, 97 % -> 22 %.
-
 - **If anything gates on density convergence, it should be densification,
   not cure.** The initial 200 -> ~1100 kg/m3 compaction is one-shot,
   involves a large volume change, and currently runs on fixed `nsteps`
@@ -709,6 +671,22 @@ Coverage as of the last measurement: **38.8%** overall.
   across four replicates; and replicate scatter is topological rather than
   equilibrative (sd 3.2 kg/m3 at high conversion against 0.7 at `chi_OCN` 0).
 
+  **Reference values for the instrumentation that did ship in v2.7.0.** The
+  relax and mobility numbers a user now sees in their own log mean nothing
+  without something to compare them against, and these are the only measured
+  ones we have. Window size: the default relax sequence ends in an NPT
+  segment of 2000 steps and `relax-npt.mdp` runs `dt = 0.001`, so 2 ps per
+  stage; at the default `nstages: 6` over ~10 iterations that is roughly
+  **120 ps of above-`Tg` constant-pressure time across an entire cure**,
+  against a 39.2 ns production ladder. Density at cure termination is still
+  climbing, bpa +1.29 +/- 0.62 and bpf +1.48 +/- 0.28 kg/m3 per iteration
+  over the second half of cure (2.1 and 5.3 sigma, n = 4 per chemistry) --
+  though a rising density is *partly* expected, since crosslinking genuinely
+  densifies, and that slope cannot separate real densification from
+  incomplete relaxation. Reactive-species mobility over cure: bpa 18.1 ->
+  3.7 A with crossing fraction 97 % -> 13 %, bpf 17.4 -> 4.4 A and
+  97 % -> 22 %. All measured by the study session.
+
 - **Published gating designs we have not evaluated.** Audited by the study
   session 2026-09-05. These gate *bond acceptance*, not density, so R16's
   refutation of the density gate leaves them untouched.
@@ -751,7 +729,11 @@ Coverage as of the last measurement: **38.8%** overall.
 
   Nobody here has read either paper; the quotations above are the study
   session's, and both citations should be checked against the originals
-  before being repeated anywhere public.
+  before being repeated anywhere public. The same applies to Varshney 2008,
+  which the v2.7.0 docs now name as the origin of the 40 ps relaxation
+  window and its mobility criterion -- that attribution is the study
+  session's too, and it is the one of the three that has already been
+  published in our documentation. Verify it first if any of them.
 
 ## Simulation defaults
 

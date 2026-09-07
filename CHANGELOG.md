@@ -40,6 +40,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The CURE relax stages now report the density they produce.**  The relax
+  ladder is the only above-`Tg` constant-pressure time in a cure -- roughly
+  120 ps of it, at the defaults -- and nothing looked at the density it
+  produced: `_do_relax` delegates to `_distance_attenuation`, which never
+  calls `TopoCoord.equilibrate()`, the only method that traced Density.  The
+  per-stage relax table gains a `Density (kg/m3)` column, read from the NPT
+  `.edr` each stage already wrote.  Drag is deliberately excluded, since it
+  runs under restraints and its density is not comparable.
+
+- **The CURE relax stages now report reactive-species mobility (Varshney's
+  criterion).**  After each relax ladder, htpolynet reports the rmsd
+  displacement of atoms that still carry an unused reactive site, and what
+  fraction of them moved at least one `CURE.controls.search_radius` during
+  the window.  Varshney sized the original 40 ps relaxation window on exactly
+  this requirement -- that unreacted species diffuse far enough between
+  reactions to find new partners -- but the requirement decays over a cure as
+  those species are bonded into the growing network, and until now nothing
+  reported when a window had stopped satisfying it.  A build where fewer than
+  25 % of still-reactive atoms cross a search radius now says so, because its
+  later bonds are being chosen from a nearly frozen neighborhood.
+
+  Both reports are pure observation: they change no simulation input and
+  gate nothing.  Every failure path is swallowed and logged at debug level,
+  so instrumentation cannot fail a build.  A run resuming mid-ladder skips
+  the mobility report rather than measuring only the tail of its window.
+
 - **`repair-summary.yaml` now reports the pre-repair bond histogram.**  A new
   `prerepair_bond_counts` key gives how many crosslinkers carried 0, 1, ... up
   to `full_bond_count` bonds *before* repair dismantled any of them.  Repair

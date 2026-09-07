@@ -93,6 +93,42 @@ The algorithm used to create new bonds and polymerize a system is called the CUR
    Refining it makes matters worse.  If you see LINCS warnings at
    ``cure_equilibrate``, look at the constraints, not at the ladder.
 
+.. _relax_diagnostics:
+
+What the relax stages report
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As of v2.7.0 the relax ladder reports two diagnostics per CURE iteration.  Both
+are pure observation: they change no simulation input and gate nothing.
+
+The per-stage table gains a **Density** column, read from the NPT ``.edr`` each
+stage already wrote.  The relax stages are the only above-:math:`T_g`
+constant-pressure time in a cure -- roughly 120 ps of it at the defaults,
+against a production ladder measured in nanoseconds -- so this is where you can
+see whether the box is still densifying when the cure stops.  Drag stages are
+excluded, because they run under restraints and their density is not
+comparable.
+
+After each ladder, ``htpolynet`` reports **reactive-species mobility**: the rmsd
+displacement of atoms that still carry an unused reactive site, and the fraction
+of them that moved at least one ``CURE.controls.search_radius`` during the
+window.  This is the criterion the fixed-relaxation-window convention was
+originally sized against -- that unreacted species diffuse far enough between
+reactions to find new partners -- and it has been in use, at 40 ps, since
+Varshney and co-workers introduced it in 2008.
+
+That requirement decays over a cure.  Past the gel point the still-reactive
+species are bonded into the growing network, and are then topologically
+constrained rather than merely slow, so more relaxation time does not restore
+their mobility.  A build in which fewer than 25 % of still-reactive atoms cross
+a search radius emits a warning, because its later bonds are being chosen from a
+nearly frozen neighborhood.  Treat that as a statement about the *validity range
+of the protocol*, not as an error: nothing is wrong with the run, but its late
+bonds are less well sampled than its early ones.
+
+A run resuming mid-ladder from a checkpoint skips the mobility report, since the
+window it could measure is only the tail of the real one.
+
 .. _bondsearch_filters:
 
 Identifying allowable bonds:  Bondsearch filters

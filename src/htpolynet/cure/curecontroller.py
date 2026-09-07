@@ -21,7 +21,7 @@ from ..core.molecule import MoleculeDict
 from ..core.topocoord import TopoCoord, BTRC
 from ..cure.reaction import ReactionList
 from ..cure.reaction import reaction_stage
-from ..external.gromacs import gromacs_distance, mdp_modify
+from ..external.gromacs import gmx_energy_trace, gromacs_distance, mdp_modify
 from ..utils import checkpoint as cp
 from ..utils.stringthings import my_logger
 
@@ -53,6 +53,82 @@ def residue_functionality(adf):
         pandas.Series: initial reactive sites, indexed by residue number
     """
     return adf.groupby('resNum')[['z','nreactions']].sum().sum(axis=1)
+
+def minimum_image_displacements(before,after,box):
+    """Per-atom displacement magnitudes across a window, under minimum image.
+
+    Args:
+        before (numpy.ndarray): (N,3) positions before the window, nm
+        after (numpy.ndarray): (N,3) positions after the window, nm
+        box (numpy.ndarray): (3,3) box matrix; only its diagonal is used
+
+    Returns:
+        numpy.ndarray: (N,) displacement magnitudes, nm; empty if N is 0
+    """
+    b=np.asarray(before,dtype=float).reshape(-1,3)
+    a=np.asarray(after,dtype=float).reshape(-1,3)
+    assert a.shape==b.shape,f'shape mismatch {b.shape} vs {a.shape}'
+    d=a-b
+    L=np.asarray(box,dtype=float)
+    L=L.diagonal() if L.ndim==2 else L.reshape(-1)
+    # an unset box would make every displacement nan; leave the raw
+    # displacement alone instead, which is right for a non-periodic snapshot
+    if d.size and np.all(L>0):
+        d=d-L*np.round(d/L)
+    return np.sqrt((d**2).sum(axis=1))
+
+def varshney_criterion(displacements,search_radius):
+    """Summarizes reactive-species mobility against the bond-search capture radius.
+
+    Varshney sized the original 40 ps relaxation window on the requirement that
+    unreacted reactive species diffuse far enough during it to find new
+    partners.  That requirement decays over a cure: as those species are bonded
+    into the growing network they become topologically constrained rather than
+    merely slow, and the fixed window silently stops satisfying the criterion it
+    was designed against.  Nothing in the build reports this, so a window that
+    has stopped working looks exactly like one that still works.
+
+    'crossing_fraction' is the share of still-reactive atoms that moved at least
+    one capture radius during the window; it is the quantity that decays.
+
+    Args:
+        displacements (numpy.ndarray): per-atom displacement magnitudes, nm, from :func:`minimum_image_displacements`
+        search_radius (float): bond-search capture radius, nm
+
+    Returns:
+        dict: 'n', 'rmsd', 'mean', 'max' (nm) and 'crossing_fraction'; all but 'n' are None when there are no reactive atoms left
+    """
+    r=np.asarray(displacements,dtype=float).reshape(-1)
+    if r.size==0:
+        return {'n':0,'rmsd':None,'mean':None,'max':None,'crossing_fraction':None}
+    return {
+        'n':int(r.size),
+        'rmsd':float(np.sqrt((r**2).mean())),
+        'mean':float(r.mean()),
+        'max':float(r.max()),
+        'crossing_fraction':float((r>=search_radius).mean())
+    }
+
+def _relax_stage_density(edr_pfx):
+    """Mean density over one relax stage's NPT segment, or None if unavailable.
+
+    Instrumentation must never be able to fail a build, so every failure path --
+    a missing edr, a gmx energy that will not run, an ensemble whose menu has no
+    Density -- returns None, and the stage reports '--' instead.
+
+    Args:
+        edr_pfx (str): edr basename, without the '.edr' extension
+
+    Returns:
+        float: mean density in kg/m^3, or None
+    """
+    try:
+        df=gmx_energy_trace(edr_pfx,['Density'])
+    except Exception as e:
+        logger.debug(f'no density available from {edr_pfx}: {e}')
+        return None
+    if df.empty or 'Density' not in df.columns: return None
+    return float(df['Density'].mean())
 
 def rank_bond_candidates(bdf,reaction_counts=None):
     """Orders bond candidates ahead of the greedy one-bond-per-residue downselection.
@@ -563,6 +639,63 @@ class CureController:
         """
         return f'{self.state.step.value}-{self.state.step}'
 
+    def _reactive_positions(self,TC:TopoCoord):
+        """Snapshots the positions of every atom that still has a reactive site.
+
+        'z' is the count of a reactive atom's unused sites, so ``z > 0`` is the
+        set of species still looking for a partner -- the same selector the bond
+        search itself uses.  Bonds only form during the topology update, so this
+        set is constant across one relax ladder and the snapshot can be compared
+        atom for atom with a later one.
+
+        Args:
+            TC (TopoCoord): global topology and coordinates
+
+        Returns:
+            tuple: (globalIdx array, (N,3) position array), or None if the atom dataframe carries no 'z' attribute or nothing is still reactive
+        """
+        adf=TC.Coordinates.A
+        if adf is None or not all(c in adf.columns for c in ('z','globalIdx','posX','posY','posZ')): return None
+        sel=adf[adf['z']>0]
+        if sel.shape[0]==0: return None
+        return sel['globalIdx'].to_numpy(),sel[['posX','posY','posZ']].to_numpy(dtype=float)
+
+    def _report_reactive_mobility(self,TC:TopoCoord,pre_reactive):
+        """Logs Varshney's criterion across the relax window just completed.
+
+        See :func:`varshney_criterion` for why this is worth reporting.  It is
+        pure observation: any failure is logged and swallowed, because a
+        diagnostic must not be able to fail a build.
+
+        Args:
+            TC (TopoCoord): global topology and coordinates, as left by the relax ladder
+            pre_reactive (tuple): the snapshot returned by :meth:`_reactive_positions` before the ladder ran
+        """
+        try:
+            idx,before=pre_reactive
+            adf=TC.Coordinates.A.set_index('globalIdx')
+            after=adf.loc[idx,['posX','posY','posZ']].to_numpy(dtype=float)
+            r=minimum_image_displacements(before,after,TC.Coordinates.box)
+            stats=varshney_criterion(r,self.dicts['controls']['search_radius'])
+        except Exception as e:
+            logger.debug(f'could not report reactive mobility: {e}')
+            return
+        if not stats['n']: return
+        rcap=self.dicts['controls']['search_radius']
+        logger.info(
+            f'Reactive-species mobility over relax: rmsd {stats["rmsd"]:.3f} nm, '
+            f'max {stats["max"]:.3f} nm, {stats["crossing_fraction"]*100:.0f}% of '
+            f'{stats["n"]} crossed the {rcap:.2f} nm search radius'
+        )
+        if stats['crossing_fraction']<0.25:
+            logger.warning(
+                f'reactive-species mobility is low: only {stats["crossing_fraction"]*100:.0f}% of '
+                f'still-reactive atoms moved a full search radius during relax. The '
+                f'relax window is no longer satisfying the criterion it was sized '
+                f'against, so later bonds are being chosen from a nearly frozen '
+                f'neighborhood'
+            )
+
     def _distance_attenuation(self,TC:TopoCoord,mode='drag',gromacs_dict={}):
         """Manages the progressive attenuation of bond parameters for new bonds.
 
@@ -591,7 +724,7 @@ class CureController:
             pmaxL,pminL,pmeanL=pdf['current_lengths'].max(),pdf['current_lengths'].min(),pdf['current_lengths'].mean()
             logger.debug(f'1-4 distances lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
             roptions.append(pmaxL)
-            logger.info('     Stage  Max-distance (nm)  Max-1-4-distance (nm)')
+            logger.info('     Stage  Max-distance (nm)  Max-1-4-distance (nm)  Density (kg/m3)')
         rcommon=max(roptions)
         for stg_dict in d['equilibration']:
             ensemble=stg_dict['ensemble']
@@ -605,6 +738,15 @@ class CureController:
             mdp_modify(f'{impfx}.mdp',mdp_mods_dict,add_if_missing=(ensemble!='min'))
         this_nstages=int(maxL/d['increment'])
         this_firststage=self.state.current_stage[mode]
+        # Varshney's criterion is measured across the whole relax window, so a
+        # build resuming mid-ladder cannot report it -- the window it would
+        # measure is only the tail.  Skip rather than report a partial number.
+        pre_reactive=None
+        if mode=='relax':
+            if this_firststage==0:
+                pre_reactive=self._reactive_positions(TC)
+            else:
+                logger.debug(f'resuming at stage {this_firststage}; skipping the mobility report')
         logger.debug(f'{self.state.step} {this_nstages} {this_firststage}')
         saveT=TC.Topology.copy_bond_parameters(self.bonds_df)
         for i in range(this_firststage,this_nstages):
@@ -615,11 +757,17 @@ class CureController:
                 TC.Topology.attenuate_bond_parameters(self.bonds_df,i,this_nstages,init_colname='initial_distance')
             stagepfx=f'{opfx}-stage-{i+1}'
             TC.write_top(f'{stagepfx}.top')
+            stage_density=None
             for stg_dict in d['equilibration']:
                 ensemble=stg_dict['ensemble']
                 impfx=f'{statename}-{ensemble}' # e.g., drag-min, drag-nvt, drag-npt
                 TC.grompp_and_mdrun(out=f'{stagepfx}-{ensemble}',mdp=f'{impfx}',**gromacs_dict)
                 # logger.debug(f'{TC.files["gro"]}')
+                # the relax stages are the only above-Tg constant-pressure time in
+                # a cure, and until now nothing looked at the density they produce.
+                # Drag runs under restraints, so its density is not comparable.
+                if mode=='relax' and ensemble=='npt':
+                    stage_density=_relax_stage_density(f'{stagepfx}-npt')
             TC.Topology.restore_bond_parameters(saveT)
             TC.add_length_attribute(nbdf,attr_name='current_lengths')
             maxL,minL,meanL=nbdf['current_lengths'].max(),nbdf['current_lengths'].min(),nbdf['current_lengths'].mean()
@@ -630,10 +778,13 @@ class CureController:
                 TC.add_length_attribute(pdf,attr_name='current_lengths')
                 pmaxL,pminL,pmeanL=pdf['current_lengths'].max(),pdf['current_lengths'].min(),pdf['current_lengths'].mean()
                 logger.debug(f'1-4 distances lengths avg/min/max: {pmeanL:.3f}/{pminL:.3f}/{pmaxL:.3f}')
-                logger.info(f'{i+1:>10d}  {maxL:>17.3f}  {pmaxL:>21.3f}')
+                dstr='--' if stage_density is None else f'{stage_density:.1f}'
+                logger.info(f'{i+1:>10d}  {maxL:>17.3f}  {pmaxL:>21.3f}  {dstr:>15}')
             self.state._to_yaml()
         if mode=='drag':
             TC.Topology.remove_restraints(self.bonds_df)
+        if pre_reactive is not None:
+            self._report_reactive_mobility(TC,pre_reactive)
         TC.write_top(f'{opfx}-complete.top')
         self._register_bonds(nbdf,pdf,f'{opfx}-{mode}-bonds.csv',bonds_are=('relaxed' if mode=='relax' else 'dragged'))
         self.state.current_stage[mode]=0
