@@ -640,7 +640,8 @@ Coverage as of the last measurement: **38.8%** overall.
   pestifer has a gate system htpolynet does not; recommended by the study
   session, twice revised, then withdrawn 2026-09-07 once the experiment that
   tested it had run. Recorded here so it is not re-proposed from the same
-  premises.
+  premises. **The verdict is "not now, on these grounds", not "never"** --
+  both legs of it have stated limits, recorded below with the evidence.
 
   **The experiment.** Arm R16 raised `CURE.relax` NPT `nsteps` 2000 ->
   32000, i.e. above-`Tg` relaxation during cure from ~120 ps to ~1.9 ns, on
@@ -654,6 +655,13 @@ Coverage as of the last measurement: **38.8%** overall.
   premise -- that the fixed relaxation window generates the deficit and a
   gate would recover it -- survives only as a minor contributor.
 
+  **R16 is underpowered for the effect it found, and must not be recorded as
+  settled beyond its power.** Resolving +4.7 kg/m3 at 3 sigma needs n ~ 11 at
+  the observed scatter; this is n = 4. "17 % of the deficit at +1.8 sigma" is
+  a point estimate, not a tight upper bound, and better statistics could move
+  it. What it does rule out is a *large* effect of relaxation duration --
+  which is what the gate would have had to deliver to be worth its cost.
+
   **The stronger reason, which does not depend on that result.** R16 ran a
   fixed multiple, never to convergence, so ask what convergence would cost.
   Restoring the start-of-cure crossing fraction needs ~4.4x the displacement
@@ -665,10 +673,14 @@ Coverage as of the last measurement: **38.8%** overall.
   capture-radius displacement to a covalently tethered fragment. So an
   honestly implemented gate would hit its ceiling on every late-cure
   iteration and report "may not have settled", correctly, with nothing to be
-  done about it. It detects a condition it cannot cure. (The study's rmsd
-  trace is still falling at the last iteration, 4.63 -> 4.08 -> 3.72 A,
-  consistent with approaching arrest but not proving a plateau; the arrest
-  argument leans partly on gelation physics, not purely on the measurement.)
+  done about it. It detects a condition it cannot cure.
+
+  **The limit on that argument:** arrest is inferred partly from gelation
+  physics, not purely measured. The study's displacement trace is still
+  falling at the last cure iteration, 4.63 -> 4.08 -> 3.72 A -- consistent
+  with approaching arrest, but not a demonstrated plateau. Measuring the
+  plateau directly would settle it either way, and is a smaller experiment
+  than powering R16 up.
 
   **And a structural mismatch.** Pestifer uses `density_equilibrate` as a
   terminal, one-shot replacement for a hand-written NPT ladder at the end of
