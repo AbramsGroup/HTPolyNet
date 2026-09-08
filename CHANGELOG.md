@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- **The docs landing page carries the standard badge row, and the release
+  history is gone from the table of contents.**  `release-history.rst`
+  duplicated what this file already records from 1.0.8 forward, so it is
+  deleted and `changelog` moves to the *end* of the contents tree rather than
+  sitting second.  The seven pre-1.0.8 entries it held -- 1.0.7.2 back to
+  0.0.1, which this file did not cover -- were migrated here first, so nothing
+  is lost by the deletion.  The landing page now shows the same eight badges
+  as the README: tests, PyPI, conda-forge, Python versions, license, docs,
+  downloads and DOI.
+
 - **Two more `CURE`/`densification` defaults in the config tables were
   wrong.**  `densification.initial_density` is 200.0 kg/m^3, not the 300.0 the
   table gave; and the prose under `min_allowable_bondcycle_length` still said
@@ -1027,3 +1037,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Uses `chordless_cycles` to find rings; `ringidx` is no longer a unique atom attribute; improved ring-pierce detection.
+
+## [1.0.7.2] - untagged
+
+### Changed
+
+- Moved the Library package to the `resources` subpackage of `htpolynet`.
+
+## [1.0.6] - 2023-06-21
+
+### Added
+
+- `gmx`-style `analyze` subcommand.
+
+## [1.0.5] - 2022-09-29
+
+### Added
+
+- Post-build MD simulations and plotting functionality.
+
+## [1.0.2] - 2022-09-16
+
+### Changed
+
+- Enhanced molecule-network graph drawing in the `plot` subcommand.
+
+## [1.0.1] - 2022-09-07
+
+### Fixed
+
+- Atom index assignment for systems with more than 100,000 atoms.
+
+## [1.0.0] - 2022-09-03
+
+- First release.
+
+## [0.0.1] - 2022-08-29
+
+- Initial beta version.
