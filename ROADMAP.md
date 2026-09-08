@@ -771,16 +771,27 @@ Coverage as of the last measurement: **38.8%** overall.
 
   Staging, agreed with the ycleptic session:
 
-  1. **ycleptic to conda-forge** -- gates shipping and nothing else.
+  1. **ycleptic to conda-forge** -- gates shipping and nothing else, and is
+     now the ONLY thing gating it.
      `api.anaconda.org/package/conda-forge/ycleptic` was 404 while htpolynet
      is 200, and a conda package's run-deps must exist in the channel, so
      declaring the dependency would make htpolynet's feedstock unbuildable and
      trip `scripts/release.sh`'s `check-conda-sync.py --strict` preflight.
      Submitted 2026-09-08 with Cameron's direct approval as
-     conda-forge/staged-recipes#34763, "Adding ycleptic"; open, not merged.
-  2. **Two ycleptic grammar additions**: `value_attributes:` + `key_text:` for
-     free-key mappings, and `list_defaults: replace|append` per attribute.
-     **Merged to ycleptic main**; 2.4.0 is not released.
+     conda-forge/staged-recipes#34763, "Adding ycleptic"; still open, not
+     merged, and `api.anaconda.org/package/conda-forge/ycleptic` is still 404.
+
+     **That PR pins 2.3.0, and 2.4.0 is now out on PyPI.** As written, merging
+     it creates a feedstock one version behind, and 2.4.0 then arrives only
+     through an autotick-bot PR -- the exact cycle whose stalling is the
+     central OBSERVED failure in Cameron's conda-forge skill. Updating the
+     staged recipe to 2.4.0 before it merges would skip that cycle entirely.
+     It is ycleptic's PR, not ours, and this is recorded as an observation
+     rather than an action.
+  2. **Three ycleptic grammar additions**: `value_attributes:` + `key_text:`
+     for free-key mappings, `value_type:` for scalar-valued ones, and
+     `list_defaults: replace|append` per attribute. **Released as ycleptic
+     2.4.0 on PyPI**, and base.yaml uses all three.
   3. Port the flat sections and generate their reference docs -- done in
      base.yaml, awaiting 1 to go live.
   4. Port `constituents` and `reactions`. **`constituents` is done**: it is a
@@ -792,8 +803,16 @@ Coverage as of the last measurement: **38.8%** overall.
      carries `list_defaults: replace`, verified to use a user's ladder
      verbatim rather than appending it to the default one.
 
-     **`reactions` remains unportable**, for two independent reasons, neither
-     of which `value_attributes` addresses:
+     **`reactions` and `postcure_repair` are now ported too.** ycleptic 2.4.0
+     added `value_attributes` on a *list*, which describes multi-key records
+     and closed the `lwalk` gap, plus `value_type:` for scalar-valued free-key
+     mappings. Every config section is now validated except
+     `gromacs.mdrun_options`, which is deliberately open. Errors name the
+     offending item -- `under 'reactions[2]'`, `of 'postcure_repair[0]'`.
+     Today an unknown reaction key is discarded by `Reaction.__init__` with a
+     debug-level message, so this replaces a silent failure with a loud one.
+
+     Superseded, kept for the record -- these were the two blockers:
 
      - ycleptic describes list items with the tagged-task idiom -- `lwalk`
        takes `itemname = list(item.keys())[0]` -- and htpolynet's reaction
@@ -801,22 +820,25 @@ Coverage as of the last measurement: **38.8%** overall.
        nowhere to hang `value_attributes` for `reactions[].atoms`, which
        would otherwise qualify. The ycleptic session has deliberately not
        changed `lwalk`; it is a real feature request.
-     - `value_attributes` requires every value to be a **mapping**. Free-key
-       mappings whose values are scalars cannot use it: `reactions[].reactants`
-       is `{1: BPA, 2: HIE}`, and inside `constituents` both `reactive_atoms`
-       and `rename_atoms` are `{label: atom-name}`. These stay bare dicts and
-       unvalidated even now. A `value_type:` variant would close it; the
-       ycleptic session reproduced the gap, agrees that is the right shape,
-       and has put it to Cameron as a call on whether to bundle it into
-       2.4.0 -- **the cost argument is that one release costs one
-       autotick-bot cycle and two releases cost two**, so if it is wanted at
-       all it should go in 2.4.0 rather than follow it. Nothing here is
-       blocked either way: `reactions` is blocked on `lwalk` regardless, and
-       the two `constituents` scalar maps are no worse than they are today.
+     - `value_attributes` requires every value to be a **mapping**, which
+       ruled out scalar-valued free-key mappings. **Closed**: `value_type:`
+       was bundled into ycleptic 2.4.0, and `constituents[].reactive_atoms`
+       and `constituents[].rename_atoms` now declare `value_type: str` and
+       are validated. `reactions[].reactants` (`{1: BPA, 2: HIE}`) is the
+       same shape and would work too, but it lives inside a `reactions` list
+       item, so the `lwalk` limitation above blocks it regardless.
 
-     So the port validates the knobs and the molecule records, and still not
-     the reaction chemistry. That is a smaller gap than before but not zero,
-     and it is the honest scope to quote.
+- **`required: true` on a list attribute is silently ineffective in ycleptic
+  2.4.0.** An absent required list is filled with `[]` and no error is raised
+  (`walkers.py:389-397`); scalars raise, and dicts raise via their required
+  children. Verified with a minimal spec, and it is the exact class of
+  do-nothing declaration `speccheck` exists to catch, which does not catch
+  this one. In base.yaml it means `reactions[].bonds`, `bonds[].atoms` and the
+  repair spec's `ring_carbon_atoms`, `ring_nitrogen_atoms` and
+  `reactive_oxygen_atoms` are declared required and are not enforced: omitting
+  one validates, then fails deeper in htpolynet. The declarations are kept
+  because they state the intent correctly and will start working when ycleptic
+  fixes it. Reported to the ycleptic session; not worked around here.
 
   **The version floor is a trap; read this before pinning anything.** The
   staged-recipes submission is necessarily at ycleptic **2.3.0**, because

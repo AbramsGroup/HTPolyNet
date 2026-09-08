@@ -6,10 +6,11 @@
 # package's run-deps must exist in the channel).  See ROADMAP.md.
 #
 # REQUIRES ycleptic >= 2.4.0, for `value_attributes`/`key_text` (free-key
-# mappings) and `list_defaults` (per-attribute replace semantics).  Both landed
-# on ycleptic main; 2.4.0 is not released, and the pin must not be written into
-# pyproject.toml until the anaconda API says 2.4.0 is on the conda-forge
-# channel.  See ROADMAP.md for why.
+# mappings), `value_type` (scalar-valued free-key mappings) and `list_defaults`
+# (per-attribute replace semantics).  2.4.0 is released on PyPI, but the pin
+# must NOT be written into pyproject.toml until the anaconda API says 2.4.0 is
+# on the conda-forge CHANNEL -- as of this writing ycleptic is not on
+# conda-forge at all.  See ROADMAP.md for why.
 #
 # `constituents` is a free-key mapping: its keys are molecule names the user
 # invents, and `value_attributes` gives the schema every record must satisfy.
@@ -19,23 +20,25 @@
 # user's [nvt] would otherwise yield ['min','nvt','npt','nvt'] and run the
 # user's own step last and twice, silently.
 #
-# What is still NOT validated, and why:
+# Every section is now validated.  `value_attributes` on a LIST closed the last
+# gap: htpolynet's reaction and repair records are multi-key dicts, which the
+# older tagged-task idiom (`itemname = list(item.keys())[0]`) could not
+# describe, so `reactions` and `postcure_repair` had to be bare lists.  They
+# are not any more, and errors name the offending item -- `under
+# 'reactions[3]'`.
 #
-#   1. `reactions` is a bare list.  ycleptic describes list items with the
-#      tagged-task idiom -- lwalk takes `itemname = list(item.keys())[0]`
-#      (walkers.py:267) -- and htpolynet's reaction records are multi-key
-#      (`name`, `stage`, `reactants`, ...).  With no schema node for the item
-#      there is nowhere to hang `value_attributes` for `reactions[].atoms`,
-#      which would otherwise qualify.  The ycleptic session knows and has
-#      deliberately not changed lwalk; it is a real feature request, not an
-#      oversight.
+# The one thing left unconstrained on purpose: `gromacs.mdrun_options` accepts
+# arbitrary mdrun flags, which is what it is for.
 #
-#   2. Free-key mappings whose values are SCALARS cannot use
-#      `value_attributes`, which requires every value to be a mapping
-#      (walkers.py:195-201).  That covers `constituents[].reactive_atoms` and
-#      `constituents[].rename_atoms` ({label: atom-name}) and
-#      `reactions[].reactants` ({index: molecule-name}).  Each is marked
-#      `# FREE-KEY, SCALAR VALUES` below.
+# CAVEAT, ycleptic 2.4.0: `required: true` on a LIST attribute is silently
+# ineffective.  An absent required list is filled with `[]` and no error is
+# raised (walkers.py:389-397); scalars raise, and dicts raise via their
+# required children.  So `reactions[].bonds`, `bonds[].atoms`, and the repair
+# spec's `ring_carbon_atoms`, `ring_nitrogen_atoms` and
+# `reactive_oxygen_atoms` are declared required here and are NOT enforced --
+# omitting one validates, then fails deeper in the code.  The declarations are
+# kept because they state the intent correctly and will start working when
+# ycleptic fixes it; reported to the ycleptic session.
 
 docs:
   title: htpolynet run configuration
@@ -163,19 +166,19 @@ attributes:
           RDKit when the string uses `[*:N]` atom-mapping tokens, to
           materialize lib/molecules/inputs/NAME.mol2 before parameterization.
       - name: reactive_atoms
-        type: dict            # FREE-KEY, SCALAR VALUES: {map-label: atom-name}
+        type: dict
+        value_type: str
+        key_text: A SMILES atom-map label, i.e. the N in a `[*:N]` token.
         text: >
           Map from a SMILES atom-map label to an atom name, for the RDKit
-          path; pairs with a `smiles` that uses `[*:N]` tokens.  Values are
-          bare strings, so this cannot use `value_attributes`, which requires
-          every value to be a mapping.  NOT VALIDATED.
+          path; pairs with a `smiles` that uses `[*:N]` tokens.
       - name: rename_atoms
-        type: dict            # FREE-KEY, SCALAR VALUES: {mol2-index: atom-name}
+        type: dict
+        value_type: str
+        key_text: A 1-based atom index into the mol2 obabel wrote.
         text: >
           Map from 1-based mol2 index to atom name, applied after obabel
-          writes the mol2; pairs with a `smiles` on the obabel path.  Values
-          are bare strings, so this cannot use `value_attributes`.
-          NOT VALIDATED.
+          writes the mol2; pairs with a `smiles` on the obabel path.
       - name: stereocenters
         type: list
         text: Names of this molecule's chiral carbons, if any.
@@ -671,18 +674,167 @@ attributes:
             default: 0
 
   - name: postcure_repair
-    type: list                # empty default; append and replace are identical here
+    type: list
     text: >
-      Topology repairs applied after the cure, in order.  Each record names a
-      repair and its parameters; `triazine_to_cyanate_cap` dismantles
-      crosslinkers that did not fill all their sites into -C#N caps.
-      Record contents are NOT VALIDATED.
+      Topology repairs applied after the cure, in order.
+    value_attributes:
+      - name: type
+        type: str
+        required: true
+        text: >
+          Which repair to run.  `triazine_to_cyanate_cap` dismantles
+          crosslinkers that did not fill all their sites into -C#N caps:
+          fragments already attached to a bridge become caps in place, and the
+          rest are transferred to the nearest unreacted bridge.
+        choices: [triazine_to_cyanate_cap]
+      - name: crosslinker
+        type: dict
+        required: true
+        text: The crosslinker residue being dismantled.
+        attributes:
+          - name: residue
+            type: str
+            required: true
+            text: Residue name of the crosslinker, e.g. TAZ.
+          - name: ring_carbon_atoms
+            type: list
+            required: true
+            text: Names of the ring carbons, one per potential bond.
+          - name: ring_nitrogen_atoms
+            type: list
+            required: true
+            text: Names of the ring nitrogens, one per potential bond.
+          - name: full_bond_count
+            type: int
+            text: How many bonds a complete crosslinker carries.
+            default: 3
+      - name: bridge
+        type: dict
+        required: true
+        text: The bifunctional residue the crosslinker bonds to.
+        attributes:
+          - name: residue
+            type: str
+            required: true
+            text: Residue name of the bridge, e.g. BPA.
+          - name: reactive_oxygen_atoms
+            type: list
+            required: true
+            text: Names of the bridge's reactive oxygens.
+      - name: cap_residue
+        type: str
+        required: true
+        text: Residue name given to the -C#N cap, e.g. CYN.
+      - name: cap_template
+        type: str
+        required: true
+        text: >
+          Name of the linked-product template supplying post-repair
+          parameters, e.g. `BPA~O1-C1~CYN`; symmetry siblings are auto-tried.
+      - name: cap_search_radius
+        type: float
+        text: >
+          Radius in nm within which a transferred fragment looks for an
+          unreacted bridge.  Expanded up to 10x on a miss, then falls back to
+          the global nearest.
+        default: 0.6
+      - name: cap_min_clearance
+        type: float
+        text: >
+          Target clearance in nm for a placed cap; placements below it are
+          counted and reported rather than rejected.
+        default: 0.15
 
   - name: reactions
-    type: list                # empty default; append and replace are identical here
+    type: list
     text: >
       Every reaction needed to build the constituents and to cure the system.
-      Each record carries `name`, `stage` (param or cure), `reactants` (keyed
-      by index), `product`, `atoms` (keyed A, B, ...), `bonds`, and optionally
-      `probability`.  Record contents are NOT VALIDATED -- both `reactants`
-      and `atoms` are free-key mappings; see the note at the top of this file.
+      Today an unrecognized key here is discarded with a debug-level message
+      from `Reaction.__init__`, so a typo is effectively silent.
+    value_attributes:
+      - name: name
+        type: str
+        required: true
+        text: A label for this reaction; appears in logs and product names.
+      - name: stage
+        type: str
+        required: true
+        text: >
+          When this reaction is used.  `build` uses parameterized oligomers to
+          build molecules; `param` generates parameterized oligomers that are
+          not cure reactions; `cure` generates those that are; `cap` makes
+          capped monomers; `repair` supplies templates for postcure topology
+          repair.
+        choices: [build, param, cure, cap, repair]
+      - name: reactants
+        type: dict
+        value_type: str
+        required: true
+        key_text: >
+          A reactant index, referenced by `reactant` in this reaction's atom
+          records.
+        text: Map from reactant index to molecule name.
+      - name: product
+        type: str
+        required: true
+        text: Name given to the molecule this reaction produces.
+      - name: atoms
+        type: dict
+        required: true
+        key_text: >
+          An atom label, A, B, ..., referenced by this reaction's bond
+          records.
+        text: The atoms this reaction joins.
+        value_attributes:
+          - name: reactant
+            type: int
+            required: true
+            text: Which reactant index this atom belongs to.
+          - name: resid
+            type: int
+            required: true
+            text: Residue number within that reactant.
+          - name: atom
+            type: str
+            required: true
+            text: Atom name within that residue.
+          - name: z
+            type: int
+            required: true
+            text: >
+              Reactive valence this atom must still have for the reaction to
+              apply.
+      - name: bonds
+        type: list
+        required: true
+        text: The bonds this reaction forms.
+        value_attributes:
+          - name: atoms
+            type: list
+            required: true
+            text: The two atom labels to join, e.g. [A, B].
+          - name: order
+            type: int
+            text: Bond order.
+            default: 1
+      - name: probability
+        type: float
+        text: >
+          Probability with which an identified bond of this type is accepted,
+          below `CURE.controls.late_threshold` conversion.
+        default: 1.0
+      - name: procession
+        type: dict
+        required: false
+        text: >
+          Linear polymerization: derive a series of further reactions by
+          repeatedly incrementing the residue index.
+        attributes:
+          - name: count
+            type: int
+            required: true
+            text: How many further reactions to derive.
+          - name: increment_resid
+            type: int
+            text: Residue-index step between successive derived reactions.
+            default: 1
