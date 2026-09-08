@@ -1,14 +1,39 @@
 """Manages reading and parsing of YAML configuration files.
 
 Author: Cameron F. Abrams <cfa22@drexel.edu>
+
+Configurations are validated against ``htpolynet/schema/base.yaml`` by
+ycleptic, which also fills in every documented default.  Before that, this
+module read the file and ``.get()``-ed the keys it recognized, so an
+unrecognized section or a misspelled key was discarded in silence -- a
+``desired_converson`` typo produced a default-value build and no message.
+
+Keys whose *presence* changes behavior are declared ``required: false`` in the
+schema so ycleptic leaves them absent rather than filling them in; see the
+comments on ``densification.initial_boxsize``, ``reactive_atoms`` and
+``rename_atoms`` there.
 """
 import json
 import logging
 import os
 
+from importlib.resources import as_file, files
+
 import yaml
 
+from ycleptic.errors import YclepticError
+from ycleptic.yclept import Yclept
+
 logger = logging.getLogger(__name__)
+
+
+def schema_path():
+    """Context manager yielding a real path to the packaged base config.
+
+    Returns:
+        contextlib.AbstractContextManager: yields a pathlib.Path to base.yaml
+    """
+    return as_file(files('htpolynet').joinpath('schema/base.yaml'))
 
 
 class Configuration:
@@ -54,15 +79,43 @@ class Configuration:
         inst = cls()
         inst.cfgfile = filename
         if ext == '.json':
+            # ycleptic reads YAML; round-trip JSON through a temporary file so
+            # both formats get the same validation rather than only one
             with open(filename, 'r') as f:
-                inst.basedict = json.load(f)
+                raw = json.load(f)
+            inst.basedict = inst._validate(raw)
         elif ext in ('.yaml', '.yml'):
             with open(filename, 'r') as f:
-                inst.basedict = yaml.safe_load(f)
+                raw = yaml.safe_load(f)
+            inst.basedict = inst._validate(raw)
         else:
             raise Exception(f'Unknown config file extension {ext}')
         inst._parse()
         return inst
+
+    def _validate(self, raw):
+        """Validates a raw config against the packaged schema and fills defaults.
+
+        Args:
+            raw (dict): the configuration as read from disk
+
+        Raises:
+            Exception: with ycleptic's message, if the configuration is invalid
+
+        Returns:
+            dict: the validated configuration, with defaults filled in
+        """
+        import tempfile
+        with schema_path() as base:
+            with tempfile.TemporaryDirectory() as td:
+                userfile = os.path.join(td, 'user.yaml')
+                with open(userfile, 'w') as f:
+                    yaml.dump(raw, f, default_flow_style=False, sort_keys=False)
+                try:
+                    y = Yclept(basefile=str(base), userfile=userfile)
+                except YclepticError as e:
+                    raise Exception(f'{self.cfgfile}: {e}') from None
+        return y['user']
 
     def _parse(self):
         """Populates named attributes from self.basedict."""

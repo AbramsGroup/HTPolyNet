@@ -51,6 +51,9 @@ densification:
       pressure: 10
       ps: 100
       repeat: 8
+      converge:
+        tolerance: 1.0    # kg/m3; stop when the mean density is this well known
+        max_repeats: 6    # hitting this is reported as a failure to converge
 precure:
   preequilibration:
     ensemble: npt

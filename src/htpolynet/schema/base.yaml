@@ -168,17 +168,25 @@ attributes:
       - name: reactive_atoms
         type: dict
         value_type: str
+        required: false       # PRESENCE IS MEANINGFUL
         key_text: A SMILES atom-map label, i.e. the N in a `[*:N]` token.
         text: >
           Map from a SMILES atom-map label to an atom name, for the RDKit
-          path; pairs with a `smiles` that uses `[*:N]` tokens.
+          path; pairs with a `smiles` that uses `[*:N]` tokens.  Declared
+          `required: false` because `external/smiles_input.py:60` selects the
+          RDKit path on this key being *present*; an injected empty map would
+          take that path with nothing in it.
       - name: rename_atoms
         type: dict
         value_type: str
+        required: false       # PRESENCE IS MEANINGFUL
         key_text: A 1-based atom index into the mol2 obabel wrote.
         text: >
           Map from 1-based mol2 index to atom name, applied after obabel
-          writes the mol2; pairs with a `smiles` on the obabel path.
+          writes the mol2; pairs with a `smiles` on the obabel path.  Declared
+          `required: false` because `external/smiles_input.py:66` raises a
+          helpful error when it is absent; an injected empty map would bypass
+          that and silently produce wrongly-named atoms.
       - name: stereocenters
         type: list
         text: Names of this molecule's chiral carbons, if any.
@@ -243,10 +251,14 @@ attributes:
           box to make the initial coordinates.
         default: 200.0
       - name: initial_boxsize
-        type: list            # empty default; mutually exclusive with initial_density
+        type: list
+        required: false       # PRESENCE IS MEANINGFUL -- see below
         text: >
           Explicit initial box dimensions in nm, as an alternative to
-          `initial_density`.
+          `initial_density`.  Declared `required: false` so ycleptic omits it
+          entirely when the user does: `core/runtime.py:955` asserts that
+          exactly one of this and `initial_density` is *present*, so an
+          injected empty list would fail that assertion on every build.
       - name: aspect_ratio
         type: list
         list_defaults: replace
@@ -585,8 +597,9 @@ attributes:
             type: float
             text: >
               Minimum amount in nm by which `b0` is decreased per stage; this
-              sets the stage count.
-            default: 0.0
+              sets the stage count.  Not 0.0: `_distance_attenuation` divides
+              by it with no guard.
+            default: 0.08
           - name: nstages
             type: int
             text: Explicit stage count, as an alternative to deriving one from `increment`.
