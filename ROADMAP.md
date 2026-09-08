@@ -735,6 +735,88 @@ Coverage as of the last measurement: **38.8%** overall.
   session's too, and it is the one of the three that has already been
   published in our documentation. Verify it first if any of them.
 
+## Configuration
+
+- **Move config handling onto ycleptic.** Approved by Cameron 2026-09-08.
+  `core/configuration.py` (85 lines) reads YAML/JSON and `.get()`s eleven
+  known top-level sections into attributes with **no validation at all**: an
+  unrecognized section or a misspelled key is silently discarded. Defaults
+  live in three separate Python dicts applied by three hand-rolled mechanisms
+  at three different depths -- `Runtime.runtime_defaults` (shallow, one level,
+  `core/runtime.py:177`), `CureController.curedict_defaults` (two levels,
+  `cure/curecontroller.py:299-304`), and `Runtime.default_edict` (ad hoc). And
+  937 lines of hand-maintained RST document those defaults, which is why six
+  of them had drifted from the code by the time anyone checked.
+
+  `src/htpolynet/schema/base.yaml` now holds the schema for the sections
+  ycleptic 2.3.0 can express. It is **inert**: nothing reads it, and
+  `pyproject.toml` does not declare a ycleptic dependency. All seven shipped
+  example configs validate against it, and a `desired_converson` typo that
+  htpolynet accepts silently today is rejected with the list of valid keys.
+
+  Staging, agreed with the ycleptic session:
+
+  1. **ycleptic to conda-forge** -- gates shipping and nothing else.
+     `api.anaconda.org/package/conda-forge/ycleptic` is 404 while htpolynet is
+     200, and a conda package's run-deps must exist in the channel, so
+     declaring the dependency would make htpolynet's feedstock unbuildable and
+     trip `scripts/release.sh`'s `check-conda-sync.py --strict` preflight.
+     **Waiting on Cameron**: the ycleptic session declined to open a
+     staged-recipes PR on a relayed approval, since it is a public publish
+     under his name.
+  2. **Two ycleptic grammar additions**, designed and committed to by that
+     session but not yet built: `value_attributes:` + `key_text:` for
+     free-key mappings, and `list_defaults: replace|append` per attribute.
+  3. Port the flat sections and generate their reference docs -- the base.yaml
+     above is this step, awaiting 1.
+  4. Port `constituents` and `reactions` once `value_attributes` exists.
+
+  Two hazards are recorded in the base.yaml header rather than here, because
+  that is where someone editing it will look: ycleptic's `dwalk` rejects any
+  key not declared, so user-keyed sections must currently be bare `dict` and
+  are unvalidated; and a bare list's default *concatenates* rather than
+  replaces, so a base default of `[min, nvt, npt]` plus a user's `[nvt]`
+  yields `['min','nvt','npt','nvt']` silently. Every list in base.yaml
+  therefore declares no default, which gives correct replace semantics, with
+  the real default left in Python and marked.
+
+- **`CURE.relax.increment` defaults to 0.0, and relax then divides by it.**
+  Found while writing the schema. `curedict_defaults` sets
+  `relax.increment: 0.0` (`cure/curecontroller.py:273`), and
+  `_distance_attenuation` computes `this_nstages = int(maxL/d['increment'])`
+  (`:739`) with no guard, so a config that omits the key raises
+  `ZeroDivisionError` at the first relax. Drag has a guard --
+  `if (d['nstages']>0 or d['increment']>0.0) and d['limit']>0.0` (`:312`) --
+  and relax has none. The `relax.nstages: 6` default (`:272`) is declared and
+  **never read**; `:739` derives the stage count from `increment` only. The
+  docs meanwhile promise `increment` defaults to 0.08. Every shipped example
+  sets it explicitly, which is why nothing caught this -- the same pattern as
+  the `desired_conversion` drift.
+
+  Fixing it is a behavior decision, not a typo: either default `increment` to
+  the documented 0.08, or make `:739` honor `nstages` when `increment` is 0
+  (which is what the dead `nstages: 6` implies was intended). Those give
+  different stage counts for the same config, so it is Cameron's call.
+
+- **Documented `CURE.drag`/`CURE.relax` defaults do not match the code, and
+  several keys are undocumented.** The tables give `drag.increment` 0.08 and
+  `drag.limit` 0.3 where `curedict_defaults` has 0.0 for both -- sentinels
+  that disable dragging via the `:312` guard, so the documented defaults would
+  turn on a stage ladder the code turns off. Undocumented entirely:
+  `drag.trigger_distance`, `drag.kb`, `drag.nstages`, `drag.cutoff_pad`,
+  `relax.nstages`, `relax.cutoff_pad`, the whole `CURE.output` block,
+  `densification.scale`, `densification.aspect_ratio` and
+  `densification.initial_boxsize`. Generating the reference from base.yaml is
+  what makes this class of error impossible; until then the tables need a pass.
+
+- **`resolve_type_discrepancies` is accepted in two places and documented in
+  one.** `core/runtime.py:326` falls back from
+  `cfg.gaff.get('resolve_type_discrepancies',[])` to
+  `cfg.resolve_type_discrepancies`, so both a top-level key and a
+  `GAFF`-scoped one work, with GAFF winning. The
+  docs describe only the GAFF-scoped form. base.yaml declares both, marking the
+  top-level spelling deprecated; pick one before the schema goes live.
+
 ## Simulation defaults
 
 - **The halogen constraint failure is fixed but not explained.** v2.7.0

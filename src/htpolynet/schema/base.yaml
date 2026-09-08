@@ -1,0 +1,568 @@
+# htpolynet configuration schema, for ycleptic.
+#
+# STATUS: not yet wired into htpolynet.  This file is inert data until
+# `ycleptic` can be declared as a runtime dependency, which is blocked on
+# ycleptic reaching conda-forge (htpolynet is on conda-forge and a conda
+# package's run-deps must exist in the channel).  See ROADMAP.md.
+#
+# Two deliberate constraints while ycleptic 2.3.0 is the target.  Both are
+# temporary: the ycleptic session has committed to a grammar that closes each
+# one, and the shapes below are what to migrate to.
+#
+#   1. Sections keyed by names the *user* invents -- `constituents`, and
+#      `reactants`/`atoms` inside a reaction -- are declared as bare `dict`
+#      with no `attributes`.  ycleptic 2.3.0's dwalk rejects any key not in the
+#      declared attribute list (walkers.py:144-149) and has no
+#      additionalProperties analogue, so a bare dict is the only way to let
+#      them through.  They are therefore UNVALIDATED.  Each is marked
+#      `# FREE-KEY` below.
+#
+#      MIGRATION: replace each with a `value_attributes:` block -- a list of
+#      ordinary attribute specs giving the schema every VALUE must satisfy --
+#      plus a `key_text:` saying what a key means, which is what make-doc and
+#      config-help render in place of a key list.  `attributes` and
+#      `value_attributes` are mutually exclusive on one node.  Defaults inside
+#      `value_attributes` apply per value.
+#
+#   2. No `default:` is declared on any list.  For a bare list ycleptic does
+#      `I[d] = defaults + I[d]` (walkers.py:240) -- concatenation, not
+#      replacement.  A non-empty default here would run the default MD ladder
+#      AND the user's: base [min, nvt, npt] plus a user's [nvt] yields
+#      ['min', 'nvt', 'npt', 'nvt'], with the user's own step run last and
+#      twice, silently.  Omitting the default yields `[] + user`, which is
+#      correct replace semantics.  Each such list is marked
+#      `# LIST-DEFAULT-IN-PYTHON` with the Python home of its real default.
+#
+#      MIGRATION: add `list_defaults: replace` to the attribute and move the
+#      real default here.  `append` stays ycleptic's global default because
+#      pestifer has five bare lists whose append semantics are correct (CHARMM
+#      force-field file lists), so replace is opt-in per attribute.
+
+docs:
+  title: htpolynet run configuration
+  text: >
+    Everything htpolynet needs to build a polymerized system, from monomer
+    structures through the polymerization chemistry.  Sections may appear in
+    any order.
+
+attributes:
+
+  - name: Title
+    type: str
+    text: A descriptive title for the build; appears in logs and reports.
+    default: No title provided
+
+  - name: ncpu
+    type: int
+    text: >
+      Worker processes for the parallelized bond search.  Defaults to the
+      machine's CPU count.
+
+  - name: gromacs
+    type: dict
+    text: >
+      How htpolynet invokes GROMACS.  Optional; the defaults work on a plain
+      Linux workstation.  On a cluster with a native GROMACS, point `gmx` at
+      the full path to `gmx_mpi` (or load the module) and use `mdrun` to
+      supply the mpirun/mpiexec launch syntax.
+    attributes:
+      - name: gmx
+        type: str
+        text: The gmx command.
+        default: gmx
+      - name: gmx_options
+        type: str
+        text: Options passed to every gmx call.
+        default: -quiet -nobackup
+      - name: mdrun
+        type: str
+        text: The mdrun command.
+        default: gmx mdrun
+      - name: mdrun_single_molecule
+        type: str
+        text: >
+          An mdrun variant used for single-molecule runs (parameterization and
+          conformer generation).  Best run on one processor with no domain
+          decomposition.
+      - name: mdrun_options
+        type: dict            # FREE-KEY: arbitrary mdrun command-line flags
+        text: >
+          Command-line arguments passed to mdrun, as keyword/value pairs.
+          `gpu_id` is stripped at runtime if the gmx build cannot drive a GPU
+          or none is visible.
+        default: {}
+
+  - name: ambertools
+    type: dict
+    text: >
+      How htpolynet invokes the AmberTools suite.  These three directives
+      determine what antechamber produces, so each parameterization records
+      them in a `.parm` file checked into the molecule library; a run whose
+      directives disagree with the record re-parameterizes rather than
+      reusing the cached files.
+    attributes:
+      - name: charge_method
+        type: str
+        text: Charge model used by antechamber.  Any antechamber-compatible method.
+        default: gas
+      - name: net_charge
+        type: int
+        text: Formal charge of each molecule, passed to `antechamber -nc`.
+        default: 0
+      - name: atom_type
+        type: str
+        text: Atom-type set used by antechamber, parmchk2 and tleap.
+        default: gaff
+
+  - name: GAFF
+    type: dict
+    text: >
+      Resolution of internally inconsistent GAFF atom types and parameters.
+      AmberTools occasionally emits types that parmed cannot translate into a
+      GROMACS topology, or that conflict between two topologies being merged.
+    attributes:
+      - name: resolve_type_discrepancies
+        type: list            # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+        text: >
+          Records describing how to resolve conflicting interaction types.
+          Each record carries `typename` (the interaction type in the top
+          file, e.g. dihedraltypes), `funcidx` (its function index), and
+          `rule` (currently only `stiffest`, which keeps the conflicting type
+          with the largest energetic parameters).
+
+  - name: resolve_type_discrepancies
+    type: list                # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+    text: >
+      Deprecated top-level spelling of `GAFF.resolve_type_discrepancies`.
+      Both are read (core/runtime.py:326), with the GAFF-scoped one winning.
+      Declared here only so existing configs keep validating; prefer the
+      GAFF-scoped form.
+
+  - name: constituents
+    type: dict                # FREE-KEY: keyed by molecule name (STY, BPA, GMA, ...)
+    text: >
+      The initial make-up of the system, as one record per molecule keyed by
+      the molecule's name.  Each record may carry `count` (how many go in the
+      box; 0 or missing marks an intermediate), `smiles`, `reactive_atoms`,
+      `rename_atoms`, `stereocenters`, `symmetry_equivalent_atoms`, and
+      `conformers`.  The key tells htpolynet to look for NAME.mol2 or NAME.pdb
+      in lib/molecules/inputs, or an existing parameterization in
+      lib/molecules/parameterized; failing both, a `smiles` key lets it
+      generate the input itself.
+      NOT VALIDATED -- see the FREE-KEY note at the top of this file.
+    default: {}
+
+  - name: densification
+    type: dict
+    text: >
+      The initial densification of the fresh system.  Specify exactly one of
+      `initial_density` or `initial_boxsize`; supplying both, or neither, is
+      an error.
+    attributes:
+      - name: initial_density
+        type: float
+        text: >
+          Density in kg/m^3 at which molecules are placed randomly into the
+          box to make the initial coordinates.
+        default: 200.0
+      - name: initial_boxsize
+        type: list            # LIST-DEFAULT-IN-PYTHON: none; mutually exclusive with initial_density
+        text: >
+          Explicit initial box dimensions in nm, as an alternative to
+          `initial_density`.
+      - name: aspect_ratio
+        type: list            # LIST-DEFAULT-IN-PYTHON: core/runtime.py:80 -> [1.0, 1.0, 1.0]
+        text: Relative box dimensions used when sizing the box from a density.
+      - name: scale
+        type: float
+        text: Packing scale factor passed to `gmx insert-molecules`.
+        default: 0.4
+      - name: equilibration
+        type: list            # LIST-DEFAULT-IN-PYTHON: core/runtime.py:81-85 -> min, nvt 300 K, npt 300 K
+        text: >
+          An ordered list of MD records run to densify the box.  Each record
+          takes `ensemble` (min, nvt or npt), `temperature` (K, for nvt/npt),
+          `pressure` (bar, for npt), one of `nsteps` or `ps`, and an optional
+          `repeat`.  `repeat` matters for very low initial densities: several
+          short NPT runs beat one long one, because a large box shrinkage in a
+          single run overwhelms domain decomposition.
+
+  - name: precure
+    type: dict
+    text: MD run after densification and before the cure.
+    attributes:
+      - name: preequilibration
+        type: dict
+        text: An MD simulation run before the anneal.
+        attributes:
+          - name: ensemble
+            type: str
+            text: min (minimization), nvt, or npt.
+            choices: [min, nvt, npt]
+            default: npt
+          - name: temperature
+            type: float
+            text: Temperature in K, assigned to `ref_t`.
+            default: 300
+          - name: pressure
+            type: float
+            text: Pressure in bar, assigned to `ref_p`.
+            default: 1
+          - name: ps
+            type: float
+            text: Duration in picoseconds.  Supply this or `nsteps`.
+            default: 100
+          - name: nsteps
+            type: int
+            text: Duration in timesteps.  Supply this or `ps`.
+          - name: repeat
+            type: int
+            text: Times to repeat this simulation in series; 0 runs it once.
+            default: 0
+      - name: anneal
+        type: dict
+        text: An annealing simulation run after the optional preequilibration.
+        attributes:
+          - name: ncycles
+            type: int
+            text: Number of annealing cycles; 0 skips the anneal.
+            default: 0
+          - name: initial_temperature
+            type: float
+            text: Initial temperature in K.  Sets only the `gen-temp` mdp parameter.
+            default: 300
+          - name: cycle_segments
+            type: list        # LIST-DEFAULT-IN-PYTHON: core/runtime.py:93-99 -> 5-segment 300/600 cycle
+            text: >
+              The annealing points of one cycle, in order.  Each record takes
+              `T` (target temperature in K) and `ps` (duration).  If the
+              previous segment's `T` differs, the system is brought to this
+              `T` over that time; if it is the same, the system is held there.
+      - name: postequilibration
+        type: dict
+        text: An MD simulation run after the anneal.
+        attributes:
+          - name: ensemble
+            type: str
+            text: min (minimization), nvt, or npt.
+            choices: [min, nvt, npt]
+            default: npt
+          - name: temperature
+            type: float
+            text: Temperature in K, assigned to `ref_t`.
+            default: 300
+          - name: pressure
+            type: float
+            text: Pressure in bar, assigned to `ref_p`.
+            default: 1
+          - name: ps
+            type: float
+            text: Duration in picoseconds.  Defaults to 0, i.e. skipped.
+            default: 0
+          - name: nsteps
+            type: int
+            text: Duration in timesteps.  Supply this or `ps`.
+          - name: repeat
+            type: int
+            text: Times to repeat this simulation in series; 0 runs it once.
+            default: 0
+
+  - name: CURE
+    type: dict
+    text: >
+      Everything governing the CURE algorithm: the bond search, the optional
+      dragging of distant partners, the relaxation of newly formed bonds, and
+      the per-iteration equilibration.
+    attributes:
+
+      - name: controls
+        type: dict
+        text: How the bond search runs and when the cure stops.
+        attributes:
+          - name: search_radius
+            type: float
+            text: Initial bond-search radius in nm.
+            default: 0.5
+          - name: radial_increment
+            type: float
+            text: >
+              Increment in nm by which the search radius grows when not enough
+              bonds are found at the current radius.
+            default: 0.05
+          - name: min_bonds_per_iteration
+            type: int
+            text: >
+              Grow the radius until at least this many bonds are found, then
+              proceed with whatever the count is.  Clamped against the bonds
+              still needed to reach `desired_conversion` and against
+              `max_conversion_per_iteration`, so a large value never stalls a
+              build.  1 reproduces the un-batched legacy behavior.
+            default: 10
+          - name: max_iterations
+            type: int
+            text: Absolute maximum number of cure iterations.
+            default: 100
+          - name: desired_conversion
+            type: float
+            text: >
+              Target BOND conversion -- bonds formed over bonds possible.  This
+              is not the crosslinker conversion an experiment measures, which
+              is lower.  Note the default is a half-cure; every shipped example
+              that cures sets this explicitly.
+            default: 0.5
+          - name: late_threshold
+            type: float
+            text: Conversion above which per-reaction bond probabilities are ignored.
+            default: 0.85
+          - name: max_conversion_per_iteration
+            type: float
+            text: >
+              Upper limit, as a fraction of total reactable bonds, on the new
+              bonds formed in any single iteration.  1.0 is no cap.
+            default: 1.0
+          - name: min_allowable_bondcycle_length
+            type: int
+            text: >
+              Minimum number of carbons allowed in a cycle of C-C bonds formed
+              by polymerization.  Any value <= 0 disallows all such cycles.
+            default: -1
+          - name: completion_bias
+            type: bool
+            text: >
+              Rank bond candidates by how many bonds their B-side residue
+              already carries, and only then by distance, so partly-reacted
+              crosslinkers are completed before untouched ones are started.
+              Changes which bonds form, and with them what `desired_conversion`
+              means physically, so comparisons across this setting must be made
+              at matched crosslinker conversion.
+            default: false
+          - name: ncpu
+            type: int
+            text: Worker processes for the bond search.  Defaults to the CPU count.
+
+      - name: drag
+        type: dict
+        text: >
+          Dragging: MD stages in which type-6 harmonic restraints pull each
+          to-be-bonded pair together BEFORE the bond forms, which reduces the
+          1-4 distances that otherwise arise when it does.  The restraint's
+          `b0` is decreased linearly across the stages.
+        attributes:
+          - name: trigger_distance
+            type: float
+            text: >
+              Pair separation in nm above which dragging is performed at all.
+              0.0 disables dragging.
+            default: 0.0
+          - name: limit
+            type: float
+            text: Distance in nm to which pairs are dragged.
+            default: 0.0
+          - name: increment
+            type: float
+            text: >
+              Minimum amount in nm by which the target distance is decreased
+              per stage; with `limit`, this sets the stage count.
+            default: 0.0
+          - name: nstages
+            type: int
+            text: Explicit stage count, as an alternative to deriving one from `increment`.
+            default: 0
+          - name: kb
+            type: float
+            text: Spring constant of the restraint, in kJ/mol/nm.
+            default: 300000.0
+          - name: cutoff_pad
+            type: float
+            text: Padding in nm added to the nonbonded cutoffs during dragging.
+            default: 0.2
+          - name: equilibration
+            type: list        # LIST-DEFAULT-IN-PYTHON: cure/curecontroller.py:242-245
+            text: >
+              The MD records run at each drag stage.  Same record shape as
+              `densification.equilibration`.  Runs unconstrained at a 1 fs
+              timestep, because the bonds being manipulated are deliberately
+              far from equilibrium.
+
+      - name: relax
+        type: dict
+        text: >
+          Relaxation: MD stages in which each new bond's `kb` and `b0` are
+          attenuated from a weak, long state to the values the force field
+          dictates.
+        attributes:
+          - name: increment
+            type: float
+            text: >
+              Minimum amount in nm by which `b0` is decreased per stage; this
+              sets the stage count.
+            default: 0.0
+          - name: nstages
+            type: int
+            text: Explicit stage count, as an alternative to deriving one from `increment`.
+            default: 6
+          - name: cutoff_pad
+            type: float
+            text: Padding in nm added to the nonbonded cutoffs during relaxation.
+            default: 0.2
+          - name: equilibration
+            type: list        # LIST-DEFAULT-IN-PYTHON: cure/curecontroller.py:242-245
+            text: >
+              The MD records run at each relax stage.  Same record shape as
+              `densification.equilibration`.  Runs unconstrained at a 1 fs
+              timestep.  These stages are the only above-Tg constant-pressure
+              time in a cure, and as of v2.7.0 each reports the density it
+              produces.
+
+      - name: equilibrate
+        type: dict
+        text: >
+          The equilibration run at the end of every cure iteration.  Unlike
+          drag and relax this uses a 2 fs timestep with constraints; see the
+          program-flow documentation.
+        attributes:
+          - name: ensemble
+            type: str
+            text: min (minimization), nvt, or npt.
+            choices: [min, nvt, npt]
+            default: npt
+          - name: temperature
+            type: float
+            text: Temperature in K.
+            default: 300
+          - name: pressure
+            type: float
+            text: Pressure in bar.
+            default: 1
+          - name: nsteps
+            type: int
+            text: Duration in timesteps.
+            default: 50000
+          - name: ps
+            type: float
+            text: Duration in picoseconds.  Supply this or `nsteps`.
+          - name: repeat
+            type: int
+            text: Times to repeat this simulation in series; 0 runs it once.
+            default: 0
+
+      - name: gromacs
+        type: dict
+        text: >
+          mdp adjustments applied to every drag and relax simulation.
+          htpolynet shortens the nonbonded cutoffs to match the longest
+          unrelaxed bond; `rdefault` is the floor it will not go below.
+        attributes:
+          - name: rdefault
+            type: float
+            text: Minimum cutoff radius in nm.
+            default: 0.9
+
+      - name: output
+        type: dict
+        text: Where the cure writes its per-iteration bond records.
+        attributes:
+          - name: bonds_file
+            type: str
+            text: CSV of every bond formed, accumulated across iterations.
+            default: bonds.csv
+
+  - name: postcure
+    type: dict
+    text: >
+      MD run after the cure.  Identical in form to `precure`.  Note that the
+      density at the end of `postequilibration` is NOT an equilibrated density
+      and should not be quoted as one -- a crosslinked network relaxes only
+      above its glass transition.  Extract densities from a melt-and-slow-cool
+      postsim ladder instead.
+    attributes:
+      - name: preequilibration
+        type: dict
+        text: An MD simulation run before the anneal.
+        attributes:
+          - name: ensemble
+            type: str
+            text: min (minimization), nvt, or npt.
+            choices: [min, nvt, npt]
+            default: npt
+          - name: temperature
+            type: float
+            text: Temperature in K.
+            default: 300
+          - name: pressure
+            type: float
+            text: Pressure in bar.
+            default: 1
+          - name: ps
+            type: float
+            text: Duration in picoseconds.  Defaults to 0, i.e. skipped.
+            default: 0
+          - name: nsteps
+            type: int
+            text: Duration in timesteps.  Supply this or `ps`.
+          - name: repeat
+            type: int
+            text: Times to repeat this simulation in series; 0 runs it once.
+            default: 0
+      - name: anneal
+        type: dict
+        text: An annealing simulation run after the cure.
+        attributes:
+          - name: ncycles
+            type: int
+            text: Number of annealing cycles; 0 skips the anneal.
+            default: 0
+          - name: initial_temperature
+            type: float
+            text: Initial temperature in K.  Sets only the `gen-temp` mdp parameter.
+            default: 300
+          - name: cycle_segments
+            type: list        # LIST-DEFAULT-IN-PYTHON: core/runtime.py:117-123
+            text: >
+              The annealing points of one cycle, in order; each record takes
+              `T` and `ps`.
+      - name: postequilibration
+        type: dict
+        text: An MD simulation run after the anneal.
+        attributes:
+          - name: ensemble
+            type: str
+            text: min (minimization), nvt, or npt.
+            choices: [min, nvt, npt]
+            default: npt
+          - name: temperature
+            type: float
+            text: Temperature in K.
+            default: 300
+          - name: pressure
+            type: float
+            text: Pressure in bar.
+            default: 1
+          - name: ps
+            type: float
+            text: Duration in picoseconds.  Defaults to 0, i.e. skipped.
+            default: 0
+          - name: nsteps
+            type: int
+            text: Duration in timesteps.  Supply this or `ps`.
+          - name: repeat
+            type: int
+            text: Times to repeat this simulation in series; 0 runs it once.
+            default: 0
+
+  - name: postcure_repair
+    type: list                # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+    text: >
+      Topology repairs applied after the cure, in order.  Each record names a
+      repair and its parameters; `triazine_to_cyanate_cap` dismantles
+      crosslinkers that did not fill all their sites into -C#N caps.
+      Record contents are NOT VALIDATED.
+
+  - name: reactions
+    type: list                # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+    text: >
+      Every reaction needed to build the constituents and to cure the system.
+      Each record carries `name`, `stage` (param or cure), `reactants` (keyed
+      by index), `product`, `atoms` (keyed A, B, ...), `bonds`, and optionally
+      `probability`.  Record contents are NOT VALIDATED -- both `reactants`
+      and `atoms` are free-key mappings; see the note at the top of this file.
