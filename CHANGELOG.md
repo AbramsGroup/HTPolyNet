@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A config that omitted `CURE.relax.increment` crashed at the first
+  relax.**  The default was `0.0`, and `_distance_attenuation` derives its
+  stage count as `int(maxL/increment)` with no guard, so the build died with
+  `ZeroDivisionError` rather than any message about the config.  The
+  documented default -- 0.08 -- is now the actual one.  Dragging's `increment`
+  stays 0.0, which is a sentinel rather than the same bug: its own 0.0 `limit`
+  disables dragging before anything divides.  Every shipped example sets
+  `relax.increment` explicitly, which is why this went unnoticed.
+
 ### Documentation
 
 - **The docs landing page carries the standard badge row, and the release

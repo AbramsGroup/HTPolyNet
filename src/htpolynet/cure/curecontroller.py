@@ -270,7 +270,11 @@ class CureController:
         },
         'relax': {
             'nstages': 6,
-            'increment': 0.0,
+            # not 0.0: _distance_attenuation derives its stage count as
+            # int(maxL/increment) with no guard, so a config that omits this
+            # key used to raise ZeroDivisionError at the first relax.  Drag
+            # can default to 0.0 because its own 0.0 limit disables it.
+            'increment': 0.08,
             'cutoff_pad': 0.2,
             'equilibration': default_equilibration_sequence
         },

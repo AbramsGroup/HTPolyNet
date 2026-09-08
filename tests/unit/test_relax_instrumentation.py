@@ -149,3 +149,21 @@ class TestReactivePositions(unittest.TestCase):
 class TestRelaxStageDensity(unittest.TestCase):
     def test_missing_edr_returns_none(self):
         self.assertIsNone(_relax_stage_density('no-such-edr-anywhere'))
+
+class TestRelaxIncrementDefault(unittest.TestCase):
+    def test_relax_increment_is_usable_without_a_config(self):
+        # _distance_attenuation derives its stage count as int(maxL/increment)
+        # with no guard, so a 0.0 default raised ZeroDivisionError at the first
+        # relax for any config that omitted the key.
+        C=CureController()
+        inc=C.dicts['relax']['increment']
+        self.assertGreater(inc,0.0)
+        self.assertAlmostEqual(inc,0.08)
+        self.assertEqual(int(0.5/inc),6)
+
+    def test_drag_increment_may_stay_zero(self):
+        # drag's 0.0 is a sentinel, not a bug: the guard in __init__ leaves
+        # dragging disabled unless a limit is also set, so nothing divides.
+        C=CureController()
+        self.assertEqual(C.dicts['drag']['increment'],0.0)
+        self.assertFalse(C.dragging_enabled)
