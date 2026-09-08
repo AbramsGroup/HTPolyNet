@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Densification can gate on measured density convergence instead of a fixed
+  step count.**  An NPT record in `densification.equilibration` may carry a
+  `converge` block; the stage then repeats until the density settles or a
+  ceiling is hit.  It is off unless configured, so existing configurations
+  reproduce exactly.  The criterion is an autocorrelation-corrected standard
+  error, `sigma/sqrt(N/tau_int)` -- an NPT cell density is correlated over
+  hundreds of steps, so successive frames are not independent samples and a
+  naive standard error is optimistic by roughly 1.5x, which would stop the
+  gate early.  It also makes the tolerance size-aware for free.  A small
+  standard error alone is not accepted as convergence, because a trace that is
+  still climbing looks tight in every short window; the window's two halves
+  are compared as well.  **Reaching the ceiling is reported as a failure**,
+  with a warning saying the number is an unsettled box rather than the
+  system's density.
+
+  Densification is the one place this belongs: the 200 to ~1100 kg/m^3
+  compaction happens once and involves a large volume change.  Gating the CURE
+  relaxation loop was measured and rejected -- past the gel point the
+  unreacted species are bonded into the network and topologically constrained,
+  the effective diffusion exponent falls to about 0.14, and restoring the
+  mobility a gate would wait for takes of order 10^4 times the relaxation
+  time.  Note also that the gate certifies convergence of the Berendsen
+  barostat `npt.mdp` currently uses, which does not sample a correct NPT
+  ensemble; treat it as a reproducibility criterion, not a physical one.
+
 ### Fixed
 
 - **A config that omitted `CURE.relax.increment` crashed at the first

@@ -18,6 +18,7 @@ from ..core import projectfilesystem as pfs
 from ..core.bondtemplate import BondTemplate, ReactionBond
 from ..core.coordinates import Coordinates
 from ..core.topology import Topology
+from ..utils.convergence import series_converged
 from ..external.gromacs import grompp_and_mdrun,mdp_get, mdp_modify, gmx_energy_trace
 from ..geometry.matrix4 import Matrix4
 from ..io.gro import GRX_ATTRIBUTES, GRX_GLOBALLY_UNIQUE, GRX_UNSET_DEFAULTS
@@ -1794,20 +1795,105 @@ class TopoCoord:
         logger.info(f'Running Gromacs: {msg}')
         self.grompp_and_mdrun(out=f'{deffnm}-{ens}',mdp=new_mdp,quiet=False,**gromacs_dict)
         edr_list=[f'{deffnm}-{ens}']
+        density=None
         if ens=='npt':
-            box=self.Coordinates.box.diagonal()
-            logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-            gmx_energy_trace(f'{deffnm}-{ens}',['Density'],report_averages=True,**gromacs_dict)
+            self._log_box()
+            density=self._density_series(f'{deffnm}-{ens}',gromacs_dict)
         for rep in range(repeat):
             logger.info(f'Repeat {rep+1} out of {repeat}')
             this_deffnm=f'{deffnm}-repeat-{rep+1}-{ens}'
             self.grompp_and_mdrun(out=this_deffnm,mdp=new_mdp,quiet=False,**gromacs_dict)
             edr_list.append(this_deffnm)
             if ens=='npt':
-                box=self.Coordinates.box.diagonal()
-                logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
-            gmx_energy_trace(this_deffnm,['Density'],report_averages=True,**gromacs_dict)
+                self._log_box()
+            density=self._density_series(this_deffnm,gromacs_dict)
+        converge=edict.get('converge',{}) or {}
+        if converge and ens=='npt':
+            edr_list+=self._converge_density(deffnm,new_mdp,converge,density,gromacs_dict)
+        elif converge:
+            logger.warning(f'ignoring "converge" on a {ens} stage; density convergence needs npt')
         return edr_list
+
+    def _log_box(self):
+        """Logs the current box side lengths."""
+        box=self.Coordinates.box.diagonal()
+        logger.info(f'Current box side lengths: {box[0]:.3f} nm x {box[1]:.3f} nm x {box[2]:.3f} nm')
+
+    def _density_series(self,edr_pfx,gromacs_dict={}):
+        """Density trace from one edr, as a plain array, or None.
+
+        Args:
+            edr_pfx (str): edr basename, without the '.edr' extension
+            gromacs_dict (dict): gromacs directives passed through to gmx energy
+
+        Returns:
+            numpy.ndarray: the Density column in kg/m^3, or None if unavailable
+        """
+        try:
+            df=gmx_energy_trace(edr_pfx,['Density'],report_averages=True,**gromacs_dict)
+        except Exception as e:
+            logger.debug(f'no density available from {edr_pfx}: {e}')
+            return None
+        if df.empty or 'Density' not in df.columns: return None
+        return df['Density'].to_numpy(dtype=float)
+
+    def _converge_density(self,deffnm,mdp,converge,density,gromacs_dict={}):
+        """Repeats an NPT stage until its density settles, or until a ceiling.
+
+        This is the fixed-``repeat`` mechanism with a measured stopping rule
+        instead of a counted one.  Densification is the right place for it:
+        the 200 -> ~1100 kg/m^3 compaction is one-shot, involves a large volume
+        change, and otherwise runs for however many steps someone guessed.
+
+        Each extension is a fresh ``mdrun``, so velocities are regenerated
+        between segments exactly as ``repeat`` already does; the criterion is
+        therefore applied to the *last* segment rather than to a concatenation
+        of segments that do not share a velocity history.
+
+        A build that never settles says so, loudly, rather than silently
+        reporting whatever density it reached.
+
+        Args:
+            deffnm (str): output file basename of the stage being extended
+            mdp (str): name of the mdp file to rerun
+            converge (dict): 'tolerance' (kg/m^3), 'max_repeats', 'min_samples', 'drift_sems'
+            density (numpy.ndarray): density trace of the stage just run, or None
+            gromacs_dict (dict): gromacs directives
+
+        Returns:
+            list: edr basenames of any extension segments run
+        """
+        tol=float(converge.get('tolerance',1.0))
+        ceiling=int(converge.get('max_repeats',10))
+        min_samples=int(converge.get('min_samples',50))
+        drift_sems=float(converge.get('drift_sems',2.0))
+        extra=[]
+        for attempt in range(ceiling+1):
+            if density is None:
+                logger.warning('density convergence requested but no Density trace is available; not gating')
+                return extra
+            r=series_converged(density,tol,min_samples=min_samples,drift_sems=drift_sems)
+            if r['converged']:
+                logger.info(
+                    f'Density converged after {attempt} extension(s): '
+                    f'{r["mean"]:.1f} +/- {r["sem"]:.2f} kg/m^3 '
+                    f'(tau_int {r["tau_int"]:.0f} samples, drift {r["drift"]:+.2f})'
+                )
+                return extra
+            if attempt==ceiling:
+                logger.warning(
+                    f'Density did NOT converge after {ceiling} extension(s) -- {r["reason"]}. '
+                    f'The last window averaged {r["mean"]:.1f} kg/m^3; treat that as an '
+                    f'unsettled box, not as this system\'s density'
+                )
+                return extra
+            logger.info(f'Density not settled ({r["reason"]}); extending, {attempt+1} of {ceiling}')
+            this_deffnm=f'{deffnm}-converge-{attempt+1}-npt'
+            self.grompp_and_mdrun(out=this_deffnm,mdp=mdp,quiet=False,**gromacs_dict)
+            extra.append(this_deffnm)
+            self._log_box()
+            density=self._density_series(this_deffnm,gromacs_dict)
+        return extra
 
     def get_resid_sets(self,atom_pair):
         """Identifies individual sets of separate resids owned by unbonded atoms i and j.

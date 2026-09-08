@@ -269,12 +269,72 @@ attributes:
             pressure: 10
             ps: 200
         text: >
-          An ordered list of MD records run to densify the box.  Each record
-          takes `ensemble` (min, nvt or npt), `temperature` (K, for nvt/npt),
-          `pressure` (bar, for npt), one of `nsteps` or `ps`, and an optional
-          `repeat`.  `repeat` matters for very low initial densities: several
-          short NPT runs beat one long one, because a large box shrinkage in a
-          single run overwhelms domain decomposition.
+          An ordered list of MD records run to densify the box.  `repeat`
+          matters for very low initial densities: several short NPT runs beat
+          one long one, because a large box shrinkage in a single run
+          overwhelms domain decomposition.
+        value_attributes:
+          - name: ensemble
+            type: str
+            required: true
+            choices: [min, nvt, npt]
+            text: min (minimization), nvt, or npt.
+          - name: temperature
+            type: float
+            text: Temperature in K, assigned to `ref_t`.  Required for nvt and npt.
+          - name: pressure
+            type: float
+            text: Pressure in bar, assigned to `ref_p`.  Required for npt.
+          - name: nsteps
+            type: int
+            text: Duration in timesteps.  Supply this or `ps`.
+          - name: ps
+            type: float
+            text: Duration in picoseconds.  Supply this or `nsteps`.
+          - name: repeat
+            type: int
+            text: Times to repeat this simulation in series; 0 runs it once.
+            default: 0
+          - name: converge
+            type: dict
+            required: false
+            text: >
+              Keep repeating this stage until its density settles, instead of
+              running a fixed number of steps somebody guessed.  npt only, and
+              off unless configured, so existing results stay reproducible.
+              Densification is the right place for this: the 200 -> ~1100
+              kg/m^3 compaction happens once and involves a large volume
+              change.  The criterion is an autocorrelation-corrected standard
+              error -- NPT density is correlated over hundreds of steps, so a
+              naive SEM is optimistic and would stop early -- plus a test that
+              the trace is not still drifting.  A build that never settles
+              says so rather than quietly reporting the density it reached.
+              Note each extension regenerates velocities, exactly as `repeat`
+              does, so the criterion is applied to the last segment.
+            attributes:
+              - name: tolerance
+                type: float
+                text: >
+                  Largest acceptable standard error of the mean density, in
+                  kg/m^3.
+                default: 1.0
+              - name: max_repeats
+                type: int
+                text: >
+                  Ceiling on extension segments.  Reaching it is reported as a
+                  failure to converge, not as success.
+                default: 10
+              - name: min_samples
+                type: int
+                text: >
+                  Refuse to judge a window with fewer energy frames than this.
+                default: 50
+              - name: drift_sems
+                type: float
+                text: >
+                  How far the window's two halves may differ, in units of that
+                  difference's own standard error.
+                default: 2.0
 
   - name: precure
     type: dict
@@ -485,10 +545,34 @@ attributes:
                 pressure: 1
                 nsteps: 2000
             text: >
-              The MD records run at each drag stage.  Same record shape as
-              `densification.equilibration`.  Runs unconstrained at a 1 fs
-              timestep, because the bonds being manipulated are deliberately
-              far from equilibrium.
+              The MD records run at each drag stage.  Runs unconstrained at a
+              1 fs timestep, because the bonds being manipulated are
+              deliberately far from equilibrium.  These stages deliberately
+              offer no `converge` block: gating the cure loop on density was
+              measured and rejected, because past the gel point no amount of
+              NPT time restores reactive-species mobility.
+            value_attributes: &cure_md_record
+              - name: ensemble
+                type: str
+                required: true
+                choices: [min, nvt, npt]
+                text: min (minimization), nvt, or npt.
+              - name: temperature
+                type: float
+                text: Temperature in K, assigned to `ref_t`.
+              - name: pressure
+                type: float
+                text: Pressure in bar, assigned to `ref_p`.
+              - name: nsteps
+                type: int
+                text: Duration in timesteps.
+              - name: ps
+                type: float
+                text: Duration in picoseconds.  Supply this or `nsteps`.
+              - name: repeat
+                type: int
+                text: Times to repeat this simulation in series; 0 runs it once.
+                default: 0
 
       - name: relax
         type: dict
@@ -524,11 +608,11 @@ attributes:
                 pressure: 1
                 nsteps: 2000
             text: >
-              The MD records run at each relax stage.  Same record shape as
-              `densification.equilibration`.  Runs unconstrained at a 1 fs
-              timestep.  These stages are the only above-Tg constant-pressure
-              time in a cure, and as of v2.7.0 each reports the density it
-              produces.
+              The MD records run at each relax stage.  Runs unconstrained at
+              a 1 fs timestep.  These stages are the only above-Tg
+              constant-pressure time in a cure, and as of v2.7.0 each reports
+              the density it produces.
+            value_attributes: *cure_md_record
 
       - name: equilibrate
         type: dict

@@ -161,6 +161,29 @@ In this section we show all subdirectives for each of the five main directives i
 
     The ``repeat`` subdirective is especially useful for densifications that start at very low initial densities.  It is better to run several short NPT simulations than a single long one so that the box size shrinkage doesn't overwhelm Gromacs' domain decomposition algorithm.
 
+    An NPT record may also carry a ``converge`` subdirective, which repeats the stage until the density settles instead of running for however many steps you guessed.  It is off unless configured, so existing configurations reproduce exactly.
+
+    =====================================    ==============  =====================
+    ``converge`` subdirective                Type            Description (default)
+    =====================================    ==============  =====================
+    ``tolerance``                            float           largest acceptable standard error of the mean density, in kg/m^3 (default 1.0)
+    ``max_repeats``                          int             ceiling on extension segments; reaching it is reported as a *failure* to converge, not as success (default 10)
+    ``min_samples``                          int             refuse to judge a window with fewer energy frames than this (default 50)
+    ``drift_sems``                           float           how far the window's two halves may differ, in units of that difference's own standard error (default 2.0)
+    =====================================    ==============  =====================
+
+    Two things are worth understanding before setting a ``tolerance``.  The criterion is an **autocorrelation-corrected** standard error, :math:`\sigma/\sqrt{N/\tau_\mathrm{int}}`: an NPT cell density is correlated over hundreds of steps, so successive energy frames are not independent samples and a naive standard error is optimistic by roughly a factor of 1.5 -- a gate built on it stops early.  The correction also makes the tolerance mean the same thing for a small box as for a large one, since :math:`\sigma/\mu` falls as :math:`1/\sqrt{N_\mathrm{atoms}}` while :math:`\tau_\mathrm{int}` is roughly size-independent.  Second, a small standard error alone is not taken as convergence, because a trace that is still climbing can look tight in every short window; the two halves of the window are compared as well, and the stage is extended if they differ by more than ``drift_sems`` times that difference's own standard error.
+
+    Each extension is a fresh ``mdrun`` and regenerates velocities, exactly as ``repeat`` does, so the criterion is applied to the last segment rather than to a concatenation of segments that do not share a velocity history.
+
+    .. note::
+
+       This is deliberately offered for **densification** and not for the CURE relaxation stages.  Densification is one-shot and involves a large volume change, which is what the machinery is for.  Gating the cure loop was measured and rejected: past the gel point the unreacted species are bonded into the network and are topologically constrained rather than merely slow, so the effective diffusion exponent falls to about 0.14 and restoring the mobility a gate would wait for takes of order :math:`10^4` times the relaxation time.  A gate there would correctly report "not settled" on every late iteration with nothing to be done about it.
+
+    .. warning::
+
+       The gate reports convergence of the **Berendsen** barostat that ``npt.mdp`` currently uses, which does not sample a correct NPT ensemble.  A converged number here means the box has stopped changing under that barostat, not that it is the correct equilibrium density for the force field.  Treat the tolerance as a reproducibility criterion rather than a physical one until the barostat is changed.
+
 * ``precure``
     
     The ``precure`` directive instructs ``htpolynet`` on running a series of MD simulations after densification but before the cure.  There are three allowable subdirectives for ``precure``: 

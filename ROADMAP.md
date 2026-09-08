@@ -575,28 +575,6 @@ Coverage as of the last measurement: **38.8%** overall.
   The densification entry below is the same shape of problem -- a number
   computed once and trusted thereafter.
 
-- **If anything gates on density convergence, it should be densification,
-  not cure.** The initial 200 -> ~1100 kg/m3 compaction is one-shot,
-  involves a large volume change, and currently runs on fixed `nsteps`
-  (`runtime_defaults['densification']['equilibration']`,
-  `core/runtime.py:78-86`). That is the direct analogue of pestifer's use of
-  `density_equilibrate` -- a terminal, run-until-converged replacement for a
-  hand-written NPT ladder -- and it is cheap, because it happens once per
-  build rather than ~10 times.
-
-  What to port from `pestifer/util/density_convergence.py` is only the
-  criterion: an **autocorrelation-corrected SEM**, `sigma/sqrt(N/tau_int)`,
-  because NPT cell density is autocorrelated over hundreds of steps and a
-  naive block-means SEM is optimistic by ~1.5x. That also makes the test
-  size-aware for free, since `sigma/mean ~ 1/sqrt(N_atoms)` while tau is
-  roughly size-independent. Port the explicit **ceiling outcome** too, so a
-  build that never settled says so instead of silently reporting a density.
-  Do **not** port the chunking (`next_chunk_steps`, `is_patch_grid_crash`):
-  that exists because NAMD fixes its patch/PME grid at the start of each
-  `run`, and GROMACS rescales the box within one `mdrun` without that
-  failure mode. The chunking is most of pestifer's complexity and none of
-  its value here.
-
 - **Decided against: gating and extending `CURE.relax` on density
   convergence.** Raised by Cameron 2026-09-05 from the observation that
   pestifer has a gate system htpolynet does not; recommended by the study
