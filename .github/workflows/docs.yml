@@ -1,0 +1,90 @@
+name: Docs
+
+# ReadTheDocs has no webhook on this repository.  Its only trigger was the
+# "Trigger ReadTheDocs build" step in release.yaml, which fires on v* tags, so
+# the published docs tracked *releases* rather than main: a docs-only commit
+# did not appear on RTD until the next release.  This workflow closes that gap
+# for the `latest` version.  `stable` follows tags and stays release.yaml's job.
+#
+# The build job also enforces the repo invariant that the docs build with zero
+# warnings (-W).  RTD builds without -W, so a warning introduced on main would
+# otherwise publish green and be caught only by whoever next built locally.
+# Gating the trigger on that build means a broken docs commit is never pushed
+# to RTD.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # autodoc reads docstrings and the tutorials literalinclude the example
+      # configs, so src/ is a docs input; changelog.rst includes CHANGELOG.md;
+      # RTD pip-installs the package, so pyproject.toml matters too.
+      - 'docs/**'
+      - 'src/**'
+      - 'CHANGELOG.md'
+      - '.readthedocs.yaml'
+      - 'pyproject.toml'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'CHANGELOG.md'
+      - '.readthedocs.yaml'
+      - 'pyproject.toml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build (zero warnings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Same invocation as CLAUDE.md documents for local use.  -W turns
+      # warnings into errors; -a rebuilds everything so a warning cannot be
+      # skipped by an up-to-date doctree.
+      - name: Build docs
+        run: >
+          uv run --with-requirements docs/requirements.txt --with sphinx
+          python -m sphinx -b html -W -a docs/source _docbuild
+
+  trigger-rtd:
+    name: trigger ReadTheDocs
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ReadTheDocs build of latest
+        env:
+          RTD_SECRET: ${{ secrets.RTD_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RTD_SECRET:-}" ]; then
+            echo "::error::RTD_SECRET is not set; cannot trigger a ReadTheDocs build."
+            exit 1
+          fi
+          # curl exits 0 on a 4xx unless told otherwise, so check the status
+          # explicitly.  A trigger that fails silently is worse than none: the
+          # job goes green and the docs quietly stop updating.
+          code=$(curl -sS --max-time 60 -o rtd-response.json -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Token ${RTD_SECRET}" \
+            https://readthedocs.org/api/v3/projects/htpolynet/versions/latest/builds/)
+          echo "ReadTheDocs returned HTTP ${code}"
+          cat rtd-response.json || true
+          echo
+          case "${code}" in
+            2*) echo "Build of 'latest' queued." ;;
+            401|403) echo "::error::RTD rejected the token (HTTP ${code}); RTD_SECRET is missing, wrong or expired."; exit 1 ;;
+            404) echo "::error::RTD has no project 'htpolynet' or no version 'latest' (HTTP 404)."; exit 1 ;;
+            *) echo "::error::RTD returned HTTP ${code}."; exit 1 ;;
+          esac

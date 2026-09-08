@@ -145,3 +145,6 @@ dmypy.json
 .pyre/
 .vscode/settings.json
 
+
+# sphinx output from the docs CI job (and local runs that mirror it)
+_docbuild/

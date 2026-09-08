@@ -79,13 +79,37 @@ jobs:
           path: dist/
 
       - name: Trigger ReadTheDocs build
+        env:
+          RTD_SECRET: ${{ secrets.RTD_SECRET }}
+          RTD_VERSION: ${{ github.ref_name }}
         run: |
-          curl -X POST \
-            -H "Authorization: Token ${{ secrets.RTD_SECRET }}" \
-            https://readthedocs.org/api/v3/projects/htpolynet/versions/latest/builds/
-          curl -X POST \
-            -H "Authorization: Token ${{ secrets.RTD_SECRET }}" \
-            https://readthedocs.org/api/v3/projects/htpolynet/versions/${{ github.ref_name }}/builds/
+          set -euo pipefail
+          if [ -z "${RTD_SECRET:-}" ]; then
+            echo "::error::RTD_SECRET is not set; cannot trigger a ReadTheDocs build."
+            exit 1
+          fi
+          # curl exits 0 on a 4xx unless told otherwise.  These calls used to
+          # go unchecked, so an expired token would print a 401 body and the
+          # step would still pass -- the docs would just stop updating.
+          trigger() {
+            local version="$1"
+            local code
+            code=$(curl -sS --max-time 60 -o rtd-response.json -w '%{http_code}' \
+              -X POST \
+              -H "Authorization: Token ${RTD_SECRET}" \
+              "https://readthedocs.org/api/v3/projects/htpolynet/versions/${version}/builds/")
+            echo "ReadTheDocs (${version}) returned HTTP ${code}"
+            cat rtd-response.json || true
+            echo
+            case "${code}" in
+              2*) return 0 ;;
+              *)  echo "::error::RTD returned HTTP ${code} for version '${version}'."; return 1 ;;
+            esac
+          }
+          trigger latest
+          # The tag's own version may not exist yet if RTD has not synced it;
+          # that is not a release failure, so report it without failing the job.
+          trigger "${RTD_VERSION}" || echo "::warning::Could not trigger the '${RTD_VERSION}' version build; trigger it from the RTD dashboard if that version is expected."
 
   publish:
     needs: release
