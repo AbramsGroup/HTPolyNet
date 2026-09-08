@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- **Two more `CURE`/`densification` defaults in the config tables were
+  wrong.**  `densification.initial_density` is 200.0 kg/m^3, not the 300.0 the
+  table gave; and the prose under `min_allowable_bondcycle_length` still said
+  "setting it to zero (the default)" after the table had been corrected to -1.
+  Found while transcribing the defaults into a machine-readable schema, which
+  is the point of doing so.
+
 ## [2.7.0] - 2026-09-08
 
 ### Changed
