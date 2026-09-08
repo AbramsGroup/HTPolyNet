@@ -757,19 +757,33 @@ Coverage as of the last measurement: **38.8%** overall.
   Staging, agreed with the ycleptic session:
 
   1. **ycleptic to conda-forge** -- gates shipping and nothing else.
-     `api.anaconda.org/package/conda-forge/ycleptic` is 404 while htpolynet is
-     200, and a conda package's run-deps must exist in the channel, so
+     `api.anaconda.org/package/conda-forge/ycleptic` was 404 while htpolynet
+     is 200, and a conda package's run-deps must exist in the channel, so
      declaring the dependency would make htpolynet's feedstock unbuildable and
      trip `scripts/release.sh`'s `check-conda-sync.py --strict` preflight.
-     **Waiting on Cameron**: the ycleptic session declined to open a
-     staged-recipes PR on a relayed approval, since it is a public publish
-     under his name.
-  2. **Two ycleptic grammar additions**, designed and committed to by that
-     session but not yet built: `value_attributes:` + `key_text:` for
+     Submitted 2026-09-08 with Cameron's direct approval as
+     conda-forge/staged-recipes#34763, "Adding ycleptic"; open, not merged.
+  2. **Two ycleptic grammar additions**: `value_attributes:` + `key_text:` for
      free-key mappings, and `list_defaults: replace|append` per attribute.
+     Built and up for Cameron's review as cameronabrams/ycleptic#1; not
+     released.
   3. Port the flat sections and generate their reference docs -- the base.yaml
      above is this step, awaiting 1.
   4. Port `constituents` and `reactions` once `value_attributes` exists.
+
+  **The version floor is a trap; read this before pinning anything.** The
+  staged-recipes submission is necessarily at ycleptic **2.3.0**, because
+  staged-recipes needs a tarball that already exists. Step 3's base.yaml is
+  written against 2.3.0 and works there. But the free-key node step 4 needs
+  will land in **2.4.0**, and 2.4.0 reaches conda-forge only via an
+  autotick-bot PR *after* that release -- and the central OBSERVED failure in
+  Cameron's conda-forge skill is exactly those bot PRs sitting red for months
+  while conda-forge serves the stale version. So: pin `ycleptic>=2.3.0` when
+  step 3 goes live, and **do not raise the floor to 2.4.0 until the anaconda
+  API confirms 2.4.0 is actually on the channel** -- not when it is released,
+  not when the bot PR opens. Raising it early recreates precisely the
+  unbuildable-feedstock problem step 1 exists to avoid. The ycleptic session
+  will report when the API says so.
 
   Two hazards are recorded in the base.yaml header rather than here, because
   that is where someone editing it will look: ycleptic's `dwalk` rejects any
