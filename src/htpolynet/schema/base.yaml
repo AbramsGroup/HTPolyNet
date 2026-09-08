@@ -5,38 +5,37 @@
 # ycleptic reaching conda-forge (htpolynet is on conda-forge and a conda
 # package's run-deps must exist in the channel).  See ROADMAP.md.
 #
-# Two deliberate constraints while ycleptic 2.3.0 is the target.  Both are
-# temporary: the ycleptic session has committed to a grammar that closes each
-# one, and the shapes below are what to migrate to.
+# REQUIRES ycleptic >= 2.4.0, for `value_attributes`/`key_text` (free-key
+# mappings) and `list_defaults` (per-attribute replace semantics).  Both landed
+# on ycleptic main; 2.4.0 is not released, and the pin must not be written into
+# pyproject.toml until the anaconda API says 2.4.0 is on the conda-forge
+# channel.  See ROADMAP.md for why.
 #
-#   1. Sections keyed by names the *user* invents -- `constituents`, and
-#      `reactants`/`atoms` inside a reaction -- are declared as bare `dict`
-#      with no `attributes`.  ycleptic 2.3.0's dwalk rejects any key not in the
-#      declared attribute list (walkers.py:144-149) and has no
-#      additionalProperties analogue, so a bare dict is the only way to let
-#      them through.  They are therefore UNVALIDATED.  Each is marked
-#      `# FREE-KEY` below.
+# `constituents` is a free-key mapping: its keys are molecule names the user
+# invents, and `value_attributes` gives the schema every record must satisfy.
+# Every list whose real default is non-empty carries `list_defaults: replace`,
+# because ycleptic's default is `append` -- correct for pestifer's CHARMM file
+# lists, wrong for an MD ladder, where a base default of [min, nvt, npt] plus a
+# user's [nvt] would otherwise yield ['min','nvt','npt','nvt'] and run the
+# user's own step last and twice, silently.
 #
-#      MIGRATION: replace each with a `value_attributes:` block -- a list of
-#      ordinary attribute specs giving the schema every VALUE must satisfy --
-#      plus a `key_text:` saying what a key means, which is what make-doc and
-#      config-help render in place of a key list.  `attributes` and
-#      `value_attributes` are mutually exclusive on one node.  Defaults inside
-#      `value_attributes` apply per value.
+# What is still NOT validated, and why:
 #
-#   2. No `default:` is declared on any list.  For a bare list ycleptic does
-#      `I[d] = defaults + I[d]` (walkers.py:240) -- concatenation, not
-#      replacement.  A non-empty default here would run the default MD ladder
-#      AND the user's: base [min, nvt, npt] plus a user's [nvt] yields
-#      ['min', 'nvt', 'npt', 'nvt'], with the user's own step run last and
-#      twice, silently.  Omitting the default yields `[] + user`, which is
-#      correct replace semantics.  Each such list is marked
-#      `# LIST-DEFAULT-IN-PYTHON` with the Python home of its real default.
+#   1. `reactions` is a bare list.  ycleptic describes list items with the
+#      tagged-task idiom -- lwalk takes `itemname = list(item.keys())[0]`
+#      (walkers.py:267) -- and htpolynet's reaction records are multi-key
+#      (`name`, `stage`, `reactants`, ...).  With no schema node for the item
+#      there is nowhere to hang `value_attributes` for `reactions[].atoms`,
+#      which would otherwise qualify.  The ycleptic session knows and has
+#      deliberately not changed lwalk; it is a real feature request, not an
+#      oversight.
 #
-#      MIGRATION: add `list_defaults: replace` to the attribute and move the
-#      real default here.  `append` stays ycleptic's global default because
-#      pestifer has five bare lists whose append semantics are correct (CHARMM
-#      force-field file lists), so replace is opt-in per attribute.
+#   2. Free-key mappings whose values are SCALARS cannot use
+#      `value_attributes`, which requires every value to be a mapping
+#      (walkers.py:195-201).  That covers `constituents[].reactive_atoms` and
+#      `constituents[].rename_atoms` ({label: atom-name}) and
+#      `reactions[].reactants` ({index: molecule-name}).  Each is marked
+#      `# FREE-KEY, SCALAR VALUES` below.
 
 docs:
   title: htpolynet run configuration
@@ -122,7 +121,7 @@ attributes:
       GROMACS topology, or that conflict between two topologies being merged.
     attributes:
       - name: resolve_type_discrepancies
-        type: list            # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+        type: list            # empty default; append and replace are identical here
         text: >
           Records describing how to resolve conflicting interaction types.
           Each record carries `typename` (the interaction type in the top
@@ -131,7 +130,7 @@ attributes:
           with the largest energetic parameters).
 
   - name: resolve_type_discrepancies
-    type: list                # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+    type: list                # empty default; append and replace are identical here
     text: >
       Deprecated top-level spelling of `GAFF.resolve_type_discrepancies`.
       Both are read (core/runtime.py:326), with the GAFF-scoped one winning.
@@ -139,18 +138,93 @@ attributes:
       GAFF-scoped form.
 
   - name: constituents
-    type: dict                # FREE-KEY: keyed by molecule name (STY, BPA, GMA, ...)
+    type: dict
     text: >
       The initial make-up of the system, as one record per molecule keyed by
-      the molecule's name.  Each record may carry `count` (how many go in the
-      box; 0 or missing marks an intermediate), `smiles`, `reactive_atoms`,
-      `rename_atoms`, `stereocenters`, `symmetry_equivalent_atoms`, and
-      `conformers`.  The key tells htpolynet to look for NAME.mol2 or NAME.pdb
-      in lib/molecules/inputs, or an existing parameterization in
+      the molecule's name.  The key tells htpolynet to look for NAME.mol2 or
+      NAME.pdb in lib/molecules/inputs, or an existing parameterization in
       lib/molecules/parameterized; failing both, a `smiles` key lets it
       generate the input itself.
-      NOT VALIDATED -- see the FREE-KEY note at the top of this file.
-    default: {}
+    key_text: >
+      A molecule name, e.g. STY, BPA or GMA.  It is the library key for every
+      file this molecule owns.
+    value_attributes:
+      - name: count
+        type: int
+        text: >
+          How many of these go in the box.  0 or missing marks an
+          intermediate -- a species that exists only to be built into another,
+          for which stereocenters or symmetry-equivalent atoms are declared.
+        default: 0
+      - name: smiles
+        type: str
+        text: >
+          SMILES for in-config monomer generation.  htpolynet runs obabel, or
+          RDKit when the string uses `[*:N]` atom-mapping tokens, to
+          materialize lib/molecules/inputs/NAME.mol2 before parameterization.
+      - name: reactive_atoms
+        type: dict            # FREE-KEY, SCALAR VALUES: {map-label: atom-name}
+        text: >
+          Map from a SMILES atom-map label to an atom name, for the RDKit
+          path; pairs with a `smiles` that uses `[*:N]` tokens.  Values are
+          bare strings, so this cannot use `value_attributes`, which requires
+          every value to be a mapping.  NOT VALIDATED.
+      - name: rename_atoms
+        type: dict            # FREE-KEY, SCALAR VALUES: {mol2-index: atom-name}
+        text: >
+          Map from 1-based mol2 index to atom name, applied after obabel
+          writes the mol2; pairs with a `smiles` on the obabel path.  Values
+          are bare strings, so this cannot use `value_attributes`.
+          NOT VALIDATED.
+      - name: stereocenters
+        type: list
+        text: Names of this molecule's chiral carbons, if any.
+      - name: symmetry_equivalent_atoms
+        type: list
+        text: Sets of symmetry-equivalent atom names, if any.
+      - name: conformers
+        type: dict
+        required: false
+        text: >
+          Whether and how to generate multiple conformers of a flexible
+          molecule for building the initial liquid.  Omit it and the conformer
+          used is whichever one the input mol2 or the constructed gro holds.
+        attributes:
+          - name: count
+            type: int
+            text: Number of unique conformers to generate, per stereoisomer.
+            required: true
+          - name: generator
+            type: dict
+            required: false
+            text: How the conformers are generated.
+            attributes:
+              - name: name
+                type: str
+                text: obabel, or gromacs for a short vacuum MD.
+                choices: [obabel, gromacs]
+                required: true
+              - name: params
+                type: dict
+                required: false
+                text: >
+                  Parameters for the generator; only meaningful for the
+                  gromacs generator.
+                attributes:
+                  - name: ensemble
+                    type: str
+                    text: nvt is the only choice that makes sense in vacuum.
+                    choices: [min, nvt, npt]
+                    default: nvt
+                  - name: temperature
+                    type: float
+                    text: Temperature in K of the conformer-generating MD.
+                  - name: ps
+                    type: float
+                    text: Duration in picoseconds of the conformer-generating MD.
+                  - name: pad
+                    type: float
+                    text: Box-size padding in nm for the vacuum MD.
 
   - name: densification
     type: dict
@@ -166,19 +240,31 @@ attributes:
           box to make the initial coordinates.
         default: 200.0
       - name: initial_boxsize
-        type: list            # LIST-DEFAULT-IN-PYTHON: none; mutually exclusive with initial_density
+        type: list            # empty default; mutually exclusive with initial_density
         text: >
           Explicit initial box dimensions in nm, as an alternative to
           `initial_density`.
       - name: aspect_ratio
-        type: list            # LIST-DEFAULT-IN-PYTHON: core/runtime.py:80 -> [1.0, 1.0, 1.0]
+        type: list
+        list_defaults: replace
+        default: [1.0, 1.0, 1.0]
         text: Relative box dimensions used when sizing the box from a density.
       - name: scale
         type: float
         text: Packing scale factor passed to `gmx insert-molecules`.
         default: 0.4
       - name: equilibration
-        type: list            # LIST-DEFAULT-IN-PYTHON: core/runtime.py:81-85 -> min, nvt 300 K, npt 300 K
+        type: list
+        list_defaults: replace
+        default:
+          - ensemble: min
+          - ensemble: nvt
+            temperature: 300
+            ps: 10
+          - ensemble: npt
+            temperature: 300
+            pressure: 10
+            ps: 200
         text: >
           An ordered list of MD records run to densify the box.  Each record
           takes `ensemble` (min, nvt or npt), `temperature` (K, for nvt/npt),
@@ -232,7 +318,14 @@ attributes:
             text: Initial temperature in K.  Sets only the `gen-temp` mdp parameter.
             default: 300
           - name: cycle_segments
-            type: list        # LIST-DEFAULT-IN-PYTHON: core/runtime.py:93-99 -> 5-segment 300/600 cycle
+            type: list
+            list_defaults: replace
+            default:
+              - {T: 300, ps: 0}
+              - {T: 600, ps: 20}
+              - {T: 600, ps: 20}
+              - {T: 300, ps: 20}
+              - {T: 300, ps: 20}
             text: >
               The annealing points of one cycle, in order.  Each record takes
               `T` (target temperature in K) and `ps` (duration).  If the
@@ -377,7 +470,17 @@ attributes:
             text: Padding in nm added to the nonbonded cutoffs during dragging.
             default: 0.2
           - name: equilibration
-            type: list        # LIST-DEFAULT-IN-PYTHON: cure/curecontroller.py:242-245
+            type: list
+            list_defaults: replace
+            default:
+              - ensemble: min
+              - ensemble: nvt
+                temperature: 600
+                nsteps: 1000
+              - ensemble: npt
+                temperature: 600
+                pressure: 1
+                nsteps: 2000
             text: >
               The MD records run at each drag stage.  Same record shape as
               `densification.equilibration`.  Runs unconstrained at a 1 fs
@@ -406,7 +509,17 @@ attributes:
             text: Padding in nm added to the nonbonded cutoffs during relaxation.
             default: 0.2
           - name: equilibration
-            type: list        # LIST-DEFAULT-IN-PYTHON: cure/curecontroller.py:242-245
+            type: list
+            list_defaults: replace
+            default:
+              - ensemble: min
+              - ensemble: nvt
+                temperature: 600
+                nsteps: 1000
+              - ensemble: npt
+                temperature: 600
+                pressure: 1
+                nsteps: 2000
             text: >
               The MD records run at each relax stage.  Same record shape as
               `densification.equilibration`.  Runs unconstrained at a 1 fs
@@ -517,7 +630,14 @@ attributes:
             text: Initial temperature in K.  Sets only the `gen-temp` mdp parameter.
             default: 300
           - name: cycle_segments
-            type: list        # LIST-DEFAULT-IN-PYTHON: core/runtime.py:117-123
+            type: list
+            list_defaults: replace
+            default:
+              - {T: 300, ps: 0}
+              - {T: 600, ps: 20}
+              - {T: 600, ps: 20}
+              - {T: 300, ps: 20}
+              - {T: 300, ps: 20}
             text: >
               The annealing points of one cycle, in order; each record takes
               `T` and `ps`.
@@ -551,7 +671,7 @@ attributes:
             default: 0
 
   - name: postcure_repair
-    type: list                # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+    type: list                # empty default; append and replace are identical here
     text: >
       Topology repairs applied after the cure, in order.  Each record names a
       repair and its parameters; `triazine_to_cyanate_cap` dismantles
@@ -559,7 +679,7 @@ attributes:
       Record contents are NOT VALIDATED.
 
   - name: reactions
-    type: list                # LIST-DEFAULT-IN-PYTHON: none; empty is the real default
+    type: list                # empty default; append and replace are identical here
     text: >
       Every reaction needed to build the constituents and to cure the system.
       Each record carries `name`, `stage` (param or cure), `reactants` (keyed

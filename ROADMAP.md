@@ -765,11 +765,37 @@ Coverage as of the last measurement: **38.8%** overall.
      conda-forge/staged-recipes#34763, "Adding ycleptic"; open, not merged.
   2. **Two ycleptic grammar additions**: `value_attributes:` + `key_text:` for
      free-key mappings, and `list_defaults: replace|append` per attribute.
-     Built and up for Cameron's review as cameronabrams/ycleptic#1; not
-     released.
-  3. Port the flat sections and generate their reference docs -- the base.yaml
-     above is this step, awaiting 1.
-  4. Port `constituents` and `reactions` once `value_attributes` exists.
+     **Merged to ycleptic main**; 2.4.0 is not released.
+  3. Port the flat sections and generate their reference docs -- done in
+     base.yaml, awaiting 1 to go live.
+  4. Port `constituents` and `reactions`. **`constituents` is done**: it is a
+     `value_attributes` free-key mapping, so a typo inside a molecule record
+     is now rejected naming the molecule (`Attribute 'smilse' invalid ...
+     under 'constituents[STY]'`), `count` defaults per value, a required
+     `conformers.count` is enforced, and `conformers.generator.name` is
+     constrained to obabel/gromacs. Every list with a non-empty default
+     carries `list_defaults: replace`, verified to use a user's ladder
+     verbatim rather than appending it to the default one.
+
+     **`reactions` remains unportable**, for two independent reasons, neither
+     of which `value_attributes` addresses:
+
+     - ycleptic describes list items with the tagged-task idiom -- `lwalk`
+       takes `itemname = list(item.keys())[0]` -- and htpolynet's reaction
+       records are multi-key. With no schema node for the item there is
+       nowhere to hang `value_attributes` for `reactions[].atoms`, which
+       would otherwise qualify. The ycleptic session has deliberately not
+       changed `lwalk`; it is a real feature request.
+     - `value_attributes` requires every value to be a **mapping**. Free-key
+       mappings whose values are scalars cannot use it: `reactions[].reactants`
+       is `{1: BPA, 2: HIE}`, and inside `constituents` both `reactive_atoms`
+       and `rename_atoms` are `{label: atom-name}`. These stay bare dicts and
+       unvalidated even now. A `value_type: str` variant would close it;
+       reported to the ycleptic session, not requested.
+
+     So the port validates the knobs and the molecule records, and still not
+     the reaction chemistry. That is a smaller gap than before but not zero,
+     and it is the honest scope to quote.
 
   **The version floor is a trap; read this before pinning anything.** The
   staged-recipes submission is necessarily at ycleptic **2.3.0**, because
