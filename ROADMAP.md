@@ -863,29 +863,14 @@ Coverage as of the last measurement: **38.8%** overall.
   therefore declares no default, which gives correct replace semantics, with
   the real default left in Python and marked.
 
-- **`CURE.relax.increment` defaults to 0.0, and relax then divides by it.**
-  Found while writing the schema. `curedict_defaults` sets
-  `relax.increment: 0.0` (`cure/curecontroller.py:273`), and
-  `_distance_attenuation` computes `this_nstages = int(maxL/d['increment'])`
-  (`:739`) with no guard, so a config that omits the key raises
-  `ZeroDivisionError` at the first relax. Drag has a guard --
-  `if (d['nstages']>0 or d['increment']>0.0) and d['limit']>0.0` (`:312`) --
-  and relax has none. The `relax.nstages: 6` default (`:272`) is declared and
-  **never read**; `:739` derives the stage count from `increment` only. The
-  docs meanwhile promise `increment` defaults to 0.08. Every shipped example
-  sets it explicitly, which is why nothing caught this -- the same pattern as
-  the `desired_conversion` drift.
-
-  Fixing it is a behavior decision, not a typo: either default `increment` to
-  the documented 0.08, or make `:739` honor `nstages` when `increment` is 0
-  (which is what the dead `nstages: 6` implies was intended). Those give
-  different stage counts for the same config, so it is Cameron's call.
-
 - **Documented `CURE.drag`/`CURE.relax` defaults do not match the code, and
   several keys are undocumented.** The tables give `drag.increment` 0.08 and
   `drag.limit` 0.3 where `curedict_defaults` has 0.0 for both -- sentinels
-  that disable dragging via the `:312` guard, so the documented defaults would
-  turn on a stage ladder the code turns off. Undocumented entirely:
+  that disable dragging via the `:316` guard, so the documented defaults would
+  turn on a stage ladder the code turns off. (`relax.increment` was the same
+  kind of mismatch and is now fixed in the code's favor: it defaults to the
+  documented 0.08. `relax.nstages: 6` is still declared and never read.)
+  Undocumented entirely:
   `drag.trigger_distance`, `drag.kb`, `drag.nstages`, `drag.cutoff_pad`,
   `relax.nstages`, `relax.cutoff_pad`, the whole `CURE.output` block,
   `densification.scale`, `densification.aspect_ratio` and
