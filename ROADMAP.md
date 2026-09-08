@@ -637,12 +637,27 @@ Coverage as of the last measurement: **38.8%** overall.
   iteration and report "may not have settled", correctly, with nothing to be
   done about it. It detects a condition it cannot cure.
 
-  **The limit on that argument:** arrest is inferred partly from gelation
-  physics, not purely measured. The study's displacement trace is still
-  falling at the last cure iteration, 4.63 -> 4.08 -> 3.72 A -- consistent
-  with approaching arrest, but not a demonstrated plateau. Measuring the
-  plateau directly would settle it either way, and is a smaller experiment
-  than powering R16 up.
+  **That limit is now closed, and the conclusion is stronger than it was.**
+  The argument used to lean partly on gelation physics rather than
+  measurement. 32 cure-only builds at the production window (study session,
+  2026-09-08) measure the effective diffusion exponent directly:
+  displacement ~ t^alpha, with alpha **0.32** at the start of cure -- already
+  sub-Fickian, which is 0.50 -- falling to **0.14** at the end. At alpha 0.14,
+  restoring the displacement a gate would need takes **3.6e4 times** the
+  relaxation time. That is not expensive, it is impossible, and it does not
+  depend on the earlier n = 4 result at all.
+
+  **And the shipped window never satisfies Varshney's criterion, not even at
+  the start.** Mean crossing fraction is **0.61 at iteration 1** and **0.036
+  at the last** -- so the window is outside the criterion it was sized against
+  for the whole cure, not merely late in it. This is the calibration for the
+  mobility report that shipped in v2.7.0: its 25 % warning threshold sits
+  between those two numbers, so a default build stays quiet early and warns
+  through the second half. Whether 25 % is the right line is not yet
+  established -- nothing measures what crossing fraction a *trustworthy* build
+  needs, only what the current one delivers -- so the threshold is a placeholder
+  chosen to be quiet at iteration 1, and should be revisited against a build
+  whose bonds are known to be well sampled.
 
   **And a structural mismatch.** Pestifer uses `density_equilibrate` as a
   terminal, one-shot replacement for a hand-written NPT ladder at the end of
