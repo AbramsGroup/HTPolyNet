@@ -805,8 +805,14 @@ Coverage as of the last measurement: **38.8%** overall.
        mappings whose values are scalars cannot use it: `reactions[].reactants`
        is `{1: BPA, 2: HIE}`, and inside `constituents` both `reactive_atoms`
        and `rename_atoms` are `{label: atom-name}`. These stay bare dicts and
-       unvalidated even now. A `value_type: str` variant would close it;
-       reported to the ycleptic session, not requested.
+       unvalidated even now. A `value_type:` variant would close it; the
+       ycleptic session reproduced the gap, agrees that is the right shape,
+       and has put it to Cameron as a call on whether to bundle it into
+       2.4.0 -- **the cost argument is that one release costs one
+       autotick-bot cycle and two releases cost two**, so if it is wanted at
+       all it should go in 2.4.0 rather than follow it. Nothing here is
+       blocked either way: `reactions` is blocked on `lwalk` regardless, and
+       the two `constituents` scalar maps are no worse than they are today.
 
      So the port validates the knobs and the molecule records, and still not
      the reaction chemistry. That is a smaller gap than before but not zero,
