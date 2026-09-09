@@ -30,15 +30,14 @@
 # The one thing left unconstrained on purpose: `gromacs.mdrun_options` accepts
 # arbitrary mdrun flags, which is what it is for.
 #
-# CAVEAT, ycleptic 2.4.0: `required: true` on a LIST attribute is silently
-# ineffective.  An absent required list is filled with `[]` and no error is
-# raised (walkers.py:389-397); scalars raise, and dicts raise via their
-# required children.  So `reactions[].bonds`, `bonds[].atoms`, and the repair
-# spec's `ring_carbon_atoms`, `ring_nitrogen_atoms` and
-# `reactive_oxygen_atoms` are declared required here and are NOT enforced --
-# omitting one validates, then fails deeper in the code.  The declarations are
-# kept because they state the intent correctly and will start working when
-# ycleptic fixes it; reported to the ycleptic session.
+# `required: true` binds on every attribute here, including the list ones --
+# `reactions[].bonds`, `bonds[].atoms`, and the repair spec's
+# `ring_carbon_atoms`, `ring_nitrogen_atoms` and `reactive_oxygen_atoms`.
+# That was NOT true in ycleptic 2.4.0, where an omitted required list was
+# quietly filled with `[]`: the declarations were inert and a config missing one
+# validated, then failed deeper in htpolynet.  Found here by a negative test
+# that passed when it should have failed, reported, and fixed in **2.4.1** --
+# which is why the pin in pyproject.toml is >=2.4.1 and not >=2.4.0.
 
 docs:
   title: htpolynet run configuration
