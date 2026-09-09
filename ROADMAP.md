@@ -772,6 +772,31 @@ Coverage as of the last measurement: **38.8%** overall.
      2.4.0 on PyPI**, and base.yaml uses all three.
   3. Port the flat sections and generate their reference docs -- done in
      base.yaml, awaiting 1 to go live.
+
+     **Before any release that carries the dependency, update the htpolynet
+     feedstock recipe by hand.** The autotick bot bumps version and sha256 and
+     nothing else -- it does not notice a new runtime dependency. A bot PR for
+     the first release containing `ycleptic` would therefore be green and
+     would ship a conda package that fails at import, because
+     `Configuration.read` imports ycleptic at module load. Verified on
+     feedstock PR #20 (htpolynet 2.7.0): its entire diff is the version, the
+     sha256, and a `python_min` re-render.
+
+     `scripts/release.sh` does guard this -- its preflight runs
+     `check-conda-sync.py --strict`, which compares `pyproject.toml`'s runtime
+     dependencies against the recipe and aborts on drift. So the order is
+     forced, and getting it wrong stops the release rather than shipping a
+     broken package. **Do not reach for `--skip-conda-check` to get past it**;
+     that flag exists for a drift you have already arranged to fix manually,
+     and using it here is precisely how the broken package would ship.
+
+     The order:
+
+     a. ycleptic lands on the conda-forge channel (step 1).
+     b. Open a PR on `conda-forge/htpolynet-feedstock` adding
+        `ycleptic >=2.4.0` to the recipe's `run:` list, and merge it.
+     c. Only then merge the `ycleptic-config` branch and run
+        `scripts/release.sh`.
   4. Port `constituents` and `reactions`. **`constituents` is done**: it is a
      `value_attributes` free-key mapping, so a typo inside a molecule record
      is now rejected naming the molecule (`Attribute 'smilse' invalid ...
