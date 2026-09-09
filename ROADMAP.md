@@ -110,6 +110,24 @@ Coverage as of the last measurement: **38.8%** overall.
 
 ## Release and distribution
 
+- **The conda recipe drops `matplotlib`'s version floor.** `pyproject.toml`
+  requires `matplotlib>=3.5`; the feedstock recipe lists a bare
+  `matplotlib-base` with no lower bound, so conda can solve an environment
+  pip would refuse. Found by grayskull's dependency analysis on feedstock
+  PR #21, not by us -- `check-conda-sync.py` compared names with the version
+  specifiers stripped and so could not see a floor at all (fixed 2026-09-09;
+  it now compares floors, and reports this one). Practical risk is low
+  because `analysis/plot.py`'s `_get_cmap` carries a pre-3.5 fallback, but
+  the declaration should match. **Fold it into the hand-written feedstock PR
+  that has to add `ycleptic >=2.4.1` anyway** rather than opening a separate
+  one -- same file, two lines.
+
+  Three other items in that same grayskull report are noise and should not be
+  "fixed": `python {{ python_min }}` vs `python 3.10` is a Jinja rendering
+  artifact, `rdkit >=2024.03` vs `>=2024.3` are the same version to both
+  conda and pip, and `ambertools`/`graphviz` are deliberate conda-only
+  additions with no PyPI equivalent.
+
 - **The release preflight cannot tell whether the *previous* release
   actually shipped to conda-forge.** `scripts/check-conda-sync.py` compares
   `pyproject.toml`'s runtime deps against the feedstock recipe, which

@@ -9,6 +9,16 @@
 # This check catches that before tagging — see the release-time
 # integration in scripts/release.sh.
 #
+# It compares two things: the set of package NAMES, and each one's
+# lower version bound.  The floor check was added after grayskull, on
+# feedstock PR #21, spotted that the recipe carried a bare
+# `matplotlib-base` against pyproject's `matplotlib>=3.5` while this
+# script reported "In sync" — because it compared names with the
+# version specifiers stripped off, and so could not see a floor at all.
+# A recipe floor at or above pyproject's is fine; only a missing or
+# lower one is drift, since that is what lets conda solve an
+# environment pip would have refused.
+#
 # Usage:
 #   ./scripts/check-conda-sync.py             # informational
 #   ./scripts/check-conda-sync.py --strict    # exit 1 on drift
@@ -49,23 +59,22 @@ CONDA_ONLY = {
 }
 
 
-def parse_pyproject_deps(path: Path) -> set[str]:
-    """Return the set of PyPI package names from
-    `[project] dependencies`, lower-cased and stripped of version
-    specifiers."""
+def parse_pyproject_deps(path: Path) -> dict:
+    """Return {PyPI package name: lower bound or None} from
+    `[project] dependencies`, lower-cased."""
     with path.open('rb') as f:
         data = tomllib.load(f)
     deps = data['project']['dependencies']
-    return {_canon(d) for d in deps}
+    return {_canon(d): _floor(d) for d in deps}
 
 
-def parse_recipe_run_deps(text: str) -> set[str]:
-    """Return the set of conda-forge package names from a meta.yaml's
-    `requirements.run:` list block."""
+def parse_recipe_run_deps(text: str) -> dict:
+    """Return {conda-forge package name: lower bound or None} from a
+    meta.yaml's `requirements.run:` list block."""
     in_requirements = False
     in_run = False
     indent = None
-    pkgs = set()
+    pkgs = {}
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith('requirements:'):
@@ -84,10 +93,46 @@ def parse_recipe_run_deps(text: str) -> set[str]:
                 in_requirements = stripped.endswith(':')
                 continue
             if stripped.startswith('-'):
-                spec = stripped.lstrip('- ').split()
-                if spec:
-                    pkgs.add(_canon(spec[0]))
+                spec = stripped.lstrip('- ')
+                if spec.split():
+                    pkgs[_canon(spec)] = _floor(spec)
     return pkgs
+
+
+def _floor(spec: str) -> str | None:
+    """Return the `>=` lower bound in a dependency spec, or None.
+
+    'numpy>=1.24' -> '1.24';  'matplotlib-base' -> None;
+    'pandas >=2,<3' -> '2'.  Only the lower bound matters here: an
+    upper bound in the recipe that pyproject lacks is a deliberate
+    conda-side pin, not drift.
+    """
+    m = re.search(r'>=\s*([0-9][0-9A-Za-z.\-_]*)', spec)
+    return m.group(1) if m else None
+
+
+def _version_key(v: str) -> tuple:
+    """Comparable key for a version string, numeric segment by segment.
+
+    Conda and pip agree that 2024.03 and 2024.3 are the same version;
+    a plain string compare does not, which would have made the rdkit
+    pin look like drift forever.
+    """
+    parts = []
+    for p in re.split(r'[.\-_]', v):
+        parts.append((0, int(p), '') if p.isdigit() else (1, 0, p))
+    return tuple(parts)
+
+
+def _floor_is_weaker(recipe_floor: str | None, required_floor: str) -> bool:
+    """True if the recipe's lower bound is absent or below what pyproject needs."""
+    if recipe_floor is None:
+        return True
+    a, b = _version_key(recipe_floor), _version_key(required_floor)
+    pad = max(len(a), len(b))
+    a += ((0, 0, ''),) * (pad - len(a))
+    b += ((0, 0, ''),) * (pad - len(b))
+    return a < b
 
 
 def _canon(spec: str) -> str:
@@ -97,15 +142,27 @@ def _canon(spec: str) -> str:
     return name.strip().lower()
 
 
-def map_to_conda(pypi_names: set[str]) -> set[str]:
-    return {PYPI_TO_CONDA.get(n, n) for n in pypi_names}
+def map_to_conda(pypi: dict) -> dict:
+    return {PYPI_TO_CONDA.get(n, n): floor for n, floor in pypi.items()}
 
 
-def compare(pypi: set[str], conda: set[str]) -> tuple[set[str], set[str]]:
-    expected_in_conda = map_to_conda(pypi)
-    missing = expected_in_conda - conda
-    extra = conda - expected_in_conda - CONDA_ONLY
-    return missing, extra
+def compare(pypi: dict, conda: dict) -> tuple[set, set, list]:
+    """Return (missing names, unexpected names, weakened floors).
+
+    A weakened floor is a dependency the recipe has, but with a lower
+    bound that is absent or below what pyproject.toml requires -- the
+    case where conda can solve an environment pip would have refused.
+    """
+    expected = map_to_conda(pypi)
+    missing = set(expected) - set(conda)
+    extra = set(conda) - set(expected) - CONDA_ONLY
+    weaker = []
+    for name, required in sorted(expected.items()):
+        if required is None or name not in conda:
+            continue
+        if _floor_is_weaker(conda[name], required):
+            weaker.append((name, conda[name], required))
+    return missing, extra, weaker
 
 
 def fetch_recipe(url: str = FEEDSTOCK_RAW) -> str:
@@ -144,7 +201,7 @@ def main(argv=None) -> int:
               f'format may have changed', file=sys.stderr)
         return 2
 
-    missing, extra = compare(pypi_deps, conda_deps)
+    missing, extra, weaker = compare(pypi_deps, conda_deps)
 
     print(f'pyproject.toml deps:    {len(pypi_deps)}')
     print(f'conda-forge run deps:   {len(conda_deps)}')
@@ -163,9 +220,16 @@ def main(argv=None) -> int:
             print(f'  - {n}')
         print()
 
-    if not missing and not extra:
+    if weaker:
+        print('WEAKER version floor in conda recipe than pyproject requires:')
+        for name, have, need in weaker:
+            shown = have if have is not None else '(no lower bound)'
+            print(f'  - {name}: recipe has {shown}, pyproject needs >={need}')
+        print()
+
+    if not missing and not extra and not weaker:
         print('In sync.  (conda-forge feedstock recipe matches pyproject.toml '
-              "dependencies; the autotick bot's next version-only PR can "
+              "dependencies and version floors; the autotick bot's next version-only PR can "
               'auto-merge.)')
         return 0
 
