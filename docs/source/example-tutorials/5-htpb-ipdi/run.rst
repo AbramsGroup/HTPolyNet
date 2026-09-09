@@ -56,10 +56,13 @@ the setup time.
 Densification + precure
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The 20 densification NPT repeats at 600 K / 10 bar progressively
+The 50 densification NPT repeats at 600 K / 10 bar progressively
 compact a dilute initial state into a near-melt density of
-~0.9-1.0 g/cm³.  Each repeat is 100 ps; the full densification
-takes ~40 minutes of wall clock.  Precure adds a 300 ps NPT
+~0.9-1.0 g/cm³.  Each repeat is 100 ps, and the stage is then extended
+further until the density settles -- three extra segments on the run
+measured here, ending at 677.2 +/- 0.56 kg/m³.  The full densification
+takes ~1h26m of wall clock, which is the single most expensive stage
+outside the cure.  Precure adds a 300 ps NPT
 preequilibration at 300 K / 1 bar, then an anneal cycle (two
 cycles between 300 and 600 K, 200 ps per segment) so the chains can
 explore conformational space before cure starts.  Total precure
@@ -69,8 +72,8 @@ Cure
 ^^^^
 
 CURE runs until either ``desired_conversion: 0.95`` or
-``max_iterations: 150`` is reached.  On a representative run cure
-converges in **15 iterations**.  The per-iteration wall-times are
+``max_iterations: 150`` is reached.  On the run measured here cure
+converges in **9 iterations**.  The per-iteration wall-times are
 revealing:
 
 .. list-table::
@@ -82,68 +85,44 @@ revealing:
      - Cumulative conversion
      - Wall time
    * - 1
-     - 42
-     - 0.168
-     - 10:56
+     - 15
+     - 0.150
+     - 3:26
    * - 2
-     - 31
-     - 0.292
-     - 10:43
+     - 19
+     - 0.340
+     - 7:27
    * - 3
-     - 21
-     - 0.376
-     - 10:40
+     - 10
+     - 0.440
+     - 6:04
    * - 4
-     - 23
-     - 0.468
-     - 10:37
+     - 12
+     - 0.560
+     - 6:52
    * - 5
-     - 13
-     - 0.520
-     - 10:16
+     - 10
+     - 0.660
+     - 7:09
    * - 6
      - 10
-     - 0.560
-     - 10:26
+     - 0.760
+     - 12:04
    * - 7
-     - 14
-     - 0.616
-     - 16:20
+     - 10
+     - 0.860
+     - 15:23
    * - 8
-     - 18
-     - 0.688
-     - 17:28
+     - 5
+     - 0.910
+     - 25:11
    * - 9
-     - 14
-     - 0.744
-     - 17:28
-   * - 10
-     - 11
-     - 0.788
-     - 22:31
-   * - 11
-     - 10
-     - 0.828
-     - 22:23
-   * - 12
-     - 11
-     - 0.872
-     - 47:35
-   * - 13
-     - 10
-     - 0.912
-     - 2:15:17
-   * - 14
-     - 8
-     - 0.944
-     - 3:51:37
-   * - 15
-     - 1
-     - 0.948
-     - 1:06:10
+     - 4
+     - 0.950
+     - 23:42
 
-The cure-tail effect is sharp: the first 11 iterations together
-take ~3 hours; the last 4 take another ~7.  By the late iterations
+The cure-tail effect is sharp: the first seven iterations together
+take ~58 minutes; the last two take another ~49.  By the late iterations
 only a handful of hydroxyl / isocyanate pairs are left unbonded,
 finding pairs within the bond-search radius requires the
 ``cure_drag`` step to pull distant atoms together over multiple MD
@@ -154,7 +133,7 @@ raising it further would slightly reduce iteration count but each
 iteration would have to drag further-apart atoms together, with
 diminishing returns.
 
-Total cure wall-time: ~10.7 hours.  Capping is trivially fast (0
+Total cure wall-time: ~1h47m.  Capping is trivially fast (0
 bonds — all reactive sites that were going to bond did) and runs in
 milliseconds.
 
@@ -164,7 +143,7 @@ Postcure
 Postcure runs two anneal cycles between 300 K and 600 K (50 ps per
 segment) followed by a 200 ps NPT postequilibration at 300 K /
 1 bar to let the cured network relax meaningfully before the final
-coordinates are written.  Postcure wall-clock: ~17 minutes.
+coordinates are written.  Postcure wall-clock: ~7 minutes.
 
 Profile
 ^^^^^^^
@@ -176,22 +155,24 @@ run:
 
    Stage                                                   wall      subprocess
    ------------------------------------------------------------------------------
-   setup                                                28.11 s          7.77 s
-   initialization                                       ~5 s             ~3 s
-   densification                                        ~40 min          ~40 min
-   precure                                              57m26s          57m26s
-   cure                                              10h40m27s              0 ms
-     iter-1                                           10m56s            9m52s
-     iter-2                                           10m43s            9m46s
+   setup                                                26.94 s          8.05 s
+   initialization                                        8.46 s          3.24 s
+   densification                                     1h26m07.4s      1h26m03.7s
+   precure                                             24m18.1s        24m17.6s
+   cure                                               1h47m17.9s            0 ms
+     iter-1                                             3m26.4s
+     iter-2                                             7m26.9s
      ...
-     iter-14                                          3h51m37s         3h48m04s
-     iter-15                                          1h06m10s         1h04m22s
+     iter-8                                            25m10.7s
+     iter-9                                            23m41.8s
      capping                                              5 ms             0 ms
-   postcure                                            16m37s          16m37s
-   final                                               24.34 s             0 s
+   postcure                                             6m57.0s         6m56.5s
+   final                                                 9.09 s             0 s
 
-Total: ~12 hours.  Of that, gmx-mdrun consumes ~95 % of the
-subprocess time; antechamber/parmchk2/tleap account for the rest of
-the setup wall.
+Total: **3h45m** on 24 cores.  Of that, gmx-mdrun consumes ~95 % of
+the subprocess time; antechamber/parmchk2/tleap account for the rest
+of the setup wall.  Wall times scale with core count, so treat these
+as a shape rather than a promise: an earlier 16-core run of an
+earlier configuration of this example took about 12 hours.
 
 The next page covers the :ref:`results <htpb_results>`.

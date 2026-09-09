@@ -177,18 +177,22 @@ End-of-run stage profile (representative run, 4-core CPU + 1 GPU):
 
    Stage                                                   wall      subprocess
    ------------------------------------------------------------------------------
-   setup                                                 688 ms            0 ms
-   initialization                                        ~10 s            ~5 s
-   densification                                         ~3 min          ~3 min
-   precure                                              3m31s           3m31s
-   cure                                                19m07s              0 ms
+   setup                                                 798 ms            0 ms
+   initialization                                        6.81 s          2.71 s
+   densification                                        5m34.6s         5m34.2s
+   precure                                              3m18.7s         3m18.3s
+   cure                                                16m51.8s            0 ms
      iter-1                                             2m18s          1m20s
      iter-2                                             2m26s          1m28s
      iter-3                                             2m20s          1m27s
      ...
-   repair                                               1m08s           10 s
-   postcure                                             1m56s          1m55s
-   final                                                5 s              0 s
+   repair                                               1m11.1s           11 s
+   postcure                                             1m39.3s         1m38.9s
+   final                                                 5.07 s            0 s
+
+Total: **28m48s** on 24 cores.  Densification is longer than its
+``ps: 200`` suggests because the stage is extended until the density
+settles -- two extra segments here, ending at 1113.5 +/- 0.33 kg/m^3.
 
 The cure dominates the run as expected.  The ``repair`` stage's wall
 time (~1 min) is split between the surgery itself (~5 s — the

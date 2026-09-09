@@ -31,7 +31,8 @@ same as in :ref:`example 0 <liquid_styrene_run>`; the new ones are
    sized for ``initial_density: 300 kg/m³``.
 
 3. **densification.**  Minimization → 10 ps NVT @ 300 K → 200 ps NPT
-   @ 300 K, 10 bar.
+   @ 300 K, 10 bar, the NPT stage repeating until the density settles
+   (one extra segment on a 24-core run; ~4 minutes in total).
 
 4. **precure.**  Pre-equilibration, two 300/600 K annealing cycles,
    post-equilibration.

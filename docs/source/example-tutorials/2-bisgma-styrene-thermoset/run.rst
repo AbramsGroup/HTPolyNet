@@ -88,7 +88,7 @@ With ``desired_conversion: 0.95`` and a max of 300 bonds, the target is
 default 0.5 nm search radius; as conversion approaches the target, the
 remaining reactive pairs get sparser and ``htpolynet`` has to grow the
 radius (and sometimes drag pairs in) to find anything.  A typical run
-needs ~12–15 iterations at the default ``min_bonds_per_iteration: 10``.
+needs ~10–15 iterations at the default ``min_bonds_per_iteration: 10``.
 Excerpted from a representative log:
 
 .. code-block:: text

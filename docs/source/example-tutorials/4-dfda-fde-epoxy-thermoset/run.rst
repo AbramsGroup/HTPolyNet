@@ -31,7 +31,7 @@ Densification, precure, CURE, postcure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These mirror example 3 exactly — same 300 kg/m³ initial density, same
-300 ps NPT densification, same 0.5 nm starting search radius, same
+300 ps NPT densification gated on measured density, same 0.5 nm starting search radius, same
 0.95 desired conversion (target 380 of 400 bonds), same 0.85 late
 threshold, same drag/relax/equilibrate cascades.  Expect a similar
 shape: early iterations grab dozens of bonds; the long tail picks up

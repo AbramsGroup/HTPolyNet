@@ -123,18 +123,20 @@ From a representative run:
 
    Stage                                                   wall      subprocess
    ------------------------------------------------------------------------------
-   setup                                                 2.06 s            0 ms
-   initialization                                         <1 s             <1 s
-   densification                                          ~10 s            ~10 s
-   precure                                              2m36s           2m35s
-   cure                                                33m03s              0 ms
-     capping                                             1m07s         1m00s
-   postcure                                             1m31s           1m31s
-   final                                                3.78 s              0 s
+   setup                                                 1.84 s            0 ms
+   initialization                                        4.17 s          1.42 s
+   densification                                        4m52.2s         4m51.8s
+   precure                                              2m25.6s         2m25.2s
+   cure                                                33m21.6s            0 ms
+     capping                                             1m07s          1m00s
+   postcure                                             1m17.2s         1m16.8s
+   final                                                 3.55 s            0 s
 
-Total: ~38 minutes — about the same as the PACM/DGEBA system (~50
-min for a similar number of bonds) and orders of magnitude shorter
-than the HTPB/IPDI system (~12 hours).  As with the other amine-cure examples,
+Total: ~42 minutes on 24 cores — about the same as the PACM/DGEBA
+system (~1 hour for a similar number of bonds) and much shorter than
+the HTPB/IPDI system (~3h45m).  Densification is longer than its
+``ps: 300`` implies because the stage repeats until the density
+settles.  As with the other amine-cure examples,
 ``gmx-mdrun`` dominates subprocess time; ``setup`` is fast
 because the diamine + diepoxide have only a few
 parameterization templates compared to the procession-built

@@ -51,12 +51,13 @@ single-CPU + single-GPU run, expect:
 
 * ~5-10 minutes of setup (most of which is the 30+ template
   parameterizations during chain assembly);
-* ~1 hour of precure densification + anneal (the long HTPB chains
-  need time to pack from the low initial density);
-* ~10-11 hours of cure (15 iterations to 95 % conversion, with the
-  last few iterations taking hours each as the remaining hydroxyl /
-  isocyanate pairs are scarce);
-* ~15-20 minutes of postcure anneal + equilibration.
+* ~1h50m of densification + precure anneal (the long HTPB chains need
+  time to pack from the low initial density, and densification runs
+  until the density settles rather than for a fixed count);
+* ~1h45m of cure (9 iterations to 95 % conversion, with the last two
+  taking ~25 minutes each as the remaining hydroxyl / isocyanate pairs
+  grow scarce);
+* ~7 minutes of postcure anneal + equilibration.
 
 The :ref:`run page <htpb_run>` gives a per-iteration breakdown and
 shows where ``min_bonds_per_iteration`` and ``late_threshold`` would

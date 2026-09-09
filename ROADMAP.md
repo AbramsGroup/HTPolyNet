@@ -1104,6 +1104,24 @@ Coverage as of the last measurement: **38.8%** overall.
   `_get_cmap()` once `matplotlib>=3.6` is a safe floor; the
   `matplotlib.colormaps` registry is then always present.
 
+- **The 18 postsim TODO placeholders are the last unfinished tutorial work.**
+  Every one of the seven `postsim.rst` pages carries `**TODO:** insert the
+  rho_v_ns.png plots`, `**TODO:** insert tg.png` and `**TODO:** report the
+  fractional free volume`, and `6-cyanate-ester/monomers.rst` still wants a
+  `pics/TAZ.png`. These are unfinished rather than stale: nothing in them is
+  wrong, the numbers and figures were simply never produced. Filling them
+  needs real compute -- `htpolynet postsim` runs, which the 2026-09-08 example
+  sweep did not do, since it ran `htpolynet run` only.
+
+- **Tutorial timings are hardware-dependent and nothing said so until now.**
+  The stage tables in examples 4, 5 and 6 were rewritten on 2026-09-09 from
+  measured 24-core runs and now say "on 24 cores". Before that, example 5's
+  table quoted ~12 hours from a 16-core run of an earlier configuration of
+  that example, against 3h45m measured now -- and its iteration count was 15
+  against 9 measured, which is a real behavior change rather than hardware.
+  Whatever replaces this should either state the machine or stop quoting
+  absolute times.
+
 ## Example depot
 
 - **Example 6's postcure anneal peaks too close to *T*:sub:`g` to relax the
