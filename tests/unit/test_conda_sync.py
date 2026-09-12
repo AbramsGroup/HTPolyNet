@@ -8,8 +8,18 @@
 
 """
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
+
+import pytest
+
+# check-conda-sync.py is release tooling, run on a maintainer's machine, and it
+# uses tomllib, which is stdlib only from Python 3.11.  htpolynet itself supports
+# 3.10, and CI tests 3.10, so importing the script unconditionally made the
+# whole 3.10 job fail at collection -- which also meant nothing else ran there.
+if sys.version_info < (3, 11):
+    pytest.skip('check-conda-sync.py needs tomllib (Python 3.11+)', allow_module_level=True)
 
 _SCRIPT = Path(__file__).resolve().parents[2] / 'scripts' / 'check-conda-sync.py'
 _spec = importlib.util.spec_from_file_location('check_conda_sync', _SCRIPT)
