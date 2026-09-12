@@ -34,6 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   barostat `npt.mdp` currently uses, which does not sample a correct NPT
   ensemble; treat it as a reproducibility criterion, not a physical one.
 
+### Changed
+
+- **The single moleculetype htpolynet writes is now named `whole_system`, not
+  `None`.**  An entire build is written as one moleculetype on purpose -- a
+  cured network is one covalently connected molecule -- but the default name
+  was the literal string `None`, which reads like an unset field or a bug.  It
+  sits on exactly the line users inspect after GROMACS warns about
+  "inconsistent shifts", so it was sending them looking for a topology error
+  that is not there.  Purely cosmetic: GROMACS accepts either, and existing
+  topologies that say `None` still read back unchanged.
+
 ### Fixed
 
 - **A config that omitted `CURE.relax.increment` crashed at the first
@@ -46,6 +57,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `relax.increment` explicitly, which is why this went unnoticed.
 
 ### Documentation
+
+- **New page: analyzing trajectories of periodic networks.**  Explains why
+  `gmx trjconv -pbc whole` reports "There were N inconsistent shifts" on a
+  cured network (the bond graph wraps through the periodic boundaries, so no
+  consistent unwrapped image exists), and that this is expected rather than a
+  topology error -- on example 3 the count is zero until the network
+  percolates, then 2 at 69% conversion and 140 at 95%.  It gives tested recipes
+  for visualization, MSD and free volume.  The MSD one carries a real
+  warning: `gmx msd`'s default `-rmpbc` tries to make the network whole every
+  frame and silently inflates the MSD, by about 2.4x at 100 ps on example 3,
+  while still exiting normally; use `-pbc nojump` and then `-normpbc`.  Prompted
+  by a user report.
+
+- The `htpolynet analyze` free-volume docs now say that the per-molecule lines
+  in `gmx freevolume`'s output describe the whole box as one molecule, and two
+  instances of `poststim` now read `postsim`.
 
 - **The docs landing page carries the standard badge row, and the release
   history is gone from the table of contents.**  `release-history.rst`

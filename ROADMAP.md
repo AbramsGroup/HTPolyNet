@@ -1140,6 +1140,26 @@ Coverage as of the last measurement: **38.8%** overall.
   Whatever replaces this should either state the machine or stop quoting
   absolute times.
 
+- **`htpolynet analyze` has no MSD stage, and one would have to be written
+  carefully.** A user asked for an MSD workflow on a DGEBA/PACM network
+  (2026-09-12), and the only thing to point them at was `gmx msd` directly.
+  The trap for whoever adds one: `gmx msd` defaults to `-rmpbc`, which tries to
+  make each molecule whole every frame, and for a periodic network that is
+  impossible. It does not fail -- it prints "inconsistent shifts" and silently
+  inflates the MSD, by about 2.4x at 100 ps on example 3 (0.379 against 0.154
+  nm^2). The correct recipe is `trjconv -pbc nojump` and then
+  `gmx msd -normpbc`. Avoid `-nopbc`, which segfaulted `gmx msd` in GROMACS
+  2025.4. `-mol` is meaningless, since the whole network is one molecule. The
+  documented recipe is on the "Analyzing Trajectories of Periodic Networks"
+  page.
+
+  Relatedly, the existing `freevolume` stage passes no `-normpbc`, so it also
+  prints the warnings. For free volume they are harmless -- 0.211 +/- 0.007
+  with default settings against 0.210 +/- 0.006 with `-normpbc` -- but they are
+  noise a user will reasonably worry about. Adding `-normpbc` to its defaults
+  would silence them; it is not done yet because `Analyze`'s option dict
+  expects key/value pairs, and a bare boolean flag needs checking there.
+
 ## Example depot
 
 - **Example 6's postcure anneal peaks too close to *T*:sub:`g` to relax the

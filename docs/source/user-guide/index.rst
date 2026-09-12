@@ -13,6 +13,7 @@ User Guide
    configuration-files
    program-flow
    postcure-repair
+   periodic-networks
 
 
 

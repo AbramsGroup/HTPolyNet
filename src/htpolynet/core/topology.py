@@ -121,10 +121,19 @@ _GromacsTopologyHashables_ = { # attributes/columns that should always have valu
     'dihedraltypes': ['i', 'j', 'k', 'l']
 }
 
+# htpolynet writes an entire build as ONE moleculetype, on purpose: a cured
+# network is a single covalently connected molecule, and leftover monomers
+# ride along in the same block.  The name used to default to the string
+# 'None', which reads to a user like an unset field or a bug -- and users who
+# hit GROMACS's "inconsistent shifts" warning under trjconv -pbc whole go
+# looking at exactly this line.  The name must match between [ moleculetype ]
+# and [ molecules ], so both defaults change together.
+_WHOLE_SYSTEM_MOLECULETYPE_ = 'whole_system'
+
 _GromacsTopologyDirectiveDefaults_ = {
     'system': ['A_generic_system'],
-    'molecules': ['None', 1],
-    'moleculetype': ['None', 3],
+    'molecules': [_WHOLE_SYSTEM_MOLECULETYPE_, 1],
+    'moleculetype': [_WHOLE_SYSTEM_MOLECULETYPE_, 3],
     'defaults': [1, 2, 'yes', 0.5, 0.83333333]
 }
 

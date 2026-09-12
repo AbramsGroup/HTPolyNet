@@ -132,7 +132,7 @@ htpolynet provides a small number of shortcut analysis dictionaries prepopulated
 
     - command: density
 
-  then htpolynet assumes the user wants to measure a density profile of all atoms (interative menu option ``0``) along the *z* direction (``-d Z``) in 50 slices (``-sl 50``) by analyzing the trajectory ``equilibrate.trr`` in the subdirectory ``poststim/equilibrate``, generating the free-format output file ``density.xvg`` in the ``analyze/density`` subdirectory.  
+  then htpolynet assumes the user wants to measure a density profile of all atoms (interative menu option ``0``) along the *z* direction (``-d Z``) in 50 slices (``-sl 50``) by analyzing the trajectory ``equilibrate.trr`` in the subdirectory ``postsim/equilibrate``, generating the free-format output file ``density.xvg`` in the ``analyze/density`` subdirectory.  
 
 
 2. ``gmx freevolume``
@@ -143,5 +143,5 @@ htpolynet provides a small number of shortcut analysis dictionaries prepopulated
 
     - command: freevolume
 
-  then htpolynet assumes the user wants to measure the fractional free volume by analyzing the trajectory ``equilibrate.trr`` and input file ``equilibrate.tpr`` in the subdirectory ``poststim/equilibrate``, generating the free-format output file ``ffv.xvg`` in the ``analyze/freevolume`` subdirectory, and reporting console output matching the following: "Free volume", "Total volume", "Number of molecules", "Density", "Molecular volume Vm assuming homogeneity", "Molecular van der Waals volume assuming homogeneity", and "Fractional free volume".
+  then htpolynet assumes the user wants to measure the fractional free volume by analyzing the trajectory ``equilibrate.trr`` and input file ``equilibrate.tpr`` in the subdirectory ``postsim/equilibrate``, generating the free-format output file ``ffv.xvg`` in the ``analyze/freevolume`` subdirectory, and reporting console output matching the following: "Free volume", "Total volume", "Number of molecules", "Density", "Molecular volume Vm assuming homogeneity", "Molecular van der Waals volume assuming homogeneity", and "Fractional free volume".  Because an ``htpolynet`` build is written as a single molecule, the per-molecule lines ("Number of molecules", "Molecular volume Vm") describe the whole box and should be ignored; the fractional free volume itself is unaffected.  See :ref:`periodic_networks` for why this stage also prints "inconsistent shifts" warnings, and why they are harmless here.
 
