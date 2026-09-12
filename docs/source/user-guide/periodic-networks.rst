@@ -25,7 +25,7 @@ One molecule, on purpose
    whole_system 1
 
 A cured network is one molecule, and any unreacted monomers are written into the
-same block.  (Topologies from releases before 2.7.1 name it ``None`` instead of
+same block.  (Topologies from releases before 2.8.0 name it ``None`` instead of
 ``whole_system``.  The name is cosmetic and nothing depends on it.)
 
 "There were N inconsistent shifts. Check your topology."

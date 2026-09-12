@@ -791,7 +791,7 @@ Coverage as of the last measurement: **38.8%** overall.
   3. Port the flat sections and generate their reference docs -- done in
      base.yaml, awaiting 1 to go live.
 
-     **The first release carrying ycleptic (2.7.1) was cut ahead of
+     **The first release carrying ycleptic (2.8.0) was cut ahead of
      conda-forge, deliberately.** An earlier version of this entry said a bot
      PR without `ycleptic` in the recipe would be green and would ship a conda
      package that fails at import, and so forbade `--skip-conda-check`. That
