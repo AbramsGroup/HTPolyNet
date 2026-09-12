@@ -60,12 +60,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ARG GROMACS_BUILD=
 ARG CONDA_OVERRIDE_CUDA=
 
+# Clean with conda, not mamba.  mamba 2.9.0 (miniforge3 26.7.2-0, the image
+# :latest moved to on 2026-09-09) fails `mamba clean -afy` with "cannot get
+# file size: No such file or directory" on the CPU AmberTools 26.0 package:
+# its bin/amber.conda is a symlink that dangles inside the package cache, and
+# mamba stats everything named *.conda.  The install itself succeeds; only the
+# clean dies, taking the whole RUN with it.  conda clean handles the same cache
+# correctly.  Reproduced locally in both directions before changing this.
 RUN CONDA_OVERRIDE_CUDA="${CONDA_OVERRIDE_CUDA}" mamba install -y -n base -c conda-forge \
         ambertools \
         "gromacs${GROMACS_BUILD:+=*=${GROMACS_BUILD}*}" \
         parmed \
         rdkit \
-    && mamba clean -afy
+    && conda clean -afy
 
 # Install HTPolyNet
 COPY . /htpolynet

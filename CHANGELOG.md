@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The CPU container image failed to build for 2.8.0**, so
+  `ghcr.io/cameronabrams/htpolynet:v2.8.0` was never published (the CUDA image
+  was).  The base image `condaforge/miniforge3:latest` moved to mamba 2.9.0,
+  whose `mamba clean -afy` fails on a symlink inside the CPU AmberTools
+  package.  The install was succeeding; only the cleanup step failed.  The
+  Dockerfile now cleans with `conda clean`.
+
+
 ## [2.8.0] - 2026-09-12
 
 ### Added
