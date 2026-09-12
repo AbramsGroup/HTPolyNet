@@ -791,30 +791,29 @@ Coverage as of the last measurement: **38.8%** overall.
   3. Port the flat sections and generate their reference docs -- done in
      base.yaml, awaiting 1 to go live.
 
-     **Before any release that carries the dependency, update the htpolynet
-     feedstock recipe by hand.** The autotick bot bumps version and sha256 and
-     nothing else -- it does not notice a new runtime dependency. A bot PR for
-     the first release containing `ycleptic` would therefore be green and
-     would ship a conda package that fails at import, because
-     `Configuration.read` imports ycleptic at module load. Verified on
-     feedstock PR #20 (htpolynet 2.7.0): its entire diff is the version, the
-     sha256, and a `python_min` re-render.
+     **The first release carrying ycleptic (2.7.1) was cut ahead of
+     conda-forge, deliberately.** An earlier version of this entry said a bot
+     PR without `ycleptic` in the recipe would be green and would ship a conda
+     package that fails at import, and so forbade `--skip-conda-check`. That
+     premise was wrong, and checked 2026-09-12: the feedstock's test runs
+     `htpolynet --help`, and importing `htpolynet.cli` loads ycleptic. So the
+     bot's PR for a ycleptic-carrying release **fails its own test**, sits red,
+     and cannot auto-merge. No broken conda package ships; conda-forge users
+     simply stay on the last good version.
 
-     `scripts/release.sh` does guard this -- its preflight runs
-     `check-conda-sync.py --strict`, which compares `pyproject.toml`'s runtime
-     dependencies against the recipe and aborts on drift. So the order is
-     forced, and getting it wrong stops the release rather than shipping a
-     broken package. **Do not reach for `--skip-conda-check` to get past it**;
-     that flag exists for a drift you have already arranged to fix manually,
-     and using it here is precisely how the broken package would ship.
+     What that leaves to do once ycleptic is on the channel:
 
-     The order:
+     a. Edit the recipe on the autotick bot's open PR for the current version
+        (push to the bot's fork, not to `origin` -- see the conda-forge skill)
+        adding `ycleptic >=2.4.1` to `run:`, and `>=3.5` to the bare
+        `matplotlib-base`. Its test then passes and automerge takes it.
+     b. If the bot has not opened one, open that recipe PR by hand.
 
-     a. ycleptic lands on the conda-forge channel (step 1).
-     b. Open a PR on `conda-forge/htpolynet-feedstock` adding
-        `ycleptic >=2.4.0` to the recipe's `run:` list, and merge it.
-     c. Only then merge the `ycleptic-config` branch and run
-        `scripts/release.sh`.
+     Two cautions that still stand. The protection is the recipe's
+     `htpolynet --help` test; if that test is ever removed, this reasoning
+     stops holding and `--skip-conda-check` becomes dangerous again. And a red
+     bot PR must not be merged by hand -- red is the thing keeping the broken
+     package off the channel.
   4. Port `constituents` and `reactions`. **`constituents` is done**: it is a
      `value_attributes` free-key mapping, so a typo inside a molecule record
      is now rejected naming the molecule (`Attribute 'smilse' invalid ...

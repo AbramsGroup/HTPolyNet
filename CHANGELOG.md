@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Configuration files are now validated.**  `htpolynet run` checks every
+  configuration against a schema before doing anything else, and fills in
+  every documented default from that same schema.  Previously a configuration
+  was read by picking out the keys htpolynet recognized and silently discarding
+  the rest, so a misspelled key did nothing and said nothing: a
+  `desired_converson: 0.9` typo produced a default-value build -- a half-cure --
+  with no message.  Errors now name the offending location, for example
+  `Attribute 'smilse' invalid ... under 'constituents[STY]'` or
+  `Attribute 'stage' of 'reactions[1]' must be one of build, param, cure, cap,
+  repair`.  Validation covers every section, including molecule records,
+  reactions and postcure repair specs; only `gromacs.mdrun_options` is left
+  open on purpose.  This adds a runtime dependency on
+  [ycleptic](https://pypi.org/project/ycleptic/) 2.4.1 or later.
+
 - **Densification can gate on measured density convergence instead of a fixed
   step count.**  An NPT record in `densification.equilibration` may carry a
   `converge` block; the stage then repeats until the density settles or a
@@ -35,6 +49,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ensemble; treat it as a reproducibility criterion, not a physical one.
 
 ### Changed
+
+- **A configuration that 2.7.0 accepted may now be rejected.**  This is the
+  point of the validation above, but it is a change in behavior: a key
+  htpolynet does not know, a value of the wrong type, a value outside its
+  allowed choices, or a missing required field now stops the run with a
+  message instead of being ignored.  Every shipped example validates.  If an
+  existing configuration of yours is rejected, the message says where; the fix
+  is almost always a misspelled or obsolete key that was already having no
+  effect.
+
+- **Every shipped example now gates its densification on density
+  convergence**, using the `converge` block described under Added, so their
+  densification stages run until the box settles rather than for a fixed
+  duration.
+
+- **The conda-forge package for this release will follow later.**  ycleptic,
+  the new dependency, is not yet available on conda-forge, so the conda-forge
+  build of this version cannot be published until it is.  In the meantime the
+  release is available from PyPI (`pip install htpolynet`) and in the container
+  image (`ghcr.io/cameronabrams/htpolynet`); conda-forge users will stay on
+  2.7.0 until then.
 
 - **The single moleculetype htpolynet writes is now named `whole_system`, not
   `None`.**  An entire build is written as one moleculetype on purpose -- a
