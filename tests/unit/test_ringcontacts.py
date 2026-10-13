@@ -35,13 +35,13 @@ class Builder:
     def bond(self, a, b):
         self.bonds.append((a, b))
 
-    def ring(self, centre, elements='CCCCCC', resnr=1, radius=0.14):
+    def ring(self, center, elements='CCCCCC', resnr=1, radius=0.14):
         """A hexagon in the xy plane, so its normal is z.  Atom k sits at angle 60k deg,
         so atoms 0 and 3 are a para pair along x."""
         idx = []
         for k in range(6):
             a = 2 * math.pi * k / 6
-            idx.append(self.atom(np.asarray(centre) + [radius * math.cos(a), radius * math.sin(a), 0.0],
+            idx.append(self.atom(np.asarray(center) + [radius * math.cos(a), radius * math.sin(a), 0.0],
                                  elements[k], resnr))
         for k in range(6):
             self.bond(idx[k], idx[(k + 1) % 6])
@@ -146,11 +146,11 @@ class TestFaceOnContacts(unittest.TestCase):
             face_on_contacts(S, [o], S.rings_of('C3N3'), exclude='chain')
 
 
-def bridged_pair(b, centre_el='S', subst=('O', 'O'), resnr=1):
-    """Two phenylenes joined at their para atoms by a bridge centre with substituents."""
+def bridged_pair(b, center_el='S', subst=('O', 'O'), resnr=1):
+    """Two phenylenes joined at their para atoms by a bridge center with substituents."""
     r1 = b.ring((1.0, 2.0, 2.0), resnr=resnr)
     r2 = b.ring((1.6, 2.0, 2.0), resnr=resnr)
-    c = b.atom((1.3, 2.0, 2.0), centre_el, resnr)
+    c = b.atom((1.3, 2.0, 2.0), center_el, resnr)
     b.bond(c, r1[0])
     b.bond(c, r2[3])
     subs = []
@@ -162,7 +162,7 @@ def bridged_pair(b, centre_el='S', subst=('O', 'O'), resnr=1):
 
 
 class TestBridgeGroups(unittest.TestCase):
-    def test_a_sulfone_bridge_is_its_centre_and_both_oxygens(self):
+    def test_a_sulfone_bridge_is_its_center_and_both_oxygens(self):
         b = Builder()
         _, _, c, subs = bridged_pair(b)
         S = system(b)
@@ -208,7 +208,7 @@ class TestRingFlip(unittest.TestCase):
         self.assertTrue(para)
         self.assertEqual({a, c}, {ring[1], ring[4]})
 
-    def test_an_ortho_methyl_widens_the_sweep_and_a_neighbour_in_it_blocks(self):
+    def test_an_ortho_methyl_widens_the_sweep_and_a_neighbor_in_it_blocks(self):
         b = Builder()
         ring = b.ring((2.0, 2.0, 2.0))
         for k, x in ((0, 1.7), (3, 2.3)):

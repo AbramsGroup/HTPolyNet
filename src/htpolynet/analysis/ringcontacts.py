@@ -1,6 +1,6 @@
 """Non-covalent structure around rings in a finished network.
 
-Three measurements on one top/gro pair, each normalised so that "more than chance" means
+Three measurements on one top/gro pair, each normalized so that "more than chance" means
 something:
 
 - :func:`face_on_contacts` --- how often a chosen atom sits over the *face* of a ring,
@@ -171,14 +171,14 @@ def face_on_contacts(S, donors, rings, rmax=0.37, max_angle=35.0, exclude_bonds=
 def bridge_groups(S, composition):
     """Bridge groups between rings of one composition.
 
-    A bridge centre is a heavy atom outside the rings bonded to atoms of two *different*
-    rings of `composition`; its group is the centre plus its neighbours outside those
+    A bridge center is a heavy atom outside the rings bonded to atoms of two *different*
+    rings of `composition`; its group is the center plus its neighbors outside those
     rings (a sulfone's two oxygens, an isopropylidene's methyls).  For ``C6`` this picks
     -O-, -S-, -CH2-, -C(CH3)2-, -C(CF3)2- and -SO2- alike, and rejects an aryl ether
     oxygen that links one phenylene to a triazine.
 
     Returns:
-        list: groups, each a list of atom indices with the centre first
+        list: groups, each a list of atom indices with the center first
     """
     ring_of = {}
     for k, r in enumerate(S.rings_of(composition)):
@@ -194,7 +194,7 @@ def bridge_groups(S, composition):
 
 
 def centroid_rdf(S, groups, rings, rmax=1.5, dr=0.02):
-    """Radial distribution from group centres of mass to ring centres of mass.
+    """Radial distribution from group centers of mass to ring centers of mass.
 
     A ring containing any atom of the group's own residue is excluded: a monomer's
     bridge is covalently a fixed distance from rings it is part of, and counting those
@@ -208,7 +208,7 @@ def centroid_rdf(S, groups, rings, rmax=1.5, dr=0.02):
         dr (float): bin width, nm
 
     Returns:
-        tuple: (bin centres in nm, g(r)); g is normalised by the eligible pair count
+        tuple: (bin centers in nm, g(r)); g is normalized by the eligible pair count
     """
     nbin = int(round(rmax / dr))
     edges = np.linspace(0.0, rmax, nbin + 1)
@@ -253,12 +253,12 @@ def flip_axis(S, ring):
 def ring_flip_clearance(S, rings):
     """Room each ring needs to flip about its para axis, and what is in the way.
 
-    The ring's own group is its atoms, their exocyclic neighbours that are not in another
-    ring, and the hydrogens on those neighbours --- an ortho methyl's hydrogens are what
+    The ring's own group is its atoms, their exocyclic neighbors that are not in another
+    ring, and the hydrogens on those neighbors --- an ortho methyl's hydrogens are what
     actually sweep.  ``R_sweep`` is the largest distance of that group from the axis;
     ``blocking`` counts foreign heavy atoms inside the cylinder of that radius over the
     group's own axial extent.  This is the static steric part of a flip barrier, not the
-    barrier: no electrostatics and no relaxation of the neighbours as the ring turns.
+    barrier: no electrostatics and no relaxation of the neighbors as the ring turns.
 
     Returns:
         dict: arrays R_sweep (nm) and blocking, one entry per ring, and the number of

@@ -647,7 +647,7 @@ the same oxygens over phenylenes, or ether oxygens over triazines --- does.  Ask
 controls; the enhancement alone does not say the contact is specific.
 
 **rdf** is the orientation-averaged companion: g(r) from each selected atom, or with
-``-bridge C6`` from the centre of mass of each bridge between two phenylenes (an -SO2-,
+``-bridge C6`` from the center of mass of each bridge between two phenylenes (an -SO2-,
 -C(CH3)2-, -O- and so on, with its substituents), to triazine centroids, excluding rings
 of the selection's own residue.  ``-o`` writes every curve to one file.
 
