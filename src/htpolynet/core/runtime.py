@@ -179,6 +179,9 @@ class Runtime:
         else:
             inputs_dir = os.path.join(pfs.root(), 'lib', pfs.Dirs.molecules_inputs)
         generated=materialize_smiles_inputs(self.cfg.constituents, inputs_dir=inputs_dir)
+        for name,spec in self.cfg.constituents.items():
+            if isinstance(spec,dict) and spec.get('smiles'):
+                pfs.note_smiles_input(f'{pfs.Dirs.molecules_inputs}/{name}.mol2')
         if generated:
             logger.info(f'Generated mol2 inputs from SMILES for: {", ".join(generated)}')
         self._build_molecules_and_reactions()

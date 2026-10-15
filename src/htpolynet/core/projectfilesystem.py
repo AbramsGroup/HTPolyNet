@@ -472,6 +472,27 @@ def resolve_user_library(pathname, default='lib'):
     return default if os.path.isdir(default) else None
 
 
+# library-relative paths of inputs htpolynet makes from a SMILES string in the config;
+# see note_smiles_input
+_SMILES_INPUTS_ = set()
+
+
+def note_smiles_input(filename):
+    """Records that `filename` is generated from SMILES, so it shadows nothing.
+
+    The SMILES generator writes into the user library, so the later checkout is a
+    user-library hit on htpolynet's own output.  For such a constituent a packaged file
+    of the same name is not what the run would otherwise use --- without the library
+    copy htpolynet regenerates from SMILES --- so the shadowing note does not apply.
+    Seen 2026-10-15 in the v2.15.0 sweep: example 0's STY.mol2 drew the note seven log
+    lines after htpolynet wrote it.
+
+    Args:
+        filename (str): path relative to the library root, e.g. ``molecules/inputs/STY.mol2``
+    """
+    _SMILES_INPUTS_.add(os.path.normpath(filename))
+
+
 def _note_if_shadowing(filename, source):
     """Says so when a file of your own replaces one htpolynet ships.
 
@@ -487,6 +508,8 @@ def _note_if_shadowing(filename, source):
     order 4, and the resulting instability was written up for weeks as a property of the
     systems being built.
     """
+    if os.path.normpath(filename) in _SMILES_INPUTS_:
+        return
     try:
         if _SYSTEM_LIBRARY_ and _SYSTEM_LIBRARY_._root.joinpath(filename).exists():
             logger.warning(

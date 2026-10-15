@@ -23,6 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oxygens over triazine faces 1.6 times as often as chance, while the same oxygens over
   phenylenes and ether oxygens over triazines both sit below it.
 
+### Fixed
+
+- **A monomer generated from SMILES no longer draws the "taken from your user library"
+  warning.**  The generator writes its mol2 into the user library, so the run's own
+  output came back as a user file and was flagged as replacing the packaged copy -- in
+  every build of example 0, a few lines after htpolynet wrote it.  For a SMILES
+  constituent the packaged file was never what the run would otherwise use, so the
+  warning now skips those, and keeping an existing generated mol2 instead of
+  regenerating it is logged at INFO with the path, since that is the one way such a
+  constituent can run on something other than its SMILES.
+
 ## [2.15.0] - 2026-10-04
 
 ### Added
