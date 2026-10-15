@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`plots post` says when a Tg cannot be read off a ladder.**  It now logs the
+  range of Tg over fit windows of 10-25 points per side, warns when that range
+  leaves the ladder's temperature span -- the glassy and rubbery lines are then
+  nearly parallel -- and warns when heating and cooling differ by more than 50 K.
+  A rebuild of example 6 gave a heating Tg of 332.5 K against the tutorial's
+  529.2 K, with other windows ranging from -1128 to 1640 K, while cooling agreed
+  to 10 K.  The example 6 tutorial now quotes the cooling Tg.
+
+- **`plots post` without `--cfg` is an error.**  It used to exit 0 having
+  written nothing.
+
 - **A monomer generated from SMILES no longer draws the "taken from your user library"
   warning.**  The generator writes its mol2 into the user library, so the run's own
   output came back as a user file and was flagged as replacing the packaged copy -- in

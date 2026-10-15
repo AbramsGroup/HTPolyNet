@@ -1825,6 +1825,36 @@ Coverage as of the last measurement: **38.8%** overall.
   and said so only in a warning.  Worth deciding whether the tolerance should
   scale with system size or window length, and whether failing it should be
   more than a warning.
+  **Second instance, v2.15.0 sweep (2026-10-15):** example 5 failed it after 6
+  extensions (sem 1.415, last window 678.1 kg/m^3) and example 6 passed --
+  the reverse of v2.10.0.  Three of six sweeps have now hit the gate on some
+  example, never the same one twice, which is what noise against a tight
+  tolerance looks like.
+
+- **The heating Tg ladder starts from a glass that is still relaxing.**  On
+  example 6 the heating ladder follows a 10 ps `equilibrate` of the postcure
+  structure, whose anneal never exceeded Tg.  In the v2.15.0 sweep's rebuild the
+  heating ladder's glassy slope was -0.084 kg/m^3/K against -0.20 on the
+  reference build: the box densifies as it relaxes while thermal expansion
+  lowers its density, and the two nearly cancel at low T.  Its Tg is 332.5 K at
+  the default window and -1128 to 1640 K over others; cooling, from a 600 K
+  melt, agrees with the reference to 10 K (530.1 vs 519.7).  2.15.0+ warns
+  (`tg_window_range`) and the tutorial now quotes cooling.  The protocol fix is
+  a longer equilibrate, or an anneal above Tg, before heating -- not done
+  because nobody has measured how long is long enough, and on a 360-monomer
+  box each try costs a GPU hour.  One rebuild is n=1 for the failure; the
+  reference's 529 K is n=1 for success.
+
+- **grompp warns 8 times per example 2 build about two transposed hydrogens.**
+  Surfaced by 2.15.0 relaying grompp's warnings (htpolynet-sweep, v2.15.0
+  sweep): atoms 76/77 are H11/H12 in GMA.top and H12/H11 in the GMAS-N
+  conformers -- two equivalent hydrogens on one carbon.  GROMACS takes the
+  topology's names, and the cached outputs agree afterwards, so nothing is
+  wrong; but it is 8 of example 2's 15 warnings.  Fixing it means making the
+  conformer generator keep the template's names for equivalent atoms, or
+  having htpolynet recognize and quiet that one grompp warning.  Neither was
+  done because the warning is accurate, and a filter on grompp's text is the
+  kind of suppression that hides the next real one.
 
 - **The halogen constraint failure is fixed but not explained.** v2.7.0
   switched the per-iteration equilibration to `constraints = h-bonds` with

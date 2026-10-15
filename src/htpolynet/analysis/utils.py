@@ -375,6 +375,29 @@ def compute_tg(T,v,n_points=[10,20]):
         Tg=-(hot_par[1]-cold_par[1])/(hot_par[0]-cold_par[0])
     return Tg,cold_par,hot_par
 
+def tg_window_range(T,v,glassy=(10,15,20,25),rubbery=(10,15,20,25)):
+    """Lowest and highest Tg over a grid of fit windows.
+
+    A Tg is the crossing of two fitted lines, so when the lines are nearly parallel a
+    small change in either window moves it a long way --- or off the temperature scale.
+    Seen 2026-10-15 on a rebuild of example 6: the heating ladder's glassy slope was a
+    third of the usual, the default windows gave 332.5 K against the reference build's
+    529.2 K, and other windows gave anything from -1128 to 1640 K.  The spread over
+    windows is what says whether a Tg can be quoted.
+
+    Args:
+        T (array-like): temperatures, sorted ascending
+        v (array-like): density or volume
+        glassy (tuple): glassy-side point counts to try
+        rubbery (tuple): rubbery-side point counts to try
+
+    Returns:
+        tuple: (lowest, highest) Tg over the windows that fit in the data, or None if none do
+    """
+    n=len(T)
+    tgs=[compute_tg(T,v,n_points=[c,h])[0] for c in glassy for h in rubbery if c+h<=n]
+    return (min(tgs),max(tgs)) if tgs else None
+
 def compute_G(shear_strain,shear_stress,fit_domain=[10,100],fit_strain=None):
     """Computes the shear modulus by a linear fit to the elastic regime of a simple shear.
 

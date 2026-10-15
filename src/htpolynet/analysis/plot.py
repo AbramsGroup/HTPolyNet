@@ -672,6 +672,8 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
     stds={}
     rate=[]
     Tgs=[]
+    spread=[]
+    span=[]
     nproj=len(projdirs)
     for i,phase in enumerate(phases):
         p=phase['ladder']
@@ -725,6 +727,8 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             ax[i].errorbar(m['Temperature'],m['Density'],std['Density'])
         Tg,c,h=compute_tg(m['Temperature'],m['Density'],n_points=n_points)
         Tgs.append(Tg)
+        spread.append(tg_window_range(m['Temperature'].values,m['Density'].values))
+        span.append((m['Temperature'].min(),m['Temperature'].max()))
         if Tg!=-1:
             ax[i].plot(m['Temperature'],c[0]*m['Temperature']+c[1],color='blue',alpha=0.5)
             ax[i].plot(m['Temperature'],h[0]*m['Temperature']+h[1],color='red',alpha=0.5)
@@ -741,6 +745,20 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
     logger.info(f'{outfile} created.')
     logger.info(f'heating Tg = {hTg:.2f} K ({(hTg-273.15):.2f} C) at {rate[0]:.5f} K/ps ({rate[0]*1.e12:.3e} K/s)')
     logger.info(f'cooling Tg = {cTg:.2f} K ({(cTg-273.15):.2f} C) at {rate[1]:.5f} K/ps ({rate[1]*1.e12:.3e} K/s)')
+    unquotable=[]
+    for label,r,(lo,hi) in zip(('heating','cooling'),spread,span):
+        if r is None:
+            continue
+        logger.info(f'{label} Tg over fit windows of 10-25 points per side: {r[0]:.0f} to {r[1]:.0f} K')
+        if r[0]<lo or r[1]>hi:
+            unquotable.append(label)
+            logger.warning(f'the {label} Tg leaves the ladder\'s {lo:.0f}-{hi:.0f} K range for some fit '
+                           f'windows, so the glassy and rubbery lines are nearly parallel and no '
+                           f'{label} Tg can be read off this ladder; equilibrate longer before it')
+    if abs(hTg-cTg)>50.0:
+        logger.warning(f'heating and cooling Tg differ by {abs(hTg-cTg):.0f} K; more than rate '
+                       f'hysteresis explains, so treat at least one as a failed fit')
+    return {'heating':hTg,'cooling':cTg,'window_range':spread,'unquotable':unquotable}
 
 def do_E_plots(phases,projdirs,outfile='e.png',save_data='E.csv',fit_strain=None):
     """Fits Young's modulus to the deform stages and plots the mean stress-strain curve.
@@ -838,6 +856,10 @@ def do_E_plots(phases,projdirs,outfile='e.png',save_data='E.csv',fit_strain=None
 
 def post_plots(args):
     n_points=args.n_points
+    if not args.cfg:
+        # without it there are no stanzas, so every branch below is skipped and the
+        # command used to exit 0 having written nothing (htpolynet-sweep, 2026-10-15)
+        raise ValueError('plots post needs the postsim config that ran the stages: --cfg postsim.yaml')
     phases=[]
     # print(args.cfg)
     for c in args.cfg:

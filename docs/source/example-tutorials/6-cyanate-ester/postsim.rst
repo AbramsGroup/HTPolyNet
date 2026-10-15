@@ -121,14 +121,44 @@ This writes ``tg.png`` and one CSV per ladder in ``proj-0/plots/``.
 .. figure:: pics/tg.png
 
    Density vs. temperature on the heating ladder (left) and the cooling ladder (right),
-   each with its glassy and rubbery fits.  *T*:sub:`g` is where the two lines cross:
-   529.2 K (256.1 °C) heating and 519.7 K (246.6 °C) cooling, both at 0.05 K/ps.
+   each with its glassy and rubbery fits.  *T*:sub:`g` is where the two lines cross.
 
-Two things to keep in mind when comparing these with a DSC or DMA measurement.  The
-ladder heats and cools at 0.05 K/ps, many orders of magnitude faster than any
-experiment, and a faster rate raises the apparent *T*:sub:`g`.  And this is one build
-of 360 monomers: the 10 K gap between heating and cooling is a fair indication of how
-far apart two estimates from the same structure can fall.
+**Quote the cooling** *T*:sub:`g`.  Two builds of this example, from independent random
+starting structures, give:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * -
+     - Heating *T*:sub:`g`
+     - Cooling *T*:sub:`g`
+   * - Reference build
+     - 529.2 K
+     - 519.7 K
+   * - Second build
+     - 332.5 K
+     - 530.1 K
+
+Cooling agrees to 10 K.  Heating does not, and on the second build it is not a
+measurement at all: its glassy-side slope is less than half the usual, so the two lines
+are nearly parallel, and changing how many points each fit uses moves their crossing
+anywhere from below 0 K to above 1600 K.  The heating ladder starts from the postcure
+structure after only a 10 ps equilibration, and a glass still relaxing while it is
+heated densifies at the same time as it expands, which flattens exactly the region
+the glassy fit uses.  The cooling ladder starts from a 600 K melt, which has no such
+history.
+
+``plots post`` now checks this for you.  It logs the range of *T*:sub:`g` over fit
+windows of 10-25 points per side, warns when that range leaves the ladder's temperature
+span, and warns when heating and cooling differ by more than 50 K.  Even a sound ladder
+moves with the window -- the reference build's cooling *T*:sub:`g` spans 457-520 K --
+so quote the default-window value with that range, not to a tenth of a kelvin.
+
+Two more things to keep in mind when comparing with a DSC or DMA measurement.  The
+ladder cools at 0.05 K/ps, many orders of magnitude faster than any experiment, and a
+faster rate raises the apparent *T*:sub:`g`.  And each build is 360 monomers, so the
+spread between builds is part of the uncertainty.
 
 Young's modulus
 ^^^^^^^^^^^^^^^
