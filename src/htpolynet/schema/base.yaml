@@ -1,16 +1,9 @@
 # htpolynet configuration schema, for ycleptic.
 #
-# STATUS: not yet wired into htpolynet.  This file is inert data until
-# `ycleptic` can be declared as a runtime dependency, which is blocked on
-# ycleptic reaching conda-forge (htpolynet is on conda-forge and a conda
-# package's run-deps must exist in the channel).  See ROADMAP.md.
-#
-# REQUIRES ycleptic >= 2.4.0, for `value_attributes`/`key_text` (free-key
-# mappings), `value_type` (scalar-valued free-key mappings) and `list_defaults`
-# (per-attribute replace semantics).  2.4.0 is released on PyPI, but the pin
-# must NOT be written into pyproject.toml until the anaconda API says 2.4.0 is
-# on the conda-forge CHANNEL -- as of this writing ycleptic is not on
-# conda-forge at all.  See ROADMAP.md for why.
+# Wired in since 2.8.0: core/configuration.py validates every config against this
+# file and fills in its defaults.  REQUIRES ycleptic >= 2.4.0 for `value_attributes`/
+# `key_text` (free-key mappings), `value_type` (scalar-valued free-key mappings) and
+# `list_defaults` (per-attribute replace semantics); pyproject.toml floors it at 2.4.4.
 #
 # `constituents` is a free-key mapping: its keys are molecule names the user
 # invents, and `value_attributes` gives the schema every record must satisfy.
