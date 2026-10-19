@@ -344,23 +344,13 @@ Coverage as of the last measurement: **38.8%** overall.
 
 ## Release and distribution
 
-- **The conda recipe drops `matplotlib`'s version floor.** `pyproject.toml`
-  requires `matplotlib>=3.5`; the feedstock recipe lists a bare
-  `matplotlib-base` with no lower bound, so conda can solve an environment
-  pip would refuse. Found by grayskull's dependency analysis on feedstock
-  PR #21, not by us -- `check-conda-sync.py` compared names with the version
-  specifiers stripped and so could not see a floor at all (fixed 2026-09-09;
-  it now compares floors, and reports this one). Practical risk is low
-  because `analysis/plot.py`'s `_get_cmap` carries a pre-3.5 fallback, but
-  the declaration should match. **Fold it into the hand-written feedstock PR
-  that has to add `ycleptic >=2.4.1` anyway** rather than opening a separate
-  one -- same file, two lines.
-
-  Three other items in that same grayskull report are noise and should not be
-  "fixed": `python {{ python_min }}` vs `python 3.10` is a Jinja rendering
-  artifact, `rdkit >=2024.03` vs `>=2024.3` are the same version to both
-  conda and pip, and `ambertools`/`graphviz` are deliberate conda-only
-  additions with no PyPI equivalent.
+- **Three grayskull warnings on the feedstock are noise; do not "fix" them.**
+  Its dependency report (feedstock PR #21) flags `python {{ python_min }}` vs
+  `python 3.10`, which is a Jinja rendering artifact; `rdkit >=2024.03` vs
+  `>=2024.3`, which are the same version to both conda and pip; and
+  `ambertools`/`graphviz`, which are deliberate conda-only additions with no PyPI
+  equivalent.  (The fourth item it raised, the missing `matplotlib-base` floor,
+  was real and shipped with feedstock PR #26.)
 
 - **The release preflight cannot tell whether the *previous* release
   actually shipped to conda-forge.** `scripts/check-conda-sync.py` compares
@@ -1616,105 +1606,15 @@ Coverage as of the last measurement: **38.8%** overall.
   now would document a moving target.  `postcure_repair` and `ncpu` are small and could
   go at any time.
 
-- **Move config handling onto ycleptic.** Approved by Cameron 2026-09-08.
-  `core/configuration.py` (85 lines) reads YAML/JSON and `.get()`s eleven
-  known top-level sections into attributes with **no validation at all**: an
-  unrecognized section or a misspelled key is silently discarded. Defaults
-  live in three separate Python dicts applied by three hand-rolled mechanisms
-  at three different depths -- `Runtime.runtime_defaults` (shallow, one level,
-  `core/runtime.py:177`), `CureController.curedict_defaults` (two levels,
-  `cure/curecontroller.py:299-304`), and `Runtime.default_edict` (ad hoc). And
-  937 lines of hand-maintained RST document those defaults, which is why six
-  of them had drifted from the code by the time anyone checked.
-
-  `src/htpolynet/schema/base.yaml` now holds the schema for the sections
-  ycleptic 2.3.0 can express. It is **inert**: nothing reads it, and
-  `pyproject.toml` does not declare a ycleptic dependency. All seven shipped
-  example configs validate against it, and a `desired_converson` typo that
-  htpolynet accepts silently today is rejected with the list of valid keys.
-
-  Staging, agreed with the ycleptic session:
-
-  1. **ycleptic to conda-forge** -- gates shipping and nothing else, and is
-     now the ONLY thing gating it.
-     `api.anaconda.org/package/conda-forge/ycleptic` was 404 while htpolynet
-     is 200, and a conda package's run-deps must exist in the channel, so
-     declaring the dependency would make htpolynet's feedstock unbuildable and
-     trip `scripts/release.sh`'s `check-conda-sync.py --strict` preflight.
-     Submitted 2026-09-08 with Cameron's direct approval as
-     conda-forge/staged-recipes#34763, "Adding ycleptic"; still open, not
-     merged, and `api.anaconda.org/package/conda-forge/ycleptic` is still 404.
-
-     **That PR pins 2.3.0, and 2.4.0 is now out on PyPI.** As written, merging
-     it creates a feedstock one version behind, and 2.4.0 then arrives only
-     through an autotick-bot PR -- the exact cycle whose stalling is the
-     central OBSERVED failure in Cameron's conda-forge skill. Updating the
-     staged recipe to 2.4.0 before it merges would skip that cycle entirely.
-     It is ycleptic's PR, not ours, and this is recorded as an observation
-     rather than an action.
-  2. **Three ycleptic grammar additions**: `value_attributes:` + `key_text:`
-     for free-key mappings, `value_type:` for scalar-valued ones, and
-     `list_defaults: replace|append` per attribute. **Released as ycleptic
-     2.4.0 on PyPI**, and base.yaml uses all three.
-  3. Port the flat sections and generate their reference docs -- done in
-     base.yaml, awaiting 1 to go live.
-
-     **The first release carrying ycleptic (2.8.0) was cut ahead of
-     conda-forge, deliberately.** An earlier version of this entry said a bot
-     PR without `ycleptic` in the recipe would be green and would ship a conda
-     package that fails at import, and so forbade `--skip-conda-check`. That
-     premise was wrong, and checked 2026-09-12: the feedstock's test runs
-     `htpolynet --help`, and importing `htpolynet.cli` loads ycleptic. So the
-     bot's PR for a ycleptic-carrying release **fails its own test**, sits red,
-     and cannot auto-merge. No broken conda package ships; conda-forge users
-     simply stay on the last good version.
-
-     What that leaves to do once ycleptic is on the channel:
-
-     a. Edit the recipe on the autotick bot's open PR for the current version
-        (push to the bot's fork, not to `origin` -- see the conda-forge skill)
-        adding `ycleptic >=2.4.1` to `run:`, and `>=3.5` to the bare
-        `matplotlib-base`. Its test then passes and automerge takes it.
-     b. If the bot has not opened one, open that recipe PR by hand.
-
-     Two cautions that still stand. The protection is the recipe's
-     `htpolynet --help` test; if that test is ever removed, this reasoning
-     stops holding and `--skip-conda-check` becomes dangerous again. And a red
-     bot PR must not be merged by hand -- red is the thing keeping the broken
-     package off the channel.
-  4. Port `constituents` and `reactions`. **`constituents` is done**: it is a
-     `value_attributes` free-key mapping, so a typo inside a molecule record
-     is now rejected naming the molecule (`Attribute 'smilse' invalid ...
-     under 'constituents[STY]'`), `count` defaults per value, a required
-     `conformers.count` is enforced, and `conformers.generator.name` is
-     constrained to obabel/gromacs. Every list with a non-empty default
-     carries `list_defaults: replace`, verified to use a user's ladder
-     verbatim rather than appending it to the default one.
-
-     **`reactions` and `postcure_repair` are now ported too.** ycleptic 2.4.0
-     added `value_attributes` on a *list*, which describes multi-key records
-     and closed the `lwalk` gap, plus `value_type:` for scalar-valued free-key
-     mappings. Every config section is now validated except
-     `gromacs.mdrun_options`, which is deliberately open. Errors name the
-     offending item -- `under 'reactions[2]'`, `of 'postcure_repair[0]'`.
-     Today an unknown reaction key is discarded by `Reaction.__init__` with a
-     debug-level message, so this replaces a silent failure with a loud one.
-
-     Superseded, kept for the record -- these were the two blockers:
-
-     - ycleptic describes list items with the tagged-task idiom -- `lwalk`
-       takes `itemname = list(item.keys())[0]` -- and htpolynet's reaction
-       records are multi-key. With no schema node for the item there is
-       nowhere to hang `value_attributes` for `reactions[].atoms`, which
-       would otherwise qualify. The ycleptic session has deliberately not
-       changed `lwalk`; it is a real feature request.
-     - `value_attributes` requires every value to be a **mapping**, which
-       ruled out scalar-valued free-key mappings. **Closed**: `value_type:`
-       was bundled into ycleptic 2.4.0, and `constituents[].reactive_atoms`
-       and `constituents[].rename_atoms` now declare `value_type: str` and
-       are validated. `reactions[].reactants` (`{1: BPA, 2: HIE}`) is the
-       same shape and would work too, but it lives inside a `reactions` list
-       item, so the `lwalk` limitation above blocks it regardless.
+- **Generate the configuration reference from `schema/base.yaml`.**  The move
+  onto ycleptic (approved by Cameron 2026-09-08) shipped: since 2.8.0 every config
+  is validated against base.yaml and gets its defaults from it, every section but
+  `gromacs.mdrun_options` is described, and since 2026-10-07 ycleptic is on
+  conda-forge, so the conda package carries it (feedstock #26).  The step left is
+  the one that motivated it: the configuration reference is still ~940 lines of
+  hand-written RST, which is how six documented defaults drifted from the code and
+  how the `CURE.drag`/`CURE.relax` mismatch below arose.  Generating those tables
+  from base.yaml makes that class of error impossible.
 
 - **`required: true` on a list attribute is silently ineffective in ycleptic
   2.4.0.** An absent required list is filled with `[]` and no error is raised
@@ -1727,29 +1627,6 @@ Coverage as of the last measurement: **38.8%** overall.
   one validates, then fails deeper in htpolynet. The declarations are kept
   because they state the intent correctly and will start working when ycleptic
   fixes it. Reported to the ycleptic session; not worked around here.
-
-  **The version floor is a trap; read this before pinning anything.** The
-  staged-recipes submission is necessarily at ycleptic **2.3.0**, because
-  staged-recipes needs a tarball that already exists. Step 3's base.yaml is
-  written against 2.3.0 and works there. But the free-key node step 4 needs
-  will land in **2.4.0**, and 2.4.0 reaches conda-forge only via an
-  autotick-bot PR *after* that release -- and the central OBSERVED failure in
-  Cameron's conda-forge skill is exactly those bot PRs sitting red for months
-  while conda-forge serves the stale version. So: pin `ycleptic>=2.3.0` when
-  step 3 goes live, and **do not raise the floor to 2.4.0 until the anaconda
-  API confirms 2.4.0 is actually on the channel** -- not when it is released,
-  not when the bot PR opens. Raising it early recreates precisely the
-  unbuildable-feedstock problem step 1 exists to avoid. The ycleptic session
-  will report when the API says so.
-
-  Two hazards are recorded in the base.yaml header rather than here, because
-  that is where someone editing it will look: ycleptic's `dwalk` rejects any
-  key not declared, so user-keyed sections must currently be bare `dict` and
-  are unvalidated; and a bare list's default *concatenates* rather than
-  replaces, so a base default of `[min, nvt, npt]` plus a user's `[nvt]`
-  yields `['min','nvt','npt','nvt']` silently. Every list in base.yaml
-  therefore declares no default, which gives correct replace semantics, with
-  the real default left in Python and marked.
 
 - **Documented `CURE.drag`/`CURE.relax` defaults do not match the code, and
   several keys are undocumented.** The tables give `drag.increment` 0.08 and

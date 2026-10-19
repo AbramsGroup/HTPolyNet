@@ -29,9 +29,7 @@ Installation and Prerequisites
    The default image runs Gromacs on CPUs only.  To use an NVIDIA GPU, use
    the ``:cuda`` tag instead.
 
-   Nothing is installed on your system, and the image is always current ---
-   which the ``conda-forge`` package is not; see
-   :ref:`the note below <conda_forge_not_recommended>`.
+   Nothing is installed on your system, and the image is always current.
 
    See :ref:`container_usage` for the details: persistent caches, GPU setup,
    and pinning a release.
@@ -157,46 +155,33 @@ On openSUSE / Fedora / RHEL:
 Conda-only (simpler one-stop install)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _conda_forge_not_recommended:
+.. _conda_forge_install:
 
-.. admonition:: Do not install ``htpolynet`` itself from conda-forge
-   :class: warning
-
-   The ``htpolynet`` package on ``conda-forge`` is several releases behind
-   and is **not currently recommended**.  What is published there installs
-   and runs, so nothing warns you --- you simply get an old ``htpolynet``.
-
-   It cannot be updated at the moment.  ``htpolynet`` now depends on
-   `ycleptic <https://pypi.org/project/ycleptic/>`_, which is not yet
-   available on ``conda-forge``; until it is, the feedstock's automatic
-   version bumps produce a package that cannot import, so none has been
-   published.
-
-   You do not have to take this page's word for how far behind it is ---
-   the page may itself be stale by the time you read it:
-
-   .. code-block:: console
-
-      $ conda search -c conda-forge htpolynet | tail -1   # what conda-forge has
-      $ pip index versions htpolynet                      # what is current
-
-   This applies only to the ``htpolynet`` package.  ``conda-forge`` remains
-   the recommended source for AmberTools and Gromacs, as described above.
-
-Using Miniforge (preferred) or any other ``conda``-style installer, you
-can manage Python and the MD binaries in a single environment, then add
-``htpolynet`` itself from PyPI:
+``htpolynet`` is on ``conda-forge``, and its package brings AmberTools, RDKit and
+every Python dependency with it, so one environment holds everything but Gromacs:
 
 .. code-block:: console
 
-    $ mamba create -n htpolynet -c conda-forge python ambertools gromacs
+    $ mamba create -n htpolynet -c conda-forge htpolynet gromacs
     $ mamba activate htpolynet
-    $ pip install htpolynet
 
 Then install OpenBabel from your distribution's package manager as
 described above (OpenBabel via ``conda-forge`` works too but the
 distribution package is usually fresher and avoids a Python-extension
 ABI link).
+
+Two things to know about this route:
+
+- **Gromacs from conda-forge cannot use an NVIDIA GPU.**  It is built against
+  OpenCL, which Gromacs no longer uses to drive NVIDIA devices.  For GPU runs, build
+  Gromacs with CUDA (see below) or use the ``:cuda`` container image.
+- **conda-forge trails PyPI by a few hours after a release**, while its automated
+  feedstock update builds and merges.  To compare:
+
+  .. code-block:: console
+
+     $ conda search -c conda-forge htpolynet | tail -1   # what conda-forge has
+     $ pip index versions htpolynet                      # what PyPI has
 
 PyPI install (Python-only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

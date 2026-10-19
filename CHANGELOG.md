@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Installing from conda-forge is recommended again.**  The conda-forge package
+  had been stuck at 2.7.0 since htpolynet came to depend on ycleptic, which was not
+  on conda-forge until 2026-10-07.  It now tracks PyPI, so the installation guide
+  drops its warning and gives a one-environment conda install.
+
 ## [2.16.0] - 2026-10-19
 
 ### Added
