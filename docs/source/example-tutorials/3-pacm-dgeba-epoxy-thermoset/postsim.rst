@@ -12,7 +12,7 @@ We perform the following:
 2. Equilibrate at 300 K for an additional 10 ps.
 3. Perform temperature ladder up to 600 K at 5 K per 100 ps, beginning with a 10 ps warmup.
 4. Perform temperature ladder down to 300 K at 5 K per 100 ps, also beginning with a 10 ps warmup.
-5. Using the result of 2, perform independent uniaxial deformations along the x, y, and z directions at a strain rate of 0.01 ps\ :sup:`-1` (10\ :sup:`10` s\ :sup:`-1`) to 0.1% strain.
+5. Using the result of 2, perform independent uniaxial deformations along the x, y, and z directions at a strain rate of 0.001 ps\ :sup:`-1` (10\ :sup:`9` s\ :sup:`-1`) for 40 ps, to 4% strain, three times each -- the ``deform`` defaults, written out.
 
 The flowchart below illustrates:
 
@@ -67,7 +67,8 @@ In the project base directory, create the file ``postsim.yaml`` with these conte
         P: 1
         direction: x
         edot: 0.001
-        ps: 10
+        ps: 40
+        replicas: 3
         gromacs:
           gmx: gmx
           mdrun: gmx mdrun -ntmpi 1
@@ -80,7 +81,8 @@ In the project base directory, create the file ``postsim.yaml`` with these conte
         P: 1
         direction: y
         edot: 0.001
-        ps: 10
+        ps: 40
+        replicas: 3
         gromacs:
           gmx: gmx
           mdrun: gmx mdrun -ntmpi 1
@@ -93,7 +95,8 @@ In the project base directory, create the file ``postsim.yaml`` with these conte
         P: 1
         direction: z
         edot: 0.001
-        ps: 10
+        ps: 40
+        replicas: 3
         gromacs:
           gmx: gmx
           mdrun: gmx mdrun -ntmpi 1
@@ -220,6 +223,12 @@ That equilibration lasted 100 ns and resulted in a significant densification.  T
 
 Now, with a single invocation of ``htpolynet plots``, we can compute T\ :sub:`g` and E.
 
+The output and the two "short" figures below were recorded with HTPolyNet 1.0.6, when
+each ``deform`` stage was a single 10 ps pull to 1 % strain and *E* was one fit to the
+averaged curve.  With the stanzas above, ``plots post`` instead fits all nine pulls and
+reports ``E = <mean> +/- <standard error> GPa``, writes the individual fits to
+``E-fits.csv``, and logs how far each *T*:sub:`g` moves with the fit window.
+
 .. code-block:: bash
 
     $ htpolynet plots post --cfg postsim.yaml --proj proj-0
@@ -261,7 +270,7 @@ In practice, we should run much longer simulations and average over replicas.  B
 
     Density vs. temperature in the heating (left) and cooling (right) simulations in production simulations, averaged over five replicas, with a heating rate of 5 K per 100 ns.
 
-We also note a ridiculous value for the Young's modulus of 7.1 GPa.  The plot of stress vs strain shows this is meaningless from such a short simulation:
+We also note a ridiculous value for the Young's modulus of 7.1 GPa, with no fit quality to speak of (R\ :sup:`2` nan).  The plot of stress vs strain shows this is meaningless from 10 ps pulls -- which is why ``deform`` now defaults to 40 ps and three replicas:
 
 .. figure:: pics/short-e.png
 
@@ -276,11 +285,11 @@ Again, in practice, this should be the result of much longer simulations and ave
 
 .. note::
 
-   Since 2.15.0 a ``deform`` stage defaults to a 40 ps pull (4 % strain at ``edot: 0.001``),
-   three replicas, and a fit over 0.1-3 % strain, and ``plots post`` reports *E* with an
-   error bar from the scatter between pulls.  The short stanzas above are kept to show what
-   too short a pull looks like; see :ref:`the deform options <htpolynet_postsim>` for
-   where the defaults come from. 
+   The ``deform`` settings above are the defaults since 2.15.0: a 40 ps pull, three
+   replicas per direction, and a fit over 0.1-3 % strain.  They were chosen on the
+   example 6 network, where a 10 ps pull could not measure *E* at all; see
+   :ref:`the deform options <htpolynet_postsim>`.  They have not been re-derived for
+   this epoxy.
 
 
 Finally, let's use ``analyze`` to measure fractional free volume in the equilibration stage.  Using the shortcut approach, we need an input YAML file ``fv.yaml`` that just has one line:

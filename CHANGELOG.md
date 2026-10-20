@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on conda-forge until 2026-10-07.  It now tracks PyPI, so the installation guide
   drops its warning and gives a one-environment conda install.
 
+- **Tutorial 3's `deform` stanzas use the defaults** -- 40 ps, three replicas --
+  like tutorials 2, 4, 5 and 6.  They had been left at single 10 ps pulls to show
+  what too short a pull gives, which also meant that copying the tutorial's
+  `postsim.yaml` gave an *E* that cannot be measured.  The recorded output from
+  HTPolyNet 1.0.6 stays, labeled as such.
+
 ## [2.16.0] - 2026-10-19
 
 ### Added
