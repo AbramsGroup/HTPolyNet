@@ -98,11 +98,11 @@ Density
 .. warning::
 
    The density the postcure stage ends at -- 1149.5 kg/m³ here -- is **not** an
-   equilibrated density.  This example's postcure anneal peaks at 500 K, and the glass
-   transition measured below is 520-530 K, so the anneal never takes the network above
-   *T*:sub:`g`, where it could rearrange.  The cooling ladder, which starts at 600 K,
-   ends at 1157.0 kg/m³ at 300 K, 0.7 % denser.  Take densities from the cooling ladder,
-   not from the end of the build.
+   equilibrated density.  This example's postcure anneal peaks at 500 K, which is not
+   clearly above this network's *T*:sub:`g` (see below), so it may never let the network
+   rearrange.  On the reference build the cooling ladder, which starts at 600 K, ends at
+   1157.0 kg/m³ at 300 K, 0.7 % denser.  Take densities from the cooling ladder, not
+   from the end of the build.
 
 ``proj-0/postsim/anneal/rho_v_ns.png`` and ``proj-0/postsim/equilibrate/rho_v_ns.png``
 show the density through the post-build anneal and equilibration.
@@ -123,8 +123,9 @@ This writes ``tg.png`` and one CSV per ladder in ``proj-0/plots/``.
    Density vs. temperature on the heating ladder (left) and the cooling ladder (right),
    each with its glassy and rubbery fits.  *T*:sub:`g` is where the two lines cross.
 
-**Quote the cooling** *T*:sub:`g`.  Two builds of this example, from independent random
-starting structures, give:
+**This protocol does not give a reproducible** *T*:sub:`g` **for this network, in either
+direction.**  Five independent builds of this example (htpolynet-sweep, 2026-10-20, on
+2.16.0), each run through the ladders above:
 
 .. list-table::
    :header-rows: 1
@@ -133,32 +134,44 @@ starting structures, give:
    * -
      - Heating *T*:sub:`g`
      - Cooling *T*:sub:`g`
-   * - Reference build
+   * - Five builds, mean +/- s.d.
+     - 401 +/- 32 K
+     - 477 +/- 68 K
+   * - Five builds, range
+     - 384-458 K
+     - 409-557 K
+   * - Reference build (pictured)
      - 529.2 K
      - 519.7 K
-   * - Second build
-     - 332.5 K
-     - 530.1 K
 
-Cooling agrees to 10 K.  Heating does not, and on the second build it is not a
-measurement at all: its glassy-side slope is less than half the usual, so the two lines
-are nearly parallel, and changing how many points each fit uses moves their crossing
-anywhere from below 0 K to above 1600 K.  The heating ladder starts from the postcure
-structure after only a 10 ps equilibration, and a glass still relaxing while it is
-heated densifies at the same time as it expands, which flattens exactly the region
-the glassy fit uses.  The cooling ladder starts from a 600 K melt, which has no such
-history.
+An earlier version of this page recommended quoting the cooling value, because two
+builds agreed on it to 10 K.  With five, cooling spreads over 150 K; the two that
+agreed were both from its upper half.  ``plots post`` warned on every one of the five
+builds -- twice because a cooling fit left the ladder's range, three times because
+heating and cooling disagreed by 74-151 K -- and even the heating fits it did not warn
+about move by 100-116 K across fit windows.
 
-``plots post`` now checks this for you.  It logs the range of *T*:sub:`g` over fit
-windows of 10-25 points per side, warns when that range leaves the ladder's temperature
-span, and warns when heating and cooling differ by more than 50 K.  Even a sound ladder
-moves with the window -- the reference build's cooling *T*:sub:`g` spans 457-520 K --
-so quote the default-window value with that range, not to a tenth of a kelvin.
+Two things about how these numbers arise:
 
-Two more things to keep in mind when comparing with a DSC or DMA measurement.  The
-ladder cools at 0.05 K/ps, many orders of magnitude faster than any experiment, and a
-faster rate raises the apparent *T*:sub:`g`.  And each build is 360 monomers, so the
-spread between builds is part of the uncertainty.
+- ``plots post`` logs the range of *T*:sub:`g` over fit windows of 10-25 points per side
+  and warns when that range leaves the ladder's temperature span, or when heating and
+  cooling differ by more than 50 K.  In the same five-build run of all six examples
+  with a ladder, those warnings fired on 23 of 60 fits, and which direction failed
+  varied by chemistry.
+  **Read the warnings for every ladder; there is no direction that is safe by
+  default.**  Polystyrene (example 1) was the one system clean on all ten fits.
+- The heating ladder starts from the postcure structure after only a 10 ps
+  equilibration.  A glass still densifying while it is heated loses density for a
+  second reason, which flattens the region the glassy fit uses.  One earlier build of
+  this example ended 19 kg/m³ lighter than the others and gave a heating *T*:sub:`g`
+  of 332.5 K.
+
+A *T*:sub:`g` for this network needs replicate builds and much slower ladders than
+these, and should be reported with its spread over both.
+
+When comparing with a DSC or DMA measurement, remember also that the ladder runs at
+0.05 K/ps, many orders of magnitude faster than any experiment, and a faster rate
+raises the apparent *T*:sub:`g`.
 
 Young's modulus
 ^^^^^^^^^^^^^^^

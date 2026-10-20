@@ -1708,19 +1708,25 @@ Coverage as of the last measurement: **38.8%** overall.
   example, never the same one twice, which is what noise against a tight
   tolerance looks like.
 
-- **The heating Tg ladder starts from a glass that is still relaxing.**  On
-  example 6 the heating ladder follows a 10 ps `equilibrate` of the postcure
-  structure, whose anneal never exceeded Tg.  In the v2.15.0 sweep's rebuild the
-  heating ladder's glassy slope was -0.084 kg/m^3/K against -0.20 on the
-  reference build: the box densifies as it relaxes while thermal expansion
-  lowers its density, and the two nearly cancel at low T.  Its Tg is 332.5 K at
-  the default window and -1128 to 1640 K over others; cooling, from a 600 K
-  melt, agrees with the reference to 10 K (530.1 vs 519.7).  2.15.0+ warns
-  (`tg_window_range`) and the tutorial now quotes cooling.  The protocol fix is
-  a longer equilibrate, or an anneal above Tg, before heating -- not done
-  because nobody has measured how long is long enough, and on a 360-monomer
-  box each try costs a GPU hour.  One rebuild is n=1 for the failure; the
-  reference's 529 K is n=1 for success.
+- **The ladder protocol does not give a reproducible Tg on most shipped examples.**
+  htpolynet-sweep's five-build replicate run on 2.16.0 (2026-10-20, examples 1-6):
+  only polystyrene (example 1) was clean on all ten fits, at 413 +/- 15 K heating and
+  427 +/- 21 K cooling.  Elsewhere which direction fails depends on the chemistry --
+  examples 4 and 5 are steady on heating and not cooling, example 3 the reverse,
+  example 2 neither -- and `tg_window_range` warned on 23 of 60 fits.  "Steady" is
+  not "right": example 5's heating Tg, 300 +/- 4 K, sits exactly where its default
+  10-point glassy window ends (250-295 K on a ladder from 250 K), which is what a
+  barely sampled glassy region would produce for an elastomer whose Tg is well
+  below room temperature.  Unchecked; a ladder starting lower would settle it.  On example 6,
+  cooling spans 409-557 K over five builds; the two-build agreement that had the
+  tutorial recommending cooling was coincidence.  Two separate causes are plausible
+  and neither is measured: the heating ladder starts after a 10 ps equilibrate from a
+  glass that is still densifying (the one example 6 build that ended 19 kg/m^3 light
+  gave a heating Tg of 332.5 K); and 5 K per 100 ps rungs at 360 monomers may simply be
+  too noisy for a two-line fit whose window alone moves it 100 K.  The work is a
+  protocol study -- slower ladders, a longer or above-Tg equilibrate before heating,
+  and a fit less sensitive to its window than two-line intersection -- costed against
+  GPU hours per example.  Until then the tutorials should not quote a single-build Tg.
 
 - **grompp warns 8 times per example 2 build about two transposed hydrogens.**
   Surfaced by 2.15.0 relaying grompp's warnings (htpolynet-sweep, v2.15.0
