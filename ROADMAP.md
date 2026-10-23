@@ -1746,6 +1746,12 @@ Coverage as of the last measurement: **38.8%** overall.
   is wider ladders -- down to ~200 K (lower still for example 5) and up past 700 K
   where the chemistry survives it -- and that is new compute, Cameron's call.  He
   approved it for example 5 only (sweep job 26556275, 100-500 K, 2026-10-23).
+  That worked: example 5's heating ladder now pools to 219.9 +/- 2.9 K, width 38.5 K,
+  4 of 5 builds kept (s.d. 5.4 K over those 4), where the 250 K floor gave nothing --
+  reproduced here from sweep's data.  Its cooling ladder still fails screening, its
+  transition interval reaching 92 K, below the new floor.  So widening the ladder is
+  the fix the screening said it would be, at least on one chemistry; the other
+  examples' wider ladders are still Cameron's call.
 
 - **grompp warns 8 times per example 2 build about two transposed hydrogens.**
   Surfaced by 2.15.0 relaying grompp's warnings (htpolynet-sweep, v2.15.0

@@ -713,7 +713,7 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
         means[i]['Density-std']=stds[i]['Density']
 
     
-    fig,ax=plt.subplots(1,2,figsize=(10,6),sharex=True,sharey=True)
+    fig,ax=plt.subplots(1,max(2,len(means)),figsize=(10,6),sharex=True,sharey=True)
     for i,v in enumerate(means.keys()):
         m=means[v]
         std=stds[v]
@@ -721,6 +721,7 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             std['Density']=np.zeros(len(std['Density']))
         m.sort_values('Temperature',axis=0,inplace=True)
         ax[i].set_xlabel('Temperature [K]')
+        ax[i].set_title('heating' if rate[i]>0 else 'cooling')
         ax[i].set_ylabel('Density [kg/m$^3$]')
         if nproj<2:
             ax[i].scatter(m['Temperature'],m['Density'])
@@ -746,13 +747,15 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
         logger.info(f'ladder{v}-{save_data} created.')
     plt.savefig(outfile,bbox_inches='tight')
     plt.close(fig)
-    hTg=Tgs[0]
-    cTg=Tgs[1]
+    # direction from the sign of the ladder's own deltaT, not its position in the
+    # config: a config listing cooling first was labeled "heating" (htpolynet-sweep,
+    # plan B on example 5, 2026-10-23)
+    labels=['heating' if r>0 else 'cooling' for r in rate]
     logger.info(f'{outfile} created.')
-    logger.info(f'heating Tg = {hTg:.2f} K ({(hTg-273.15):.2f} C) at {rate[0]:.5f} K/ps ({rate[0]*1.e12:.3e} K/s)')
-    logger.info(f'cooling Tg = {cTg:.2f} K ({(cTg-273.15):.2f} C) at {rate[1]:.5f} K/ps ({rate[1]*1.e12:.3e} K/s)')
+    for label,Tg,r in zip(labels,Tgs,rate):
+        logger.info(f'{label} Tg = {Tg:.2f} K ({(Tg-273.15):.2f} C) at {r:.5f} K/ps ({r*1.e12:.3e} K/s)')
     unquotable=[]
-    for label,r,(lo,hi) in zip(('heating','cooling'),spread,span):
+    for label,r,(lo,hi) in zip(labels,spread,span):
         if r is None:
             continue
         logger.info(f'{label} Tg over fit windows of 10-25 points per side: {r[0]:.0f} to {r[1]:.0f} K')
@@ -761,7 +764,7 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             logger.warning(f'the {label} Tg leaves the ladder\'s {lo:.0f}-{hi:.0f} K range for some fit '
                            f'windows, so the glassy and rubbery lines are nearly parallel and no '
                            f'{label} Tg can be read off this ladder; equilibrate longer before it')
-    for label,w in zip(('heating','cooling'),whole):
+    for label,w in zip(labels,whole):
         f=w['fit']
         if f is None:
             logger.info(f'{label} Tg, whole-curve fit: did not converge')
@@ -781,11 +784,16 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             logger.info(f'{label} Tg, whole-curve fit: {f["Tg"]:.1f} K {err}; tangents at the '
                         f'ladder ends cross at {f["Tg_tangents"]:.1f} K'
                         + ('; a sharp break' if f['sharp'] else ''))
-    if abs(hTg-cTg)>50.0:
+    first={}
+    for i,label in enumerate(labels):
+        first.setdefault(label,i)
+    hTg=Tgs[first['heating']] if 'heating' in first else None
+    cTg=Tgs[first['cooling']] if 'cooling' in first else None
+    if hTg is not None and cTg is not None and abs(hTg-cTg)>50.0:
         logger.warning(f'heating and cooling Tg differ by {abs(hTg-cTg):.0f} K; more than rate '
                        f'hysteresis explains, so treat at least one as a failed fit')
-    return {'heating':hTg,'cooling':cTg,'window_range':spread,'unquotable':unquotable,
-            'whole_curve':whole}
+    return {'heating':hTg,'cooling':cTg,'directions':labels,'window_range':spread,
+            'unquotable':unquotable,'whole_curve':whole}
 
 def do_E_plots(phases,projdirs,outfile='e.png',save_data='E.csv',fit_strain=None):
     """Fits Young's modulus to the deform stages and plots the mean stress-strain curve.

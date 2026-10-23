@@ -44,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   409-557 K, so the page now reports the five-build spread in both directions and
   says to read `plots post`'s window warnings for every ladder.
 
+### Fixed
+
+- **`plots post` labels each Tg ladder heating or cooling from the sign of its
+  `deltaT`**, not from its position in the config.  A config listing the cooling
+  ladder first had it reported as the heating Tg, and the two compared the wrong way
+  round.  A config with a single ladder no longer fails.
+
 ## [2.16.0] - 2026-10-19
 
 ### Added

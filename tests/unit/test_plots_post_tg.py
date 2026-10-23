@@ -153,9 +153,12 @@ class TestPooledFit(unittest.TestCase):
 
 
 class TestDoTgPlots(unittest.TestCase):
-    def run_tg(self, heat, cool):
-        phases = [{'ladder': dict(LADDER, subdir='heat')},
-                  {'ladder': dict(LADDER, subdir='cool')}]
+    def run_tg(self, heat, cool, cooling_first=False, only=None):
+        h = {'ladder': dict(LADDER, subdir='heat')}
+        c = {'ladder': dict(LADDER, subdir='cool', deltaT=-LADDER['deltaT'])}
+        phases = [c, h] if cooling_first else [h, c]
+        if only is not None:
+            phases = [h] if only == 'heating' else [c]
         with tempfile.TemporaryDirectory() as d:
             write_ladder(d, 'heat', heat)
             write_ladder(d, 'cool', cool)
@@ -181,6 +184,20 @@ class TestDoTgPlots(unittest.TestCase):
         result, log = self.run_tg(bad, kinked(TEMPS))
         self.assertEqual(result['unquotable'], ['heating'])
         self.assertIn('no heating Tg can be read off this ladder', log)
+
+    def test_direction_comes_from_the_rate_sign_not_the_order(self):
+        """Plan B on example 5 listed cooling first and got its cooling ladder called heating."""
+        result, log = self.run_tg(kinked(TEMPS, Tg=422.0), kinked(TEMPS, Tg=478.0), cooling_first=True)
+        self.assertEqual(result['directions'], ['cooling', 'heating'])
+        self.assertAlmostEqual(result['heating'], 422.0, delta=1.0)
+        self.assertAlmostEqual(result['cooling'], 478.0, delta=1.0)
+        self.assertIn('cooling Tg = 478', log)
+
+    def test_a_single_ladder_runs_and_compares_nothing(self):
+        result, log = self.run_tg(kinked(TEMPS), kinked(TEMPS), only='cooling')
+        self.assertEqual(result['directions'], ['cooling'])
+        self.assertIsNone(result['heating'])
+        self.assertNotIn('differ by', log)
 
     def test_heating_and_cooling_far_apart_is_flagged(self):
         result, log = self.run_tg(kinked(TEMPS, Tg=422.0), kinked(TEMPS, Tg=478.0))
