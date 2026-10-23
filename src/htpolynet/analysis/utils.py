@@ -561,11 +561,12 @@ def pooled_tg(curves,n_boot=500,seed=0):
     signal.  The points within one build are correlated -- one structure, one
     trajectory -- so the pooled fit's own standard error understates the uncertainty,
     which is taken instead from a bootstrap over builds: resample whole builds with
-    replacement, realign, refit.  That bootstrap measures how well the pool pins a
-    *shared* T0; it is not the spread between structures, which can be far larger (on
-    example 2 cooling, 12.5 K against builds whose own break points spanned 96 K), so
-    the kept builds' own spread is returned beside it as ``per_build_sd``.  A pooled
-    fit that is sharp when most builds are refused on their own is held out.
+    replacement, realign, refit.  That bootstrap is the uncertainty of the pooled Tg --
+    on the replicate ladders it matches the kept builds' s.d./sqrt(n) within a few K.
+    It is not how far one build's Tg lands from another's, which is larger by about
+    sqrt(n) and is returned beside it as ``per_build_sd``: the answer to "how far off
+    might a single build be".  A pooled fit that is sharp when most builds are refused
+    on their own is held out.
     Patrone et al. (2016) found exactly this: two
     simulations of one chemistry gave Tg distributions that did not overlap, because
     the structures crosslinking produces differ.

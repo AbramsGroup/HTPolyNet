@@ -20,10 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   criterion), when Tg lands on the ladder's edge, or when the bend does not beat a
   straight line.  The two-line Tg is still reported, with its window warnings.  On
   the 2.16.0 replicate ladders the screening holds out most examples: their
-  transitions are wider than a 300-600 K ladder.  The bootstrap measures how well
-  the pool pins one shared Tg, which can be far tighter than the builds' own spread,
-  so the log gives both; and a pool that fits as a sharp break when most builds are
-  refused on their own is held out too.
+  transitions are wider than a 300-600 K ladder.  The log gives two error bars,
+  labeled: the bootstrap, the uncertainty of the pooled Tg, and the s.d. of the
+  builds' own Tg, how far a single build may land.  A pool that fits as a sharp break
+  when most builds are refused on their own is held out.
 
 ### Changed
 
