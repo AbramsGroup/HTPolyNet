@@ -1732,11 +1732,18 @@ Coverage as of the last measurement: **38.8%** overall.
   (`fit_tg_hyperbola`, `pooled_tg`), run on those same 60 ladders, pools to a Tg
   only for example 1 heating (417 +/- 6 K), example 3 heating (462 +/- 7 K), example
   2 cooling (381 +/- 13 K, a sharp break) and example 6 cooling (509 +/- 25 K).
+  htpolynet-sweep reproduced all four exactly.  Example 3's is not settled: the
+  two-line estimate on the same ladders is 427 +/- 19 K (mean, s.e.), further apart
+  than either error bar, so on these ladders the answer still depends on the
+  estimator.  And a tight two-line spread is not evidence either way -- example 4
+  heating gives 403 +/- 9 K that way, while the whole-curve fit puts its center on
+  the ladder's floor.
   Elsewhere Patrone's screening criterion fails: the fitted transitions are 70-200 K
   wide, so their 90 % intervals span roughly 180-730 K, past both ends of a
   300-600 K ladder; example 5's pooled fits sit on its 250 K floor.  So the next step
   is wider ladders -- down to ~200 K (lower still for example 5) and up past 700 K
-  where the chemistry survives it -- and that is new compute, Cameron's call.
+  where the chemistry survives it -- and that is new compute, Cameron's call.  He
+  approved it for example 5 only (sweep job 26556275, 100-500 K, 2026-10-23).
 
 - **grompp warns 8 times per example 2 build about two transposed hydrogens.**
   Surfaced by 2.15.0 relaying grompp's warnings (htpolynet-sweep, v2.15.0
