@@ -771,7 +771,8 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             if w['Tg_boot_sd'] is not None:
                 err=(f'+/- {w["Tg_boot_sd"]:.0f} K (uncertainty of the mean, bootstrap over '
                      f'{w["n_builds"]} builds); {w["n_kept"]} of {w["n_builds"]} builds give a Tg alone'
-                     + (f', scattered by {w["per_build_sd"]:.0f} K (s.d. of a single build)'
+                     + (f', s.d. {w["per_build_sd"]:.0f} K over those {w["n_kept"]} '
+                        f'({w["n_kept"]}/{w["n_builds"]} kept)'
                         if w['per_build_sd'] is not None else ''))
             elif f.get('Tg_synth_sd') is not None:
                 err=f'+/- {f["Tg_synth_sd"]:.0f} K within this build'

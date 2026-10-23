@@ -21,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   straight line.  The two-line Tg is still reported, with its window warnings.  On
   the 2.16.0 replicate ladders the screening holds out most examples: their
   transitions are wider than a 300-600 K ladder.  The log gives two error bars,
-  labeled: the bootstrap, the uncertainty of the pooled Tg, and the s.d. of the
-  builds' own Tg, how far a single build may land.  A pool that fits as a sharp break
+  labeled: the bootstrap, the uncertainty of the pooled Tg, and the s.d. over the
+  builds that give a Tg on their own, shown with how many of how many were kept --
+  it is conditioned on that filter, so it is not the scatter of an arbitrary build.  A pool that fits as a sharp break
   when most builds are refused on their own is held out.
 
 ### Changed

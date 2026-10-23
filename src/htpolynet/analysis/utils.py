@@ -561,11 +561,12 @@ def pooled_tg(curves,n_boot=500,seed=0):
     signal.  The points within one build are correlated -- one structure, one
     trajectory -- so the pooled fit's own standard error understates the uncertainty,
     which is taken instead from a bootstrap over builds: resample whole builds with
-    replacement, realign, refit.  That bootstrap is the uncertainty of the pooled Tg --
-    on the replicate ladders it matches the kept builds' s.d./sqrt(n) within a few K.
-    It is not how far one build's Tg lands from another's, which is larger by about
-    sqrt(n) and is returned beside it as ``per_build_sd``: the answer to "how far off
-    might a single build be".  A pooled fit that is sharp when most builds are refused
+    replacement, realign, refit.  That bootstrap is the uncertainty of the pooled Tg.
+    Beside it, ``per_build_sd`` is the s.d. of the Tg of the builds that pass on their
+    own, with ``n_kept`` saying how many.  It is conditioned on that filter, so it is
+    not the scatter of an arbitrary build: on example 3 heating it is 7.7 K over the
+    3 of 5 kept, and 73.6 K over all five, one of which the fit puts on the ladder's
+    edge.  Quote it with k/n.  A pooled fit that is sharp when most builds are refused
     on their own is held out.
     Patrone et al. (2016) found exactly this: two
     simulations of one chemistry gave Tg distributions that did not overlap, because
@@ -579,8 +580,8 @@ def pooled_tg(curves,n_boot=500,seed=0):
     Returns:
         dict: Tg and fit (the pooled :func:`fit_tg_hyperbola` result), Tg_boot_sd (None
             with one build or too few usable resamples), per_build (each build's own
-            fit), n_builds, n_kept, per_build_sd (s.d. of the kept builds' Tg, None
-            with fewer than two)
+            fit), n_builds, n_kept, per_build_sd (s.d. over the n_kept kept builds'
+            Tg, None with fewer than two)
     """
     per=[fit_tg_hyperbola(t,y) for t,y in curves]
     def fit_pool(cs):
