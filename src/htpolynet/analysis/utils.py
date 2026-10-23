@@ -11,6 +11,7 @@ import pandas as pd
 
 from scipy.constants import physical_constants
 from scipy.optimize import curve_fit
+from scipy.stats import f as f_dist
 
 from ..core.coordinates import Coordinates
 from ..core.topocoord import TopoCoord
@@ -397,6 +398,205 @@ def tg_window_range(T,v,glassy=(10,15,20,25),rubbery=(10,15,20,25)):
     n=len(T)
     tgs=[compute_tg(T,v,n_points=[c,h])[0] for c in glassy for h in rubbery if c+h<=n]
     return (min(tgs),max(tgs)) if tgs else None
+
+def _tg_hyperbola(T,rho0,T0,a,b,c):
+    """rho0 + a (T-T0) + b H(T-T0), H(t) = t/2 + sqrt(t^2/4 + exp(c)).
+
+    Asymptotes: slope a well below T0 (glassy) and a+b well above (rubbery), crossing
+    at T0, which is Tg; exp(c/2) sets the width of the transition between them."""
+    t=np.asarray(T,dtype=float)-T0
+    return rho0+a*t+b*(0.5*t+np.sqrt(0.25*t*t+np.exp(c)))
+
+def fit_tg_hyperbola(T,v,width_bounds=(1.0,200.0),P_hat=0.9,n_synth=0,seed=0):
+    """Tg from one hyperbola fitted to the whole density (or volume) curve.
+
+    The two-line intersection of :func:`compute_tg` fits each side separately and
+    intersects them, so how many points each side gets moves Tg -- by 100 K or more on
+    some shipped examples.  Following Patrone et al., Polymer 87, 246 (2016), a
+    hyperbola whose asymptotes are the glassy and rubbery lines is fitted to every point
+    at once, weighted by sigma_j proportional to T_j, and Tg is read off it two ways:
+    ``Tg`` is T0, the hyperbola's center, and ``Tg_tangents`` is where its tangents at
+    the two ends of the ladder cross.  When the data reach both asymptotes the two
+    agree; their gap is the paper's own check that they do.
+
+    The screening criterion (their Eqs. 4-5): the slope reaches a fraction P_hat of the
+    way between its asymptotes at T0 +/- DeltaT, DeltaT = e^(c/2) (2P-1)/sqrt(P(1-P)).
+    A ladder that does not extend past that interval on both sides does not contain the
+    asymptotic regimes, and its Tg is held out.  Also held out: a width on its upper
+    bound, and a bend that does not beat a straight line (F-test, p > 0.01) -- a
+    straight line otherwise fits as a sharp break at a noise feature.  A width on its lower
+    bound is kept and flagged ``sharp``: the fit is then a two-line fit with its break
+    where the misfit is least.
+
+    Args:
+        T (array-like): temperatures, K
+        v (array-like): density or volume
+        width_bounds (tuple): allowed e^(c/2), K
+        P_hat (float): slope convergence that defines the transition interval
+        n_synth (int): synthetic datasets for the within-build uncertainty (their
+            section 5.1): residuals give a noise level, rising as T, from which data
+            are redrawn about the fit and refitted; 0 skips it
+        seed (int): random seed for the synthetic data
+
+    Returns:
+        dict: Tg, Tg_tangents, Tg_se (from the covariance), Tg_synth_sd, glassy and
+            rubbery slopes, width, transition (T0-DeltaT, T0+DeltaT), sharp, held_out,
+            reason, params; None if the fit does not converge
+    """
+    T=np.asarray(T,dtype=float); v=np.asarray(v,dtype=float)
+    o=np.argsort(T); T,v=T[o],v[o]
+    p,cov=_fit_hyperbola(T,v,width_bounds)
+    if p is None:
+        return None
+    rho0,T0,a,b,c=p
+    w_lo,w_hi=width_bounds
+    width=float(np.exp(c/2))
+    dT=width*(2*P_hat-1)/np.sqrt(P_hat*(1-P_hat))
+    sharp=bool(width<=w_lo*1.001)
+    # does the bend beat a straight line?  An F-test on the weighted residuals, not the
+    # covariance of b: at the sharp-width bound that covariance is ill-conditioned and
+    # would hold out a real break
+    n=len(T)
+    ss_h=float(np.sum(((v-_tg_hyperbola(T,*p))/T)**2))
+    lin=np.polyfit(T,v,1,w=1.0/T)
+    ss_l=float(np.sum(((v-np.polyval(lin,T))/T)**2))
+    F=((ss_l-ss_h)/3.0)/(ss_h/(n-5)) if ss_h>0 and n>5 else float('inf')
+    p_line=float(f_dist.sf(F,3,n-5)) if np.isfinite(F) else 0.0
+    reason=None
+    if T0<=T[0]+1.0 or T0>=T[-1]-1.0:
+        reason='Tg at the edge of the data'
+    elif width>=w_hi*0.999:
+        reason=f'transition width at its {w_hi:g} K bound'
+    elif p_line>0.01:
+        reason=f'no significant change of slope (a straight line fits as well, p = {p_line:.2f})'
+    elif T[0]>T0-dT or T[-1]<T0+dT:
+        reason=(f'the ladder ({T[0]:.0f}-{T[-1]:.0f} K) does not reach past the transition, '
+                f'{T0-dT:.0f}-{T0+dT:.0f} K at {P_hat:.0%} slope convergence')
+    Tt=_tangent_crossing(p,T[0],T[-1])
+    se=float(np.sqrt(cov[1,1])) if np.isfinite(cov[1,1]) and not sharp else float('nan')
+    synth=None
+    if n_synth>0:
+        resid=v-_tg_hyperbola(T,*p)
+        scale=np.sqrt(np.mean((resid/T)**2))
+        rng=np.random.default_rng(seed)
+        tgs=[]
+        for _ in range(n_synth):
+            q,_=_fit_hyperbola(T,_tg_hyperbola(T,*p)+rng.normal(0.0,scale*T),width_bounds,p0=p)
+            if q is not None:
+                tgs.append(q[1])
+        synth=float(np.std(tgs,ddof=1)) if len(tgs)>1 else None
+    return {'Tg':float(T0),'Tg_tangents':Tt,'Tg_se':se,'Tg_synth_sd':synth,
+            'glassy':float(a),'rubbery':float(a+b),'width':width,
+            'transition':(float(T0-dT),float(T0+dT)),'sharp':sharp,
+            'held_out':reason is not None,'reason':reason,'params':p}
+
+def _fit_hyperbola(T,v,width_bounds,p0=None):
+    """Weighted least-squares fit of :func:`_tg_hyperbola`; (params, cov) or (None, None)."""
+    w_lo,w_hi=width_bounds
+    if p0 is None:
+        k=max(3,len(T)//4)
+        a0=np.polyfit(T[:k],v[:k],1)[0]
+        a1=np.polyfit(T[-k:],v[-k:],1)[0]
+        T0=0.5*(T[0]+T[-1])
+        p0=[np.interp(T0,T,v),T0,a0,a1-a0,2*np.log(20.0)]
+    lo=[-np.inf,T[0],-np.inf,-np.inf,2*np.log(w_lo)]
+    hi=[np.inf,T[-1],np.inf,np.inf,2*np.log(w_hi)]
+    p0=np.clip(np.asarray(p0,dtype=float),np.array(lo)+1e-9,np.array(hi)-1e-9)
+    try:
+        # sigma_j ~ T_j: Patrone et al. take sigma_j ~ T_j^p, 1/2 <= p <= 2, and find p
+        # barely matters
+        return curve_fit(_tg_hyperbola,T,v,p0=p0,sigma=T,bounds=(lo,hi),maxfev=40000)
+    except (RuntimeError,ValueError):
+        return None,None
+
+def _tangent_crossing(p,T_lo,T_hi):
+    """Where the fitted hyperbola's tangents at T_lo and T_hi cross."""
+    def tangent(Tx,h=1e-3):
+        y=_tg_hyperbola(Tx,*p)
+        m=(_tg_hyperbola(Tx+h,*p)-_tg_hyperbola(Tx-h,*p))/(2*h)
+        return m,y-m*Tx
+    m1,b1=tangent(T_lo)
+    m2,b2=tangent(T_hi)
+    return float((b2-b1)/(m1-m2)) if abs(m1-m2)>1e-12 else float('nan')
+
+def _align_builds(curves,width_bounds=(1.0,200.0)):
+    """Each build's curve shifted onto a common density, by a joint fit.
+
+    Replica builds of one system differ in density by a few kg/m^3 (3-11 across the
+    v2.16.0 replicates), which is as large as the change of slope a Tg fit looks for,
+    so pooling raw points turns the offsets into noise and hides the transition.  This
+    fits one hyperbola -- shared T0, slopes and width -- with a separate rho0 for each
+    build, and returns the curves with those offsets removed.
+    """
+    Ts=[np.asarray(c[0],dtype=float) for c in curves]
+    Vs=[np.asarray(c[1],dtype=float) for c in curves]
+    n=len(curves)
+    T=np.concatenate(Ts); idx=np.concatenate([np.full(len(t),k) for k,t in enumerate(Ts)])
+    V=np.concatenate(Vs)
+    means=np.array([v.mean() for v in Vs])
+    first=fit_tg_hyperbola(T,V-means[idx]+means.mean(),width_bounds)
+    if first is None:
+        return None
+    _,T0,a0,b0,c0=first['params']
+    def model(X,T0,a,b,c,*rho0):
+        return np.asarray(rho0)[X[1].astype(int)]+_tg_hyperbola(X[0],0.0,T0,a,b,c)
+    w_lo,w_hi=width_bounds
+    lo=[T.min(),-np.inf,-np.inf,2*np.log(w_lo)]+[-np.inf]*n
+    hi=[T.max(),np.inf,np.inf,2*np.log(w_hi)]+[np.inf]*n
+    p0=[T0,a0,b0,c0]+[float(np.mean(v-_tg_hyperbola(t,0.0,T0,a0,b0,c0))) for t,v in zip(Ts,Vs)]
+    p0=np.clip(np.asarray(p0,dtype=float),np.array(lo)+1e-9,np.array(hi)-1e-9)
+    try:
+        p,_=curve_fit(model,np.vstack([T,idx]),V,p0=p0,sigma=T,bounds=(lo,hi),maxfev=40000)
+    except (RuntimeError,ValueError):
+        return None
+    rho0=np.asarray(p[4:])
+    return [(t,v-(rho0[k]-rho0.mean())) for k,(t,v) in enumerate(zip(Ts,Vs))]
+
+def pooled_tg(curves,n_boot=500,seed=0):
+    """Tg from replica builds' curves fitted together, with a between-build error bar.
+
+    Each build's curve is noisy on its own; fitting all builds at once uses them as data
+    rather than averaging separately fitted answers.  Builds are first aligned on
+    density (:func:`_align_builds`), since replicas differ by about as much as the
+    signal.  The points within one build are correlated -- one structure, one
+    trajectory -- so the pooled fit's own standard error understates the uncertainty,
+    which is taken instead from a bootstrap over builds: resample whole builds with
+    replacement, realign, refit.  Patrone et al. (2016) found exactly this: two
+    simulations of one chemistry gave Tg distributions that did not overlap, because
+    the structures crosslinking produces differ.
+
+    Args:
+        curves (list): one (T, v) pair of arrays per build
+        n_boot (int): bootstrap resamples
+        seed (int): random seed for the resampling
+
+    Returns:
+        dict: Tg and fit (the pooled :func:`fit_tg_hyperbola` result), Tg_boot_sd (None
+            with one build or too few usable resamples), per_build (each build's own
+            fit), n_builds
+    """
+    per=[fit_tg_hyperbola(t,y) for t,y in curves]
+    def fit_pool(cs):
+        aligned=_align_builds(cs) if len(cs)>1 else cs
+        if aligned is None:
+            return None
+        return fit_tg_hyperbola(np.concatenate([c[0] for c in aligned]),
+                                np.concatenate([c[1] for c in aligned]))
+    pool=fit_pool(curves)
+    sd=None
+    if len(curves)>1 and pool is not None and not pool['held_out']:
+        rng=np.random.default_rng(seed)
+        tgs=[]
+        for _ in range(n_boot):
+            pick=rng.integers(0,len(curves),len(curves))
+            if len(set(pick.tolist()))<2:
+                continue
+            r=fit_pool([curves[i] for i in pick])
+            if r is not None and not r['held_out']:
+                tgs.append(r['Tg'])
+        sd=float(np.std(tgs,ddof=1)) if len(tgs)>1 else None
+    return {'Tg':pool['Tg'] if pool and not pool['held_out'] else None,'fit':pool,
+            'Tg_boot_sd':sd,'per_build':per,'n_builds':len(curves)}
 
 def compute_G(shear_strain,shear_stress,fit_domain=[10,100],fit_strain=None):
     """Computes the shear modulus by a linear fit to the elastic regime of a simple shear.

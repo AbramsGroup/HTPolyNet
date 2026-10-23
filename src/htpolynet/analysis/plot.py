@@ -674,6 +674,7 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
     Tgs=[]
     spread=[]
     span=[]
+    whole=[]
     nproj=len(projdirs)
     for i,phase in enumerate(phases):
         p=phase['ladder']
@@ -728,6 +729,11 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
         Tg,c,h=compute_tg(m['Temperature'],m['Density'],n_points=n_points)
         Tgs.append(Tg)
         spread.append(tg_window_range(m['Temperature'].values,m['Density'].values))
+        curves=[(r['Temperature'].values,r['Density'].values) for r in res[v]]
+        w=pooled_tg(curves)
+        if len(curves)==1 and w['fit'] is not None and not w['fit']['held_out']:
+            w['fit']=fit_tg_hyperbola(*curves[0],n_synth=200)
+        whole.append(w)
         span.append((m['Temperature'].min(),m['Temperature'].max()))
         if Tg!=-1:
             ax[i].plot(m['Temperature'],c[0]*m['Temperature']+c[1],color='blue',alpha=0.5)
@@ -755,10 +761,27 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             logger.warning(f'the {label} Tg leaves the ladder\'s {lo:.0f}-{hi:.0f} K range for some fit '
                            f'windows, so the glassy and rubbery lines are nearly parallel and no '
                            f'{label} Tg can be read off this ladder; equilibrate longer before it')
+    for label,w in zip(('heating','cooling'),whole):
+        f=w['fit']
+        if f is None:
+            logger.info(f'{label} Tg, whole-curve fit: did not converge')
+        elif f['held_out']:
+            logger.info(f'{label} Tg, whole-curve fit: none ({f["reason"]})')
+        else:
+            if w['Tg_boot_sd'] is not None:
+                err=f'+/- {w["Tg_boot_sd"]:.0f} K between {w["n_builds"]} builds'
+            elif f.get('Tg_synth_sd') is not None:
+                err=f'+/- {f["Tg_synth_sd"]:.0f} K within this build'
+            else:
+                err='no error bar'
+            logger.info(f'{label} Tg, whole-curve fit: {f["Tg"]:.1f} K {err}; tangents at the '
+                        f'ladder ends cross at {f["Tg_tangents"]:.1f} K'
+                        + ('; a sharp break' if f['sharp'] else ''))
     if abs(hTg-cTg)>50.0:
         logger.warning(f'heating and cooling Tg differ by {abs(hTg-cTg):.0f} K; more than rate '
                        f'hysteresis explains, so treat at least one as a failed fit')
-    return {'heating':hTg,'cooling':cTg,'window_range':spread,'unquotable':unquotable}
+    return {'heating':hTg,'cooling':cTg,'window_range':spread,'unquotable':unquotable,
+            'whole_curve':whole}
 
 def do_E_plots(phases,projdirs,outfile='e.png',save_data='E.csv',fit_strain=None):
     """Fits Young's modulus to the deform stages and plots the mean stress-strain curve.

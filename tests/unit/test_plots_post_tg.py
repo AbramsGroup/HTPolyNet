@@ -15,7 +15,8 @@ import numpy as np
 import pandas as pd
 
 from htpolynet.analysis.plot import do_tg_plots, post_plots
-from htpolynet.analysis.utils import tg_window_range
+from htpolynet.analysis.utils import (_tg_hyperbola, fit_tg_hyperbola, pooled_tg,
+                                      tg_window_range)
 
 TEMPS = np.arange(300.0, 605.0, 5.0)          # 61 rungs, as in example 6's ladders
 LADDER = {'warmup_ps': 0, 'ps_per_rise': 1, 'ps_per_run': 10, 'deltaT': 5}
@@ -56,6 +57,76 @@ class TestWindowRange(unittest.TestCase):
         self.assertIsNone(tg_window_range(TEMPS[:15], kinked(TEMPS[:15])))
 
 
+def smooth(T, Tg=450.0, width=25.0, noise=0.0, seed=0):
+    """A transition of finite width, from the fitted form itself."""
+    rng = np.random.default_rng(seed)
+    rho = _tg_hyperbola(T, 1150.0, Tg, -0.20, -0.15, 2 * np.log(width))
+    return rho + rng.normal(0.0, noise, T.shape)
+
+
+class TestWholeCurveFit(unittest.TestCase):
+    def test_a_smooth_transition_is_recovered_with_an_error_bar(self):
+        f = fit_tg_hyperbola(TEMPS, smooth(TEMPS, noise=0.3, seed=1))
+        self.assertAlmostEqual(f['Tg'], 450.0, delta=10.0)
+        self.assertAlmostEqual(f['glassy'], -0.20, delta=0.03)
+        self.assertAlmostEqual(f['rubbery'], -0.35, delta=0.03)
+        self.assertFalse(f['held_out'])
+        self.assertTrue(np.isfinite(f['Tg_se']))
+
+    def test_a_sharp_kink_is_kept_and_flagged_sharp(self):
+        f = fit_tg_hyperbola(TEMPS, kinked(TEMPS))
+        self.assertAlmostEqual(f['Tg'], 450.0, delta=2.0)
+        self.assertTrue(f['sharp'])
+        self.assertFalse(f['held_out'])
+
+    def test_no_transition_in_the_ladder_is_held_out(self):
+        # the transition sits below the ladder: only one asymptote is in the data
+        f = fit_tg_hyperbola(TEMPS, smooth(TEMPS, Tg=150.0, width=10.0, noise=0.3, seed=2))
+        self.assertTrue(f['held_out'], f)
+        self.assertIsNotNone(f['reason'])
+
+
+    def test_both_tg_definitions_agree_when_the_ladder_reaches_both_asymptotes(self):
+        f = fit_tg_hyperbola(TEMPS, smooth(TEMPS, width=15.0, noise=0.2, seed=4))
+        self.assertAlmostEqual(f['Tg_tangents'], f['Tg'], delta=3.0)
+
+    def test_a_ladder_too_narrow_for_its_transition_is_screened_out(self):
+        # width 60 K centered at 450: the 90% interval is about 450 +/- 160 K, past both ends
+        f = fit_tg_hyperbola(TEMPS, smooth(TEMPS, width=60.0, noise=0.05, seed=5))
+        self.assertTrue(f['held_out'], f)
+        self.assertIn('does not reach past the transition', f['reason'])
+        lo, hi = f['transition']
+        self.assertTrue(lo < TEMPS[0] or hi > TEMPS[-1])
+
+    def test_synthetic_data_give_a_within_build_spread(self):
+        f = fit_tg_hyperbola(TEMPS, smooth(TEMPS, noise=0.5, seed=6), n_synth=40)
+        self.assertIsNotNone(f['Tg_synth_sd'])
+        self.assertGreater(f['Tg_synth_sd'], 0.0)
+        self.assertLess(f['Tg_synth_sd'], 30.0)
+
+
+class TestPooledFit(unittest.TestCase):
+    def curves(self, n, noise=1.5):
+        return [(TEMPS, smooth(TEMPS, Tg=450.0 + 8.0 * (k - n / 2), noise=noise, seed=k))
+                for k in range(n)]
+
+    def test_pooling_builds_gives_a_between_build_error_bar(self):
+        res = pooled_tg(self.curves(5), n_boot=100)
+        self.assertEqual(res['n_builds'], 5)
+        self.assertEqual(len(res['per_build']), 5)
+        self.assertAlmostEqual(res['Tg'], 450.0, delta=15.0)
+        self.assertIsNotNone(res['Tg_boot_sd'])
+        self.assertGreater(res['Tg_boot_sd'], 0.0)
+
+    def test_one_build_has_no_bootstrap(self):
+        self.assertIsNone(pooled_tg(self.curves(1), n_boot=50)['Tg_boot_sd'])
+
+    def test_the_bootstrap_is_reproducible(self):
+        a = pooled_tg(self.curves(4), n_boot=60, seed=7)['Tg_boot_sd']
+        b = pooled_tg(self.curves(4), n_boot=60, seed=7)['Tg_boot_sd']
+        self.assertEqual(a, b)
+
+
 class TestDoTgPlots(unittest.TestCase):
     def run_tg(self, heat, cool):
         phases = [{'ladder': dict(LADDER, subdir='heat')},
@@ -76,6 +147,7 @@ class TestDoTgPlots(unittest.TestCase):
         result, log = self.run_tg(kinked(TEMPS), kinked(TEMPS, Tg=440.0))
         self.assertAlmostEqual(result['heating'], 450.0, delta=1.0)
         self.assertIn('over fit windows', log)
+        self.assertIn('heating Tg, whole-curve fit: 450.0 K', log)
         self.assertNotIn('WARNING', log)
         self.assertEqual(result['unquotable'], [])
 

@@ -1728,6 +1728,16 @@ Coverage as of the last measurement: **38.8%** overall.
   and a fit less sensitive to its window than two-line intersection -- costed against
   GPU hours per example.  Until then the tutorials should not quote a single-build Tg.
 
+  **The estimator is not what limits it (2026-10-23).**  The whole-curve fit
+  (`fit_tg_hyperbola`, `pooled_tg`), run on those same 60 ladders, pools to a Tg
+  only for example 1 heating (417 +/- 6 K), example 3 heating (462 +/- 7 K), example
+  2 cooling (381 +/- 13 K, a sharp break) and example 6 cooling (509 +/- 25 K).
+  Elsewhere Patrone's screening criterion fails: the fitted transitions are 70-200 K
+  wide, so their 90 % intervals span roughly 180-730 K, past both ends of a
+  300-600 K ladder; example 5's pooled fits sit on its 250 K floor.  So the next step
+  is wider ladders -- down to ~200 K (lower still for example 5) and up past 700 K
+  where the chemistry survives it -- and that is new compute, Cameron's call.
+
 - **grompp warns 8 times per example 2 build about two transposed hydrogens.**
   Surfaced by 2.15.0 relaying grompp's warnings (htpolynet-sweep, v2.15.0
   sweep): atoms 76/77 are H11/H12 in GMA.top and H12/H11 in the GMAS-N

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`plots post` also fits Tg to the whole curve, and pools replica builds.**
+  Following Patrone et al. (Polymer 87, 246, 2016), a hyperbola whose asymptotes are
+  the glassy and rubbery lines is fitted to every point of a ladder, and Tg is read
+  off as its center and, as a check, where its tangents at the ladder ends cross.
+  Given several project directories, the builds are aligned on density and fitted
+  together, with the error bar from a bootstrap over builds; given one, from refits
+  to synthetic data.  The fit is held out, with the reason logged, when the ladder
+  does not reach past the transition at 90 % slope convergence (the paper's screening
+  criterion), when Tg lands on the ladder's edge, or when the bend does not beat a
+  straight line.  The two-line Tg is still reported, with its window warnings.  On
+  the 2.16.0 replicate ladders the screening holds out most examples: their
+  transitions are wider than a 300-600 K ladder.
+
 ### Changed
 
 - **Installing from conda-forge is recommended again.**  The conda-forge package
