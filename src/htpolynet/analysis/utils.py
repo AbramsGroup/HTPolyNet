@@ -561,7 +561,12 @@ def pooled_tg(curves,n_boot=500,seed=0):
     signal.  The points within one build are correlated -- one structure, one
     trajectory -- so the pooled fit's own standard error understates the uncertainty,
     which is taken instead from a bootstrap over builds: resample whole builds with
-    replacement, realign, refit.  Patrone et al. (2016) found exactly this: two
+    replacement, realign, refit.  That bootstrap measures how well the pool pins a
+    *shared* T0; it is not the spread between structures, which can be far larger (on
+    example 2 cooling, 12.5 K against builds whose own break points spanned 96 K), so
+    the kept builds' own spread is returned beside it as ``per_build_sd``.  A pooled
+    fit that is sharp when most builds are refused on their own is held out.
+    Patrone et al. (2016) found exactly this: two
     simulations of one chemistry gave Tg distributions that did not overlap, because
     the structures crosslinking produces differ.
 
@@ -573,7 +578,8 @@ def pooled_tg(curves,n_boot=500,seed=0):
     Returns:
         dict: Tg and fit (the pooled :func:`fit_tg_hyperbola` result), Tg_boot_sd (None
             with one build or too few usable resamples), per_build (each build's own
-            fit), n_builds
+            fit), n_builds, n_kept, per_build_sd (s.d. of the kept builds' Tg, None
+            with fewer than two)
     """
     per=[fit_tg_hyperbola(t,y) for t,y in curves]
     def fit_pool(cs):
@@ -583,6 +589,15 @@ def pooled_tg(curves,n_boot=500,seed=0):
         return fit_tg_hyperbola(np.concatenate([c[0] for c in aligned]),
                                 np.concatenate([c[1] for c in aligned]))
     pool=fit_pool(curves)
+    kept=[f['Tg'] for f in per if f is not None and not f['held_out']]
+    if (pool is not None and not pool['held_out'] and pool['sharp']
+            and len(curves)>1 and 2*len(kept)<len(curves)):
+        # pooling n builds buys significance with n: five straight lines can pool into
+        # a "sharp" break that none of them shows (example 2 cooling, 2026-10-23: 4 of 5
+        # builds refused, pooled kept at width 1 K, local slope showing no step)
+        pool['held_out']=True
+        pool['reason']=(f'a sharp break in the pool that {len(curves)-len(kept)} of '
+                        f'{len(curves)} builds do not show on their own')
     sd=None
     if len(curves)>1 and pool is not None and not pool['held_out']:
         rng=np.random.default_rng(seed)
@@ -596,7 +611,8 @@ def pooled_tg(curves,n_boot=500,seed=0):
                 tgs.append(r['Tg'])
         sd=float(np.std(tgs,ddof=1)) if len(tgs)>1 else None
     return {'Tg':pool['Tg'] if pool and not pool['held_out'] else None,'fit':pool,
-            'Tg_boot_sd':sd,'per_build':per,'n_builds':len(curves)}
+            'Tg_boot_sd':sd,'per_build':per,'n_builds':len(curves),'n_kept':len(kept),
+            'per_build_sd':float(np.std(kept,ddof=1)) if len(kept)>1 else None}
 
 def compute_G(shear_strain,shear_stress,fit_domain=[10,100],fit_strain=None):
     """Computes the shear modulus by a linear fit to the elastic regime of a simple shear.

@@ -118,6 +118,31 @@ class TestPooledFit(unittest.TestCase):
         self.assertIsNotNone(res['Tg_boot_sd'])
         self.assertGreater(res['Tg_boot_sd'], 0.0)
 
+    def test_the_kept_builds_own_spread_is_reported(self):
+        res = pooled_tg(self.curves(5), n_boot=40)
+        own = [f['Tg'] for f in res['per_build'] if not f['held_out']]
+        self.assertEqual(res['n_kept'], len(own))
+        self.assertAlmostEqual(res['per_build_sd'], float(np.std(own, ddof=1)))
+
+    def test_a_sharp_pool_most_builds_refuse_is_held_out(self):
+        """Example 2 cooling, 2026-10-23: four of five builds refused on their own, the
+        pool kept as a 1 K-wide break that the local slope does not show."""
+        from unittest import mock
+        import htpolynet.analysis.utils as U
+
+        def fake(T, v, *a, **k):
+            pooled = len(T) > len(TEMPS)
+            refused = not pooled and v[0] != 0.0
+            return {'Tg': 400.0, 'Tg_se': float('nan'), 'sharp': True,
+                    'held_out': refused, 'reason': 'no significant change of slope' if refused else None}
+        curves = [(TEMPS, np.full(TEMPS.shape, float(k))) for k in range(5)]   # build 0 kept
+        with mock.patch.object(U, 'fit_tg_hyperbola', side_effect=fake), \
+             mock.patch.object(U, '_align_builds', side_effect=lambda cs: cs):
+            res = U.pooled_tg(curves, n_boot=5)
+        self.assertTrue(res['fit']['held_out'])
+        self.assertIn('4 of 5 builds do not show', res['fit']['reason'])
+        self.assertIsNone(res['Tg'])
+
     def test_one_build_has_no_bootstrap(self):
         self.assertIsNone(pooled_tg(self.curves(1), n_boot=50)['Tg_boot_sd'])
 

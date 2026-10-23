@@ -769,7 +769,9 @@ def do_tg_plots(phases,projdirs,outfile='tg.png',save_data='data.csv',n_points=[
             logger.info(f'{label} Tg, whole-curve fit: none ({f["reason"]})')
         else:
             if w['Tg_boot_sd'] is not None:
-                err=f'+/- {w["Tg_boot_sd"]:.0f} K between {w["n_builds"]} builds'
+                err=(f'+/- {w["Tg_boot_sd"]:.0f} K (bootstrap over {w["n_builds"]} builds of the '
+                     f'shared Tg); {w["n_kept"]} of {w["n_builds"]} builds give a Tg alone'
+                     + (f', spread {w["per_build_sd"]:.0f} K' if w['per_build_sd'] is not None else ''))
             elif f.get('Tg_synth_sd') is not None:
                 err=f'+/- {f["Tg_synth_sd"]:.0f} K within this build'
             else:

@@ -1730,9 +1730,11 @@ Coverage as of the last measurement: **38.8%** overall.
 
   **The estimator is not what limits it (2026-10-23).**  The whole-curve fit
   (`fit_tg_hyperbola`, `pooled_tg`), run on those same 60 ladders, pools to a Tg
-  only for example 1 heating (417 +/- 6 K), example 3 heating (462 +/- 7 K), example
-  2 cooling (381 +/- 13 K, a sharp break) and example 6 cooling (509 +/- 25 K).
-  htpolynet-sweep reproduced all four exactly.  Example 3's is not settled: the
+  only for example 1 heating (417 +/- 6 K), example 3 heating (462 +/- 7 K) and
+  example 6 cooling (509 +/- 25 K, though its four kept builds spread by 46 K).
+  htpolynet-sweep reproduced these exactly.  A fourth, example 2 cooling at 381 K,
+  was a sharp break in the pool that four of five builds refused on their own, with
+  no step in the local slope (sweep's diagnosis); it is now held out.  Example 3's is not settled: the
   two-line estimate on the same ladders is 427 +/- 19 K (mean, s.e.), further apart
   than either error bar, so on these ladders the answer still depends on the
   estimator.  And a tight two-line spread is not evidence either way -- example 4
